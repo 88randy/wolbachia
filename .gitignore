@@ -1,0 +1,10 @@
+.env
+*.env
+__pycache__/
+node_modules/
+.venv/
+dist/
+build/
+.expo/
+android/app/build/
+*.apk y coverage/.
