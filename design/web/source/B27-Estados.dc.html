@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Estados globales</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:4000px; height:960px">
+
+<div class="col"><div class="lbl">Cargando · sin conexión · pendiente de subir<span>Esqueletos con la forma del contenido; banda superior sin conexión que conserva lo escrito; registro que aún no llega del teléfono</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Operación</div>
+<a class="nv on" href="#"><svg class="i"><use href="#ops"></use></svg>Validar jornadas</a>
+<div class="foot">Centro Operativo Norte</div></div>
+<div class="mn">
+<div class="band off"><svg class="i"><use href="#nosig"></use></svg><span class="fx">Sin conexión. Lo que escribas se conserva y se envía solo cuando vuelva la red.</span><span>Reintentando en 10 s</span></div>
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="sk" style="width:320px; height:28px"></div>
+<div class="g4"><div class="kpi"><span class="sk" style="width:50%"></span><span class="sk" style="width:40%; height:30px"></span></div><div class="kpi"><span class="sk" style="width:50%"></span><span class="sk" style="width:40%; height:30px"></span></div><div class="kpi"><span class="sk" style="width:50%"></span><span class="sk" style="width:40%; height:30px"></span></div><div class="kpi"><span class="sk" style="width:50%"></span><span class="sk" style="width:40%; height:30px"></span></div></div>
+<div class="tw"><table class="t"><thead><tr><th>Repartidor</th><th>Fecha</th><th class="n">Puntos</th><th>Estado</th></tr></thead><tbody>
+<tr><td><span class="sk" style="display:block; width:120px"></span></td><td><span class="sk" style="display:block; width:90px"></span></td><td><span class="sk" style="display:block; width:50px; margin-left:auto"></span></td><td><span class="sk" style="display:block; width:110px"></span></td></tr>
+<tr><td><span class="sk" style="display:block; width:100px"></span></td><td><span class="sk" style="display:block; width:90px"></span></td><td><span class="sk" style="display:block; width:50px; margin-left:auto"></span></td><td><span class="sk" style="display:block; width:110px"></span></td></tr>
+<tr><td><b>Luis</b></td><td>4 nov 2026</td><td class="n">18 de 40</td><td><span class="bd nt"><svg class="i"><use href="#cloudup"></use></svg>Pendiente de subir desde el teléfono de Luis</span></td></tr>
+<tr><td><span class="sk" style="display:block; width:130px"></span></td><td><span class="sk" style="display:block; width:90px"></span></td><td><span class="sk" style="display:block; width:50px; margin-left:auto"></span></td><td><span class="sk" style="display:block; width:110px"></span></td></tr>
+</tbody></table></div>
+<div class="g3">
+<div class="card tight"><span class="ov">Cargando</span><p class="cap">Nunca pantalla en blanco: esqueletos con la misma forma que la tabla o el tablero. Si pasan 10 s, se agrega «Sigue cargando…».</p></div>
+<div class="card tight"><span class="ov">Sin conexión</span><p class="cap">Banda marino arriba de todo. Los botones de guardar siguen activos; lo guardado queda en cola y se marca «por enviar».</p></div>
+<div class="card tight"><span class="ov">Pendiente del teléfono</span><p class="cap">Lo que se hizo en campo sin señal aparece con su insignia gris hasta que llega al servidor.</p></div>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">Sesión por expirar · semana en cierre<span>Aviso un minuto antes con «Seguir conectado»; aviso en tableros de semana epidemiológica en cierre</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Tableros</div>
+<a class="nv on" href="#"><svg class="i"><use href="#chart"></use></svg>Entomológico</a>
+<div class="foot">Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora</small></span></button></div>
+<div class="band wn"><svg class="i"><use href="#clock"></use></svg><span class="fx">La semana 45 cierra el sábado; los índices pueden cambiar.</span></div>
+<div class="pg" style="gap:12px">
+<h1 class="h1">Tablero entomológico</h1>
+<div class="g5"><div class="kpi"><span class="k">IPO</span><span class="v">41 %</span></div><div class="kpi"><span class="k">PHO</span><span class="v">128</span></div><div class="kpi"><span class="k">PHMR</span><span class="v">380</span></div><div class="kpi"><span class="k">PHMP</span><span class="v">520</span></div><div class="kpi"><span class="k">MP</span><span class="v">58 %</span></div></div>
+<div class="card" style="flex:1"></div>
+</div></div>
+<div class="scrim"></div>
+<div class="mdl" style="width:440px" role="alertdialog" aria-label="Tu sesión está por cerrarse"><div class="mh"><div class="row"><svg class="i s24" style="color:#8A4B00"><use href="#clock"></use></svg><h2 class="h2">Tu sesión se cierra en 0:58</h2></div><p class="sub">Por seguridad cerramos la sesión tras 30 min sin uso. Lo que tengas sin guardar se conserva.</p></div>
+<div class="mf"><button class="b t">Cerrar sesión</button><button class="b p fo">Seguir conectado</button></div></div>
+</div></div>
+
+<div class="col"><div class="lbl">Sin permiso · error del servidor<span>Página con la razón y a quién pedir acceso; error con explicación breve, número de referencia e «Intentar de nuevo»</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv" href="#" aria-label="Operación"><svg class="i"><use href="#ops"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora</small></span></button></div>
+<div class="row" style="flex:1; min-height:0; gap:0">
+<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:40px; border-right:1px solid #C9D0DE">
+<svg class="i s48" style="color:#3A4664"><use href="#lock"></use></svg>
+<h1 class="h1">No tienes acceso a Bitácora de accesos</h1>
+<p class="sub" style="max-width:420px">Esta sección es del perfil Responsable regulatorio. Tu perfil activo es Supervisora del Centro Norte.</p>
+<div class="card tight" style="text-align:left; width:380px"><div class="kv"><span>Quién da acceso</span><b>Administrador de la organización</b></div><div class="kv"><span>Qué pedir</span><b>Perfil o acción «Ver bitácora»</b></div></div>
+<div class="row"><a class="b o" href="#"><svg class="i s16"><use href="#left"></use></svg>Volver al inicio</a><button class="b p">Pedir acceso</button></div>
+</div>
+<div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; gap:14px; padding:40px">
+<svg class="i s48" style="color:#B3141A"><use href="#alert"></use></svg>
+<h1 class="h1">No pudimos cargar esta página</h1>
+<p class="sub" style="max-width:420px">El servidor no respondió a tiempo. No se perdió nada de lo que guardaste. Intenta de nuevo; si sigue pasando, avisa a soporte con este número.</p>
+<div class="card tight" style="width:320px"><div class="kv"><span>Referencia</span><b class="mono">ERR-20261104-7F3A</b></div><div class="kv"><span>Hora</span><b>4 nov 2026 12:41</b></div></div>
+<div class="row"><button class="b o">Copiar referencia</button><button class="b p"><svg class="i s16"><use href="#refresh"></use></svg>Intentar de nuevo</button></div>
+</div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4000,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

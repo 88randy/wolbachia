@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Recorrido 2 nueva versión de C-07</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="vtx" viewBox="0 0 24 24"><path d="M5 5h3v3H5zM16 5h3v3h-3zM10 16h3v3h-3zM8 6.5h8M7 8l4 8M17 8l-4 8"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+</defs></svg>
+
+<div class="scr" style="border-radius:0; box-shadow:none">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="P-Indice.dc.html" aria-label="Índice de recorridos"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Cuadrantes"><svg class="i"><use href="#map"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><a class="b t" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Recorridos</a><b style="font-size:14px">R2 · Nueva versión de C-07 y puntos de una manzana sugerida</b><span class="bd in">Paso {{stepNum}} de 4</span><span class="fx"></span><button class="b t sm" onClick="{{reset}}">Reiniciar</button><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora regional</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="map" style="flex:1; height:100%; border-radius:0; border:0">
+<svg class="base" viewBox="0 0 760 744" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="760" height="744" fill="#EEF1EC"></rect>
+<g fill="#E2E6DF" stroke="#D3D8CF"><rect x="90" y="80" width="130" height="100"></rect><rect x="240" y="80" width="130" height="100"></rect><rect x="390" y="80" width="130" height="100"></rect><rect x="540" y="80" width="130" height="100"></rect><rect x="90" y="200" width="130" height="100"></rect><rect x="240" y="200" width="130" height="100"></rect><rect x="390" y="200" width="130" height="100"></rect><rect x="540" y="200" width="130" height="100"></rect><rect x="90" y="320" width="130" height="100"></rect><rect x="240" y="320" width="130" height="100"></rect><rect x="390" y="320" width="130" height="100"></rect><rect x="540" y="320" width="130" height="100"></rect><rect x="90" y="440" width="130" height="100"></rect><rect x="240" y="440" width="130" height="100"></rect><rect x="390" y="440" width="130" height="100"></rect><rect x="540" y="440" width="130" height="100"></rect></g>
+<path d="M0 190 H760 M0 310 H760 M0 430 H760 M230 0 V744 M380 0 V744 M530 0 V744" stroke="#fff" stroke-width="10"></path>
+<path d="M80 70 L690 70 L690 550 L80 550z" fill="#1A5DFF" fill-opacity=".12" stroke="#1A5DFF" stroke-width="3" style="opacity:{{oldOp}}"></path>
+<path d="M80 70 L690 70 L690 550 L80 550z" fill="none" stroke="#586380" stroke-width="2.5" stroke-dasharray="6 5" style="opacity:{{newOp}}"></path>
+<path d="M80 70 L690 70 L690 300 L530 300 L530 550 L80 550z" fill="#1A5DFF" fill-opacity=".12" stroke="#1A5DFF" stroke-width="3" style="opacity:{{newOp}}"></path>
+<rect x="390" y="440" width="130" height="100" fill="#FFF1D6" stroke="#8A4B00" stroke-width="3" stroke-dasharray="7 4" style="opacity:{{sugOp}}"></rect>
+<rect x="390" y="440" width="130" height="100" fill="#1A5DFF" fill-opacity=".3" stroke="#0044E6" stroke-width="3" style="opacity:{{accOp}}"></rect>
+<text x="455" y="495" text-anchor="middle" style="font:700 13px Inter; fill:#0A1A3F; opacity:{{sugOp}}">0131 ? sugerida</text>
+<text x="305" y="255" text-anchor="middle" style="font:600 12px Inter; fill:#586380">0123</text><text x="605" y="375" text-anchor="middle" style="font:600 12px Inter; fill:#586380">0127</text>
+<g style="opacity:{{ptsOp}}"><circle cx="415" cy="465" r="8" fill="#0044E6" stroke="#fff" stroke-width="2"></circle><circle cx="495" cy="465" r="8" fill="#0044E6" stroke="#fff" stroke-width="2"></circle><circle cx="415" cy="520" r="8" fill="#0044E6" stroke="#fff" stroke-width="2"></circle><circle cx="{{p4x}}" cy="520" r="8" fill="{{p4c}}" stroke="#fff" stroke-width="2"></circle></g>
+</svg>
+<div class="mk crit" style="left:580px; top:360px; opacity:{{outOp}}"><div class="p"><svg class="i"><use href="#ban"></use></svg></div><span class="t">OV-020</span></div>
+<div class="mk crit" style="left:640px; top:400px; opacity:{{outOp}}"><div class="p"><svg class="i"><use href="#ban"></use></svg></div><span class="t">OV-022</span></div>
+<div class="mk crit" style="left:600px; top:500px; opacity:{{outOp}}"><div class="p"><svg class="i"><use href="#ban"></use></svg></div><span class="t">OV-023</span></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<div class="dp" style="width:420px">
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div class="dh"><p class="ov">W23 · Editor</p><b class="h2">C-07 · versión vigente v3</b><p class="cap">Quieres excluir la manzana 0127 y lo que está al sureste.</p></div>
+<div class="db"><div class="nt info"><svg class="i"><use href="#vtx"></use></svg><p>En el prototipo, un clic mueve el vértice por ti. En el producto se arrastra o se mueve con las flechas.</p></div>
+<button class="b p lg" onClick="{{moveVertex}}"><svg class="i s16"><use href="#vtx"></use></svg>Mover el vértice sureste</button></div>
+</sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="dh"><p class="ov">W23 · Borrador de v4 · vigente desde 10 nov 2026</p><b class="h2">3 puntos quedan fuera</b></div>
+<div class="db" style="gap:8px">
+<sc-for list="{{outs}}" as="o" hint-placeholder-count="3"><div class="card tight"><div class="row sb2"><b><svg class="i s16" style="vertical-align:-3px"><use href="#trap"></use></svg> {{o.id}} · Mz 0127</b><span class="bd {{o.cls}}">{{o.label}}</span></div><button class="b {{o.btn}} sm" style="align-self:flex-start" onClick="{{o.pick}}">Pasar a C-08 · conserva folio</button></div></sc-for>
+<sc-if value="{{allDecided}}" hint-placeholder-val="{{ false }}"><button class="b p lg" onClick="{{save}}"><svg class="i s16"><use href="#check"></use></svg>Guardar nueva versión v4</button></sc-if>
+<sc-if value="{{notDecided}}" hint-placeholder-val="{{ true }}"><button class="b dis lg" disabled>Guardar v4 · faltan {{pending}} puntos</button></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="dh"><div class="nt ok"><svg class="i"><use href="#check"></use></svg><p>v4 guardada. OV-020, OV-022 y OV-023 pasan a C-08 desde el 10 nov.</p></div><p class="ov">W24 · Manzanas sugeridas</p><b class="h2">Manzana 0131 · sector 5</b><p class="cap">Llano · 1 de cada 5 manzanas.</p></div>
+<div class="db"><button class="b p lg" onClick="{{accept}}"><svg class="i s16"><use href="#check"></use></svg>Aceptar sugerencia y crear 4 puntos</button><button class="b o">Cambiar por otra</button></div>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div class="dh"><p class="ov">W24 · Puntos de 0131</p><b class="h2">4 puntos con folio fijo</b></div>
+<div class="db" style="gap:8px">
+<div class="kv"><span>OV-030 · vivienda habitada</span><b><span class="bd ok">Ubicado</span></b></div>
+<div class="kv"><span>OV-031 · vivienda habitada</span><b><span class="bd ok">Ubicado</span></b></div>
+<div class="kv"><span>OV-032 · vivienda habitada</span><b><span class="bd ok">Ubicado</span></b></div>
+<div class="kv"><span>OV-033 · vía pública</span><b><span class="bd {{p4cls}}">{{p4label}}</span></b></div>
+<sc-if value="{{tooClose}}" hint-placeholder-val="{{ true }}"><div class="nt warn"><svg class="i"><use href="#alert"></use></svg><p>OV-033 queda a 32 m de OV-032. La distancia mínima es 50 m.</p></div><button class="b p" onClick="{{fix}}"><svg class="i s16"><use href="#move"></use></svg>Mover OV-033 a la otra esquina</button></sc-if>
+<sc-if value="{{fixed}}" hint-placeholder-val="{{ false }}"><div class="nt ok"><svg class="i"><use href="#check"></use></svg><p>Listo. C-07 queda con 41 puntos y la manzana 0131 entra a la programación de la próxima semana.</p></div><a class="b o" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Volver a los recorridos</a></sc-if>
+</div>
+</sc-if>
+
+</div></div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 0, d: [false, false, false], fixed: false }; }
+  renderVals() {
+    const { s, d, fixed } = this.state;
+    const ids = ['OV-020', 'OV-022', 'OV-023'];
+    const outs = ids.map((id, i) => ({
+      id, cls: d[i] ? 'ok' : 'wn', label: d[i] ? 'Decidido' : 'Por decidir', btn: d[i] ? 'p' : 'o',
+      pick: () => { const nd = this.state.d.slice(); nd[i] = true; this.setState({ d: nd }); }
+    }));
+    const pending = d.filter((x) => !x).length;
+    return {
+      s0: s === 0, s1: s === 1, s2: s === 2, s3: s === 3, stepNum: s + 1,
+      oldOp: s === 0 ? 1 : 0, newOp: s >= 1 ? 1 : 0, outOp: s === 1 ? 1 : 0,
+      sugOp: s === 2 ? 1 : 0, accOp: s === 3 ? 1 : 0, ptsOp: s === 3 ? 1 : 0,
+      p4x: fixed ? 495 : 437, p4c: fixed ? '#0044E6' : '#B3141A',
+      p4cls: fixed ? 'ok' : 'wn', p4label: fixed ? 'Ubicado' : 'A 32 m de OV-032',
+      tooClose: !fixed, fixed,
+      outs, pending, allDecided: pending === 0, notDecided: pending > 0,
+      moveVertex: () => this.setState({ s: 1 }),
+      save: () => this.setState({ s: 2 }),
+      accept: () => this.setState({ s: 3 }),
+      fix: () => this.setState({ fixed: true }),
+      reset: () => this.setState({ s: 0, d: [false, false, false], fixed: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

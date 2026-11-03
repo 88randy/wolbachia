@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W35 y W38 Laboratorio</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1 1 0 0 0 .9 1.5h13.2a1 1 0 0 0 .9-1.5L14 9V3M7 15h10"></path></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="egg" viewBox="0 0 24 24"><path d="M12 3c3.5 0 6 5 6 10a6 6 0 0 1-12 0c0-5 2.5-10 6-10z"></path></symbol>
+<symbol id="vial" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+<symbol id="send" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="thermo" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z"></path></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:2680px; height:960px">
+
+<div class="col"><div class="lbl">W35 · Conteo y validación · solo teclado y lector<span>Foco fijo en el campo grande; Enter guarda y pasa a la siguiente bolsa; atajos a la vista</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv on" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#refresh"></use></svg>Recuentos<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#bag"></use></svg>Papeletas recicladas</a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<div class="grp">Tableros</div>
+<a class="nv" href="#"><svg class="i"><use href="#chart"></use></svg>Entomológico</a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Muestras asignadas a ti</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div style="width:300px; flex:none; border-right:1px solid #C9D0DE; background:#fff; display:flex; flex-direction:column">
+<div style="padding:14px 16px; border-bottom:1px solid #E4E8EF"><b class="h3">Cola sin conteo · 17</b><p class="cap">Bolsas recibidas hoy · orden de llegada</p></div>
+<a class="row" href="#" style="padding:10px 16px; background:#EBF1FF; box-shadow:inset 3px 0 0 #1A5DFF; text-decoration:none; color:#0A1A3F"><svg class="i"><use href="#bag"></use></svg><div class="st fx" style="gap:0"><b>B-4471 · OV-010</b><span class="cap">Lectura 12 · Mz 0123</span></div><span class="bd in">Ahora</span></a>
+<a class="row" href="#" style="padding:10px 16px; text-decoration:none; color:#0A1A3F"><svg class="i"><use href="#bag"></use></svg><div class="st fx" style="gap:0"><b>B-4472 · OV-011</b><span class="cap">Lectura 12 · Mz 0123</span></div><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Desfasada</span></a>
+<a class="row" href="#" style="padding:10px 16px; text-decoration:none; color:#0A1A3F"><svg class="i"><use href="#bag"></use></svg><div class="st fx" style="gap:0"><b>B-4474 · OV-013</b><span class="cap">Lectura 12 · Mz 0123</span></div></a>
+<a class="row" href="#" style="padding:10px 16px; text-decoration:none; color:#0A1A3F"><svg class="i"><use href="#bag"></use></svg><div class="st fx" style="gap:0"><b>B-4480 · OV-020</b><span class="cap">Lectura 12 · Mz 0127</span></div></a>
+<div style="padding:10px 16px 6px; border-top:1px solid #E4E8EF"><span class="ov">Ya procesadas hoy</span></div>
+<div class="row" style="padding:8px 16px"><svg class="i" style="color:#0B6B35"><use href="#check"></use></svg><span class="fx">B-4466 · OV-006</span><span class="bd ok">Validada</span></div>
+<div class="row" style="padding:8px 16px"><svg class="i" style="color:#8A4B00"><use href="#refresh"></use></svg><span class="fx">B-4468 · OV-008</span><span class="bd wn">A recuento</span></div>
+<div class="row" style="padding:8px 16px; color:#586380"><svg class="i"><use href="#ban"></use></svg><span class="fx" style="text-decoration:line-through">B-4469 · OV-009</span><span class="bd nt">Rechazada</span></div>
+</div>
+<div class="pg" style="gap:14px">
+<div class="row"><div class="st fx" style="gap:2px"><p class="ov">Bolsa 1 de 17</p><h1 class="h1">B-4471 · OV-010 · lectura 12</h1><p class="sub">Mz 0123 · C-07 · colectó Luis el 3 nov 2026 · 29 °C · 68 % · papeleta reciclada 1.ª vez</p></div><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lectura a tiempo</span></div>
+<div class="g3" style="grid-template-columns:200px minmax(0,1fr) 220px">
+<div class="card" style="background:#F4F6FA"><span class="ov">Huevos en campo</span><b style="font-size:40px; line-height:48px; color:#3A4664">530</b><span class="cap">Lo anotó el repartidor en la bolsa</span></div>
+<div class="card hl"><span class="l" style="font-size:14px; font-weight:800">Huevos de laboratorio <span style="color:#B3141A">*</span></span><div class="in big f" style="height:76px; font-size:44px">512|</div><div class="row"><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Diferencia 18 (3.4 %)</span><span class="cap">Límite de la región: 10 % · valor de ejemplo</span></div></div>
+<div class="card"><span class="l" style="font-size:12px; font-weight:700">Huevos viables</span><div class="in" style="height:52px; font-size:26px; font-weight:800">470</div><span class="ov" style="margin-top:4px">Viabilidad</span><span class="bd ok" style="align-self:flex-start"><svg class="i"><use href="#check"></use></svg>Buena · 92 %</span><span class="cap">Calculada con las bandas de Parámetros</span></div>
+</div>
+<div class="fld"><span class="l">Observaciones</span><div class="in">Papeleta en buen estado.</div></div>
+<div class="row" style="gap:10px"><button class="b p lg" style="height:52px; font-size:15px; padding:0 22px"><svg class="i"><use href="#check"></use></svg>Validar y siguiente<kbd style="margin-left:6px; background:rgba(255,255,255,.2); color:#fff; border-color:rgba(255,255,255,.4)">Enter</kbd></button><button class="b do lg" style="height:52px">Rechazar con motivo<kbd style="margin-left:6px">Ctrl R</kbd></button><span class="fx"></span><button class="b t">Saltar<kbd style="margin-left:6px">Ctrl →</kbd></button></div>
+<div class="g3" style="gap:12px">
+<div class="card tight" style="border-color:#8A4B00"><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#refresh"></use></svg>Estado · diferencia alta</span><p class="cap">Campo 300 · laboratorio 210. <b>Pasa a recuento</b> y no entra a índices hasta que otra persona cuente.</p></div>
+<div class="card tight"><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Estado · desfasada</span><p class="cap">Se cuenta igual, pero queda marcada «no entra a índices».</p></div>
+<div class="card tight"><span class="bd nt" style="align-self:flex-start"><svg class="i"><use href="#ban"></use></svg>Estado · rechazada</span><p class="cap">Con motivo, por ejemplo «papeleta mojada, ilegible». Queda en el historial.</p></div>
+</div>
+<div class="row" style="margin-top:auto; gap:16px; padding-top:8px; border-top:1px solid #C9D0DE"><span class="cap"><kbd>Tab</kbd> siguiente campo</span><span class="cap"><kbd>Enter</kbd> validar y pasar</span><span class="cap"><kbd>Ctrl R</kbd> rechazar</span><span class="cap"><kbd>/</kbd> escanear otra bolsa</span><span class="fx"></span><span class="cap">Hoy: 23 validadas · 1 a recuento</span></div>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W38 · Envío a UIEB · vista previa del Anexo VI<span>Columna de RFC vacía porque el responsable regulatorio no autorizó esa transferencia</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">16</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#refresh"></use></svg>Recuentos<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#bag"></use></svg>Papeletas recicladas</a>
+<a class="nv on" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Muestras asignadas a ti</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="crumb"><a href="#">Laboratorio</a><svg class="i s16"><use href="#right"></use></svg><a href="#">Envíos a UIEB</a><svg class="i s16"><use href="#right"></use></svg><span>Nuevo envío E-0012</span></div>
+<div class="row top" style="gap:16px; flex:1; min-height:0">
+<div class="st" style="width:330px; flex:none; gap:10px">
+<div class="card" style="gap:10px"><b class="h3">Datos del envío</b>
+<div class="fld"><span class="l">UIEB destino <span class="req">*</span></span><div class="in">[UIEB estatal]<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+<div class="g2" style="gap:8px"><div class="fld"><span class="l">Solicitante</span><div class="in">Sofía</div></div><div class="fld"><span class="l">Responsable</span><div class="in">Marco</div></div></div>
+<div class="fld"><span class="l">Quién entrega</span><div class="in">Marco</div></div>
+<div class="fld"><span class="l">Diagnóstico solicitado <span class="req">*</span></span><div class="in">Eclosión de huevos<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+</div>
+<div class="scanf"><svg class="i s24"><use href="#scan"></use></svg><span class="fx">Escanea las bolsas · 4 incluidas</span></div>
+<div class="nt blk"><svg class="i"><use href="#lock"></use></svg><div class="tx"><p><b>El RFC del colector saldrá vacío.</b></p><p>Requiere autorización del responsable regulatorio para esta UIEB.</p><a href="#">Pedir autorización a Elena</a></div></div>
+<div class="card tight"><span class="ov">Seguimiento</span><div class="row"><span class="bd in">1 · Enviado</span><svg class="i s16"><use href="#right"></use></svg><span class="bd nt">2 · Recibido por UIEB</span><svg class="i s16"><use href="#right"></use></svg><span class="bd nt">3 · Resultados</span></div><span class="cap">Alerta si la UIEB no confirma en el plazo del parámetro.</span></div>
+</div>
+<div class="st fx" style="gap:10px">
+<div class="row"><b class="h3 fx">Vista previa · Anexo VI</b><button class="b o sm"><svg class="i s16"><use href="#dl"></use></svg>Excel</button><button class="b o sm"><svg class="i s16"><use href="#dl"></use></svg>PDF</button><button class="b p"><svg class="i s16"><use href="#send"></use></svg>Registrar envío</button></div>
+<div class="doc" style="flex:1">
+<div class="row sb2"><b style="font-size:13px">Anexo VI · Relación de muestras enviadas a la UIEB</b><span>Envío E-0012 · 4 nov 2026</span></div>
+<div class="row" style="gap:24px"><span><b>Solicitante:</b> Sofía</span><span><b>Responsable:</b> Marco</span><span><b>Diagnóstico:</b> eclosión de huevos</span></div>
+<table><thead><tr><th>Folio registro UIEB</th><th>Folio plataforma</th><th>Municipio</th><th>Localidad</th><th>Fecha de colecta</th><th>RFC del colector</th><th>Huevos totales</th><th>Larvas emergidas</th><th>% eclosión</th><th>Observaciones</th></tr></thead>
+<tbody>
+<tr><td></td><td>B-4471 · OV-010</td><td>[Municipio]</td><td>[Localidad]</td><td>3 nov 2026</td><td class="emp">Vacío*</td><td>512</td><td></td><td></td><td></td></tr>
+<tr><td></td><td>B-4474 · OV-013</td><td>[Municipio]</td><td>[Localidad]</td><td>3 nov 2026</td><td class="emp">Vacío*</td><td>288</td><td></td><td></td><td></td></tr>
+<tr><td></td><td>B-4480 · OV-020</td><td>[Municipio]</td><td>[Localidad]</td><td>3 nov 2026</td><td class="emp">Vacío*</td><td>146</td><td></td><td></td><td></td></tr>
+<tr><td></td><td>B-4483 · OV-023</td><td>[Municipio]</td><td>[Localidad]</td><td>3 nov 2026</td><td class="emp">Vacío*</td><td>0</td><td></td><td></td><td>Negativa</td></tr>
+</tbody></table>
+<p style="margin:0; color:#8A4B00; font-weight:700">* Requiere autorización del responsable regulatorio. La columna se llena sola cuando exista la transferencia de datos autorizada (W59).</p>
+<p style="margin:0; color:#3A4664">Folio de registro UIEB, larvas emergidas y % de eclosión los llena la UIEB; se capturan al volver los resultados.</p>
+<div class="row" style="margin-top:auto; gap:60px; padding-top:24px"><span style="border-top:1px solid #0A1A3F; padding-top:4px; width:180px">Entrega</span><span style="border-top:1px solid #0A1A3F; padding-top:4px; width:180px">Recibe UIEB</span></div>
+</div>
+<p class="cap">Los huevos de OV-020 a OV-023 son de muestra. Municipio y localidad quedan entre corchetes hasta tener los datos del convenio.</p>
+</div>
+</div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2680,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

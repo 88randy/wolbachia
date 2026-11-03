@@ -1,0 +1,249 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Main.dc.html": {
+      "h": 5200,
+      "title": "Sistema de diseño · Codequim",
+      "w": 1600,
+      "x": 0,
+      "y": 0
+    },
+    "Proto.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "Prototipo · Índice de recorridos",
+      "w": 360,
+      "x": 1720,
+      "y": 0
+    },
+    "R1.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "R1 · Abrir jornada + caja faltante",
+      "w": 360,
+      "x": 2160,
+      "y": 0
+    },
+    "R2.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "R2 · Revisión normal OV-010",
+      "w": 360,
+      "x": 2600,
+      "y": 0
+    },
+    "R3.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "R3 · Casa cerrada OV-011",
+      "w": 360,
+      "x": 3040,
+      "y": 0
+    },
+    "R4.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "R4 · Colocación con «No acepta»",
+      "w": 360,
+      "x": 3480,
+      "y": 0
+    },
+    "R5.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "R5 · Liberación válida y bloqueada",
+      "w": 360,
+      "x": 3920,
+      "y": 0
+    },
+    "R6.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "R6 · Incidente sin señal",
+      "w": 360,
+      "x": 4360,
+      "y": 0
+    },
+    "R7.dc.html": {
+      "h": 800,
+      "is_interactive": true,
+      "title": "R7 · Cierre con diferencia",
+      "w": 360,
+      "x": 4800,
+      "y": 0
+    },
+    "S01-Acceso.dc.html": {
+      "h": 940,
+      "title": "P1–P2 · Acceso",
+      "w": 3240,
+      "x": 1720,
+      "y": 920
+    },
+    "S02-Inicio.dc.html": {
+      "h": 940,
+      "title": "P3–P4 · Inicio y elegir moto",
+      "w": 2440,
+      "x": 1720,
+      "y": 1980
+    },
+    "S03-Moto.dc.html": {
+      "h": 940,
+      "title": "P5–P7 · Revisar moto, km, mapa",
+      "w": 3640,
+      "x": 1720,
+      "y": 3040
+    },
+    "S04-Insumos.dc.html": {
+      "h": 940,
+      "title": "P8 · Recibir insumos",
+      "w": 2040,
+      "x": 1720,
+      "y": 4100
+    },
+    "S05-Dia.dc.html": {
+      "h": 940,
+      "title": "P9–P10 · Jornada y mapa",
+      "w": 3640,
+      "x": 1720,
+      "y": 5160
+    },
+    "S06-Escaner.dc.html": {
+      "h": 940,
+      "title": "P11, P12, P21 · Escáner, insumo, código no válido",
+      "w": 4040,
+      "x": 1720,
+      "y": 6220
+    },
+    "S07-Colocar.dc.html": {
+      "h": 940,
+      "title": "P13 · Colocar ovitrampa",
+      "w": 3240,
+      "x": 1720,
+      "y": 7280
+    },
+    "S08-Revisar.dc.html": {
+      "h": 940,
+      "title": "P14 · Revisar ovitrampa",
+      "w": 4840,
+      "x": 1720,
+      "y": 8340
+    },
+    "S09-Ovitrampa.dc.html": {
+      "h": 940,
+      "title": "P15–P17 · Sustituir, reubicar, retirar",
+      "w": 3240,
+      "x": 1720,
+      "y": 9400
+    },
+    "S10-Liberar.dc.html": {
+      "h": 940,
+      "title": "P18–P20 · Liberar y muestra",
+      "w": 2840,
+      "x": 1720,
+      "y": 10460
+    },
+    "S11-Fijos.dc.html": {
+      "h": 940,
+      "title": "P22–P25 · Gasolina, incidente, emergencia, comunidad",
+      "w": 3640,
+      "x": 1720,
+      "y": 11520
+    },
+    "S12-Cierre.dc.html": {
+      "h": 940,
+      "title": "P26–P27 · Cerrar jornada",
+      "w": 2440,
+      "x": 1720,
+      "y": 12580
+    },
+    "S13-Sistema.dc.html": {
+      "h": 940,
+      "title": "P28–P32 · Bandeja, historial, ajustes, bloqueo",
+      "w": 2840,
+      "x": 1720,
+      "y": 13640
+    },
+    "S14-Globales.dc.html": {
+      "h": 940,
+      "title": "Estados globales",
+      "w": 3240,
+      "x": 1720,
+      "y": 14700
+    },
+    "S15-Ingles.dc.html": {
+      "h": 940,
+      "title": "P9, P14, P26 · English",
+      "w": 1640,
+      "x": 1720,
+      "y": 15760
+    },
+    "S16-Accesibilidad.dc.html": {
+      "h": 940,
+      "title": "Modo oscuro y texto al 130 %",
+      "w": 1640,
+      "x": 1720,
+      "y": 16820
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-11-03T18:00:00Z",
+    "v": 1
+  },
+  "designSystems": [],
+  "launch": {
+    "view": "focused",
+    "file": "Proto.dc.html"
+  },
+  "noteOrder": [
+    "title",
+    "dec"
+  ],
+  "notes": {
+    "dec": {
+      "fill": "blue",
+      "size": 24,
+      "text": "Decisiones de diseño (resumen)\n\n1. Escanear es el centro: botón azul más grande de la barra inferior, al alcance del pulgar. El QR decide la pantalla.\n2. Una tarea por pantalla con «Paso X de Y» y botón principal fijo abajo, siempre en el mismo lugar.\n3. Camino rápido de revisión: «Bien» avanza solo. El repartidor no cuenta huevos: embolsa la papeleta y el entomólogo captura el conteo en la web.\n3b. Toda lista abierta termina en «Otro (especificar)», con texto o dictado.\n4. Casa cerrada se guarda al tocarla: 1 toque + confirmación en pantalla.\n5. Azul solo para lo que se toca. Estados siempre con ícono + texto + color; verde, ámbar y rojo con contraste ≥ 5.8:1 sobre su fondo.\n6. Emergencia en rojo arriba a la derecha: visible siempre, lejos de Escanear para evitar toques accidentales.\n7. Sincronización como chip en la barra superior; al tocarlo abre la bandeja. Nunca ventanas emergentes por falta de señal.\n8. Nada se borra: solo «Anular con motivo».\n9. Inter con cifras tabulares; tamaños de letra como tokens escalables (variante 130 %).",
+      "w": 760,
+      "x": 0,
+      "y": 5320
+    },
+    "title": {
+      "kind": "title1",
+      "maxW": 5160,
+      "text": "Wolbachia · App Repartidor — Ronda 1",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Proto.dc.html",
+    "R1.dc.html",
+    "R2.dc.html",
+    "R3.dc.html",
+    "R4.dc.html",
+    "R5.dc.html",
+    "R6.dc.html",
+    "R7.dc.html",
+    "S01-Acceso.dc.html",
+    "S02-Inicio.dc.html",
+    "S03-Moto.dc.html",
+    "S04-Insumos.dc.html",
+    "S05-Dia.dc.html",
+    "S06-Escaner.dc.html",
+    "S07-Colocar.dc.html",
+    "S08-Revisar.dc.html",
+    "S09-Ovitrampa.dc.html",
+    "S10-Liberar.dc.html",
+    "S11-Fijos.dc.html",
+    "S12-Cierre.dc.html",
+    "S13-Sistema.dc.html",
+    "S14-Globales.dc.html",
+    "S15-Ingles.dc.html",
+    "S16-Accesibilidad.dc.html"
+  ],
+  "pages": [],
+  "title": "Wolbachia · App Repartidor"
+}

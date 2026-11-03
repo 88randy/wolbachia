@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P13 Colocar ovitrampa</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="people" viewBox="0 0 24 24"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18 13.5a7 7 0 0 1 4 6.5"></path></symbol>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:3240px; height:940px">
+
+<div class="col"><div class="lbl">P13 · Paso 1 · Punto (a más de 50 m)<span>Sugiere el más cercano; aviso de distancia</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar T-0457</b><small>Ovitrampa asignada a ti</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<p class="h1">¿En qué punto la colocas?</p>
+<button class="opt sel" style="min-height:88px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span><svg class="i s28"><use href="#pin"></use></svg><span style="flex:1"><b style="display:block">OV-013</b><span class="cap">Manzana 0123 · a 85 m</span></span></button>
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><div class="tx"><p>Estás a 85 m del punto registrado. Acércate antes de colocar.</p></div></div>
+<button class="opt"><svg class="i s28"><use href="#pin"></use></svg><span style="flex:1">Elegir otro de mis puntos</span><svg class="i"><use href="#right"></use></svg></button>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P13 · Paso 2 · Sitio de concentración<span>El guion cambia a «responsable del sitio»</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-030</b><small>Escuela · Mz 0131</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:10px">
+<p class="h2">Habla con el responsable del sitio</p>
+<div class="script">«Buenos días, soy del programa de control del dengue. ¿Me autoriza dejar una trampa para huevos de mosquito en la escuela? La revisaremos una vez por semana durante al menos un año.»</div>
+<p class="ov">¿Qué pasó?</p>
+<div class="g2"><button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#check"></use></svg>Aceptó</button><button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#people"></use></svg>Solo hay menores</button><button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#ban"></use></svg>No acepta</button><button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#home"></use></svg>Sitio cerrado</button><button class="opt full" style="min-height:56px"><svg class="i s28"><use href="#dots"></use></svg>Otro (especificar)</button></div>
+</div></div></div>
+
+<div class="col"><div class="lbl">P13 · Intento fallido<span>Guarda el intento; «No acepta» avisa al promotor</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs ph1"><svg class="i"><use href="#user"></use></svg></div><p class="h1">Intento guardado</p><p class="b">Avisamos al promotor comunitario de esta vivienda.</p>
+<div class="nt info" style="text-align:left"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Prueba en otra vivienda de la misma cara de la manzana.</p></div></div>
+<span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Guardado en el teléfono</span></div>
+<div class="ft"><button class="btn p">Probar en otra vivienda</button></div></div></div>
+
+<div class="col"><div class="lbl">P13 · Paso 3 · Preparar y colocar<span>Casillas grandes · papeleta sin tercera reciclada</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Morador aceptó</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:6px">
+<div class="chk" style="min-height:48px"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Bote limpio</div>
+<div class="chk" style="min-height:48px"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Agua limpia a ¾, sin cloro ni larvicida</div>
+<div class="chk" style="min-height:48px"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Papeleta cubre todo el interior</div>
+<div class="chk" style="min-height:48px"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>A la sombra, entre plantas</div>
+<div class="chk" style="min-height:48px"><span class="box"></span>Hasta 1.5 m de altura</div>
+<div class="chk" style="min-height:48px"><span class="box"></span>Lejos de otros recipientes con agua</div>
+<div class="chk" style="min-height:48px"><span class="box"></span>Fuera del alcance de niños y animales</div>
+<p class="s" style="font-weight:700; color:#0A1A3F">Tipo de papeleta</p>
+<div class="g3"><button class="opt v sel" style="min-height:56px; font-size:14px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Nueva</button><button class="opt v" style="min-height:56px; font-size:14px">Reciclada 1.ª vez</button><button class="opt v" style="min-height:56px; font-size:14px">Reciclada 2.ª vez</button></div>
+</div><div class="ft"><button class="btn dis" disabled>Marca los 7 puntos</button></div></div></div>
+
+<div class="col"><div class="lbl">P13 · Paso 4 · Foto y marca<span>Datos opcionales desplegados · nunca nombre del morador</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Foto y marca</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 4 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></div>
+<div class="ct" style="gap:10px">
+<div class="row"><span class="thumb"><svg class="i"><use href="#trap"></use></svg></span><span class="b" style="flex:1">Foto de la ovitrampa</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div>
+<div class="chk"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Marqué la fachada con «OV» y el folio</div>
+<div class="fold" style="border-color:#1A5DFF"><span>Datos opcionales</span><svg class="i"><use href="#up"></use></svg></div>
+<div class="fld"><label>Dirección (opcional)</label><div class="in" style="font-size:16px"><span class="ph0">Calle y número</span></div></div>
+<div class="fld"><label>Tipo de sitio</label><div class="g3"><button class="opt v sel" style="min-height:48px; font-size:14px">Casa</button><button class="opt v" style="min-height:48px; font-size:14px">Escuela</button><button class="opt v" style="min-height:48px; font-size:14px">Otro</button></div></div>
+<div class="fld"><label>Referencia del lugar</label><div class="in" style="font-size:16px">Maceta grande del patio trasero</div></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P13 · Paso 5 · Confirmar</div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Revisa antes de guardar</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 5 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct"><div class="cd"><div class="kv"><span>Punto</span><b>OV-013 · Mz 0123</b></div><div class="kv"><span>Ovitrampa</span><b>T-0457</b></div><div class="kv"><span>Papeleta</span><b>Nueva</b></div><div class="kv"><span>Foto</span><b>Lista</b></div><div class="kv"><span>Ubicación</span><b>±6 m</b></div></div></div>
+<div class="ft"><button class="btn p">Guardar colocación</button></div></div></div>
+
+<div class="col"><div class="lbl">P13 · Otra ovitrampa a menos de 50 m<span>Permite continuar con motivo</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Paso 1 de 5</small></div></div></div>
+<div class="ct">
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><div class="tx"><p>OV-012, de la misma manzana, está a 32 m.</p></div></div>
+<p class="h2">¿Por qué aquí?</p>
+<div class="st"><button class="opt">No hay otra vivienda que acepte</button><button class="opt sel"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Lo indicó mi supervisor</button><button class="opt">Otro motivo</button></div>
+</div><div class="ft"><button class="btn o">Elegir otra vivienda</button><button class="btn p">Continuar con motivo</button></div></div></div>
+
+<div class="col"><div class="lbl">P13 · GPS débil<span>Espera; no bloquea la colocación</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar T-0457</b><small>Ovitrampa asignada a ti</small></div></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="nt warn"><svg class="i"><use href="#loc"></use></svg><div class="tx"><p>Ubicación aproximada (±40 m). Sal a un lugar abierto unos segundos.</p></div></div>
+<p class="h1">¿En qué punto la colocas?</p>
+<button class="opt" style="min-height:88px"><svg class="i s28"><use href="#pin"></use></svg><span style="flex:1"><b style="display:block">Elige tu punto</b><span class="cap">No podemos sugerir el más cercano</span></span><svg class="i"><use href="#right"></use></svg></button>
+</div><div class="ft"><button class="btn dis" disabled>Elige un punto</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3240,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

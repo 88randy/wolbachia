@@ -15,7 +15,7 @@ Implement first login (requires signal), offline unlock with PIN/biometrics, idl
 PIN hash stored in Android Keystore-backed secure storage; never sent to server.
 
 ## 5. Contract
-`/api/auth/login/`, `/api/auth/refresh/`.
+`/api/v1/auth/login/`, `/api/v1/auth/refresh/` (#4), through `packages/api-client`.
 
 ## 6. Behavior
 Lock never discards unsent data or half-filled forms.
@@ -28,4 +28,4 @@ Clock skew detected at login → banner "La hora del teléfono no coincide".
 - [ ] 3 wrong PINs → requires full password.
 
 ## Notes
-Attempts threshold to confirm with client.
+Attempts threshold: rule parameter (default 3, seeded in #3); confirm with client.

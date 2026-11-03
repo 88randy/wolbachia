@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P5–P7 Moto, km y mapa</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}
+.mr{display:flex;align-items:center;justify-content:space-between;background:#fff;border:1px solid #C9D0DE;border-radius:12px;padding:6px 6px 6px 14px;gap:6px}
+.mr b.x{min-height:44px;padding:0 10px;border-radius:8px;font-size:14px;display:flex;align-items:center;gap:4px}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="moto" viewBox="0 0 24 24"><path d="M2 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM16 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM5 16.5 9 10h5l3 6.5M13 5h3l2.5 5M8 10H5"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:3640px; height:940px">
+
+<div class="col"><div class="lbl">P5 · Todo bien<span>Lista configurable por la empresa</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar moto M-03</b><small>Responsiva</small></div></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:8px">
+<div class="mr"><span class="bb">Llantas</span><div class="row" style="gap:6px"><b class="x seg-on-ok"><svg class="i s18"><use href="#check"></use></svg>Bien</b><b class="x seg-off">Con falla</b></div></div>
+<div class="mr"><span class="bb">Frenos</span><div class="row" style="gap:6px"><b class="x seg-on-ok"><svg class="i s18"><use href="#check"></use></svg>Bien</b><b class="x seg-off">Con falla</b></div></div>
+<div class="mr"><span class="bb">Luces</span><div class="row" style="gap:6px"><b class="x seg-on-ok"><svg class="i s18"><use href="#check"></use></svg>Bien</b><b class="x seg-off">Con falla</b></div></div>
+<div class="mr"><span class="bb">Espejos</span><div class="row" style="gap:6px"><b class="x seg-on-ok"><svg class="i s18"><use href="#check"></use></svg>Bien</b><b class="x seg-off">Con falla</b></div></div>
+<div class="mr"><span class="bb">Casco</span><div class="row" style="gap:6px"><b class="x seg-on-ok"><svg class="i s18"><use href="#check"></use></svg>Bien</b><b class="x seg-off">Con falla</b></div></div>
+<p class="s" style="font-weight:700; color:#0A1A3F">Firma de responsiva</p>
+<div class="sig"><svg viewBox="0 0 300 80" style="position:absolute; left:20px; top:14px; width:240px; height:70px" fill="none" stroke="#0A1A3F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M10 50c20-30 30 10 45-10s15-25 30 5 25 0 35-15 20 20 40 5 25-10 40 0"></path></svg><div class="ln"></div></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P5 · Falla leve<span>Foto obligatoria; continúa y avisa a flota</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar moto M-03</b><small>Responsiva</small></div></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:8px">
+<div class="mr"><span class="bb">Llantas</span><div class="row" style="gap:6px"><b class="x seg-on-ok"><svg class="i s18"><use href="#check"></use></svg>Bien</b><b class="x seg-off">Con falla</b></div></div>
+<div class="mr"><span class="bb">Frenos</span><div class="row" style="gap:6px"><b class="x seg-on-ok"><svg class="i s18"><use href="#check"></use></svg>Bien</b><b class="x seg-off">Con falla</b></div></div>
+<div class="cd" style="border-color:#B3141A; gap:10px; padding:12px"><div class="row sb"><span class="bb">Espejos</span><b class="x seg-on-bad" style="min-height:44px; padding:0 10px; border-radius:8px; font-size:14px; display:flex; align-items:center; gap:4px"><svg class="i s18"><use href="#alert"></use></svg>Con falla</b></div>
+<div class="g2"><button class="opt v sel" style="min-height:56px; font-size:15px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Leve</button><button class="opt v" style="min-height:56px; font-size:15px">Grave</button></div>
+<div class="row"><span class="thumb"><svg class="i"><use href="#camera"></use></svg></span><span class="b" style="flex:1">Foto de la falla</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div></div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Puedes salir. Avisamos a flota de la falla leve.</p></div></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P5 · Falla grave<span>No puede continuar con esta moto; abre incidente</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar moto M-03</b><small>Responsiva</small></div></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:10px">
+<div class="cd" style="border-color:#B3141A; gap:10px; padding:12px"><div class="row sb"><span class="bb">Frenos</span><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>Falla grave</span></div><div class="row"><span class="thumb"><svg class="i"><use href="#camera"></use></svg></span><span class="b" style="flex:1">Foto de la falla</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div></div>
+<div class="nt blk"><svg class="i"><use href="#ban"></use></svg><div class="tx"><p>No puedes salir con M-03. Ya abrimos un incidente para flota.</p></div></div>
+<p class="b">Elige otra moto para seguir.</p>
+</div><div class="ft"><button class="btn p"><svg class="i"><use href="#moto"></use></svg>Elegir otra moto</button></div></div></div>
+
+<div class="col"><div class="lbl">P6 · Km inicial<span>Último km como referencia</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Km inicial</b><small>Moto M-03</small></div></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="photo"><svg class="i s32"><use href="#camera"></use></svg>Foto del odómetro</div>
+<div class="row"><button class="btn o" style="flex:1">Repetir foto</button></div>
+<div class="fld"><label>Km que marca el odómetro</label><div class="in f">12,486<span class="u">km</span></div><span class="hp">Último registrado: 12,480 km</span></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P6 · Km fuera de lo esperado<span>Aviso para corregir; puede seguir con observación</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Km inicial</b><small>Moto M-03</small></div></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="row"><span class="thumb"><svg class="i"><use href="#camera"></use></svg></span><span class="b" style="flex:1">Foto del odómetro</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div>
+<div class="fld"><label>Km que marca el odómetro</label><div class="in er">12,380<span class="u">km</span></div><span class="hp er"><svg class="i s18"><use href="#alert"></use></svg>Es menor que el último registrado (12,480).</span></div>
+<p class="b">Revisa el número. Si es correcto, explica por qué.</p>
+<div class="fld"><label>Observación</label><div class="in" style="min-height:88px; align-items:flex-start; padding-top:14px; font-size:16px; font-weight:500"><span class="ph0">Ej. cambiaron el tablero</span></div></div>
+</div><div class="ft"><button class="btn o">Corregir km</button><button class="btn p">Continuar con observación</button></div></div></div>
+
+<div class="col"><div class="lbl">P7 · Descargando<span>Tamaño aproximado visible</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Mapa del cuadrante</b><small>C-07 · para usar sin señal</small></div></div><div class="stp"><span>Paso 4 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></div>
+<div class="ct c" style="gap:16px"><svg class="i s64 blue"><use href="#map"></use></svg><p class="h2">Descargando mapa…</p><div style="width:280px; height:12px; border-radius:6px; background:#DDE2EC; overflow:hidden"><div style="width:62%; height:12px; background:#1A5DFF"></div></div><p class="b">5.6 de 9 MB · 62 %</p></div>
+<div class="ft"><button class="btn t">Continuar sin mapa</button></div></div></div>
+
+<div class="col"><div class="lbl">P7 · Listo</div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Mapa del cuadrante</b><small>C-07</small></div></div><div class="stp"><span>Paso 4 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></div>
+<div class="ct c" style="gap:16px"><div class="rs ok"><svg class="i"><use href="#check"></use></svg></div><p class="h2">Mapa listo</p><p class="b">Funciona sin señal todo el día.</p></div>
+<div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P7 · Ya estaba descargado</div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Mapa del cuadrante</b><small>C-07</small></div></div><div class="stp"><span>Paso 4 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></div>
+<div class="ct c" style="gap:16px"><div class="rs ok"><svg class="i"><use href="#map"></use></svg></div><p class="h2">Ya tienes el mapa</p><p class="b">Es la versión más reciente (8 nov).</p></div>
+<div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P7 · Sin señal<span>Usa la última versión guardada y lo dice</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Mapa del cuadrante</b><small>C-07</small></div></div><div class="stp"><span>Paso 4 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></div>
+<div class="ct c" style="gap:16px"><div class="rs wn"><svg class="i"><use href="#nosig"></use></svg></div><p class="h2">Sin señal</p><p class="b">Usarás el mapa guardado del 1 nov. Puede faltar algún cambio reciente.</p></div>
+<div class="ft"><button class="btn p">Continuar con mapa guardado</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3640,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

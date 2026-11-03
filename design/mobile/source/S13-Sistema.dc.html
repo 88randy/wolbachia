@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P28–P32 Sistema</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}
+.tli{display:flex;gap:12px}.tli .ln{display:flex;flex-direction:column;align-items:center;width:14px}.tli .ln i{width:12px;height:12px;border-radius:6px;background:#1A5DFF;margin-top:5px}.tli .ln s{flex:1;width:2px;background:#C9D0DE}
+.set{display:flex;align-items:center;gap:12px;min-height:60px;padding:8px 14px;background:#fff;border:1px solid #C9D0DE;border-radius:12px}
+.set .tx{flex:1}
+.sw2{width:52px;height:32px;border-radius:16px;background:#1A5DFF;position:relative}.sw2::after{content:"";position:absolute;right:4px;top:4px;width:24px;height:24px;border-radius:12px;background:#fff}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="cloudok" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM9 14.5l2 2 4-4"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 21V5M8 7h8"></path></symbol>
+<symbol id="globe" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM3 12h18M12 3c2.5 2.5 3.5 5.5 3.5 9s-1 6.5-3.5 9c-2.5-2.5-3.5-5.5-3.5-9s1-6.5 3.5-9z"></path></symbol>
+<symbol id="tsize" viewBox="0 0 24 24"><path d="M3 18 8 6l5 12M4.5 14h7M15 18l3-7 3 7M16 16h4"></path></symbol>
+<symbol id="moon" viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"></path></symbol>
+<symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="out" viewBox="0 0 24 24"><path d="M14 4h5v16h-5M10 16l-4-4 4-4M6 12h10"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="moto" viewBox="0 0 24 24"><path d="M2 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM16 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM5 16.5 9 10h5l3 6.5M13 5h3l2.5 5M8 10H5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:2840px; height:940px">
+
+<div class="col"><div class="lbl">P28 · Bandeja de envíos<span>Se abre desde el indicador · nunca ofrece borrar</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Envíos</b><small>Última conexión: hace 40 min</small></div><button class="chip l er"><svg class="i s20"><use href="#alert"></use></svg>Error</button></div></div>
+<div class="ct" style="gap:8px">
+<p class="ov">Con problema</p>
+<div class="cd" style="border-color:#B3141A; gap:6px"><div class="row sb"><b class="bb">Liberación W-118-07</b><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>No aceptada</span></div><p class="b">Esta liberación no se aceptó porque el permiso estaba suspendido. Tu supervisor ya fue avisado.</p></div>
+<div class="cd" style="gap:6px"><div class="row sb"><b class="bb">Lectura OV-021</b><span class="bd in"><svg class="i"><use href="#search"></use></svg>En revisión</span></div><p class="cap">La hora del teléfono no coincidía. Tu supervisor la revisa; no tienes que hacer nada.</p></div>
+<p class="ov">En el teléfono · 12</p>
+<div class="cd" style="gap:4px"><div class="row sb"><span class="bb">10 lecturas</span><span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Por subir</span></div><span class="cap">09:02 a 11:20</span></div>
+<div class="cd" style="gap:4px"><div class="row sb"><span class="bb">2 fotos</span><span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Por subir</span></div><span class="cap">Esperan señal más fuerte</span></div>
+<p class="ov">Enviados hoy · 18</p>
+</div><div class="ft"><button class="btn p"><svg class="i"><use href="#refresh"></use></svg>Intentar ahora</button></div></div></div>
+
+<div class="col"><div class="lbl">P29 · Mi historial<span>Jornadas por fecha + búsqueda por folio</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Mi historial</b></div></div></div>
+<div class="ct" style="gap:8px">
+<div class="in" style="min-height:48px"><svg class="i"><use href="#search"></use></svg><span class="ph0" style="font-size:16px">Buscar folio, ej. OV-010</span></div>
+<button class="opt" style="min-height:76px"><span style="flex:1"><b style="display:block">Lunes 9 nov · Semana 45</b><span class="cap">40 de 40 · 40 papeletas · 46 km</span></span><span class="bd ok"><svg class="i"><use href="#cloudok"></use></svg>Enviada</span></button>
+<button class="opt" style="min-height:76px"><span style="flex:1"><b style="display:block">Viernes 6 nov · Semana 44</b><span class="cap">38 de 40 · 38 papeletas · 51 km</span></span><span class="bd ok"><svg class="i"><use href="#cloudok"></use></svg>Enviada</span></button>
+<button class="opt" style="min-height:76px"><span style="flex:1"><b style="display:block">Jueves 5 nov · Semana 44</b><span class="cap">40 de 40 · 40 papeletas · 44 km</span></span><span class="bd ok"><svg class="i"><use href="#cloudok"></use></svg>Enviada</span></button>
+</div></div></div>
+
+<div class="col"><div class="lbl">P29 · Detalle de jornada<span>Eventos en línea de tiempo</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Lunes 9 nov</b><small>C-07 · M-03 · 46 km</small></div></div></div>
+<div class="ct" style="gap:0">
+<div class="tli"><div class="ln"><i></i><s></s></div><div style="padding-bottom:14px"><p class="bb">08:05 · Abriste jornada</p><p class="cap">M-03 · 12,434 km</p></div></div>
+<div class="tli"><div class="ln"><i></i><s></s></div><div style="padding-bottom:14px"><p class="bb">08:41 · OV-010 · Revisada</p><p class="cap">Bolsa B-4410 · Mz 0123</p></div></div>
+<div class="tli"><div class="ln"><i style="background:#8A4B00"></i><s></s></div><div style="padding-bottom:14px"><p class="bb">09:02 · OV-011 · Casa cerrada</p><p class="cap">Volviste 15:40 · seguía cerrada</p></div></div>
+<div class="tli"><div class="ln"><i></i><s></s></div><div style="padding-bottom:14px"><p class="bb">11:10 · Gasolina 4.2 L</p><p class="cap">$ 101</p></div></div>
+<div class="tli"><div class="ln"><i style="background:#0B6B35"></i><s></s></div><div style="padding-bottom:14px"><p class="bb">16:55 · Cerraste jornada</p><p class="cap">Cerrada y enviada</p></div></div>
+</div></div></div>
+
+<div class="col"><div class="lbl">P30 · Capacitaciones y cédulas<span>Tono de mejora</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Capacitaciones y cédulas</b></div></div></div>
+<div class="ct" style="gap:8px">
+<p class="ov">Capacitaciones</p>
+<div class="cd" style="gap:4px"><div class="row sb"><b class="bb">Ovitrampas</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Vigente</span></div><span class="cap">Hasta 30 jun 2027 · habilita colocar, revisar, retirar</span></div>
+<div class="cd" style="gap:4px; border-color:#B3141A"><div class="row sb"><b class="bb">Liberación</b><span class="bd cr"><svg class="i"><use href="#clock"></use></svg>Vencida</span></div><span class="cap">Venció 5 nov · hoy no puedes liberar. Tu supervisor agenda el readiestramiento.</span></div>
+<p class="ov">Cédulas de evaluación</p>
+<div class="cd" style="gap:4px"><div class="row sb"><b class="bb">28 oct · Revisión</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Correcto</span></div></div>
+<div class="cd" style="gap:4px"><div class="row sb"><b class="bb">14 oct · Colocación</b><span class="bd wn"><svg class="i"><use href="#info"></use></svg>Observación</span></div><span class="cap">«Recuerda: máximo 1.5 m de altura. Vas muy bien.»</span></div>
+</div></div></div>
+
+<div class="col"><div class="lbl">P31 · Ajustes</div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Ajustes</b></div></div></div>
+<div class="ct" style="gap:8px">
+<div class="set"><svg class="i blue"><use href="#globe"></use></svg><div class="tx"><b class="bb">Idioma</b><p class="cap">Español (México)</p></div><svg class="i"><use href="#right"></use></svg></div>
+<div class="set"><svg class="i blue"><use href="#tsize"></use></svg><div class="tx"><b class="bb">Tamaño de texto</b><p class="cap">Igual que el teléfono</p></div><svg class="i"><use href="#right"></use></svg></div>
+<div class="set"><svg class="i blue"><use href="#moon"></use></svg><div class="tx"><b class="bb">Modo oscuro</b><p class="cap">Para noche o interiores</p></div><span class="sw2" style="background:#C9D0DE"></span></div>
+<div class="set"><svg class="i blue"><use href="#shield"></use></svg><div class="tx"><b class="bb">Aviso de privacidad</b></div><svg class="i"><use href="#right"></use></svg></div>
+<div class="set"><svg class="i blue"><use href="#dl"></use></svg><div class="tx"><b class="bb">Versión 1.0.0</b><p class="cap">Revisada hoy 07:50</p></div><button class="btn o" style="width:auto; min-height:48px; font-size:14px">Buscar actualización</button></div>
+<div class="sp"></div>
+<button class="btn t" style="color:#B3141A"><svg class="i"><use href="#out"></use></svg>Cerrar sesión</button>
+</div></div></div>
+
+<div class="col"><div class="lbl">P31 · Cerrar sesión bloqueado<span>Explica por qué, en una frase</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Ajustes</b></div></div></div>
+<div class="ct"></div><div class="scrim"></div>
+<div class="sh"><div class="grab"></div><div class="row"><svg class="i s28" style="color:#8A4B00"><use href="#lock"></use></svg><p class="h2">Aún no puedes cerrar sesión</p></div><p class="b">Tienes 12 registros sin subir. Busca señal y espera a que se envíen.</p><button class="btn o"><svg class="i"><use href="#cloudup"></use></svg>Ver envíos</button><button class="btn t">Volver</button></div></div></div>
+
+<div class="col"><div class="lbl">P32 · Bloqueo por velocidad<span>Arriba de 10 km/h · lo capturado no se pierde</span></div>
+<div class="ph"><div class="lock">
+<div class="sp"></div>
+<div style="display:flex; flex-direction:column; align-items:center; gap:16px; text-align:center"><svg class="i s64"><use href="#moto"></use></svg><p class="h1" style="color:#fff">Detente para seguir capturando</p><p class="b" style="color:#C9D3EA">Al detenerte unos segundos, vuelves al mismo paso.</p><span class="bd" style="background:rgba(255,255,255,.12); color:#fff">Revisar OV-012 · Paso 3 de 6 guardado</span></div>
+<div class="sp"></div>
+<button class="btn e big"><svg class="i s32"><use href="#sos"></use></svg>Emergencia</button>
+<button class="btn big" style="background:#fff; color:#0A1A3F"><svg class="i s32"><use href="#alert"></use></svg>Incidente</button>
+</div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2840,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

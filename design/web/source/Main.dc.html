@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Sistema de diseño web Codequim</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"></path></symbol>
+<symbol id="moto" viewBox="0 0 24 24"><path d="M2 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM16 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM5 16.5 9 10h5l3 6.5M13 5h3l2.5 5M8 10H5"></path></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1 1 0 0 0 .9 1.5h13.2a1 1 0 0 0 .9-1.5L14 9V3M7 15h10"></path></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="ul" viewBox="0 0 24 24"><path d="M12 20V9M7 14l5-5 5 5M4 4h16"></path></symbol>
+<symbol id="filter" viewBox="0 0 24 24"><path d="M4 5h16l-6 8v6l-4-2v-4z"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+<symbol id="print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-8h16v8h-3M7 14h10v7H7z"></path></symbol>
+<symbol id="layers" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 17.5l10 5 10-5"></path></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"></path></symbol>
+<symbol id="cut" viewBox="0 0 24 24"><path d="M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.1 7.9 20 20M8.1 16.1 20 4"></path></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><path d="M4 6h16v15H4zM4 10h16M8 3v5M16 3v5"></path></symbol>
+<symbol id="cols" viewBox="0 0 24 24"><path d="M4 4h16v16H4zM10 4v16M15 4v16"></path></symbol>
+<symbol id="sort" viewBox="0 0 24 24"><path d="M8 4v16M4 16l4 4 4-4M16 20V4M12 8l4-4 4 4"></path></symbol>
+<symbol id="web" viewBox="0 0 24 24"><path d="M3 5h18v12H3zM8 21h8M12 17v4"></path></symbol>
+<symbol id="vtx" viewBox="0 0 24 24"><path d="M5 5h3v3H5zM16 5h3v3h-3zM10 16h3v3h-3zM8 6.5h8M7 8l4 8M17 8l-4 8"></path></symbol>
+</defs></svg>
+
+<div class="ds" style="width:1600px; min-height:4400px">
+
+<div class="st" style="gap:12px">
+<p class="ov">Codequim · Programa Wolbachia · App web de oficina</p>
+<h1>Sistema de diseño · Escritorio</h1>
+<p class="lead">Extiende el sistema de la app del repartidor: mismos tokens de color, Inter con cifras tabulares, íconos de trazo en cuadrícula de 24 y el mismo StatusBadge. Aquí solo se agregan los componentes de escritorio. Base 1280 × 800; a 1024 px la navegación se colapsa a íconos y las tablas se desplazan dentro de su caja.</p>
+</div>
+
+<div class="sec">
+<h2>0 · Tokens heredados y tokens nuevos</h2>
+<div class="g4">
+<div class="dsbox"><div class="ttl">Heredados del móvil</div>
+<div class="row wr"><span class="sw" style="width:28px; height:28px; background:#3772FF"></span><span class="sw" style="width:28px; height:28px; background:#1A5DFF"></span><span class="sw" style="width:28px; height:28px; background:#0044E6"></span><span class="sw" style="width:28px; height:28px; background:#0A1A3F"></span><span class="sw" style="width:28px; height:28px; background:#EBF1FF; box-shadow:inset 0 0 0 1px #C9D0DE"></span><span class="sw" style="width:28px; height:28px; background:#F4F6FA; box-shadow:inset 0 0 0 1px #C9D0DE"></span></div>
+<p class="spec">brand · action · action.strong · navy · tint · surface.bg<br>success #0B6B35 · warning #8A4B00 · critical #B3141A · info #0044E6</p></div>
+<div class="dsbox"><div class="ttl">Nuevos · estructura</div>
+<p class="spec">side.bg = navy #0A1A3F<br>side.ink #C9D3EA sobre navy<br>side.active = brand + texto blanco 14 bold<br>line.soft #E4E8EF · filas de tabla</p></div>
+<div class="dsbox"><div class="ttl">Nuevos · series de gráfica</div>
+<div class="row"><span class="sw" style="width:28px; height:28px; background:#1A5DFF"></span><span class="sw" style="width:28px; height:28px; background:#D9620B"></span><span class="sw" style="width:28px; height:28px; background:#0B6B35"></span><span class="sw" style="width:28px; height:28px; background:#7A3CC4"></span></div>
+<p class="spec">chart.1 … chart.4 · azul y naranja primero (se distinguen con daltonismo); cada serie lleva además su forma de marcador: ● ■ ▲ ◆</p></div>
+<div class="dsbox"><div class="ttl">Nuevos · bandas y mapa</div>
+<div class="row"><span class="sw" style="width:28px; height:28px; background:#E3F5EA"></span><span class="sw" style="width:28px; height:28px; background:#F1F8E6"></span><span class="sw" style="width:28px; height:28px; background:#FFF1D6"></span><span class="sw" style="width:28px; height:28px; background:#FDE8E8"></span><span class="sw" style="width:28px; height:28px; background:#EEF1EC"></span><span class="sw" style="width:28px; height:28px; background:#CFE0F2"></span></div>
+<p class="spec">band.optimo · bueno · alarma · emergencia<br>map.land · map.water · estilo OSM claro</p></div>
+</div>
+</div>
+
+<div class="sec">
+<h2>1 · Estructura</h2>
+<div class="row top" style="gap:24px">
+<div class="dsbox" style="width:540px; flex:none"><div class="ttl">Navegación lateral · normal y colapsada</div>
+<div class="row top" style="gap:16px">
+<div class="sb" style="height:560px; border-radius:12px">
+<div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv on" href="#">Inicio</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Incidentes<span class="ct cr">3</span></a>
+<div class="grp">Operación</div>
+<a class="nv hv" href="#"><svg class="i"><use href="#ops"></use></svg>Jornadas del día<span class="ct">6</span></a>
+<a class="nv fo" href="#"><svg class="i"><use href="#check"></use></svg>Validar jornadas<span class="ct">4</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#move"></use></svg>Reubicaciones<span class="ct">2</span></a>
+<div class="grp">Inventario</div>
+<a class="nv" href="#"><svg class="i"><use href="#box"></use></svg>Transferencias</a>
+<a class="nv" href="#"><svg class="i"><use href="#ban"></use></svg>Discrepancias<span class="ct cr">1</span></a>
+<div class="grp">Flota</div>
+<a class="nv" href="#"><svg class="i"><use href="#moto"></use></svg>Motos</a>
+<div class="foot"><svg class="i s16"><use href="#left"></use></svg>Colapsar menú</div>
+</div>
+<div class="sb mini" style="height:560px; border-radius:12px">
+<div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv on" href="#" aria-label="Inicio">⌂</a>
+<a class="nv" href="#" aria-label="Incidentes, 3"><svg class="i"><use href="#alert"></use></svg><span class="ct cr">3</span></a>
+<a class="nv" href="#" aria-label="Operación, 6"><svg class="i"><use href="#ops"></use></svg><span class="ct">6</span></a>
+<a class="nv" href="#" aria-label="Inventario"><svg class="i"><use href="#box"></use></svg></a>
+<a class="nv" href="#" aria-label="Flota"><svg class="i"><use href="#moto"></use></svg></a>
+</div>
+<div class="st fx" style="gap:10px">
+<p class="cap"><b>Estados</b>: normal · <b>hover</b> (fondo blanco al 12 %) · <b>activo</b> (brand) · <b>foco</b> (anillo azul 2 px + halo) · contador blanco o <b>rojo</b> si hay críticos.</p>
+<p class="cap">Solo aparecen los grupos que el perfil activo puede usar.</p>
+<p class="cap">Colapsada: 64 px, ícono + contador; el nombre va como tooltip y aria-label.</p>
+<p class="cap">Elementos de 36 de alto; el mínimo WCAG 2.2 es 24 × 24.</p>
+</div>
+</div>
+</div>
+<div class="st fx" style="gap:24px">
+<div class="dsbox"><div class="ttl">Barra superior</div>
+<div style="border-radius:10px; overflow:hidden; border:1px solid #C9D0DE" class="tk">
+<div class="tp"><button class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte · Centro Norte<svg class="i s16"><use href="#down"></use></svg></button><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea: OV-010, L-2611, D-0042…</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones, 6 sin leer"><svg class="i"><use href="#bell"></use></svg><span class="dot">6</span></button><button class="icb" aria-label="Idioma: español">ES</button><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora · Centro Norte</small></span><svg class="i s16"><use href="#down"></use></svg></button></div>
+</div>
+<div class="row top" style="gap:16px">
+<div class="card tight tk" style="width:300px"><p class="ov">Menú de usuario · perfil activo</p><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#check"></use></svg>Supervisora · Centro Norte</span><span class="bd nt" style="align-self:flex-start">Promotora · Zona 3</span><p class="cap">Cambiar de perfil recarga la navegación y el inicio.</p><button class="b t" style="justify-content:flex-start">Preferencias de notificación</button><button class="b t" style="justify-content:flex-start">Cerrar sesión</button></div>
+<div class="st fx"><p class="cap"><b>Búsqueda universal</b>: acepta texto, lector USB (escribe el código y manda Enter) o cámara con el ícono de escaneo. Atajo «/». Si hay un solo resultado exacto, abre directo la ficha.</p><div class="srch f tk" style="max-width:none"><svg class="i s16"><use href="#search"></use></svg><span class="fx" style="color:#0A1A3F; font-weight:600">OV-010|</span><span class="cap">Enter para abrir</span></div><p class="cap"><b>Selector de región o centro</b>: solo si el perfil ve más de uno. <b>Idioma</b>: ES / EN.</p></div>
+</div>
+</div>
+<div class="dsbox"><div class="ttl">Encabezado de página</div>
+<div class="card tk" style="gap:8px"><div class="crumb"><a href="#">Inventario</a><svg class="i s16"><use href="#right"></use></svg><a href="#">Lotes</a><svg class="i s16"><use href="#right"></use></svg><span>L-2611</span></div>
+<div class="phd"><div class="t"><h3 class="h1">Lote L-2611 · Ovitrampas</h3><p class="sub">20 piezas · Almacén Norte · creado el 2 nov 2026 por Marco</p></div><button class="b o"><svg class="i s16"><use href="#print"></use></svg>Imprimir etiquetas</button><button class="b o"><svg class="i s16"><use href="#dots"></use></svg>Más</button><button class="b p"><svg class="i s16"><use href="#box"></use></svg>Despachar</button></div></div>
+<p class="cap">Migas → título → una acción principal a la derecha y las secundarias a su izquierda. «Más» agrupa «Anular con motivo» y «Abrir incidente».</p>
+</div>
+</div>
+</div>
+<div class="dsbox"><div class="ttl">Panel lateral de detalle · pestañas Resumen, Historial, Relacionados</div>
+<div class="row top" style="gap:24px">
+<div class="dp tk" style="height:430px; border-radius:12px; border:1px solid #C9D0DE; box-shadow:none">
+<div class="dh"><div class="row sb2"><span class="ov">Punto de muestreo</span><button class="icb" aria-label="Cerrar panel"><svg class="i"><use href="#x"></use></svg></button></div><div class="row"><h3 class="h2">OV-010</h3><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Revisado</span><span class="bd ar">Alto Riesgo</span></div><p class="cap">Manzana 0123 · C-07 · ovitrampa física OT-0388</p><div class="tabs"><b>Resumen</b><b class="on">Historial<span class="ct">31</span></b><b>Relacionados<span class="ct">15</span></b></div></div>
+<div class="db"><div class="tl">
+<div class="ev ok"><span class="dt"><svg class="i"><use href="#flask"></use></svg></span><div class="bx"><b>Conteo validado · lectura 12</b><div class="m">Marco · 4 nov 2026 11:02<span class="org">Web</span></div><div class="ba">Huevos <s>530 campo</s><svg class="i s16"><use href="#right"></use></svg><ins>512 lab</ins></div></div></div>
+<div class="ev in"><span class="dt"><svg class="i"><use href="#bag"></use></svg></span><div class="bx"><b>Bolsa B-4471 recibida en laboratorio</b><div class="m">Marco · 4 nov 2026 09:15<span class="org">Web</span></div></div></div>
+<div class="ev"><span class="dt"><svg class="i"><use href="#trap"></use></svg></span><div class="bx"><b>Lectura 12 · Bien · 29 °C · 68 %</b><div class="m">Luis · 3 nov 2026 10:22<span class="org">Móvil</span></div></div></div>
+</div></div></div>
+<div class="st fx"><p class="cap">440 px fijo a la derecha; la lista sigue a la vista y la fila elegida se marca con tinte. Esc cierra el panel y regresa el foco a la fila.</p><p class="cap"><b>Línea de tiempo</b>: ícono por tipo · autor · fecha y hora · origen (Móvil, Web o Sistema) · caja antes → después cuando algo cambió · el título enlaza al objeto.</p><p class="cap">Los eventos anulados se ven tachados con su motivo; nunca desaparecen.</p></div>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2>2 · Datos</h2>
+<div class="dsbox"><div class="ttl">Barra de filtros</div>
+<div class="fbar tk"><span class="fc on"><svg class="i"><use href="#cal"></use></svg>S45 · 1–7 nov 2026<svg class="i"><use href="#down"></use></svg></span><span class="fc on">Región Norte<svg class="i"><use href="#x"></use></svg></span><span class="fc on">Centro Norte<svg class="i"><use href="#x"></use></svg></span><span class="fc">Cuadrante<svg class="i"><use href="#down"></use></svg></span><span class="fc">Estado<svg class="i"><use href="#down"></use></svg></span><span class="fc add"><svg class="i"><use href="#plus"></use></svg>Filtro</span><span class="fx"></span><span class="fc"><svg class="i"><use href="#filter"></use></svg>Guardados: «Mi centro esta semana»<svg class="i"><use href="#down"></use></svg></span><button class="b t sm">Limpiar</button></div>
+<p class="cap">Chip con valor: tinte + borde azul y ✕ para quitarlo. Sin valor: contorno. «+ Filtro»: punteado. La fecha acepta rango o semana epidemiológica (domingo a sábado).</p>
+</div>
+<div class="dsbox"><div class="ttl">Tabla de datos · selección, acciones masivas y filas especiales</div>
+<div class="tw tk">
+<div class="tbar sel"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span><b style="font-size:13px">2 seleccionados</b><button class="b o sm"><svg class="i s16"><use href="#print"></use></svg>Imprimir etiquetas</button><button class="b o sm"><svg class="i s16"><use href="#box"></use></svg>Transferir</button><span class="fx"></span><button class="b t sm"><svg class="i s16"><use href="#cols"></use></svg>Columnas</button><button class="b t sm"><svg class="i s16"><use href="#dl"></use></svg>CSV</button><button class="b t sm"><svg class="i s16"><use href="#dl"></use></svg>Excel</button></div>
+<table class="t"><thead><tr><th style="width:36px"><span class="cb"></span></th><th class="s">Lote <svg class="i"><use href="#sort"></use></svg></th><th>Tipo</th><th class="n">Disponible</th><th>Ubicación</th><th>Caducidad</th><th>Estado</th><th></th></tr></thead>
+<tbody>
+<tr class="sel"><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td><td><a href="#">L-2611</a></td><td>Ovitrampas</td><td class="n">18 de 20</td><td>Almacén Norte</td><td>—</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Disponible</span></td><td></td></tr>
+<tr class="sel"><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td><td><a href="#">L-2614</a></td><td>Papeletas de pellón</td><td class="n">100 de 100</td><td>En camino a Centro Norte</td><td>—</td><td><span class="bd in"><svg class="i"><use href="#moto"></use></svg>En tránsito</span></td><td></td></tr>
+<tr class="blk"><td><span class="cb"></span></td><td><a href="#">L-2602</a></td><td>Papeletas de pellón</td><td class="n">98 de 100</td><td>Centro Norte</td><td>—</td><td><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Bloqueado</span></td><td class="cap" style="color:#B3141A; font-weight:600">Discrepancia D-0042 · la cierra la supervisora</td></tr>
+<tr class="wn"><td><span class="cb"></span></td><td><a href="#">W-118</a></td><td>Dispositivos de liberación</td><td class="n">1,200 de 1,200</td><td>Biofábrica</td><td>6 nov 2026</td><td><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Caduca en 3 días</span></td><td></td></tr>
+<tr class="void"><td><span class="cb"></span></td><td class="vx">L-2598</td><td class="vx">Ovitrampas</td><td class="n vx">20 de 20</td><td class="vx">Almacén Norte</td><td>—</td><td><span class="bd nt"><svg class="i"><use href="#ban"></use></svg>Anulado</span></td><td class="cap">«Capturado dos veces» · Marco · 1 nov</td></tr>
+</tbody></table>
+<div class="pgn"><span class="fx">1–5 de 48 lotes</span><b class="on">1</b><b>2</b><b>3</b><b>…</b><b>10</b></div>
+</div>
+<p class="cap">Fila de 42: seleccionada (tinte) · <b>bloqueada</b> (rojo claro + motivo y quién la desbloquea) · <b>con aviso</b> (ámbar) · <b>anulada</b> (tachada y atenuada, con motivo). Cifras a la derecha con separador de miles. Se exporta exactamente lo filtrado y visible.</p>
+</div>
+
+<div class="g3">
+<div class="dsbox"><div class="ttl">Tarjeta de indicador</div>
+<div class="g2 tk" style="gap:12px">
+<a class="kpi" href="#"><span class="k">IPO · S45</span><span class="v">41 %</span><span class="d dn"><svg class="i s16"><use href="#down"></use></svg>Bajó 3 pts vs S44</span><svg class="spk" viewBox="0 0 120 28" aria-hidden="true"><path d="M2 8 L15 6 L28 4 L41 3 L54 6 L67 9 L80 12 L93 15 L106 18 L118 21" fill="none" stroke="#1A5DFF" stroke-width="2"></path></svg></a>
+<a class="kpi fo" href="#"><span class="k">Foco / hover</span><span class="v">41 %</span><span class="d fl">Abre las 92 lecturas</span><svg class="spk" viewBox="0 0 120 28" aria-hidden="true"><path d="M2 8 L15 6 L28 4 L41 3 L54 6 L67 9 L80 12 L93 15 L106 18 L118 21" fill="none" stroke="#1A5DFF" stroke-width="2"></path></svg></a>
+<div class="kpi"><span class="k">Cargando</span><span class="sk" style="width:60%; height:30px"></span><span class="sk" style="width:40%"></span><span class="sk" style="height:24px"></span></div>
+<div class="kpi"><span class="k">Sin datos</span><span class="v" style="color:#586380; text-decoration:none">—</span><span class="d fl">Aún no hay lecturas de S45</span></div>
+</div>
+<p class="cap">Cifra subrayada = enlace a los registros que la forman. La variación lleva flecha y texto, no solo color.</p>
+</div>
+<div class="dsbox"><div class="ttl">Comparador antes / después</div>
+<div class="card tk" style="gap:8px"><div class="row sb2"><b>Frecuencia de revisión</b><span class="bd in">v3 → v4</span></div>
+<div class="g2" style="gap:8px"><div class="card tight" style="background:#FDE8E8; border-color:#F3B9BB"><span class="ov" style="color:#B3141A">Antes · v3</span><b style="font-size:22px; color:#B3141A"><s>7 días</s></b><span class="cap">Desde 1 ene 2026 · Sofía</span></div><div class="card tight" style="background:#E3F5EA; border-color:#9FD7B5"><span class="ov" style="color:#0B6B35">Después · v4</span><b style="font-size:22px; color:#0B6B35">6 días</b><span class="cap">Desde 10 nov 2026 · Sofía</span></div></div>
+<p class="cap">Afecta: Programación (W26) y «días sin revisar» en tableros.</p></div>
+<p class="cap">Antes tachado en rojo, después en verde, y las etiquetas «Antes / Después» para no depender del color.</p>
+</div>
+<div class="dsbox"><div class="ttl">Línea de tiempo · tipos de evento</div>
+<div class="tl tk">
+<div class="ev ok"><span class="dt"><svg class="i"><use href="#check"></use></svg></span><div class="bx"><b>Aprobado o validado</b><div class="m">verde</div></div></div>
+<div class="ev in"><span class="dt"><svg class="i"><use href="#pen"></use></svg></span><div class="bx"><b>Editado</b><div class="m">azul · con antes → después</div></div></div>
+<div class="ev wn"><span class="dt"><svg class="i"><use href="#alert"></use></svg></span><div class="bx"><b>Incidente o aviso</b><div class="m">ámbar</div></div></div>
+<div class="ev cr"><span class="dt"><svg class="i"><use href="#ban"></use></svg></span><div class="bx"><b>Bloqueo o anulación</b><div class="m">rojo · motivo obligatorio</div></div></div>
+<div class="ev"><span class="dt"><svg class="i"><use href="#cloudup"></use></svg></span><div class="bx"><b>Pendiente de subir desde el teléfono de Luis</b><div class="m">gris · se completa cuando llega</div></div></div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2>3 · Gráficas (todas con tabla alternativa y descarga)</h2>
+<div class="g2">
+<div class="dsbox"><div class="ttl">Línea por semana · bandas, umbral, periodo y marcas</div>
+<div class="card tk" style="gap:8px">
+<div class="chead"><b class="h3">IPO y MP · C-07</b><div class="seg"><b class="on"><svg class="i s16"><use href="#chart"></use></svg>Gráfica</b><b><svg class="i s16"><use href="#ops"></use></svg>Tabla</b></div><button class="icb" aria-label="Descargar"><svg class="i"><use href="#dl"></use></svg></button></div>
+<svg class="ch" viewBox="0 0 700 230" role="img" aria-label="IPO y MP por semana, S36 a S45, con bandas de ejemplo, liberaciones de S40 a S43, umbral de 50 % y una nebulización en S42">
+<rect x="40" y="20" width="640" height="34" fill="#FDE8E8"></rect><rect x="40" y="54" width="640" height="51" fill="#FFF1D6"></rect><rect x="40" y="105" width="640" height="51" fill="#F1F8E6"></rect><rect x="40" y="156" width="640" height="34" fill="#E3F5EA"></rect>
+<text x="676" y="32" text-anchor="end" style="font-weight:700; fill:#B3141A">Emergencia</text><text x="676" y="66" text-anchor="end" style="font-weight:700; fill:#8A4B00">Alarma</text><text x="676" y="150" text-anchor="end" style="font-weight:700; fill:#3A4664">Bueno</text><text x="676" y="184" text-anchor="end" style="font-weight:700; fill:#0B6B35">Óptimo</text>
+<rect x="320" y="20" width="210" height="170" fill="#3772FF" opacity=".10"></rect><text x="325" y="16" style="font-weight:700; fill:#0044E6">Liberaciones S40–S43</text>
+<line class="thr" x1="40" y1="105" x2="680" y2="105"></line><text x="44" y="100" style="font-weight:700; fill:#0A1A3F">Umbral 50 %</text>
+<line class="ax" x1="40" y1="190" x2="680" y2="190"></line>
+<text x="40" y="206" text-anchor="middle">S36</text><text x="180" y="206" text-anchor="middle">S38</text><text x="320" y="206" text-anchor="middle">S40</text><text x="460" y="206" text-anchor="middle">S42</text><text x="670" y="206" text-anchor="middle">S45</text>
+<text x="32" y="194" text-anchor="end">0</text><text x="32" y="109" text-anchor="end">50</text><text x="32" y="24" text-anchor="end">100</text>
+<path d="M40 71 L110 67.6 L180 62.5 L250 57.4 L320 64.2 L390 71 L460 77.8 L530 82.9 L600 88 L670 91.4" fill="none" stroke="#D9620B" stroke-width="2.5"></path>
+<rect x="36" y="67" width="8" height="8" fill="#D9620B"></rect><rect x="246" y="53.4" width="8" height="8" fill="#D9620B"></rect><rect x="456" y="73.8" width="8" height="8" fill="#D9620B"></rect><rect x="666" y="87.4" width="8" height="8" fill="#D9620B"></rect>
+<path d="M40 101.6 L110 96.5 L180 91.4 L250 86.3 L320 93.1 L390 98.2 L460 105 L530 110.1 L600 115.2 L670 120.3" fill="none" stroke="#1A5DFF" stroke-width="2.5"></path>
+<circle cx="40" cy="101.6" r="4" fill="#1A5DFF"></circle><circle cx="250" cy="86.3" r="4" fill="#1A5DFF"></circle><circle cx="460" cy="105" r="4" fill="#1A5DFF"></circle><circle cx="670" cy="120.3" r="5" fill="#1A5DFF" stroke="#fff" stroke-width="2"></circle>
+<path d="M460 190 l-6 10 h12z" fill="#0A1A3F"></path><text x="470" y="222" style="font-weight:600; fill:#0A1A3F">▲ Nebulización de terceros</text>
+<text x="600" y="136" style="font-weight:700; fill:#0044E6">● IPO 41 %</text><text x="600" y="80" style="font-weight:700; fill:#B04F06">■ MP 58 %</text>
+</svg>
+<div class="lgn"><span><i style="background:#1A5DFF"></i>● IPO</span><span><i style="background:#D9620B"></i>■ MP</span><span><i style="background:#0A1A3F; height:2px"></i>- - Umbral</span><span><i style="background:#3772FF; opacity:.3; height:10px"></i>Periodo de liberaciones</span><span>▲ Intervención</span></div>
+<p class="cap">Bandas y umbral con valores de ejemplo: los define la empresa en Parámetros. Las lecturas desfasadas o en recuento no entran al cálculo.</p>
+</div></div>
+<div class="dsbox"><div class="ttl">Mismo componente sin bandas configuradas</div>
+<div class="card tk" style="gap:8px">
+<div class="chead"><b class="h3">IPO · C-07</b><span class="bd nt"><svg class="i"><use href="#info"></use></svg>Sin umbrales configurados</span><button class="icb" aria-label="Descargar"><svg class="i"><use href="#dl"></use></svg></button></div>
+<svg class="ch" viewBox="0 0 700 230" role="img" aria-label="IPO por semana, S36 a S45, sin bandas">
+<line class="gd" x1="40" y1="20" x2="680" y2="20"></line><line class="gd" x1="40" y1="62.5" x2="680" y2="62.5"></line><line class="gd" x1="40" y1="105" x2="680" y2="105"></line><line class="gd" x1="40" y1="147.5" x2="680" y2="147.5"></line><line class="ax" x1="40" y1="190" x2="680" y2="190"></line>
+<text x="32" y="194" text-anchor="end">0</text><text x="32" y="151" text-anchor="end">25</text><text x="32" y="109" text-anchor="end">50</text><text x="32" y="66" text-anchor="end">75</text><text x="32" y="24" text-anchor="end">100</text>
+<text x="40" y="206" text-anchor="middle">S36</text><text x="180" y="206" text-anchor="middle">S38</text><text x="320" y="206" text-anchor="middle">S40</text><text x="460" y="206" text-anchor="middle">S42</text><text x="670" y="206" text-anchor="middle">S45</text>
+<path d="M40 101.6 L110 96.5 L180 91.4 L250 86.3 L320 93.1 L390 98.2 L460 105 L530 110.1 L600 115.2 L670 120.3" fill="none" stroke="#1A5DFF" stroke-width="2.5"></path>
+<circle cx="40" cy="101.6" r="4" fill="#1A5DFF"></circle><circle cx="110" cy="96.5" r="4" fill="#1A5DFF"></circle><circle cx="180" cy="91.4" r="4" fill="#1A5DFF"></circle><circle cx="250" cy="86.3" r="4" fill="#1A5DFF"></circle><circle cx="320" cy="93.1" r="4" fill="#1A5DFF"></circle><circle cx="390" cy="98.2" r="4" fill="#1A5DFF"></circle><circle cx="460" cy="105" r="4" fill="#1A5DFF"></circle><circle cx="530" cy="110.1" r="4" fill="#1A5DFF"></circle><circle cx="600" cy="115.2" r="4" fill="#1A5DFF"></circle><circle cx="670" cy="120.3" r="5" fill="#1A5DFF" stroke="#fff" stroke-width="2"></circle>
+<text x="630" y="142" style="font-weight:700; fill:#0044E6">41 %</text>
+</svg>
+<p class="cap">Con cuadrícula visible, la gráfica se lee completa aunque no haya bandas. El aviso es una insignia neutra, no un error. El administrador ve además «Configurar bandas».</p>
+</div></div>
+<div class="dsbox"><div class="ttl">Punto con intervalo de confianza</div>
+<div class="card tk" style="gap:8px">
+<svg class="ch" viewBox="0 0 700 200" role="img" aria-label="Prevalencia con intervalo de confianza por semana, datos de muestra">
+<line class="gd" x1="40" y1="20" x2="680" y2="20"></line><line class="gd" x1="40" y1="95" x2="680" y2="95"></line><line class="ax" x1="40" y1="170" x2="680" y2="170"></line>
+<text x="32" y="174" text-anchor="end">0 %</text><text x="32" y="99" text-anchor="end">50 %</text><text x="32" y="24" text-anchor="end">100 %</text>
+<line x1="110" y1="160" x2="110" y2="128" stroke="#1A5DFF" stroke-width="2"></line><line x1="104" y1="160" x2="116" y2="160" stroke="#1A5DFF" stroke-width="2"></line><line x1="104" y1="128" x2="116" y2="128" stroke="#1A5DFF" stroke-width="2"></line><circle cx="110" cy="146" r="5" fill="#1A5DFF"></circle>
+<line x1="320" y1="140" x2="320" y2="100" stroke="#1A5DFF" stroke-width="2"></line><line x1="314" y1="140" x2="326" y2="140" stroke="#1A5DFF" stroke-width="2"></line><line x1="314" y1="100" x2="326" y2="100" stroke="#1A5DFF" stroke-width="2"></line><circle cx="320" cy="120" r="5" fill="#1A5DFF"></circle>
+<line x1="530" y1="125" x2="530" y2="72" stroke="#1A5DFF" stroke-width="2"></line><line x1="524" y1="125" x2="536" y2="125" stroke="#1A5DFF" stroke-width="2"></line><line x1="524" y1="72" x2="536" y2="72" stroke="#1A5DFF" stroke-width="2"></line><circle cx="530" cy="100" r="5" fill="#1A5DFF"></circle>
+<rect x="545" y="40" width="140" height="44" rx="6" fill="#0A1A3F"></rect><text x="555" y="58" style="fill:#fff; font-weight:700">S43 · 47 %</text><text x="555" y="74" style="fill:#C9D3EA">IC 95 % 34–61 · n = 52</text>
+<text x="110" y="188" text-anchor="middle">S39</text><text x="320" y="188" text-anchor="middle">S41</text><text x="530" y="188" text-anchor="middle">S43</text>
+</svg>
+<p class="cap">Al pasar el cursor o con foco de teclado: semana, prevalencia, intervalo y número de mosquitos analizados. Valores de muestra.</p>
+</div></div>
+<div class="dsbox"><div class="ttl">Barras comparativas</div>
+<div class="card tk" style="gap:8px">
+<svg class="ch" viewBox="0 0 700 200" role="img" aria-label="IPO por centro: Norte 41 %, Sur 33 %">
+<line class="ax" x1="140" y1="20" x2="140" y2="170"></line><line class="gd" x1="490" y1="20" x2="490" y2="170"></line>
+<text x="130" y="60" text-anchor="end" style="font-weight:600; fill:#0A1A3F">Centro Norte</text><rect x="140" y="42" width="287" height="28" rx="4" fill="#1A5DFF"></rect><text x="435" y="61" style="font-weight:700; fill:#0A1A3F">41 %</text>
+<text x="130" y="120" text-anchor="end" style="font-weight:600; fill:#0A1A3F">Centro Sur</text><rect x="140" y="102" width="231" height="28" rx="4" fill="#1A5DFF"></rect><text x="379" y="121" style="font-weight:700; fill:#0A1A3F">33 %</text>
+<text x="140" y="188">0</text><text x="490" y="188" text-anchor="middle">50 %</text>
+</svg>
+<p class="cap">Horizontales para que los nombres de centros y cuadrantes aguanten +30 % de largo. Valor escrito al final de cada barra.</p>
+</div></div>
+</div>
+</div>
+
+<div class="sec">
+<h2>4 · Mapa (MapLibre + OpenStreetMap)</h2>
+<div class="g3">
+<div class="dsbox"><div class="ttl">Visor con capas y leyenda</div>
+<div class="map tk" style="height:300px">
+<svg class="base" viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="440" height="300" fill="#EEF1EC"></rect><path d="M0 240 C120 220 200 270 440 230 V300 H0z" fill="#CFE0F2"></path><path d="M0 80 H440 M0 160 H440 M110 0 V300 M230 0 V300 M340 0 V300" stroke="#FFFFFF" stroke-width="9"></path><path d="M30 20 L210 30 L220 150 L40 140z" fill="#1A5DFF" fill-opacity=".14" stroke="#1A5DFF" stroke-width="2.5"></path><path d="M240 30 L420 20 L410 150 L240 150z" fill="#D9620B" fill-opacity=".12" stroke="#D9620B" stroke-width="2.5" stroke-dasharray="7 4"></path></svg>
+<div class="lyr"><b>Capas</b><span class="row"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span>Cuadrantes</span><span class="row"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span>Puntos por estado</span><span class="row"><span class="cb"></span>Mapa de calor</span><span class="row"><span class="cb"></span>Permisos</span></div>
+<div class="mk done" style="left:90px; top:200px"><div class="p"><svg class="i"><use href="#check"></use></svg></div><span class="t">OV-010</span></div>
+<div class="mk pend" style="left:170px; top:120px"><div class="p"><svg class="i"><use href="#clock"></use></svg></div><span class="t">OV-011</span></div>
+<div class="mk crit" style="left:320px; top:110px"><div class="p"><svg class="i"><use href="#alert"></use></svg></div><span class="t">OV-021</span></div>
+<div class="ctl"><b aria-label="Acercar"><svg class="i s16"><use href="#plus"></use></svg></b><b aria-label="Alejar">−</b><b aria-label="Capas"><svg class="i s16"><use href="#layers"></use></svg></b></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<p class="cap">Cuadrantes: C-07 azul continuo, C-08 naranja punteado (color + patrón). Marcadores: forma + ícono + folio, igual que en el móvil.</p>
+</div>
+<div class="dsbox"><div class="ttl">Editor de polígonos</div>
+<div class="map tk" style="height:300px">
+<svg class="base" viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="440" height="300" fill="#EEF1EC"></rect><path d="M0 80 H440 M0 160 H440 M110 0 V300 M230 0 V300 M340 0 V300" stroke="#FFFFFF" stroke-width="9"></path><path d="M60 60 L300 50 L330 200 L80 230z" fill="none" stroke="#586380" stroke-width="2" stroke-dasharray="4 4"></path><path d="M60 60 L260 70 L280 190 L80 230z" fill="#1A5DFF" fill-opacity=".14" stroke="#1A5DFF" stroke-width="2.5"></path><rect x="54" y="54" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect><rect x="254" y="64" width="12" height="12" fill="#1A5DFF" stroke="#fff" stroke-width="2"></rect><rect x="274" y="184" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect><rect x="74" y="224" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect></svg>
+<div style="position:absolute; left:10px; top:10px; display:flex; gap:4px; background:#fff; border:1px solid #C9D0DE; border-radius:8px; padding:4px"><button class="icb" aria-label="Dibujar"><svg class="i"><use href="#pen"></use></svg></button><button class="icb" style="background:#EBF1FF; color:#0044E6" aria-label="Mover vértices, activo"><svg class="i"><use href="#vtx"></use></svg></button><button class="icb" aria-label="Recortar"><svg class="i"><use href="#cut"></use></svg></button><button class="icb" aria-label="Deshacer"><svg class="i"><use href="#undo"></use></svg></button></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<p class="cap">Versión anterior en gris punteado; la nueva en azul. Vértice seleccionado relleno. Teclado: Tab recorre los vértices, flechas mueven 1 m, Shift + flechas 10 m.</p>
+</div>
+<div class="dsbox"><div class="ttl">Selector de manzanas con sugerencias</div>
+<div class="map tk" style="height:300px">
+<svg class="base" viewBox="0 0 440 300" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="440" height="300" fill="#FFFFFF"></rect>
+<g fill="#E2E6DF" stroke="#C9D0DE"><rect x="20" y="20" width="90" height="70"></rect><rect x="125" y="20" width="90" height="70"></rect><rect x="230" y="20" width="90" height="70"></rect><rect x="335" y="20" width="90" height="70"></rect><rect x="20" y="105" width="90" height="70"></rect><rect x="230" y="105" width="90" height="70"></rect><rect x="335" y="105" width="90" height="70"></rect><rect x="20" y="190" width="90" height="70"></rect><rect x="125" y="190" width="90" height="70"></rect><rect x="230" y="190" width="90" height="70"></rect></g>
+<rect x="125" y="105" width="90" height="70" fill="#1A5DFF" fill-opacity=".25" stroke="#0044E6" stroke-width="3"></rect>
+<rect x="335" y="190" width="90" height="70" fill="#FFF1D6" stroke="#8A4B00" stroke-width="2.5" stroke-dasharray="6 4"></rect>
+<text x="170" y="145" text-anchor="middle" style="font:700 13px Inter; fill:#0A1A3F">0123 ✓</text><text x="380" y="230" text-anchor="middle" style="font:700 13px Inter; fill:#8A4B00">0131 ?</text></svg>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<p class="cap">Elegida: azul relleno + ✓. Sugerida: ámbar punteado + «?». Al lado va una lista con «Aceptar sugerencia» y «Cambiar», para trabajar sin mouse.</p>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2>5 · Formularios y acciones</h2>
+<div class="g3">
+<div class="dsbox"><div class="ttl">Campos · estados</div>
+<div class="st tk" style="gap:12px">
+<div class="fld"><span class="l">Cantidad <span class="req">*</span></span><div class="in">20<span class="u">piezas</span></div></div>
+<div class="fld"><span class="l">Cepa <span class="req">*</span></span><div class="in f">Cepa de ejemplo|</div></div>
+<div class="fld"><span class="l">Fecha de postura <span class="req">*</span></span><div class="in er">31 nov 2026</div><span class="hp er"><svg class="i s16"><use href="#alert"></use></svg>Esa fecha no existe. Revisa el día.</span></div>
+<div class="fld"><span class="l">Ubicación</span><div class="in dis">Biofábrica<svg class="i s16" style="margin-left:auto"><use href="#lock"></use></svg></div><span class="hp">La fija tu perfil de almacén.</span></div>
+</div></div>
+<div class="dsbox"><div class="ttl">Campo de escaneo</div>
+<div class="st tk" style="gap:12px">
+<div class="scanf f"><svg class="i s24"><use href="#scan"></use></svg><span class="fx">Listo para escanear · lector USB</span><kbd>Enter</kbd></div>
+<div class="scanf" style="border-style:solid; background:#E3F5EA; border-color:#0B6B35; color:#0B6B35"><svg class="i s24"><use href="#check"></use></svg><span class="fx">B-4471 leído · OV-010</span></div>
+<div class="scanf" style="border-style:solid; background:#FDE8E8; border-color:#B3141A; color:#B3141A"><svg class="i s24"><use href="#ban"></use></svg><span class="fx">Código de otra organización</span></div>
+<div class="row"><button class="b o sm"><svg class="i s16"><use href="#scan"></use></svg>Usar cámara</button><button class="b t sm">Escribir código</button></div>
+<p class="cap">El foco vuelve al campo después de cada lectura. Aviso con sonido + destello + texto, nunca solo sonido.</p>
+</div></div>
+<div class="dsbox"><div class="ttl">Carga de documentos</div>
+<div class="st tk" style="gap:12px">
+<div class="drop"><svg class="i s32"><use href="#ul"></use></svg><div class="st" style="gap:2px"><b style="color:#0A1A3F">Arrastra o elige un PDF o una imagen</b><span class="cap">Hasta 20 MB</span></div></div>
+<div class="card tight"><div class="row"><span style="width:44px; height:56px; border:1px solid #C9D0DE; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#B3141A; font-size:10px; font-weight:800">PDF</span><div class="st fx" style="gap:2px"><b>Convenio-014-2026.pdf</b><span class="cap">1.2 MB · subido por Elena</span></div><button class="b t sm">Ver</button></div>
+<div class="fld"><span class="l">Vigente hasta <span class="req">*</span></span><div class="in">31 dic 2026<svg class="i s16" style="margin-left:auto"><use href="#cal"></use></svg></div></div></div>
+</div></div>
+</div>
+<div class="g3">
+<div class="dsbox"><div class="ttl">Diálogo de anulación</div>
+<div style="position:relative; height:330px; border-radius:12px; overflow:hidden; background:#F4F6FA" class="tk"><div class="scrim"></div>
+<div class="mdl" style="width:380px"><div class="mh"><h3 class="h2">Anular lectura 12 de OV-010</h3><p class="sub">No se borra: queda tachada en el historial con tu motivo.</p></div>
+<div class="mb"><div class="fld"><span class="l">Motivo <span class="req">*</span></span><div class="in">Capturado dos veces<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div><div class="fld"><span class="l">Detalle</span><div class="in ta">La lectura de las 10:22 es la buena.</div></div></div>
+<div class="mf"><button class="b t">Cancelar</button><button class="b d">Anular lectura</button></div></div></div>
+</div>
+<div class="dsbox"><div class="ttl">Confirmación irreversible con resumen</div>
+<div style="position:relative; height:330px; border-radius:12px; overflow:hidden; background:#F4F6FA" class="tk"><div class="scrim"></div>
+<div class="mdl" style="width:380px"><div class="mh"><h3 class="h2">¿Cerrar el cuadrante C-07?</h3></div>
+<div class="mb"><div class="kv"><span>Ovitrampas retiradas</span><b>40 de 40</b></div><div class="kv"><span>Lecturas en laboratorio</span><b>38 validadas · 2 en recuento</b></div><div class="kv"><span>Fecha de cierre</span><b>7 nov 2026</b></div><div class="nt warn"><svg class="i"><use href="#alert"></use></svg><p>No se puede deshacer. Para volver a operar ahí se crea un cuadrante nuevo.</p></div></div>
+<div class="mf"><button class="b t">Volver</button><button class="b d">Cerrar cuadrante</button></div></div></div>
+</div>
+<div class="dsbox"><div class="ttl">Dato personal · candado</div>
+<div class="st tk" style="gap:12px">
+<div class="card tight"><div class="kv"><span>RFC</span><span class="lock"><svg class="i s16" style="color:#8A4B00"><use href="#lock"></use></svg><b class="msk">XXXX ●●●●●● ●●●</b><button class="b t sm"><svg class="i s16"><use href="#eye"></use></svg>Mostrar</button></span></div><p class="cap">Al mostrarlo queda registro en la bitácora de accesos.</p></div>
+<div class="card tight" style="border-color:#8A4B00"><div class="kv"><span>RFC</span><span class="lock"><svg class="i s16" style="color:#8A4B00"><use href="#lock"></use></svg><b class="msk">XAXX 010101 000</b><button class="b t sm">Ocultar</button></span></div><p class="cap" style="color:#8A4B00; font-weight:600">Registrado en la bitácora · Ana · 4 nov 2026 12:40</p></div>
+<div class="card tight"><div class="kv"><span>RFC</span><span class="lock" style="color:#586380"><svg class="i s16"><use href="#lock"></use></svg>No tienes permiso para verlo</span></div></div>
+<p class="cap">RFC genérico de ejemplo, no corresponde a nadie.</p>
+</div></div>
+</div>
+<div class="g3">
+<div class="dsbox"><div class="ttl">Formulario por secciones con resumen fijo</div>
+<div class="row top tk" style="gap:12px"><div class="st fx" style="gap:6px"><div class="card tight"><b>1 · Tipo y cantidad</b><span class="bd ok" style="align-self:flex-start"><svg class="i"><use href="#check"></use></svg>Completa</span></div><div class="card tight hl"><b>2 · Datos biológicos</b><span class="cap">Especie, cepa, generación, postura</span></div><div class="card tight"><b>3 · Ubicación y caducidad</b></div></div>
+<div class="card tight" style="width:170px"><span class="ov">Resumen</span><div class="kv"><span>Tipo</span><b>Dispositivos</b></div><div class="kv"><span>Cantidad</span><b>1,200</b></div><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Faltan 2 datos</span></div></div>
+</div>
+<div class="dsbox"><div class="ttl">Asistente de exportación oficial</div>
+<div class="st tk" style="gap:10px"><div class="wiz"><b class="dn"><i>✓</i>Formato</b><b class="dn"><i>✓</i>Filtros</b><b class="on"><i>3</i>Vista previa</b></div>
+<div class="doc" style="padding:12px"><b>E-Ov2 · Resumen diario por persona · S45</b><table><tr><th>Persona</th><th>Casas trab.</th><th>Cerradas</th><th>Leídas</th></tr><tr><td>Luis</td><td>18</td><td>2</td><td>16</td></tr></table></div>
+<div class="row"><span class="fx"></span><button class="b o sm">Excel</button><button class="b p sm"><svg class="i s16"><use href="#dl"></use></svg>Descargar PDF</button></div></div>
+</div>
+<div class="dsbox"><div class="ttl">Botones de escritorio · estados y avisos</div>
+<div class="row wr tk" style="gap:8px"><button class="b p">Guardar</button><button class="b p hv">Hover</button><button class="b p pr">Presionado</button><button class="b p fo">Foco</button><button class="b dis" disabled>Deshabilitado</button><button class="b p"><span class="spin"></span>Guardando…</button><button class="b o">Contorno</button><button class="b t">Texto</button><button class="b d">Anular</button><button class="b do">Suspender ahora</button></div>
+<p class="cap">36 de alto (44 en laboratorio). Un botón deshabilitado siempre lleva su motivo al lado o en tooltip.</p>
+<div style="position:relative; height:110px" class="tk"><div class="toast" style="left:0; top:0"><svg class="i"><use href="#check"></use></svg>Lote L-2611 despachado. <a href="#">Ver transferencia</a></div><div class="toast er" style="left:0; top:56px"><svg class="i"><use href="#alert"></use></svg>No se pudo guardar. Revisa tu conexión e intenta de nuevo.</div></div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":4400}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

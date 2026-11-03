@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P18–P20 Liberar y muestra</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}
+.vr{display:flex;gap:10px;align-items:flex-start}
+.vr .k{width:28px;height:28px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex:none}
+.vr .k.g{background:#E3F5EA;color:#0B6B35}.vr .k.r{background:#FDE8E8;color:#B3141A}
+.vr .k .i{width:18px;height:18px;stroke-width:3}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="cloudok" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM9 14.5l2 2 4-4"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="vial" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"></path></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1 1 0 0 0 .9 1.5h13.2a1 1 0 0 0 .9-1.5L14 9V3M7 15h10"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:2840px; height:940px">
+
+<div class="col"><div class="lbl">P18 · Lista para liberar<span>Cinco renglones en verde</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Liberar · W-118-03</b><small>Lote W-118</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct" style="gap:10px">
+<div class="cd" style="gap:10px; border-color:#0B6B35">
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><div><p class="bb">Permiso vigente</p><p class="cap">Convenio estatal 014/2026 · vence 31/12/2026</p></div></div>
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Estás dentro de la zona autorizada</p></div>
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Lote en condiciones</p></div>
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Tu capacitación está vigente</p></div>
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Horario permitido</p></div>
+</div>
+<div class="fld"><label>Cantidad estimada</label><div class="in">2,500<span class="u">mosquitos</span></div><span class="hp">Prellenada desde el lote.</span></div>
+<div class="row"><span class="bd ok"><svg class="i"><use href="#loc"></use></svg>Ubicación ±4 m</span><button class="bd nt" style="border:0"><svg class="i"><use href="#camera"></use></svg>Foto opcional</button></div>
+</div><div class="ft"><button class="btn p"><svg class="i"><use href="#bug"></use></svg>Registrar liberación</button></div></div></div>
+
+<div class="col"><div class="lbl">P18 · Esperando GPS<span>Botón inhabilitado hasta tener precisión</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Liberar · W-118-03</b><small>Lote W-118</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct" style="gap:10px">
+<div class="cd" style="gap:8px; border-color:#0B6B35"><div class="row"><span class="bd ok"><svg class="i"><use href="#check"></use></svg>5 de 5 condiciones</span></div><p class="cap">Permiso, zona, lote, capacitación y horario en orden.</p></div>
+<div class="nt warn"><svg class="i"><use href="#loc"></use></svg><div class="tx"><p>Esperando ubicación precisa: ±18 m. Quédate quieto unos segundos.</p></div></div>
+<div class="fld"><label>Cantidad estimada</label><div class="in">2,500<span class="u">mosquitos</span></div></div>
+</div><div class="ft"><button class="btn dis" disabled><span class="spin" style="border-color:rgba(10,26,63,.2); border-top-color:#586380"></span>Esperando GPS…</button></div></div></div>
+
+<div class="col"><div class="lbl">P18 · Guardada<span>Con señal: guardada y enviada</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs ok"><svg class="i"><use href="#cloudok"></use></svg></div><p class="h1">Liberación guardada y enviada</p><p class="b">W-118-03 · 2,500 mosquitos · 10:52 · ±4 m</p><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></div>
+<div class="ft"><button class="btn p">Volver al día</button></div></div></div>
+
+<div class="col"><div class="lbl">P18 · Guardada sin señal<span>Validada con permisos del teléfono</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs ph1"><svg class="i"><use href="#phone"></use></svg></div><p class="h1">Guardada en el teléfono</p><p class="b">Validado con los permisos guardados en el teléfono, actualizados hace 2 h.</p><span class="bd nt"><svg class="i"><use href="#nosig"></use></svg>Se enviará sola con señal</span></div>
+<div class="ft"><button class="btn p">Volver al día</button></div></div></div>
+
+<div class="col"><div class="lbl">P19 · Bloqueada por capacitación<span>Mismo componente; el renglón que falla en rojo</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>No puedes liberar</b><small>W-118-03 · Zona C-07</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct" style="gap:10px">
+<div class="cd" style="gap:10px; border-color:#B3141A">
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Permiso vigente</p></div>
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Dentro de la zona autorizada</p></div>
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Lote en condiciones</p></div>
+<div class="vr" style="background:#FDE8E8; border-radius:10px; padding:8px; margin:0 -8px"><span class="k r"><svg class="i"><use href="#x"></use></svg></span><div><p class="bb" style="color:#B3141A">Capacitación vencida</p><p class="b">Venció el 5 nov. Pide a tu supervisor fecha de readiestramiento.</p></div></div>
+<div class="vr"><span class="k g"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Horario permitido</p></div>
+</div>
+<p class="cap">Desde aquí no existe forma de liberar.</p>
+</div><div class="ft"><button class="btn o">Reportar dispositivo dañado</button><button class="btn p"><svg class="i"><use href="#user"></use></svg>Reportar al supervisor</button></div></div></div>
+
+<div class="col"><div class="lbl">P20 · Muestra · Origen y método<span>Opciones configuradas por la empresa</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Muestra de Wolbachia</b><small>Contenedor M-2207 · Mz 0123</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 6</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">¿De dónde viene la muestra?</p>
+<div class="st"><button class="opt sel"><span class="ck"><svg class="i"><use href="#check"></use></svg></span><svg class="i s28"><use href="#flask"></use></svg>Trampa de adultos</button><button class="opt"><svg class="i s28"><use href="#trap"></use></svg>Ovitrampa</button><button class="opt"><svg class="i s28"><use href="#bug"></use></svg>Captura directa</button><button class="opt"><svg class="i s28"><use href="#info"></use></svg>Otro (especificar)</button></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P20 · Guardar muestra<span>Recordatorio de entregar al laboratorio</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Muestra de Wolbachia</b><small>Revisa antes de guardar</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 6 de 6</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct"><div class="cd"><div class="kv"><span>Contenedor</span><b>M-2207</b></div><div class="kv"><span>Manzana</span><b>0123</b></div><div class="kv"><span>Origen</span><b>Trampa de adultos</b></div><div class="kv"><span>Cantidad aprox.</span><b>15 mosquitos</b></div><div class="kv"><span>Foto</span><b>Lista</b></div></div>
+<div class="nt info"><svg class="i"><use href="#vial"></use></svg><div class="tx"><p>Entrega el contenedor al laboratorio al cerrar jornada.</p></div></div>
+</div><div class="ft"><button class="btn p">Guardar muestra</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2840,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

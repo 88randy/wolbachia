@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Recorrido 5 permisos y liberación bloqueada</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h6"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+</defs></svg>
+
+<div class="scr" style="border-radius:0; box-shadow:none">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="P-Indice.dc.html" aria-label="Índice de recorridos"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Permisos"><svg class="i"><use href="#file"></use></svg></a>
+<a class="nv" href="#" aria-label="Liberaciones"><svg class="i"><use href="#bug"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><a class="b t" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Recorridos</a><b style="font-size:14px">R5 · Primer tipo de permiso → suspender → bloqueo</b><span class="bd in">Paso {{stepNum}} de 5</span><span class="fx"></span><button class="b t sm" onClick="{{reset}}">Reiniciar</button><button class="usr"><span class="av">EL</span><span><b>Elena</b><small>Responsable regulatoria</small></span></button></div>
+<div class="pg" style="gap:14px; position:relative">
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div class="card" style="align-items:center; text-align:center; gap:14px; padding:60px">
+<svg class="i s48" style="color:#3772FF"><use href="#file"></use></svg>
+<h1 class="h1">Aún no hay tipos de permiso</h1>
+<p class="sub" style="max-width:520px">Un tipo define qué autoridad lo da y qué requisitos lleva. Sin un permiso vigente no se puede liberar en ninguna zona.</p>
+<button class="b p lg" onClick="{{next}}"><svg class="i s16"><use href="#plus"></use></svg>Crear el primer tipo</button>
+</div>
+</sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px">
+<div class="st" style="gap:2px"><p class="ov">W43 · nuevo tipo</p><h1 class="h1">Tipo de permiso</h1></div>
+<div class="g2"><div class="fld"><span class="l">Nombre</span><div class="in">Convenio estatal</div></div><div class="fld"><span class="l">Autoridad que lo emite</span><div class="in">[Secretaría de Salud estatal]</div></div></div>
+<div class="tw"><div class="tbar"><b class="h3 fx">Requisitos</b><button class="b t sm"><svg class="i s16"><use href="#plus"></use></svg>Agregar requisito</button></div><table class="t"><thead><tr><th>Requisito</th><th>Lleva documento</th><th>Lleva vigencia</th><th>Obligatorio</th></tr></thead><tbody>
+<tr><td>Convenio firmado</td><td>Sí</td><td>Sí</td><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td></tr>
+<tr><td>Aval de comité de ética</td><td>Sí</td><td>Sí</td><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td></tr>
+<tr><td>Acuerdo comunitario</td><td>Sí</td><td>Sí</td><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td></tr>
+</tbody></table></div>
+<div class="row"><span class="fx"></span><button class="b p lg" onClick="{{next}}">Guardar tipo y crear permiso<svg class="i s16"><use href="#right"></use></svg></button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px">
+<div class="st" style="gap:2px"><p class="ov">W45 · nuevo permiso</p><h1 class="h1">Convenio estatal 014/2026</h1></div>
+<div class="row top" style="gap:16px">
+<div class="st fx" style="gap:10px">
+<div class="g2"><div class="fld"><span class="l">Número</span><div class="in">014/2026</div></div><div class="fld"><span class="l">Vigente hasta</span><div class="in">31 dic 2026</div></div></div>
+<div class="g2"><div class="fld"><span class="l">Horario permitido</span><div class="in">06:00–11:00</div></div><div class="fld"><span class="l">Documento</span><div class="in">convenio-014-2026.pdf</div></div></div>
+<div class="kv"><span>Requisitos</span><b>3 de 3 con documento</b></div>
+<button class="b {{zoneBtn}}" style="align-self:flex-start" onClick="{{copyZone}}"><svg class="i s16"><use href="#map"></use></svg>{{zoneLabel}}</button>
+</div>
+<div class="map" style="width:380px; height:240px; flex:none"><svg class="base" viewBox="0 0 380 240" aria-hidden="true"><rect width="380" height="240" fill="#EEF1EC"></rect><path d="M0 80 H380 M0 160 H380 M126 0 V240 M252 0 V240" stroke="#fff" stroke-width="8"></path><path d="M30 30 L190 30 L190 210 L30 210z" fill="#1A5DFF" fill-opacity=".12" stroke="#1A5DFF" stroke-width="2"></path><path d="M190 30 L350 30 L350 210 L190 210z" fill="#D9620B" fill-opacity=".10" stroke="#D9620B" stroke-width="2" stroke-dasharray="6 4"></path><path d="M22 22 L358 22 L358 218 L22 218z" fill="#0B6B35" fill-opacity=".12" stroke="#0B6B35" stroke-width="3" style="opacity:{{zoneOp}}"></path></svg><div class="attr">© OpenStreetMap contributors</div></div>
+</div>
+<div class="row"><span class="fx"></span><sc-if value="{{zone}}" hint-placeholder-val="{{ false }}"><button class="b p lg" onClick="{{next}}">Guardar permiso<svg class="i s16"><use href="#right"></use></svg></button></sc-if><sc-if value="{{noZone}}" hint-placeholder-val="{{ true }}"><button class="b dis lg" disabled>Guardar permiso · falta la zona</button></sc-if></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px">
+<div class="phd"><div class="t"><div class="row"><h1 class="h1">Convenio estatal 014/2026</h1><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Vigente</span></div><p class="sub">Zona C-07 y C-08 · vigente al 31 dic 2026 · 06:00–11:00 · requisitos 3 de 3</p></div><button class="b do lg" onClick="{{openModal}}"><svg class="i s16"><use href="#pause"></use></svg>Suspender ahora</button></div>
+<div class="tw"><div class="tbar"><b class="h3 fx">Liberaciones que ampara hoy</b></div><table class="t"><tbody>
+<tr><td>4 nov 2026 07:42</td><td>D-118-0441</td><td>Luis · C-07</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td></tr>
+<tr><td>4 nov 2026 07:39</td><td>D-118-0440</td><td>Luis · C-07</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td></tr>
+</tbody></table></div>
+<sc-if value="{{modal}}" hint-placeholder-val="{{ false }}">
+<div class="scrim" style="position:fixed"></div>
+<div class="mdl" style="position:fixed; width:500px"><div class="mh"><h2 class="h2">¿Suspender el Convenio estatal 014/2026?</h2><p class="sub">Efecto inmediato: toda liberación en su zona queda bloqueada.</p></div>
+<div class="mb"><div class="kv"><span>Repartidores que se avisan</span><b>Luis y Rosa</b></div><div class="fld"><span class="l">Motivo</span><div class="in ta">La autoridad pidió pausar mientras revisa el acuerdo comunitario.</div></div>
+<div class="nt info"><svg class="i"><use href="#phone"></use></svg><p>Lo que se libere sin señal después de este momento se marcará «bloqueada al sincronizar».</p></div></div>
+<div class="mf"><button class="b t" onClick="{{closeModal}}">Cancelar</button><button class="b d" onClick="{{suspend}}"><svg class="i s16"><use href="#pause"></use></svg>Suspender ahora</button></div></div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{s4}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px">
+<div class="nt warn"><svg class="i"><use href="#pause"></use></svg><p><b>Convenio 014/2026 suspendido a las 09:05.</b> Se avisó a Luis y a Rosa.</p></div>
+<div class="row"><h1 class="h1 fx">Liberaciones · S45</h1><span class="cap">Más tarde, al sincronizar el teléfono de Luis…</span></div>
+<div class="tw"><table class="t"><thead><tr><th>Fecha</th><th>Dispositivo</th><th>Repartidor</th><th>Permiso</th><th>Estado</th><th>Condición que falló</th></tr></thead><tbody>
+<tr class="blk"><td>4 nov 2026 09:20</td><td>D-118-0453</td><td>Luis</td><td>014/2026</td><td><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Bloqueada al sincronizar</span></td><td style="color:#B3141A; font-weight:600">Permiso suspendido 09:05 por Elena</td></tr>
+<tr><td>4 nov 2026 07:42</td><td>D-118-0441</td><td>Luis</td><td>014/2026</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td><td>—</td></tr>
+</tbody></table></div>
+<div class="nt blk"><svg class="i"><use href="#ban"></use></svg><div class="tx"><p><b>¿Por qué se bloqueó?</b> Luis liberó a las 09:20 sin señal; el permiso ya estaba suspendido desde las 09:05. El servidor la rechazó y la mandó a la Bandeja de revisión.</p></div></div>
+<p class="cap">Pregunta de la prueba: «Explica con tus palabras por qué quedó bloqueada».</p>
+<a class="b o" href="P-Indice.dc.html" style="align-self:flex-start"><svg class="i s16"><use href="#left"></use></svg>Volver a los recorridos</a>
+</div>
+</sc-if>
+
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 0, zone: false, modal: false }; }
+  renderVals() {
+    const { s, zone, modal } = this.state;
+    return {
+      s0: s === 0, s1: s === 1, s2: s === 2, s3: s === 3, s4: s === 4,
+      stepNum: s + 1, zone, noZone: !zone, modal, zoneOp: zone ? 1 : 0,
+      zoneBtn: zone ? 'p' : 'o', zoneLabel: zone ? 'Zona copiada de C-07 y C-08' : 'Copiar zona de los cuadrantes C-07 y C-08',
+      next: () => this.setState({ s: this.state.s + 1 }),
+      copyZone: () => this.setState({ zone: true }),
+      openModal: () => this.setState({ modal: true }),
+      closeModal: () => this.setState({ modal: false }),
+      suspend: () => this.setState({ modal: false, s: 4 }),
+      reset: () => this.setState({ s: 0, zone: false, modal: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

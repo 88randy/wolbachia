@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Estados globales</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}
+.bar{position:absolute;left:0;right:0;bottom:0;padding:12px 16px 20px;background:#fff;border-top:1px solid #C9D0DE;display:flex;align-items:center;gap:12px;box-shadow:0 -4px 16px rgba(10,26,63,.12)}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+<symbol id="bat" viewBox="0 0 24 24"><path d="M3 8h15v8H3zM21 11v2M6 11v2"></path></symbol>
+<symbol id="disk" viewBox="0 0 24 24"><path d="M4 5h16v5H4zM4 14h16v5H4zM7 7.5h.01M7 16.5h.01"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+<symbol id="thermo" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z"></path></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></symbol>
+<symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:3240px; height:940px">
+
+<div class="col"><div class="lbl">Sin señal · formulario a medio llenar<span>Solo cambia el chip; sin ventanas emergentes</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-012</b><small>Encontrada: Bien</small></div><button class="chip l wn"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 12</button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">Condiciones del sitio</p><div class="fld"><label>Temperatura</label><div class="in"><svg class="i blue"><use href="#thermo"></use></svg>30<span class="u">°C</span></div></div><div class="fld"><label>Humedad</label><div class="in f"><svg class="i blue"><use href="#drop"></use></svg>6|<span class="u">%</span></div></div></div>
+<div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">GPS apagado · formulario<span>Aviso en línea en la pantalla que lo necesita</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar T-0457</b><small>Ovitrampa asignada a ti</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><div class="nt blk"><svg class="i"><use href="#loc"></use></svg><div class="tx"><p>La ubicación está apagada. Actívala para colocar.</p><button>Activar ubicación</button></div></div><p class="h1">¿En qué punto la colocas?</p><button class="opt" style="min-height:72px"><svg class="i s28"><use href="#pin"></use></svg>Elige tu punto</button></div>
+<div class="ft"><button class="btn dis" disabled>Esperando ubicación</button></div></div></div>
+
+<div class="col"><div class="lbl">Batería baja · P9<span>Chip en la barra; la app reduce el uso del mapa</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12</small></div><span class="chip bat" aria-label="Batería 12 por ciento"><svg class="i s20"><use href="#bat"></use></svg>12 %</span><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px"><div class="nt warn"><svg class="i"><use href="#bat"></use></svg><div class="tx"><p>Batería baja: el mapa se actualiza menos para ahorrar.</p></div></div><p class="bb">18 de 40 puntos revisados</p><div class="pt"><div class="m"><b>OV-012</b><span class="cap">Manzana 0123 · Revisar</span></div><div class="d">160 m</div></div></div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">Almacenamiento casi lleno · P9<span>Aviso fijo</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12</small></div><button class="chip off"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 64</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px"><div class="nt blk"><svg class="i"><use href="#disk"></use></svg><div class="tx"><p>Queda poco espacio. Busca señal para subir las fotos.</p></div></div><p class="bb">31 de 40 puntos revisados</p><div class="pt"><div class="m"><b>OV-030</b><span class="cap">Manzana 0131 · Revisar</span></div><div class="d">220 m</div></div></div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">Hora del teléfono incorrecta · formulario<span>Sigue; los registros quedan «en revisión», sin culpa</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-012</b><small>Condiciones</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><div class="nt warn"><svg class="i"><use href="#clock"></use></svg><div class="tx"><p>La hora del teléfono no coincide. Puedes seguir; lo de hoy quedará «en revisión».</p></div></div>
+<div class="fld"><label>Temperatura</label><div class="in"><svg class="i blue"><use href="#thermo"></use></svg>30<span class="u">°C</span></div></div><div class="fld"><label>Humedad</label><div class="in f"><svg class="i blue"><use href="#drop"></use></svg>6|<span class="u">%</span></div></div></div>
+<div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">Actualización disponible · P9<span>Aviso en la barra superior; nunca a media captura</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12</small></div><button class="chip"><svg class="i s20"><use href="#dl"></use></svg>Actualizar</button><button class="chip ok"><svg class="i s20"><use href="#check"></use></svg>0</button></div>
+<div class="ct" style="gap:10px"><div class="nt info"><svg class="i"><use href="#dl"></use></svg><div class="tx"><p>Hay una versión nueva (1.1.0, 18 MB).</p><button>Instalar al cerrar jornada</button></div></div><p class="bb">18 de 40 puntos revisados</p></div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">Actualización obligatoria<span>Pantalla completa · sin señal sigue trabajando</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs ph1"><svg class="i"><use href="#dl"></use></svg></div><p class="h1">Actualización necesaria</p><p class="b">Versión 1.2.0 · 22 MB</p>
+<div style="width:280px; height:12px; border-radius:6px; background:#DDE2EC; overflow:hidden"><div style="width:35%; height:12px; background:#1A5DFF"></div></div><p class="cap">35 % · Descargando</p>
+<div class="nt info" style="text-align:left"><svg class="i"><use href="#phone"></use></svg><div class="tx"><p>Tus 12 registros se subirán antes de instalar.</p></div></div></div>
+<div class="ft"><button class="btn t">Seguir trabajando · se instalará con señal</button></div></div></div>
+
+<div class="col"><div class="lbl">Sesión por expirar · formulario<span>Aviso un minuto antes; un toque para seguir</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-012</b><small>Encontrada: Bien</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">Condiciones del sitio</p><div class="fld"><label>Temperatura</label><div class="in"><svg class="i blue"><use href="#thermo"></use></svg>30<span class="u">°C</span></div></div><div class="fld"><label>Humedad</label><div class="in">64<span class="u">%</span></div></div></div>
+<div class="bar"><svg class="i s28" style="color:#8A4B00"><use href="#lock"></use></svg><p class="b" style="flex:1">Tu sesión se bloquea en 1 minuto.</p><button class="btn p" style="width:auto">Seguir</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3240,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

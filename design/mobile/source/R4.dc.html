@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>R4 · Colocar ovitrampa</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="people" viewBox="0 0 24 24"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18 13.5a7 7 0 0 1 4 6.5"></path></symbol>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+</defs></svg>
+
+<div style="width:360px; height:800px; position:relative">
+
+<sc-if value="{{is.home}}" hint-placeholder-val="{{true}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12 por subir</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 puntos revisados · 3 casas cerradas por volver</p>
+<p class="ov">Pendientes · Alto Riesgo primero</p>
+<div class="pt"><div class="m"><div class="row"><b>OV-013</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Colocar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">15 m</div></div>
+<button class="sim" onClick="{{go.scan}}">Simulación: sacas una ovitrampa asignada. Toca Escanear.</button>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan" onClick="{{go.scan}}"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.scan}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0; background:#1d232e"><div class="cam"></div><div class="frame"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; top:16px; left:16px"><button class="cbtn" aria-label="Cerrar" onClick="{{go.home}}"><svg class="i"><use href="#x"></use></svg></button></div>
+<div style="position:absolute; left:16px; right:16px; bottom:24px"><button class="sim" style="width:100%; justify-content:center" onClick="{{go.p1}}">Simulación: leer ovitrampa T-0457 (Asignada)</button></div></div>
+</sc-if>
+
+<sc-if value="{{is.p1}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.home}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar T-0457</b><small>Ovitrampa asignada a ti</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<p class="h1">¿En qué punto la colocas?</p>
+<p class="ov">Sugerido: el más cercano</p>
+<button class="opt sel" style="min-height:88px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span><svg class="i s28"><use href="#pin"></use></svg><span style="flex:1"><b style="display:block">OV-013</b><span class="cap">Manzana 0123 · a 15 m</span></span></button>
+<button class="opt"><svg class="i s28"><use href="#pin"></use></svg><span style="flex:1">Elegir otro de mis puntos</span><svg class="i"><use href="#right"></use></svg></button>
+<p class="cap">Ubicación ±6 m · se guarda sola.</p>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.p2}}">Continuar</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p2}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.p1}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Mz 0123 · Intento 1</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:10px">
+<p class="h2">Habla con el morador</p>
+<div class="script">«Buenos días, soy del programa de control del dengue. ¿Me permite dejar una trampa para huevos de mosquito? La revisaremos una vez por semana durante al menos un año.»</div>
+<p class="ov">¿Qué pasó?</p>
+<div class="g2">
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#check"></use></svg>Aceptó</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#people"></use></svg>Solo hay menores</button>
+<button class="opt v" style="min-height:80px" onClick="{{go.fail}}"><svg class="i s28"><use href="#ban"></use></svg>No acepta</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#home"></use></svg>Casa deshabitada</button>
+<button class="opt full" style="min-height:56px"><svg class="i s28"><use href="#dots"></use></svg>Otro (especificar)</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.fail}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="ct c" style="gap:16px">
+<div class="rs ph1"><svg class="i"><use href="#user"></use></svg></div>
+<p class="h1">Intento guardado</p>
+<p class="b">Avisamos al promotor comunitario de esta vivienda.</p>
+<div class="nt info" style="text-align:left"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Prueba en la vivienda de al lado, en la misma cara de la manzana.</p></div></div>
+<span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Guardado en el teléfono</span>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.p2b}}">Probar en otra vivienda</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p2b}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.fail}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Mz 0123 · Intento 2</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:10px">
+<span class="bd nt" style="align-self:flex-start"><svg class="i"><use href="#ban"></use></svg>Intento 1: No acepta</span>
+<p class="h2">Habla con el morador</p>
+<div class="script">«Buenos días, soy del programa de control del dengue. ¿Me permite dejar una trampa para huevos de mosquito? La revisaremos una vez por semana durante al menos un año.»</div>
+<p class="ov">¿Qué pasó?</p>
+<div class="g2">
+<button class="opt v" style="min-height:80px" onClick="{{go.p3}}"><svg class="i s28"><use href="#check"></use></svg>Aceptó</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#people"></use></svg>Solo hay menores</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#ban"></use></svg>No acepta</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#home"></use></svg>Casa deshabitada</button>
+<button class="opt full" style="min-height:56px"><svg class="i s28"><use href="#dots"></use></svg>Otro (especificar)</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p3}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.p2b}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Morador aceptó</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:8px; overflow:auto">
+<p class="h2">Prepara y coloca</p>
+<sc-for list="{{items}}" as="it" hint-placeholder-count="7">
+<button class="chk" style="min-height:52px; text-align:left" onClick="{{it.tog}}"><span class="{{it.cls}}"><svg class="i"><use href="#check"></use></svg></span><span>{{it.label}}</span></button>
+</sc-for>
+<p class="s" style="font-weight:700; color:#0A1A3F; margin-top:4px">Tipo de papeleta</p>
+<div class="g3"><button class="opt v sel" style="min-height:60px; font-size:15px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Nueva</button><button class="opt v" style="min-height:60px; font-size:15px">Reciclada 1.ª vez</button><button class="opt v" style="min-height:60px; font-size:15px">Reciclada 2.ª vez</button></div>
+</div>
+<div class="ft">
+<sc-if value="{{allOn}}" hint-placeholder-val="{{false}}"><button class="btn p" onClick="{{go.p4}}">Continuar</button></sc-if>
+<sc-if value="{{notAll}}" hint-placeholder-val="{{true}}"><p class="cap" style="text-align:center">Faltan {{left}} puntos por marcar.</p><button class="btn dis" disabled>Continuar</button></sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p4}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.p3}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Foto y marca</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 4 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></div>
+<div class="ct">
+<sc-if value="{{noPhoto}}" hint-placeholder-val="{{true}}"><button class="photo empty" style="width:100%" onClick="{{takePhoto}}"><svg class="i s32"><use href="#camera"></use></svg>Tomar foto de la ovitrampa</button></sc-if>
+<sc-if value="{{photo}}" hint-placeholder-val="{{false}}"><div class="row"><span class="thumb"><svg class="i"><use href="#trap"></use></svg></span><span class="b" style="flex:1">Foto de la ovitrampa colocada</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div></sc-if>
+<button class="chk" style="text-align:left" onClick="{{togMark}}"><span class="{{markCls}}"><svg class="i"><use href="#check"></use></svg></span><span>Marqué la fachada con «OV» y el folio</span></button>
+<div class="fold"><span>Datos opcionales</span><svg class="i"><use href="#down"></use></svg></div>
+<p class="cap">Dirección, tipo de sitio y referencia del lugar. Nunca el nombre del morador.</p>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.p5}}">Continuar</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p5}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.p4}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Colocar en OV-013</b><small>Revisa antes de guardar</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 5 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct">
+<div class="cd">
+<div class="kv"><span>Punto</span><b>OV-013 · Mz 0123</b></div>
+<div class="kv"><span>Ovitrampa</span><b>T-0457</b></div>
+<div class="kv"><span>Papeleta</span><b>Nueva</b></div>
+<div class="kv"><span>Foto</span><b>Lista</b></div>
+<div class="kv"><span>Intentos</span><b>2 (1 no aceptó)</b></div>
+</div>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.ok}}">Guardar colocación</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.ok}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0"><div class="flashg"></div>
+<div class="ct c" style="gap:16px; position:relative">
+<div class="rs ok"><svg class="i"><use href="#check"></use></svg></div>
+<p class="h1">Colocación guardada</p>
+<p class="b">T-0457 quedó activa en OV-013. Guardado en el teléfono.</p>
+<a class="sim" href="Proto.dc.html">Fin del recorrido · Volver a recorridos</a>
+</div></div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const s = st.s || 'home';
+    const keys = ['home','scan','p1','p2','fail','p2b','p3','p4','p5','ok'];
+    const is = {}; const go = {};
+    keys.forEach((k) => { is[k] = s === k; go[k] = () => this.setState({ s: k }); });
+    const labels = ['Bote limpio','Agua limpia a ¾, sin cloro ni larvicida','La papeleta cubre todo el interior','A la sombra, entre plantas','Hasta 1.5 m de altura','Lejos de otros recipientes con agua','Fuera del alcance de niños y animales'];
+    const on = st.on || [];
+    const items = labels.map((label, i) => ({ label, cls: on[i] ? 'box on' : 'box', tog: () => { const n = on.slice(); n[i] = !n[i]; this.setState({ on: n }); } }));
+    const count = labels.filter((_, i) => on[i]).length;
+    return {
+      is, go, items,
+      allOn: count === labels.length, notAll: count < labels.length, left: labels.length - count,
+      photo: !!st.photo, noPhoto: !st.photo, takePhoto: () => this.setState({ photo: true }),
+      markCls: st.mark ? 'box on' : 'box', togMark: () => this.setState({ mark: !st.mark })
+    };
+  }
+}
+</script>
+</body>
+</html>

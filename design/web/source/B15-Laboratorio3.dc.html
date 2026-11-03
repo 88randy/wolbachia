@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W39, W41 y W42 Laboratorio</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1 1 0 0 0 .9 1.5h13.2a1 1 0 0 0 .9-1.5L14 9V3M7 15h10"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="egg" viewBox="0 0 24 24"><path d="M12 3c3.5 0 6 5 6 10a6 6 0 0 1-12 0c0-5 2.5-10 6-10z"></path></symbol>
+<symbol id="vial" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+<symbol id="send" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></symbol>
+<symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+<symbol id="ul" viewBox="0 0 24 24"><path d="M12 20V9M7 14l5-5 5 5M4 4h16"></path></symbol>
+<symbol id="file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h6"></path></symbol>
+<symbol id="home2" viewBox="0 0 24 24"><path d="M4 21V10l8-6 8 6v11zM10 21v-6h4v6"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:4000px; height:960px">
+
+<div class="col"><div class="lbl">W39 · Bajas de material biológico<span>Seleccionar bolsas o lotes, motivo, fecha, responsable y comprobante RPBI</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#refresh"></use></svg>Recuentos<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#minus"></use></svg>Bajas de material biológico</a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#file"></use></svg>Solicitudes de material</a>
+<a class="nv" href="#"><svg class="i"><use href="#drop"></use></svg>Estudios larvarios</a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Laboratorio · Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Bajas de material biológico</h1><p class="sub">Bolsas ya contadas y validadas que pueden darse de baja</p></div></div>
+<div class="tw">
+<div class="tbar sel"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span><b style="font-size:13px">3 seleccionadas</b><span class="fx"></span><span class="cap">Escanea o marca las bolsas</span></div>
+<table class="t"><thead><tr><th style="width:36px"><span class="cb"></span></th><th>Bolsa o lote</th><th>Folio</th><th>Estado de conteo</th><th>Envío UIEB</th></tr></thead><tbody>
+<tr class="sel"><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td><td><a href="#">B-4466</a></td><td>OV-006</td><td><span class="bd ok">Validada</span></td><td>No aplica</td></tr>
+<tr class="sel"><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td><td><a href="#">B-4469</a></td><td>OV-009</td><td><span class="bd nt">Rechazada</span></td><td>No aplica</td></tr>
+<tr class="sel"><td><span class="cb on"><svg class="i"><use href="#check"></use></svg></span></td><td><a href="#">W-117</a></td><td>Lote · 300</td><td><span class="bd cr">Bloqueado</span></td><td>—</td></tr>
+<tr class="blk"><td><span class="cb"></span></td><td><a href="#">B-4471</a></td><td>OV-010</td><td><span class="bd ok">Validada</span></td><td><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>En envío E-0012 · no se puede dar de baja</span></td></tr>
+</tbody></table></div>
+</div>
+<div class="dp" style="width:400px">
+<div class="dh"><b class="h2">Dar de baja 3 elementos</b></div>
+<div class="db" style="gap:10px">
+<div class="fld"><span class="l">Motivo <span class="req">*</span></span><div class="in">Residuo biológico tras conteo<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Fecha <span class="req">*</span></span><div class="in">4 nov 2026</div></div><div class="fld"><span class="l">Responsable</span><div class="in dis">Marco</div></div></div>
+<div class="fld"><span class="l">Comprobante de manejo RPBI <span class="req">*</span></span><div class="card tight" style="flex-direction:row; align-items:center"><span style="width:36px; height:44px; border:1px solid #C9D0DE; border-radius:4px; display:flex; align-items:center; justify-content:center; color:#B3141A; font-size:10px; font-weight:800">PDF</span><div class="st fx" style="gap:0"><b style="font-size:13px">manifiesto-rpbi-1104.pdf</b><span class="cap">Gestor autorizado · folio [n]</span></div><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Listo</span></div></div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><p>La baja no borra: cada bolsa queda «Dada de baja» con su comprobante en el historial.</p></div>
+<div class="row" style="margin-top:auto"><span class="fx"></span><button class="b d lg">Dar de baja 3</button></div>
+</div></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W41 · Solicitudes de material por terceros<span>Institución, material y para qué; la entrega queda bloqueada hasta registrar la notificación a CENAPRECE</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#minus"></use></svg>Bajas de material biológico</a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#file"></use></svg>Solicitudes de material<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#drop"></use></svg>Estudios larvarios</a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Laboratorio · Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="crumb"><a href="#">Solicitudes de material</a><span>›</span><span>S-0004</span></div>
+<div class="phd"><div class="t"><div class="row"><h1 class="h1">S-0004 · [Institución académica]</h1><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Por entregar</span></div><p class="sub">Solicitó: [nombre del contacto institucional] · recibida 30 oct 2026</p></div></div>
+<div class="wiz"><b class="dn"><i>✓</i>Solicitud registrada</b><b class="on"><i>2</i>Notificación a CENAPRECE</b><b><i>3</i>Entrega</b></div>
+<div class="row top" style="gap:16px">
+<div class="card fx" style="gap:8px"><b class="h3">Qué pide y para qué</b>
+<div class="kv"><span>Material</span><b>Huevos · lote H-041 · F2</b></div>
+<div class="kv"><span>Cantidad</span><b>[n]</b></div>
+<div class="kv"><span>Para qué</span><b>Bioensayo de laboratorio</b></div>
+<div class="kv"><span>Documento de solicitud</span><b><a href="#">oficio-S0004.pdf</a></b></div>
+</div>
+<div class="card" style="width:400px; gap:10px"><b class="h3">Notificación a CENAPRECE</b>
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Fecha <span class="req">*</span></span><div class="in f">|</div></div><div class="fld"><span class="l">Folio u oficio</span><div class="in"></div></div></div>
+<div class="drop" style="padding:12px"><svg class="i s24"><use href="#ul"></use></svg><span>Sube el documento de notificación</span></div>
+<button class="b p" style="align-self:flex-end">Registrar notificación</button>
+</div>
+</div>
+<div class="nt blk"><svg class="i"><use href="#ban"></use></svg><div class="tx"><p><b>Entrega bloqueada.</b> Falta registrar la notificación a CENAPRECE (fecha y documento). La registra laboratorio o regulatorio.</p></div></div>
+<div class="row"><span class="fx"></span><button class="b dis" disabled>Registrar entrega · falta notificación</button></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W42 · Estudios larvarios · EA-1 (módulo opcional)<span>Captura de encuesta, índices calculados y bandas oficiales del ICP</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#minus"></use></svg>Bajas de material biológico</a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#file"></use></svg>Solicitudes de material<span class="ct">1</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#drop"></use></svg>Estudios larvarios</a>
+<div class="foot">Módulo opcional · activo</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Laboratorio · Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="row"><div class="st fx" style="gap:2px"><h1 class="h1">Estudio larvario · C-07 · S45</h1><p class="sub">Formatos EA-1 (encuesta) y EA-2 (verificación)</p></div><div class="seg"><b class="on">EA-1 · Encuesta</b><b>EA-2 · Verificación</b></div></div>
+<div class="row top" style="gap:16px">
+<div class="card" style="width:420px; gap:10px"><b class="h3">Captura</b>
+<div class="g2" style="gap:10px">
+<div class="fld"><span class="l">Viviendas exploradas</span><div class="in">100</div></div>
+<div class="fld"><span class="l">Viviendas positivas</span><div class="in">4</div></div>
+<div class="fld"><span class="l">Recipientes con agua</span><div class="in">320</div></div>
+<div class="fld"><span class="l">Recipientes positivos</span><div class="in">9</div></div>
+<div class="fld"><span class="l">Recipientes con pupas</span><div class="in">3</div></div>
+<div class="fld"><span class="l">Número de pupas</span><div class="in f">26|</div></div>
+</div>
+<p class="cap">Valores de muestra.</p>
+</div>
+<div class="st fx" style="gap:10px">
+<div class="g3" style="gap:10px">
+<div class="kpi"><span class="k">ICP · casas positivas</span><span class="v">4.0 %</span><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#alert"></use></svg>Alarma</span><span class="cap">4 ÷ 100 × 100</span></div>
+<div class="kpi"><span class="k">IRP · recipientes positivos</span><span class="v">2.8 %</span><span class="cap">9 ÷ 320 × 100</span></div>
+<div class="kpi"><span class="k">Índice de Breteau</span><span class="v">9</span><span class="cap">9 recipientes positivos ÷ 100 casas × 100</span></div>
+<div class="kpi"><span class="k">Índice de Pupas</span><span class="v" style="text-decoration:none; color:#586380">[—]</span><span class="cap">Fórmula según guía CENAPRECE 2024 · por cargar</span></div>
+<div class="kpi"><span class="k">IPP</span><span class="v" style="text-decoration:none; color:#586380">[—]</span><span class="cap">Fórmula por confirmar</span></div>
+<div class="kpi"><span class="k">ICPP</span><span class="v" style="text-decoration:none; color:#586380">[—]</span><span class="cap">Fórmula por confirmar</span></div>
+</div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><div class="tx"><p><b>Cómo se calcula el Índice de Pupas</b></p><p>[Texto tomado de la guía CENAPRECE 2024. Va aquí, junto al índice, para que quien lo lea sepa de dónde sale.]</p></div></div>
+<div class="card tight"><span class="ov">Bandas oficiales del ICP</span>
+<div class="row" style="gap:4px"><span class="bd ok" style="flex:1; justify-content:center">Óptimo · menos de 1 %</span><span class="bd br" style="flex:1; justify-content:center">Bueno · 1 a 3 %</span><span class="bd wn" style="flex:1; justify-content:center; box-shadow:inset 0 0 0 2px #8A4B00">▲ Alarma · 3 a 5 % · aquí</span><span class="bd cr" style="flex:1; justify-content:center">Emergencia · más de 5 %</span></div></div>
+</div>
+</div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4000,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

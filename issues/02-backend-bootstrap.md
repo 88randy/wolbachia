@@ -2,38 +2,41 @@ TITLE: [Backend] Bootstrap Django project, Docker, CI and multi-organization fou
 LABELS: backend,priority:high
 
 ## 1. Context
-Single PostgreSQL database for now, but data must be separable by organization (company) without mixing, in case other organizations join.
+One PostgreSQL database, but data must stay separated by organization (company) in case other organizations join. Mobile and web share this backend (see `docs/api-conventions.md`, `docs/web-api-needs.md`).
 
 ## 2. Goal
-A dockerized Django + DRF project with an `organizations` app, row-level isolation helpers, and CI running on GitHub Actions.
+Dockerized Django + DRF project with organizations, memberships/roles, row-level isolation, OpenAPI generation and CI.
 
 ## 3. Scope / Out of scope
-**In:** `backend/` project, settings by env vars, Docker Compose (web, db, redis, celery), `organizations` app, base model mixins, queryset scoping, DRF permission, pytest + coverage in CI, ruff.
-**Out:** deploy to DigitalOcean (separate issue), auth flows (#accounts issue).
+**In:** `backend/` project, env-based settings, Docker Compose (web, db, redis, celery), apps `organizations` and `accounts` (models only), base mixins, org-scoped querysets, DRF permissions, drf-spectacular at `/api/v1/schema/`, pytest + coverage, ruff, GitHub Actions with `paths: backend/**`.
+**Out:** auth flows (#4), deploy to DigitalOcean (#18), role × action matrix editor (web W65).
 
 ## 4. Data model
-- `Organization`: id (uuid), name, slug (unique), is_active, created_at.
+- `Organization`: id uuid, name, slug unique, country, timezone, languages, logo, is_active.
 - `OrgScopedModel` (abstract): organization FK (required, indexed), created_at, created_by.
-- `Membership`: user FK, organization FK, role (field_worker | supervisor | community_promoter | entomologist | admin), is_active. Unique (user, organization).
+- `VoidableMixin`: voided_at, voided_by, void_reason (no physical delete).
+- `Membership`: user, organization, profiles (multi), scope (centers/quadrants), is_active. Unique (user, organization).
+- `Profile` (OrgScoped, data not code): slug, name, permission codes. Seeded: field_worker, supervisor, entomologist, community_promoter, admin. Coordinator, warehouse, regulatory and government read-only are added as data if the client confirms them (`docs/decisions.md`); no code change needed.
 
 ## 5. Contract (API / interfaces)
-- `OrgScopedQuerySet.for_org(org)`; default manager never returns rows without an org filter in API views.
-- DRF: `IsMemberOfOrganization` permission + `OrgScopedViewSetMixin` that resolves the active org from the authenticated membership.
-- Health endpoint: `GET /api/health/` → `{"status":"ok"}`.
+- `OrgScopedQuerySet.for_org(org)`, `OrgScopedViewSetMixin` resolving the active org per `docs/api-conventions.md`.
+- `GET /api/v1/health/` → `{"status":"ok"}`.
+- `GET /api/v1/me/` → user, organization, profiles, `permissions[]`, scope.
 
 ## 6. Behavior
-Every business table inherits `OrgScopedModel`. A request can only read/write rows of the user's active organization.
+Every business table inherits `OrgScopedModel` (+ `VoidableMixin` where it applies). Objects of another org return `404`.
 
 ## 7. Edge cases & errors
-- User with no active membership → 403.
-- User in more than one organization → must send `X-Organization` header; otherwise 400.
-- Attempt to create a row for another org → 403, logged.
+- No active membership → 403.
+- More than one membership without `X-Organization` → 400.
+- `organization_id` in body is ignored.
 
 ## 8. Acceptance criteria
-- [ ] `docker compose up` starts the stack locally.
-- [ ] CI runs lint + tests on every PR.
-- [ ] Tests prove a user of org A cannot list, read or write data of org B.
-- [ ] No secrets in repo; `.env.example` documented.
+- [ ] `docker compose up` runs the stack.
+- [ ] CI runs lint + tests + schema generation on backend changes.
+- [ ] Tests prove org A cannot list/read/write org B data (404).
+- [ ] No `DELETE` routes on business resources (test).
+- [ ] `.env.example` documented; no secrets in repo.
 
 ## Notes
-- Conscious deviation from the PYROBYTE default (DB per tenant), decided by the client: one DB, row-level isolation. Revisit if an organization requires physical separation.
+Conscious deviation from the PYROBYTE default (DB per tenant), decided by the client.

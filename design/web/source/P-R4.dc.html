@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Recorrido 4 envío a UIEB</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="send" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+</defs></svg>
+
+<div class="scr" style="border-radius:0; box-shadow:none">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="P-Indice.dc.html" aria-label="Índice de recorridos"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Envíos a UIEB"><svg class="i"><use href="#send"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><a class="b t" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Recorridos</a><b style="font-size:14px">R4 · Envío a UIEB con RFC vacío</b><span class="bd in">Paso {{stepNum}} de 3</span><span class="fx"></span><button class="b t sm" onClick="{{reset}}">Reiniciar</button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="pg" style="gap:14px">
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div class="st" style="gap:14px">
+<div class="st" style="gap:2px"><p class="ov">W38 · Nuevo envío E-0012</p><h1 class="h1">Arma el envío a la UIEB</h1></div>
+<div class="g4"><div class="fld"><span class="l">UIEB destino</span><div class="in">[UIEB estatal]</div></div><div class="fld"><span class="l">Solicitante</span><div class="in">Sofía</div></div><div class="fld"><span class="l">Responsable y entrega</span><div class="in">Marco</div></div><div class="fld"><span class="l">Diagnóstico</span><div class="in">Eclosión de huevos</div></div></div>
+<button class="scanf f" style="width:100%; font-family:inherit; cursor:pointer; height:60px" onClick="{{scan}}"><svg class="i s24"><use href="#scan"></use></svg><span class="fx" style="text-align:left">Escanea las bolsas · clic para simular · {{n}} de 4</span></button>
+<div class="tw"><table class="t"><tbody><sc-for list="{{bags}}" as="b" hint-placeholder-count="2"><tr><td><svg class="i s16" style="vertical-align:-3px"><use href="#bag"></use></svg> <b>{{b.code}}</b></td><td>{{b.folio}}</td><td class="n">{{b.eggs}} huevos</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Incluida</span></td></tr></sc-for></tbody></table></div>
+<div class="row"><span class="fx"></span><sc-if value="{{ready}}" hint-placeholder-val="{{ false }}"><button class="b p lg" onClick="{{preview}}">Ver vista previa del Anexo VI<svg class="i s16"><use href="#right"></use></svg></button></sc-if><sc-if value="{{notReady}}" hint-placeholder-val="{{ true }}"><button class="b dis lg" disabled>Escanea al menos una bolsa</button></sc-if></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:12px">
+<div class="row"><h1 class="h1 fx">Vista previa · Anexo VI</h1><button class="b p lg" onClick="{{register}}"><svg class="i s16"><use href="#send"></use></svg>Registrar envío</button></div>
+<div class="doc">
+<b style="font-size:13px">Anexo VI · Relación de muestras enviadas a la UIEB · E-0012 · 4 nov 2026</b>
+<table><thead><tr><th>Folio UIEB</th><th>Folio plataforma</th><th>Municipio</th><th>Localidad</th><th>Fecha de colecta</th><th>RFC del colector</th><th>Huevos totales</th><th>Larvas emergidas</th><th>% eclosión</th><th>Observaciones</th></tr></thead><tbody>
+<sc-for list="{{bags}}" as="b" hint-placeholder-count="2"><tr><td></td><td>{{b.code}} · {{b.folio}}</td><td>[Municipio]</td><td>[Localidad]</td><td>3 nov 2026</td><td class="emp">Vacío*</td><td>{{b.eggs}}</td><td></td><td></td><td></td></tr></sc-for>
+</tbody></table>
+<p style="margin:0; color:#8A4B00; font-weight:700">* Requiere autorización del responsable regulatorio.</p>
+</div>
+<div class="row" style="gap:12px"><div class="nt blk fx"><svg class="i"><use href="#lock"></use></svg><p><b>El RFC sale vacío</b> porque no hay una transferencia de datos autorizada para esta UIEB (W59). Puedes enviar así o pedir la autorización.</p></div>
+<sc-if value="{{notAsked}}" hint-placeholder-val="{{ true }}"><button class="b o lg" onClick="{{ask}}">Pedir autorización a Elena</button></sc-if>
+<sc-if value="{{asked}}" hint-placeholder-val="{{ false }}"><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Pedida a Elena</span></sc-if></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px; align-items:center; text-align:center; padding-top:60px">
+<svg class="i s48" style="color:#0B6B35"><use href="#check"></use></svg>
+<h1 class="h1">Envío E-0012 registrado</h1>
+<div class="row"><span class="bd ok">1 · Enviado</span><svg class="i s16"><use href="#right"></use></svg><span class="bd nt">2 · Recibido por la UIEB</span><svg class="i s16"><use href="#right"></use></svg><span class="bd nt">3 · Resultados</span></div>
+<p class="sub">{{askNote}} Si la UIEB no confirma en el plazo del parámetro, te llega una alerta.</p>
+<p class="cap">Pregunta de la prueba: «¿Por qué la columna de RFC salió vacía?»</p>
+<a class="b o" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Volver a los recorridos</a>
+</div>
+</sc-if>
+
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 0, n: 0, asked: false }; }
+  renderVals() {
+    const { s, n, asked } = this.state;
+    const all = [
+      { code: 'B-4471', folio: 'OV-010', eggs: 512 },
+      { code: 'B-4474', folio: 'OV-013', eggs: 288 },
+      { code: 'B-4480', folio: 'OV-020', eggs: 146 },
+      { code: 'B-4483', folio: 'OV-023', eggs: 0 }
+    ];
+    return {
+      s0: s === 0, s1: s === 1, s2: s === 2, stepNum: s + 1,
+      n, bags: all.slice(0, n), ready: n > 0, notReady: n === 0,
+      asked, notAsked: !asked,
+      askNote: asked ? 'Elena recibió tu solicitud; si la autoriza, la columna de RFC se llena en el Anexo de este envío.' : 'Salió sin RFC.',
+      scan: () => { if (this.state.n < 4) this.setState({ n: this.state.n + 1 }); },
+      preview: () => this.setState({ s: 1 }),
+      ask: () => this.setState({ asked: true }),
+      register: () => this.setState({ s: 2 }),
+      reset: () => this.setState({ s: 0, n: 0, asked: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

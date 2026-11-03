@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Modo oscuro y texto 130 %</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:1640px; height:940px">
+
+<div class="col"><div class="lbl">P9 · Modo oscuro<span>Opcional para noche o interiores; mismos tokens</span></div>
+<div class="ph dark"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12 por subir</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 puntos revisados · 3 casas cerradas por volver</p>
+<div class="tg"><b class="on"><svg class="i s20"><use href="#list"></use></svg>Lista</b><b><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div>
+<p class="ov">Pendientes · Alto Riesgo primero</p>
+<div class="pt"><div class="m"><div class="row"><b>OV-012</b><span class="bd ar" style="background:#F2F5FB; color:#0A1A3F">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">160 m</div></div>
+<p class="ov">Casas cerradas por volver hoy</p>
+<div class="pt"><div class="m"><b>OV-011</b><span class="cap">Mz 0123 · cerrada 10:40</span><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver</span></div><div class="d">350 m</div></div>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Modo oscuro · condiciones</div>
+<div class="ph dark"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Encontrada: Bien</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">Condiciones del sitio</p>
+<div class="fld"><label>Temperatura</label><div class="in">29<span class="u">°C</span></div></div>
+<div class="fld"><label>Humedad</label><div class="in f">68<span class="u">%</span></div></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P9 · Texto al 130 %<span>Tarjetas crecen en alto; nada se corta</span></div>
+<div class="ph x130"><div class="tb"><div class="tt"><b>C-07 · Sem. 45</b><small>Desde 08:12</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 revisados · 3 casas cerradas por volver</p>
+<div class="tg"><b class="on"><svg class="i s20"><use href="#list"></use></svg>Lista</b><b><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div>
+<div class="pt"><div class="m"><b>OV-012</b><span class="bd ar" style="align-self:flex-start">Alto Riesgo</span><span class="cap">Manzana 0123 · Revisar</span></div><div class="d">160 m</div></div>
+<div class="pt"><div class="m"><b>OV-011</b><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada</span></div><div class="d">350 m</div></div>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Texto al 130 % · paso 1<span>Opciones en una columna; la lista se desplaza</span></div>
+<div class="ph x130"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Lectura 12</small></div></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:8px"><p class="h1">¿Cómo la encontraste?</p>
+<button class="opt hero"><svg class="i s32"><use href="#check"></use></svg><span style="flex:1; font-weight:700">Bien</span><svg class="i"><use href="#right"></use></svg></button>
+<button class="opt"><svg class="i s28"><use href="#door"></use></svg>Casa cerrada</button>
+<button class="opt"><svg class="i s28"><use href="#user"></use></svg>Morador renuente</button>
+<button class="opt"><svg class="i s28"><use href="#search"></use></svg>No está</button>
+<button class="opt"><svg class="i s28"><use href="#trap"></use></svg>Volteada</button>
+<p class="cap">Desliza para ver: Sin agua, Sin papeleta, Destruida, Otro.</p>
+</div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1640,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

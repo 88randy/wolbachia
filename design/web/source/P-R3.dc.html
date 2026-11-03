@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Recorrido 3 laboratorio recibe y cuenta</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="egg" viewBox="0 0 24 24"><path d="M12 3c3.5 0 6 5 6 10a6 6 0 0 1-12 0c0-5 2.5-10 6-10z"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+</defs></svg>
+
+<div class="scr" style="border-radius:0; box-shadow:none">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="P-Indice.dc.html" aria-label="Índice de recorridos"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv" href="#" aria-label="Recepción de bolsas"><svg class="i"><use href="#scan"></use></svg></a>
+<a class="nv" href="#" aria-label="Conteo y validación"><svg class="i"><use href="#egg"></use></svg></a>
+<a class="nv" href="#" aria-label="Recuentos"><svg class="i"><use href="#refresh"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><a class="b t" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Recorridos</a><b style="font-size:14px">R3 · Laboratorio recibe 20 bolsas y cuenta</b><span class="fx"></span><button class="b t sm" onClick="{{reset}}">Reiniciar</button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="pg" style="gap:14px">
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div class="st" style="gap:14px">
+<div class="row"><div class="st fx" style="gap:2px"><p class="ov">Paso 1 de 3 · W34</p><h1 class="h1">Recepción de bolsas · Centro Norte</h1></div><div class="card tight" style="flex-direction:row; align-items:center; gap:12px"><span class="ov">Recibidas</span><b style="font-size:30px">{{n}} de 20</b></div></div>
+<button class="scanf f" style="height:64px; font-size:16px; width:100%; font-family:inherit; cursor:pointer" onClick="{{scan}}"><svg class="i s32"><use href="#scan"></use></svg><span class="fx" style="text-align:left">Lector listo · haz clic para simular una lectura</span><span class="cap" style="color:#0044E6">Última: {{last}}</span></button>
+<div class="tw"><table class="t"><thead><tr><th>Bolsa</th><th>Folio</th><th class="n">Lectura</th><th>Colector</th><th>Estado</th></tr></thead><tbody>
+<sc-for list="{{recent}}" as="r" hint-placeholder-count="3"><tr><td><b>{{r.code}}</b></td><td>{{r.folio}}</td><td class="n">12</td><td>Luis</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Recibida</span></td></tr></sc-for>
+</tbody></table></div>
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}"><div class="row"><div class="nt ok fx"><svg class="i"><use href="#check"></use></svg><p>Llegaron las 20 bolsas esperadas.</p></div><button class="b p lg" onClick="{{toCount}}">Cerrar recepción e ir a conteo<svg class="i s16"><use href="#right"></use></svg></button></div></sc-if>
+<sc-if value="{{notDone}}" hint-placeholder-val="{{ true }}"><p class="cap">El lector «escribe» el código y manda Enter; el foco nunca sale del campo. <button class="b t sm" onClick="{{scanAll}}">Simular las que faltan</button></p></sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px">
+<div class="row"><div class="st fx" style="gap:2px"><p class="ov">Paso 2 de 3 · W35 · bolsa {{bagNum}} de 20</p><h1 class="h1">{{bag.code}} · {{bag.folio}} · lectura 12</h1><p class="sub">{{bag.where}}</p></div></div>
+<div class="g3" style="grid-template-columns:200px minmax(0,1fr) 260px">
+<div class="card" style="background:#F4F6FA"><span class="ov">Huevos en campo</span><b style="font-size:40px; color:#3A4664">{{bag.field}}</b></div>
+<div class="card hl"><span style="font-size:14px; font-weight:800">Huevos de laboratorio</span><div class="in big f" style="height:72px; font-size:42px">{{bag.lab}}|</div></div>
+<div class="card"><span class="ov">Diferencia</span><b style="font-size:28px">{{bag.diff}}</b><sc-if value="{{bag.ok}}" hint-placeholder-val="{{ true }}"><span class="bd ok" style="align-self:flex-start"><svg class="i"><use href="#check"></use></svg>Dentro del parámetro</span></sc-if><sc-if value="{{bag.high}}" hint-placeholder-val="{{ false }}"><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#refresh"></use></svg>Diferencia alta · irá a recuento</span></sc-if></div>
+</div>
+<div class="row"><button class="b p lg" style="height:52px" onClick="{{validate}}"><svg class="i"><use href="#check"></use></svg>Validar y siguiente<kbd style="margin-left:6px; background:rgba(255,255,255,.2); color:#fff; border-color:rgba(255,255,255,.4)">Enter</kbd></button><span class="cap">Límite de ejemplo: 10 %</span></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px">
+<p class="ov">Paso 3 de 3 · resultado</p>
+<div class="nt warn"><svg class="i s24"><use href="#refresh"></use></svg><div class="tx"><p><b>B-4468 · OV-008 pasó a recuento.</b> Campo 300, laboratorio 210: diferencia de 30 %. No entra a índices hasta que otra persona la recuente (W36).</p></div></div>
+<div class="tw"><table class="t"><thead><tr><th>Bolsa</th><th>Folio</th><th class="n">Campo</th><th class="n">Laboratorio</th><th>Resultado</th></tr></thead><tbody>
+<tr><td><b>B-4471</b></td><td>OV-010</td><td class="n">530</td><td class="n">512</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Validada · entra a índices</span></td></tr>
+<tr class="wn"><td><b>B-4468</b></td><td>OV-008</td><td class="n">300</td><td class="n">210</td><td><span class="bd wn"><svg class="i"><use href="#refresh"></use></svg>A recuento</span></td></tr>
+</tbody></table></div>
+<p class="cap">Quedan 18 bolsas en la cola; el prototipo termina aquí.</p>
+<a class="b o" href="P-Indice.dc.html" style="align-self:flex-start"><svg class="i s16"><use href="#left"></use></svg>Volver a los recorridos</a>
+</div>
+</sc-if>
+
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 0, n: 0, b: 0 }; }
+  renderVals() {
+    const { s, n, b } = this.state;
+    const code = (i) => 'B-' + (4460 + i);
+    const folio = (i) => 'OV-' + String(i).padStart(3, '0');
+    const recent = [];
+    for (let i = n; i > Math.max(0, n - 5); i--) recent.push({ code: code(i), folio: folio(i) });
+    const bags = [
+      { code: 'B-4471', folio: 'OV-010', where: 'Mz 0123 · C-07 · colectó Luis el 3 nov 2026 · 29 °C · 68 %', field: 530, lab: 512, diff: '18 · 3.4 %', ok: true, high: false },
+      { code: 'B-4468', folio: 'OV-008', where: 'Mz 0121 · C-07 · colectó Luis el 3 nov 2026', field: 300, lab: 210, diff: '90 · 30 %', ok: false, high: true }
+    ];
+    return {
+      s0: s === 0, s1: s === 1, s2: s === 2,
+      n, last: n ? code(n) : '—', recent, done: n >= 20, notDone: n < 20,
+      bag: bags[b], bagNum: b + 1,
+      scan: () => { if (this.state.n < 20) this.setState({ n: this.state.n + 1 }); },
+      scanAll: () => this.setState({ n: 20 }),
+      toCount: () => this.setState({ s: 1, b: 0 }),
+      validate: () => { if (this.state.b === 0) this.setState({ b: 1 }); else this.setState({ s: 2 }); },
+      reset: () => this.setState({ s: 0, n: 0, b: 0 })
+    };
+  }
+}
+</script>
+</body>
+</html>

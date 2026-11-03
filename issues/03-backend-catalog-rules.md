@@ -1,35 +1,39 @@
-TITLE: [Backend] Configurable catalogs and rules per organization
+TITLE: [Backend] Configurable catalogs and versioned rule parameters per organization
 LABELS: backend,priority:high
 
 ## 1. Context
-The app shows rules but does not decide them. Thresholds and lists (incident types, bike checklist, sample origins, etc.) must be configurable by each organization.
+The app shows rules but does not decide them. Web admins edit catalogs (W63), incident types (W64) and rule parameters (W62); the phone downloads snapshots to work offline.
 
 ## 2. Goal
-Versioned catalogs and rules per organization, downloadable by the phone and editable from Django admin (web UI later).
+Catalogs and per-key versioned rule parameters, editable by ADM, readable by every internal client, with compact snapshots for mobile.
 
 ## 3. Scope / Out of scope
-**In:** models, admin, read-only API, versioning (etag), seed data.
-**Out:** web screens for editing (web team).
+**In:** models, admin endpoints, field snapshots, seed data.
+**Out:** web UI; full `incident-types` model (incidents epic).
 
 ## 4. Data model
-- `CatalogItem` (OrgScoped): catalog (enum: incident_type, bike_check_item, sample_origin, community_activity_type, removal_reason, replacement_reason, damage_reason, trap_finding), code, label_es, label_en, icon, sort, is_active, default_severity (nullable), requires_photo (bool), allows_other (bool).
-- `RuleSet` (OrgScoped): version (int), values JSON validated by schema: `max_distance_to_point_m=50`, `min_distance_same_block_m=50`, `speed_lock_kmh=10`, `speed_unlock_seconds`, `clock_skew_review_seconds`, `closed_house_weeks_to_relocate=2`, `incidents_to_relocate=3`, `fuel_efficiency_min_km_l`, `fuel_efficiency_max_km_l`, `session_idle_minutes`, `reminder_minutes_before_end=60`. Only one active per org.
+- `Catalog` (OrgScoped): slug (incident-type, bike-check-item, sample-origin, community-activity-type, removal-reason, replacement-reason, damage-reason, trap-finding, intervention-type…), name.
+- `CatalogItem`: catalog, code, label_es, label_en, icon, sort, is_active, is_other (fixed "Other (specify)", cannot be deactivated), requires_photo.
+- `RuleParameter` (OrgScoped): key, value_type, unit.
+- `RuleParameterVersion`: parameter, value, effective_from, created_by. Never updated in place.
+Seed keys: `max_distance_to_point_m=50`, `min_distance_same_block_m=50`, `speed_lock_kmh=10`, `speed_unlock_seconds`, `clock_skew_review_seconds`, `closed_house_weeks_to_relocate=2`, `incidents_to_relocate=3`, `fuel_efficiency_min_km_l`, `fuel_efficiency_max_km_l`, `session_idle_minutes`, `reminder_minutes_before_end=60`, `max_paddle_reuses=2`.
 
 ## 5. Contract (API / interfaces)
-- `GET /api/field/catalog/` → `{version, items:[...]}`; supports `If-None-Match`.
-- `GET /api/field/rules/` → `{version, values:{...}}`.
+- Web/admin: `GET /api/v1/catalogs/`, `GET/POST/PATCH /api/v1/catalogs/{slug}/items/`, `POST …/items/{id}/deactivate/` (`409` for `is_other`); `GET /api/v1/rule-parameters/`, `GET|POST /api/v1/rule-parameters/{key}/versions/`.
+- Mobile: `GET /api/v1/field/catalog/` and `GET /api/v1/field/rules/` → snapshot with `version` hash, `ETag`/`304`.
 
 ## 6. Behavior
-Phone stores the last version; every synced event carries `rules_version` used for local validation.
+Value in force = latest version with `effective_from <= now` (org timezone). Every field event carries `rules_version` and `catalog_version`.
 
 ## 7. Edge cases & errors
-- Item deactivated while phones still have old version → server accepts events with that code and flags them `in_review` only if the rule says so.
-- Every open list must include an "other" item with free text (`allows_other=true`) unless the rule fixes the options (paddle type, Ok/Fault, severity).
+- Item deactivated while phones hold an old snapshot → server accepts and flags `in_review` only if configured.
+- Future-dated version → not in snapshot until effective (snapshot exposes next change date).
 
 ## 8. Acceptance criteria
-- [ ] Admin can edit catalogs/rules for their org only.
-- [ ] Endpoints return 304 when unchanged.
-- [ ] Seed with the values from the design brief.
+- [ ] Versions never overwrite; history endpoint returns all.
+- [ ] "Other" cannot be deactivated (test).
+- [ ] Snapshots return 304 when unchanged.
+- [ ] Seed with brief values.
 
 ## Notes
-Default values come from the design brief and NOM-032-SSA2-2014 / CENAPRECE guide as cited by the client; **validate with the program entomologist** before production.
+Default values from the design brief and NOM-032-SSA2-2014 / CENAPRECE guide as cited by the client; **validate with the program entomologist**.

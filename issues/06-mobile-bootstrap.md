@@ -15,7 +15,7 @@ App skeleton with tokens, i18n (es-MX default, en), local store and outbox chose
 `outbox_event` mirrors `FieldEvent` envelope + local_status (pending | sending | sent | error | in_review | rejected), attempts, last_error.
 
 ## 5. Contract (API / interfaces)
-Consumes `/api/field/sync/`, `/api/field/uploads/`, catalog and rules endpoints.
+Consumes `/api/v1/field/sync/`, `/api/v1/field/uploads/`, catalog and rules endpoints.
 
 ## 6. Behavior
 - Never blocks UI on network.
@@ -30,4 +30,4 @@ App killed mid-upload, token expired while offline, storage almost full, 130 % f
 - [ ] Unit tests for outbox state machine.
 
 ## Notes
-Depends on spike (local store choice) and #sync API.
+Depends on #1 (local store choice), #5 (sync API), #12 (api-client) and #17 (tokens, i18n).

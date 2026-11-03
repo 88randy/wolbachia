@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>R5 · Liberar mosquitos</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+</defs></svg>
+
+<div style="width:360px; height:800px; position:relative">
+
+<sc-if value="{{is.home}}" hint-placeholder-val="{{true}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip off"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">Liberaciones de hoy: 0 de 2</p>
+<p class="ov">Dispositivos que llevas</p>
+<div class="cd"><div class="row sb"><b class="bb">Dispositivo W-118-03</b><span class="bd in"><svg class="i"><use href="#bug"></use></svg>Por liberar</span></div><span class="cap">Lote W-118 · Zona C-07</span></div>
+<div class="cd"><div class="row sb"><b class="bb">Dispositivo W-118-07</b><span class="bd in"><svg class="i"><use href="#bug"></use></svg>Por liberar</span></div><span class="cap">Lote W-118 · Zona C-09</span></div>
+<button class="sim" onClick="{{go.scan1}}">Simulación: estás en la zona C-07. Toca Escanear.</button>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan" onClick="{{go.scan1}}"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.scan1}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0; background:#1d232e"><div class="cam"></div><div class="frame"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; top:16px; left:16px"><button class="cbtn" aria-label="Cerrar" onClick="{{go.home}}"><svg class="i"><use href="#x"></use></svg></button></div>
+<div style="position:absolute; left:16px; right:16px; bottom:24px"><button class="sim" style="width:100%; justify-content:center" onClick="{{go.lib}}">Simulación: leer dispositivo W-118-03</button></div></div>
+</sc-if>
+
+<sc-if value="{{is.lib}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.home}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Liberar · W-118-03</b><small>Lote W-118</small></div><button class="chip l wn"><svg class="i s20"><use href="#nosig"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct" style="gap:10px">
+<div class="cd" style="gap:10px; border-color:#0B6B35">
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><div><p class="bb">Permiso vigente</p><p class="cap">Convenio estatal 014/2026 · vence 31/12/2026</p></div></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Estás dentro de la zona autorizada</p></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Lote en condiciones</p></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Tu capacitación está vigente</p></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Horario permitido</p></div>
+</div>
+<p class="cap">Validado con los permisos guardados en el teléfono, actualizados hace 2 h.</p>
+<div class="fld"><label>Cantidad estimada</label><div class="in">2,500<span class="u">mosquitos</span></div><span class="hp">Prellenada desde el lote. Puedes corregirla.</span></div>
+<sc-if value="{{gpsWait}}" hint-placeholder-val="{{true}}"><div class="nt warn"><svg class="i"><use href="#loc"></use></svg><div class="tx"><p>Esperando ubicación precisa: ±18 m. Quédate quieto unos segundos.</p></div></div><button class="sim" onClick="{{gpsOk}}">Simulación: el GPS mejora a ±4 m</button></sc-if>
+<sc-if value="{{gpsReady}}" hint-placeholder-val="{{false}}"><div class="row"><span class="bd ok"><svg class="i"><use href="#loc"></use></svg>Ubicación ±4 m</span><span class="bd nt"><svg class="i"><use href="#camera"></use></svg>Foto opcional</span></div></sc-if>
+</div>
+<div class="ft">
+<sc-if value="{{gpsWait}}" hint-placeholder-val="{{true}}"><button class="btn dis" disabled><span class="spin" style="border-color:rgba(10,26,63,.2); border-top-color:#586380"></span>Esperando GPS…</button></sc-if>
+<sc-if value="{{gpsReady}}" hint-placeholder-val="{{false}}"><button class="btn p" onClick="{{go.ok1}}"><svg class="i"><use href="#bug"></use></svg>Registrar liberación</button></sc-if>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.ok1}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0"><div class="flashg"></div>
+<div class="ct c" style="gap:16px; position:relative">
+<div class="rs ok"><svg class="i"><use href="#check"></use></svg></div>
+<p class="h1">Liberación guardada</p>
+<p class="b">W-118-03 · 2,500 mosquitos · 10:52.</p>
+<span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Guardado en el teléfono · sin señal</span>
+</div>
+<div class="ft"><button class="sim" style="justify-content:center" onClick="{{go.scan2}}">Simulación: más tarde, en la zona C-09, escaneas W-118-07</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.scan2}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0; background:#1d232e"><div class="cam"></div><div class="frame"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; left:16px; right:16px; bottom:24px"><button class="sim" style="width:100%; justify-content:center" onClick="{{go.blk}}">Simulación: leer dispositivo W-118-07</button></div></div>
+</sc-if>
+
+<sc-if value="{{is.blk}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.home}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>No puedes liberar aquí</b><small>W-118-07 · Zona C-09</small></div><button class="chip l wn"><svg class="i s20"><use href="#nosig"></use></svg>13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct" style="gap:10px">
+<div class="cd" style="gap:10px; border-color:#B3141A">
+<div class="row top" style="background:#FDE8E8; margin:-6px -8px; padding:8px; border-radius:10px"><span class="bd cr" style="padding:2px 6px"><svg class="i"><use href="#ban"></use></svg></span><div><p class="bb" style="color:#B3141A">Permiso vencido</p><p class="b">El permiso de esta zona venció el 30 de octubre. Avísale a tu supervisor.</p></div></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Estás dentro de la zona</p></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Lote en condiciones</p></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Tu capacitación está vigente</p></div>
+<div class="row top"><span class="bd ok" style="padding:2px 6px"><svg class="i"><use href="#check"></use></svg></span><p class="bb">Horario permitido</p></div>
+</div>
+<p class="cap">Guarda el dispositivo cerrado y regrésalo al cerrar jornada.</p>
+</div>
+<div class="ft"><button class="btn o">Reportar dispositivo dañado</button><button class="btn p" onClick="{{go.ok2}}"><svg class="i"><use href="#user"></use></svg>Reportar al supervisor</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.ok2}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="ct c" style="gap:16px">
+<div class="rs ph1"><svg class="i"><use href="#phone"></use></svg></div>
+<p class="h1">Reporte guardado</p>
+<p class="b">Tu supervisor lo verá en cuanto haya señal.</p>
+<a class="sim" href="Proto.dc.html">Fin del recorrido · Volver a recorridos</a>
+</div></div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const st = this.state || {};
+    const s = st.s || 'home';
+    const keys = ['home','scan1','lib','ok1','scan2','blk','ok2'];
+    const is = {}; const go = {};
+    keys.forEach((k) => { is[k] = s === k; go[k] = () => this.setState({ s: k }); });
+    return { is, go, gpsWait: !st.gps, gpsReady: !!st.gps, gpsOk: () => this.setState({ gps: true }) };
+  }
+}
+</script>
+</body>
+</html>

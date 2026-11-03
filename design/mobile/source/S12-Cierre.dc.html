@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P26–P27 Cerrar jornada</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="nav" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="cloudok" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM9 14.5l2 2 4-4"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:2440px; height:940px">
+
+<div class="col"><div class="lbl">P26 · Paso 1 · Pendientes<span>«Ir ahora» o «Cerrar así» por punto</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Cerrar jornada</b><small>Pendientes</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>3</button></div><div class="stp"><span>Paso 1 de 4</span><div class="pg"><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:10px"><p class="h2">Te quedan 3 pendientes</p>
+<div class="cd" style="gap:8px"><div class="row sb"><b class="bb">OV-022 · Mz 0127</b><span class="bd wn"><svg class="i"><use href="#door"></use></svg>Casa cerrada</span></div><div class="row"><button class="btn o" style="flex:1; min-height:48px; font-size:15px"><svg class="i"><use href="#nav"></use></svg>Ir ahora</button><button class="btn t" style="flex:1; font-size:15px">Cerrar así</button></div></div>
+<div class="cd" style="gap:8px"><div class="row sb"><b class="bb">OV-023 · Mz 0127</b><span class="bd wn"><svg class="i"><use href="#door"></use></svg>Casa cerrada</span></div><div class="row"><button class="btn o" style="flex:1; min-height:48px; font-size:15px"><svg class="i"><use href="#nav"></use></svg>Ir ahora</button><button class="btn t" style="flex:1; font-size:15px">Cerrar así</button></div></div>
+<div class="cd" style="gap:8px"><div class="row sb"><b class="bb">OV-031 · Mz 0131</b><span class="bd in"><svg class="i"><use href="#clock"></use></svg>Sin revisar</span></div><div class="row"><button class="btn o" style="flex:1; min-height:48px; font-size:15px"><svg class="i"><use href="#nav"></use></svg>Ir ahora</button><button class="btn t" style="flex:1; font-size:15px">Cerrar así</button></div></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P26 · Paso 2 · Conciliación<span>Ecuación visible · diferencia en rojo</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Cerrar jornada</b><small>Conciliación de insumos</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>3</button></div><div class="stp"><span>Paso 2 de 4</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct" style="gap:10px">
+<p class="cap" style="text-align:center; font-weight:700">Asignado = usado + devuelto + merma</p>
+<div class="cd" style="gap:8px"><div class="row sb"><b class="bb">Ovitrampas</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Cuadra</span></div><div class="eq"><div><b>60</b><small>Asignado</small></div><div><b>2</b><small>Usado</small></div><div><b>58</b><small>Devuelto</small></div><div><b>0</b><small>Merma</small></div></div></div>
+<div class="cd" style="gap:8px; border-color:#B3141A; border-width:2px"><div class="row sb"><b class="bb">Papeletas</b><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>Falta 1</span></div><div class="eq"><div><b>300</b><small>Asignado</small></div><div><b>41</b><small>Usado</small></div><div><b>258</b><small>Devuelto</small></div><div class="bad"><b>0</b><small>Merma</small></div></div><p class="b" style="color:#B3141A; font-weight:600">Te falta justificar 1 papeleta.</p><div class="row"><button class="btn o" style="flex:1; font-size:15px">Registrar merma</button><button class="btn t" style="flex:1; font-size:15px">Dejar para revisión</button></div></div>
+<div class="cd" style="gap:8px"><div class="row sb"><b class="bb">Dispositivos</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Cuadra</span></div><div class="eq"><div><b>2</b><small>Asignado</small></div><div><b>1</b><small>Usado</small></div><div><b>1</b><small>Devuelto</small></div><div><b>0</b><small>Merma</small></div></div></div>
+</div><div class="ft"><button class="btn o"><svg class="i"><use href="#scan"></use></svg>Escanear lo que devuelves</button><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P26 · Registrar merma<span>Motivo + foto</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Merma de papeletas</b><small>Cerrar jornada</small></div></div></div>
+<div class="ct"><div class="fld"><label>Cantidad</label><div class="in f">1<span class="u">piezas</span></div></div>
+<p class="s" style="font-weight:700; color:#0A1A3F">Motivo</p>
+<div class="g2"><button class="opt v sel" style="min-height:64px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Se rompió</button><button class="opt v" style="min-height:64px">Se mojó</button><button class="opt v" style="min-height:64px">Se perdió</button><button class="opt v" style="min-height:64px">Otro</button></div>
+<div class="photo empty" style="height:110px"><svg class="i s28"><use href="#camera"></use></svg>Tomar foto</div></div>
+<div class="ft"><button class="btn p">Guardar merma</button></div></div></div>
+
+<div class="col"><div class="lbl">P26 · Paso 4 · Confirmar<span>Hoja inferior con resumen</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Cerrar jornada</b><small>Confirmar</small></div></div><div class="stp"><span>Paso 4 de 4</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct"></div><div class="scrim"></div>
+<div class="sh"><div class="grab"></div><p class="h2">¿Cerrar la jornada de hoy?</p>
+<div class="kv"><span>Puntos revisados</span><b>37 de 40</b></div><div class="kv"><span>Recorrido</span><b>48 km · M-03</b></div><div class="kv"><span>Insumos</span><b style="color:#B3141A">1 papeleta sin justificar</b></div><div class="kv"><span>Por subir</span><b>3 registros</b></div>
+<p class="cap">Después de cerrar ya no podrás capturar hasta mañana.</p><button class="btn p">Cerrar jornada</button><button class="btn t">Volver</button></div></div></div>
+
+<div class="col"><div class="lbl">P27 · Cerrada y enviada</div>
+<div class="ph"><div class="tb"><div class="tt"><b>Jornada cerrada</b><small>Martes 10 nov · Semana 45</small></div><button class="chip ok"><svg class="i s20"><use href="#cloudok"></use></svg>Todo enviado</button></div>
+<div class="ct" style="gap:10px"><span class="bd ok" style="align-self:flex-start"><svg class="i"><use href="#cloudok"></use></svg>Cerrada y enviada</span>
+<div class="cd"><div class="kv"><span>Puntos revisados</span><b>37 de 40</b></div><div class="kv"><span>Papeletas al laboratorio</span><b>37</b></div><div class="kv"><span>Colocadas / retiradas</span><b>2 / 0</b></div><div class="kv"><span>Liberaciones</span><b>1</b></div><div class="kv"><span>Km · litros</span><b>48 km · 4.5 L</b></div><div class="kv"><span>Incidentes</span><b>1</b></div></div>
+<p class="b">Buen trabajo, Luis. Nos vemos mañana.</p></div></div></div>
+
+<div class="col"><div class="lbl">P27 · Cerrada en el teléfono<span>Pendiente de subir</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>Jornada cerrada</b><small>Martes 10 nov · Semana 45</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>3 por subir</button></div>
+<div class="ct" style="gap:10px"><div class="nt info"><svg class="i"><use href="#phone"></use></svg><div class="tx"><p>Se enviará sola en cuanto haya señal; no desinstales la app.</p></div></div>
+<span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#phone"></use></svg>Cerrada en el teléfono</span>
+<div class="cd"><div class="kv"><span>Puntos revisados</span><b>37 de 40</b></div><div class="kv"><span>Papeletas al laboratorio</span><b>37</b></div><div class="kv"><span>Colocadas / retiradas</span><b>2 / 0</b></div><div class="kv"><span>Liberaciones</span><b>1</b></div><div class="kv"><span>Km · litros</span><b>48 km · 4.5 L</b></div><div class="kv"><span>Diferencias</span><b style="color:#B3141A">1 papeleta</b></div></div>
+</div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2440,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

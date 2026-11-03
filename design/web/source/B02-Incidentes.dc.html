@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W6 y W7 Incidentes</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="sort" viewBox="0 0 24 24"><path d="M8 4v16M4 16l4 4 4-4M16 20V4M12 8l4-4 4 4"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"></path></symbol>
+<symbol id="people" viewBox="0 0 24 24"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18 13.5a7 7 0 0 1 4 6.5"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:2680px; height:960px">
+
+<div class="col"><div class="lbl">W6 · Bandeja de incidentes · Coordinadora · pestaña «De mi zona»<span>Críticos fijos arriba; los vencidos suben de nivel solos y se marcan «Escalado a coordinador»</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<a class="nv on" href="#"><svg class="i"><use href="#alert"></use></svg>Incidentes<span class="ct cr">7</span></a>
+<div class="grp">Tableros</div>
+<a class="nv" href="#"><svg class="i"><use href="#chart"></use></svg>Entomológico</a>
+<a class="nv" href="#"><svg class="i"><use href="#chart"></use></svg>Prevalencia de Wolbachia</a>
+<a class="nv" href="#"><svg class="i"><use href="#chart"></use></svg>Comparativo</a>
+<div class="grp">Cuadrantes y muestreo</div>
+<a class="nv" href="#"><svg class="i"><use href="#map"></use></svg>Mapa de cuadrantes</a>
+<a class="nv" href="#"><svg class="i"><use href="#map"></use></svg>Editor</a>
+<a class="nv" href="#"><svg class="i"><use href="#map"></use></svg>Manzanas y puntos</a>
+<div class="grp">Liberaciones</div>
+<a class="nv" href="#"><svg class="i"><use href="#bug"></use></svg>Liberaciones</a>
+<div class="foot">Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte · todos los centros<svg class="i s16"><use href="#down"></use></svg></span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones, 2 sin leer"><svg class="i"><use href="#bell"></use></svg><span class="dot">2</span></button><button class="icb" aria-label="Idioma">ES</button><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora regional</small></span><svg class="i s16"><use href="#down"></use></svg></button></div>
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Incidentes</h1><p class="sub">7 abiertos en tu región · 1 vencido y escalado a ti</p></div><div class="seg"><b class="on"><svg class="i s16"><use href="#ops"></use></svg>Lista</b><b><svg class="i s16"><use href="#map"></use></svg>Mapa</b></div><button class="b p"><svg class="i s16"><use href="#alert"></use></svg>Nuevo incidente</button></div>
+<div class="tabs"><b>Míos<span class="ct">1</span></b><b class="on">De mi zona<span class="ct">7</span></b><b>Vencidos<span class="ct">1</span></b><b>Cerrados</b></div>
+<div class="fbar"><span class="fc">Tipo<svg class="i"><use href="#down"></use></svg></span><span class="fc">Severidad<svg class="i"><use href="#down"></use></svg></span><span class="fc on">Centro: todos<svg class="i"><use href="#down"></use></svg></span><span class="fc">Origen<svg class="i"><use href="#down"></use></svg></span><span class="fx"></span><button class="b t sm"><svg class="i s16"><use href="#dl"></use></svg>CSV</button><button class="b t sm"><svg class="i s16"><use href="#dl"></use></svg>Excel</button></div>
+<div class="tw">
+<table class="t"><thead><tr><th>Número</th><th>Tipo</th><th>Severidad</th><th>Responsable</th><th>Origen</th><th class="n s">Días abiertos <svg class="i"><use href="#sort"></use></svg></th><th>Vencimiento</th><th>Estado</th></tr></thead><tbody>
+<tr class="blk"><td><a href="#">I-0231</a></td><td>Ovitrampa no recuperada · OV-021</td><td><span class="bd cr"><svg class="i"><use href="#up"></use></svg>Crítica</span></td><td>Sofía <span class="cap">(antes Ana)</span></td><td>Móvil · Luis</td><td class="n">2</td><td><b style="color:#B3141A">Venció hace 20 min</b></td><td><span class="bd cr"><svg class="i"><use href="#clock"></use></svg>Escalado a coordinador</span></td></tr>
+<tr class="blk"><td><a href="#">I-0233</a></td><td>Liberación bloqueada · permiso vencido</td><td><span class="bd cr"><svg class="i"><use href="#up"></use></svg>Crítica</span></td><td>Elena</td><td>Sistema</td><td class="n">0</td><td>en 22 h</td><td><span class="bd in"><svg class="i"><use href="#user"></use></svg>Asignado</span></td></tr>
+<tr><td><a href="#">I-0229</a></td><td>Discrepancia D-0042 · faltan 2 papeletas</td><td><span class="bd wn">Alta</span></td><td>Ana</td><td>Web · Ana</td><td class="n">1</td><td>en 1 d</td><td><span class="bd in"><svg class="i"><use href="#user"></use></svg>Asignado</span></td></tr>
+<tr><td><a href="#">I-0228</a></td><td>Lectura de campo sin bolsa · OV-033</td><td><span class="bd wn">Media</span></td><td>Marco</td><td>Sistema</td><td class="n">1</td><td>en 2 d</td><td><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Abierto</span></td></tr>
+<tr><td><a href="#">I-0226</a></td><td>Moto con falla de frenos · M-03</td><td><span class="bd wn">Alta</span></td><td>Ana</td><td>Móvil · Rosa</td><td class="n">2</td><td>en 6 h</td><td><span class="bd in"><svg class="i"><use href="#user"></use></svg>Asignado</span></td></tr>
+<tr><td><a href="#">I-0224</a></td><td>Queja de vecino · Manzana 0127</td><td><span class="bd nt">Baja</span></td><td>Promotor · Zona 3</td><td>Web</td><td class="n">3</td><td>en 4 d</td><td><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Abierto</span></td></tr>
+<tr><td><a href="#">I-0221</a></td><td>Otro · «perro agresivo en la vivienda»</td><td><span class="bd nt">Baja</span></td><td>Ana</td><td>Móvil · Carla</td><td class="n">4</td><td>en 3 d</td><td><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Abierto</span></td></tr>
+</tbody></table>
+<div class="pgn"><span class="fx">7 incidentes · críticos fijos arriba, después por vencimiento</span></div>
+</div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><p>Severidad con flecha y texto, no solo color. Un incidente vencido sube un nivel y pasa al perfil que marque su tipo (W64).</p></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W7 · Detalle de incidente · escalado, cerrando con evidencia<span>Qué bloquea, cronómetro, hilo, reasignar, cambiar severidad y cierre con la evidencia que pide su tipo</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Incidentes, 7"><svg class="i"><use href="#alert"></use></svg><span class="ct cr">7</span></a>
+<a class="nv" href="#" aria-label="Tableros"><svg class="i"><use href="#chart"></use></svg></a>
+<a class="nv" href="#" aria-label="Cuadrantes"><svg class="i"><use href="#map"></use></svg></a>
+<a class="nv" href="#" aria-label="Liberaciones"><svg class="i"><use href="#bug"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora regional</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="pg" style="gap:12px">
+<div class="crumb"><a href="#">Incidentes</a><svg class="i s16"><use href="#right"></use></svg><span>I-0231</span></div>
+<div class="phd"><div class="t"><div class="row"><h1 class="h1">I-0231 · Ovitrampa no recuperada</h1></div><div class="row"><span class="bd cr"><svg class="i"><use href="#up"></use></svg>Crítica</span><span class="bd cr"><svg class="i"><use href="#clock"></use></svg>Escalado a coordinador</span><span class="cap">Reportado por Luis desde el móvil · 2 nov 2026 16:40</span></div></div><button class="b o">Reasignar</button><button class="b o">Cambiar severidad</button></div>
+<div class="g3" style="gap:12px">
+<div class="card tight" style="border-color:#B3141A"><span class="ov" style="color:#B3141A">Tiempo de respuesta</span><b style="font-size:26px; color:#B3141A">48 h 20 min</b><span class="cap">Meta del tipo: 48 h · venció hoy 16:40</span></div>
+<div class="card tight"><span class="ov">Objeto ligado</span><a href="#" style="font-weight:700; text-decoration:none"><svg class="i s16" style="vertical-align:-3px"><use href="#trap"></use></svg> OV-021 · OT-0412</a><span class="cap">Manzana 0127 · C-07</span></div>
+<div class="card tight" style="background:#FDE8E8; border-color:#F3B9BB"><span class="ov" style="color:#B3141A">Mientras siga abierto, bloquea</span><p class="cap" style="color:#B3141A; font-weight:600"><svg class="i s16" style="vertical-align:-3px"><use href="#ban"></use></svg> El cierre del cuadrante C-07 (W33)</p></div>
+</div>
+<div class="row top" style="gap:12px">
+<div class="card tight fx"><span class="ov">Reporte de campo</span><p style="margin:0">«Llegué y ya no estaba el bote. La vecina dice que lo tiraron con la basura.»</p><div class="row"><div style="width:120px; height:80px; border-radius:8px; background:#C9D0DE; display:flex; align-items:center; justify-content:center; color:#3A4664"><svg class="i s32"><use href="#camera"></use></svg></div><div class="map" style="width:200px; height:80px"><svg class="base" viewBox="0 0 200 80" aria-hidden="true"><rect width="200" height="80" fill="#EEF1EC"></rect><path d="M0 30 H200 M70 0 V80" stroke="#fff" stroke-width="7"></path></svg><div class="mk crit" style="left:110px; top:62px"><div class="p"><svg class="i"><use href="#alert"></use></svg></div></div><div class="attr" style="font-size:9px">© OpenStreetMap contributors</div></div></div></div>
+</div>
+<div class="card" style="gap:10px; flex:1; min-height:0"><b class="h3">Comentarios y eventos</b>
+<div class="tl">
+<div class="ev cr"><span class="dt"><svg class="i"><use href="#up"></use></svg></span><div class="bx"><b>Escalado automáticamente a Sofía</b><div class="m">Sistema · hoy 16:40 · venció el tiempo de respuesta de Ana</div></div></div>
+<div class="ev"><span class="dt"><svg class="i"><use href="#user"></use></svg></span><div class="bx"><b>Ana: «Mañana Luis pasa a buscarlo con el promotor.»</b><div class="m">Ana · 3 nov 2026 09:12 · Web</div></div></div>
+<div class="ev wn"><span class="dt"><svg class="i"><use href="#phone"></use></svg></span><div class="bx"><b>Reportado desde campo</b><div class="m">Luis · 2 nov 2026 16:40 · Móvil · subió a las 17:05 (sin señal)</div></div></div>
+</div>
+<div class="in ta" style="height:44px; color:#586380">Escribe un comentario…</div></div>
+</div>
+<div class="dp">
+<div class="dh"><div class="row sb2"><b class="h2">Cerrar incidente</b><button class="icb" aria-label="Cerrar panel"><svg class="i"><use href="#x"></use></svg></button></div><p class="cap">El tipo «Ovitrampa no recuperada» pide para cerrar: <b>resultado</b>, <b>comentario</b> y <b>foto</b>.</p></div>
+<div class="db">
+<div class="fld"><span class="l">Resultado <span class="req">*</span></span><div class="in">Ovitrampa dada de baja y punto reinstalado<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+<div class="fld"><span class="l">Comentario <span class="req">*</span></span><div class="in ta f" style="height:84px">Se colocó OT-0455 en el mismo folio OV-021. Se habló con la moradora y aceptó cuidarla.|</div></div>
+<div class="fld"><span class="l">Foto de evidencia <span class="req">*</span></span><div class="card tight" style="flex-direction:row; align-items:center"><div style="width:56px; height:44px; border-radius:6px; background:#C9D0DE; display:flex; align-items:center; justify-content:center; color:#3A4664"><svg class="i"><use href="#camera"></use></svg></div><div class="st fx" style="gap:0"><b style="font-size:13px">reinstalacion-ov021.jpg</b><span class="cap">Tomada por Luis · 4 nov 2026 15:58</span></div><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div></div>
+<div class="nt ok"><svg class="i"><use href="#check"></use></svg><p>Al cerrar se desbloquea el cierre de C-07 y se avisa a Ana y a Luis.</p></div>
+<div class="row" style="margin-top:auto"><button class="b t">Cancelar</button><span class="fx"></span><button class="b p lg"><svg class="i s16"><use href="#check"></use></svg>Cerrar incidente</button></div>
+<p class="cap">Los cerrados muestran «Reabrir» con motivo obligatorio.</p>
+</div></div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2680,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>
