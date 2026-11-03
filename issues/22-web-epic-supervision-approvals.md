@@ -38,7 +38,7 @@ See `docs/web-api-needs.md` § Incidents and § Operations / supervision. Live p
 - **Observe** returns a shift to the courier with a reason.
 - **Rejecting a relocation** creates a next-day task.
 - **Overdue incidents** escalate automatically; the configured response time and escalation target come from the incident type.
-- **Closure** is blocked while a trap is "Not recovered" or its removal is unconfirmed.
+- **Closure** is blocked while an ovitrap is "Not recovered" or its removal is unconfirmed.
 
 ## 7. Edge cases & errors
 - Two supervisors act on the same item: the second one gets `409` and sees the current state.

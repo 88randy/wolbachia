@@ -43,7 +43,7 @@ See `docs/web-api-needs.md` § Entomology lab.
 - Bag scanned without a reading → incident.
 - A bag expected but not received → "missing" incident.
 - Duplicate scan → no new record.
-- Egg paper marked "not present" in mobile → no count expected; the bag is flagged.
+- Egg paddle marked "not present" in mobile → no count expected; the bag is flagged.
 
 ## 8. Acceptance criteria
 - [ ] W34–W41 implemented with their designed states.

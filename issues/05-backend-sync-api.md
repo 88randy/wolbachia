@@ -18,7 +18,7 @@ A rejected / in_review event creates a `ReviewItem` for the web (W30).
 ## 5. Contract (API / interfaces)
 `POST /api/v1/field/sync/`
 ```json
-{ "device_id": "...", "cursor": "...", "events": [ { "id": "uuid", "type": "trap.check", "device_time": "...", "payload": {} } ] }
+{ "device_id": "...", "cursor": "...", "events": [ { "id": "uuid", "type": "ovitrap.check", "device_time": "...", "payload": {} } ] }
 ```
 →
 ```json
@@ -27,8 +27,8 @@ A rejected / in_review event creates a `ReviewItem` for the web (W30).
 ```
 `POST /api/v1/field/uploads/` → presigned S3 URL bound to an event id.
 
-Initial event types: shift.open, shift.close, location.ping, supplies.receive, supplies.reconcile, trap.place, trap.check, trap.replace, trap.relocate, trap.remove, release.record, sample.collect, fuel.load, incident.report, emergency.accident, community.activity, record.void.
-`trap.check` payload: `finding`, `paddle_present: bool`, `has_eggs: bool|null` (null if no paddle), `temperature_c`, `humidity_pct`, `bag_code`, `paddle_type`, `is_lagged`. Feeds `paddle_present` and `has_eggs` in `/bags/receive/` (W34).
+Initial event types: shift.open, shift.close, location.ping, supplies.receive, supplies.reconcile, ovitrap.place, ovitrap.check, ovitrap.replace, ovitrap.relocate, ovitrap.remove, release.record, sample.collect, fuel.load, incident.report, emergency.accident, community.activity, record.void.
+`ovitrap.check` payload: `finding`, `paddle_present: bool`, `has_eggs: bool|null` (null if no paddle), `temperature_c`, `humidity_pct`, `bag_code`, `paddle_type`, `is_lagged`. Feeds `paddle_present` and `has_eggs` in `/bags/receive/` (W34).
 
 ## 6. Behavior
 - Same event id twice → same result, no duplicate.

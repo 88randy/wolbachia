@@ -16,7 +16,7 @@ Dockerized Django + DRF project with organizations, memberships/roles, row-level
 - `OrgScopedModel` (abstract): organization FK (required, indexed), created_at, created_by.
 - `VoidableMixin`: voided_at, voided_by, void_reason (no physical delete).
 - `Membership`: user, organization, profiles (multi), scope (centers/quadrants), is_active. Unique (user, organization).
-- `Profile` (OrgScoped, data not code): slug, name, permission codes. Seeded: field_worker, supervisor, entomologist, community_promoter, admin. Coordinator, warehouse, regulatory and government read-only are added as data if the client confirms them (`docs/decisions.md`); no code change needed.
+- `Profile` (OrgScoped, data not code): slug, name, permission codes. Seeded: courier, supervisor, entomologist, community_promoter, admin. Coordinator, warehouse, regulatory and government read-only are added as data if the client confirms them (`docs/decisions.md`); no code change needed.
 
 ## 5. Contract (API / interfaces)
 - `OrgScopedQuerySet.for_org(org)`, `OrgScopedViewSetMixin` resolving the active org per `docs/api-conventions.md`.

@@ -12,7 +12,7 @@ Rules:
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
-| ovitrampa | ovitrap | `ovitrap` | Trap that holds the egg paddle. See "Open questions" about `Trap` / `trap.*` in the issues. |
+| ovitrampa | ovitrap | `ovitrap` | Trap that holds the egg paddle. Models `Ovitrap`, `OvitrapReading`; sync events `ovitrap.place|check|replace|relocate|remove`. |
 | papeleta | egg paddle | `/egg-paddles/`, `paddle_present`, `paddle_type` | The courier only records presence and Yes/No eggs; never a count (decision 14). |
 | ¿tiene huevos? | has eggs | `has_eggs` (`bool`, `null` when there is no paddle) | Yes/No by the courier; the egg count is the entomologist's (web). |
 | folio | sampling point code | `/sampling-points/`, `code` on `sampling_point` [ASSUMPTION] | Fixed human code of a sampling point (e.g. OV-010). |
@@ -24,7 +24,7 @@ Rules:
 | hallazgo | finding | `finding` | Result noted when checking an ovitrap. |
 | casa cerrada | closed house | — (not defined yet) | Visit result: nobody let the courier in. |
 | semana epidemiológica | epi week | `epi_week` | Always "epi week" in code and docs; never "epidemiological week". |
-| colocar | place | `place` (action) | Fixed action on an ovitrap. Event names are decided in #5 / #9. |
+| colocar | place | `place` (action) | Fixed action on an ovitrap. Event `ovitrap.place`. |
 | revisar | check | `check` (action) | Fixed action. |
 | reemplazar | replace | `replace` (action) | Fixed action. |
 | reubicar | relocate | `relocate` (action), `/relocations/` | Fixed action; also a proposal that the supervisor approves. |
@@ -36,7 +36,7 @@ Rules:
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
-| liberación | release | `/releases/`, `release` | Release of Wolbachia mosquitoes. Not an app release (see "Open questions"). |
+| liberación | release | `/releases/`, `release` | Release of Wolbachia mosquitoes. Not an app release: app builds are `app-versions` (`/app-versions/`). |
 | dispositivo de liberación | release device | `/release-devices/`, `release_device` | |
 | permiso | permit | `/permits/`, `permit` | Authorization for a release zone; may expire (`PermitExpiredError`). |
 
@@ -74,13 +74,10 @@ Rules:
 | anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 
-## Open questions
+## Resolved conflicts (2026-11-03)
 
-Conflicts found while writing this glossary, to resolve in their own issue or PR (not here):
-
-- `Bike`, `BikeCheck`, `bike-check-item` in `issues/03`, `issues/08` vs `motorcycle` (web screens and routes).
-- `Trap` / `TrapReading` / `trap.place` events (`issues/05`, `issues/09`) vs `ovitrap` here and in the domain text.
-- "worker" / "field worker" / "field user" / "delivery worker" vs `courier` (`issues/09`, `issues/13`, `issues/14`, `docs/decisions.md`).
-- "egg paper" (`issues/21`) vs `egg paddle`.
-- "epidemiological week" (`issues/38`) vs `epi week`.
-- `/mobile-releases/` (app versions, `docs/web-api-needs.md`) vs `release` (mosquito release): app versions should use another word, e.g. `app-versions`.
+- `Bike`/`BikeCheck`/`bike-check-item` → `Motorcycle`/`MotorcycleCheck`/`motorcycle-check-item` (#3, #8).
+- `Trap`/`TrapReading`/`trap.*` → `Ovitrap`/`OvitrapReading`/`ovitrap.*` (#5, #9, #14).
+- "worker", "field worker", "field user", "delivery worker" → `courier`; profile slug `courier` (#2, #9, #13, #14, decision 4).
+- "egg paper" → `egg paddle` (#21). "epidemiological week" → `epi week` (#38, CLAUDE.md).
+- `/mobile-releases/` → `/app-versions/` (`docs/web-api-needs.md`).

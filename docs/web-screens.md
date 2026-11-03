@@ -37,7 +37,7 @@ These apply to every screen. Designed once on the global-states board; they are 
 | W1 | Sign-in | all | wrong credentials; other states shown next to it; no "create account" | — |
 | W2 | Home | all (content per profile) | with a critical item (red band + link), daily sentence, cards, "needs your attention"; 1440; EN | — |
 | W3 | Universal search | internal | results grouped by type; voided object marked; no results; code from another organization | — |
-| W4 | Universal record (e.g. point OV-010, History tab) | internal | history with physical traps, readings, approved relocation, closed incident | R8 |
+| W4 | Universal record (e.g. point OV-010, History tab) | internal | history with physical ovitraps, readings, approved relocation, closed incident | R8 |
 | W5 | Notifications panel | internal | unread first, grouped by type, link to object; per-type preferences (in-app / email / both) | — |
 | W6 | Incident tray | SUP, COO, ADM | "My zone" tab; critical pinned; overdue auto-escalated and marked "Escalated to coordinator" | R6 |
 | W7 | Incident detail | SUP, COO, ADM | escalated; what it blocks; timer; thread; reassign; change severity; close with the evidence its type requires | R6 |
@@ -66,7 +66,7 @@ These apply to every screen. Designed once on the global-states board; they are 
 | W30 | Review queue | SUP | records flagged by the system: what happened, evidence, Accept / Void with reason / Open incident | — |
 | W31 | Relocations | SUP | reason, old/new location, photo, same code; reject creates a task for the next day | R7 |
 | W32 | Third-party interventions | SUP, ENT | spraying, fogging, larvicide by other institutions; shown as markers on dashboards | — |
-| W33 | Quadrant closure | SUP, COO | wizard; blocked while a trap is "Not recovered" or removal is unconfirmed | — |
+| W33 | Quadrant closure | SUP, COO | wizard; blocked while an ovitrap is "Not recovered" or removal is unconfirmed | — |
 | W34 | Lab bag reception | ENT | continuous scan; code, block, reading, date, collector, **egg paddle present + has eggs (Yes/No)**; "no reading" and "missing" open an incident | R3 |
 | W35 | Egg count and validation | ENT | keyboard and scanner only; fixed focus on the big field; Enter saves and moves to the next bag; visible shortcuts; EN | R3 |
 | W36 | Recounts | ENT | lab count and recount by another person, side by side; history keeps all attempts | R3 |
