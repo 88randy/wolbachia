@@ -17,6 +17,8 @@ jobs:
   checks:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      FOLDER: ${{ inputs.folder }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -26,8 +28,8 @@ jobs:
       - run: npm ci
       # A folder without code yet matches no files: that is a pass, not a failure.
       - name: ESLint
-        run: npx eslint "${{ inputs.folder }}" --max-warnings=0 --no-error-on-unmatched-pattern
+        run: npx eslint "$FOLDER" --max-warnings=0 --no-error-on-unmatched-pattern
       - name: Prettier
-        run: npx prettier --check "${{ inputs.folder }}" --ignore-unknown
+        run: npx prettier --check "$FOLDER" --ignore-unknown
       - name: Type-check
-        run: node scripts/typecheck.mjs "${{ inputs.folder }}"
+        run: node scripts/typecheck.mjs "$FOLDER"

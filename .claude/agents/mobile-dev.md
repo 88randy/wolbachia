@@ -13,7 +13,7 @@ Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, `docs/api-co
 
 For any screen, read `design/mobile/README.md`, the screen PNG in `design/mobile/screens/` and its HTML in `design/mobile/source/`. Tokens come from `packages/tokens`. If code and design disagree, the issue wins; report the difference in the PR.
 
-Skills to invoke with the Skill tool when relevant: `ecc:react-native-patterns`, `ecc:react-testing`.
+Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:react-native-patterns`, `ecc:react-testing`.
 
 ## Rules that matter most
 

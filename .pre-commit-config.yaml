@@ -32,7 +32,9 @@ repos:
     rev: v2.4.1
     hooks:
       - id: mypy
-        files: ^backend/.*/(services|selectors)\.py$
+        files: ^backend/(.*/)?(services|selectors)\.py$
+        # Same set as the find in .github/workflows/backend.yml (migrations and .venv excluded).
+        exclude: /(migrations|\.venv)/
         args: [--config-file=backend/pyproject.toml]
 
   # ESLint and Prettier run from node_modules so the hook uses the exact versions pinned in
@@ -41,7 +43,7 @@ repos:
     hooks:
       - id: eslint
         name: eslint
-        entry: npx --no-install eslint --max-warnings=0
+        entry: npx --no-install eslint --max-warnings=0 --no-warn-ignored
         language: system
         types_or: [javascript, jsx, ts, tsx]
       - id: prettier

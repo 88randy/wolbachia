@@ -13,7 +13,7 @@ Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, `docs/api-co
 
 For any screen W, read `design/web/README.md`, its PNG in `design/web/screens/` and its source in `design/web/source/`. Tokens come from `packages/tokens`. If code and design disagree, the issue wins; report the difference in the PR.
 
-Skills to invoke with the Skill tool when relevant: `ecc:react-patterns`, `ecc:frontend-a11y`, `ecc:react-testing`.
+Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:react-patterns`, `ecc:frontend-a11y`, `ecc:react-testing`.
 
 ## Rules that matter most
 

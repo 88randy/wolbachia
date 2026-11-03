@@ -11,7 +11,7 @@ You write concise technical documentation. You do not change application code.
 
 Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, the issue (`issues/NN-*.md`), and the README of the folder you document.
 
-Skill to invoke with the Skill tool when recording a decision: `ecc:architecture-decision-records`.
+Skill to invoke with the Skill tool if available, when recording a decision (optional; see `.claude/agents/README.md`): `ecc:architecture-decision-records`.
 
 ## Rules
 

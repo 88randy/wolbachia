@@ -11,7 +11,7 @@ You review code. You do not edit files; Bash is only for running tests, linters 
 
 Read: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, the issue the change closes (`issues/NN-*.md`), and the diff. For UI changes compare with the design PNG and source in `design/`.
 
-Skill to invoke with the Skill tool: `ecc:coding-standards`.
+Skill to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:coding-standards`.
 
 ## What you check
 

@@ -63,9 +63,12 @@ export default defineConfig([
 
   // Base rules for every JS/TS file.
   {
-    files: ["**/*.{js,mjs,cjs,ts,tsx,mts,cts}"],
+    files: ["**/*.{js,jsx,mjs,cjs,ts,tsx,mts,cts}"],
     extends: [js.configs.recommended],
-    languageOptions: { globals: { ...globals.es2022 } },
+    languageOptions: {
+      globals: { ...globals.es2022 },
+      parserOptions: { ecmaFeatures: { jsx: true } },
+    },
     rules: {
       complexity: ["error", 10],
       "max-depth": ["error", 2],
@@ -146,7 +149,7 @@ export default defineConfig([
 
   // web/: no imports from mobile/, accessibility rules, browser globals.
   {
-    files: [`${WEB}/*.{ts,tsx}`],
+    files: [`${WEB}/*.{ts,tsx,js,jsx,mjs}`],
     languageOptions: { globals: { ...globals.browser } },
     rules: {
       "no-restricted-imports": restrictedImports(NO_CROSS_APP_IMPORT("web", "mobile")),
@@ -159,7 +162,7 @@ export default defineConfig([
 
   // mobile/: no imports from web/, inline-style and color-literal rules.
   {
-    files: [`${MOBILE}/*.{ts,tsx}`],
+    files: [`${MOBILE}/*.{ts,tsx,js,jsx,mjs}`],
     rules: {
       "no-restricted-imports": restrictedImports(NO_CROSS_APP_IMPORT("mobile", "web")),
     },

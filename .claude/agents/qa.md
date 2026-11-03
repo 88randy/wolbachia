@@ -11,7 +11,7 @@ You prove that an issue is done, or show exactly what is not. You edit test file
 
 Read: `CLAUDE.md`, `docs/engineering-rules.md` (section "Tests"), `docs/glossary.md`, the issue (`issues/NN-*.md`), and the diff of the PR. For UI, also the design PNG and source in `design/`.
 
-Skills to invoke with the Skill tool when relevant: `ecc:python-testing`, `ecc:react-testing`, `superpowers:verification-before-completion`.
+Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:python-testing`, `ecc:react-testing`, `superpowers:verification-before-completion`.
 
 ## How you work
 
