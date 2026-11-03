@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W63 a W66 Configuración</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="people" viewBox="0 0 24 24"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18 13.5a7 7 0 0 1 4 6.5"></path></symbol>
+<symbol id="key" viewBox="0 0 24 24"><path d="M8 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM11 12h10M18 12v3M21 12v2"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="copy" viewBox="0 0 24 24"><path d="M8 8h12v12H8zM4 16V4h12"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:5320px; height:960px">
+
+<div class="col"><div class="lbl">W63 · Catálogos · intervenciones de terceros<span>Pestañas por catálogo; los elementos en uso no se borran: se desactivan</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Configuración</div>
+<a class="nv" href="#"><svg class="i"><use href="#gear"></use></svg>Parámetros por región</a>
+<a class="nv on" href="#"><svg class="i"><use href="#ops"></use></svg>Catálogos</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Tipos de incidente</a>
+<a class="nv" href="#"><svg class="i"><use href="#people"></use></svg>Perfiles y permisos</a>
+<a class="nv" href="#"><svg class="i"><use href="#key"></use></svg>Llaves de API</a>
+<a class="nv" href="#"><svg class="i"><use href="#phone"></use></svg>App móvil<span class="ct">3</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#map"></use></svg>Organización</a>
+<div class="foot">Codequim</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Codequim · toda la organización</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AD</span><span><b>Administración</b><small>Administrador de organización</small></span></button></div>
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Catálogos</h1></div><button class="b p"><svg class="i s16"><use href="#plus"></use></svg>Agregar elemento</button></div>
+<div class="tabs"><b>Insumos</b><b>Orígenes de muestra</b><b>Métodos de muestra</b><b class="on">Intervenciones de terceros</b><b>Motivos de anulación</b><b>Cursos</b><b>Revisión de moto</b></div>
+<div class="tw"><table class="t"><thead><tr><th>Elemento</th><th class="n">En uso</th><th>Desde</th><th>Estado</th><th></th></tr></thead><tbody>
+<tr><td><b>Rociado</b></td><td class="n"><a class="u" href="#">4 registros</a></td><td>1 ene 2026 · Administración</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Activo</span></td><td><button class="b t sm">Desactivar</button></td></tr>
+<tr><td><b>Nebulización</b></td><td class="n"><a class="u" href="#">7 registros</a></td><td>1 ene 2026 · Administración</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Activo</span></td><td><button class="b t sm">Desactivar</button></td></tr>
+<tr><td><b>Larvicida</b></td><td class="n"><a class="u" href="#">3 registros</a></td><td>1 ene 2026 · Administración</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Activo</span></td><td><button class="b t sm">Desactivar</button></td></tr>
+<tr><td><b>Descacharrización</b></td><td class="n">0</td><td>2 oct 2026 · Sofía</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Activo</span></td><td><button class="b t sm">Desactivar</button></td></tr>
+<tr class="void"><td class="vx">Fumigación general</td><td class="n">2 registros</td><td>1 ene 2026</td><td><span class="bd nt"><svg class="i"><use href="#ban"></use></svg>Desactivado 15 mar 2026</span></td><td><button class="b t sm">Reactivar</button></td></tr>
+<tr><td><b>Otro (especificar)</b></td><td class="n">1 registro</td><td>Siempre</td><td><span class="bd in"><svg class="i"><use href="#lock"></use></svg>Fijo</span></td><td></td></tr>
+</tbody></table></div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><p>Un elemento desactivado deja de aparecer en formularios nuevos, pero los registros que ya lo usan lo siguen mostrando. Cada lista abierta conserva «Otro (especificar)», igual que en la app móvil.</p></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W64 · Tipos de incidente<span>Ícono, severidad por defecto, responsable, tiempo de respuesta, a quién escala, qué bloquea y qué evidencia pide; «Otro» no se desactiva</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Configuración</div>
+<a class="nv" href="#"><svg class="i"><use href="#gear"></use></svg>Parámetros por región</a>
+<a class="nv" href="#"><svg class="i"><use href="#ops"></use></svg>Catálogos</a>
+<a class="nv on" href="#"><svg class="i"><use href="#alert"></use></svg>Tipos de incidente</a>
+<a class="nv" href="#"><svg class="i"><use href="#people"></use></svg>Perfiles y permisos</a>
+<a class="nv" href="#"><svg class="i"><use href="#key"></use></svg>Llaves de API</a>
+<div class="foot">Codequim</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Codequim</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AD</span><span><b>Administración</b><small>Administrador</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Tipos de incidente</h1></div><button class="b p"><svg class="i s16"><use href="#plus"></use></svg>Nuevo tipo</button></div>
+<div class="tw"><table class="t"><thead><tr><th>Tipo</th><th>Severidad</th><th>Responde</th><th class="n">Tiempo</th></tr></thead><tbody>
+<tr class="sel"><td><b><svg class="i s16" style="vertical-align:-3px"><use href="#trap"></use></svg> Ovitrampa no recuperada</b></td><td><span class="bd cr"><svg class="i"><use href="#up"></use></svg>Crítica</span></td><td>Supervisor</td><td class="n">48 h</td></tr>
+<tr><td><b>Discrepancia de inventario</b></td><td><span class="bd wn">Alta</span></td><td>Supervisor</td><td class="n">24 h</td></tr>
+<tr><td><b>Moto con falla</b></td><td><span class="bd wn">Alta</span></td><td>Supervisor</td><td class="n">12 h</td></tr>
+<tr><td><b>Queja de vecino</b></td><td><span class="bd nt">Baja</span></td><td>Promotor</td><td class="n">72 h</td></tr>
+<tr><td><b>Otro</b> <span class="bd in"><svg class="i"><use href="#lock"></use></svg>Siempre existe</span></td><td><span class="bd nt">Baja</span></td><td>Supervisor</td><td class="n">72 h</td></tr>
+</tbody></table></div>
+<p class="cap">Tiempos de muestra; los define la empresa.</p>
+</div>
+<div class="dp" style="width:460px">
+<div class="dh"><div class="row sb2"><span class="ov">Tipo de incidente</span><button class="icb" aria-label="Cerrar panel"><svg class="i"><use href="#x"></use></svg></button></div><h2 class="h2">Ovitrampa no recuperada</h2></div>
+<div class="db" style="gap:10px">
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Ícono</span><div class="in"><svg class="i s16"><use href="#trap"></use></svg>Ovitrampa<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div><div class="fld"><span class="l">Severidad por defecto</span><div class="in">Crítica<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div></div>
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Perfil responsable</span><div class="in">Supervisor de centro</div></div><div class="fld"><span class="l">Tiempo de respuesta</span><div class="in">48<span class="u">horas</span></div></div></div>
+<div class="fld"><span class="l">Si vence, escala a</span><div class="in">Coordinador regional<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+<div class="fld"><span class="l">Mientras siga abierto, bloquea</span><div class="row wr"><span class="fc on"><svg class="i"><use href="#ban"></use></svg>Cierre de cuadrante<svg class="i"><use href="#x"></use></svg></span><span class="fc add"><svg class="i"><use href="#plus"></use></svg>Agregar</span></div></div>
+<div class="fld"><span class="l">Evidencia para cerrar</span><div class="row wr"><span class="fc on">Resultado<svg class="i"><use href="#x"></use></svg></span><span class="fc on">Comentario<svg class="i"><use href="#x"></use></svg></span><span class="fc on"><svg class="i"><use href="#camera"></use></svg>Foto<svg class="i"><use href="#x"></use></svg></span></div></div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><p>Los cambios aplican a incidentes nuevos. Los abiertos conservan las reglas con que se crearon; queda en el historial del tipo.</p></div>
+<div class="row" style="margin-top:auto"><button class="b t">Desactivar tipo</button><span class="fx"></span><button class="b p">Guardar versión</button></div>
+</div></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W65 · Perfiles y permisos · matriz<span>Perfiles contra acciones, con alcance por casilla; los perfiles de consulta externa son fijos de solo lectura</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Configuración</div>
+<a class="nv" href="#"><svg class="i"><use href="#gear"></use></svg>Parámetros por región</a>
+<a class="nv" href="#"><svg class="i"><use href="#ops"></use></svg>Catálogos</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Tipos de incidente</a>
+<a class="nv on" href="#"><svg class="i"><use href="#people"></use></svg>Perfiles y permisos</a>
+<a class="nv" href="#"><svg class="i"><use href="#key"></use></svg>Llaves de API</a>
+<div class="foot">Codequim</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Codequim</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AD</span><span><b>Administración</b><small>Administrador</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="phd"><div class="t"><h1 class="h1">Perfiles y permisos</h1><p class="sub">Grupo: Liberaciones y laboratorio · 6 de 48 acciones</p></div><span class="fc on">Grupo: Liberaciones y laboratorio<svg class="i"><use href="#down"></use></svg></span><button class="b p">Guardar cambios</button></div>
+<div class="tw" style="overflow:hidden"><table class="t" style="font-size:12px"><thead><tr><th>Acción</th><th>Supervisor</th><th>Almacén</th><th>Laboratorio</th><th>Coordinador</th><th>Regulatorio</th><th>Promotor</th><th>Admin.</th><th>Gobierno</th><th>Empresa</th></tr></thead><tbody>
+<tr><td><b>Validar conteo</b></td><td>—</td><td>—</td><td><span class="bd ok">Asignadas</span></td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td></tr>
+<tr><td><b>Crear envío a UIEB</b></td><td>—</td><td>—</td><td><span class="bd ok">Organización</span></td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td></tr>
+<tr><td><b>Autorizar transferencia de datos</b></td><td>—</td><td>—</td><td>—</td><td>—</td><td><span class="bd ok">Organización</span></td><td>—</td><td>—</td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td></tr>
+<tr class="sel"><td><b>Suspender permiso</b></td><td>—</td><td>—</td><td>—</td><td><span class="bd in">Región</span></td><td><span class="bd ok">Organización</span></td><td>—</td><td>—</td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td></tr>
+<tr><td><b>Ver RFC completo</b></td><td><span class="bd wn"><svg class="i"><use href="#lock"></use></svg>Centro · con registro</span></td><td>—</td><td>—</td><td><span class="bd wn"><svg class="i"><use href="#lock"></use></svg>Región · con registro</span></td><td><span class="bd wn"><svg class="i"><use href="#lock"></use></svg>Org. · con registro</span></td><td>—</td><td><span class="bd wn"><svg class="i"><use href="#lock"></use></svg>Org. · con registro</span></td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td><td><span class="bd nt"><svg class="i"><use href="#lock"></use></svg>No</span></td></tr>
+<tr><td><b>Ver tableros agregados</b></td><td><span class="bd ok">Centro</span></td><td>—</td><td><span class="bd ok">Región</span></td><td><span class="bd ok">Región</span></td><td><span class="bd ok">Org.</span></td><td>—</td><td><span class="bd ok">Org.</span></td><td><span class="bd in"><svg class="i"><use href="#lock"></use></svg>Territorio · fijo</span></td><td><span class="bd in"><svg class="i"><use href="#lock"></use></svg>Sus sitios · fijo</span></td></tr>
+</tbody></table></div>
+<div class="row top" style="gap:12px">
+<div class="nt info fx"><svg class="i"><use href="#info"></use></svg><p>Cada casilla elige alcance: centro, región u organización. «—» significa sin permiso. Las columnas Gobierno y Empresa están fijas en solo lectura y no se pueden editar.</p></div>
+<div class="card tight" style="width:380px"><span class="ov">Casilla con foco · Coordinador · Suspender permiso</span><div class="seg" style="align-self:flex-start"><b>Sin permiso</b><b>Centro</b><b class="on">Región</b><b>Organización</b></div><span class="cap">Teclado: flechas para moverse, Enter para cambiar el alcance.</span></div>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W66 · Llaves de API · llave recién creada<span>Una llave por institución con alcance geográfico, endpoints, límite y vigencia; la llave se muestra una sola vez</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Configuración</div>
+<a class="nv" href="#"><svg class="i"><use href="#gear"></use></svg>Parámetros por región</a>
+<a class="nv" href="#"><svg class="i"><use href="#ops"></use></svg>Catálogos</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Tipos de incidente</a>
+<a class="nv" href="#"><svg class="i"><use href="#people"></use></svg>Perfiles y permisos</a>
+<a class="nv on" href="#"><svg class="i"><use href="#key"></use></svg>Llaves de API</a>
+<div class="foot">Codequim</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Codequim</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AD</span><span><b>Administración</b><small>Administrador</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="phd"><div class="t"><h1 class="h1">Llaves de API</h1></div><button class="b p"><svg class="i s16"><use href="#plus"></use></svg>Nueva llave</button></div>
+<div class="tw"><table class="t"><thead><tr><th>Institución</th><th>Alcance</th><th>Endpoints</th><th class="n">Límite</th><th>Vigencia</th><th>Estado</th></tr></thead><tbody>
+<tr><td><b>[Secretaría de Salud estatal]</b></td><td>Región Norte</td><td>Índices · prevalencia · cobertura</td><td class="n">[n] / día</td><td>al 31 dic 2026</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Activa</span></td></tr>
+<tr><td><b>[Empresa cliente]</b></td><td>Polígono · 3 sitios</td><td>Lecturas · índices</td><td class="n">[n] / día</td><td>al 30 jun 2027</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Activa</span></td></tr>
+<tr class="void"><td class="vx">[Institución académica]</td><td class="vx">C-07</td><td class="vx">Prevalencia</td><td class="n vx">—</td><td>venció 1 oct 2026</td><td><span class="bd nt">Vencida</span></td></tr>
+</tbody></table></div>
+<div class="card" style="gap:6px"><div class="chead"><b class="h3">Uso por día · [Secretaría de Salud estatal]</b><button class="b t sm">Tabla</button><button class="b t sm">Bitácora de consultas</button></div>
+<svg class="ch" viewBox="0 0 900 110" role="img" aria-label="Consultas por día de la llave de la Secretaría, del 28 oct al 3 nov, de muestra"><line class="ax" x1="30" y1="90" x2="890" y2="90"></line><g fill="#1A5DFF"><rect x="60" y="50" width="70" height="40" rx="3"></rect><rect x="180" y="40" width="70" height="50" rx="3"></rect><rect x="300" y="60" width="70" height="30" rx="3"></rect><rect x="420" y="30" width="70" height="60" rx="3"></rect><rect x="540" y="55" width="70" height="35" rx="3"></rect><rect x="660" y="75" width="70" height="15" rx="3"></rect><rect x="780" y="45" width="70" height="45" rx="3"></rect></g><g text-anchor="middle"><text x="95" y="105">28 oct</text><text x="815" y="105">3 nov</text></g></svg></div>
+<div class="scrim"></div>
+<div class="mdl" style="width:520px"><div class="mh"><h2 class="h2">Llave creada para [Empresa cliente]</h2><p class="sub">Cópiala ahora. Por seguridad no se vuelve a mostrar; si se pierde, se revoca y se crea otra.</p></div>
+<div class="mb"><div class="in mono" style="height:48px; font-size:14px; letter-spacing:.02em; background:#F4F6FA">cq_live_••••••••••••••••••••••••••••<button class="b o sm" style="margin-left:auto"><svg class="i s16"><use href="#copy"></use></svg>Copiar</button></div>
+<div class="kv"><span>Alcance</span><b>Polígono de 3 sitios contratados</b></div><div class="kv"><span>Endpoints</span><b>Lecturas de ovitrampa · índices entomológicos</b></div>
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><p>La llave se entrega por un canal seguro al equipo técnico de la institución, nunca por correo abierto.</p></div></div>
+<div class="mf"><button class="b p">Ya la copié</button></div></div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":5320,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

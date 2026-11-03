@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W31 a W33 Operación diaria</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"></path></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><path d="M4 6h16v15H4zM4 10h16M8 3v5M16 3v5"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:4000px; height:960px">
+
+<div class="col"><div class="lbl">W31 · Reubicaciones · propuesta de campo<span>Motivo, ubicación anterior y nueva, foto y mismo folio; rechazar crea una tarea para el día siguiente</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Incidentes<span class="ct cr">5</span></a>
+<div class="grp">Operación</div>
+<a class="nv" href="#"><svg class="i"><use href="#ops"></use></svg>Jornadas del día<span class="ct">6</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#check"></use></svg>Validar jornadas<span class="ct">4</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#search"></use></svg>Bandeja de revisión<span class="ct">5</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#move"></use></svg>Reubicaciones<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Intervenciones de terceros</a>
+<a class="nv" href="#"><svg class="i"><use href="#lock"></use></svg>Cierre de cuadrante</a>
+<div class="foot">Centro Operativo Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Reubicaciones</h1></div></div>
+<div class="tabs"><b class="on">Por decidir<span class="ct">2</span></b><b>Aprobadas</b><b>Rechazadas</b></div>
+<div class="tw"><table class="t"><thead><tr><th>Folio</th><th>Motivo</th><th>Propuso</th><th>Fecha</th></tr></thead><tbody>
+<tr class="sel"><td><a href="#">OV-011</a></td><td><span class="bd wn"><svg class="i"><use href="#door"></use></svg>Casa cerrada 2 semanas</span></td><td>Luis</td><td>3 nov 2026</td></tr>
+<tr><td><a href="#">OV-032</a></td><td><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Volteada 2 de 2</span></td><td>Luis</td><td>3 nov 2026</td></tr>
+</tbody></table></div>
+</div>
+<div class="dp" style="width:480px">
+<div class="dh"><div class="row sb2"><span class="ov">Reubicación R-0024 · mismo folio</span><button class="icb" aria-label="Cerrar panel"><svg class="i"><use href="#x"></use></svg></button></div><h2 class="h2">OV-011 · Mz 0123</h2><span class="cap">Casa cerrada el 27 oct y el 3 nov · propuso Luis desde el móvil</span></div>
+<div class="db" style="gap:10px">
+<div class="map" style="height:220px"><svg class="base" viewBox="0 0 440 220" aria-hidden="true"><rect width="440" height="220" fill="#EEF1EC"></rect><path d="M0 70 H440 M0 160 H440 M150 0 V220 M300 0 V220" stroke="#fff" stroke-width="8"></path><rect x="160" y="80" width="130" height="70" fill="#E2E6DF" stroke="#B3141A" stroke-width="2"></rect><path d="M190 100 L250 130" stroke="#0A1A3F" stroke-width="2" stroke-dasharray="4 3"></path><text x="225" y="76" text-anchor="middle" style="font:700 11px Inter; fill:#586380">Mz 0123 · 28 m</text></svg><div class="mk out" style="left:190px; top:100px"><div class="p"><svg class="i"><use href="#door"></use></svg></div><span class="t">Antes</span></div><div class="mk pend" style="left:250px; top:130px"><div class="p"><svg class="i"><use href="#move"></use></svg></div><span class="t">Nueva</span></div><div class="attr">© OpenStreetMap contributors</div></div>
+<div class="g2" style="gap:10px"><div class="card tight"><span class="ov">Antes</span><b>Vivienda C · frente</b><span class="cap">Cerrada 2 semanas</span></div><div class="card tight hl"><span class="ov">Propuesta</span><b>Vivienda D · patio</b><div class="row"><span style="width:44px; height:34px; border-radius:6px; background:#C9D0DE; display:flex; align-items:center; justify-content:center"><svg class="i s16"><use href="#camera"></use></svg></span><span class="cap">Foto del sitio</span></div></div></div>
+<div class="nt ok"><svg class="i"><use href="#check"></use></svg><p>Sigue dentro de la manzana 0123 y a 64 m del punto más cercano.</p></div>
+<div class="fld"><span class="l">Comentario (obligatorio si rechazas)</span><div class="in" style="color:#586380">Opcional al aprobar</div></div>
+<div class="row" style="margin-top:auto"><button class="b do">Rechazar · crea tarea para mañana</button><span class="fx"></span><button class="b p lg"><svg class="i s16"><use href="#check"></use></svg>Aprobar reubicación</button></div>
+</div></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W32 · Intervenciones de terceros<span>Rociado, nebulización o larvicida de otras instituciones: tipo, producto, manzanas en el mapa, fechas y fuente; salen como marcas en los tableros</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Operación</div>
+<a class="nv" href="#"><svg class="i"><use href="#ops"></use></svg>Jornadas del día</a>
+<a class="nv" href="#"><svg class="i"><use href="#move"></use></svg>Reubicaciones<span class="ct">2</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#alert"></use></svg>Intervenciones de terceros</a>
+<a class="nv" href="#"><svg class="i"><use href="#lock"></use></svg>Cierre de cuadrante</a>
+<div class="foot">Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="phd"><div class="t"><h1 class="h1">Nueva intervención de terceros</h1><p class="sub">Aparecerá como ▲ en la línea de tiempo de los tableros (W53, W54)</p></div></div>
+<div class="row top" style="gap:16px; flex:1; min-height:0">
+<div class="card" style="width:420px; gap:10px">
+<div class="fld"><span class="l">Tipo <span class="req">*</span></span><div class="in">Nebulización<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div><span class="hp">Del catálogo (W63) · rociado, nebulización, larvicida u «Otro»</span></div>
+<div class="fld"><span class="l">Producto</span><div class="in">[Producto informado por la institución]</div></div>
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Desde <span class="req">*</span></span><div class="in">12 oct 2026<svg class="i s16" style="margin-left:auto"><use href="#cal"></use></svg></div></div><div class="fld"><span class="l">Hasta</span><div class="in">13 oct 2026<svg class="i s16" style="margin-left:auto"><use href="#cal"></use></svg></div></div></div>
+<div class="fld"><span class="l">Fuente <span class="req">*</span></span><div class="in">[Institución] · oficio recibido</div></div>
+<div class="kv"><span>Manzanas</span><b>0121, 0123, 0124, 0127 · <a href="#">editar en el mapa</a></b></div>
+<button class="b p" style="align-self:flex-end">Guardar intervención</button>
+</div>
+<div class="map" style="flex:1; height:100%"><svg class="base" viewBox="0 0 560 540" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="560" height="540" fill="#FFFFFF"></rect><g fill="#E2E6DF" stroke="#C9D0DE"><rect x="30" y="30" width="150" height="120"></rect><rect x="200" y="30" width="150" height="120"></rect><rect x="370" y="30" width="150" height="120"></rect><rect x="30" y="170" width="150" height="120"></rect><rect x="200" y="170" width="150" height="120"></rect><rect x="370" y="170" width="150" height="120"></rect><rect x="30" y="310" width="150" height="120"></rect><rect x="200" y="310" width="150" height="120"></rect></g>
+<g fill="#7A3CC4" fill-opacity=".22" stroke="#7A3CC4" stroke-width="3"><rect x="200" y="30" width="150" height="120"></rect><rect x="200" y="170" width="150" height="120"></rect><rect x="370" y="170" width="150" height="120"></rect><rect x="370" y="30" width="150" height="120"></rect></g>
+<g style="font:700 13px Inter" text-anchor="middle"><text x="275" y="95" fill="#0A1A3F">0121 ▲</text><text x="275" y="235" fill="#0A1A3F">0123 ▲</text><text x="445" y="235" fill="#0A1A3F">0124 ▲</text><text x="445" y="95" fill="#0A1A3F">0127 ▲</text></g></svg>
+<div class="lgd"><span class="row"><span class="sw" style="background:#7A3CC4; opacity:.5"></span>Con intervención ▲</span><span class="cap">Elige manzanas con clic o con la lista</span></div><div class="attr">© OpenStreetMap contributors</div></div>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W33 · Cierre de cuadrante · bloqueado<span>Asistente: estado de cada ovitrampa y avance del retiro; bloqueo visible mientras quede una «No recuperada» o sin retiro confirmado</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Operación"><svg class="i"><use href="#ops"></use></svg></a>
+<a class="nv" href="#" aria-label="Cuadrantes"><svg class="i"><use href="#map"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="row"><h1 class="h1 fx">Cerrar cuadrante C-07</h1></div>
+<div class="wiz"><b class="on"><i>1</i>Retiro de ovitrampas</b><b><i>2</i>Lecturas en laboratorio</b><b><i>3</i>Resumen y confirmación</b></div>
+<div class="g4">
+<div class="kpi"><span class="k">Retiradas con retiro confirmado</span><span class="v">37 de 40</span></div>
+<div class="kpi"><span class="k">Pendientes de retiro</span><span class="v">2</span></div>
+<div class="kpi" style="border-color:#B3141A"><span class="k">No recuperadas</span><span class="v" style="color:#B3141A">1</span></div>
+<div class="kpi"><span class="k">Bolsas finales en laboratorio</span><span class="v">37</span></div>
+</div>
+<div style="height:10px; border-radius:5px; background:#E4E8EF; display:flex; overflow:hidden"><span style="width:92.5%; background:#0B6B35"></span><span style="width:5%; background:#8A4B00"></span><span style="width:2.5%; background:#B3141A"></span></div>
+<div class="tw"><table class="t"><thead><tr><th>Folio</th><th>Ovitrampa</th><th>Manzana</th><th>Estado</th><th>Acción</th></tr></thead><tbody>
+<tr class="blk"><td><b>OV-021</b></td><td>OT-0412</td><td>0127</td><td><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>No recuperada · I-0231 abierto</span></td><td><a href="#">Ver incidente</a></td></tr>
+<tr class="wn"><td><b>OV-012</b></td><td>OT-0390</td><td>0123</td><td><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Retiro programado hoy</span></td><td>Luis</td></tr>
+<tr class="wn"><td><b>OV-031</b></td><td>OT-0445</td><td>0131</td><td><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Sin retiro confirmado</span></td><td>Luis</td></tr>
+<tr><td><b>OV-010</b></td><td>OT-0388</td><td>0123</td><td><span class="bd ok"><svg class="i"><use href="#bag"></use></svg>Retirada · bolsa final B-4521</span></td><td>—</td></tr>
+</tbody></table></div>
+<div class="row"><div class="nt blk fx"><svg class="i"><use href="#ban"></use></svg><p><b>No se puede cerrar todavía.</b> Falta resolver OV-021 (incidente I-0231) y confirmar el retiro de OV-012 y OV-031. Lo desbloquea quien cierre el incidente y el repartidor al retirar.</p></div><button class="b dis lg" disabled>Continuar</button></div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4000,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

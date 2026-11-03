@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Recorrido 6 incidente crítico escalado</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+</defs></svg>
+
+<div class="scr" style="border-radius:0; box-shadow:none">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="P-Indice.dc.html" aria-label="Índice de recorridos"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Incidentes"><svg class="i"><use href="#alert"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><a class="b t" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Recorridos</a><b style="font-size:14px">R6 · Incidente crítico vence, se escala y se cierra</b><span class="bd in">Paso {{stepNum}} de 4</span><span class="fx"></span><button class="b t sm" onClick="{{reset}}">Reiniciar</button><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg><sc-if value="{{escalated}}" hint-placeholder-val="{{ false }}"><span class="dot">1</span></sc-if></button><button class="usr"><span class="av">{{av}}</span><span><b>{{who}}</b><small>{{role}}</small></span></button></div>
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div class="band cr"><svg class="i"><use href="#alert"></use></svg><span class="fx">Crítico: ovitrampa no recuperada · OV-021 · vence en 12 h</span></div>
+<div class="pg" style="gap:14px">
+<p class="ov">Inicio de Ana · 4 nov 2026 04:40</p>
+<h1 class="h1">El incidente I-0231 está asignado a Ana y vence a las 16:40.</h1>
+<div class="card" style="gap:8px"><div class="row"><span class="bd cr"><svg class="i"><use href="#up"></use></svg>Crítica</span><b class="fx">I-0231 · OV-021 · Mz 0127</b><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Vence en 12 h</span></div><p class="cap">Regla del tipo (W64): tiempo de respuesta 48 h; si vence, escala a la coordinadora regional.</p></div>
+<div class="nt info"><svg class="i"><use href="#clock"></use></svg><p>Para el prototipo, adelanta el reloj 12 horas sin que Ana lo atienda.</p></div>
+<button class="b p lg" style="align-self:flex-start" onClick="{{expire}}"><svg class="i s16"><use href="#clock"></use></svg>Adelantar 12 horas</button>
+</div>
+</sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="gap:14px">
+<p class="ov">Bandeja de Sofía · 16:40</p>
+<div class="card" style="gap:6px; border:2px solid #B3141A; max-width:560px"><div class="row"><svg class="i" style="color:#B3141A"><use href="#bell"></use></svg><b class="fx">Te escalaron I-0231</b><span class="cap">hace 1 min</span></div><p class="cap">Venció el tiempo de respuesta de Ana. Ahora la responsable eres tú.</p></div>
+<div class="tw"><table class="t"><thead><tr><th>Número</th><th>Tipo</th><th>Severidad</th><th>Responsable</th><th>Vencimiento</th><th>Estado</th><th></th></tr></thead><tbody>
+<tr class="blk"><td><b>I-0231</b></td><td>Ovitrampa no recuperada · OV-021</td><td><span class="bd cr"><svg class="i"><use href="#up"></use></svg>Crítica</span></td><td>Sofía <span class="cap">(antes Ana)</span></td><td><b style="color:#B3141A">Venció hace 1 min</b></td><td><span class="bd cr"><svg class="i"><use href="#clock"></use></svg>Escalado a coordinador</span></td><td><button class="b p sm" onClick="{{open}}">Abrir<svg class="i s16"><use href="#right"></use></svg></button></td></tr>
+</tbody></table></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="pg" style="gap:12px">
+<div class="row"><h1 class="h1 fx">I-0231 · Ovitrampa no recuperada</h1><span class="bd cr"><svg class="i"><use href="#clock"></use></svg>Escalado a coordinador</span></div>
+<div class="g2"><div class="card tight" style="border-color:#B3141A"><span class="ov" style="color:#B3141A">Tiempo de respuesta</span><b style="font-size:24px; color:#B3141A">48 h 01 min</b></div><div class="card tight" style="background:#FDE8E8; border-color:#F3B9BB"><span class="ov" style="color:#B3141A">Mientras siga abierto, bloquea</span><b style="color:#B3141A"><svg class="i s16" style="vertical-align:-3px"><use href="#ban"></use></svg> El cierre del cuadrante C-07</b></div></div>
+<div class="card tight"><span class="ov">Reporte de campo</span><p style="margin:0">«Llegué y ya no estaba el bote. La vecina dice que lo tiraron con la basura.» · Luis, 2 nov 16:40</p></div>
+</div>
+<div class="dp">
+<div class="dh"><b class="h2">Cerrar incidente</b><p class="cap">El tipo pide: resultado, comentario y foto.</p></div>
+<div class="db" style="gap:10px">
+<span class="l" style="font-size:12px; font-weight:700">Resultado</span>
+<button class="b {{resBtn}}" style="justify-content:flex-start" onClick="{{pickRes}}">Ovitrampa dada de baja y punto reinstalado</button>
+<div class="fld"><span class="l">Comentario</span><div class="in ta" style="height:70px">Se colocó OT-0455 en el mismo folio OV-021. La moradora aceptó cuidarla.</div></div>
+<span class="l" style="font-size:12px; font-weight:700">Foto de evidencia</span>
+<sc-if value="{{noPhoto}}" hint-placeholder-val="{{ true }}"><button class="drop" style="font-family:inherit; cursor:pointer" onClick="{{addPhoto}}"><svg class="i s24"><use href="#camera"></use></svg><span>Adjuntar la foto que subió Luis</span></button></sc-if>
+<sc-if value="{{photo}}" hint-placeholder-val="{{ false }}"><div class="card tight" style="flex-direction:row; align-items:center"><svg class="i s24"><use href="#camera"></use></svg><span class="fx">reinstalacion-ov021.jpg</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div></sc-if>
+<div style="margin-top:auto"></div>
+<sc-if value="{{canClose}}" hint-placeholder-val="{{ false }}"><button class="b p lg" onClick="{{close}}"><svg class="i s16"><use href="#check"></use></svg>Cerrar incidente</button></sc-if>
+<sc-if value="{{cantClose}}" hint-placeholder-val="{{ true }}"><button class="b dis lg" disabled>Cerrar · falta {{missing}}</button></sc-if>
+</div></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div class="pg" style="gap:14px; align-items:center; text-align:center; padding-top:80px">
+<svg class="i s48" style="color:#0B6B35"><use href="#check"></use></svg>
+<h1 class="h1">I-0231 cerrado con evidencia</h1>
+<p class="sub">Se desbloqueó el cierre de C-07 y se avisó a Ana y a Luis. Todo quedó en el historial: reporte, escalamiento automático y cierre.</p>
+<div class="row"><button class="b o"><svg class="i s16"><use href="#refresh"></use></svg>Reabrir con motivo</button><a class="b p" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Volver a los recorridos</a></div>
+</div>
+</sc-if>
+
+</div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 0, res: false, photo: false }; }
+  renderVals() {
+    const { s, res, photo } = this.state;
+    const sofia = s >= 1;
+    const can = res && photo;
+    return {
+      s0: s === 0, s1: s === 1, s2: s === 2, s3: s === 3, stepNum: s + 1,
+      escalated: s === 1,
+      av: sofia ? 'SO' : 'AN', who: sofia ? 'Sofía' : 'Ana', role: sofia ? 'Coordinadora regional' : 'Supervisora · Centro Norte',
+      resBtn: res ? 'p' : 'o', photo, noPhoto: !photo, canClose: can, cantClose: !can,
+      missing: !res && !photo ? 'resultado y foto' : (!res ? 'el resultado' : 'la foto'),
+      expire: () => this.setState({ s: 1 }),
+      open: () => this.setState({ s: 2 }),
+      pickRes: () => this.setState({ res: true }),
+      addPhoto: () => this.setState({ photo: true }),
+      close: () => this.setState({ s: 3 }),
+      reset: () => this.setState({ s: 0, res: false, photo: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>R3 · Casa cerrada OV-011</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="nav" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="egg" viewBox="0 0 24 24"><path d="M12 3c3.5 0 6 5 6 10a6 6 0 0 1-12 0c0-5 2.5-10 6-10z"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+<symbol id="hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 8v4l3 2"></path></symbol>
+</defs></svg>
+
+<div style="width:360px; height:800px; position:relative">
+
+<sc-if value="{{is.home}}" hint-placeholder-val="{{true}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12 por subir</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 puntos revisados · 2 casas cerradas por volver</p>
+<div class="tg"><b class="on"><svg class="i s20"><use href="#list"></use></svg>Lista</b><b><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div>
+<p class="ov">Pendientes · Alto Riesgo primero</p>
+<div class="pt"><div class="m"><div class="row"><b>OV-011</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">30 m</div></div>
+<div class="pt"><div class="m"><div class="row"><b>OV-012</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">160 m</div></div>
+<button class="sim" onClick="{{go.scan1}}">Simulación: estás frente a OV-011. Toca Escanear.</button>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan" onClick="{{go.scan1}}"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.scan1}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0; background:#1d232e"><div class="cam"></div><div class="frame"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; top:16px; left:16px"><button class="cbtn" aria-label="Cerrar" onClick="{{go.home}}"><svg class="i"><use href="#x"></use></svg></button></div>
+<div style="position:absolute; left:16px; right:16px; bottom:24px"><button class="sim" style="width:100%; justify-content:center" onClick="{{go.p1a}}">Simulación: leer QR de OV-011</button></div></div>
+</sc-if>
+
+<sc-if value="{{is.p1a}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.home}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-011</b><small>Mz 0123 · Lectura 9 · Anterior 3 nov</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 6</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<p class="h1">¿Cómo la encontraste?</p>
+<button class="opt hero"><svg class="i s32"><use href="#check"></use></svg><span style="flex:1; font-size:20px; font-weight:700">Bien</span></button>
+<div class="g2">
+<button class="opt v" style="min-height:76px; border-color:#1A5DFF" onClick="{{go.closed1}}"><svg class="i s28"><use href="#door"></use></svg>Casa cerrada</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#user"></use></svg>Morador renuente</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#search"></use></svg>No está</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#trap"></use></svg>Volteada</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#drop"></use></svg>Sin agua</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#minus"></use></svg>Sin papeleta</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#ban"></use></svg>Destruida</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#dots"></use></svg>Otro</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.closed1}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="ct c" style="gap:16px">
+<div class="rs wn"><svg class="i"><use href="#door"></use></svg></div>
+<p class="h1">Casa cerrada guardada</p>
+<p class="b">OV-011 pasó a «Volver hoy». Te lo recordamos una hora antes de cerrar.</p>
+<span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Guardado en el teléfono</span>
+<span class="vib">〰 Vibración corta</span>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.late}}">Siguiente punto</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.late}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>16:05 · cierras a las 17:00</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>21 por subir</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<div class="nt warn"><svg class="i"><use href="#clock"></use></svg><div class="tx"><p>Falta una hora: vuelve a las 3 casas cerradas.</p></div></div>
+<p class="bb">37 de 40 puntos revisados · 3 casas cerradas por volver</p>
+<p class="ov">Casas cerradas por volver hoy</p>
+<button class="pt" style="text-align:left" onClick="{{go.det}}"><div class="m"><div class="row"><b>OV-011</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · cerrada a las 10:40</span><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver</span></div><div class="d">350 m<svg class="i s20" style="display:block; margin:4px 0 0 auto"><use href="#right"></use></svg></div></button>
+<div class="pt"><div class="m"><b>OV-022</b><span class="cap">Manzana 0127 · cerrada a las 12:15</span><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver</span></div><div class="d">610 m</div></div>
+<div class="pt"><div class="m"><b>OV-023</b><span class="cap">Manzana 0127 · cerrada a las 12:30</span><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver</span></div><div class="d">640 m</div></div>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.det}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.late}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>OV-011</b><small>Manzana 0123 · Alto Riesgo</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>21</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct">
+<span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver hoy</span>
+<button class="btn o"><svg class="i"><use href="#nav"></use></svg>Cómo llegar (Organic Maps)</button>
+<p class="ov">Historial reciente</p>
+<div class="cd" style="gap:10px">
+<div class="kv"><span>Hoy 10:40</span><b>Casa cerrada</b></div>
+<div class="kv"><span>3 nov</span><b>Bien · papeleta entregada</b></div>
+<div class="kv"><span>27 oct</span><b>Negativa · 0</b></div>
+</div>
+<p class="cap">Para registrar, escanea el QR de la ovitrampa.</p>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan" onClick="{{go.scan2}}"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.scan2}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0; background:#1d232e"><div class="cam"></div><div class="frame"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; left:16px; right:16px; bottom:24px"><button class="sim" style="width:100%; justify-content:center" onClick="{{go.p1b}}">Simulación: leer QR de OV-011 (16:20)</button></div></div>
+</sc-if>
+
+<sc-if value="{{is.p1b}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.late}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-011</b><small>Segundo intento de hoy</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>21</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 6</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<p class="h1">¿Cómo la encontraste?</p>
+<button class="opt hero"><svg class="i s32"><use href="#check"></use></svg><span style="flex:1; font-size:20px; font-weight:700">Bien</span></button>
+<div class="g2">
+<button class="opt v" style="min-height:76px; border-color:#1A5DFF" onClick="{{go.closed2}}"><svg class="i s28"><use href="#door"></use></svg>Casa cerrada</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#user"></use></svg>Morador renuente</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#search"></use></svg>No está</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#trap"></use></svg>Volteada</button>
+</div>
+<p class="cap">Más opciones abajo: Sin agua, Sin papeleta, Destruida, Otro.</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.closed2}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="ct c" style="gap:16px">
+<div class="rs wn"><svg class="i"><use href="#door"></use></svg></div>
+<p class="h1">Sigue cerrada</p>
+<p class="b">Guardamos el segundo intento. La próxima semana tu lectura quedará como desfasada.</p>
+<div class="nt info" style="text-align:left"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Si la semana que entra vuelve a estar cerrada, se propondrá reubicar este punto.</p></div></div>
+<span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Guardado en el teléfono</span>
+</div>
+<div class="ft"><button class="btn o" onClick="{{go.wk46}}">Simulación: ir a la semana 46</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.wk46}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 46</b><small>Jornada desde 08:05 · M-03</small></div><button class="chip ok"><svg class="i s20"><use href="#check"></use></svg>Todo enviado</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">4 de 40 puntos revisados · 0 casas cerradas</p>
+<p class="ov">Pendientes · Alto Riesgo primero</p>
+<div class="pt"><div class="m"><div class="row"><b>OV-011</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Cerrada la semana pasada</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">25 m</div></div>
+<button class="sim" onClick="{{go.p1c}}">Simulación: escanear OV-011 (casa abierta)</button>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan" onClick="{{go.p1c}}"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p1c}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.wk46}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-011</b><small>Lectura 10 · Anterior: casa cerrada 10 nov</small></div><button class="chip l ok"><svg class="i s20"><use href="#check"></use></svg>0</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 6</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<p class="h1">¿Cómo la encontraste?</p>
+<button class="opt hero" onClick="{{go.p3}}"><svg class="i s32"><use href="#check"></use></svg><span style="flex:1; font-size:20px; font-weight:700">Bien</span><svg class="i"><use href="#right"></use></svg></button>
+<div class="g2">
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#door"></use></svg>Casa cerrada</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#user"></use></svg>Morador renuente</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#search"></use></svg>No está</button>
+<button class="opt v" style="min-height:76px"><svg class="i s28"><use href="#trap"></use></svg>Volteada</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p3}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.p1c}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-011</b><small>Encontrada: Bien</small></div><button class="chip l ok"><svg class="i s20"><use href="#check"></use></svg>0</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="nt warn"><svg class="i"><use href="#clock"></use></svg><div class="tx"><p>Esta lectura quedará como desfasada: se guarda pero no cuenta en los índices.</p></div></div>
+<p class="h1">Escanea la bolsa de la papeleta</p>
+<div class="cd" style="border-color:#0B6B35"><div class="row sb"><b class="bb">Bolsa B-4502</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Leída</span></div></div>
+<p class="cap">Condiciones (paso 2) y reinstalar (paso 4) son iguales que en el recorrido 2; aquí se omiten.</p>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.p6}}">Continuar</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.p6}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.p3}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-011</b><small>Revisa antes de guardar</small></div><button class="chip l ok"><svg class="i s20"><use href="#check"></use></svg>0</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 5 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct">
+<div class="cd hl" style="align-items:center; text-align:center; padding:20px"><p class="h2">Papeleta en bolsa B-4502</p><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Desfasada</span></div>
+<div class="cd"><div class="kv"><span>Folio</span><b>OV-011 · Mz 0123</b></div><div class="kv"><span>Lectura</span><b>N.º 10</b></div><div class="kv"><span>Motivo</span><b>Casa cerrada sem. 45</b></div></div>
+<p class="cap">El laboratorio la cuenta igual; solo no entra al cálculo de índices.</p>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.ok}}">Guardar lectura</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.ok}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0"><div class="flashg"></div>
+<div class="ct c" style="gap:16px; position:relative">
+<div class="rs ok"><svg class="i"><use href="#check"></use></svg></div>
+<p class="h1">Guardado y enviado</p>
+<p class="b">OV-011 · bolsa B-4502 · lectura desfasada.</p>
+<a class="sim" href="Proto.dc.html">Fin del recorrido · Volver a recorridos</a>
+</div></div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = (this.state && this.state.s) || 'home';
+    const keys = ['home','scan1','p1a','closed1','late','det','scan2','p1b','closed2','wk46','p1c','p3','p6','ok'];
+    const is = {}; const go = {};
+    keys.forEach((k) => { is[k] = s === k; go[k] = () => this.setState({ s: k }); });
+    return { is, go };
+  }
+}
+</script>
+</body>
+</html>

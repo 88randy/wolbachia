@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>R6 · Incidente sin señal</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="cloudok" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM9 14.5l2 2 4-4"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"></path></symbol>
+<symbol id="moto" viewBox="0 0 24 24"><path d="M2 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM16 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM5 16.5 9 10h5l3 6.5M13 5h3l2.5 5M8 10H5"></path></symbol>
+<symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"></path></symbol>
+<symbol id="msg" viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"></path></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1 1 0 0 0 .9 1.5h13.2a1 1 0 0 0 .9-1.5L14 9V3M7 15h10"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="mic" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+</defs></svg>
+
+<div style="width:360px; height:800px; position:relative">
+
+<sc-if value="{{is.home}}" hint-placeholder-val="{{true}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip off"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 puntos revisados · 3 casas cerradas por volver</p>
+<p class="ov">Pendientes</p>
+<div class="pt"><div class="m"><b>OV-022</b><span class="cap">Manzana 0127 · Revisar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">300 m</div></div>
+<button class="sim" onClick="{{go.type}}">Simulación: ves algo que te hace sentir inseguro. Toca Incidente.</button>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb" onClick="{{go.type}}"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.type}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.home}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Reportar incidente</b><small>Ubicación y hora se guardan solas</small></div><button class="chip l wn"><svg class="i s20"><use href="#nosig"></use></svg>12</button></div><div class="stp"><span>Paso 1 de 2</span><div class="pg"><i class="on"></i><i></i></div></div></div>
+<div class="ct" style="gap:10px">
+<p class="h1">¿Qué pasó?</p>
+<div class="in" style="min-height:48px"><svg class="i"><use href="#search"></use></svg><span class="ph0" style="font-size:16px">Buscar tipo</span></div>
+<div class="g2">
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#trap"></use></svg>Ovitrampa con problema</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#box"></use></svg>Insumo dañado</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#moto"></use></svg>Falla de moto</button>
+<button class="opt v" style="min-height:80px; border-color:#1A5DFF" onClick="{{go.det}}"><svg class="i s28"><use href="#shield"></use></svg>Zona insegura</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#msg"></use></svg>Queja de vecino</button>
+<button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#flask"></use></svg>Químico de otros en la zona</button>
+</div>
+<button class="opt"><svg class="i s28"><use href="#dots"></use></svg>Otro</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.det}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.type}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Zona insegura</b><small>Detalle</small></div><button class="chip l wn"><svg class="i s20"><use href="#nosig"></use></svg>12</button></div><div class="stp"><span>Paso 2 de 2</span><div class="pg"><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct" style="gap:10px">
+<p class="s" style="font-weight:700; color:#0A1A3F">Severidad (sugerida: Alta)</p>
+<div class="g3"><button class="opt v" style="min-height:56px; font-size:15px">Baja</button><button class="opt v" style="min-height:56px; font-size:15px">Media</button><button class="opt v sel" style="min-height:56px; font-size:15px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Alta</button></div>
+<button class="photo empty" style="width:100%; height:110px"><svg class="i s28"><use href="#camera"></use></svg>Foto (opcional)</button>
+<p class="s" style="font-weight:700; color:#0A1A3F">Descripción (opcional)</p>
+<div class="row"><button class="btn o" style="flex:1"><svg class="i"><use href="#mic"></use></svg>Dictar</button><button class="btn o" style="flex:1">Escribir</button></div>
+<div class="row"><span class="bd ok"><svg class="i"><use href="#loc"></use></svg>Ubicación guardada ±8 m</span><span class="bd nt"><svg class="i"><use href="#clock"></use></svg>11:38</span></div>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.sent}}">Guardar incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.sent}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="ct c" style="gap:16px">
+<div class="rs ph1"><svg class="i"><use href="#phone"></use></svg></div>
+<p class="h1">Guardado en el teléfono</p>
+<p class="b">Tu supervisor lo verá en cuanto haya señal. No tienes que hacer nada más.</p>
+<span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Zona insegura · Alta</span>
+<span class="vib">〰 Vibración corta</span>
+</div>
+<div class="ft"><button class="btn p" onClick="{{go.home2}}">Volver al día</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.home2}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip off"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 13</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 puntos revisados · 3 casas cerradas por volver</p>
+<button class="sim" onClick="{{go.home3}}"><svg class="i"><use href="#refresh"></use></svg>Simulación: 20 minutos después, recuperas señal</button>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.home3}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip ok" onClick="{{go.inbox}}"><svg class="i s20"><use href="#cloudok"></use></svg>Todo enviado</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 puntos revisados · 3 casas cerradas por volver</p>
+<p class="cap">Toca «Todo enviado» para ver qué subió.</p>
+</div>
+<div class="toast"><svg class="i"><use href="#cloudok"></use></svg>13 registros enviados</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.inbox}}" hint-placeholder-val="{{false}}">
+<div class="ph" style="border-radius:0">
+<div class="fh"><div class="r"><button class="ib" aria-label="Atrás" onClick="{{go.home3}}"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Envíos</b><small>Última conexión: 11:58</small></div><button class="chip l ok"><svg class="i s20"><use href="#cloudok"></use></svg>Todo enviado</button></div></div>
+<div class="ct" style="gap:10px">
+<p class="ov">Enviados hoy</p>
+<div class="cd" style="border-color:#0B6B35"><div class="row sb"><b class="bb">Incidente · Zona insegura</b><span class="bd ok"><svg class="i"><use href="#cloudok"></use></svg>Enviado</span></div><span class="cap">Guardado 11:38 · enviado 11:58 · Tu supervisor ya fue avisado</span></div>
+<div class="cd"><div class="row sb"><b class="bb">12 lecturas</b><span class="bd ok"><svg class="i"><use href="#cloudok"></use></svg>Enviado</span></div><span class="cap">OV-010 a OV-021 · 08:40 a 11:20</span></div>
+<p class="ov">Mis incidentes</p>
+<div class="cd"><div class="row sb"><b class="bb">Zona insegura · Mz 0127</b><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Abierto</span></div><span class="cap">Sin comentarios del supervisor todavía.</span></div>
+<a class="sim" href="Proto.dc.html">Fin del recorrido · Volver a recorridos</a>
+</div>
+</div>
+</sc-if>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const s = (this.state && this.state.s) || 'home';
+    const keys = ['home','type','det','sent','home2','home3','inbox'];
+    const is = {}; const go = {};
+    keys.forEach((k) => { is[k] = s === k; go[k] = () => this.setState({ s: k }); });
+    return { is, go };
+  }
+}
+</script>
+</body>
+</html>

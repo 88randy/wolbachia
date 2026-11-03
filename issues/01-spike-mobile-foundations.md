@@ -41,5 +41,5 @@ Each item is tested on at least one real company phone model. Results recorded a
 - [ ] `docs/decisions.md` row 6 and 7 updated.
 
 ## Notes
-- Timebox: 1–2 weeks. If dedicated mode or in-app updates are not feasible, escalate before Epic "Field session" starts.
+- Timebox: 1–2 weeks. If dedicated mode or in-app updates are not feasible, escalate before epic #8 (Field shift) starts.
 - Phone model(s) to test: **[PENDING: confirm with client]**.

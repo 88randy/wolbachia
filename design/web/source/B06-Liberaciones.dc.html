@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W43, W45 y W46 Permisos y liberaciones</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="shield" viewBox="0 0 24 24"><path d="M12 3l8 3v6c0 4.5-3.5 8-8 9-4.5-1-8-4.5-8-9V6z"></path></symbol>
+<symbol id="file" viewBox="0 0 24 24"><path d="M6 3h8l4 4v14H6zM14 3v4h4M9 13h6M9 17h6"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:4000px; height:960px">
+
+<div class="col"><div class="lbl">W43 · Tipos de permiso · estado vacío<span>Al inicio no hay tipos: una frase de para qué sirven y crear el primero</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Liberaciones</div>
+<a class="nv" href="#"><svg class="i"><use href="#file"></use></svg>Permisos</a>
+<div class="grp">Regulatorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#shield"></use></svg>Solicitudes ARCO<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#shield"></use></svg>Transferencias de datos</a>
+<a class="nv" href="#"><svg class="i"><use href="#eye"></use></svg>Bitácora de accesos</a>
+<a class="nv" href="#"><svg class="i"><use href="#clock"></use></svg>Retención</a>
+<a class="nv on" href="#"><svg class="i"><use href="#file"></use></svg>Tipos de permiso</a>
+<div class="foot">Codequim</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Codequim · toda la organización</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">EL</span><span><b>Elena</b><small>Responsable regulatoria</small></span></button></div>
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Tipos de permiso</h1></div></div>
+<div class="card" style="flex:1; align-items:center; justify-content:center; text-align:center; gap:16px">
+<svg width="140" height="110" viewBox="0 0 140 110" fill="none" stroke="#3772FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M30 10h56l20 20v70H30z"></path><path d="M86 10v20h20M44 50h48M44 64h48M44 78h28"></path><circle cx="104" cy="84" r="16" fill="#fff"></circle><path d="M104 76v16M96 84h16"></path></svg>
+<h2 class="h2">Aún no hay tipos de permiso</h2>
+<p class="sub" style="max-width:560px">Un tipo define qué autoridad lo da y qué requisitos lleva. Sin al menos un permiso vigente de un tipo, no se puede liberar en ninguna zona.</p>
+<button class="b p lg"><svg class="i s16"><use href="#plus"></use></svg>Crear el primer tipo</button>
+<p class="cap">Ejemplos: autorización de la Secretaría de Salud, convenio estatal, permiso ambiental, aval de comité de ética, acuerdo comunitario.</p>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W45 · Detalle de permiso · «Suspender ahora»<span>Efecto inmediato y aviso a los repartidores de la zona; motivo obligatorio</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Liberaciones</div>
+<a class="nv on" href="#"><svg class="i"><use href="#file"></use></svg>Permisos<span class="ct">1</span></a>
+<div class="grp">Regulatorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#shield"></use></svg>Solicitudes ARCO<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#shield"></use></svg>Transferencias de datos</a>
+<a class="nv" href="#"><svg class="i"><use href="#eye"></use></svg>Bitácora de accesos</a>
+<a class="nv" href="#"><svg class="i"><use href="#clock"></use></svg>Retención</a>
+<a class="nv" href="#"><svg class="i"><use href="#file"></use></svg>Tipos de permiso</a>
+<div class="foot">Codequim</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Codequim · toda la organización</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">EL</span><span><b>Elena</b><small>Responsable regulatoria</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="crumb"><a href="#">Permisos</a><svg class="i s16"><use href="#right"></use></svg><span>Convenio estatal 014/2026</span></div>
+<div class="phd"><div class="t"><div class="row"><h1 class="h1">Convenio estatal 014/2026</h1><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Vigente</span></div><p class="sub">Tipo: convenio estatal · autoridad: [Secretaría de Salud estatal] · vigente al 31 dic 2026 · horario permitido 06:00–11:00</p></div><button class="b o"><svg class="i s16"><use href="#dl"></use></svg>Reporte por zona y semana</button><button class="b do"><svg class="i s16"><use href="#pause"></use></svg>Suspender ahora</button></div>
+<div class="row top" style="gap:16px">
+<div class="map" style="width:420px; height:280px; flex:none"><svg class="base" viewBox="0 0 420 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="420" height="280" fill="#EEF1EC"></rect><path d="M0 90 H420 M0 180 H420 M140 0 V280 M280 0 V280" stroke="#fff" stroke-width="8"></path><path d="M30 30 L390 30 L390 250 L30 250z" fill="#0B6B35" fill-opacity=".10" stroke="#0B6B35" stroke-width="3"></path><path d="M60 50 L250 50 L250 200 L60 200z" fill="#1A5DFF" fill-opacity=".14" stroke="#1A5DFF" stroke-width="2"></path><path d="M250 50 L370 50 L370 200 L250 200z" fill="#D9620B" fill-opacity=".10" stroke="#D9620B" stroke-width="2" stroke-dasharray="6 4"></path><text x="70" y="70" style="font:700 12px Inter; fill:#0044E6">C-07</text><text x="260" y="70" style="font:700 12px Inter; fill:#B04F06">C-08</text></svg><div class="lgd"><span class="row"><i style="width:20px; height:0; border-top:3px solid #0B6B35"></i>Zona del permiso</span></div><div class="attr">© OpenStreetMap contributors</div></div>
+<div class="card fx" style="gap:8px"><div class="row sb2"><b class="h3">Requisitos del tipo</b><span class="bd ok">5 de 5</span></div>
+<div class="kv"><span><svg class="i s16" style="vertical-align:-3px; color:#0B6B35"><use href="#check"></use></svg> Convenio firmado</span><b>PDF · al 31 dic 2026</b></div>
+<div class="kv"><span><svg class="i s16" style="vertical-align:-3px; color:#0B6B35"><use href="#check"></use></svg> Aval de comité de ética</span><b>PDF · al 15 mar 2027</b></div>
+<div class="kv"><span><svg class="i s16" style="vertical-align:-3px; color:#0B6B35"><use href="#check"></use></svg> Acuerdo comunitario · Zona 3</span><b>PDF · al 31 dic 2026</b></div>
+<div class="kv"><span><svg class="i s16" style="vertical-align:-3px; color:#0B6B35"><use href="#check"></use></svg> Notificación a CENAPRECE</span><b>PDF · sin vigencia</b></div>
+<div class="kv"><span><svg class="i s16" style="vertical-align:-3px; color:#0B6B35"><use href="#check"></use></svg> Póliza de responsabilidad</span><b>PDF · al 30 jun 2027</b></div>
+</div>
+</div>
+<div class="tw"><div class="tbar"><b class="h3 fx">Liberaciones que ampara · S45</b><span class="cap">186 válidas · 0 bloqueadas</span></div>
+<table class="t"><thead><tr><th>Fecha</th><th>Dispositivo</th><th>Lote</th><th>Cuadrante</th><th>Repartidor</th><th>Estado</th></tr></thead><tbody>
+<tr><td>4 nov 2026 07:42</td><td>D-118-0441</td><td>W-118</td><td>C-07</td><td>Luis</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td></tr>
+<tr><td>4 nov 2026 07:39</td><td>D-118-0440</td><td>W-118</td><td>C-07</td><td>Luis</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td></tr>
+</tbody></table></div>
+</div>
+<div class="scrim"></div>
+<div class="mdl" style="width:500px"><div class="mh"><h2 class="h2">¿Suspender el Convenio estatal 014/2026?</h2><p class="sub">Tiene efecto inmediato. Desde este momento, toda liberación en su zona queda bloqueada.</p></div>
+<div class="mb"><div class="kv"><span>Zona afectada</span><b>C-07 y C-08 · Región Norte</b></div><div class="kv"><span>Repartidores que se avisan ahora</span><b>Luis y Rosa</b></div><div class="kv"><span>Liberaciones de hoy ya hechas</span><b>Se conservan como válidas</b></div>
+<div class="fld"><span class="l">Motivo <span class="req">*</span></span><div class="in ta f" style="height:60px">La autoridad pidió pausar mientras revisa el acuerdo comunitario de la Zona 3.|</div></div>
+<div class="nt info"><svg class="i"><use href="#phone"></use></svg><p>Los teléfonos sin señal reciben el bloqueo al sincronizar; lo liberado sin señal después de suspender se marca «bloqueada al sincronizar».</p></div></div>
+<div class="mf"><button class="b t">Cancelar</button><button class="b d"><svg class="i s16"><use href="#pause"></use></svg>Suspender ahora</button></div></div>
+</div></div>
+
+</div>
+<div class="col"><div class="lbl">W46 · Liberaciones · con bloqueadas y su condición<span>Tabla y mapa; en cada bloqueada se dice qué condición falló</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Incidentes<span class="ct cr">7</span></a>
+<div class="grp">Tableros</div>
+<a class="nv" href="#"><svg class="i"><use href="#chart"></use></svg>Entomológico</a>
+<a class="nv" href="#"><svg class="i"><use href="#chart"></use></svg>Prevalencia de Wolbachia</a>
+<div class="grp">Liberaciones</div>
+<a class="nv on" href="#"><svg class="i"><use href="#bug"></use></svg>Liberaciones<span class="ct cr">3</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#file"></use></svg>Permisos</a>
+<div class="foot">Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg><span class="dot">2</span></button><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora regional</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="phd"><div class="t"><h1 class="h1">Liberaciones</h1><p class="sub">S45 · 1–7 nov 2026 · 412 válidas · 3 bloqueadas</p></div><div class="seg"><b class="on"><svg class="i s16"><use href="#ops"></use></svg>Tabla</b><b><svg class="i s16"><use href="#map"></use></svg>Mapa</b></div><a class="b o" href="#"><svg class="i s16"><use href="#chart"></use></svg>Ver prevalencia</a></div>
+<div class="fbar"><span class="fc on">S45<svg class="i"><use href="#down"></use></svg></span><span class="fc">Cuadrante<svg class="i"><use href="#down"></use></svg></span><span class="fc on">Estado: bloqueadas primero<svg class="i"><use href="#down"></use></svg></span><span class="fc">Permiso<svg class="i"><use href="#down"></use></svg></span><span class="fx"></span><button class="b t sm"><svg class="i s16"><use href="#dl"></use></svg>CSV</button><button class="b t sm"><svg class="i s16"><use href="#dl"></use></svg>Excel</button></div>
+<div class="tw">
+<table class="t"><thead><tr><th>Fecha</th><th>Dispositivo</th><th>Lote</th><th class="n">Cant. estimada</th><th>Repartidor</th><th>Permiso</th><th>Estado</th><th>Condición que falló</th></tr></thead><tbody>
+<tr class="blk"><td>4 nov 2026 09:14</td><td><a href="#">D-118-0452</a></td><td>W-118</td><td class="n">[n]</td><td>Rosa</td><td>PA-031/2026</td><td><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Bloqueada</span></td><td style="color:#B3141A; font-weight:600">Permiso vencido el 30 oct 2026</td></tr>
+<tr class="blk"><td>4 nov 2026 09:20</td><td><a href="#">D-118-0453</a></td><td>W-118</td><td class="n">[n]</td><td>Luis</td><td>014/2026</td><td><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Bloqueada al sincronizar</span></td><td style="color:#B3141A; font-weight:600">Permiso suspendido 09:05 por Elena</td></tr>
+<tr class="blk"><td>3 nov 2026 12:02</td><td><a href="#">D-118-0398</a></td><td>W-118</td><td class="n">[n]</td><td>Iván</td><td>014/2026</td><td><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Bloqueada</span></td><td style="color:#B3141A; font-weight:600">Fuera de horario (06:00–11:00)</td></tr>
+<tr><td>4 nov 2026 07:42</td><td><a href="#">D-118-0441</a></td><td>W-118</td><td class="n">[n]</td><td>Luis</td><td>014/2026</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td><td>—</td></tr>
+<tr><td>4 nov 2026 07:39</td><td><a href="#">D-118-0440</a></td><td>W-118</td><td class="n">[n]</td><td>Luis</td><td>014/2026</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td><td>—</td></tr>
+<tr><td>4 nov 2026 07:31</td><td><a href="#">D-118-0439</a></td><td>W-118</td><td class="n">[n]</td><td>Rosa</td><td>014/2026</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span></td><td>—</td></tr>
+</tbody></table></div>
+<div class="row top" style="gap:16px">
+<div class="card tight fx"><div class="chead"><b class="h3">Liberaciones por semana · C-07</b><button class="b t sm">Tabla</button></div>
+<svg class="ch" viewBox="0 0 560 120" role="img" aria-label="Liberaciones por semana en C-07: S40 a S45">
+<line class="ax" x1="30" y1="100" x2="550" y2="100"></line>
+<rect x="50" y="40" width="50" height="60" rx="3" fill="#1A5DFF"></rect><rect x="135" y="30" width="50" height="70" rx="3" fill="#1A5DFF"></rect><rect x="220" y="36" width="50" height="64" rx="3" fill="#1A5DFF"></rect><rect x="305" y="28" width="50" height="72" rx="3" fill="#1A5DFF"></rect><rect x="390" y="80" width="50" height="20" rx="3" fill="#7C869E"></rect><rect x="475" y="70" width="50" height="30" rx="3" fill="#1A5DFF"></rect>
+<text x="75" y="115" text-anchor="middle">S40</text><text x="160" y="115" text-anchor="middle">S41</text><text x="245" y="115" text-anchor="middle">S42</text><text x="330" y="115" text-anchor="middle">S43</text><text x="415" y="115" text-anchor="middle">S44</text><text x="500" y="115" text-anchor="middle">S45 · en curso</text>
+</svg><p class="cap">Cifras de muestra. S44 en gris: semana sin periodo de liberación programado.</p></div>
+<div class="nt blk" style="width:330px"><svg class="i"><use href="#ban"></use></svg><div class="tx"><p><b>¿Por qué se bloqueó D-118-0453?</b></p><p>Luis liberó a las 09:20 sin señal. El convenio 014/2026 se suspendió a las 09:05. Al sincronizar, el servidor rechazó la liberación y la mandó a la Bandeja de revisión.</p><a href="#">Ver en Bandeja de revisión</a></div></div>
+</div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4000,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P9–P10 Jornada y mapa</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="cloudok" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM9 14.5l2 2 4-4"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="nav" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="out" viewBox="0 0 24 24"><path d="M14 4h5v16h-5M10 16l-4-4 4-4M6 12h10"></path></symbol>
+<symbol id="mapbase" viewBox="0 0 360 520"><rect width="360" height="520" fill="#EEF0F3"></rect><g fill="#FFFFFF" stroke="#DDE2EC"><rect x="14" y="20" width="100" height="120" rx="6"></rect><rect x="130" y="20" width="100" height="120" rx="6"></rect><rect x="246" y="20" width="100" height="120" rx="6"></rect><rect x="14" y="160" width="100" height="140" rx="6"></rect><rect x="130" y="160" width="100" height="140" rx="6"></rect><rect x="246" y="160" width="100" height="140" rx="6"></rect><rect x="14" y="320" width="100" height="180" rx="6"></rect><rect x="130" y="320" width="100" height="180" rx="6"></rect><rect x="246" y="320" width="100" height="180" rx="6"></rect></g><rect x="0" y="146" width="360" height="8" fill="#E2E6EC"></rect><path d="M24 30H220V470H24Z" fill="rgba(55,114,255,0.06)" stroke="#0A1A3F" stroke-width="2" stroke-dasharray="8 6"></path><g font-family="Inter,sans-serif" font-size="11" fill="#586380" font-weight="600"><text x="40" y="132">Mz 0123</text><text x="156" y="292">Mz 0127</text></g></symbol>
+</defs></svg>
+
+<div class="board" style="width:3640px; height:940px">
+
+<div class="col"><div class="lbl">P9 · Inicio del día<span>Alto Riesgo primero, luego cercanía</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip ok"><svg class="i s20"><use href="#cloudok"></use></svg>Todo enviado</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">0 de 40 puntos revisados</p>
+<div class="tg"><b class="on"><svg class="i s20"><use href="#list"></use></svg>Lista</b><b><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div>
+<p class="ov">Pendientes · Alto Riesgo primero</p>
+<div class="pt"><div class="m"><div class="row"><b>OV-010</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">1.2 km</div></div>
+<div class="pt"><div class="m"><div class="row"><b>OV-011</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">1.2 km</div></div>
+<div class="pt"><div class="m"><div class="row"><b>OV-013</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Colocar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#trap"></use></svg>Pendiente hoy</span></div><div class="d">1.3 km</div></div>
+<div class="pt"><div class="m"><b>OV-020</b><span class="cap">Manzana 0127 · Revisar</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">1.6 km</div></div>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P9 · A mitad del día<span>Sección «Casas cerradas por volver hoy»</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12 por subir</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<p class="bb">18 de 40 puntos revisados · 3 casas cerradas por volver</p>
+<div class="tg"><b class="on"><svg class="i s20"><use href="#list"></use></svg>Lista</b><b><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div>
+<p class="ov">Pendientes · Alto Riesgo primero</p>
+<div class="pt"><div class="m"><div class="row"><b>OV-012</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar</span></div><div class="d">160 m</div></div>
+<div class="pt"><div class="m"><b>OV-021</b><span class="cap">Manzana 0127 · Revisar</span></div><div class="d">520 m</div></div>
+<p class="ov">Casas cerradas por volver hoy</p>
+<div class="pt"><div class="m"><b>OV-011</b><span class="cap">Mz 0123 · cerrada 10:40</span><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver</span></div><div class="d">350 m</div></div>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P9 · Todo revisado<span>Invita a cerrar jornada</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip ok"><svg class="i s20"><use href="#cloudok"></use></svg>Todo enviado</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:12px">
+<div class="cd hl" style="align-items:center; text-align:center; padding:24px"><div class="rs ok" style="width:72px; height:72px"><svg class="i"><use href="#check"></use></svg></div><p class="h2">Listo por hoy</p><p class="b">40 de 40 puntos revisados. Puedes cerrar jornada.</p></div>
+<button class="btn p"><svg class="i"><use href="#out"></use></svg>Cerrar jornada</button>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P9 · Sin señal<span>Solo cambia el indicador; nada se bloquea</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip off"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 12 por subir</button></div>
+<div class="ct" style="gap:10px">
+<div class="row sb"><p class="bb">18 de 40 revisados</p><button class="sos" aria-label="Emergencia"><svg class="i s20"><use href="#sos"></use></svg>Emergencia</button></div>
+<div class="tg"><b class="on"><svg class="i s20"><use href="#list"></use></svg>Lista</b><b><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div>
+<div class="pt"><div class="m"><div class="row"><b>OV-012</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar</span></div><div class="d">160 m</div></div>
+<div class="pt"><div class="m"><b>OV-021</b><span class="cap">Manzana 0127 · Revisar</span></div><div class="d">520 m</div></div>
+<p class="cap">Todo lo que captures se guarda en el teléfono.</p>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P9 · Con errores de envío<span>Chip rojo + aviso con acción</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>Jornada desde 08:12 · M-03</small></div><button class="chip er"><svg class="i s20"><use href="#alert"></use></svg>Error: revisar</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:10px">
+<div class="nt blk"><svg class="i"><use href="#alert"></use></svg><div class="tx"><p>2 registros no se pudieron enviar. Ya los tienes guardados.</p><button>Ver qué pasó</button></div></div>
+<p class="bb">22 de 40 puntos revisados</p>
+<div class="pt"><div class="m"><b>OV-022</b><span class="cap">Manzana 0127 · Revisar</span></div><div class="d">300 m</div></div>
+<div class="pt"><div class="m"><b>OV-023</b><span class="cap">Manzana 0127 · Revisar</span></div><div class="d">340 m</div></div>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P9 · Detalle de punto<span>«Cómo llegar» abre Organic Maps; la acción empieza escaneando</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>OV-012</b><small>Manzana 0123 · Alto Riesgo</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct">
+<div class="row"><span class="bd in"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span><span class="bd nt">Revisar · 160 m</span></div>
+<button class="btn o"><svg class="i"><use href="#nav"></use></svg>Cómo llegar (Organic Maps)</button>
+<p class="ov">Historial reciente</p>
+<div class="cd" style="gap:8px"><div class="kv"><span>3 nov</span><b>Bien · papeleta entregada</b></div><div class="kv"><span>27 oct</span><b>Bien · papeleta entregada</b></div><div class="kv"><span>20 oct</span><b>Sin agua · reinstalada</b></div></div>
+<p class="cap">Referencia: maceta grande del patio trasero.</p>
+<div class="nt info"><svg class="i"><use href="#scan"></use></svg><div class="tx"><p>Para registrar, escanea el QR de la ovitrampa.</p></div></div>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P10 · Mapa del cuadrante<span>OSM con estilo propio · solo folios y estados</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>18 de 40 revisados</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12 por subir</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div style="padding:8px 16px; background:var(--bg)"><div class="tg"><b><svg class="i s20"><use href="#list"></use></svg>Lista</b><b class="on"><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div></div>
+<div class="map"><svg class="base" viewBox="0 0 360 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#mapbase"></use></svg>
+<div class="mk done" style="left:60px; top:70px"><div class="p"><svg class="i"><use href="#check"></use></svg></div><span class="t">OV-010</span></div>
+<div class="mk closed" style="left:96px; top:118px"><div class="p"><svg class="i"><use href="#door"></use></svg></div><span class="t">OV-011</span></div>
+<div class="mk pend sel" style="left:178px; top:96px"><div class="p"><svg class="i"><use href="#clock"></use></svg></div><span class="t">OV-012</span></div>
+<div class="mk pend" style="left:160px; top:210px"><div class="p"><svg class="i"><use href="#clock"></use></svg></div><span class="t">OV-021</span></div>
+<div class="mk reub" style="left:70px; top:250px"><div class="p"><svg class="i"><use href="#move"></use></svg></div><span class="t">OV-020</span></div>
+<div class="me" style="left:150px; top:150px"></div>
+<span class="attr">© OpenStreetMap contributors</span>
+</div>
+<div style="padding:8px 16px; background:var(--surface); border-top:1px solid var(--line)"><div class="pt" style="border:0; padding:4px 0"><div class="m"><div class="row"><b>OV-012</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Mz 0123 · Revisar · 160 m</span></div><button class="btn o" style="width:auto; min-height:48px"><svg class="i"><use href="#nav"></use></svg>Ir</button></div></div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+<div class="col"><div class="lbl">P10 · Sin mapa descargado<span>La lista es la alternativa</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>18 de 40 revisados</small></div><button class="chip off"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div class="ct" style="gap:12px">
+<div class="tg"><b><svg class="i s20"><use href="#list"></use></svg>Lista</b><b class="on"><svg class="i s20"><use href="#map"></use></svg>Mapa</b></div>
+<div class="cd" style="align-items:center; text-align:center; padding:28px 16px"><svg class="i s64 blue"><use href="#map"></use></svg><p class="h2">No tienes el mapa guardado</p><p class="b">Se descargará solo cuando haya señal. Mientras, usa la lista.</p></div>
+</div>
+<div class="ft"><button class="btn p"><svg class="i"><use href="#list"></use></svg>Ver lista de puntos</button></div></div></div>
+
+<div class="col"><div class="lbl">P10 · GPS débil y fuera del cuadrante<span>Halo grande + avisos discretos</span></div>
+<div class="ph"><div class="tb"><div class="tt"><b>C-07 · Semana 45</b><small>18 de 40 revisados</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12 por subir</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div>
+<div style="padding:8px 16px; background:var(--bg); display:flex; flex-direction:column; gap:8px"><div class="nt warn" style="padding:8px 12px"><svg class="i"><use href="#loc"></use></svg><div class="tx"><p>Ubicación aproximada (±60 m).</p></div></div></div>
+<div class="map"><svg class="base" viewBox="0 0 360 520" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><use href="#mapbase"></use></svg>
+<div class="mk done" style="left:60px; top:70px"><div class="p"><svg class="i"><use href="#check"></use></svg></div><span class="t">OV-010</span></div>
+<div class="mk pend" style="left:178px; top:96px"><div class="p"><svg class="i"><use href="#clock"></use></svg></div><span class="t">OV-012</span></div>
+<div class="me weak" style="left:290px; top:230px"></div>
+<div style="position:absolute; left:12px; right:12px; bottom:28px" class="nt info"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Estás fuera de tu cuadrante C-07.</p></div></div>
+<span class="attr">© OpenStreetMap contributors</span>
+</div>
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3640,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

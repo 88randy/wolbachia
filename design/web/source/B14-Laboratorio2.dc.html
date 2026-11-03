@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W34, W36, W37 y W40 Laboratorio</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1 1 0 0 0 .9 1.5h13.2a1 1 0 0 0 .9-1.5L14 9V3M7 15h10"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="egg" viewBox="0 0 24 24"><path d="M12 3c3.5 0 6 5 6 10a6 6 0 0 1-12 0c0-5 2.5-10 6-10z"></path></symbol>
+<symbol id="vial" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+<symbol id="send" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:5320px; height:960px">
+
+<div class="col"><div class="lbl">W34 · Recepción de bolsas · escaneo continuo<span>Cada bolsa muestra folio, manzana, lectura, fecha, colector y huevos de campo; «sin lectura» y «faltante» abren incidente</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv on" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#refresh"></use></svg>Recuentos<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#drop"></use></svg>Papeletas recicladas</a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Muestras asignadas a ti</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="row"><div class="st fx" style="gap:2px"><h1 class="h1">Recepción de bolsas · Centro Norte</h1><p class="sub">Entrega de la jornada del 3 nov 2026 · llegó 4 nov 09:10</p></div><div class="card tight" style="flex-direction:row; align-items:center; gap:14px; padding:10px 16px"><div class="st" style="gap:0"><span class="ov">Recibidas</span><b style="font-size:28px; line-height:32px">17 de 20</b></div><div style="width:120px; height:8px; border-radius:4px; background:#E4E8EF"><div style="width:85%; height:8px; border-radius:4px; background:#1A5DFF"></div></div></div></div>
+<div class="scanf f" style="height:60px; font-size:16px"><svg class="i s32"><use href="#scan"></use></svg><span class="fx">Listo para la siguiente bolsa · lector USB</span><span class="cap" style="color:#0044E6">Última: B-4483 ✓ 09:41</span><kbd>Enter</kbd></div>
+<div class="tw"><table class="t"><thead><tr><th>Bolsa</th><th>Folio</th><th>Manzana</th><th class="n">Lectura</th><th>Fecha</th><th>Colector</th><th class="n">Huevos campo</th><th>Estado</th></tr></thead><tbody>
+<tr class="sel"><td><a href="#">B-4483</a></td><td>OV-023</td><td>0127</td><td class="n">12</td><td>3 nov 2026</td><td>Luis</td><td class="n">0</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Recibida 09:41</span></td></tr>
+<tr><td><a href="#">B-4480</a></td><td>OV-020</td><td>0127</td><td class="n">12</td><td>3 nov 2026</td><td>Luis</td><td class="n">150</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Recibida 09:40</span></td></tr>
+<tr class="wn"><td><a href="#">B-4471</a></td><td>OV-010</td><td>0123</td><td class="n">12</td><td>3 nov 2026</td><td>Luis</td><td class="n">530</td><td><span class="bd wn"><svg class="i"><use href="#refresh"></use></svg>Ya recibida 09:15 · no se duplica</span></td></tr>
+<tr class="blk"><td><a href="#">B-4490</a></td><td>—</td><td>—</td><td class="n">—</td><td>—</td><td>—</td><td class="n">—</td><td><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>Bolsa sin lectura de campo · incidente I-0236</span></td></tr>
+<tr class="blk"><td>Sin bolsa</td><td>OV-033</td><td>0131</td><td class="n">12</td><td>3 nov 2026</td><td>Luis</td><td class="n">80</td><td><span class="bd cr"><svg class="i"><use href="#minus"></use></svg>Faltante · lectura sin bolsa · I-0228</span></td></tr>
+<tr class="blk"><td>X-0012</td><td>—</td><td>—</td><td class="n">—</td><td>—</td><td>—</td><td class="n">—</td><td><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Bolsa de otra organización · apártala</span></td></tr>
+</tbody></table></div>
+<div class="row"><p class="cap fx">Faltan 3 bolsas esperadas. Al cerrar la recepción, las que no llegaron quedan como faltantes con su incidente.</p><button class="b p">Cerrar recepción</button></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W36 · Recuentos<span>Los dos conteos lado a lado, quién contó, y el recuento por otra persona; el historial guarda los tres</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#refresh"></use></svg>Recuentos<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#drop"></use></svg>Papeletas recicladas</a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Muestras asignadas a ti</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">LA</span><span><b>Laboratorio 2</b><small>Segunda persona</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div style="width:280px; flex:none; background:#fff; border-right:1px solid #C9D0DE">
+<div style="padding:14px 16px; border-bottom:1px solid #E4E8EF"><b class="h3">Por recontar · 2</b><p class="cap">No entran a índices hasta resolverse</p></div>
+<a class="row" href="#" style="padding:10px 16px; background:#EBF1FF; box-shadow:inset 3px 0 0 #1A5DFF; text-decoration:none; color:#0A1A3F"><svg class="i"><use href="#bag"></use></svg><div class="st fx" style="gap:0"><b>B-4468 · OV-008</b><span class="cap">Campo 300 · lab 210</span></div></a>
+<a class="row" href="#" style="padding:10px 16px; text-decoration:none; color:#0A1A3F"><svg class="i"><use href="#bag"></use></svg><div class="st fx" style="gap:0"><b>B-4475 · OV-014</b><span class="cap">Campo 90 · lab 160</span></div></a>
+</div>
+<div class="pg" style="gap:14px">
+<div class="st" style="gap:2px"><p class="ov">Recuento</p><h1 class="h1">B-4468 · OV-008 · lectura 12</h1><p class="sub">Mz 0121 · C-07 · diferencia de 90 huevos (30 %) · el límite es 10 % (valor de ejemplo)</p></div>
+<div class="g3">
+<div class="card" style="background:#F4F6FA"><span class="ov">1 · Campo</span><b style="font-size:40px; line-height:48px; color:#3A4664">300</b><span class="cap">Luis · 3 nov 10:58 · Móvil</span></div>
+<div class="card" style="background:#F4F6FA"><span class="ov">2 · Laboratorio</span><b style="font-size:40px; line-height:48px; color:#3A4664">210</b><span class="cap">Marco · 4 nov 10:20 · Web</span></div>
+<div class="card hl"><span class="ov">3 · Recuento <span style="color:#B3141A">*</span></span><div class="in big f" style="height:64px">218|</div><span class="cap">Tú · otra persona distinta de Marco</span></div>
+</div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><p>Al guardar, el recuento es el valor que entra a índices. Los tres conteos quedan en el historial de la bolsa.</p></div>
+<div class="fld"><span class="l">Observaciones</span><div class="in">Huevos en el borde doblado de la papeleta.</div></div>
+<div class="row"><span class="fx"></span><button class="b do lg">Rechazar con motivo</button><button class="b p lg"><svg class="i s16"><use href="#check"></use></svg>Guardar recuento y siguiente<kbd style="margin-left:6px; background:rgba(255,255,255,.2); color:#fff; border-color:rgba(255,255,255,.4)">Enter</kbd></button></div>
+<div class="card tight"><span class="ov">Regla</span><p class="cap">Quien hizo el conteo 2 no puede hacer el recuento: para Marco esta bolsa aparece bloqueada con el aviso «Debe recontarla otra persona».</p></div>
+</div></div>
+</div></div>
+
+</div>
+<div class="col"><div class="lbl">W37 · Papeletas recicladas<span>Negativas lavadas y secadas con su número de uso; la tercera vez no existe como opción</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#refresh"></use></svg>Recuentos<span class="ct">2</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#drop"></use></svg>Papeletas recicladas</a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Laboratorio · Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Papeletas recicladas</h1><p class="sub">Solo papeletas negativas. Máximo de usos: 2 (parámetro de la región).</p></div></div>
+<div class="g3">
+<div class="kpi"><span class="k">Disponibles · 1.ª vez reciclada</span><span class="v">64</span><span class="cap">Listas para entregar</span></div>
+<div class="kpi"><span class="k">Disponibles · 2.ª vez reciclada</span><span class="v">22</span><span class="cap">Último uso posible</span></div>
+<div class="kpi"><span class="k">Dadas de baja por uso máximo</span><span class="v">18</span><span class="cap">Este mes</span></div>
+</div>
+<div class="row top" style="gap:16px">
+<div class="card" style="width:420px; gap:10px"><b class="h3">Registrar lote lavado y secado</b>
+<div class="fld"><span class="l">Cantidad <span class="req">*</span></span><div class="in">30<span class="u">papeletas</span></div></div>
+<span class="l" style="font-size:12px; font-weight:700">Número de uso <span style="color:#B3141A">*</span></span>
+<div class="seg" style="height:40px; align-self:flex-start"><b class="on" style="padding:0 18px"><svg class="i s16"><use href="#check"></use></svg>1.ª vez</b><b style="padding:0 18px">2.ª vez</b></div>
+<p class="cap">No hay «3.ª vez»: después de su segundo uso la papeleta se da de baja sola.</p>
+<div class="fld"><span class="l">De las lecturas negativas</span><div class="in">S44 · 30 bolsas negativas<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+<button class="b p" style="align-self:flex-end">Registrar 30 papeletas</button>
+</div>
+<div class="tw fx"><table class="t"><thead><tr><th>Fecha</th><th class="n">Cantidad</th><th>Uso</th><th>Registró</th><th class="n">Entregadas</th></tr></thead><tbody>
+<tr><td>4 nov 2026</td><td class="n">30</td><td><span class="bd in">1.ª vez</span></td><td>Marco</td><td class="n">0</td></tr>
+<tr><td>28 oct 2026</td><td class="n">40</td><td><span class="bd in">1.ª vez</span></td><td>Marco</td><td class="n">6</td></tr>
+<tr><td>28 oct 2026</td><td class="n">22</td><td><span class="bd wn">2.ª vez</span></td><td>Marco</td><td class="n">0</td></tr>
+<tr class="void"><td class="vx">21 oct 2026</td><td class="n vx">18</td><td><span class="bd nt">Baja por uso máximo</span></td><td>Sistema</td><td class="n">—</td></tr>
+</tbody></table></div>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W40 · Wolbachia · captura de resultados<span>Muestras recibidas y resultados; un resultado inválido se repite y queda el intento anterior</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<div class="grp">Laboratorio</div>
+<a class="nv" href="#"><svg class="i"><use href="#scan"></use></svg>Recepción de bolsas</a>
+<a class="nv" href="#"><svg class="i"><use href="#egg"></use></svg>Conteo y validación<span class="ct">17</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#refresh"></use></svg>Recuentos<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#drop"></use></svg>Papeletas recicladas</a>
+<a class="nv" href="#"><svg class="i"><use href="#send"></use></svg>Envíos a UIEB<span class="ct">1</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#vial"></use></svg>Wolbachia<span class="ct">4</span></a>
+<div class="foot">Laboratorio · Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#flask"></use></svg>Muestras asignadas a ti</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">MA</span><span><b>Marco</b><small>Laboratorio</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Muestras de Wolbachia</h1><p class="sub">4 sin resultado</p></div></div>
+<div class="tw"><table class="t"><thead><tr><th>QR</th><th>Cuadrante</th><th>Punto</th><th>Semana</th><th>Origen</th><th>Método</th><th class="n">Cant.</th><th>Estado</th></tr></thead><tbody>
+<tr class="sel"><td><a href="#">M-0091</a></td><td>C-07</td><td>OV-010</td><td>S45</td><td>[Origen de catálogo]</td><td>[Método]</td><td class="n">16</td><td><span class="bd wn"><svg class="i"><use href="#refresh"></use></svg>Repetir · intento 1 inválido</span></td></tr>
+<tr><td><a href="#">M-0092</a></td><td>C-07</td><td>OV-012</td><td>S45</td><td>[Origen]</td><td>[Método]</td><td class="n">16</td><td><span class="bd in"><svg class="i"><use href="#clock"></use></svg>Sin resultado</span></td></tr>
+<tr><td><a href="#">M-0093</a></td><td>C-08</td><td>OV-030</td><td>S45</td><td>[Origen]</td><td>[Método]</td><td class="n">16</td><td><span class="bd in"><svg class="i"><use href="#clock"></use></svg>Sin resultado</span></td></tr>
+<tr><td><a href="#">M-0088</a></td><td>C-07</td><td>OV-020</td><td>S45</td><td>[Origen]</td><td>[Método]</td><td class="n">16</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>7 de 16 positivos</span></td></tr>
+</tbody></table></div>
+<p class="cap">Orígenes y métodos salen del catálogo (W63); aquí van como marcadores porque el brief no los define.</p>
+</div>
+<div class="dp" style="width:420px">
+<div class="dh"><div class="row sb2"><span class="ov">Muestra · intento 2</span><button class="icb" aria-label="Cerrar panel"><svg class="i"><use href="#x"></use></svg></button></div><h2 class="h2">M-0091 · C-07 · S45</h2></div>
+<div class="db" style="gap:10px">
+<div class="card tight" style="background:#F4F6FA"><div class="row sb2"><b style="text-decoration:line-through; color:#586380">Intento 1 · 3 nov 2026</b><span class="bd nt"><svg class="i"><use href="#ban"></use></svg>Inválido</span></div><span class="cap">Motivo: «control negativo falló» · Marco. Se conserva en el historial.</span></div>
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Analizados <span class="req">*</span></span><div class="in f">16|</div></div><div class="fld"><span class="l">Positivos <span class="req">*</span></span><div class="in">7</div></div></div>
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Fecha <span class="req">*</span></span><div class="in">4 nov 2026</div></div><div class="fld"><span class="l">Método de análisis <span class="req">*</span></span><div class="in">[Método]<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div></div>
+<div class="kv"><span>Prevalencia de esta muestra</span><b>44 % (7 de 16)</b></div>
+<div class="fld"><span class="l">Observaciones</span><div class="in ta">Repetición con nuevo control.</div></div>
+<div class="row" style="margin-top:auto"><button class="b t">Marcar inválido</button><span class="fx"></span><button class="b p">Guardar resultado</button></div>
+</div></div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":5320,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W22 y W24 a W27 Cuadrantes y muestreo</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="chart" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16v-5M12 16V8M16 16v-3"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="layers" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 17.5l10 5 10-5"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="ul" viewBox="0 0 24 24"><path d="M12 20V9M7 14l5-5 5 5M4 4h16"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><path d="M4 6h16v15H4zM4 10h16M8 3v5M16 3v5"></path></symbol>
+<symbol id="swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"></path></symbol>
+<symbol id="moto" viewBox="0 0 24 24"><path d="M2 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM16 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM5 16.5 9 10h5l3 6.5M13 5h3l2.5 5M8 10H5"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:6640px; height:960px">
+
+<div class="col"><div class="lbl">W22 · Mapa de cuadrantes<span>Cuadrantes por centro (color + patrón), capas activables y lista lateral con repartidor, puntos y avance de la semana</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Incidentes<span class="ct cr">7</span></a>
+<div class="grp">Cuadrantes y muestreo</div>
+<a class="nv on" href="#"><svg class="i"><use href="#map"></use></svg>Mapa de cuadrantes</a>
+<a class="nv" href="#"><svg class="i"><use href="#map"></use></svg>Editor</a>
+<a class="nv" href="#"><svg class="i"><use href="#trap"></use></svg>Manzanas y puntos</a>
+<a class="nv" href="#"><svg class="i"><use href="#user"></use></svg>Asignación</a>
+<a class="nv" href="#"><svg class="i"><use href="#cal"></use></svg>Programación</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Categorías de riesgo</a>
+<div class="grp">Tableros</div>
+<a class="nv" href="#"><svg class="i"><use href="#chart"></use></svg>Entomológico</a>
+<div class="foot">Región Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte · todos los centros<svg class="i s16"><use href="#down"></use></svg></span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg></button><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora regional</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="map" style="flex:1; height:100%; border-radius:0; border:0">
+<svg class="base" viewBox="0 0 700 744" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="700" height="744" fill="#EEF1EC"></rect><path d="M0 640 C200 600 380 700 700 620 V744 H0z" fill="#CFE0F2"></path><path d="M0 190 H700 M0 370 H700 M0 540 H700 M180 0 V744 M360 0 V744 M530 0 V744" stroke="#fff" stroke-width="10"></path>
+<path d="M30 40 L340 40 L340 340 L30 340z" fill="#1A5DFF" fill-opacity=".14" stroke="#1A5DFF" stroke-width="3"></path>
+<path d="M360 40 L670 40 L670 340 L360 340z" fill="#1A5DFF" fill-opacity=".14" stroke="#1A5DFF" stroke-width="3"></path>
+<path d="M30 360 L340 360 L340 600 L30 600z" fill="#D9620B" fill-opacity=".12" stroke="#D9620B" stroke-width="3" stroke-dasharray="8 5"></path>
+<path d="M360 360 L670 360 L670 600 L360 600z" fill="#D9620B" fill-opacity=".12" stroke="#D9620B" stroke-width="3" stroke-dasharray="8 5"></path>
+<g style="font:800 16px Inter"><text x="50" y="70" fill="#0044E6">C-07</text><text x="380" y="70" fill="#0044E6">C-08</text><text x="50" y="390" fill="#B04F06">C-21</text><text x="380" y="390" fill="#B04F06">C-22</text></g></svg>
+<div class="lyr"><b>Capas</b><span class="row"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span>Cuadrantes</span><span class="row"><span class="cb"></span>Manzanas</span><span class="row"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span>Puntos por estado</span><span class="row"><span class="cb"></span>Categorías de riesgo</span><span class="row"><span class="cb"></span>Permisos</span><span class="row"><span class="cb"></span>Liberaciones</span><span class="row"><span class="cb"></span>Intervenciones</span></div>
+<div class="mk done" style="left:140px; top:180px"><div class="p"><svg class="i"><use href="#check"></use></svg></div><span class="t">OV-010</span></div>
+<div class="mk pend" style="left:230px; top:240px"><div class="p"><svg class="i"><use href="#clock"></use></svg></div><span class="t">OV-012</span></div>
+<div class="mk crit" style="left:270px; top:120px"><div class="p"><svg class="i"><use href="#alert"></use></svg></div><span class="t">OV-021</span></div>
+<div class="lgd"><span class="row"><i style="width:22px; border-top:3px solid #1A5DFF"></i>Centro Norte</span><span class="row"><i style="width:22px; border-top:3px dashed #D9620B"></i>Centro Sur</span></div>
+<div class="ctl"><b aria-label="Acercar"><svg class="i s16"><use href="#plus"></use></svg></b><b aria-label="Alejar">−</b><b aria-label="Capas"><svg class="i s16"><use href="#layers"></use></svg></b></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<div class="dp" style="width:380px">
+<div class="dh"><div class="row sb2"><b class="h2">Cuadrantes · S45</b><button class="b p sm"><svg class="i s16"><use href="#plus"></use></svg>Nuevo</button></div><div class="seg"><b class="on">Lista</b><b>Tabla</b></div></div>
+<div class="db" style="gap:8px">
+<div class="card tight hl"><div class="row sb2"><b>C-07 · Centro Norte</b><a href="#" class="cap">Editar</a></div><span class="cap">Luis · 40 puntos · 12 manzanas</span><div class="row"><div style="flex:1; height:6px; border-radius:3px; background:#E4E8EF"><div style="width:45%; height:6px; border-radius:3px; background:#1A5DFF"></div></div><b style="font-size:12px">18 de 40</b></div></div>
+<div class="card tight"><div class="row sb2"><b>C-08 · Centro Norte</b></div><span class="cap">Rosa · 40 puntos</span><div class="row"><div style="flex:1; height:6px; border-radius:3px; background:#E4E8EF"><div style="width:55%; height:6px; border-radius:3px; background:#1A5DFF"></div></div><b style="font-size:12px">22 de 40</b></div></div>
+<div class="card tight"><div class="row sb2"><b>C-21 · Centro Sur</b></div><span class="cap">[Repartidor] · 36 puntos</span><div class="row"><div style="flex:1; height:6px; border-radius:3px; background:#E4E8EF"><div style="width:30%; height:6px; border-radius:3px; background:#1A5DFF"></div></div><b style="font-size:12px">11 de 36</b></div></div>
+<div class="card tight"><div class="row sb2"><b>C-22 · Centro Sur</b><span class="bd wn"><svg class="i"><use href="#user"></use></svg>Sin repartidor</span></div><span class="cap">32 puntos · asígnalo en W25</span></div>
+</div></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W24 · Manzanas y puntos de muestreo<span>Sugerencia de manzanas (cada 4 a 6 en llano, 2 a 3 en cerro, 10 por área); 4 puntos con folio fijo; aviso si dos quedan a menos de 50 m</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Cuadrantes y muestreo"><svg class="i"><use href="#map"></use></svg></a>
+<a class="nv" href="#" aria-label="Tableros"><svg class="i"><use href="#chart"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>C-07 · Centro Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><div class="seg"><b class="on"><svg class="i s16"><use href="#map"></use></svg>Mapa</b><b><svg class="i s16"><use href="#ops"></use></svg>Tabla de puntos</b></div><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="map" style="flex:1; height:100%; border-radius:0; border:0">
+<svg class="base" viewBox="0 0 700 744" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="700" height="744" fill="#FFFFFF"></rect>
+<g fill="#E2E6DF" stroke="#C9D0DE"><rect x="30" y="30" width="140" height="110"></rect><rect x="190" y="30" width="140" height="110"></rect><rect x="350" y="30" width="140" height="110"></rect><rect x="510" y="30" width="140" height="110"></rect><rect x="30" y="160" width="140" height="110"></rect><rect x="350" y="160" width="140" height="110"></rect><rect x="510" y="160" width="140" height="110"></rect><rect x="30" y="290" width="140" height="110"></rect><rect x="190" y="290" width="140" height="110"></rect><rect x="350" y="290" width="140" height="110"></rect><rect x="30" y="420" width="140" height="110"></rect><rect x="190" y="420" width="140" height="110"></rect><rect x="510" y="420" width="140" height="110"></rect></g>
+<rect x="190" y="160" width="140" height="110" fill="#1A5DFF" fill-opacity=".25" stroke="#0044E6" stroke-width="3"></rect>
+<rect x="510" y="290" width="140" height="110" fill="#1A5DFF" fill-opacity=".25" stroke="#0044E6" stroke-width="3"></rect>
+<rect x="350" y="420" width="140" height="110" fill="#FFF1D6" stroke="#8A4B00" stroke-width="3" stroke-dasharray="7 4"></rect>
+<g style="font:700 13px Inter"><text x="260" y="212" text-anchor="middle" fill="#0A1A3F">0123 ✓</text><text x="260" y="230" text-anchor="middle" fill="#3A4664">sector 4</text><text x="580" y="342" text-anchor="middle" fill="#0A1A3F">0127 ✓</text><text x="420" y="472" text-anchor="middle" fill="#8A4B00">0131 ? sugerida</text><text x="100" y="90" text-anchor="middle" fill="#586380">0118</text><text x="420" y="90" text-anchor="middle" fill="#586380">0120</text></g>
+<circle cx="380" cy="450" r="7" fill="#0044E6" stroke="#fff" stroke-width="2"></circle><circle cx="460" cy="450" r="7" fill="#0044E6" stroke="#fff" stroke-width="2"></circle><circle cx="380" cy="505" r="7" fill="#0044E6" stroke="#fff" stroke-width="2"></circle><circle cx="398" cy="500" r="7" fill="#B3141A" stroke="#fff" stroke-width="2"></circle><circle cx="398" cy="500" r="40" fill="none" stroke="#B3141A" stroke-width="1.5" stroke-dasharray="4 3"></circle>
+</svg>
+<div class="lgd"><span class="row"><span class="sw" style="background:#1A5DFF; opacity:.5"></span>Muestreada ✓</span><span class="row"><span class="sw" style="background:#FFF1D6; box-shadow:inset 0 0 0 2px #8A4B00"></span>Sugerida ?</span><span class="row"><span class="sw" style="background:#E2E6DF"></span>Sin muestrear</span></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<div class="dp" style="width:420px">
+<div class="dh"><b class="h2">Sugerencias para C-07</b><p class="cap">Terreno: llano · 1 de cada 5 manzanas (regla 4 a 6). Acepta o cambia cada una.</p></div>
+<div class="db" style="gap:10px">
+<div class="card tight hl"><div class="row sb2"><b>Manzana 0131 · sector 5</b><span class="bd wn">Sugerida</span></div><div class="row"><button class="b p sm"><svg class="i s16"><use href="#check"></use></svg>Aceptar</button><button class="b o sm"><svg class="i s16"><use href="#swap"></use></svg>Cambiar por otra</button></div></div>
+<span class="ov">Puntos de 0131 · folio fijo</span>
+<div class="tw"><table class="t"><thead><tr><th>Folio</th><th>Tipo de sitio</th><th>Estado</th></tr></thead><tbody>
+<tr><td><b>OV-030</b></td><td>Vivienda habitada</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Ubicado</span></td></tr>
+<tr><td><b>OV-031</b></td><td>Vivienda habitada</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Ubicado</span></td></tr>
+<tr><td><b>OV-032</b></td><td>Vivienda habitada</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Ubicado</span></td></tr>
+<tr class="wn"><td><b>OV-033</b></td><td>Vía pública</td><td><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>A 32 m de OV-032</span></td></tr>
+</tbody></table></div>
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><div class="tx"><p>OV-033 queda a 32 m de OV-032; la distancia mínima es 50 m. Muévelo o guarda con motivo.</p></div></div>
+<p class="cap">Tipos de sitio: vivienda habitada · sitio de concentración (4 por hectárea) · vía pública.</p>
+<div class="row" style="margin-top:auto"><span class="fx"></span><button class="b o">Guardar con motivo</button><button class="b p">Mover OV-033</button></div>
+</div></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W25 · Asignación de cuadrantes<span>Repartidores como columnas y cuadrantes como tarjetas; arrastrar o «Mover a…» con teclado; carga contra la meta de 40</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Cuadrantes y muestreo"><svg class="i"><use href="#map"></use></svg></a>
+<a class="nv" href="#" aria-label="Operación"><svg class="i"><use href="#ops"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="phd"><div class="t"><h1 class="h1">Asignación de cuadrantes · Centro Norte</h1><p class="sub">Meta de productividad: 40 puntos por día (parámetro)</p></div><button class="b p">Guardar cambios</button></div>
+<div style="display:grid; grid-template-columns:repeat(4, minmax(0,1fr)); gap:12px; flex:1; min-height:0">
+<div class="card" style="background:#F4F6FA; gap:8px"><div class="row sb2"><b>Luis</b><span class="cap">40 / 40</span></div><div style="height:6px; border-radius:3px; background:#E4E8EF"><div style="width:100%; height:6px; border-radius:3px; background:#0B6B35"></div></div>
+<div class="card tight"><b>C-07</b><span class="cap">40 puntos · 12 manzanas</span><button class="b t sm" style="align-self:flex-start"><svg class="i s16"><use href="#dots"></use></svg>Mover a…</button></div></div>
+<div class="card" style="background:#F4F6FA; gap:8px"><div class="row sb2"><b>Rosa</b><span class="cap">40 / 40</span></div><div style="height:6px; border-radius:3px; background:#E4E8EF"><div style="width:100%; height:6px; border-radius:3px; background:#0B6B35"></div></div>
+<div class="card tight"><b>C-08</b><span class="cap">40 puntos</span><button class="b t sm" style="align-self:flex-start"><svg class="i s16"><use href="#dots"></use></svg>Mover a…</button></div></div>
+<div class="card" style="background:#F4F6FA; gap:8px; border:2px dashed #1A5DFF"><div class="row sb2"><b>Pedro</b><span class="cap" style="color:#8A4B00; font-weight:700">56 / 40 · se pasa</span></div><div style="height:6px; border-radius:3px; background:#E4E8EF"><div style="width:100%; height:6px; border-radius:3px; background:#8A4B00"></div></div>
+<div class="card tight"><b>C-09</b><span class="cap">24 puntos</span></div>
+<div class="card tight" style="box-shadow:0 8px 20px rgba(10,26,63,.25); transform:rotate(-1.5deg); border:2px solid #1A5DFF"><b>C-11</b><span class="cap">32 puntos · arrastrando</span></div>
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><p>Con C-11, Pedro tendría 56 puntos: 16 sobre la meta.</p></div></div>
+<div class="card" style="background:#F4F6FA; gap:8px"><div class="row sb2"><b>Sin asignar</b><span class="cap">1 cuadrante</span></div>
+<div class="card tight" style="opacity:.5"><b>C-11</b><span class="cap">antes con Jorge · sin jornada hoy</span></div>
+<div class="card tight"><span class="ov">Teclado</span><p class="cap">Enfoca una tarjeta, Enter abre «Mover a…», flechas eligen repartidor, Enter confirma.</p></div></div>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W26 · Programación · semana y día<span>Puntos a revisar, colocar o retirar por repartidor, ordenados por riesgo; «Reasignar sus pendientes» si alguien falta</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Cuadrantes y muestreo"><svg class="i"><use href="#map"></use></svg></a>
+<a class="nv" href="#" aria-label="Operación"><svg class="i"><use href="#ops"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="row"><h1 class="h1 fx">Programación · S45</h1><div class="seg"><b class="on">Semana</b><b>Día</b></div></div>
+<div class="tw"><table class="t"><thead><tr><th>Repartidor</th><th class="n">Dom 1</th><th class="n">Lun 2</th><th class="n">Mar 3</th><th class="n">Mié 4</th><th class="n">Jue 5</th><th class="n">Vie 6</th><th class="n">Sáb 7</th></tr></thead><tbody>
+<tr><td><b>Luis</b> · C-07</td><td class="n">—</td><td class="n">40</td><td class="n">40</td><td class="n"><b>40</b></td><td class="n">40</td><td class="n">40</td><td class="n">—</td></tr>
+<tr><td><b>Rosa</b> · C-08</td><td class="n">—</td><td class="n">40</td><td class="n">40</td><td class="n"><b>40</b></td><td class="n">40</td><td class="n">40</td><td class="n">—</td></tr>
+<tr class="wn"><td><b>Jorge</b> · C-11 <span class="bd wn">Falta hoy</span></td><td class="n">—</td><td class="n">32</td><td class="n">32</td><td class="n"><b style="color:#8A4B00">32 pendientes</b></td><td class="n">32</td><td class="n">32</td><td class="n">—</td></tr>
+</tbody></table></div>
+<div class="row top" style="gap:12px">
+<div class="card fx" style="gap:6px"><b class="h3">Luis · miércoles 4 nov · por riesgo</b>
+<div class="kv"><span><span class="bd ar">Alto</span> Mz 0123 · OV-010 a OV-013</span><b>4 revisar</b></div>
+<div class="kv"><span><span class="bd ar">Alto</span> Mz 0127 · OV-020 a OV-023</span><b>3 revisar · 1 colocar</b></div>
+<div class="kv"><span><span class="bd ma">Mod. Alto</span> Mz 0121</span><b>4 revisar</b></div>
+<div class="kv"><span><span class="bd mb">Mod. Bajo</span> Mz 0131</span><b>4 colocar</b></div>
+<span class="cap">… 24 puntos más</span></div>
+<div class="card" style="width:420px; gap:8px; border:2px solid #8A4B00"><b class="h3">Reasignar los 32 pendientes de Jorge</b><p class="cap">Propuesta según carga y cercanía:</p>
+<div class="kv"><span>Pedro · C-09 (24 hoy)</span><b>+16 puntos de Mz 0140–0143</b></div>
+<div class="kv"><span>Mara · C-13 (18 hoy)</span><b>+16 puntos de Mz 0144–0147</b></div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><p>Ambos quedarían en 40 o menos. Se les avisa en el teléfono.</p></div>
+<div class="row"><span class="fx"></span><button class="b o sm">Cambiar</button><button class="b p sm">Aplicar propuesta</button></div></div>
+</div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W27 · Categorías de riesgo · importación semanal<span>Origen de cada categoría: importada del sistema oficial o calculada con la regla de la empresa; vista previa antes de aplicar</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Cuadrantes y muestreo"><svg class="i"><use href="#map"></use></svg></a>
+<a class="nv" href="#" aria-label="Tableros"><svg class="i"><use href="#chart"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Región Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">SO</span><span><b>Sofía</b><small>Coordinadora</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="row"><h1 class="h1 fx">Categorías de riesgo · S45</h1><span class="fc on">S45<svg class="i"><use href="#down"></use></svg></span><button class="b p"><svg class="i s16"><use href="#ul"></use></svg>Importar archivo semanal</button></div>
+<div class="card hl" style="gap:8px"><div class="row sb2"><b class="h3">Vista previa · categorias_S45.csv</b><span class="bd in">Sin aplicar</span></div>
+<div class="g4" style="gap:10px"><div class="kpi"><span class="k">Manzanas en el archivo</span><span class="v">212</span></div><div class="kpi"><span class="k">Cambian de categoría</span><span class="v">14</span></div><div class="kpi"><span class="k">Sin coincidencia de clave</span><span class="v" style="color:#8A4B00">3</span></div><div class="kpi"><span class="k">Se quedan con regla de la empresa</span><span class="v">9</span></div></div>
+<div class="tw"><table class="t"><thead><tr><th>Manzana</th><th>Antes (S44)</th><th>Después (S45)</th><th>Origen</th></tr></thead><tbody>
+<tr><td>0123</td><td><span class="bd ma">Moderado Alto</span></td><td><span class="bd ar">Alto Riesgo</span></td><td>Importada del sistema oficial</td></tr>
+<tr><td>0127</td><td><span class="bd ar">Alto Riesgo</span></td><td><span class="bd ar">Alto Riesgo</span></td><td>Importada del sistema oficial</td></tr>
+<tr><td>0131</td><td>—</td><td><span class="bd mb">Moderado Bajo</span></td><td>Calculada con la regla de la empresa</td></tr>
+<tr class="wn"><td>01X9</td><td>—</td><td>—</td><td><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Clave no existe en la región</span></td></tr>
+</tbody></table></div>
+<div class="row"><span class="cap fx">Las 3 claves sin coincidencia se ignoran y quedan en la bitácora de importación.</span><button class="b t">Cancelar</button><button class="b p">Aplicar a S45</button></div></div>
+<p class="cap">Categorías con letra y color: Alto · Moderado Alto (borde ámbar) · Moderado Bajo (borde gris) · Bajo (verde). Cifras de muestra.</p>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":6640,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W19 Etiquetas QR a tamaño real</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600;700&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="qr" viewBox="0 0 25 25"><path fill="#000" fill-rule="evenodd" d="M0 0h7v7H0zM1 1v5h5V1zM2 2h3v3H2zM18 0h7v7h-7zM19 1v5h5V1zM20 2h3v3h-3zM0 18h7v7H0zM1 19v5h5v-5zM2 20h3v3H2zM9 0h1v1H9zM11 1h2v1h-2zM14 0h1v2h-1zM9 3h2v1H9zM12 3h1v2h-1zM15 4h1v2h-1zM8 6h1v1H8zM10 6h1v1h-1zM13 7h2v1h-2zM0 9h1v2H0zM2 8h2v1H2zM5 10h2v1H5zM8 9h3v1H8zM12 10h1v2h-1zM15 9h2v1h-2zM18 8h1v2h-1zM20 9h2v1h-2zM23 8h2v1h-2zM1 12h2v1H1zM4 13h1v2H4zM7 12h2v1H7zM10 13h1v1h-1zM14 12h3v1h-3zM19 12h1v2h-1zM22 11h1v3h-1zM0 15h2v1H0zM3 16h3v1H3zM8 15h1v3H8zM11 16h2v1h-2zM15 15h1v1h-1zM17 16h2v1h-2zM21 15h3v1h-3zM10 19h1v2h-1zM12 18h2v1h-2zM9 22h3v1H9zM13 21h1v2h-1zM16 19h1v1h-1zM18 18h4v1h-4zM16 18h1v1h-1zM18 20h1v3h-1zM20 21h2v1h-2zM23 20h1v2h-1zM15 23h2v1h-2zM20 23h3v1h-3zM24 24h1v1h-1zM16 21h1v1h-1z"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"></path></symbol>
+<symbol id="print" viewBox="0 0 24 24"><path d="M7 9V3h10v6M7 17H4v-8h16v8h-3M7 14h10v7H7z"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:1960px; height:900px; flex-direction:column; gap:24px">
+<div class="row" style="gap:16px; width:1880px"><div class="st fx" style="gap:4px"><b style="font-size:20px">W19 · Las cinco etiquetas a tamaño real (96 px por pulgada)</b><span class="cap" style="font-size:13px">QR ilustrativo: el real se genera al guardar el lote. Código impreso siempre debajo del QR para captura manual. Tipografía mínima 7 pt.</span></div><button class="b o"><svg class="i s16"><use href="#print"></use></svg>Hoja carta</button><button class="b o">Impresora de etiquetas</button><button class="b p"><svg class="i s16"><use href="#dl"></use></svg>Descargar PDF</button></div>
+<div class="row top" style="gap:40px; width:1880px">
+
+<div class="st" style="gap:10px"><b>Ovitrampa · 90 × 50 mm</b>
+<div style="width:340px; height:189px; background:#fff; border:2px solid #0A1A3F; border-radius:10px; display:flex; gap:10px; padding:10px; font-family:Inter, sans-serif; color:#0A1A3F">
+<div class="st" style="gap:2px; align-items:center"><svg width="112" height="112" aria-label="Código QR de OT-0388" role="img"><use href="#qr"></use></svg><b style="font:700 15px 'JetBrains Mono', monospace; letter-spacing:.04em">OT-0388</b></div>
+<div class="st fx" style="gap:6px"><b style="font-size:16px; line-height:18px">Codequim</b><div style="background:#B3141A; color:#fff; border-radius:6px; padding:6px 8px; font-weight:800; font-size:13px; line-height:16px">Ovitrampa en uso<br>No retirar</div><span style="font-size:10px; line-height:13px">Vigilancia del mosquito del dengue. Si tienes dudas, llama:</span><b style="font-size:13px; display:flex; align-items:center; gap:4px"><svg width="13" height="13"><use href="#phone"></use></svg>[Teléfono del centro]</b></div>
+</div>
+<p class="cap" style="width:340px">Vinil blanco con laminado mate UV, adhesivo para exterior. Rojo con texto blanco 6.93:1. Logo y teléfono vienen de Organización (W68).</p></div>
+
+<div class="st" style="gap:10px"><b>Bolsa de lectura · 100 × 150 mm</b>
+<div style="width:378px; height:567px; background:#fff; border:2px solid #0A1A3F; border-radius:8px; padding:12px; display:flex; flex-direction:column; gap:8px; font-family:Inter, sans-serif; color:#0A1A3F">
+<div class="row" style="gap:10px"><svg width="96" height="96" aria-label="Código QR de B-4471" role="img"><use href="#qr"></use></svg><div class="st" style="gap:2px"><b style="font-size:12px">Codequim · Bolsa de lectura</b><b style="font:700 18px 'JetBrains Mono', monospace">B-4471</b><span style="font-size:10px">Una bolsa por lectura · doblar hacia dentro</span></div></div>
+<div style="display:grid; grid-template-columns:repeat(2, minmax(0,1fr)); gap:0; border-top:1.5px solid #0A1A3F; font-size:10px; flex:1">
+<div style="border-bottom:1px solid #7C869E; border-right:1px solid #7C869E; padding:3px 4px">Estado</div><div style="border-bottom:1px solid #7C869E; padding:3px 4px">Municipio</div>
+<div style="border-bottom:1px solid #7C869E; border-right:1px solid #7C869E; padding:3px 4px">Localidad</div><div style="border-bottom:1px solid #7C869E; padding:3px 4px">Colonia</div>
+<div style="border-bottom:1px solid #7C869E; border-right:1px solid #7C869E; padding:3px 4px">Sector</div><div style="border-bottom:1px solid #7C869E; padding:3px 4px">Manzana</div>
+<div style="border-bottom:1px solid #7C869E; border-right:1px solid #7C869E; padding:3px 4px">Fecha</div><div style="border-bottom:1px solid #7C869E; padding:3px 4px">Semana</div>
+<div style="border-bottom:1px solid #7C869E; border-right:1px solid #7C869E; padding:3px 4px">N.º de revisión</div><div style="border-bottom:1px solid #7C869E; padding:3px 4px">N.º de ovitrampa</div>
+<div style="border-bottom:1px solid #7C869E; grid-column:1 / span 2; padding:3px 4px">Colector</div>
+<div style="border-bottom:1px solid #7C869E; border-right:1px solid #7C869E; padding:3px 4px; height:52px">Huevos</div><div style="border-bottom:1px solid #7C869E; padding:3px 4px">Temperatura °C</div>
+<div style="border-right:1px solid #7C869E; padding:3px 4px"></div><div style="padding:3px 4px">Humedad %</div>
+</div>
+<span style="font-size:9px; color:#3A4664">Escribe con marcador indeleble. Filas de 9 mm para letra a mano.</span>
+</div></div>
+
+<div class="st" style="gap:28px">
+<div class="st" style="gap:10px"><b>Lote · 100 × 60 mm</b>
+<div style="width:378px; height:227px; background:#fff; border:2px solid #0A1A3F; border-radius:8px; padding:12px; display:flex; gap:12px; font-family:Inter, sans-serif; color:#0A1A3F">
+<div class="st" style="gap:2px; align-items:center"><svg width="120" height="120" aria-label="Código QR de L-2611" role="img"><use href="#qr"></use></svg><b style="font:700 16px 'JetBrains Mono', monospace">L-2611</b></div>
+<div class="st fx" style="gap:4px; font-size:11px"><b style="font-size:16px">Ovitrampas</b><span>Cantidad: <b>20 piezas</b></span><span>Origen: Almacén Norte</span><span>Alta: 2 nov 2026</span><span>Caducidad: —</span><span style="margin-top:auto; font-size:10px; color:#3A4664">Codequim · Contiene QR por pieza</span></div>
+</div></div>
+<div class="row top" style="gap:28px">
+<div class="st" style="gap:10px"><b>Dispositivo · 50 × 30 mm</b>
+<div style="width:189px; height:113px; background:#fff; border:2px solid #0A1A3F; border-radius:6px; padding:6px; display:flex; gap:6px; font-family:Inter, sans-serif; color:#0A1A3F">
+<div class="st" style="gap:1px; align-items:center"><svg width="74" height="74" aria-label="Código QR de D-118-0441" role="img"><use href="#qr"></use></svg><b style="font:700 9px 'JetBrains Mono', monospace">D-118-0441</b></div>
+<div class="st fx" style="gap:1px; font-size:9px; line-height:12px"><b style="font-size:10px">Liberación</b><span>Lote W-118</span><span>Gen. F3</span><span>Post. 28 oct 26</span><span>Cad. 6 nov 26</span></div>
+</div></div>
+<div class="st" style="gap:10px"><b>Muestra · 50 × 25 mm</b>
+<div style="width:189px; height:94px; background:#fff; border:2px solid #0A1A3F; border-radius:6px; padding:6px; display:flex; gap:6px; font-family:Inter, sans-serif; color:#0A1A3F">
+<div class="st" style="gap:1px; align-items:center"><svg width="62" height="62" aria-label="Código QR de M-0091" role="img"><use href="#qr"></use></svg><b style="font:700 9px 'JetBrains Mono', monospace">M-0091</b></div>
+<div class="st fx" style="gap:1px; font-size:9px; line-height:12px"><b style="font-size:10px">Wolbachia</b><span>C-07 · OV-010</span><span>S45 · 2026</span><span>Codequim</span></div>
+</div></div>
+</div>
+<div class="card tight" style="width:378px"><span class="ov">Al imprimir</span><p class="cap">Elige tipo y cantidad, revisa la vista previa y descarga el PDF para hoja carta (rejilla) o para impresora de etiquetas (una por página). Reimprimir una etiqueta queda en el historial del objeto.</p></div>
+</div>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1960,"height":900}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

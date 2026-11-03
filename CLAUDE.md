@@ -22,6 +22,51 @@
 - **Tokens e i18n compartidos.** Móvil y web consumen `packages/tokens` y `packages/i18n`; no se copian colores ni textos en cada app.
 - **CI y despliegue por carpeta.** Cada carpeta tiene su workflow con filtros de ruta (`paths:`). Backend y web se despliegan en DigitalOcean; móvil se compila y se publica en el servidor interno de actualizaciones.
 - **Convención de ramas y commits:** `feat/<issue>-<slug>`, `fix/<issue>-<slug>`; commits con prefijo de ámbito: `feat(mobile): ...`, `fix(backend): ...`, `chore(web): ...`.
+- **Diseño:** antes de implementar una pantalla, lee `design/mobile/README.md`, su PNG en `design/mobile/screens/` y su HTML en `design/mobile/source/`. Los tokens salen de `design/mobile/source/codequim.css`. Si el código y el diseño no coinciden, gana el issue; avisa la diferencia en el PR.
+- **Diseño web:** antes de implementar una pantalla W, lee `design/web/README.md`, su PNG en `design/web/screens/` y su fuente en `design/web/source/`. Los tokens se unifican en `packages/tokens`; si hay diferencias con `design/mobile/source/codequim.css`, se resuelven en un PR, no en el código de una pantalla.
+- **Issues:** GitHub Issues son la fuente de verdad; `issues/NN-*.md` es un espejo con `NN` = número de GitHub (ver `issues/README.md`).
+- **Términos del dominio:** un solo nombre en inglés en backend, móvil y web (glosario en `docs/glossary.md`, #16). Papeleta = **egg paddle** (`paddle_present`, `has_eggs`).
+- **Textos al usuario:** la API nunca devuelve texto para el usuario; devuelve `code` + `params` y los clientes traducen con `packages/i18n`.
+
+### Web
+
+**Scope:** `web/` is the React client for Supervisor, Entomologist, Promoter and Admin (plus the read-only public portal). It uses only the backend API through `packages/api-client`, plus `packages/tokens` and `packages/i18n`.
+
+**Routes**
+- Pattern: `/<area>/<resource>` for lists and `/<area>/<resource>/<code>` for records, with human codes, not database ids (e.g. `/incidents/I-0236`, `/lab/bags/B-4471`).
+- Never put `organization_id` in a route or query string. The organization comes from the session.
+- List filters, sorting and paging live in the query string, so every view can be shared and bookmarked.
+- The public portal lives under its own prefix (`/portal/...`) with its own layout and its own read-only API (`/api/v1/portal/...`).
+- Every screen has a code W1…W71 (see `docs/web-screens.md`). Reference it in the PR and in the route component name.
+
+**Permissions per profile**
+- The source of truth is `GET /api/v1/me/` (`permissions[]` + `scope`). Do not hard-code profile names in components; check permissions (e.g. `incidents.close`).
+- No permission to see something: hide it (menu item, column, button).
+- Allowed but blocked by state (closed quadrant, missing data, suspended permit): show the control disabled, with the reason and who can unblock it.
+- The backend always re-checks. The UI check is for usability only.
+- Revealing personal data (RFC) is an explicit action, it is logged, and its result is never cached.
+
+**Tables and filters**
+- Paging, sorting and filtering happen on the server. Never load a full table to filter it in the browser.
+- Filters show as removable chips with a "Clear filters" action. The default filter is visible, never implicit.
+- Voided rows: hidden by default and shown with an "Include voided" toggle. They render struck through with a "Voided" badge, the reason and the author.
+- Number cells are right-aligned with tabular figures, and each one links to the filtered list behind it.
+- Exports go through the backend (`/export/`), which applies data-transfer authorizations. An unauthorized personal-data column comes out empty with a note.
+- No delete action anywhere. Correction = void with reason (required, minimum length per backend).
+- Open option lists end with "Other (specify)", which requires the free text.
+
+**Accessibility (WCAG 2.2 AA)**
+- Everything works with the keyboard. Visible focus: 2px outline in `action` with 2px offset. The lab count screen (W35) is keyboard- and scanner-first.
+- Target size of at least 24×24 px (2.5.8). Design controls are 32–44 px high.
+- Never use color alone: status = color + icon/text, and map areas = color + pattern.
+- Every chart has an equivalent data table.
+- Contrast at least 4.5:1 for text, in both light and dark themes. Minimum text size 12px.
+- Live regions for toasts and scan results. Modals trap focus and return it on close.
+- Strings come from `packages/i18n` (es-MX default, en). No hard-coded copy. Layouts must survive +30 % text length.
+
+**Formats**
+- Dates and times in the organization's time zone. Weeks use the organization's epidemiological week.
+- Numbers use es-MX or en formatting according to the user's language.
 
 ### Estructura del monorepo
 ```
@@ -36,4 +81,5 @@ docs/           Decisiones (ADR), contratos y notas
 ```
 
 ### Lecciones aprendidas
-- (vacío; agregar al cerrar cada épica)
+- (web) The first design round assumed couriers send a field egg count. Wrong: mobile only records whether the egg paddle is present and, if so, whether it has eggs (Yes/No). Any comparison between a "field count" and the lab count must not exist.
+- (repo) Los issues locales y los de GitHub se desfasaron porque un issue no se creó y el resto se corrió un número. Por eso GitHub es la fuente de verdad y el espejo usa su número.

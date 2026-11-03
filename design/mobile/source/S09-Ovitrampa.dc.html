@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P15–P17 Sustituir, reubicar, retirar</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:3240px; height:940px">
+
+<div class="col"><div class="lbl">P15 · Sustituir · Motivo<span>Regla visible: el folio no cambia</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Sustituir en OV-012</b><small>Ovitrampa actual T-0211</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>El folio del punto no cambia; solo cambia la ovitrampa.</p></div></div>
+<p class="h1">¿Por qué la cambias?</p>
+<div class="st"><button class="opt sel"><span class="ck"><svg class="i"><use href="#check"></use></svg></span><svg class="i s28"><use href="#ban"></use></svg>Destruida</button><button class="opt"><svg class="i s28"><use href="#alert"></use></svg>Dañada</button><button class="opt"><svg class="i s28"><use href="#info"></use></svg>Otro (especificar)</button></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P15 · Escanear la nueva<span>Debe estar asignada a él</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Sustituir en OV-012</b><small>Motivo: destruida</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<p class="h1">Escanea la ovitrampa nueva</p>
+<div class="cd" style="border-color:#0B6B35"><div class="row sb"><div class="row"><svg class="i s28" style="color:#0B6B35"><use href="#trap"></use></svg><b class="bb">T-0461</b></div><span class="bd in">Asignada a ti</span></div></div>
+<div class="row" style="justify-content:center; gap:16px; padding:8px"><span class="bd nt">T-0211</span><svg class="i"><use href="#swap"></use></svg><span class="bd ok">T-0461</span></div>
+</div><div class="ft"><button class="btn o"><svg class="i"><use href="#scan"></use></svg>Escanear otra</button><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P15 · ¿Qué pasa con la vieja?</div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Sustituir en OV-012</b><small>T-0211 → T-0461</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct">
+<p class="h1">¿Y la ovitrampa vieja?</p>
+<button class="opt sel" style="min-height:80px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span><svg class="i s28"><use href="#bag"></use></svg><span style="flex:1">La llevo de regreso<br><span class="cap">Cuenta como devolución al cerrar</span></span></button>
+<button class="opt" style="min-height:80px"><svg class="i s28"><use href="#search"></use></svg><span style="flex:1">No se pudo recuperar<br><span class="cap">Abre incidente</span></span></button>
+<p class="cap">Después: reinstalación igual que en la revisión (paso 5) y confirmar.</p>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P16 · Reubicar · Por qué se propone<span>Una línea con fechas</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Reubicar OV-011</b><small>Mz 0123</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 4</span><div class="pg"><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="cd" style="border-color:#8A4B00; border-width:2px"><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#move"></use></svg>Reubicación propuesta</span><p class="b">Casa cerrada dos semanas seguidas: 3 nov y 10 nov.</p></div>
+<p class="b">Busca una vivienda nueva en la <b>misma cara de la manzana</b>. El folio OV-011 se conserva.</p>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Siguientes pasos: hablar con el morador, colocar y confirmar.</p></div></div>
+</div><div class="ft"><button class="btn t">Ahora no</button><button class="btn p">Buscar nueva vivienda</button></div></div></div>
+
+<div class="col"><div class="lbl">P16 · Confirmar reubicación<span>Se coloca ya; queda pendiente de aprobación</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Reubicar OV-011</b><small>Revisa antes de guardar</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 4 de 4</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct">
+<div class="cd"><div class="kv"><span>Folio</span><b>OV-011 (se conserva)</b></div><div class="kv"><span>Nueva vivienda</span><b>a 24 m de la anterior</b></div><div class="kv"><span>Ovitrampa</span><b>T-0213</b></div><div class="kv"><span>Papeleta</span><b>Nueva</b></div></div>
+<div class="nt warn"><svg class="i"><use href="#clock"></use></svg><div class="tx"><p>Quedará pendiente de aprobación del supervisor. Si la rechaza, verás una tarea mañana.</p></div></div>
+</div><div class="ft"><button class="btn p">Guardar reubicación</button></div></div></div>
+
+<div class="col"><div class="lbl">P17 · Retirar · Motivo</div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Retirar de OV-012</b><small>T-0211 · Mz 0123</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 3</span><div class="pg"><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">¿Por qué la retiras?</p>
+<div class="st"><button class="opt sel"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Fin de periodo</button><button class="opt">Cierre de cuadrante</button><button class="opt">Lo pidió el morador</button><button class="opt">Indicación del supervisor</button><button class="opt">Otro (especificar)</button></div>
+<button class="btn t">No la encuentro</button>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P17 · No se pudo recuperar<span>Incidente de severidad alta · explica por qué importa</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs er"><svg class="i"><use href="#search"></use></svg></div><p class="h1">Reportar que no la encontraste</p><p class="b">Una ovitrampa abandonada se vuelve criadero. El punto quedará «No recuperada» hasta localizarla.</p><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>Incidente · severidad alta</span></div>
+<div class="ft"><button class="btn o">Volver a buscar</button><button class="btn p">Reportar no recuperada</button></div></div></div>
+
+<div class="col"><div class="lbl">P17 · Confirmación<span>Hoja inferior: acción irreversible</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Retirar de OV-012</b><small>Paso 3 de 3</small></div></div></div>
+<div class="ct"></div>
+<div class="scrim"></div>
+<div class="sh"><div class="grab"></div><p class="h2">¿Retirar T-0211 de OV-012?</p><div class="kv"><span>Motivo</span><b>Fin de periodo</b></div><div class="kv"><span>Papeleta final</span><b>Bolsa B-4492 al laboratorio</b></div><div class="kv"><span>Punto</span><b>Quedará sin ovitrampa</b></div><p class="cap">No se puede deshacer. Si te equivocas, podrás anular con motivo.</p><button class="btn d">La recogí y la llevo</button><button class="btn t">Volver</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3240,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

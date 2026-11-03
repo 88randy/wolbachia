@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W28 a W30 Operación diaria</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"></path></symbol>
+<symbol id="moto" viewBox="0 0 24 24"><path d="M2 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM16 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM5 16.5 9 10h5l3 6.5M13 5h3l2.5 5M8 10H5"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 20a2 2 0 0 0 4 0"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="kbd" viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"></path></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:4000px; height:960px">
+
+<div class="col"><div class="lbl">W28 · Jornadas del día · mapa en vivo<span>Solo supervisor y coordinador; al cerrar la jornada el punto desaparece del mapa</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Incidentes<span class="ct cr">5</span></a>
+<div class="grp">Operación</div>
+<a class="nv on" href="#"><svg class="i"><use href="#ops"></use></svg>Jornadas del día<span class="ct">6</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#check"></use></svg>Validar jornadas<span class="ct">4</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#search"></use></svg>Bandeja de revisión<span class="ct">3</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#move"></use></svg>Reubicaciones<span class="ct">2</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Intervenciones de terceros</a>
+<a class="nv" href="#"><svg class="i"><use href="#lock"></use></svg>Cierre de cuadrante</a>
+<div class="foot">Centro Operativo Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="icb" aria-label="Notificaciones"><svg class="i"><use href="#bell"></use></svg><span class="dot">6</span></button><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora · Centro Norte</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="map" style="flex:1; height:100%; border-radius:0; border:0">
+<svg class="base" viewBox="0 0 640 744" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="640" height="744" fill="#EEF1EC"></rect><path d="M0 200 H640 M0 400 H640 M0 580 H640 M160 0 V744 M330 0 V744 M490 0 V744" stroke="#fff" stroke-width="9"></path>
+<path d="M30 30 L310 30 L310 380 L30 380z" fill="#1A5DFF" fill-opacity=".10" stroke="#1A5DFF" stroke-width="2.5"></path><path d="M330 30 L610 30 L610 380 L330 380z" fill="#1A5DFF" fill-opacity=".10" stroke="#1A5DFF" stroke-width="2.5"></path><path d="M30 400 L310 400 L310 700 L30 700z" fill="#1A5DFF" fill-opacity=".10" stroke="#1A5DFF" stroke-width="2.5"></path>
+<g style="font:800 14px Inter" fill="#0044E6"><text x="44" y="54">C-07</text><text x="344" y="54">C-08</text><text x="44" y="424">C-09</text></g></svg>
+<div class="rider" style="left:190px; top:220px"><span class="c">LU</span><span class="n">Luis · 18 de 40</span></div>
+<div class="rider" style="left:470px; top:180px"><span class="c">RO</span><span class="n">Rosa · 22 de 40</span></div>
+<div class="rider" style="left:150px; top:560px"><span class="c" style="background:#8A4B00">PE</span><span class="n">Pedro · sin subir 1 h 10 min</span></div>
+<div class="rider" style="left:390px; top:520px"><span class="c" style="background:#8A4B00">CA</span><span class="n">Carla · fuera de su cuadrante</span></div>
+<div class="lgd"><span class="row"><span class="av" style="width:18px; height:18px; background:#0A1A3F; color:#fff; font-size:8px">AB</span>Jornada abierta</span><span class="row"><span class="av" style="width:18px; height:18px; background:#8A4B00; color:#fff; font-size:8px">AB</span>Con alerta (texto al lado)</span><span class="cap">Ubicación solo con jornada abierta</span></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<div class="dp" style="width:420px">
+<div class="dh"><b class="h2">6 jornadas abiertas</b><p class="cap">Actualizado hace 30 s · alerta si no sube en más de 60 min (parámetro)</p></div>
+<div class="db" style="gap:8px">
+<div class="card tight hl"><div class="row sb2"><b>Luis · C-07 · M-03</b><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>Incidente crítico</span></div><div class="row"><div style="flex:1; height:6px; border-radius:3px; background:#E4E8EF"><div style="width:45%; height:6px; border-radius:3px; background:#1A5DFF"></div></div><b style="font-size:12px">18 de 40</b></div><span class="cap">23 km · última sincronización hace 4 min</span></div>
+<div class="card tight"><div class="row sb2"><b>Rosa · C-08</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Sin alertas</span></div><span class="cap">22 de 40 · 31 km · hace 2 min</span></div>
+<div class="card tight" style="border-color:#8A4B00"><div class="row sb2"><b>Pedro · C-09</b><span class="bd wn"><svg class="i"><use href="#cloudup"></use></svg>Sin subir 1 h 10 min</span></div><span class="cap">9 de 40 · 12 km · su último dato es de las 10:02</span></div>
+<div class="card tight" style="border-color:#8A4B00"><div class="row sb2"><b>Carla · C-10</b><span class="bd wn"><svg class="i"><use href="#move"></use></svg>Fuera del cuadrante</span></div><span class="cap">20 de 40 · 27 km · a 400 m del límite</span></div>
+<div class="nt neu"><svg class="i"><use href="#lock"></use></svg><p>Esta vista no la ve nadie más que supervisores y coordinadores. No se guarda la ruta del día más allá de la retención (W61).</p></div>
+</div></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W29 · Validar jornada · «Observar» con motivo<span>Resumen de la jornada cerrada y línea de tiempo sobre el mapa; observar la regresa al repartidor</span></div>
+<div class="scr">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="#" aria-label="Inicio"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv on" href="#" aria-label="Operación, 4"><svg class="i"><use href="#ops"></use></svg><span class="ct">4</span></a>
+<a class="nv" href="#" aria-label="Inventario"><svg class="i"><use href="#box"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora</small></span></button></div>
+<div class="pg" style="gap:12px">
+<div class="phd"><div class="t"><div class="row"><h1 class="h1">Jornada de Luis · 3 nov 2026</h1><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Por validar</span></div><p class="sub">C-07 · M-03 · 08:12 a 14:40 · cerrada y enviada a las 14:52</p></div><button class="b o">Observar</button><button class="b p"><svg class="i s16"><use href="#check"></use></svg>Aprobar</button></div>
+<div class="g5" style="grid-template-columns:repeat(8, minmax(0,1fr)); gap:8px">
+<div class="kpi" style="padding:10px"><span class="k">Puntos</span><span class="v" style="font-size:22px">38 de 40</span></div>
+<div class="kpi" style="padding:10px"><span class="k">Lecturas</span><span class="v" style="font-size:22px">34</span></div>
+<div class="kpi" style="padding:10px"><span class="k">Colocaciones</span><span class="v" style="font-size:22px">2</span></div>
+<div class="kpi" style="padding:10px"><span class="k">Retiros</span><span class="v" style="font-size:22px">1</span></div>
+<div class="kpi" style="padding:10px"><span class="k">Liberaciones</span><span class="v" style="font-size:22px">24</span></div>
+<div class="kpi" style="padding:10px"><span class="k">Km · litros</span><span class="v" style="font-size:22px">41 · 1.9</span></div>
+<div class="kpi" style="padding:10px; border-color:#B3141A"><span class="k">Conciliación</span><span class="v" style="font-size:22px; color:#B3141A">−2</span></div>
+<div class="kpi" style="padding:10px"><span class="k">Incidentes</span><span class="v" style="font-size:22px">1</span></div>
+</div>
+<div class="row top" style="gap:12px; flex:1; min-height:0">
+<div class="map" style="flex:1; height:330px"><svg class="base" viewBox="0 0 560 330" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="560" height="330" fill="#EEF1EC"></rect><path d="M0 110 H560 M0 220 H560 M140 0 V330 M300 0 V330 M440 0 V330" stroke="#fff" stroke-width="8"></path><path d="M40 300 L80 240 L150 200 L200 150 L280 130 L330 90 L420 80 L480 140 L460 230 L380 260" fill="none" stroke="#1A5DFF" stroke-width="3" stroke-dasharray="1 0"></path><g fill="#0B6B35" stroke="#fff" stroke-width="2"><circle cx="80" cy="240" r="6"></circle><circle cx="150" cy="200" r="6"></circle><circle cx="200" cy="150" r="6"></circle><circle cx="280" cy="130" r="6"></circle><circle cx="420" cy="80" r="6"></circle></g><circle cx="330" cy="90" r="7" fill="#B3141A" stroke="#fff" stroke-width="2"></circle><circle cx="480" cy="140" r="7" fill="#8A4B00" stroke="#fff" stroke-width="2"></circle><text x="342" y="84" style="font:700 11px Inter; fill:#B3141A">10:58 incidente</text><text x="492" y="136" style="font:700 11px Inter; fill:#8A4B00">12:10 casa cerrada</text></svg><div class="attr">© OpenStreetMap contributors</div></div>
+<div class="card" style="width:360px; gap:6px"><b class="h3">Línea de tiempo del día</b>
+<div class="tl">
+<div class="ev in"><span class="dt"><svg class="i"><use href="#moto"></use></svg></span><div class="bx"><b>08:12 · abre jornada · M-03 · 12,480 km</b></div></div>
+<div class="ev ok"><span class="dt"><svg class="i"><use href="#trap"></use></svg></span><div class="bx"><b>10:22 · lectura OV-010 · B-4471</b></div></div>
+<div class="ev cr"><span class="dt"><svg class="i"><use href="#alert"></use></svg></span><div class="bx"><b>10:58 · OV-021 no recuperada</b></div></div>
+<div class="ev ok"><span class="dt"><svg class="i"><use href="#bug"></use></svg></span><div class="bx"><b>11:20 · 24 liberaciones válidas</b></div></div>
+<div class="ev wn"><span class="dt"><svg class="i"><use href="#box"></use></svg></span><div class="bx"><b>14:40 · cierra · faltan 2 papeletas</b></div></div>
+</div></div>
+</div>
+<div class="scrim"></div>
+<div class="mdl" style="width:460px"><div class="mh"><h2 class="h2">Observar la jornada de Luis</h2><p class="sub">Regresa a Luis con tu motivo. Podrá responder desde su teléfono; después vuelve a esta bandeja.</p></div>
+<div class="mb"><div class="fld"><span class="l">Motivo <span class="req">*</span></span><div class="in">Diferencia en conciliación<svg class="i s16" style="margin-left:auto"><use href="#ban"></use></svg></div></div><div class="fld"><span class="l">Detalle</span><div class="in ta f">Faltan 2 papeletas sin justificar. Dime qué pasó con ellas.|</div></div></div>
+<div class="mf"><button class="b t">Cancelar</button><button class="b p">Enviar observación</button></div></div>
+</div></div>
+</div></div>
+
+<div class="col"><div class="lbl">W30 · Bandeja de revisión<span>Registros que el sistema separó para revisión humana: qué pasó, evidencia y «Aceptar», «Anular con motivo» o «Abrir incidente»</span></div>
+<div class="scr">
+<div class="sb"><div class="brand"><span class="lg">CQ</span>Wolbachia</div>
+<a class="nv" href="#"><svg class="i"><use href="#home"></use></svg>Inicio</a>
+<a class="nv" href="#"><svg class="i"><use href="#alert"></use></svg>Incidentes<span class="ct cr">5</span></a>
+<div class="grp">Operación</div>
+<a class="nv" href="#"><svg class="i"><use href="#ops"></use></svg>Jornadas del día<span class="ct">6</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#check"></use></svg>Validar jornadas<span class="ct">4</span></a>
+<a class="nv on" href="#"><svg class="i"><use href="#search"></use></svg>Bandeja de revisión<span class="ct">5</span></a>
+<a class="nv" href="#"><svg class="i"><use href="#move"></use></svg>Reubicaciones<span class="ct">2</span></a>
+<div class="foot">Centro Operativo Norte</div></div>
+<div class="mn">
+<div class="tp"><span class="scope"><svg class="i s16"><use href="#map"></use></svg>Centro Operativo Norte</span><div class="srch"><svg class="i s16"><use href="#search"></use></svg><span class="fx">Busca o escanea</span><svg class="i s16"><use href="#scan"></use></svg><kbd>/</kbd></div><span class="fx"></span><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora</small></span></button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="pg">
+<div class="phd"><div class="t"><h1 class="h1">Bandeja de revisión</h1><p class="sub">5 registros esperan una decisión</p></div></div>
+<div class="tw"><table class="t"><thead><tr><th>Qué pasó</th><th>Objeto</th><th>Repartidor</th><th>Cuándo</th></tr></thead><tbody>
+<tr class="sel"><td><span class="bd cr"><svg class="i"><use href="#bug"></use></svg>Liberación bloqueada al sincronizar</span></td><td>D-118-0453</td><td>Luis</td><td>4 nov 09:20</td></tr>
+<tr><td><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Hora del teléfono 2 h distinta</span></td><td>Lectura OV-034</td><td>Pedro</td><td>4 nov 08:15</td></tr>
+<tr><td><span class="bd wn"><svg class="i"><use href="#trap"></use></svg>Evento sobre ovitrampa ya retirada</span></td><td>OT-0301</td><td>Carla</td><td>3 nov 12:40</td></tr>
+<tr><td><span class="bd in"><svg class="i"><use href="#kbd"></use></svg>QR capturado a mano</span></td><td>B-4471</td><td>Luis</td><td>3 nov 10:22</td></tr>
+<tr><td><span class="bd wn"><svg class="i"><use href="#bag"></use></svg>Lectura sin bolsa</span></td><td>OV-033</td><td>Luis</td><td>3 nov 11:05</td></tr>
+</tbody></table></div>
+</div>
+<div class="dp" style="width:420px">
+<div class="dh"><div class="row sb2"><span class="ov">Revisión</span><button class="icb" aria-label="Cerrar panel"><svg class="i"><use href="#x"></use></svg></button></div><h2 class="h2">Liberación bloqueada al sincronizar</h2><span class="cap">D-118-0453 · Luis · C-07</span></div>
+<div class="db" style="gap:10px">
+<div class="nt blk"><svg class="i"><use href="#ban"></use></svg><div class="tx"><p>Luis liberó a las 09:20 sin señal. El convenio 014/2026 se suspendió a las 09:05. El servidor no la aceptó como válida.</p></div></div>
+<div class="kv"><span>Hora en el teléfono</span><b>09:20</b></div>
+<div class="kv"><span>Llegó al servidor</span><b>10:41</b></div>
+<div class="kv"><span>Ubicación</span><b>Dentro de C-07</b></div>
+<div class="kv"><span>Evidencia</span><b><a href="#">foto del dispositivo</a></b></div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><p>«Aceptar» no la vuelve válida: solo confirma que la revisaste. Para validarla habría que reactivar el permiso con fecha anterior, y eso lo decide regulatorio.</p></div>
+<div class="row" style="margin-top:auto; flex-wrap:wrap"><button class="b o">Anular con motivo</button><button class="b o">Abrir incidente</button><span class="fx"></span><button class="b p">Aceptar como revisada</button></div>
+</div></div>
+</div></div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4000,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Sistema de diseño Codequim</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="fuel" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16M3 21h12M4 10h10M14 8h3l3 3v7a1.5 1.5 0 0 1-3 0v-3h-3"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="cloudok" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM9 14.5l2 2 4-4"></path></symbol>
+<symbol id="nosig" viewBox="0 0 24 24"><path d="M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="moto" viewBox="0 0 24 24"><path d="M2 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM16 16.5a3 3 0 1 0 6 0 3 3 0 0 0-6 0zM5 16.5 9 10h5l3 6.5M13 5h3l2.5 5M8 10H5"></path></symbol>
+<symbol id="map" viewBox="0 0 24 24"><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3zM9 3v15M15 6v15"></path></symbol>
+<symbol id="list" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="pin" viewBox="0 0 24 24"><path d="M12 21s-7-6.2-7-11.5a7 7 0 0 1 14 0C19 14.8 12 21 12 21zM12 7.5a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"></path></symbol>
+<symbol id="nav" viewBox="0 0 24 24"><path d="M3 11 21 3l-8 18-2-8z"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="flash" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></symbol>
+<symbol id="kbd" viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+<symbol id="bat" viewBox="0 0 24 24"><path d="M3 8h15v8H3zM21 11v2M6 11v2"></path></symbol>
+<symbol id="lock" viewBox="0 0 24 24"><path d="M6 11h12v10H6zM8.5 11V7.5a3.5 3.5 0 0 1 7 0V11"></path></symbol>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 8v4l3 2"></path></symbol>
+<symbol id="book" viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h14v16H6a2 2 0 0 0-2 2zM4 21V5M8 7h8"></path></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"></path></symbol>
+<symbol id="box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="thermo" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z"></path></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"></path></symbol>
+<symbol id="refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 0 0-14.5-4.5L3 9M3 4v5h5M4 13a8 8 0 0 0 14.5 4.5L21 15M21 20v-5h-5"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="people" viewBox="0 0 24 24"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM2 20a7 7 0 0 1 14 0M16 4.5a3.5 3.5 0 0 1 0 6.5M18 13.5a7 7 0 0 1 4 6.5"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+<symbol id="egg" viewBox="0 0 24 24"><path d="M12 3c3.5 0 6 5 6 10a6 6 0 0 1-12 0c0-5 2.5-10 6-10z"></path></symbol>
+<symbol id="swap" viewBox="0 0 24 24"><path d="M7 4 3 8l4 4M3 8h14M17 12l4 4-4 4M21 16H7"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="vial" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"></path></symbol>
+<symbol id="tool" viewBox="0 0 24 24"><path d="M14.5 6.5a4 4 0 0 0 5 5L12 19a2.1 2.1 0 0 1-3-3l7.5-7.5a4 4 0 0 0-2-2z"></path></symbol>
+</defs></svg>
+
+<div class="ds" style="width:1600px; min-height:5200px">
+
+<div class="row sb top">
+<div class="st" style="gap:12px">
+<p class="ov">Codequim · Programa Wolbachia · App de campo Android</p>
+<h1>Sistema de diseño · Repartidor</h1>
+<p class="lead">Claro, plano y de alto contraste para leerse a pleno sol con una mano. Todo está definido como tokens con nombre para reutilizarse en la app web. El azul solo marca lo que se toca y lo importante.</p>
+</div>
+<div style="width:220px; height:96px; border:2px dashed #7C869E; border-radius:16px; display:flex; align-items:center; justify-content:center; color:#3A4664; font-weight:700; font-size:14px; text-align:center">[Logo Codequim]<br>archivo pendiente</div>
+</div>
+
+<div class="sec">
+<h2>1 · Color</h2>
+<p class="lead">Contraste calculado con la fórmula WCAG 2.x sobre blanco (#FFFFFF). Meta de campo: 7:1 en datos críticos.</p>
+<div class="dsbox"><div class="ttl">Marca Codequim</div>
+<div class="grid5">
+<div class="sw"><div class="c" style="background:#3772FF"></div><div class="m"><b>color.brand</b><code>#3772FF</code><span>4.19:1 · solo texto grande, íconos, selección</span></div></div>
+<div class="sw"><div class="c" style="background:#1A5DFF"></div><div class="m"><b>color.action</b><code>#1A5DFF</code><span>5.18:1 · botones, enlaces</span></div></div>
+<div class="sw"><div class="c" style="background:#0044E6"></div><div class="m"><b>color.action.strong</b><code>#0044E6</code><span>7.07:1 · presionado, datos al sol</span></div></div>
+<div class="sw"><div class="c" style="background:#0A1A3F"></div><div class="m"><b>color.navy</b><code>#0A1A3F</code><span>17.04:1 · texto, títulos, barra superior</span></div></div>
+<div class="sw"><div class="c" style="background:#EBF1FF; border-bottom:1px solid #C9D0DE"></div><div class="m"><b>color.tint</b><code>#EBF1FF</code><span>fondo · marino encima 15.06:1</span></div></div>
+</div></div>
+<div class="dsbox"><div class="ttl">Neutros (derivados del azul marino)</div>
+<div class="grid6">
+<div class="sw"><div class="c" style="background:#0A1A3F"></div><div class="m"><b>text.primary</b><code>#0A1A3F</code><span>17.04:1</span></div></div>
+<div class="sw"><div class="c" style="background:#3A4664"></div><div class="m"><b>text.secondary</b><code>#3A4664</code><span>9.38:1</span></div></div>
+<div class="sw"><div class="c" style="background:#586380"></div><div class="m"><b>text.tertiary</b><code>#586380</code><span>5.98:1 · nunca para dato crítico</span></div></div>
+<div class="sw"><div class="c" style="background:#7C869E"></div><div class="m"><b>border.strong</b><code>#7C869E</code><span>3.65:1 · bordes de campo (≥3:1)</span></div></div>
+<div class="sw"><div class="c" style="background:#C9D0DE"></div><div class="m"><b>border.default</b><code>#C9D0DE</code><span>decorativo · tarjetas</span></div></div>
+<div class="sw"><div class="c" style="background:#F4F6FA; border-bottom:1px solid #C9D0DE"></div><div class="m"><b>surface.bg</b><code>#F4F6FA</code><span>fondo · superficie #FFFFFF</span></div></div>
+</div></div>
+<div class="dsbox"><div class="ttl">Semánticos · texto sobre su fondo / sobre blanco</div>
+<div class="grid5">
+<div class="sw"><div class="c" style="background:#E3F5EA; display:flex; align-items:center; justify-content:center"><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Éxito</span></div><div class="m"><b>success</b><code>#0B6B35 / #E3F5EA</code><span>5.84:1 · 6.63:1 en blanco</span></div></div>
+<div class="sw"><div class="c" style="background:#FFF1D6; display:flex; align-items:center; justify-content:center"><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Advertencia</span></div><div class="m"><b>warning</b><code>#8A4B00 / #FFF1D6</code><span>6.09:1 · 6.80:1 en blanco</span></div></div>
+<div class="sw"><div class="c" style="background:#FDE8E8; display:flex; align-items:center; justify-content:center"><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Crítico</span></div><div class="m"><b>critical</b><code>#B3141A / #FDE8E8</code><span>5.90:1 · 6.93:1 en blanco</span></div></div>
+<div class="sw"><div class="c" style="background:#EBF1FF; display:flex; align-items:center; justify-content:center"><span class="bd in"><svg class="i"><use href="#info"></use></svg>Información</span></div><div class="m"><b>info</b><code>#0044E6 / #EBF1FF</code><span>6.25:1</span></div></div>
+<div class="sw"><div class="c" style="background:#EEF0F5; display:flex; align-items:center; justify-content:center"><span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Neutro</span></div><div class="m"><b>neutral</b><code>#3A4664 / #EEF0F5</code><span>texto secundario 9.38:1 en blanco</span></div></div>
+</div>
+<p class="cap">Emergencia: <b>color.emergency #C40F1E</b> (blanco encima 6.11:1); solo el botón de emergencia lo usa. La advertencia es ámbar para no competir con el azul de marca.</p>
+</div>
+<div class="dsbox"><div class="ttl">Modo oscuro (opcional: noche e interiores)</div>
+<div class="grid6">
+<div class="sw"><div class="c" style="background:#0B1630"></div><div class="m"><b>dark.bg</b><code>#0B1630</code></div></div>
+<div class="sw"><div class="c" style="background:#13244A"></div><div class="m"><b>dark.surface</b><code>#13244A</code></div></div>
+<div class="sw"><div class="c" style="background:#F2F5FB; border-bottom:1px solid #C9D0DE"></div><div class="m"><b>dark.text</b><code>#F2F5FB</code><span>16.41:1 sobre bg</span></div></div>
+<div class="sw"><div class="c" style="background:#7FA4FF"></div><div class="m"><b>dark.action</b><code>#7FA4FF</code><span>7.39:1 · marino encima 7.02:1</span></div></div>
+<div class="sw"><div class="c" style="background:#5FD08F"></div><div class="m"><b>dark.success</b><code>#5FD08F</code><span>9.31:1 sobre bg</span></div></div>
+<div class="sw"><div class="c" style="background:#FF8A8A"></div><div class="m"><b>dark.critical</b><code>#FF8A8A</code><span>7.90:1 sobre bg</span></div></div>
+</div></div>
+</div>
+
+<div class="sec">
+<h2>2 · Tipografía, espaciado y forma</h2>
+<p class="lead">Inter incluida en el paquete de la app (no se descarga) con cifras tabulares para conteos, km y litros. Tamaños en sp como tokens; escalan con el sistema hasta 130 %.</p>
+<div class="grid3">
+<div class="dsbox"><div class="ttl">Escala</div>
+<div class="row sb"><span class="num">530</span><span class="spec">type.number · 40 · 700</span></div>
+<div class="row sb"><span style="font-size:48px; font-weight:800">12</span><span class="spec">type.counter · 48 · 800</span></div>
+<div class="row sb"><span class="h1">Revisar ovitrampa</span><span class="spec">type.h1 · 24/32</span></div>
+<div class="row sb"><span class="h2">OV-010 · Mz 0123</span><span class="spec">type.h2 · 20/28</span></div>
+<div class="row sb"><span class="b">Texto de cuerpo</span><span class="spec">type.body · 16/24</span></div>
+<div class="row sb"><span style="font-size:17px; font-weight:700">Guardar lectura</span><span class="spec">type.button · 17</span></div>
+<div class="row sb"><span class="s" style="font-weight:700; color:#0A1A3F">Etiqueta de campo</span><span class="spec">type.label · 14/20</span></div>
+<div class="row sb"><span class="cap">Metadato secundario</span><span class="spec">type.caption · 13/18</span></div>
+</div>
+<div class="dsbox"><div class="ttl">Espaciado · base 8</div>
+<div class="row" style="align-items:flex-end; gap:12px">
+<div class="st" style="align-items:center"><div style="width:4px; height:4px; background:#3772FF"></div><span class="spec">4</span></div>
+<div class="st" style="align-items:center"><div style="width:8px; height:8px; background:#3772FF"></div><span class="spec">8</span></div>
+<div class="st" style="align-items:center"><div style="width:12px; height:12px; background:#3772FF"></div><span class="spec">12</span></div>
+<div class="st" style="align-items:center"><div style="width:16px; height:16px; background:#3772FF"></div><span class="spec">16</span></div>
+<div class="st" style="align-items:center"><div style="width:24px; height:24px; background:#3772FF"></div><span class="spec">24</span></div>
+<div class="st" style="align-items:center"><div style="width:32px; height:32px; background:#3772FF"></div><span class="spec">32</span></div>
+<div class="st" style="align-items:center"><div style="width:48px; height:48px; background:#3772FF"></div><span class="spec">48</span></div>
+</div>
+<p class="cap">space.1 = 4 · space.2 = 8 · space.3 = 12 · space.4 = 16 · space.6 = 24 · space.8 = 32 · space.12 = 48. Margen lateral 16. Separación mínima entre zonas táctiles 8.</p>
+<p class="cap"><b>Zonas táctiles:</b> touch.min 48 × 48 · touch.primary 56 de alto · touch.scan 72 · touch.counter 72 × 72 · option 88.</p>
+</div>
+<div class="dsbox"><div class="ttl">Radios, bordes, elevación</div>
+<div class="row" style="gap:16px">
+<div class="st" style="align-items:center"><div style="width:56px; height:56px; border:2px solid #0A1A3F; border-radius:8px"></div><span class="spec">radius.sm 8</span></div>
+<div class="st" style="align-items:center"><div style="width:56px; height:56px; border:2px solid #0A1A3F; border-radius:12px"></div><span class="spec">radius.md 12</span></div>
+<div class="st" style="align-items:center"><div style="width:56px; height:56px; border:2px solid #0A1A3F; border-radius:16px"></div><span class="spec">radius.lg 16</span></div>
+<div class="st" style="align-items:center"><div style="width:56px; height:56px; border:2px solid #0A1A3F; border-radius:20px"></div><span class="spec">radius.xl 20</span></div>
+</div>
+<p class="cap">border.thin 1 (tarjetas) · border.field 2 (campos, opciones) · focus = borde azul 2 + halo 3 al 25 %</p>
+<div class="row" style="gap:16px">
+<div style="width:96px; height:56px; background:#fff; border:1px solid #C9D0DE; border-radius:12px; display:flex; align-items:center; justify-content:center" class="spec">elev.0</div>
+<div style="width:96px; height:56px; background:#fff; border-radius:12px; box-shadow:0 1px 2px rgba(10,26,63,.08); display:flex; align-items:center; justify-content:center" class="spec">elev.1</div>
+<div style="width:96px; height:56px; background:#fff; border-radius:12px; box-shadow:0 -4px 16px rgba(10,26,63,.12); display:flex; align-items:center; justify-content:center" class="spec">elev.sheet</div>
+</div>
+</div>
+</div>
+</div>
+
+<div class="sec">
+<h2>3 · Íconos</h2>
+<p class="lead">Línea simple, trazo 2.25 en cuadrícula de 24, puntas redondas. Siempre con texto; en TalkBack cada uno lleva descripción.</p>
+<div style="display:grid; grid-template-columns:repeat(12, minmax(0,1fr)); gap:16px">
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#scan"></use></svg><span class="cap">Escanear</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#fuel"></use></svg><span class="cap">Gasolina</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#alert"></use></svg><span class="cap">Incidente</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#sos"></use></svg><span class="cap">Emergencia</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#trap"></use></svg><span class="cap">Ovitrampa</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#bag"></use></svg><span class="cap">Bolsa</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#egg"></use></svg><span class="cap">Huevos</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#bug"></use></svg><span class="cap">Liberación</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#vial"></use></svg><span class="cap">Muestra</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#box"></use></svg><span class="cap">Insumo</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#moto"></use></svg><span class="cap">Moto</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#door"></use></svg><span class="cap">Casa cerrada</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#cloudok"></use></svg><span class="cap">Enviado</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#phone"></use></svg><span class="cap">En el teléfono</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#nosig"></use></svg><span class="cap">Sin señal</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#cloudup"></use></svg><span class="cap">Por subir</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#map"></use></svg><span class="cap">Mapa</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#list"></use></svg><span class="cap">Lista</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#nav"></use></svg><span class="cap">Cómo llegar</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#loc"></use></svg><span class="cap">Mi ubicación</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#camera"></use></svg><span class="cap">Foto</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#pen"></use></svg><span class="cap">Firma</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#thermo"></use></svg><span class="cap">Temperatura</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#drop"></use></svg><span class="cap">Humedad</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#swap"></use></svg><span class="cap">Sustituir</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#move"></use></svg><span class="cap">Reubicar</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#ban"></use></svg><span class="cap">Bloqueado</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#check"></use></svg><span class="cap">Correcto</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#info"></use></svg><span class="cap">Información</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#clock"></use></svg><span class="cap">Hora</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#hist"></use></svg><span class="cap">Historial</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#book"></use></svg><span class="cap">Capacitación</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#gear"></use></svg><span class="cap">Ajustes</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#people"></use></svg><span class="cap">Comunidad</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#bat"></use></svg><span class="cap">Batería baja</span></div>
+<div class="st" style="align-items:center; gap:6px"><svg class="i s32"><use href="#flash"></use></svg><span class="cap">Linterna</span></div>
+</div>
+</div>
+
+<div class="sec">
+<h2>4 · Estados de objetos</h2>
+<p class="lead">Siempre color + ícono + etiqueta. Un solo componente <span class="spec">StatusBadge(object, state)</span> para la app y la web.</p>
+<div>
+<div class="strow"><b>Ovitrampa</b><div class="bds"><span class="bd nt"><svg class="i"><use href="#box"></use></svg>En almacén</span><span class="bd in"><svg class="i"><use href="#user"></use></svg>Asignada</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Activa</span><span class="bd nt"><svg class="i"><use href="#bag"></use></svg>Retirada</span><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>No recuperada</span><span class="bd nt"><svg class="i"><use href="#ban"></use></svg>Baja</span></div></div>
+<div class="strow"><b>Punto de muestreo</b><div class="bds"><span class="bd in"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Revisado</span><span class="bd wn"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver</span><span class="bd wn"><svg class="i"><use href="#move"></use></svg>Reubicación propuesta</span><span class="bd ok"><svg class="i"><use href="#move"></use></svg>Reubicación aprobada</span></div></div>
+<div class="strow"><b>Lectura</b><div class="bds"><span class="bd cr"><svg class="i"><use href="#egg"></use></svg>Positiva</span><span class="bd nt"><svg class="i"><use href="#minus"></use></svg>Negativa</span><span class="bd wn"><svg class="i"><use href="#clock"></use></svg>Desfasada</span><span class="bd in"><svg class="i"><use href="#search"></use></svg>En revisión</span><span class="bd nt"><svg class="i"><use href="#ban"></use></svg>Anulada</span></div></div>
+<div class="strow"><b>Registro</b><div class="bds"><span class="bd nt"><svg class="i"><use href="#phone"></use></svg>En el teléfono</span><span class="bd ok"><svg class="i"><use href="#cloudok"></use></svg>Enviado</span><span class="bd cr"><svg class="i"><use href="#alert"></use></svg>Error al enviar</span><span class="bd in"><svg class="i"><use href="#search"></use></svg>En revisión</span></div></div>
+<div class="strow"><b>Liberación</b><div class="bds"><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Válida</span><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Bloqueada</span></div></div>
+<div class="strow"><b>Incidente</b><div class="bds"><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Abierto</span><span class="bd in"><svg class="i"><use href="#user"></use></svg>Asignado</span><span class="bd cr"><svg class="i"><use href="#clock"></use></svg>Vencido</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Cerrado</span></div></div>
+<div class="strow"><b>Moto</b><div class="bds"><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Disponible</span><span class="bd in"><svg class="i"><use href="#moto"></use></svg>En uso</span><span class="bd wn"><svg class="i"><use href="#tool"></use></svg>Servicio vencido</span><span class="bd cr"><svg class="i"><use href="#ban"></use></svg>Fuera de servicio</span></div></div>
+<div class="strow"><b>Jornada</b><div class="bds"><span class="bd nt"><svg class="i"><use href="#clock"></use></svg>Sin abrir</span><span class="bd in"><svg class="i"><use href="#moto"></use></svg>Abierta</span><span class="bd wn"><svg class="i"><use href="#phone"></use></svg>Cerrada en el teléfono</span><span class="bd ok"><svg class="i"><use href="#cloudok"></use></svg>Cerrada y enviada</span></div></div>
+</div>
+<p class="cap">Regla: rojo = atención o positiva a huevos; ámbar = pendiente o advertencia; verde = completado o válido; azul = en proceso o información; gris = inactivo.</p>
+</div>
+
+<div class="sec">
+<h2>5 · Componentes</h2>
+<p class="lead">Con sus estados: normal, presionado, deshabilitado, error y cargando. Medidas en dp.</p>
+<div class="grid3">
+
+<div class="dsbox"><div class="ttl">Barra superior · sincronización</div>
+<div class="tb" style="border-radius:12px"><div class="tt"><b>C-07</b><small>Jornada desde 08:12</small></div><button class="chip ok"><svg class="i s20"><use href="#cloudok"></use></svg>Todo enviado</button></div>
+<div class="tb" style="border-radius:12px"><div class="tt"><b>C-07</b><small>Jornada desde 08:12</small></div><button class="chip wn"><svg class="i s20"><use href="#cloudup"></use></svg>12 por subir</button></div>
+<div class="tb" style="border-radius:12px"><div class="tt"><b>C-07</b><small>Jornada desde 08:12</small></div><button class="chip off"><svg class="i s20"><use href="#nosig"></use></svg>Sin señal · 12 por subir</button></div>
+<div class="tb" style="border-radius:12px"><div class="tt"><b>C-07</b><small>Jornada desde 08:12</small></div><button class="chip er"><svg class="i s20"><use href="#alert"></use></svg>Error: revisar</button></div>
+<div class="tb" style="border-radius:12px"><div class="tt"><b>C-07</b><small>Jornada desde 08:12</small></div><span class="chip bat" aria-label="Batería baja, 14 por ciento"><svg class="i s20"><use href="#bat"></use></svg>14 %</span><button class="sos"><svg class="i s20"><use href="#sos"></use></svg>Emergencia</button></div>
+<p class="cap">Altura 64. El chip mide 48 de alto y abre la bandeja (P28). Emergencia siempre a la derecha.</p>
+</div>
+
+<div class="dsbox"><div class="ttl">Barra inferior de jornada</div>
+<div style="border-radius:12px; overflow:hidden; border:1px solid #C9D0DE">
+<div class="jb"><button class="nb"><svg class="i s28"><use href="#fuel"></use></svg>Gasolina</button><button class="scan"><svg class="i s32"><use href="#scan"></use></svg>Escanear</button><button class="nb"><svg class="i s28"><use href="#alert"></use></svg>Incidente</button></div>
+</div>
+<p class="cap">Escanear: 72 de alto, 1.5× el ancho de los laterales, al centro y al alcance de cualquier pulgar. Solo aparece con jornada abierta.</p>
+<div class="ttl">Insignia de conteo</div>
+<div class="row"><span class="cnt">12</span><span class="cnt">3</span><span class="bd wn"><svg class="i"><use href="#cloudup"></use></svg>12 por subir</span></div>
+<div class="ttl">Indicador de pasos</div>
+<div class="fh" style="border-radius:12px"><div class="stp" style="padding-left:0; margin-top:0"><span>Paso 2 de 6</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+</div>
+
+<div class="dsbox"><div class="ttl">Botones</div>
+<button class="btn p">Guardar lectura</button>
+<button class="btn p pr">Presionado</button>
+<button class="btn dis" disabled>Deshabilitado</button>
+<button class="btn p" aria-busy="true"><span class="spin"></span>Guardando…</button>
+<button class="btn o">Botón de contorno</button>
+<button class="btn t">Acción secundaria (texto)</button>
+<button class="btn d">Retirar ovitrampa</button>
+<p class="cap">Principal: 56 de alto, a todo el ancho, fijo abajo. Secundaria siempre encima. Peligro solo en hojas de confirmación.</p>
+</div>
+
+<div class="dsbox"><div class="ttl">Opción grande (2 a 6)</div>
+<div class="g2">
+<button class="opt v"><svg class="i s28"><use href="#check"></use></svg>Normal</button>
+<button class="opt v sel"><span class="ck"><svg class="i"><use href="#check"></use></svg></span><svg class="i s28"><use href="#door"></use></svg>Seleccionada</button>
+<button class="opt v dis" disabled><svg class="i s28"><use href="#ban"></use></svg>Deshabilitada</button>
+<button class="opt v er"><svg class="i s28"><use href="#alert"></use></svg>Con error</button>
+</div>
+<button class="opt"><svg class="i s28"><use href="#moto"></use></svg><span style="flex:1">Variante en lista</span><svg class="i"><use href="#right"></use></svg></button>
+<p class="cap">Mínimo 88 de alto en cuadrícula y 64 en lista. Al tocar: borde azul + fondo tinte + palomita + vibración corta.</p>
+<div class="ttl">Patrón «Otro (especificar)»</div>
+<div class="other"><label class="s" style="font-weight:700; color:#0A1A3F">Especifica</label><div class="row"><div class="in f" style="font-size:16px; font-weight:500">Tapada con una tabla|</div><button class="mic" aria-label="Dictar"><svg class="i"><use href="#pen"></use></svg></button></div><span class="hp">Obligatorio al elegir «Otro». Texto o dictado.</span></div>
+<p class="cap">Toda lista de opciones abierta termina en «Otro». Excepción: listas que fija una regla (tipo de papeleta, Bien / Con falla, severidad).</p>
+</div>
+
+<div class="dsbox"><div class="ttl">Contador y campo numérico</div>
+<div class="ctr"><button aria-label="Restar uno"><svg class="i s32"><use href="#minus"></use></svg></button><div class="vl">12</div><button aria-label="Sumar uno"><svg class="i s32"><use href="#plus"></use></svg></button></div>
+<div class="ctr"><button aria-label="Restar uno"><svg class="i s32"><use href="#minus"></use></svg></button><div class="vl f">1|</div><button aria-label="Sumar uno"><svg class="i s32"><use href="#plus"></use></svg></button></div>
+<p class="cap">Para cantidades (personas, piezas, merma). Tocar el número abre el teclado numérico. Los huevos no se cuentan en la app: los captura el entomólogo en la web.</p>
+<div class="fld"><label>Km actual</label><div class="in">12,480<span class="u">km</span></div></div>
+<div class="fld"><label>Litros</label><div class="in f">4.5<span class="u">L</span></div></div>
+<div class="fld"><label>Temperatura</label><div class="in er">95<span class="u">°C</span></div><span class="hp er"><svg class="i s18"><use href="#alert"></use></svg>Revisa: la temperatura se ve muy alta.</span></div>
+<div class="fld"><label>Moto de la jornada</label><div class="in dis">M-03<span class="u"><svg class="i s20"><use href="#lock"></use></svg></span></div></div>
+<p class="cap">Unidades: km · L · $ · °C · %</p>
+</div>
+
+<div class="dsbox"><div class="ttl">Lista de verificación</div>
+<div class="chk"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Bote limpio</div>
+<div class="chk"><span class="box"></span>Agua limpia a ¾, sin cloro ni larvicida</div>
+<div class="chk" style="flex-direction:column; align-items:stretch"><span class="bb">Frenos</span><div class="seg"><b class="on"><svg class="i s20"><use href="#check"></use></svg>Bien</b><b>Con falla</b></div></div>
+<div class="chk" style="flex-direction:column; align-items:stretch"><span class="bb">Luces</span><div class="seg"><b>Bien</b><b class="bad"><svg class="i s20"><use href="#alert"></use></svg>Con falla</b></div></div>
+<p class="cap">Toda la fila es tocable, 56 de alto. Casilla 28.</p>
+</div>
+
+<div class="dsbox"><div class="ttl">Foto y firma</div>
+<div class="photo empty"><svg class="i s32"><use href="#camera"></use></svg>Tomar foto</div>
+<div class="photo"><svg class="i s32"><use href="#camera"></use></svg>Vista previa</div>
+<div class="row"><button class="btn o" style="flex:1"><svg class="i"><use href="#refresh"></use></svg>Repetir</button><button class="btn p" style="flex:1">Usar foto</button></div>
+<div class="row"><span class="thumb"><svg class="i"><use href="#camera"></use></svg></span><span class="b" style="flex:1">Foto del odómetro</span><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Lista</span></div>
+<div class="sig"><svg viewBox="0 0 300 80" style="position:absolute; left:20px; top:14px; width:240px; height:70px" fill="none" stroke="#0A1A3F" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M10 50c20-30 30 10 45-10s15-25 30 5 25 0 35-15 20 20 40 5 25-10 40 0"></path></svg><div class="ln"></div><span class="hint">Firma aquí con el dedo</span></div>
+<button class="btn t">Borrar firma y repetir</button>
+</div>
+
+<div class="dsbox"><div class="ttl">Tarjetas de punto e insumo</div>
+<div class="pt"><div class="m"><div class="row"><b>OV-010</b><span class="bd ar">Alto Riesgo</span></div><span class="cap">Manzana 0123 · Revisar · Última: papeleta entregada</span><span class="bd in" style="align-self:flex-start"><svg class="i"><use href="#clock"></use></svg>Pendiente hoy</span></div><div class="d">120 m</div></div>
+<div class="pt"><div class="m"><b>OV-011</b><span class="cap">Manzana 0123 · Volver hoy</span><span class="bd wn" style="align-self:flex-start"><svg class="i"><use href="#door"></use></svg>Casa cerrada · volver</span></div><div class="d">180 m</div></div>
+<div class="pt"><div class="m"><b>OV-020</b><span class="cap">Manzana 0127 · Revisada 09:41</span><span class="bd ok" style="align-self:flex-start"><svg class="i"><use href="#check"></use></svg>Revisado</span></div><div class="d">450 m</div></div>
+<div class="cd"><div class="row sb"><div class="row"><svg class="i s28 blue"><use href="#box"></use></svg><b class="bb">Caja de ovitrampas</b></div><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Recibida</span></div><span class="cap">Lote L-2611 · 20 piezas · Asignada a ti</span></div>
+</div>
+
+<div class="dsbox"><div class="ttl">Avisos en línea</div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Mientras tu jornada esté abierta, la app usa tu ubicación.</p></div></div>
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><div class="tx"><p>Hay otra ovitrampa de esta manzana a 32 m.</p><button>Continuar con motivo</button></div></div>
+<div class="nt blk"><svg class="i"><use href="#ban"></use></svg><div class="tx"><p>Tu capacitación de liberación venció: hoy no podrás liberar.</p><button>Ver capacitaciones</button></div></div>
+<div class="nt ok"><svg class="i"><use href="#phone"></use></svg><div class="tx"><p>Guardado en el teléfono. Se enviará solo con señal.</p></div></div>
+<p class="cap">Una frase + una acción. Bloqueo = rojo con ícono de prohibido.</p>
+</div>
+
+<div class="dsbox"><div class="ttl">Hoja inferior de confirmación</div>
+<div style="position:relative; height:400px; border-radius:12px; overflow:hidden; background:#F4F6FA" class="tk">
+<div class="scrim"></div>
+<div class="sh"><div class="grab"></div><p class="h2">¿Retirar OV-012?</p><div class="kv"><span>Motivo</span><b>Fin de periodo</b></div><div class="kv"><span>Papeleta final</span><b>Bolsa B-4492</b></div><div class="kv"><span>Punto</span><b>Quedará sin ovitrampa</b></div><p class="cap">No se puede deshacer. Si te equivocas, podrás anular con motivo.</p><button class="btn d">Retirar ovitrampa</button><button class="btn t">Volver</button></div>
+</div>
+</div>
+
+<div class="dsbox"><div class="ttl">Resultado y estado vacío</div>
+<div class="g3">
+<div class="st" style="align-items:center; text-align:center"><div class="rs ok" style="width:72px; height:72px"><svg class="i"><use href="#cloudok"></use></svg></div><span class="cap"><b>Guardado y enviado</b></span></div>
+<div class="st" style="align-items:center; text-align:center"><div class="rs ph1" style="width:72px; height:72px"><svg class="i"><use href="#phone"></use></svg></div><span class="cap"><b>Guardado en el teléfono</b></span></div>
+<div class="st" style="align-items:center; text-align:center"><div class="rs er" style="width:72px; height:72px"><svg class="i"><use href="#alert"></use></svg></div><span class="cap"><b>No se pudo guardar</b></span></div>
+</div>
+<p class="cap">Cada resultado: cambio visual + vibración + texto. Nunca solo sonido.</p>
+<div class="cd" style="align-items:center; text-align:center; padding:24px"><svg viewBox="0 0 120 80" width="120" height="80" fill="none" stroke="#3772FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 70h80M35 70V35l25-18 25 18v35M52 70V52h16v18"></path><path d="M92 18l4 4 8-8" stroke="#0B6B35"></path></svg><p class="bb">Sin casas cerradas por volver</p><p class="cap">Si encuentras una, aparecerá aquí.</p></div>
+</div>
+
+<div class="dsbox"><div class="ttl">Marcadores de mapa</div>
+<div class="row" style="gap:20px; padding-top:8px; align-items:flex-end">
+<div class="mk pend" style="position:relative; transform:none"><div class="p"><svg class="i"><use href="#clock"></use></svg></div><span class="t">Pendiente</span></div>
+<div class="mk done" style="position:relative; transform:none"><div class="p"><svg class="i"><use href="#check"></use></svg></div><span class="t">Revisado</span></div>
+<div class="mk closed" style="position:relative; transform:none"><div class="p"><svg class="i"><use href="#door"></use></svg></div><span class="t">Cerrada</span></div>
+<div class="mk reub" style="position:relative; transform:none"><div class="p"><svg class="i"><use href="#move"></use></svg></div><span class="t">Reubicar</span></div>
+<div style="position:relative; width:40px; height:48px"><div class="me" style="left:20px; top:20px"></div></div>
+</div>
+<p class="cap">Estado = ícono + color + folio. «Mi ubicación»: punto azul con halo; el halo crece si el GPS es débil. Seleccionado: 48 con anillo.</p>
+</div>
+
+</div>
+</div>
+
+<div class="sec">
+<h2>6 · Textos y claves de traducción</h2>
+<div class="grid3">
+<div class="dsbox"><div class="ttl">Tono</div><p class="b">De tú, frases de menos de 12 palabras. Verbos de acción en botones: «Guardar lectura», «Cerrar jornada». Sin «offline», «sincronización» ni «Aceptar».</p></div>
+<div class="dsbox"><div class="ttl">Errores</div><p class="b">Qué pasó + qué hacer, sin culpa: «No se aceptó porque el permiso estaba suspendido. Tu supervisor ya fue avisado.»</p></div>
+<div class="dsbox"><div class="ttl">Claves</div><p class="spec">review.step1.title → «¿Cómo la encontraste?» / "How did you find it?"<br>review.cta.save → «Guardar lectura» / "Save reading"<br>sync.pending → «{n} por subir» / "{n} to upload"<br>Todo componente aguanta +30 % de largo: botones con salto de línea, etiquetas sin truncar.</p></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1600,"height":5200}}'>
+class Component extends DCLogic {
+  renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W23 Editor de cuadrante</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;600&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"></path></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"></path></symbol>
+<symbol id="undo" viewBox="0 0 24 24"><path d="M9 14 4 9l5-5M4 9h10a6 6 0 0 1 0 12h-3"></path></symbol>
+<symbol id="cut" viewBox="0 0 24 24"><path d="M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6zM8.1 7.9 20 20M8.1 16.1 20 4"></path></symbol>
+<symbol id="vtx" viewBox="0 0 24 24"><path d="M5 5h3v3H5zM16 5h3v3h-3zM10 16h3v3h-3zM8 6.5h8M7 8l4 8M17 8l-4 8"></path></symbol>
+<symbol id="layers" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 17.5l10 5 10-5"></path></symbol>
+<symbol id="cal" viewBox="0 0 24 24"><path d="M4 6h16v15H4zM4 10h16M8 3v5M16 3v5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4M12 8v4l3 2"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:1360px; height:960px">
+<div class="col"><div class="lbl">W23 · Editor de cuadrante C-07 · nueva versión con puntos fuera<span>Página completa. No se guarda hasta decidir qué pasa con cada punto que queda fuera del polígono</span></div>
+<div class="scr">
+<div class="mn">
+<div class="tp"><a class="b t" href="#"><svg class="i s16"><use href="#left"></use></svg>Mapa de cuadrantes</a><b style="font-size:15px">Editar C-07</b><span class="bd in">Borrador de v4</span><span class="fx"></span><span class="cap">Versión</span><span class="scope"><svg class="i s16"><use href="#hist"></use></svg>v3 · vigente desde 1 sep 2026<svg class="i s16"><use href="#down"></use></svg></span><button class="b t">Descartar</button><button class="b dis" disabled>Guardar nueva versión</button></div>
+<div class="row top" style="flex:1; min-height:0; gap:0">
+<div class="map" style="flex:1; height:100%; border-radius:0; border:0">
+<svg class="base" viewBox="0 0 860 744" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+<rect width="860" height="744" fill="#EEF1EC"></rect>
+<path d="M0 640 C200 600 380 700 860 620 V744 H0z" fill="#CFE0F2"></path>
+<g fill="#E2E6DF" stroke="#D3D8CF"><rect x="90" y="80" width="130" height="100"></rect><rect x="240" y="80" width="130" height="100"></rect><rect x="390" y="80" width="130" height="100"></rect><rect x="540" y="80" width="130" height="100"></rect><rect x="90" y="200" width="130" height="100"></rect><rect x="240" y="200" width="130" height="100"></rect><rect x="390" y="200" width="130" height="100"></rect><rect x="540" y="200" width="130" height="100"></rect><rect x="90" y="320" width="130" height="100"></rect><rect x="240" y="320" width="130" height="100"></rect><rect x="390" y="320" width="130" height="100"></rect><rect x="540" y="320" width="130" height="100"></rect><rect x="90" y="440" width="130" height="100"></rect><rect x="240" y="440" width="130" height="100"></rect><rect x="390" y="440" width="130" height="100"></rect><rect x="540" y="440" width="130" height="100"></rect></g>
+<path d="M0 190 H860 M0 310 H860 M0 430 H860 M230 0 V744 M380 0 V744 M530 0 V744" stroke="#FFFFFF" stroke-width="10"></path>
+<text x="155" y="135" text-anchor="middle" style="font:600 12px Inter; fill:#586380">0121</text><text x="305" y="255" text-anchor="middle" style="font:600 12px Inter; fill:#586380">0123</text><text x="455" y="255" text-anchor="middle" style="font:600 12px Inter; fill:#586380">0124</text><text x="605" y="375" text-anchor="middle" style="font:600 12px Inter; fill:#586380">0127</text><text x="605" y="495" text-anchor="middle" style="font:600 12px Inter; fill:#586380">0131</text>
+<path d="M80 70 L690 70 L690 550 L80 550z" fill="none" stroke="#586380" stroke-width="2.5" stroke-dasharray="6 5"></path>
+<path d="M80 70 L690 70 L690 300 L530 300 L530 550 L80 550z" fill="#1A5DFF" fill-opacity=".12" stroke="#1A5DFF" stroke-width="3"></path>
+<g><rect x="74" y="64" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect><rect x="684" y="64" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect><rect x="684" y="294" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect><rect x="522" y="292" width="16" height="16" fill="#1A5DFF" stroke="#fff" stroke-width="2.5"></rect><rect x="524" y="544" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect><rect x="74" y="544" width="12" height="12" fill="#fff" stroke="#1A5DFF" stroke-width="2.5"></rect></g>
+<path d="M530 300 L690 300 L690 550 L530 550z" fill="#B3141A" fill-opacity=".06"></path>
+</svg>
+<div style="position:absolute; left:12px; top:12px; display:flex; gap:4px; background:#fff; border:1px solid #C9D0DE; border-radius:10px; padding:4px; box-shadow:0 2px 8px rgba(10,26,63,.12)"><button class="icb" aria-label="Dibujar polígono"><svg class="i"><use href="#pen"></use></svg></button><button class="icb" style="background:#EBF1FF; color:#0044E6" aria-label="Mover vértices, activo"><svg class="i"><use href="#vtx"></use></svg></button><button class="icb" aria-label="Recortar"><svg class="i"><use href="#cut"></use></svg></button><button class="icb" aria-label="Deshacer"><svg class="i"><use href="#undo"></use></svg></button><button class="icb" aria-label="Capas"><svg class="i"><use href="#layers"></use></svg></button></div>
+<div class="mk done" style="left:290px; top:240px"><div class="p"><svg class="i"><use href="#check"></use></svg></div><span class="t">OV-010</span></div>
+<div class="mk pend" style="left:330px; top:280px"><div class="p"><svg class="i"><use href="#clock"></use></svg></div><span class="t">OV-012</span></div>
+<div class="mk crit" style="left:580px; top:360px"><div class="p"><svg class="i"><use href="#ban"></use></svg></div><span class="t">OV-020</span></div>
+<div class="mk crit" style="left:640px; top:400px"><div class="p"><svg class="i"><use href="#ban"></use></svg></div><span class="t">OV-022</span></div>
+<div class="mk crit" style="left:600px; top:500px"><div class="p"><svg class="i"><use href="#ban"></use></svg></div><span class="t">OV-023</span></div>
+<div class="lgd"><span class="row"><i style="width:22px; height:0; border-top:3px solid #1A5DFF"></i>Nueva versión (v4)</span><span class="row"><i style="width:22px; height:0; border-top:2.5px dashed #586380"></i>Versión vigente (v3)</span><span class="row"><span class="mk crit" style="position:relative; transform:none"><span class="p" style="width:16px; height:16px"><svg class="i" style="width:9px; height:9px"><use href="#ban"></use></svg></span></span>Punto activo que queda fuera</span><span class="cap">Vértice elegido: arrastra o usa flechas (1 m) · Shift + flechas (10 m)</span></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<div class="dp" style="width:400px">
+<div class="dh"><b class="h2">Datos de la versión</b>
+<div class="fld"><span class="l">Nombre</span><div class="in">C-07</div></div>
+<div class="g2" style="gap:10px"><div class="fld"><span class="l">Centro</span><div class="in">Centro Norte<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div><div class="fld"><span class="l">Responsable</span><div class="in">Luis<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div></div>
+<div class="fld"><span class="l">Vigente desde <span class="req">*</span></span><div class="in">10 nov 2026 · S46<svg class="i s16" style="margin-left:auto"><use href="#cal"></use></svg></div><span class="hp">La v3 sigue vigente hasta el 9 nov.</span></div>
+</div>
+<div class="db" style="gap:10px">
+<div class="nt blk"><svg class="i"><use href="#ban"></use></svg><div class="tx"><p><b>3 puntos activos quedan fuera de la nueva versión.</b></p><p>Decide qué pasa con cada uno para poder guardar.</p></div></div>
+<div class="card tight"><div class="row sb2"><b><svg class="i s16" style="vertical-align:-3px"><use href="#trap"></use></svg> OV-020 · Mz 0127</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Decidido</span></div><div class="in" style="height:34px; font-size:13px">Pasar a C-08 · conserva folio<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+<div class="card tight"><div class="row sb2"><b><svg class="i s16" style="vertical-align:-3px"><use href="#trap"></use></svg> OV-022 · Mz 0127</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Decidido</span></div><div class="in" style="height:34px; font-size:13px">Pasar a C-08 · conserva folio<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div></div>
+<div class="card tight" style="border:2px solid #1A5DFF"><div class="row sb2"><b><svg class="i s16" style="vertical-align:-3px"><use href="#trap"></use></svg> OV-023 · Mz 0127</b><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>Por decidir</span></div><div class="in f" style="height:34px; font-size:13px; color:#586380">Elige qué pasa…<svg class="i s16" style="margin-left:auto"><use href="#down"></use></svg></div><div class="cap">Opciones: pasar a otro cuadrante · programar retiro · reubicar dentro de C-07</div></div>
+<div class="kv"><span>Puntos que quedan en C-07</span><b>37</b></div>
+<div class="kv"><span>Manzanas</span><b>12 → 10</b></div>
+<button class="b dis" style="width:100%; margin-top:auto" disabled>Guardar v4 · falta 1 punto</button>
+</div></div>
+</div></div>
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1360,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

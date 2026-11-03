@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Recorrido 7 reubicación y jornada observada</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="home" viewBox="0 0 24 24"><path d="M3 11 12 3l9 8M5 9.5V21h14V9.5"></path></symbol>
+<symbol id="ops" viewBox="0 0 24 24"><path d="M9 6h12M9 12h12M9 18h12M4 6h.01M4 12h.01M4 18h.01"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></symbol>
+</defs></svg>
+
+<div class="scr" style="border-radius:0; box-shadow:none">
+<div class="sb mini"><div class="brand" style="padding:6px 0 14px"><span class="lg">CQ</span></div>
+<a class="nv" href="P-Indice.dc.html" aria-label="Índice de recorridos"><svg class="i"><use href="#home"></use></svg></a>
+<a class="nv {{navR}}" href="#" aria-label="Reubicaciones"><svg class="i"><use href="#move"></use></svg></a>
+<a class="nv {{navJ}}" href="#" aria-label="Validar jornadas"><svg class="i"><use href="#ops"></use></svg></a></div>
+<div class="mn">
+<div class="tp"><a class="b t" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Recorridos</a><b style="font-size:14px">R7 · Aprobar reubicación y observar una jornada</b><span class="bd in">Paso {{stepNum}} de 4</span><span class="fx"></span><button class="b t sm" onClick="{{reset}}">Reiniciar</button><button class="usr"><span class="av">AN</span><span><b>Ana</b><small>Supervisora · Centro Norte</small></span></button></div>
+<div class="pg" style="gap:14px; position:relative">
+
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div class="st" style="gap:14px">
+<div class="st" style="gap:2px"><p class="ov">W31 · Reubicaciones por decidir</p><h1 class="h1">OV-011 · Mz 0123 · mismo folio</h1><p class="sub">Propuso Luis el 3 nov · motivo: casa cerrada el 27 oct y el 3 nov</p></div>
+<div class="row top" style="gap:16px">
+<div class="map" style="flex:1; height:300px"><svg class="base" viewBox="0 0 600 300" aria-hidden="true"><rect width="600" height="300" fill="#EEF1EC"></rect><path d="M0 90 H600 M0 220 H600 M200 0 V300 M400 0 V300" stroke="#fff" stroke-width="8"></path><rect x="215" y="105" width="170" height="100" fill="#E2E6DF" stroke="#B3141A" stroke-width="2"></rect><path d="M250 130 L340 175" stroke="#0A1A3F" stroke-width="2" stroke-dasharray="4 3"></path></svg><div class="mk out" style="left:250px; top:130px"><div class="p"><svg class="i"><use href="#door"></use></svg></div><span class="t">Antes</span></div><div class="mk pend" style="left:340px; top:175px"><div class="p"><svg class="i"><use href="#move"></use></svg></div><span class="t">Nueva</span></div><div class="attr">© OpenStreetMap contributors</div></div>
+<div class="st" style="width:320px; gap:10px"><div class="card tight"><span class="ov">Antes</span><b>Vivienda C · frente</b></div><div class="card tight hl"><span class="ov">Propuesta</span><b>Vivienda D · patio</b><div class="row"><span style="width:44px; height:34px; border-radius:6px; background:#C9D0DE; display:flex; align-items:center; justify-content:center"><svg class="i s16"><use href="#camera"></use></svg></span><span class="cap">Foto del sitio</span></div></div><div class="nt ok"><svg class="i"><use href="#check"></use></svg><p>Dentro de la manzana y a 64 m del punto más cercano.</p></div></div>
+</div>
+<div class="row"><button class="b do">Rechazar · crea tarea para mañana</button><span class="fx"></span><button class="b p lg" onClick="{{approve}}"><svg class="i s16"><use href="#check"></use></svg>Aprobar reubicación</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px">
+<div class="nt ok"><svg class="i"><use href="#check"></use></svg><p>Reubicación de OV-011 aprobada. Luis la verá en su próxima revisión. <b>Ahora valida su jornada de ayer.</b></p></div>
+<div class="row"><div class="st fx" style="gap:2px"><p class="ov">W29 · Validar jornadas</p><h1 class="h1">Jornada de Luis · 3 nov 2026</h1><p class="sub">C-07 · M-03 · 08:12 a 14:40</p></div><span class="bd {{jCls}}"><svg class="i"><use href="#clock"></use></svg>{{jLabel}}</span></div>
+<div class="g4"><div class="kpi"><span class="k">Puntos</span><span class="v">38 de 40</span></div><div class="kpi"><span class="k">Lecturas</span><span class="v">34</span></div><div class="kpi"><span class="k">Km · litros</span><span class="v">41 · 1.9</span></div><div class="kpi" style="border-color:#B3141A"><span class="k">Conciliación</span><span class="v" style="color:#B3141A">−2 papeletas</span></div></div>
+<div class="row"><span class="fx"></span><button class="b o lg" onClick="{{openObs}}"><svg class="i s16"><use href="#eye"></use></svg>Observar</button><button class="b p lg">Aprobar</button></div>
+<sc-if value="{{obs}}" hint-placeholder-val="{{ false }}">
+<div class="scrim" style="position:fixed"></div>
+<div class="mdl" style="position:fixed; width:460px"><div class="mh"><h2 class="h2">Observar la jornada de Luis</h2><p class="sub">Regresa a Luis con tu motivo. Responde desde su teléfono.</p></div>
+<div class="mb"><div class="fld"><span class="l">Motivo</span><div class="in">Diferencia en conciliación</div></div><div class="fld"><span class="l">Detalle</span><div class="in ta">Faltan 2 papeletas sin justificar. Dime qué pasó con ellas.</div></div></div>
+<div class="mf"><button class="b t" onClick="{{closeObs}}">Cancelar</button><button class="b p" onClick="{{send}}">Enviar observación</button></div></div>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:14px; align-items:center; text-align:center; padding-top:60px">
+<svg class="i s48" style="color:#0044E6"><use href="#phone"></use></svg>
+<h1 class="h1">Jornada observada · regresó a Luis</h1>
+<p class="sub">Luis recibe el aviso en su teléfono. Cuando responda, la jornada vuelve a «Por validar» con su explicación en la línea de tiempo.</p>
+<div class="tw" style="width:640px; text-align:left"><table class="t"><tbody>
+<tr><td>OV-011</td><td>Reubicación R-0024</td><td><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Aprobada · Ana</span></td></tr>
+<tr><td>Jornada 3 nov</td><td>Luis · C-07</td><td><span class="bd wn"><svg class="i"><use href="#eye"></use></svg>Observada · esperando respuesta</span></td></tr>
+</tbody></table></div>
+<a class="b o" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Volver a los recorridos</a>
+</div>
+</sc-if>
+
+</div></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 0, obs: false }; }
+  renderVals() {
+    const { s, obs } = this.state;
+    return {
+      s0: s === 0, s1: s === 1, s2: s === 2, obs,
+      stepNum: s === 0 ? 1 : (s === 1 ? (obs ? 3 : 2) : 4),
+      navR: s === 0 ? 'on' : '', navJ: s >= 1 ? 'on' : '',
+      jCls: 'wn', jLabel: 'Por validar',
+      approve: () => this.setState({ s: 1 }),
+      openObs: () => this.setState({ obs: true }),
+      closeObs: () => this.setState({ obs: false }),
+      send: () => this.setState({ s: 2, obs: false }),
+      reset: () => this.setState({ s: 0, obs: false })
+    };
+  }
+}
+</script>
+</body>
+</html>

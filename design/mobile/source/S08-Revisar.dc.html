@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P14 Revisar ovitrampa</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="minus" viewBox="0 0 24 24"><path d="M5 12h14"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="door" viewBox="0 0 24 24"><path d="M5 21V4h14v17M3 21h18M15 12h.01M9 8h6"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="search" viewBox="0 0 24 24"><path d="M11 4a7 7 0 1 0 0 14 7 7 0 0 0 0-14zM20 20l-4-4"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="drop" viewBox="0 0 24 24"><path d="M12 3s6 6.5 6 11a6 6 0 0 1-12 0c0-4.5 6-11 6-11z"></path></symbol>
+<symbol id="thermo" viewBox="0 0 24 24"><path d="M10 14V5a2 2 0 0 1 4 0v9a4 4 0 1 1-4 0z"></path></symbol>
+<symbol id="bag" viewBox="0 0 24 24"><path d="M5 8h14l-1 13H6zM9 8V6a3 3 0 0 1 6 0v2"></path></symbol>
+<symbol id="pen" viewBox="0 0 24 24"><path d="M4 20h4L19 9l-4-4L4 16zM14 6l4 4"></path></symbol>
+<symbol id="scan" viewBox="0 0 24 24"><path d="M4 8V5a1 1 0 0 1 1-1h3M16 4h3a1 1 0 0 1 1 1v3M20 16v3a1 1 0 0 1-1 1h-3M8 20H5a1 1 0 0 1-1-1v-3M4 12h16"></path></symbol>
+<symbol id="kbd" viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="move" viewBox="0 0 24 24"><path d="M12 21s-6-5.5-6-10a6 6 0 0 1 12 0c0 4.5-6 10-6 10zM12 14V8M9.5 10.5 12 8l2.5 2.5"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="phone" viewBox="0 0 24 24"><path d="M7 3h10v18H7zM11 18h2"></path></symbol>
+<symbol id="flask" viewBox="0 0 24 24"><path d="M9 3h6M10 3v6L4.5 19a1 1 0 0 0 .9 1.5h13.2a1 1 0 0 0 .9-1.5L14 9V3M7 15h10"></path></symbol>
+<symbol id="dots" viewBox="0 0 24 24"><path d="M6 12h.01M12 12h.01M18 12h.01"></path></symbol>
+<symbol id="mic" viewBox="0 0 24 24"><path d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:4840px; height:940px">
+
+<div class="col"><div class="lbl">P14 · Paso 1 · ¿Cómo la encontraste?<span>«Bien» destacado; «Otro» para casos no previstos</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Mz 0123 · Lectura 12 · Anterior 3 nov</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">¿Cómo la encontraste?</p>
+<button class="opt hero"><svg class="i s32"><use href="#check"></use></svg><span style="flex:1; font-size:20px; font-weight:700">Bien</span><svg class="i"><use href="#right"></use></svg></button>
+<div class="g2"><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#door"></use></svg>Casa cerrada</button><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#user"></use></svg>Morador renuente</button><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#search"></use></svg>No está</button><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#trap"></use></svg>Volteada</button><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#drop"></use></svg>Sin agua</button><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#minus"></use></svg>Sin papeleta</button><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#ban"></use></svg>Destruida</button><button class="opt v" style="min-height:70px"><svg class="i s28"><use href="#dots"></use></svg>Otro</button></div>
+</div></div></div>
+
+<div class="col"><div class="lbl">P14 · «Otro» seleccionado<span>Pide especificar por voz o texto; no avanza solo</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Mz 0123 · Lectura 12</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">¿Cómo la encontraste?</p>
+<button class="opt sel"><span class="ck"><svg class="i"><use href="#check"></use></svg></span><svg class="i s28"><use href="#dots"></use></svg>Otro</button>
+<div class="other"><label class="s" style="font-weight:700; color:#0A1A3F">Especifica qué encontraste</label><div class="row"><div class="in f" style="font-size:16px; font-weight:500">Tapada con una tabla|</div><button class="mic" aria-label="Dictar"><svg class="i"><use href="#mic"></use></svg></button></div><span class="hp">Obligatorio. Escribe o dicta en pocas palabras.</span></div>
+<p class="b">¿Todavía tiene papeleta?</p>
+<div class="g2"><button class="opt v sel" style="min-height:64px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Sí</button><button class="opt v" style="min-height:64px">No</button></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Casa cerrada, 2.ª semana<span>1 toque: guarda y avisa que se propondrá reubicar</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs wn"><svg class="i"><use href="#door"></use></svg></div><p class="h1">Casa cerrada guardada</p><p class="b">OV-011 pasó a «Volver hoy».</p>
+<div class="nt warn" style="text-align:left"><svg class="i"><use href="#move"></use></svg><div class="tx"><p>Es la segunda semana seguida. Se propondrá reubicar este punto.</p></div></div>
+<span class="bd nt"><svg class="i"><use href="#phone"></use></svg>Guardado en el teléfono</span></div>
+<div class="ft"><button class="btn p">Siguiente punto</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Incidencia con contador<span>«Volteada» 2 de 2 · si hay papeleta, se embolsa</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-012</b><small>Encontrada: Volteada</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 1 de 5</span><div class="pg"><i class="on"></i><i></i><i></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="cd" style="border-color:#8A4B00; border-width:2px"><div class="row sb"><b class="h2">Volteada</b><span class="bd wn"><svg class="i"><use href="#alert"></use></svg>2 de 2</span></div><p class="b">A la siguiente incidencia se propone reubicar.</p></div>
+<div class="nt info"><svg class="i"><use href="#info"></use></svg><div class="tx"><p>Al reinstalar, ponla en otro lugar de la misma vivienda y pide al morador que la cuide.</p></div></div>
+<p class="h2">¿Todavía tiene papeleta?</p>
+<div class="g2"><button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#bag"></use></svg>Sí, embolsarla</button><button class="opt v" style="min-height:80px"><svg class="i s28"><use href="#minus"></use></svg>No, reinstalar</button></div>
+</div></div></div>
+
+<div class="col"><div class="lbl">P14 · Paso 2 · Condiciones<span>Teclado numérico · sin conteo de huevos</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Encontrada: Bien</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 2 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">Condiciones del sitio</p>
+<div class="fld"><label>Temperatura</label><div class="in"><svg class="i blue"><use href="#thermo"></use></svg>29<span class="u">°C</span></div></div>
+<div class="fld"><label>Humedad</label><div class="in f"><svg class="i blue"><use href="#drop"></use></svg>68<span class="u">%</span></div></div>
+<div class="nt info"><svg class="i"><use href="#flask"></use></svg><div class="tx"><p>No cuentes huevos: el laboratorio los cuenta en la papeleta.</p></div></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Paso 3 · Embolsar papeleta<span>Una bolsa por lectura, siempre</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>29 °C · 68 %</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct"><p class="h1">Escanea la bolsa de la papeleta</p>
+<div class="cd" style="gap:10px"><div class="row top"><svg class="i blue"><use href="#pen"></use></svg><p class="b">Escribe en la esquina el folio <b>OV-010</b> y la fecha.</p></div><div class="row top"><svg class="i blue"><use href="#bag"></use></svg><p class="b">Dóblala hacia dentro, nunca en forma de libro.</p></div><div class="row top"><svg class="i blue"><use href="#flask"></use></svg><p class="b">Siempre se embolsa y va al laboratorio.</p></div></div>
+</div><div class="ft"><button class="btn t">QR dañado: escribir código</button><button class="btn p"><svg class="i"><use href="#scan"></use></svg>Escanear bolsa</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Bolsa ilegible<span>Captura manual marcada</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Bolsa</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><div class="tx"><p>No se pudo leer la bolsa. Escribe el código impreso.</p></div></div>
+<div class="fld"><label>Código de la bolsa</label><div class="in f" style="font-size:24px; letter-spacing:.06em">B-4471</div><span class="hp"><svg class="i s18"><use href="#kbd"></use></svg>Quedará como captura manual.</span></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Lectura desfasada<span>Aviso fijo; la papeleta igual va al laboratorio</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-011</b><small>Anterior: casa cerrada</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 3 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i></div></div></div>
+<div class="ct">
+<div class="nt warn"><svg class="i"><use href="#clock"></use></svg><div class="tx"><p>Esta lectura quedará como desfasada: se guarda pero no cuenta en los índices.</p></div></div>
+<p class="h1">Escanea la bolsa de la papeleta</p>
+<div class="cd" style="border-color:#0B6B35"><div class="row sb"><b class="bb">Bolsa B-4502</b><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Leída</span></div></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Paso 4 · Reinstalar<span>Papeleta: sin «Otro» porque la regla solo permite 3 tipos</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Bolsa B-4471</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 4 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i></div></div></div>
+<div class="ct"><p class="h1">Reinstala la ovitrampa</p>
+<div class="chk"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Lavé y tallé el bote</div>
+<div class="chk"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Agua limpia a ¾</div>
+<div class="chk"><span class="box on"><svg class="i"><use href="#check"></use></svg></span>Papeleta cubre todo el interior</div>
+<p class="s" style="font-weight:700; color:#0A1A3F">Papeleta que pusiste</p>
+<div class="g3"><button class="opt v" style="min-height:60px; font-size:14px">Nueva</button><button class="opt v sel" style="min-height:60px; font-size:14px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Reciclada 1.ª vez</button><button class="opt v" style="min-height:60px; font-size:14px">Reciclada 2.ª vez</button></div>
+</div><div class="ft"><button class="btn p">Continuar</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Paso 5 · Confirmar<span>Resumen sin cifra de huevos</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Revisar OV-010</b><small>Revisa antes de guardar</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div><div class="stp"><span>Paso 5 de 5</span><div class="pg"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></div></div></div>
+<div class="ct"><div class="cd hl" style="align-items:center; text-align:center; padding:20px"><svg class="i s48 blue"><use href="#bag"></use></svg><p class="h2">Papeleta en bolsa B-4471</p><span class="bd in"><svg class="i"><use href="#flask"></use></svg>Va al laboratorio</span></div>
+<div class="cd"><div class="kv"><span>Folio</span><b>OV-010 · Mz 0123</b></div><div class="kv"><span>Lectura</span><b>N.º 12</b></div><div class="kv"><span>Encontrada</span><b>Bien</b></div><div class="kv"><span>Condiciones</span><b>29 °C · 68 %</b></div><div class="kv"><span>Papeleta puesta</span><b>Reciclada 1.ª vez</b></div></div>
+</div><div class="ft"><button class="btn p">Guardar lectura</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Guardada<span>Confirmación inmediata + vibración</span></div>
+<div class="ph"><div class="flashg"></div><div class="ct c" style="gap:16px; position:relative"><div class="rs ok"><svg class="i"><use href="#check"></use></svg></div><p class="h1">Guardado en el teléfono</p><p class="b">OV-010 · bolsa B-4471. Entrégala al laboratorio al cerrar jornada.</p><span class="vib">〰 Vibración corta</span></div>
+<div class="ft"><button class="btn p">Siguiente punto</button></div></div></div>
+
+<div class="col"><div class="lbl">P14 · Ya revisada esta semana<span>Ofrece anular y corregir, nunca borrar</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs ph1"><svg class="i"><use href="#info"></use></svg></div><p class="h1">Ya registraste esta ovitrampa hoy</p><p class="b">OV-010 · bolsa B-4471 · 10:22. ¿Quieres anular y corregir?</p><span class="bd ok"><svg class="i"><use href="#check"></use></svg>Revisado</span></div>
+<div class="ft"><button class="btn o">Anular con motivo y corregir</button><button class="btn p">Salir sin cambios</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4840,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

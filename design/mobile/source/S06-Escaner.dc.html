@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>P11 P12 P21 Escáner</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./codequim.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}
+.kp{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;background:#DDE2EC;padding:8px}
+.kp b{height:52px;border-radius:8px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:600;color:#0A1A3F}
+</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"></path></symbol>
+<symbol id="flash" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"></path></symbol>
+<symbol id="kbd" viewBox="0 0 24 24"><path d="M3 6h18v12H3zM7 10h.01M11 10h.01M15 10h.01M7 14h10"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="camera" viewBox="0 0 24 24"><path d="M4 7h3l2-3h6l2 3h3a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1zM12 9.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7z"></path></symbol>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="alert" viewBox="0 0 24 24"><path d="M12 3 2 20h20L12 3zM12 10v4M12 17v.5"></path></symbol>
+<symbol id="ban" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM5.6 5.6l12.8 12.8"></path></symbol>
+<symbol id="box" viewBox="0 0 24 24"><path d="M3 7l9-4 9 4v10l-9 4-9-4zM3 7l9 4 9-4M12 11v10"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="qr" viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2v2h-2zM18 18h2v2h-2zM14 18h2M18 14h2"></path></symbol>
+<symbol id="gear" viewBox="0 0 24 24"><path d="M4 6h9M17 6h3M4 12h3M11 12h9M4 18h11M19 18h1M15 4v4M9 10v4M17 16v4"></path></symbol>
+<symbol id="cloudup" viewBox="0 0 24 24"><path d="M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5"></path></symbol>
+<symbol id="sos" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7.5v9M7.5 12h9"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="loc" viewBox="0 0 24 24"><path d="M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8zM12 2v3M12 19v3M2 12h3M19 12h3"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:4040px; height:940px">
+
+<div class="col"><div class="lbl">P11 · Buscando<span>Cámara a pantalla completa</span></div>
+<div class="ph" style="background:#1d232e"><div class="cam"></div><div class="frame"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; top:16px; left:16px; right:16px; display:flex; justify-content:space-between"><button class="cbtn" aria-label="Cerrar escáner"><svg class="i"><use href="#x"></use></svg></button><button class="cbtn"><svg class="i"><use href="#flash"></use></svg>Linterna</button></div>
+<p class="b" style="position:absolute; top:520px; left:16px; right:16px; color:#fff; text-align:center; font-weight:600">Apunta al código QR</p>
+<div style="position:absolute; left:16px; right:16px; bottom:24px"><button class="cbtn" style="width:100%"><svg class="i"><use href="#kbd"></use></svg>Escribir código</button></div></div></div>
+
+<div class="col"><div class="lbl">P11 · Leído<span>Destello verde + vibración; pasa sola</span></div>
+<div class="ph" style="background:#1d232e"><div class="cam"></div><div class="frame ok"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; left:50%; top:42%; transform:translate(-50%,-50%); width:72px; height:72px; border-radius:36px; background:#0B6B35; color:#fff; display:flex; align-items:center; justify-content:center"><svg class="i s48"><use href="#check"></use></svg></div>
+<div style="position:absolute; top:520px; left:16px; right:16px; text-align:center; color:#fff"><p class="h2">OV-010 · Ovitrampa activa</p><p class="b" style="opacity:.9">Abriendo revisión…</p></div>
+<span class="vib" style="position:absolute; bottom:28px; left:0; right:0; justify-content:center; color:#fff">〰 Vibración</span></div></div>
+
+<div class="col"><div class="lbl">P11 · Código ilegible<span>Ofrece escribirlo</span></div>
+<div class="ph" style="background:#1d232e"><div class="cam"></div><div class="frame"><i></i><i></i><i></i><i></i></div>
+<div style="position:absolute; top:16px; left:16px"><button class="cbtn" aria-label="Cerrar escáner"><svg class="i"><use href="#x"></use></svg></button></div>
+<div style="position:absolute; left:16px; right:16px; bottom:24px; display:flex; flex-direction:column; gap:12px">
+<div class="nt warn"><svg class="i"><use href="#alert"></use></svg><div class="tx"><p>No se puede leer el código. Limpia la etiqueta o enciende la linterna.</p></div></div>
+<div class="row"><button class="cbtn" style="flex:1"><svg class="i"><use href="#flash"></use></svg>Linterna</button><button class="cbtn" style="flex:1"><svg class="i"><use href="#kbd"></use></svg>Escribir</button></div></div></div></div>
+
+<div class="col"><div class="lbl">P11 · Cámara sin permiso<span>Instrucción de una línea</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Cerrar"><svg class="i"><use href="#x"></use></svg></button><div class="tt"><b>Escanear</b></div></div></div>
+<div class="ct c" style="gap:16px"><div class="rs wn"><svg class="i"><use href="#camera"></use></svg></div><p class="h2">La app no puede usar la cámara</p><p class="b">Actívala en Ajustes del teléfono › Permisos › Cámara.</p></div>
+<div class="ft"><button class="btn o"><svg class="i"><use href="#kbd"></use></svg>Escribir código</button><button class="btn p"><svg class="i"><use href="#gear"></use></svg>Abrir ajustes</button></div></div></div>
+
+<div class="col"><div class="lbl">P11 · Escribir código<span>Queda marcado como «captura manual»</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Escribir código</b><small>Está impreso debajo del QR</small></div></div></div>
+<div class="ct">
+<div class="fld"><label>Código</label><div class="in f" style="font-size:24px; letter-spacing:.06em">OV-01|</div><span class="hp"><svg class="i s18"><use href="#info"></use></svg>Se guardará como captura manual.</span></div>
+<div class="sp"></div></div>
+<div class="ft" style="padding-bottom:8px"><button class="btn p">Buscar código</button></div>
+<div class="kp"><b>1</b><b>2</b><b>3</b><b>4</b><b>5</b><b>6</b><b>7</b><b>8</b><b>9</b><b>-</b><b>0</b><b>⌫</b></div></div></div>
+
+<div class="col"><div class="lbl">P12 · Detalle de insumo<span>Escaneado fuera de la recepción</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Caja de ovitrampas</b><small>Insumo escaneado</small></div><button class="chip l wn"><svg class="i s20"><use href="#cloudup"></use></svg>12</button><button class="sos r" aria-label="Emergencia"><svg class="i"><use href="#sos"></use></svg></button></div></div>
+<div class="ct">
+<div class="cd"><div class="row sb"><div class="row"><svg class="i s32 blue"><use href="#box"></use></svg><b class="h2">L-2611</b></div><span class="bd ok"><svg class="i"><use href="#check"></use></svg>En uso</span></div>
+<div class="dv"></div>
+<div class="kv"><span>Tipo</span><b>Caja de ovitrampas</b></div>
+<div class="kv"><span>Lote</span><b>L-2611</b></div>
+<div class="kv"><span>Cantidad</span><b>18 de 20 piezas</b></div>
+<div class="kv"><span>Caducidad</span><b>No aplica</b></div>
+<div class="kv"><span>Asignada a</span><b>Ti · desde hoy 07:58</b></div></div>
+</div>
+<div class="ft"><button class="btn o"><svg class="i"><use href="#alert"></use></svg>Reportar daño o caducidad</button></div></div></div>
+
+<div class="col"><div class="lbl">P12 · Reportar daño o caducidad<span>Foto obligatoria</span></div>
+<div class="ph"><div class="fh"><div class="r"><button class="ib" aria-label="Atrás"><svg class="i"><use href="#left"></use></svg></button><div class="tt"><b>Reportar insumo</b><small>Caja L-2611</small></div></div></div>
+<div class="ct">
+<div class="g3"><button class="opt v sel" style="min-height:72px"><span class="ck"><svg class="i"><use href="#check"></use></svg></span>Dañado</button><button class="opt v" style="min-height:72px">Caducado</button><button class="opt v" style="min-height:72px">Otro</button></div>
+<div class="photo"><svg class="i s32"><use href="#camera"></use></svg>Vista previa</div>
+<div class="row"><button class="btn o" style="flex:1">Repetir</button></div>
+</div>
+<div class="ft"><button class="btn p">Guardar reporte</button></div></div></div>
+
+<div class="col"><div class="lbl">P21 · Código ajeno a la empresa</div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs er"><svg class="i"><use href="#qr"></use></svg></div><p class="h1">Este código no es del programa</p><p class="b">Busca la etiqueta con el logo del programa.</p></div>
+<div class="ft"><button class="btn p">Escanear de nuevo</button></div></div></div>
+
+<div class="col"><div class="lbl">P21 · Asignada a otra persona</div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs wn"><svg class="i"><use href="#user"></use></svg></div><p class="h1">Esta ovitrampa es de otro repartidor</p><p class="b">T-0388 pertenece a otra zona. No la registres.</p></div>
+<div class="ft"><button class="btn o">Escanear otra</button><button class="btn p">Avisar a mi supervisor</button></div></div></div>
+
+<div class="col"><div class="lbl">P21 · Ya retirada o dada de baja<span>Abre incidente de ovitrampa abandonada</span></div>
+<div class="ph"><div class="ct c" style="gap:16px"><div class="rs er"><svg class="i"><use href="#trap"></use></svg></div><p class="h1">Esta ovitrampa ya fue retirada</p><p class="b">T-0102 se retiró el 14 oct. Si está aquí, puede volverse criadero.</p><span class="bd nt"><svg class="i"><use href="#loc"></use></svg>Se guarda tu ubicación</span></div>
+<div class="ft"><button class="btn o">Escanear otra</button><button class="btn p"><svg class="i"><use href="#camera"></use></svg>Reportar que la encontré aquí</button></div></div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":4040,"height":940}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>W69 y W70 Portal de consulta</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="info" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5v.5"></path></symbol>
+<symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="clock" viewBox="0 0 24 24"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2"></path></symbol>
+<symbol id="layers" viewBox="0 0 24 24"><path d="M12 3 2 8l10 5 10-5zM2 13l10 5 10-5M2 17.5l10 5 10-5"></path></symbol>
+<symbol id="trap" viewBox="0 0 24 24"><path d="M6 5h12l-1.5 15a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1zM6.5 9h11"></path></symbol>
+<symbol id="bug" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0-3 3v4a3 3 0 0 0 6 0v-4a3 3 0 0 0-3-3zM9 5l3 3 3-3M9 12H4M20 12h-5M9 16l-4 3M15 16l4 3"></path></symbol>
+<symbol id="vial" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"></path></symbol>
+<symbol id="egg" viewBox="0 0 24 24"><path d="M12 3c3.5 0 6 5 6 10a6 6 0 0 1-12 0c0-5 2.5-10 6-10z"></path></symbol>
+<symbol id="user" viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 21a8 8 0 0 1 16 0"></path></symbol>
+</defs></svg>
+
+<div class="board" style="width:2680px; height:960px">
+
+<div class="col"><div class="lbl">W69 · Portal de consulta · Inicio (gobierno)<span>Navegación superior de 3 secciones, frase en lenguaje común, fecha de corte junto a cada dato y aviso de bitácora</span></div>
+<div class="scr" style="flex-direction:column; background:#FFFFFF">
+<div style="height:64px; display:flex; align-items:center; gap:28px; padding:0 48px; border-bottom:1px solid #C9D0DE; flex:none">
+<div class="row" style="gap:10px"><span style="width:32px; height:32px; border-radius:8px; background:#3772FF; color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center">CQ</span><b style="font-size:15px">Programa Wolbachia · Consulta</b></div>
+<span class="fx"></span>
+<a href="#" style="font-weight:700; color:#0A1A3F; text-decoration:none; padding:20px 2px; box-shadow:inset 0 -3px 0 #1A5DFF">Inicio</a><a href="#" style="font-weight:600; color:#3A4664; text-decoration:none">Mapa y tendencias</a><a href="#" style="font-weight:600; color:#3A4664; text-decoration:none">Descargas</a>
+<span style="width:1px; height:24px; background:#C9D0DE"></span><button class="icb" aria-label="Idioma">ES</button><button class="usr"><span class="av">GO</span><span><b>Consulta</b><small>[Secretaría de Salud estatal]</small></span></button>
+</div>
+<div style="flex:1; padding:40px 120px; display:flex; flex-direction:column; gap:28px; overflow:hidden">
+<div class="st" style="gap:6px"><p class="ov">[Secretaría de Salud estatal] · Territorio convenido: Región Norte</p><h1 style="margin:0; font-size:34px; line-height:42px; font-weight:800">La prevalencia de Wolbachia subió a 46 % en la semana 45.</h1><p class="sub" style="font-size:15px">Las ovitrampas positivas bajaron a 41 %. Se revisaron 212 de 240 ovitrampas activas.</p></div>
+<div class="g4" style="gap:20px">
+<a class="kpi" href="#" style="padding:20px; gap:6px"><span class="k"><svg class="i s16"><use href="#trap"></use></svg>Ovitrampas activas y revisadas</span><span class="v">212 de 240</span><span class="cap">Datos al cierre de la semana 45</span></a>
+<a class="kpi" href="#" style="padding:20px; gap:6px"><span class="k"><svg class="i s16"><use href="#egg"></use></svg>Ovitrampas positivas (IPO)</span><span class="v">41 %</span><span class="d dn"><svg class="i s16"><use href="#down"></use></svg>Bajó 3 puntos</span><span class="cap">Datos al cierre de la semana 45</span></a>
+<a class="kpi" href="#" style="padding:20px; gap:6px"><span class="k"><svg class="i s16"><use href="#vial"></use></svg>Prevalencia de Wolbachia</span><span class="v">46 %</span><span class="d" style="color:#0044E6"><svg class="i s16"><use href="#up"></use></svg>Subió 4 puntos</span><span class="cap">Última muestra: semana 45</span></a>
+<a class="kpi" href="#" style="padding:20px; gap:6px"><span class="k"><svg class="i s16"><use href="#bug"></use></svg>Liberaciones del mes</span><span class="v">1,240</span><span class="cap">Noviembre 2026 · datos al 4 nov</span></a>
+</div>
+<div class="row top" style="gap:20px">
+<div class="card fx" style="padding:20px"><b class="h3">Prevalencia · últimas 8 semanas</b>
+<svg class="ch" viewBox="0 0 600 150" role="img" aria-label="Prevalencia de 8 % en S38 a 46 % en S45">
+<line class="gd" x1="30" y1="20" x2="590" y2="20"></line><line class="gd" x1="30" y1="75" x2="590" y2="75"></line><line class="ax" x1="30" y1="130" x2="590" y2="130"></line>
+<text x="24" y="134" text-anchor="end">0</text><text x="24" y="79" text-anchor="end">50</text><text x="24" y="24" text-anchor="end">100 %</text>
+<path d="M40 121 L116 117 L192 110 L268 103 L344 96 L420 88 L496 84 L572 79" fill="none" stroke="#1A5DFF" stroke-width="3"></path><circle cx="572" cy="79" r="6" fill="#1A5DFF" stroke="#fff" stroke-width="2"></circle><text x="560" y="66" text-anchor="end" style="font-weight:800; fill:#0044E6">46 %</text>
+<text x="40" y="146" text-anchor="middle">S38</text><text x="572" y="146" text-anchor="middle">S45</text></svg>
+<a href="#" class="b t" style="align-self:flex-start">Ver mapa y tendencias<svg class="i s16"><use href="#right"></use></svg></a></div>
+<div class="card" style="width:360px; padding:20px; gap:12px"><b class="h3">Otros estados del portal</b>
+<div class="nt info"><svg class="i"><use href="#clock"></use></svg><p><b>Sin datos aún:</b> «Tu territorio inicia monitoreo el 10 de noviembre.»</p></div>
+<div class="nt warn"><svg class="i"><use href="#clock"></use></svg><p><b>Semana en cierre:</b> «La semana 45 cierra el sábado; las cifras pueden cambiar.»</p></div>
+<div class="nt neu"><svg class="i"><use href="#info"></use></svg><p><b>Fuera de tu territorio:</b> «Esa zona no está en tu convenio, por eso no se muestra.»</p></div>
+</div>
+</div>
+</div>
+<div style="height:44px; display:flex; align-items:center; gap:8px; padding:0 48px; border-top:1px solid #E4E8EF; color:#3A4664; font-size:12px; flex:none"><svg class="i s16"><use href="#eye"></use></svg>Solo lectura. Cada consulta y descarga queda registrada en la bitácora. Solo se muestran datos agregados por manzana o cuadrante.<span class="fx"></span>Codequim · Programa Wolbachia</div>
+</div></div>
+
+<div class="col"><div class="lbl">W70 · Mapa y tendencias<span>Capas agregadas: índices por manzana, prevalencia por cuadrante, zonas de liberación con su permiso; gráficas simplificadas con tabla</span></div>
+<div class="scr" style="flex-direction:column; background:#FFFFFF">
+<div style="height:64px; display:flex; align-items:center; gap:28px; padding:0 48px; border-bottom:1px solid #C9D0DE; flex:none">
+<div class="row" style="gap:10px"><span style="width:32px; height:32px; border-radius:8px; background:#3772FF; color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center">CQ</span><b style="font-size:15px">Programa Wolbachia · Consulta</b></div>
+<span class="fx"></span>
+<a href="#" style="font-weight:600; color:#3A4664; text-decoration:none">Inicio</a><a href="#" style="font-weight:700; color:#0A1A3F; text-decoration:none; padding:20px 2px; box-shadow:inset 0 -3px 0 #1A5DFF">Mapa y tendencias</a><a href="#" style="font-weight:600; color:#3A4664; text-decoration:none">Descargas</a>
+<span style="width:1px; height:24px; background:#C9D0DE"></span><button class="icb" aria-label="Idioma">ES</button><button class="usr"><span class="av">GO</span><span><b>Consulta</b><small>[Secretaría de Salud estatal]</small></span></button>
+</div>
+<div style="flex:1; padding:24px 48px; display:flex; flex-direction:column; gap:16px; overflow:hidden">
+<div class="row"><h1 class="h1 fx">Mapa y tendencias · Región Norte</h1><span class="cap">Datos al cierre de la semana 45</span><span class="fc on">S45<svg class="i"><use href="#down"></use></svg></span></div>
+<div class="row top" style="gap:16px">
+<div class="map" style="flex:1; height:340px">
+<svg class="base" viewBox="0 0 760 340" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="760" height="340" fill="#EEF1EC"></rect><path d="M0 290 C200 260 420 330 760 280 V340 H0z" fill="#CFE0F2"></path><path d="M0 110 H760 M0 210 H760 M190 0 V340 M380 0 V340 M570 0 V340" stroke="#fff" stroke-width="9"></path>
+<path d="M40 30 L360 30 L360 260 L40 260z" fill="#1A5DFF" fill-opacity=".5" stroke="#0044E6" stroke-width="2.5"></path>
+<path d="M400 30 L720 30 L720 260 L400 260z" fill="#1A5DFF" fill-opacity=".25" stroke="#0044E6" stroke-width="2.5" stroke-dasharray="7 4"></path>
+<path d="M30 20 L730 20 L730 270 L30 270z" fill="none" stroke="#0B6B35" stroke-width="3" stroke-dasharray="2 6"></path>
+<text x="200" y="140" text-anchor="middle" style="font:800 18px Inter; fill:#fff">C-07 · 46 %</text><text x="560" y="140" text-anchor="middle" style="font:800 18px Inter; fill:#0A1A3F">C-08 · 30 %</text></svg>
+<div class="lyr"><b>Capas</b><span class="row"><span class="cb"></span>Índices por manzana</span><span class="row"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span>Prevalencia por cuadrante</span><span class="row"><span class="cb on"><svg class="i"><use href="#check"></use></svg></span>Zonas de liberación</span></div>
+<div class="lgd"><span class="row"><i style="width:22px; height:0; border-top:3px dotted #0B6B35"></i>Zona amparada · Convenio estatal 014/2026</span><span class="row"><span class="sw" style="background:#1A5DFF; opacity:.5"></span>Mayor prevalencia, cifra escrita</span></div>
+<div class="attr">© OpenStreetMap contributors</div>
+</div>
+<div class="card" style="width:340px; flex:none; gap:8px"><b class="h3">Lo que no verás aquí</b><p class="cap">Nombres, teléfonos, RFC, direcciones ni la ubicación en vivo de repartidores. Los puntos se agregan por manzana o cuadrante.</p><div class="nt info"><svg class="i"><use href="#info"></use></svg><p>Para el detalle técnico, tu equipo puede usar la API (sección Descargas).</p></div></div>
+</div>
+<div class="g2">
+<div class="card" style="gap:6px"><div class="chead"><b class="h3">IPO por semana</b><div class="seg"><b class="on">Gráfica</b><b>Tabla</b></div></div>
+<svg class="ch" viewBox="0 0 560 120" role="img" aria-label="IPO baja de 52 % en S36 a 41 % en S45"><line class="gd" x1="30" y1="15" x2="550" y2="15"></line><line class="ax" x1="30" y1="100" x2="550" y2="100"></line><path d="M40 56 L96 53 L152 51 L208 48 L264 52 L320 54 L376 58 L432 60 L488 63 L540 65" fill="none" stroke="#1A5DFF" stroke-width="3"></path><circle cx="540" cy="65" r="5" fill="#1A5DFF"></circle><text x="530" y="84" text-anchor="end" style="font-weight:800; fill:#0044E6">41 %</text><text x="40" y="115" text-anchor="middle">S36</text><text x="540" y="115" text-anchor="middle">S45</text></svg></div>
+<div class="card" style="gap:6px"><div class="chead"><b class="h3">Prevalencia de Wolbachia</b><div class="seg"><b>Gráfica</b><b class="on">Tabla</b></div></div>
+<table class="t"><thead><tr><th>Semana</th><th class="n">C-07</th><th class="n">C-08</th></tr></thead><tbody><tr><td>S43</td><td class="n">38 %</td><td class="n">24 %</td></tr><tr><td>S44</td><td class="n">42 %</td><td class="n">27 %</td></tr><tr><td>S45</td><td class="n"><b>46 %</b></td><td class="n"><b>30 %</b></td></tr></tbody></table></div>
+</div>
+</div>
+<div style="height:44px; display:flex; align-items:center; gap:8px; padding:0 48px; border-top:1px solid #E4E8EF; color:#3A4664; font-size:12px; flex:none"><svg class="i s16"><use href="#eye"></use></svg>Solo lectura. Cada consulta y descarga queda registrada en la bitácora.<span class="fx"></span>Datos de muestra para el prototipo</div>
+</div></div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2680,"height":960}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

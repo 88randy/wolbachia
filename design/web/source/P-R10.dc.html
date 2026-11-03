@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="es-MX">
+<head>
+<meta charset="utf-8">
+<title>Recorrido 10 portal de gobierno</title>
+<script src="./support.js"></script>
+<link rel="stylesheet" href="./web.css">
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&amp;display=swap">
+<style>body{margin:0}a{color:#0044E6}a:hover{color:#0A1A3F}</style>
+</helmet>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="left" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"></path></symbol>
+<symbol id="right" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"></path></symbol>
+<symbol id="check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"></path></symbol>
+<symbol id="up" viewBox="0 0 24 24"><path d="M5 15l7-7 7 7"></path></symbol>
+<symbol id="down" viewBox="0 0 24 24"><path d="M5 9l7 7 7-7"></path></symbol>
+<symbol id="dl" viewBox="0 0 24 24"><path d="M12 4v11M7 10l5 5 5-5M4 20h16"></path></symbol>
+<symbol id="eye" viewBox="0 0 24 24"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12zM12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z"></path></symbol>
+<symbol id="vial" viewBox="0 0 24 24"><path d="M9 3h6M10 3v13a2 2 0 0 0 4 0V3M10 10h4"></path></symbol>
+</defs></svg>
+
+<div class="scr" style="border-radius:0; box-shadow:none; flex-direction:column; background:#fff">
+<sc-if value="{{s0}}" hint-placeholder-val="{{ true }}">
+<div style="flex:1; display:flex; align-items:center; justify-content:center; background:#F4F6FA">
+<div class="card" style="width:420px; padding:28px; gap:14px"><div class="row"><span class="lg" style="width:36px; height:36px; border-radius:9px; background:#3772FF; color:#fff; font-weight:800; display:flex; align-items:center; justify-content:center">CQ</span><b>Programa Wolbachia · Consulta</b></div>
+<h1 class="h1">Inicia sesión</h1><div class="fld"><span class="l">Usuario</span><div class="in">consulta.salud.estatal</div></div><div class="fld"><span class="l">Contraseña</span><div class="in">●●●●●●●●●●</div></div>
+<button class="b p lg" onClick="{{login}}">Entrar</button><a class="b t" href="P-Indice.dc.html"><svg class="i s16"><use href="#left"></use></svg>Volver a los recorridos</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{inPortal}}" hint-placeholder-val="{{ false }}">
+<div style="height:64px; display:flex; align-items:center; gap:28px; padding:0 48px; border-bottom:1px solid #C9D0DE; flex:none">
+<div class="row" style="gap:10px"><span style="width:32px; height:32px; border-radius:8px; background:#3772FF; color:#fff; font-weight:800; font-size:13px; display:flex; align-items:center; justify-content:center">CQ</span><b style="font-size:15px">Programa Wolbachia · Consulta</b></div>
+<span class="fx"></span>
+<button class="b t" style="{{t1}}" onClick="{{goHome}}">Inicio</button><button class="b t" style="{{t2}}" onClick="{{goMap}}">Mapa y tendencias</button><button class="b t" style="{{t3}}" onClick="{{goDl}}">Descargas</button>
+<button class="b t sm" onClick="{{reset}}">Reiniciar</button>
+</div>
+<div style="flex:1; padding:32px 120px; display:flex; flex-direction:column; gap:22px; overflow:hidden">
+
+<sc-if value="{{s1}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:22px">
+<div class="st" style="gap:6px"><p class="ov">[Secretaría de Salud estatal] · Territorio convenido: Región Norte</p><h1 style="margin:0; font-size:32px; line-height:40px; font-weight:800">La prevalencia de Wolbachia subió a 46 % en la semana 45.</h1><p class="sub" style="font-size:15px">Las ovitrampas positivas bajaron a 41 %. Se revisaron 212 de 240 ovitrampas activas.</p></div>
+<div class="g4" style="gap:20px">
+<div class="kpi" style="padding:20px"><span class="k">Ovitrampas revisadas</span><span class="v">212 de 240</span><span class="cap">Cierre de la semana 45</span></div>
+<div class="kpi" style="padding:20px"><span class="k">IPO</span><span class="v">41 %</span><span class="d dn"><svg class="i s16"><use href="#down"></use></svg>Bajó 3 puntos</span></div>
+<button class="kpi fo" style="padding:20px; text-align:left; font-family:inherit; cursor:pointer" onClick="{{goMap}}"><span class="k"><svg class="i s16"><use href="#vial"></use></svg>Prevalencia de Wolbachia</span><span class="v">46 %</span><span class="d" style="color:#0044E6"><svg class="i s16"><use href="#up"></use></svg>Subió 4 puntos · ver tendencia</span></button>
+<div class="kpi" style="padding:20px"><span class="k">Liberaciones del mes</span><span class="v">1,240</span><span class="cap">Al 4 nov 2026</span></div>
+</div>
+<p class="cap">Datos de muestra para el prototipo.</p>
+</div>
+</sc-if>
+
+<sc-if value="{{s2}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:16px">
+<div class="row"><h1 class="h1 fx">Prevalencia de Wolbachia · Región Norte</h1><span class="cap">Datos al cierre de la semana 45</span></div>
+<div class="card" style="gap:6px"><svg class="ch" viewBox="0 0 900 180" role="img" aria-label="Prevalencia en C-07 de 8 % en S38 a 46 % en S45, datos de muestra"><line class="gd" x1="40" y1="20" x2="880" y2="20"></line><line class="gd" x1="40" y1="90" x2="880" y2="90"></line><line class="ax" x1="40" y1="160" x2="880" y2="160"></line><text x="34" y="164" text-anchor="end">0</text><text x="34" y="94" text-anchor="end">50</text><text x="34" y="24" text-anchor="end">100 %</text><path d="M60 149 L177 143 L294 135 L411 125 L528 117 L645 107 L762 101 L860 96" fill="none" stroke="#1A5DFF" stroke-width="3"></path><circle cx="860" cy="96" r="6" fill="#1A5DFF" stroke="#fff" stroke-width="2"></circle><text x="850" y="84" text-anchor="end" style="font-weight:800; fill:#0044E6">46 %</text><text x="60" y="176" text-anchor="middle">S38</text><text x="860" y="176" text-anchor="middle">S45</text></svg></div>
+<div class="tw"><table class="t"><thead><tr><th>Semana</th><th class="n">C-07</th><th class="n">C-08</th></tr></thead><tbody><tr><td>S43</td><td class="n">38 %</td><td class="n">24 %</td></tr><tr><td>S44</td><td class="n">42 %</td><td class="n">27 %</td></tr><tr><td>S45</td><td class="n"><b>46 %</b></td><td class="n"><b>30 %</b></td></tr></tbody></table></div>
+<button class="b p lg" style="align-self:flex-start" onClick="{{goDl}}">Ir a Descargas<svg class="i s16"><use href="#right"></use></svg></button>
+</div>
+</sc-if>
+
+<sc-if value="{{s3}}" hint-placeholder-val="{{ false }}">
+<div class="st" style="gap:16px">
+<h1 class="h1">Descargas · Región Norte</h1>
+<div class="tw"><table class="t" style="font-size:14px"><tbody>
+<tr><td><b>Índices semanales</b><br><span class="cap">Cierre de la semana 45</span></td><td style="text-align:right"><button class="b p sm" onClick="{{download}}"><svg class="i s16"><use href="#dl"></use></svg>PDF</button> <button class="b o sm" onClick="{{download}}"><svg class="i s16"><use href="#dl"></use></svg>CSV</button></td></tr>
+<tr><td><b>Prevalencia de Wolbachia</b><br><span class="cap">Cierre de la semana 45</span></td><td style="text-align:right"><button class="b o sm" onClick="{{download}}">PDF</button> <button class="b o sm" onClick="{{download}}">CSV</button></td></tr>
+<tr><td><b>Liberaciones por permiso</b><br><span class="cap">Al 4 nov 2026</span></td><td style="text-align:right"><button class="b o sm" onClick="{{download}}">PDF</button> <button class="b o sm" onClick="{{download}}">CSV</button></td></tr>
+</tbody></table></div>
+<sc-if value="{{done}}" hint-placeholder-val="{{ false }}"><div class="nt ok"><svg class="i"><use href="#check"></use></svg><p><b>Reporte descargado.</b> La descarga quedó registrada en la bitácora de Codequim.</p></div><p class="cap">Pregunta de la prueba: «Resume en una frase cómo va tu territorio.»</p></sc-if>
+</div>
+</sc-if>
+
+</div>
+<div style="height:44px; display:flex; align-items:center; gap:8px; padding:0 48px; border-top:1px solid #E4E8EF; color:#3A4664; font-size:12px; flex:none"><svg class="i s16"><use href="#eye"></use></svg>Solo lectura. Cada consulta y descarga queda registrada en la bitácora.</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+  constructor(props) { super(props); this.state = { s: 0, done: false }; }
+  renderVals() {
+    const { s, done } = this.state;
+    const on = 'color:#0A1A3F; font-weight:800; box-shadow:inset 0 -3px 0 #1A5DFF; border-radius:0';
+    const off = 'color:#3A4664';
+    return {
+      s0: s === 0, inPortal: s > 0, s1: s === 1, s2: s === 2, s3: s === 3, done,
+      t1: s === 1 ? on : off, t2: s === 2 ? on : off, t3: s === 3 ? on : off,
+      login: () => this.setState({ s: 1 }),
+      goHome: () => this.setState({ s: 1 }),
+      goMap: () => this.setState({ s: 2 }),
+      goDl: () => this.setState({ s: 3 }),
+      download: () => this.setState({ done: true }),
+      reset: () => this.setState({ s: 0, done: false })
+    };
+  }
+}
+</script>
+</body>
+</html>
