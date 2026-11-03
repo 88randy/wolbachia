@@ -29,7 +29,11 @@ function typecheck(dir) {
   return result.status === 0;
 }
 
-const workspaces = listWorkspaceDirs();
+// Optional arguments restrict the run to some folders: `node scripts/typecheck.mjs web packages`.
+const scopes = process.argv.slice(2);
+const workspaces = listWorkspaceDirs().filter(
+  (dir) => scopes.length === 0 || scopes.some((scope) => dir.split(/[\\/]/)[0] === scope),
+);
 if (workspaces.length === 0) {
   console.log("No TypeScript workspace yet: nothing to type-check.");
 }

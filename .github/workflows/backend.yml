@@ -1,0 +1,50 @@
+name: backend
+
+# Runs only when backend/ or this workflow changes.
+# Tool versions mirror .pre-commit-config.yaml (ruff v0.17.3, mypy v2.4.1); bump both together.
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+  push:
+    branches: [master]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend.yml"
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  RUFF_VERSION: "0.17.3"
+  MYPY_VERSION: "2.4.1"
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      # ruff and ruff format succeed when there is no Python file yet.
+      - name: Ruff lint
+        run: uvx ruff@${RUFF_VERSION} check --config pyproject.toml .
+      - name: Ruff format
+        run: uvx ruff@${RUFF_VERSION} format --check --config pyproject.toml .
+      # mypy is strict only for services.py and selectors.py; with none present there is nothing to check.
+      - name: Mypy (services and selectors)
+        run: |
+          mapfile -t targets < <(find . \( -name services.py -o -name selectors.py \) -not -path "*/.venv/*" -not -path "*/migrations/*")
+          if [ "${#targets[@]}" -eq 0 ]; then
+            echo "No services.py or selectors.py yet: nothing to type-check."
+          else
+            uvx mypy@${MYPY_VERSION} --config-file pyproject.toml "${targets[@]}"
+          fi

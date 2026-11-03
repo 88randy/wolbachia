@@ -1,0 +1,33 @@
+# Reusable job: ESLint, Prettier and tsc for one folder of the monorepo.
+# Called by web.yml, mobile.yml and packages.yml. Same commands as `npm run lint|format:check|typecheck`.
+name: js-checks
+
+on:
+  workflow_call:
+    inputs:
+      folder:
+        description: Folder to check (web, mobile or packages)
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      # A folder without code yet matches no files: that is a pass, not a failure.
+      - name: ESLint
+        run: npx eslint "${{ inputs.folder }}" --max-warnings=0 --no-error-on-unmatched-pattern
+      - name: Prettier
+        run: npx prettier --check "${{ inputs.folder }}" --ignore-unknown
+      - name: Type-check
+        run: node scripts/typecheck.mjs "${{ inputs.folder }}"
