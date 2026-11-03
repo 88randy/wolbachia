@@ -18,3 +18,12 @@
 | 14 | Glossary term for *papeleta* is **egg paddle** (`paddle_present`, `has_eggs`) in backend, mobile and web | Accepted (2026-11-03) | PYROBYTE |
 | 15 | OpenAPI + `packages/api-client` (#12) lands right after #2, before #3–#5, so every API PR regenerates the client | Accepted (2026-11-03) | PYROBYTE |
 | 16 | GitHub Issues are the source of truth for specs; `issues/NN-*.md` mirrors them with `NN` = GitHub number | Accepted (2026-11-03) | PYROBYTE |
+| 17 | Web build tool: Vite + `@vitejs/plugin-react` | Accepted (spike #27) | PYROBYTE |
+| 18 | Web router: TanStack Router (schema-validated, typed search params as table/filter state) | Accepted (spike #27) | PYROBYTE |
+| 19 | Web server state: TanStack Query over plain typed functions exported by `packages/api-client` | Accepted (spike #27) | PYROBYTE |
+| 20 | Web forms: React Hook Form + Zod (via `@hookform/resolvers`) | Accepted (spike #27) | PYROBYTE |
+| 21 | Web tables: TanStack Table (headless) behind the shared `DataTable` (#29) | Accepted (spike #27) | PYROBYTE |
+| 22 | Web charts: Recharts, every chart with its data table | Accepted (spike #27) | PYROBYTE |
+| 23 | Web maps: MapLibre GL JS via `react-map-gl/maplibre`, lazy-loaded; OSM attribution | Accepted (spike #27); production tile source pending | PYROBYTE |
+| 24 | Web i18n runtime: i18next + react-i18next with `{param}` interpolation; `packages/i18n` stays runtime-agnostic (catalogs + key types) | Accepted (spike #27); mobile runtime decided in #6 | PYROBYTE |
+| 25 | Web tests: Vitest + Testing Library + jest-axe; Playwright for e2e. Details in `docs/adr/0001-web-stack.md` | Accepted (spike #27) | PYROBYTE |
