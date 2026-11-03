@@ -1,0 +1,85 @@
+# Tooling configuration only. The Django project itself (dependencies, settings, apps)
+# lands in issue #2; do not add [project] or dependencies here until then.
+# Rules and rationale: docs/engineering-rules.md.
+#
+# What #2 must add to make mypy fully useful (not possible today: there is no settings module):
+#   - dev dependencies: django-stubs, djangorestframework-stubs (and the mypy plugin below).
+#   - in [tool.mypy]: plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"].
+#   - [tool.django-stubs] django_settings_module = "<project>.settings.test"
+#     (the plugin imports the settings to learn model fields, so it needs a real module).
+#   - in .pre-commit-config.yaml: switch the mypy hook to the project environment (or add the
+#     same dependencies under additional_dependencies) and remove `ignore_missing_imports` below.
+
+[tool.ruff]
+target-version = "py313"
+line-length = 100
+extend-exclude = ["**/migrations/**"]
+
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle errors
+  "W",    # pycodestyle warnings
+  "F",    # pyflakes
+  "I",    # isort (import order)
+  "N",    # pep8-naming
+  "UP",   # pyupgrade
+  "B",    # flake8-bugbear
+  "SIM",  # flake8-simplify
+  "C90",  # mccabe complexity (limit below)
+  "PLR0913",  # too many arguments (limit below)
+  "T20",  # no print()
+  "BLE",  # blind except
+  "ERA",  # commented-out code
+  "DJ",   # flake8-django
+  "S",    # bandit (security)
+  "PT",   # flake8-pytest-style
+  "RET",  # flake8-return
+  "TRY",  # tryceratops (exception handling)
+  "ANN",  # type annotations
+]
+ignore = [
+  "E501",    # line length is the formatter's job (ruff format), not a lint error
+  "TRY003",  # long messages in exceptions: domain exceptions carry their message by design
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+[tool.ruff.lint.pylint]
+max-args = 3
+
+[tool.ruff.lint.flake8-annotations]
+# `-> None` is still required on public functions, but __init__ may omit it when typed.
+mypy-init-return = true
+
+[tool.ruff.lint.per-file-ignores]
+# Tests: assert is the point, fixtures/factories take many args, annotations add noise.
+"**/tests/**" = ["S101", "S105", "S106", "PLR0913", "ANN"]
+"**/test_*.py" = ["S101", "S105", "S106", "PLR0913", "ANN"]
+"**/conftest.py" = ["S101", "PLR0913", "ANN"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.mypy]
+python_version = "3.13"
+# Lenient everywhere; strict only where the business logic lives (override below).
+# TEMPORARY: Django and DRF are not installed in the pre-commit environment yet.
+# Remove together with the plugin setup described at the top of this file (issue #2).
+ignore_missing_imports = true
+
+# `strict = true` cannot be set per module, so the strict flags are listed one by one.
+[[tool.mypy.overrides]]
+module = ["services", "*.services", "selectors", "*.selectors"]
+disallow_any_generics = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = true
+warn_unused_ignores = true
+warn_return_any = true
+no_implicit_reexport = true
+strict_equality = true
+extra_checks = true
