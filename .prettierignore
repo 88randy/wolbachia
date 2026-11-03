@@ -1,0 +1,13 @@
+# External design export: never reformatted.
+design/
+# Prose is hand-wrapped and mirrored from GitHub Issues; prettier would rewrite emphasis and tables.
+*.md
+# Local agent state and sibling worktrees.
+.claude/worktrees/
+# Generated code.
+packages/api-client/src/generated/
+# Python is formatted by ruff.
+backend/
+**/node_modules/
+**/dist/
+package-lock.json
