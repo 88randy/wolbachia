@@ -1,0 +1,136 @@
+import type { MessageKey } from "@wolbachia/i18n";
+import type { LinkProps } from "@tanstack/react-router";
+import type { ReactNode } from "react";
+
+/** One option of a `select` filter. `value` is what goes in the URL and to the API. */
+export interface FilterOption {
+  value: string;
+  labelKey: MessageKey;
+}
+
+interface FilterBase {
+  /** Query-string name, also the API parameter name (`?status=open`). */
+  key: string;
+  labelKey: MessageKey;
+}
+
+export interface SelectFilter extends FilterBase {
+  kind: "select";
+  options: readonly FilterOption[];
+}
+
+export interface TextFilter extends FilterBase {
+  kind: "text";
+  /** Longest accepted value; longer ones in the URL are ignored. */
+  maxLength: number;
+}
+
+export type FilterDefinition = SelectFilter | TextFilter;
+
+export type PagingMode = "page" | "cursor";
+
+/** What a list screen declares about its table: the shape of its query string. */
+export interface TableQueryConfig {
+  paging: PagingMode;
+  /** Rows per page; sent to the API as `page_size` in page mode. */
+  pageSize: number;
+  filters: readonly FilterDefinition[];
+  /** Column ids the API can order by (`?ordering=<id>` or `-<id>`). */
+  sortableIds: readonly string[];
+  /** Ordering the API applies when the URL has none, e.g. `-created_at`. */
+  defaultOrdering?: string;
+  /** Whether the list endpoint understands `?include_voided=true`. */
+  supportsVoided: boolean;
+}
+
+export type SortDirection = "asc" | "desc";
+
+export interface SortState {
+  id: string;
+  direction: SortDirection;
+}
+
+/** The table state held in the address bar, already validated. */
+export interface TableState {
+  /** Page mode: 1-based. Cursor mode: always 1 (unused). */
+  page: number;
+  /** Cursor mode: opaque cursor of the page, `null` for the first one. */
+  cursor: string | null;
+  /** Effective order: the one in the URL, else the default of the config. */
+  sort: SortState | null;
+  /** Whether the ordering was written in the URL (only then is it sent to the API). */
+  isSortExplicit: boolean;
+  /** Valid filter values by key; filters with no value are absent. */
+  filters: Readonly<Record<string, string>>;
+  includeVoided: boolean;
+}
+
+/** A state plus the names of URL parameters that were unknown or invalid and are ignored. */
+export interface ParsedTableState {
+  state: TableState;
+  ignored: readonly string[];
+}
+
+/** Changes to the URL: `undefined` removes a key. Values are already strings. */
+export type SearchPatch = Readonly<Record<string, string | undefined>>;
+
+/** Everything the table and its filter bar need from the address bar. */
+export interface TableController {
+  config: TableQueryConfig;
+  state: TableState;
+  ignored: readonly string[];
+  hasActiveFilters: boolean;
+  toggleSort: (columnId: string) => void;
+  goToPage: (page: number) => void;
+  goToCursor: (cursor: string | null) => void;
+  setFilter: (key: string, value: string | undefined) => void;
+  clearFilters: () => void;
+  setIncludeVoided: (include: boolean) => void;
+  dropIgnored: () => void;
+}
+
+/** Paging information of the answer in view. */
+export type Paging =
+  | { mode: "page"; page: number; pageSize: number; count: number }
+  | { mode: "cursor"; next: string | null; previous: string | null };
+
+/** What a list screen hands to the table: the rows in view and where the request stands. */
+export interface TableData<Row> {
+  rows: readonly Row[];
+  /** `undefined` until the first answer arrives. */
+  paging: Paging | undefined;
+  /** First load: nothing to show yet. */
+  isLoading: boolean;
+  /** Any request in flight (a new page keeps the previous rows in view meanwhile). */
+  isFetching: boolean;
+  error: unknown;
+  refetch: () => void;
+}
+
+/** Row selection: shown only when the screen passes it. */
+export interface RowSelectionConfig<Row> {
+  /** Accessible name of a row's checkbox, e.g. its code. */
+  rowLabel: (row: Row) => string;
+  isSelectable?: (row: Row) => boolean;
+  /** Actions for the selected rows of the current page. */
+  renderActions?: (rows: readonly Row[]) => ReactNode;
+}
+
+export interface VoidInfo {
+  reason: string;
+  /** Already formatted for display (a name, never an id). */
+  author: string;
+  /** Already formatted in the organization's time zone; shown only when present. */
+  when?: string;
+}
+
+export interface DataTableColumn<Row> {
+  /** Also the ordering key sent to the API when the column is sortable. */
+  id: string;
+  headerKey: MessageKey;
+  cell: (row: Row) => ReactNode;
+  /** Numbers: right-aligned with tabular figures. */
+  align?: "start" | "end";
+  /** Wraps the cell in a link (row link, or the filtered list behind a number). */
+  link?: (row: Row) => LinkProps | undefined;
+}

@@ -4,8 +4,10 @@ import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
 import { shell } from "./shell.ts";
+import { phones } from "./phones.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
+import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const en: Record<MessageKey, string> = {
@@ -15,5 +17,7 @@ export const en: Record<MessageKey, string> = {
   ...states,
   ...auth,
   ...sync,
+  ...table,
+  ...phones,
   ...voiding,
 };

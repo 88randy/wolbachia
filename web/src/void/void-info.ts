@@ -1,11 +1,6 @@
-/** What the UI needs to show a voided record. Compatible with `VoidInfo` of the data table (#29). */
-export interface VoidInfo {
-  reason: string;
-  /** Already formatted for display (a name, never an id). */
-  author: string;
-  /** Already formatted in the organization's time zone; shown only when present. */
-  when?: string;
-}
+import type { VoidInfo } from "../data-table/table-types";
+
+export type { VoidInfo };
 
 /** The void fields every voidable record carries in the API (`VoidableMixin`). */
 export interface VoidFields {

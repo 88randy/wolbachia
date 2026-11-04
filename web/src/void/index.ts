@@ -1,9 +1,6 @@
 /** Public API of the void-with-reason pattern (#32). Screens import from here only. */
 export { VoidDialog } from "./VoidDialog";
 export type { VoidDialogProps } from "./VoidDialog";
-export { VoidedBadge } from "./VoidedBadge";
-export { VoidedCell } from "./VoidedCell";
-export { VoidedText } from "./VoidedText";
 export { submitVoid } from "./submit-void";
 export type { VoidResult } from "./submit-void";
 export { useVoidLimits } from "./use-void-limits";
@@ -13,4 +10,3 @@ export { voidInfoOf } from "./void-info";
 export type { VoidFields, VoidInfo } from "./void-info";
 export { DEFAULT_VOID_LIMITS } from "./void-limits";
 export type { VoidLimits } from "./void-limits";
-export { voidedRowClass } from "./voided-row";

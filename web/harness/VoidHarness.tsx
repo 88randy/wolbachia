@@ -1,10 +1,8 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { classNames } from "../src/styles/class-names";
+import { VoidedDetail } from "../src/data-table/VoidedDetail";
 import type { VoidResult } from "../src/void/submit-void";
 import { VoidDialog } from "../src/void/VoidDialog";
-import { VoidedCell } from "../src/void/VoidedCell";
-import { voidedRowClass } from "../src/void/voided-row";
 import { DEFAULT_VOID_LIMITS } from "../src/void/void-limits";
 import type { VoidLimits } from "../src/void/void-limits";
 import type { VoidInfo } from "../src/void/void-info";
@@ -35,9 +33,10 @@ export function VoidHarness({ submit, limits = DEFAULT_VOID_LIMITS }: HarnessPro
       <table>
         <caption>Ovitrampas</caption>
         <tbody>
-          <tr className={classNames(info && voidedRowClass)}>
+          <tr>
             <td>
-              <VoidedCell info={info}>OV-010</VoidedCell>
+              OV-010
+              {info && <VoidedDetail info={info} />}
             </td>
             <td>
               <button
@@ -50,9 +49,10 @@ export function VoidHarness({ submit, limits = DEFAULT_VOID_LIMITS }: HarnessPro
               </button>
             </td>
           </tr>
-          <tr className={voidedRowClass}>
+          <tr>
             <td>
-              <VoidedCell info={ALREADY_VOIDED}>OV-019</VoidedCell>
+              <s>OV-019</s>
+              <VoidedDetail info={ALREADY_VOIDED} />
             </td>
             <td />
           </tr>

@@ -25,4 +25,6 @@ Skills to invoke with the Skill tool if available (optional; see `.claude/agents
 - Accessibility: touch targets, contrast and text at 130%.
 - Run `npm run lint`, `npm run format:check`, `npm run typecheck` and the tests before you finish.
 
+- Before you start, read and follow "Working protocol (all implementers)" in `.claude/agents/README.md`.
+
 Branch `feat/<issue>-<slug>`, commits `feat(mobile): ...`, PR linked with `Closes #N`. Reply to the user in Mexican Spanish; code and commits in English.

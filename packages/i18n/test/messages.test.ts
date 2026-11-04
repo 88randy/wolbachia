@@ -12,20 +12,32 @@ const locales = Object.keys(messages) as Locale[];
 /**
  * Messages that take a placeholder, sorted by key. A new one is added here on purpose: the
  * wording around a number or a noun must not need plural or gender agreement (see the README).
+ * `table.*` fill in the range, the count, a translated column header or filter name, and a row
+ * name the screen provides; each sentence reads the same for 1 and for many.
  * `voiding.*` fill in a count, the configured length limits, a record code and the reason or
  * author of a void; the minimum is 10 by default, so no sentence has a singular form.
  */
 const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = [
   ["auth.lockout.message", ["minutes"]],
   ["errors.api.blocked", ["role"]],
+  ["table.filters.ignoredBody", ["names"]],
+  ["table.filters.ignoredMore", ["count"]],
+  ["table.filters.remove", ["filter", "value"]],
+  ["table.pager.position", ["page", "pages"]],
+  ["table.selection.count", ["count"]],
+  ["table.selection.row", ["row"]],
+  ["table.sort.ascending", ["column"]],
+  ["table.sort.descending", ["column"]],
+  ["table.status.range", ["from", "to", "total"]],
+  ["table.status.rangeCursor", ["count"]],
+  ["table.voided.author", ["author"]],
+  ["table.voided.reason", ["reason"]],
+  ["table.voided.when", ["when"]],
   ["voiding.dialog.counterBelow", ["count", "min"]],
   ["voiding.dialog.counterOk", ["count", "max"]],
   ["voiding.dialog.minHelp", ["min"]],
   ["voiding.dialog.title", ["record"]],
   ["voiding.error.tooShort", ["min"]],
-  ["voiding.mark.author", ["author"]],
-  ["voiding.mark.reason", ["reason"]],
-  ["voiding.mark.when", ["when"]],
 ];
 
 function sortedKeys(locale: Locale): string[] {

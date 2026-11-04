@@ -66,6 +66,14 @@ The clean-code reference for everyone who writes code in this repo, human or age
 - Arrange / Act / Assert. Names describe behavior, e.g. `test_sync_ignores_duplicate_event_id`.
 - One reason to fail per test. Factories over big fixtures. Test behavior, not implementation.
 - Every bug fix ships with a regression test.
+- **Every test earns its CI time.** A test must protect an acceptance criterion, an edge case of the issue, a past bug or a non-obvious invariant (concurrency, isolation, idempotency, permissions). Do not write tests that:
+  - re-test the framework or a library (that Django validates a field, that React renders a prop). Testing that our configuration produces the documented contract (an error code, a status, a param) is not a re-test;
+  - assert implementation details (private calls, internal state, exact query count unless performance is the point);
+  - are tautological (assert a value right after setting it) or snapshot a whole structure "to be safe" (a fixture that guards a refactor is fine when the PR says when it will be removed);
+  - duplicate the same behavior at several layers: test each rule's cases once, at the lowest layer that proves them, plus at most one wiring test where the rule is enforced (e.g. the endpoint answers `403`/`404` for another organization). Keep e2e for user journeys, cross-layer wiring and the accessibility matrix.
+- Deterministic only: wait for a condition (deferred promises, barriers, fake clocks, polling assertions such as `vi.waitFor` or Playwright's `expect`), never for a fixed duration (`sleep`, `setTimeout(n)`, `waitForTimeout`). A real timeout is allowed only when the timeout itself is the behavior under test (lock timeout, request timeout); keep it short and configurable. No assertion may depend on the current date or time of day.
+- Slow tests need a reason: real database or concurrency tests are fine when they prove a race; otherwise prefer the fast layer.
+- The PR lists which test proves each acceptance criterion.
 - Credentials in tests are obviously fake and match `pw-for-<words>` (e.g. `pw-for-this-test-123`) under `backend/tests/`: the secret scan (`.gitleaks.toml`) skips only that pattern, only there, and only for `generic-api-key`. Generate tokens and keys at runtime (e.g. `secrets.token_urlsafe()`), never as literals. Changes to `.gitleaks.toml` are security-sensitive and need explicit review.
 
 ## 10. Simplicity

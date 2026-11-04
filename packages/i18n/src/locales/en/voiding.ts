@@ -21,10 +21,4 @@ export const voiding: Record<keyof typeof source, string> = {
   "voiding.error.alreadyVoided": "Someone already voided this record. Refresh the page to see it.",
   "voiding.error.blocked":
     "This record can no longer be voided, because another part of the system depends on it.",
-
-  // A voided record in a list or a record page
-  "voiding.mark.badge": "Voided",
-  "voiding.mark.reason": "Reason: {reason}",
-  "voiding.mark.author": "Voided by: {author}",
-  "voiding.mark.when": "Date: {when}",
 };

@@ -1,0 +1,132 @@
+/* FilterBar (.fbar and .fc in design/web/source/web.css). Tokens only. */
+.bar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--space-1) var(--space-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+}
+
+.inline {
+  display: flex;
+  gap: var(--space-1);
+}
+
+.label {
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+}
+
+.control {
+  height: var(--web-control-md);
+  min-width: 0;
+  padding: 0 var(--space-1);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+
+.toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--web-control-md);
+  font-weight: 600;
+}
+
+.check {
+  width: var(--web-icon-lg);
+  height: var(--web-icon-lg);
+  margin: 0;
+  accent-color: var(--color-action);
+}
+
+.icon {
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+  flex: none;
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.chipList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  min-height: var(--web-icon-lg);
+  padding: 0 var(--space-1-5);
+  border: 1px solid var(--color-action);
+  border-radius: var(--radius-full);
+  background: var(--color-tint);
+  color: var(--color-action-strong);
+  font: inherit;
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.export {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  margin-inline-start: auto;
+}
+
+.exportStatus,
+.exportError {
+  margin: 0;
+  font-size: var(--web-type-label-small-font-size);
+}
+
+.exportError {
+  color: var(--color-status-critical-fg);
+  font-weight: 600;
+}
+
+.notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-fg);
+}
+
+.noticeTitle {
+  margin: 0;
+  font-weight: 700;
+}
+
+.noticeBody {
+  margin: 0;
+}

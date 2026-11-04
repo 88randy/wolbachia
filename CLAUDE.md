@@ -38,7 +38,9 @@ El orquestador (sesión principal) planea, delega, revisa, integra y decide; no 
 1. `planner` parte el issue en tareas, interfaces y riesgos.
 2. El implementador trabaja en su propio git worktree y rama (`feat|fix|chore/<n>-<slug>`). Solo se paralelizan issues sin dependencias entre sí ni archivos compartidos.
 3. Cada delegación lleva: el issue, los archivos relevantes, el PNG y la fuente de diseño de la pantalla y los criterios de aceptación. Nada de instrucciones vagas.
-4. Revisión: `qa` (pruebas y casos borde), `code-reviewer` (siempre) y `security-reviewer` (si toca datos, permisos, auth o entradas). En PRs con riesgo (sync, auth, permisos, migraciones) además una revisión de Codex (`/codex:adversarial-review`).
+4. Revisión, en paralelo: `code-reviewer` (siempre; incluye la auditoría de valor de las pruebas), `security-reviewer` (si toca datos, permisos, auth o entradas) y, en PRs con riesgo (sync, auth, permisos, migraciones, concurrencia), Codex (`/codex:adversarial-review`) desde la **primera** ronda, no al final. `qa` cuando falten pruebas de criterios. Las confirmaciones se piden al mismo revisor, que ya tiene contexto.
+   - Una sola ronda consolidada por vez: se juntan los hallazgos de todos los revisores antes de regresarla al implementador.
+   - Si un PR llega a 3 rondas por la misma clase de problema (carreras, sesión, orden), el orquestador cambia la regla de diseño (decisión nueva) en vez de seguir parchando casos.
 5. Si algo no cumple, regresa al agente con observaciones concretas. Si un agente se atora dos veces en lo mismo: cambiar de enfoque o de modelo, o escalar al dueño con opciones.
 6. Tablero en el PR: tarea · agente · estado.
 

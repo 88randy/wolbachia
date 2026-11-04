@@ -20,10 +20,4 @@ export const voiding = {
   "voiding.error.alreadyVoided": "Alguien ya anuló este registro. Actualiza la página para verlo.",
   "voiding.error.blocked":
     "Este registro ya no se puede anular, porque otra parte del sistema depende de él.",
-
-  // A voided record in a list or a record page
-  "voiding.mark.badge": "Anulado",
-  "voiding.mark.reason": "Motivo: {reason}",
-  "voiding.mark.author": "Anuló: {author}",
-  "voiding.mark.when": "Fecha: {when}",
 } as const satisfies AreaCatalog<"voiding">;
