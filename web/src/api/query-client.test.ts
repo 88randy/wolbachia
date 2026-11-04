@@ -27,6 +27,13 @@ describe("createAppQueryClient", () => {
     expect(client.getDefaultOptions().queries?.retry).toBe(false);
   });
 
+  test("does not pause requests when the browser says it is offline", () => {
+    const client = createAppQueryClient();
+
+    expect(client.getDefaultOptions().queries?.networkMode).toBe("always");
+    expect(client.getDefaultOptions().mutations?.networkMode).toBe("always");
+  });
+
   test("uses the retry policy by default", () => {
     const client = createAppQueryClient();
 

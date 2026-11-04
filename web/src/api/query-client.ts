@@ -25,6 +25,12 @@ interface AppQueryClientOptions {
 export function createAppQueryClient(options: AppQueryClientOptions = {}): QueryClient {
   const { retry = true } = options;
   return new QueryClient({
-    defaultOptions: { queries: { retry: retry ? shouldRetry : false } },
+    defaultOptions: {
+      // "always": the browser's online flag is only a hint and the web is not offline-first.
+      // With the default ("online") a request made while the flag says offline never starts, and
+      // the page would wait forever instead of failing with a retry button.
+      queries: { retry: retry ? shouldRetry : false, networkMode: "always" },
+      mutations: { networkMode: "always" },
+    },
   });
 }

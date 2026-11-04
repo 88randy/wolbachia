@@ -1,6 +1,7 @@
 import { ApiError, isErrorEnvelope, unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import { queryOptions } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { clearOrganizationSlug, getOrganizationSlug } from "./organization-slug";
 
@@ -34,6 +35,18 @@ export async function fetchMe(client: ApiClient): Promise<Me> {
 /** Whether a failed `/me/` means "nobody is signed in". */
 export function isNotAuthenticated(error: unknown): boolean {
   return error instanceof ApiError && error.status === 401;
+}
+
+/**
+ * `/me/` for a route guard: the cached answer while it is fresh, otherwise a new request (so a
+ * navigation after a minute also refreshes the permissions). Rejects with the `ApiError`.
+ */
+export function loadMe(queryClient: QueryClient, client: ApiClient): Promise<Me> {
+  return queryClient.query({
+    queryKey: ME_QUERY_KEY,
+    queryFn: () => fetchMe(client),
+    staleTime: ME_STALE_TIME_MS,
+  });
 }
 
 export function meQueryOptions(client: ApiClient) {

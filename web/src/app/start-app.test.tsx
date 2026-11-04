@@ -2,6 +2,7 @@ import { act, screen, waitFor } from "@testing-library/react";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { STORAGE_KEYS } from "../storage/safe-storage";
+import { createFakeApi, makeMe } from "../test/fake-api";
 import { startApp } from "./start-app";
 
 let container: HTMLElement;
@@ -20,6 +21,7 @@ afterEach(() => {
   root = undefined;
   container.remove();
   vi.restoreAllMocks();
+  vi.unstubAllGlobals();
 });
 
 describe("startApp", () => {
@@ -44,6 +46,7 @@ describe("startApp", () => {
 
   test("renders the app when the API URL is valid", async () => {
     const consoleError = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    vi.stubGlobal("fetch", createFakeApi({ "GET /api/v1/me/": Response.json(makeMe()) }).fetch);
 
     root = await startApp(container, { VITE_API_BASE_URL: "/api/v1" });
 
