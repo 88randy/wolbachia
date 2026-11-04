@@ -29,3 +29,7 @@ coverage/
 # Django runtime artifacts
 backend/media/
 backend/schema.yml
+
+# Playwright
+test-results/
+playwright-report/

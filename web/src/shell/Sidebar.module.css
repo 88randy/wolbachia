@@ -33,7 +33,7 @@
   width: var(--web-control-md);
   height: var(--web-control-md);
   border-radius: var(--radius-sm);
-  background: var(--color-brand);
+  background: var(--color-action);
   color: var(--color-on-action);
   font-size: var(--web-type-label-font-size);
   font-weight: 700;
