@@ -1,0 +1,14 @@
+# Extends the default gitleaks rules. Only generic-api-key is relaxed, only under backend/tests/,
+# and only for values that follow the fake-credential convention in docs/engineering-rules.md
+# (`pw-for-...`). Every other rule still applies to tests (#52).
+title = "wolbachia gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Obviously fake passwords in backend tests (#52)"
+targetRules = ["generic-api-key"]
+condition = "AND"
+paths = ['''^backend/tests/''']
+regexes = ['''^pw-for-[a-z0-9-]+$''']
