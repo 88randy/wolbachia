@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
+import { useMe } from "../session/use-me";
 import { classNames } from "../styles/class-names";
 import { SIDEBAR_ID } from "./ids";
-import { NAV_GROUPS } from "./nav-items";
+import { visibleNavGroups } from "./nav-items";
 import styles from "./Sidebar.module.css";
 import { SidebarBrand } from "./SidebarBrand";
 import { SidebarGroup } from "./SidebarGroup";
@@ -14,14 +15,15 @@ interface SidebarProps {
   canToggle: boolean;
 }
 
-/** Left navigation: the areas of the back-office, grouped, with a collapse button. */
+/** Left navigation: the areas the user may open, grouped, with a collapse button. */
 export function Sidebar({ collapsed, onToggle, canToggle }: SidebarProps) {
   const { t } = useTranslation();
+  const me = useMe();
   return (
     <div id={SIDEBAR_ID} className={classNames(styles.sidebar, collapsed && styles.collapsed)}>
       <SidebarBrand collapsed={collapsed} />
       <nav className={styles.nav} aria-label={t("shell.nav.label")}>
-        {NAV_GROUPS.map((group) => (
+        {visibleNavGroups(me).map((group) => (
           <SidebarGroup key={group.id} group={group} collapsed={collapsed} />
         ))}
       </nav>
