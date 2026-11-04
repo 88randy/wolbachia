@@ -85,6 +85,14 @@ Rules:
 | anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 
+## Sync
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| lote de sincronización | sync batch | `events` in `POST /field/sync/` | The events the phone uploads in one request. Never "batch" for supply lots (that is `lot`). |
+| evento de campo | field event | `FieldEvent`, `event`, `/field/sync/` | One immutable record sent by the phone; its id is a UUID generated on the phone. Status `accepted`, `rejected` or `in_review`. |
+| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | What a supervisor must look at: a rejected or in-review field event. Insert-only; decisions arrive with #22. |
+
 ## Devices and sessions
 
 | Spanish | English name in code | API / field form | Notes |

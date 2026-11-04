@@ -32,11 +32,12 @@ User rows are locked with `select_for_update(no_key=True)` (`FOR NO KEY UPDATE`)
 | Revoke a user's sessions | `User`, the sessions |
 | Revoke a device | `Device`, the device's sessions |
 | Final upload (`consume_final_upload`) | `User`, `DeviceSession` |
+| Sync batch (`/field/sync/`, #5) | none of the above in a normal request; in a final upload it runs inside the `User` and `DeviceSession` locks above. Its per-device serialization is a PostgreSQL advisory lock (not a row lock), taken after them |
 
 Bookkeeping (`touch_session`, the first-use mark of a lone pair) are single statements outside any transaction of ours. `tests/test_credentials_and_locks.py` runs refresh, login and final upload against reset on threads (`transaction=True`) to catch a deadlock.
 
 Revocation and rotation commit before they raise, so they must not run inside an outer `atomic()`; `ATOMIC_REQUESTS` stays off.
 
-## For #5 (`/field/sync/`)
+## `/field/sync/` (#5)
 
-`FinalUploadMixin` holds the `User` and `DeviceSession` locks for the whole view when a revoked phone makes its final upload: keep sync batches bounded and make no external calls (HTTP, storage, email) inside the view.
+`FinalUploadMixin` holds the `User` and `DeviceSession` locks for the whole view when a revoked phone makes its final upload: sync batches are bounded (`SYNC_MAX_EVENTS`, `SYNC_MAX_BODY_BYTES`) and no handler or pipeline code calls an external service (HTTP, storage, email). The batches of one device are serialized with `pg_advisory_xact_lock`, not with a `Device` row lock: a row lock taken after the session lock would run against the order above, and it would block the `Device.last_seen_at` update that every authenticated request does. `authenticate_header` makes a bearer-only view answer a request without credentials `401` (not `403`).
