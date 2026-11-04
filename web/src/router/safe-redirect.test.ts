@@ -31,6 +31,15 @@ describe("safeRedirect", () => {
     expect(result.startsWith("//")).toBe(false);
   });
 
+  test.each([
+    "/..//evil.example",
+    "/%2e%2e//evil.example",
+    "/.//evil.example",
+    "/a/..//evil.example/x",
+  ])("dot segments that normalize to a protocol-relative URL (%s) go Home", (target) => {
+    expect(safeRedirect(target)).toBe("/");
+  });
+
   test("never sends the user back to the sign-in page (no loop)", () => {
     expect(safeRedirect("/login")).toBe("/");
     expect(safeRedirect("/login?redirect=%2Fsettings")).toBe("/");

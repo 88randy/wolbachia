@@ -47,6 +47,22 @@ describe("reset password: the page of the emailed link", () => {
     expect(api.requests).toEqual([]);
   });
 
+  test("takes the token out of the address bar and still completes the reset", async () => {
+    window.history.replaceState(null, "", LINK_PATH);
+    const { api } = await openReset();
+
+    expect(window.location.pathname).toBe("/reset-password");
+    await fillAndSend(NEW_PASSWORD);
+
+    await vi.waitFor(() => {
+      expect(api.requests[0]?.body).toEqual({
+        uid: "MQ",
+        token: "set-password-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+  });
+
   test("sends uid, token and the new password in the body, then goes to sign-in with a notice", async () => {
     const { api, app } = await openReset();
 
