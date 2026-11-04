@@ -1,5 +1,6 @@
 import { Outlet } from "@tanstack/react-router";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
+import { useCrossTabSession } from "../session/use-cross-tab-session";
 import { useSessionChanges } from "../session/use-session-changes";
 import styles from "./AppShell.module.css";
 import { MAIN_ID } from "./ids";
@@ -18,6 +19,7 @@ export function AppShell() {
   const collapsed = isCompact || preferCollapsed;
   useFocusMainOnNavigation();
   useSessionChanges();
+  useCrossTabSession();
   return (
     <div className={styles.shell}>
       <SkipLink />

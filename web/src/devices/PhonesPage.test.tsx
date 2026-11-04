@@ -50,6 +50,13 @@ function open(
 const devicesRequests = (api: { requests: RecordedRequest[] }) =>
   api.requests.filter((request) => request.path.startsWith("/api/v1/devices/"));
 
+/** What another tab does when it signs in: it announces the change on the shared channel. */
+function announceFromAnotherTab(): void {
+  const otherTab = new BroadcastChannel("wolbachia.session");
+  otherTab.postMessage("changed");
+  otherTab.close();
+}
+
 describe("phones list (W67)", () => {
   test("shows the phones read from GET /devices/, with the date in the organization's time zone", async () => {
     const { api } = await open(
@@ -187,6 +194,47 @@ describe("phones list (W67)", () => {
     expect(screen.queryByText("Teléfono de Norte")).toBeNull();
     release(pageOf([phone({ label: "Teléfono de Sur" })]));
     expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
+  });
+
+  test("another tab signs in as someone else while this tab pages: no old rows, and the late answer is dropped (#82)", async () => {
+    const user = userEvent.setup();
+    const deferred = () => {
+      let release: (response: Response) => void = () => undefined;
+      const promise = new Promise<Response>((resolve) => {
+        release = resolve;
+      });
+      return { promise, release };
+    };
+    const latePage = deferred();
+    const newMe = deferred();
+    const replies = [
+      pageOf([phone({ label: "Teléfono de Norte" })], 60),
+      () => latePage.promise,
+      () => pageOf([phone({ label: "Teléfono de Sur" })], 1),
+    ];
+    let call = 0;
+    const { api } = await open(() => {
+      const reply = replies[call];
+      call += 1;
+      return typeof reply === "function" ? reply() : (reply as Response).clone();
+    });
+    await screen.findByRole("row", { name: /Teléfono de Norte/ });
+    await user.click(screen.getByRole("button", { name: "Siguiente" }));
+    await waitFor(() => {
+      expect(call).toBe(2);
+    });
+    api.setRoute(ME, () => newMe.promise);
+
+    announceFromAnotherTab();
+
+    expect(await screen.findByText("Cargando resultados")).toBeDefined();
+    expect(screen.queryByText("Teléfono de Norte")).toBeNull();
+    latePage.release(pageOf([phone({ label: "Teléfono TARDE" })], 60));
+    newMe.release(Response.json({ ...ALLOWED, organization: makeOrganization("sur", "Sur") }));
+
+    expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
+    expect(screen.queryByText("Teléfono TARDE")).toBeNull();
+    expect(screen.queryByText("Teléfono de Norte")).toBeNull();
   });
 
   test("is in English when the language is English", async () => {

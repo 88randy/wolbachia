@@ -2,6 +2,7 @@ import type { ApiClient } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { fetchMe, ME_QUERY_KEY } from "./me-query";
+import { broadcastSessionChanged } from "./session-sync";
 import { removeOrganizationQueries } from "./organization-cache";
 import {
   clearOrganizationSlug,
@@ -31,11 +32,13 @@ export async function switchOrganization(
   setOrganizationSlug(slug);
   removeOrganizationQueries(queryClient);
   try {
-    return await queryClient.query({
+    const me = await queryClient.query({
       queryKey: ME_QUERY_KEY,
       queryFn: ({ signal }) => fetchMe(client, signal),
       staleTime: 0,
     });
+    broadcastSessionChanged();
+    return me;
   } catch (error) {
     restoreSlug(previous);
     throw error;
