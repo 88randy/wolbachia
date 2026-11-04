@@ -18,10 +18,17 @@ def params_message(params: dict[str, Any]) -> str:
 
 
 def _params_of(message: object) -> dict[str, Any]:
+    """Internal contract: DRF rebuilds every `ErrorDetail` from its text and code, so a subclass
+    cannot carry `params` through `ValidationError`; the text does, behind `PARAMS_MARKER`.
+    Anything that is not valid JSON after the marker (a message that merely starts with it) means
+    "no params": the error handler must never fail while reporting an error."""
     text = str(message)
     if not text.startswith(PARAMS_MARKER):
         return {}
-    loaded = json.loads(text[len(PARAMS_MARKER) :])
+    try:
+        loaded = json.loads(text[len(PARAMS_MARKER) :])
+    except ValueError:
+        return {}
     return loaded if isinstance(loaded, dict) else {}
 
 

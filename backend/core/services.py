@@ -15,8 +15,9 @@ def void_record[VoidableT: VoidableMixin](
     """Void a record (writes: voided_at, voided_by, void_reason). Never deletes anything.
 
     The row is locked so two concurrent voids cannot both succeed; the second one gets
-    `AlreadyVoidedError` (409). The reason goes through `validate_void_reason` (trimmed, minimum
-    length), so no caller can store a shorter one: `FieldValidationError` (400).
+    `AlreadyVoidedError` (409). The reason goes through `validate_void_reason`, so no caller can
+    store an unchecked one. It raises a DRF `ValidationError` (400) on purpose: it is the single
+    validator of every void path and the error handler already answers it with `params`.
     """
     cleaned_reason = validate_void_reason(reason, "reason")
     with transaction.atomic():

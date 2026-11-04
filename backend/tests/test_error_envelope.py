@@ -125,6 +125,13 @@ def test_flatten_error_details_keeps_the_params_a_message_carries() -> None:
     }
 
 
+def test_flatten_error_details_ignores_a_params_marker_that_is_not_json() -> None:
+    """A message that merely starts with the marker must not turn an error into a 500."""
+    details = {"reason": [leaf("too_short", "params:{not json")]}
+
+    assert flatten_error_details(details) == {"reason": [{"code": "too_short", "params": {}}]}
+
+
 def test_domain_error_rolls_back_writes_made_during_an_atomic_request(
     api_client: APIClient, org_a: Organization, monkeypatch: pytest.MonkeyPatch
 ) -> None:

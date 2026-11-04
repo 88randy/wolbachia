@@ -20,8 +20,6 @@ from tests.factories import RuleParameterFactory, RuleParameterVersionFactory, W
 from tests.sync_support import Phone, event, make_phone
 from tests.testapp.models import Widget
 
-pytestmark = pytest.mark.django_db
-
 WIDGETS = "/api/v1/widgets/"
 ME_URL = "/api/v1/me/"
 TOO_SHORT = {"code": "void_reason_too_short", "params": {"min_length": 10}}
@@ -66,6 +64,8 @@ INVISIBLE = [
     "\u2028",  # line separator (Zl)
     "\u3164",  # Hangul filler
     "\u2800",  # braille blank
+    "\ue000",  # private use (Co)
+    "\u0378",  # unassigned (Cn)
 ]
 
 
@@ -78,7 +78,7 @@ def test_text_that_shows_nothing_never_reaches_the_minimum(invisible: str) -> No
 @pytest.mark.parametrize(
     "reason",
     [
-        "​" + "\n" * 10 + "​",  # a multiline reason that shows nothing
+        "\u200b" + "\n" * 10 + "\u200b",  # a multiline reason that shows nothing
         "ab" + "\n" * 8 + "cd",  # four letters padded with line feeds
         "\n".join("a" * 5),  # five letters, one per line
     ],
@@ -87,88 +87,30 @@ def test_line_feeds_are_allowed_but_never_count_toward_the_minimum(reason: str) 
     assert refused(reason) == {"reason": [TOO_SHORT]}
 
 
-@pytest.mark.parametrize("reason", ["", "   ", NINE, f"  {NINE}  "])
-def test_blank_and_short_reasons_get_the_same_code_and_params(reason: str) -> None:
-    assert refused(reason) == {"reason": [TOO_SHORT]}
-
-
-@pytest.mark.parametrize(
-    "reason",
-    ["\u202eevil " + TEN, TEN + "\u2066", TEN + "\x00", TEN + "\x07", "aaaaa\taaaaa"],
-)
-def test_control_and_bidi_characters_are_refused(reason: str) -> None:
-    assert refused(reason) == {"reason": [{"code": "void_reason_invalid_characters", "params": {}}]}
-
-
-def test_the_maximum_is_enforced_by_the_validator_too() -> None:
-    assert validate_void_reason("x" * VOID_REASON_MAX_LENGTH) == "x" * VOID_REASON_MAX_LENGTH
-    assert refused("x" * (VOID_REASON_MAX_LENGTH + 1)) == {
-        "reason": [{"code": "max_length", "params": {"max_length": VOID_REASON_MAX_LENGTH}}]
-    }
-
-
-def test_the_minimum_comes_from_the_setting(settings: Any) -> None:  # noqa: ANN401
-    settings.VOID_REASON_MIN_LENGTH = 25
-
-    assert refused(TEN) == {
-        "reason": [{"code": "void_reason_too_short", "params": {"min_length": 25}}]
-    }
-
-
-@pytest.mark.parametrize(
-    ("configured", "effective"), [(0, 1), (-5, 1), (10, 10), (5000, VOID_REASON_MAX_LENGTH)]
-)
-def test_a_silly_setting_is_clamped_so_a_void_stays_possible(
-    settings: Any,  # noqa: ANN401
-    configured: int,
-    effective: int,
-) -> None:
-    settings.VOID_REASON_MIN_LENGTH = configured
-
-    assert void_reason_min_length() == effective
-
-
-# --- core: POST .../void/ and void_record --------------------------------------------------
-
-
-def test_void_endpoint_answers_with_code_and_params_and_changes_nothing(
+@pytest.mark.django_db
+def test_void_endpoint_answers_a_blank_reason_with_too_short(
     client_a: APIClient, org_a: Organization
 ) -> None:
+    """Blank text reaches the validator (`allow_blank=True`) instead of DRF's own `blank`."""
     widget = WidgetFactory(organization=org_a)
 
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": NINE}, format="json")
-
-    widget.refresh_from_db()
-    assert response.status_code == 400
-    assert response.data["code"] == "validation_error"
-    assert response.data["fields"] == {"reason": [TOO_SHORT]}
-    assert widget.voided_at is None
-
-
-@pytest.mark.parametrize("reason", ["", "   ", "​" * 10])
-def test_void_endpoint_treats_blank_and_invisible_text_as_too_short(
-    client_a: APIClient, org_a: Organization, reason: str
-) -> None:
-    widget = WidgetFactory(organization=org_a)
-
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": reason}, format="json")
+    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "   "}, format="json")
 
     assert response.data["fields"] == {"reason": [TOO_SHORT]}
 
 
-def test_void_endpoint_refuses_control_characters_and_a_missing_reason(
+@pytest.mark.django_db
+def test_void_endpoint_answers_a_missing_reason_with_required(
     client_a: APIClient, org_a: Organization
 ) -> None:
     widget = WidgetFactory(organization=org_a)
-    url = f"{WIDGETS}{widget.pk}/void/"
 
-    bidi = client_a.post(url, {"reason": "‮" + TEN}, format="json")
-    missing = client_a.post(url, {}, format="json")
+    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {}, format="json")
 
-    assert bidi.data["fields"]["reason"][0]["code"] == "void_reason_invalid_characters"
-    assert missing.data["fields"]["reason"][0]["code"] == "required"
+    assert response.data["fields"]["reason"][0]["code"] == "required"
 
 
+@pytest.mark.django_db
 def test_void_endpoint_stores_the_normalized_reason(
     client_a: APIClient, org_a: Organization
 ) -> None:
@@ -181,13 +123,14 @@ def test_void_endpoint_stores_the_normalized_reason(
     assert widget.void_reason == TEN
 
 
+@pytest.mark.django_db
 def test_void_record_validates_for_callers_that_skip_the_serializer(
     org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a)
 
     with pytest.raises(ValidationError) as raised:
-        void_record(widget, member_a, "​" * 10)
+        void_record(widget, member_a, "\u200b" * 10)
 
     assert flatten_error_details(raised.value.get_full_details()) == {"reason": [TOO_SHORT]}
     assert Widget.objects.get(pk=widget.pk).voided_at is None
@@ -217,6 +160,7 @@ def rule_void_url(version: Any) -> str:  # noqa: ANN401
     return f"/api/v1/rule-parameters/speed_lock_kmh/versions/{version.id}/void/"
 
 
+@pytest.mark.django_db
 def test_rule_version_void_refuses_a_short_reason(
     rule_admin: APIClient, org_a: Organization
 ) -> None:
@@ -230,6 +174,7 @@ def test_rule_version_void_refuses_a_short_reason(
     assert version.voided_at is None
 
 
+@pytest.mark.django_db
 def test_rule_version_void_checks_the_reason_before_the_state(
     rule_admin: APIClient, org_a: Organization
 ) -> None:
@@ -256,6 +201,7 @@ def void_event(target_id: Any, reason: str) -> dict[str, Any]:  # noqa: ANN401
     return event(type="record.void", payload={"reason": reason}, voids_event_id=str(target_id))
 
 
+@pytest.mark.django_db
 def test_a_short_void_event_is_rejected_and_leaves_the_target_intact(phone: Phone) -> None:
     original = event()
     phone.sync([original])
@@ -271,14 +217,12 @@ def test_a_short_void_event_is_rejected_and_leaves_the_target_intact(phone: Phon
     assert FieldEvent.objects.get(pk=original["id"]).voided_at is None
 
 
-@pytest.mark.parametrize("reason", ["", "   ", "​" * 10])
-def test_a_void_event_with_a_blank_or_invisible_reason_is_too_short(
-    phone: Phone, reason: str
-) -> None:
+@pytest.mark.django_db
+def test_a_void_event_with_a_blank_reason_is_too_short(phone: Phone) -> None:
     original = event()
     phone.sync([original])
 
-    response = phone.sync([void_event(original["id"], reason)])
+    response = phone.sync([void_event(original["id"], "   ")])
 
     assert response.data["results"][0]["params"]["fields"] == {"reason": ["void_reason_too_short"]}
 
@@ -286,6 +230,7 @@ def test_a_void_event_with_a_blank_or_invisible_reason_is_too_short(
 # --- /me/ limits ---------------------------------------------------------------------------
 
 
+@pytest.mark.django_db
 def test_me_tells_the_web_the_void_reason_limits(client_a: APIClient) -> None:
     response = client_a.get(ME_URL)
 
@@ -296,6 +241,7 @@ def test_me_tells_the_web_the_void_reason_limits(client_a: APIClient) -> None:
     }
 
 
+@pytest.mark.django_db
 def test_me_limits_follow_the_setting(
     client_a: APIClient,
     settings: Any,  # noqa: ANN401

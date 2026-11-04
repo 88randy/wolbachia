@@ -23,8 +23,8 @@ VOID_REASON_INVALID_CHARACTERS = "void_reason_invalid_characters"
 MAX_LENGTH_CODE = "max_length"
 
 # Text that shows nothing: format (zero-width, joiners), combining marks, every space and line
-# separator. They are not trimmed away, only ignored for the minimum.
-_INVISIBLE_CATEGORIES = frozenset({"Cf", "Mn", "Me", "Zs", "Zl", "Zp"})
+# separator, private-use and unassigned code points (no font draws them). They are not trimmed away, only ignored for the minimum.
+_INVISIBLE_CATEGORIES = frozenset({"Cf", "Mn", "Me", "Zs", "Zl", "Zp", "Co", "Cn"})
 # Letters that render as blanks (Hangul fillers, braille blank).
 _FILLERS = frozenset({0x115F, 0x1160, 0x3164, 0xFFA0, 0x2800})
 # Bidirectional controls: embeddings, overrides and isolates can reorder text to hide it.
