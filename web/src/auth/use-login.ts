@@ -16,7 +16,8 @@ import { requestLogin } from "./request-login";
 import type { Credentials } from "./request-login";
 
 /** The server accepted the credentials: replace whatever a previous user left (synchronous). */
-function replaceSession(me: Me, queryClient: QueryClient): void {
+function replaceSession(me: Me, queryClient: QueryClient, commit: () => void): void {
+  commit();
   queryClient.clear();
   forgetIdentity(queryClient);
   recordIdentity(queryClient, me);
@@ -54,10 +55,10 @@ export function useLogin(requestedTarget: string | undefined) {
   const router = useRouter();
   const track = useAbandonOnUnmount();
   return async (credentials: Credentials): Promise<LoginFailure | undefined> => {
-    const run = runAuthOperation("login", async ({ signal, isCurrent }) => {
+    const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
       const outcome = await requestLogin(client, credentials, signal);
       if (!isCurrent()) return undefined;
-      if (outcome.ok) replaceSession(outcome.me, queryClient);
+      if (outcome.ok) replaceSession(outcome.me, queryClient, commit);
       return outcome;
     });
     track(run);

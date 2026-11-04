@@ -21,7 +21,8 @@ import { acceptSession, currentRevision } from "./session-revision";
 import { useMe } from "./use-me";
 
 /** The session is back: store `/me/` and drop another user's or organization's cache (synchronous). */
-function restoreSession(me: Me, queryClient: QueryClient): void {
+function restoreSession(me: Me, queryClient: QueryClient, commit: () => void): void {
+  commit(); // the dialog unmounting because of this very update must not abandon it
   recordIdentity(queryClient, me);
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
@@ -41,17 +42,15 @@ interface SettleContext {
 
 /** After the queue: show the failure, or refetch and, if needed, go to the organization chooser. */
 async function settleReauth(
-  outcome: LoginOutcome | undefined,
-  isCurrent: boolean,
+  outcome: LoginOutcome,
   { queryClient, router, setFailure }: SettleContext,
 ): Promise<void> {
-  if (!outcome) return;
   if (!outcome.ok) {
     setFailure(outcome.failure);
     return;
   }
   void queryClient.invalidateQueries();
-  if (isCurrent) await goToChooserIfNeeded(outcome.me, router);
+  await goToChooserIfNeeded(outcome.me, router);
 }
 
 /**
@@ -80,16 +79,17 @@ export function useReauthenticate() {
     // The session this form was shown for. If a sign-out or another login changes it while this
     // waits in the queue or in flight, nothing is sent or stored.
     const revision = currentRevision();
-    const run = runAuthOperation("login", async ({ signal, isCurrent }) => {
+    const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
       if (revision !== currentRevision() || !isCurrent()) return undefined;
       const outcome = await requestLogin(client, { username: user.username, password }, signal);
       if (revision !== currentRevision() || !isCurrent()) return undefined;
-      if (outcome.ok) restoreSession(outcome.me, queryClient);
+      if (outcome.ok) restoreSession(outcome.me, queryClient, commit);
       return outcome;
     });
     track(run);
     const outcome = await run.result;
-    await settleReauth(outcome, run.isCurrent(), { queryClient, router, setFailure });
+    if (outcome === undefined || !run.isCurrent()) return;
+    await settleReauth(outcome, { queryClient, router, setFailure });
   });
   return { form, username: user.username, failure, alertRef, submit };
 }

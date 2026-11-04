@@ -4,6 +4,7 @@ import { queryOptions } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
+import { currentRevision, recoverSession } from "./session-revision";
 import { clearOrganizationSlug, getOrganizationSlug } from "./organization-slug";
 
 export const ME_QUERY_KEY = ["me"] as const;
@@ -20,6 +21,16 @@ export const ME_STALE_TIME_MS = 60_000;
  * without the header, so the user lands on organization selection instead of a dead end.
  */
 export async function fetchMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
+  const revision = currentRevision();
+  const me = await requestMe(client, signal);
+  // Answered for the same session revision it started in: if the page was signed out, another tab
+  // signed in again, so real 401s count as expiry again. An answer to a request that started
+  // before a sign-out carries an older revision and changes nothing.
+  if (revision === currentRevision()) recoverSession();
+  return me;
+}
+
+async function requestMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
   const options = signal ? { signal } : {};
   const slug = getOrganizationSlug();
   const first = await client.GET("/api/v1/me/", options);

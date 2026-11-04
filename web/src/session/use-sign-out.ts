@@ -32,20 +32,21 @@ export function useSignOut() {
     if (isBusy) return;
     setIsBusy(true);
     setFailure(undefined);
-    let revisionAtEnd = -1;
     const run = runAuthOperation("logout", async ({ signal }) => {
       const outcome = await requestLogout(client, signal);
-      if (outcome.ok) {
-        revisionAtEnd = confirmSignOut();
-        void queryClient.cancelQueries();
-        clearOrganizationSlug();
-        endSessionExpiry();
-      }
-      return outcome;
+      if (!outcome.ok) return { outcome, revision: -1 };
+      const revision = confirmSignOut();
+      void queryClient.cancelQueries();
+      clearOrganizationSlug();
+      endSessionExpiry();
+      return { outcome, revision };
     });
-    const outcome = await run.result;
-    if (outcome?.ok) await leaveSession(queryClient, router, revisionAtEnd);
-    else if (outcome) setFailure(outcome.failure);
+    const done = await run.result;
+    if (done !== undefined) {
+      const { outcome, revision } = done;
+      if (outcome.ok) await leaveSession(queryClient, router, revision);
+      else setFailure(outcome.failure);
+    }
     setIsBusy(false);
   }
   return { signOut, isBusy, failure };

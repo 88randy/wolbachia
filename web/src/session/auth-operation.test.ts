@@ -101,6 +101,38 @@ describe("generations and abandonment", () => {
     expect(seen).toEqual({ aborted: true, current: false });
   });
 
+  test("abandoning a settled login is a no-op", async () => {
+    let signal: AbortSignal | undefined;
+    const login = runAuthOperation("login", (context) => {
+      signal = context.signal;
+      return Promise.resolve("done");
+    });
+    await login.result;
+
+    login.abandon();
+
+    expect(login.isCurrent()).toBe(true);
+    expect(signal?.aborted).toBe(false);
+  });
+
+  test("abandoning after commit() is a no-op: a screen unmounting because of the update must not cancel it", async () => {
+    const gate = deferred();
+    let signal: AbortSignal | undefined;
+    const login = runAuthOperation("login", async (context) => {
+      signal = context.signal;
+      context.commit();
+      await gate.promise;
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    login.abandon();
+
+    expect(login.isCurrent()).toBe(true);
+    expect(signal?.aborted).toBe(false);
+    gate.release();
+    await login.result;
+  });
+
   test("a sign-out is never abandoned", async () => {
     const gate = deferred();
     let seen: { aborted: boolean; current: boolean } | undefined;

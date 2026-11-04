@@ -197,7 +197,8 @@ describe("leaving the page during a pending sign-out", () => {
 });
 
 describe("a /me/ of the closed session cannot survive the sign-out", () => {
-  test("started before the logout and answered after it: the cache is cleared and the next guard asks the server", async () => {
+  /** /me/ starts before the logout and answers after it. */
+  async function signOutWithLateMe() {
     let meCalls = 0;
     const late = deferred();
     const api = createFakeApi({
@@ -210,7 +211,7 @@ describe("a /me/ of the closed session cannot survive the sign-out", () => {
     });
     const app = await renderApp({ fetch: api.fetch });
     await screen.findByRole("heading", { level: 1, name: "Inicio" });
-    void app.queryClient.refetchQueries({ queryKey: ["me"] });
+    const refetch = app.queryClient.refetchQueries({ queryKey: ["me"] });
     await vi.waitFor(() => {
       expect(meCalls).toBe(2);
     });
@@ -219,12 +220,25 @@ describe("a /me/ of the closed session cannot survive the sign-out", () => {
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
     await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
     late.release(Response.json(makeMe()));
-    await new Promise((resolve) => setTimeout(resolve, 20));
+    await refetch;
 
     expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
+    return { app, calls: () => meCalls };
+  }
+
+  test("the cache is cleared", async () => {
+    const { app } = await signOutWithLateMe();
+
+    expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
+  });
+
+  test("the next guard check asks the server", async () => {
+    const { app, calls } = await signOutWithLateMe();
+
     app.router.history.push("/settings");
+
     await vi.waitFor(() => {
-      expect(meCalls).toBe(3);
+      expect(calls()).toBe(3);
     });
   });
 });

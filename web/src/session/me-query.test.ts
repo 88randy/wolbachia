@@ -2,7 +2,10 @@ import { ApiError } from "@wolbachia/api-client";
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
-import { fetchMe } from "./me-query";
+import { createAppQueryClient } from "../api/query-client";
+import { fetchMe, ME_QUERY_KEY } from "./me-query";
+import { confirmSignOut, isSignedOutSession } from "./session-revision";
+import { endSessionExpiry, isSessionExpired, reportSessionError } from "./session-events";
 import {
   clearOrganizationSlug,
   getOrganizationSlug,
@@ -12,6 +15,7 @@ import {
 const ME_PATH = "GET /api/v1/me/";
 
 beforeEach(() => {
+  endSessionExpiry();
   clearOrganizationSlug();
   window.localStorage.clear();
 });
@@ -19,6 +23,37 @@ beforeEach(() => {
 function clientFor(api: ReturnType<typeof createFakeApi>) {
   return createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
 }
+
+describe("fetchMe and the signed-out state", () => {
+  test("a /me/ that started after a sign-out leaves the signed-out state; a real 401 then counts", async () => {
+    confirmSignOut();
+    const api = createFakeApi({ [ME_PATH]: Response.json(makeMe()) });
+
+    await fetchMe(clientFor(api));
+    const queryClient = createAppQueryClient({ retry: false });
+    queryClient.setQueryData(ME_QUERY_KEY, makeMe());
+    reportSessionError(new ApiError(401), queryClient);
+
+    expect(isSignedOutSession()).toBe(false);
+    expect(isSessionExpired()).toBe(true);
+  });
+
+  test("a /me/ that started BEFORE the sign-out does not clear it when it answers after", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const late = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const api = createFakeApi({ [ME_PATH]: () => late });
+    const pending = fetchMe(clientFor(api));
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    confirmSignOut();
+    release(Response.json(makeMe()));
+    await pending;
+
+    expect(isSignedOutSession()).toBe(true);
+  });
+});
 
 describe("fetchMe", () => {
   test("returns the user of /me/", async () => {

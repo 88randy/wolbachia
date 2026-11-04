@@ -1,10 +1,11 @@
 /**
- * Which session the page is in, as a counter instead of clocks or flags. The revision changes
+ * Which session the page is in, as a counter instead of clocks. The revision changes
  * ONLY when a login is accepted (login page or re-authentication) and when a sign-out is
  * confirmed by the server. Anything that began before a change can ask "is this still my
  * session?" by comparing revisions, with no dependence on timing.
  *
- * After a confirmed sign-out the page is "signed out" until the next accepted login: a late 401
+ * After a confirmed sign-out the page is "signed out" until the next accepted login or a valid
+ * `/me/` that started after it: a late 401
  * from a request of the closed session is then not an expiry (nothing to re-authenticate).
  */
 let revision = 0;
@@ -15,10 +16,18 @@ export function currentRevision(): number {
 }
 
 /** A login was accepted (its `/me/` is being stored). */
-export function acceptSession(): number {
+export function acceptSession(): void {
   revision += 1;
   isSignedOut = false;
-  return revision;
+}
+
+/**
+ * A valid `/me/` that started after the sign-out proves a session exists again (another tab
+ * signed in, cookies are shared). Leaves the signed-out state WITHOUT changing the revision:
+ * this tab did not log in.
+ */
+export function recoverSession(): void {
+  isSignedOut = false;
 }
 
 /** The server confirmed the sign-out. Returns the new revision. */

@@ -18,6 +18,11 @@ export interface AuthOperationContext {
   signal: AbortSignal;
   /** False once the result must be ignored (abandoned, or a sign-out came after it). */
   isCurrent: () => boolean;
+  /**
+   * Call right before applying the result (the session is being replaced). From then on
+   * abandoning is a no-op: a screen that unmounts because of that very update must not cancel it.
+   */
+  commit: () => void;
 }
 
 export interface AuthOperationRun<T> {
@@ -34,7 +39,7 @@ interface Queued {
   generation: number;
   isAbandoned: boolean;
   /** The task finished: abandoning it no longer means anything. */
-  isSettled: boolean;
+  isSettled: boolean; // finished, or committed to applying its result
   controller: AbortController;
 }
 
@@ -44,6 +49,16 @@ let tail: Promise<unknown> = Promise.resolve();
 function isWanted(operation: Queued): boolean {
   if (operation.kind === "logout") return true;
   return !operation.isAbandoned && operation.generation === generation;
+}
+
+function contextOf(operation: Queued): AuthOperationContext {
+  return {
+    signal: operation.controller.signal,
+    isCurrent: () => isWanted(operation),
+    commit: () => {
+      operation.isSettled = true;
+    },
+  };
 }
 
 function createOperation(kind: AuthOperation): Queued {
@@ -75,7 +90,7 @@ export function runAuthOperation<T>(
   const result = tail
     .then(async () => {
       if (!isWanted(operation)) return undefined;
-      return task({ signal: operation.controller.signal, isCurrent: () => isWanted(operation) });
+      return task(contextOf(operation));
     })
     .finally(() => {
       operation.isSettled = true;
