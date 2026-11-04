@@ -23,6 +23,7 @@ INSTALLED_APPS = [
     "core",
     "organizations",
     "catalogs",
+    "rules",
 ]
 
 MIDDLEWARE = [
