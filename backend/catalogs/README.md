@@ -24,4 +24,4 @@ Per-organization option lists (incident reasons, removal reasons, the motorcycle
 
 ## Snapshot
 
-`GET /api/v1/field/catalog/` returns active items only and a `version` hash that is also the `ETag` (`core/versioning.py`). It changes when any label, order, flag or active state changes.
+`GET /api/v1/field/catalog/` returns active items only and a `version` hash that is also the `ETag` (`core/snapshots.py`). It changes when any label, order, flag or active state changes.

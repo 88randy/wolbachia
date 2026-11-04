@@ -16,7 +16,7 @@ from catalogs.permissions import (
     CATALOG_ITEM_UPDATE,
     CATALOG_READ,
 )
-from catalogs.selectors import build_catalog_snapshot
+from catalogs.selectors import build_catalog_snapshot, list_catalogs
 from catalogs.serializers import (
     CatalogItemCreateSerializer,
     CatalogItemSerializer,
@@ -38,9 +38,14 @@ from core.views import OrgScopedViewSetMixin
 class CatalogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     """The catalogs of the organization. They are created by the seed: there is no POST."""
 
-    queryset = Catalog.objects.order_by("slug")
+    queryset = Catalog.objects.all()
     serializer_class = CatalogSerializer
     required_permissions = {"list": CATALOG_READ}
+
+    def get_queryset(self) -> QuerySet[Any]:
+        if getattr(self, "swagger_fake_view", False):
+            return Catalog.objects.none()
+        return list_catalogs(self.request.organization)  # type: ignore[attr-defined]
 
 
 class CatalogSnapshotViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):

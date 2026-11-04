@@ -4,7 +4,7 @@ Versioned rule parameters per organization: the thresholds the app shows but nev
 
 ## Rules of this app
 
-- No threshold is hard-coded anywhere else: code reads it from here (`get_values_in_force`).
+- No threshold is hard-coded anywhere else: code reads it from here. [PENDING #5] sync resolves the values that applied at an event's `device_time` from the version history.
 - A `RuleParameter` is the definition (key, `integer` or `decimal`, unit, optional `min_value`/`max_value`). It is created by the seed only.
 - Editing adds a `RuleParameterVersion`; versions are **insert-only** (`core.models.ImmutableMixin`): `save()` of a stored row, queryset `update()`, bulk upserts and the base manager raise `ImmutableRecordError`, and a PostgreSQL trigger (migration `0002`) rejects raw `UPDATE` and `DELETE`. Only the void fields can be written, once. There is no PUT/PATCH/DELETE route.
 - A wrong version that has not taken effect yet is voided (`POST .../versions/{id}/void/`, `409 version_not_scheduled` otherwise); it stays in the history, leaves the value in force and the snapshots, and frees its date.

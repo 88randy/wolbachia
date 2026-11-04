@@ -35,9 +35,11 @@ class RuleParameterSerializer(OrgScopedModelSerializer):
     min_value = serializers.SerializerMethodField()
     max_value = serializers.SerializerMethodField()
     value = serializers.SerializerMethodField(method_name="current_number")
-    effective_from = serializers.DateTimeField(source="current_effective_from", read_only=True)
-    version_id = serializers.UUIDField(source="current_version_id", read_only=True)
-    next_change_at = serializers.DateTimeField(read_only=True)
+    effective_from = serializers.DateTimeField(
+        source="current_effective_from", read_only=True, allow_null=True
+    )
+    version_id = serializers.UUIDField(source="current_version_id", read_only=True, allow_null=True)
+    next_change_at = serializers.DateTimeField(read_only=True, allow_null=True)
 
     class Meta:
         model = RuleParameter

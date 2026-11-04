@@ -100,16 +100,28 @@ def seed_default_permission_codes(organization: Organization) -> PermissionSeedP
 
     Each code is granted once and recorded in `seeded_permission_codes`, so running it again
     never re-grants a code an admin revoked, and it never removes a code. Returns what it did.
+
+    Every profile is read with `select_for_update()` and the codes to add are computed from that
+    locked row, never from an earlier read: a concurrent run or an admin edit that committed in
+    between is seen, so a revoked code is not granted again.
     """
-    plan = plan_default_permission_codes(organization)
+    grants: dict[str, tuple[str, ...]] = {}
+    skipped = []
     with transaction.atomic():
-        for profile in _seedable_profiles(organization):
-            codes = plan.grants.get(profile.slug)
-            if codes:
+        locked = (
+            Profile.objects.select_for_update()
+            .filter(organization=organization, slug__in=DEFAULT_PROFILE_PERMISSIONS)
+            .order_by("slug")
+        )
+        for profile in locked:
+            if not profile.created_by_seed:
+                skipped.append(profile.slug)
+            elif codes := _new_codes(profile):
                 profile.permission_codes = sorted({*profile.permission_codes, *codes})
                 profile.seeded_permission_codes = sorted({*profile.seeded_permission_codes, *codes})
                 profile.save(update_fields=["permission_codes", "seeded_permission_codes"])
-    return plan
+                grants[profile.slug] = codes
+    return PermissionSeedPlan(grants=grants, skipped=tuple(skipped))
 
 
 def plan_organization_defaults(organization: Organization) -> DefaultsPlan:
@@ -128,8 +140,9 @@ def seed_organization_defaults(organization: Organization) -> DefaultsPlan:
     defaults existed up to date (`manage.py seed_organization_defaults --apply`).
     """
     with transaction.atomic():
-        plan = plan_organization_defaults(organization)
-        seed_default_permission_codes(organization)
+        missing_catalogs = tuple(missing_catalog_slugs(organization))
+        missing_parameters = tuple(missing_parameter_keys(organization))
+        permissions = seed_default_permission_codes(organization)
         seed_default_catalogs(organization)
         seed_default_rule_parameters(organization)
-    return plan
+    return DefaultsPlan(permissions, missing_catalogs, missing_parameters)

@@ -159,11 +159,12 @@ def test_deactivate_other_raises_a_locked_error_and_keeps_it_active() -> None:
     assert other.is_active is True
 
 
-def test_deactivate_then_activate_a_regular_item() -> None:
-    item = CatalogItemFactory()
+def test_deactivate_a_regular_item() -> None:
+    assert deactivate_catalog_item(CatalogItemFactory()).is_active is False
 
-    assert deactivate_catalog_item(item).is_active is False
-    assert activate_catalog_item(item).is_active is True
+
+def test_activate_a_deactivated_item() -> None:
+    assert activate_catalog_item(CatalogItemFactory(is_active=False)).is_active is True
 
 
 def test_deactivating_twice_is_harmless() -> None:

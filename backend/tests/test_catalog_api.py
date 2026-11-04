@@ -355,4 +355,5 @@ def test_patch_activate_and_deactivate_of_another_organizations_item_are_404(
     assert admin.post(f"{base}activate/").status_code == 404
     assert admin.post(f"{base}deactivate/").status_code == 404
     foreign.refresh_from_db()
-    assert (foreign.label_es, foreign.is_active) != ("Hacked", False)
+    assert foreign.label_es != "Hacked"
+    assert foreign.is_active is True
