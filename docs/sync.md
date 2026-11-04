@@ -125,6 +125,7 @@ Each epic owns its event types. It registers one handler per `(event_type, schem
 ```python
 from field_sync.registry import EventHandler, register
 
+
 def ready(self) -> None:
     register(EventHandler("ovitrap.check", 1, OvitrapCheckPayload, apply_ovitrap_check))
 ```
