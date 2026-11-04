@@ -8,9 +8,13 @@ function anyOf(signals: AbortSignal[]): AbortSignal {
   for (const signal of signals) {
     if (signal.aborted) controller.abort();
     else
-      signal.addEventListener("abort", () => {
-        controller.abort();
-      });
+      signal.addEventListener(
+        "abort",
+        () => {
+          controller.abort();
+        },
+        { once: true },
+      );
   }
   return controller.signal;
 }

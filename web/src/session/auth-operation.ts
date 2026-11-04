@@ -1,5 +1,4 @@
 import { useEffect, useRef } from "react";
-import type { RefObject } from "react";
 
 /**
  * Auth operations (sign-in on the login page, re-authentication, sign-out) run strictly one after
@@ -34,12 +33,13 @@ interface Queued {
   kind: AuthOperation;
   generation: number;
   isAbandoned: boolean;
+  /** The task finished: abandoning it no longer means anything. */
+  isSettled: boolean;
   controller: AbortController;
 }
 
 let generation = 0;
 let tail: Promise<unknown> = Promise.resolve();
-const active = new Set<Queued>();
 
 function isWanted(operation: Queued): boolean {
   if (operation.kind === "logout") return true;
@@ -47,17 +47,17 @@ function isWanted(operation: Queued): boolean {
 }
 
 function createOperation(kind: AuthOperation): Queued {
-  if (kind === "logout") generation += 1;
   return {
     kind,
     generation,
     isAbandoned: false,
+    isSettled: false,
     controller: new AbortController(),
   };
 }
 
 /**
- * Queues `task behind every earlier auth operation.
+ * Queues `task` behind every earlier auth operation.
  *
  * RULE: a task may only await signal-bound auth network calls (CSRF, login, logout and their
  * retries, all through `withAuthTimeout(signal)`), plus synchronous cache and identity updates.
@@ -70,21 +70,22 @@ export function runAuthOperation<T>(
   kind: AuthOperation,
   task: (context: AuthOperationContext) => Promise<T>,
 ): AuthOperationRun<T> {
+  if (kind === "logout") generation += 1; // supersedes every login queued before it
   const operation = createOperation(kind);
-  active.add(operation);
-  const result = tail.then(async () => {
-    if (!isWanted(operation)) return undefined;
-    return task({ signal: operation.controller.signal, isCurrent: () => isWanted(operation) });
-  });
-  const settled = result.finally(() => {
-    active.delete(operation);
-  });
-  tail = settled.catch(() => undefined);
+  const result = tail
+    .then(async () => {
+      if (!isWanted(operation)) return undefined;
+      return task({ signal: operation.controller.signal, isCurrent: () => isWanted(operation) });
+    })
+    .finally(() => {
+      operation.isSettled = true;
+    });
+  tail = result.catch(() => undefined);
   return {
     result,
     isCurrent: () => isWanted(operation),
     abandon: () => {
-      if (kind === "logout") return;
+      if (kind === "logout" || operation.isSettled) return;
       operation.isAbandoned = true;
       operation.controller.abort();
     },
@@ -93,19 +94,15 @@ export function runAuthOperation<T>(
 
 /** Forgets everything (tests only: module state must not leak between them). */
 export function resetAuthOperation(): void {
-  active.forEach((operation) => {
-    operation.controller.abort();
-  });
-  active.clear();
   tail = Promise.resolve();
   generation = 0;
 }
 
 /**
- * Keeps the `abandon` of the login this component started (assign `ref.current`); when the
- * component unmounts (the user left the screen) that login is abandoned.
+ * Returns `track(run)`: call it with the login this component started; when the component
+ * unmounts (the user left the screen) that login is abandoned.
  */
-export function useAbandonOnUnmount(): RefObject<(() => void) | undefined> {
+export function useAbandonOnUnmount(): (run: { abandon: () => void }) => void {
   const abandonRef = useRef<(() => void) | undefined>(undefined);
   useEffect(
     () => () => {
@@ -113,5 +110,7 @@ export function useAbandonOnUnmount(): RefObject<(() => void) | undefined> {
     },
     [],
   );
-  return abandonRef;
+  return (run) => {
+    abandonRef.current = run.abandon;
+  };
 }

@@ -135,7 +135,7 @@ describe("leaving the page during a pending sign-out", () => {
     await userEvent.type(screen.getByLabelText("Usuario"), "ana.supervisora");
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
-    return api;
+    return { api, app };
   }
 
   function order(api: { requests: { method: string; path: string }[] }) {
@@ -148,7 +148,7 @@ describe("leaving the page during a pending sign-out", () => {
     document.cookie = "csrftoken=; Max-Age=0; path=/";
     const held = deferred();
     let csrfCalls = 0;
-    const api = await signOutThenSignInAgain(
+    const { api, app } = await signOutThenSignInAgain(
       {
         [CSRF]: () => {
           csrfCalls += 1;
@@ -165,13 +165,15 @@ describe("leaving the page during a pending sign-out", () => {
 
     await screen.findByRole("heading", { level: 1, name: "Inicio" });
     expect(order(api)).toEqual(["logout/", "login/"]);
+    // The sign-in accepted after the sign-out changed the revision: its /me/ was not wiped.
+    expect(app.queryClient.getQueryData(["me"])).toBeDefined();
   });
 
   test("during the CSRF refresh after a 403: the login is sent after the logout settles", async () => {
     const held = deferred();
     let logouts = 0;
     let csrfCalls = 0;
-    const api = await signOutThenSignInAgain(
+    const { api, app } = await signOutThenSignInAgain(
       {
         [CSRF]: () => {
           csrfCalls += 1;
@@ -190,6 +192,40 @@ describe("leaving the page during a pending sign-out", () => {
 
     await screen.findByRole("heading", { level: 1, name: "Inicio" });
     expect(order(api)).toEqual(["logout/", "logout/", "login/"]);
+    expect(app.queryClient.getQueryData(["me"])).toBeDefined();
+  });
+});
+
+describe("a /me/ of the closed session cannot survive the sign-out", () => {
+  test("started before the logout and answered after it: the cache is cleared and the next guard asks the server", async () => {
+    let meCalls = 0;
+    const late = deferred();
+    const api = createFakeApi({
+      [ME]: () => {
+        meCalls += 1;
+        if (meCalls === 2) return late.promise;
+        return meCalls === 1 ? Response.json(makeMe()) : apiError(401, "not_authenticated");
+      },
+      [LOGOUT]: noContent(204),
+    });
+    const app = await renderApp({ fetch: api.fetch });
+    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    void app.queryClient.refetchQueries({ queryKey: ["me"] });
+    await vi.waitFor(() => {
+      expect(meCalls).toBe(2);
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /Menú de usuario/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+    await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
+    late.release(Response.json(makeMe()));
+    await new Promise((resolve) => setTimeout(resolve, 20));
+
+    expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
+    app.router.history.push("/settings");
+    await vi.waitFor(() => {
+      expect(meCalls).toBe(3);
+    });
   });
 });
 

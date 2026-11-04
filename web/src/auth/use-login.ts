@@ -10,17 +10,19 @@ import { forgetIdentity, recordIdentity } from "../session/identity";
 import type { Me } from "../session/me";
 import { ME_QUERY_KEY } from "../session/me-query";
 import { endSessionExpiry } from "../session/session-events";
+import { acceptSession } from "../session/session-revision";
 import type { LoginFailure } from "./login-failure";
 import { requestLogin } from "./request-login";
 import type { Credentials } from "./request-login";
 
 /** The server accepted the credentials: replace whatever a previous user left (synchronous). */
-function storeSession(me: Me, queryClient: QueryClient): void {
+function replaceSession(me: Me, queryClient: QueryClient): void {
   queryClient.clear();
   forgetIdentity(queryClient);
   recordIdentity(queryClient, me);
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
+  acceptSession();
 }
 
 /** Where the user goes after signing in. Runs outside the auth queue (navigation can wait). */
@@ -50,15 +52,15 @@ export function useLogin(requestedTarget: string | undefined) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const abandonRef = useAbandonOnUnmount();
+  const track = useAbandonOnUnmount();
   return async (credentials: Credentials): Promise<LoginFailure | undefined> => {
     const run = runAuthOperation("login", async ({ signal, isCurrent }) => {
       const outcome = await requestLogin(client, credentials, signal);
       if (!isCurrent()) return undefined;
-      if (outcome.ok) storeSession(outcome.me, queryClient);
+      if (outcome.ok) replaceSession(outcome.me, queryClient);
       return outcome;
     });
-    abandonRef.current = run.abandon;
+    track(run);
     const outcome = await run.result;
     if (outcome === undefined) return undefined;
     if (!outcome.ok) return outcome.failure;

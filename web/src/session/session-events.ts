@@ -2,6 +2,7 @@ import { ApiError } from "@wolbachia/api-client";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { ME_QUERY_KEY } from "./me-query";
+import { isSignedOutSession } from "./session-revision";
 
 /**
  * Things that happen to a session while the user is working, reported by the query and mutation
@@ -77,8 +78,10 @@ export function reportSessionError(
 ): void {
   if (!(error instanceof ApiError)) return;
   if (queryClient.getQueryData(ME_QUERY_KEY) === undefined) return;
-  if (error.status === HTTP_UNAUTHORIZED) markSessionExpired();
-  else if (error.status === HTTP_FORBIDDEN && error.code === NO_ACTIVE_MEMBERSHIP) {
+  if (error.status === HTTP_UNAUTHORIZED) {
+    // After a confirmed sign-out a late 401 belongs to the closed session: nothing to renew.
+    if (!isSignedOutSession()) markSessionExpired();
+  } else if (error.status === HTTP_FORBIDDEN && error.code === NO_ACTIVE_MEMBERSHIP) {
     if (!isMeQuery(queryKey)) notify(membershipListeners);
   }
 }

@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { LoginFailure } from "../auth/login-failure";
 import { requestLogin } from "../auth/request-login";
+import type { LoginOutcome } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
 import { runAuthOperation, useAbandonOnUnmount } from "./auth-operation";
 import { recordIdentity } from "./identity";
@@ -15,24 +16,42 @@ import type { Me } from "./me";
 import { ME_QUERY_KEY } from "./me-query";
 import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
-import { endSessionExpiry, isSessionExpired } from "./session-events";
+import { endSessionExpiry } from "./session-events";
+import { acceptSession, currentRevision } from "./session-revision";
 import { useMe } from "./use-me";
 
 /** The session is back: store `/me/` and drop another user's or organization's cache (synchronous). */
-function storeSession(me: Me, queryClient: QueryClient): void {
+function restoreSession(me: Me, queryClient: QueryClient): void {
   recordIdentity(queryClient, me);
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
+  acceptSession();
 }
 
-/** After the queue: refetching and navigating can wait on the network, so they come last. */
-async function refreshAfterLogin(
-  me: Me,
-  { queryClient, router }: { queryClient: QueryClient; router: RegisteredRouter },
+/** After the queue: navigating can wait on the network, so it comes last. */
+async function goToChooserIfNeeded(me: Me, router: RegisteredRouter): Promise<void> {
+  if (me.organization === null) await router.navigate({ to: "/select-organization" });
+}
+
+interface SettleContext {
+  queryClient: QueryClient;
+  router: RegisteredRouter;
+  setFailure: (failure: LoginFailure) => void;
+}
+
+/** After the queue: show the failure, or refetch and, if needed, go to the organization chooser. */
+async function settleReauth(
+  outcome: LoginOutcome | undefined,
   isCurrent: boolean,
+  { queryClient, router, setFailure }: SettleContext,
 ): Promise<void> {
+  if (!outcome) return;
+  if (!outcome.ok) {
+    setFailure(outcome.failure);
+    return;
+  }
   void queryClient.invalidateQueries();
-  if (isCurrent && me.organization === null) await router.navigate({ to: "/select-organization" });
+  if (isCurrent) await goToChooserIfNeeded(outcome.me, router);
 }
 
 /**
@@ -51,26 +70,26 @@ export function useReauthenticate() {
   const router = useRouter();
   const [failure, setFailure] = useState<LoginFailure | undefined>();
   const alertRef = useFocusAlert(failure);
-  const abandonRef = useAbandonOnUnmount();
+  const track = useAbandonOnUnmount();
   const form = useForm<ReauthValues>({
     resolver: zodResolver(reauthSchema),
     defaultValues: { password: "" },
   });
   const submit = form.handleSubmit(async ({ password }) => {
     setFailure(undefined);
-    const credentials = { username: user.username, password };
+    // The session this form was shown for. If a sign-out or another login changes it while this
+    // waits in the queue or in flight, nothing is sent or stored.
+    const revision = currentRevision();
     const run = runAuthOperation("login", async ({ signal, isCurrent }) => {
-      // The session may have ended (a sign-out ran first) while this waited in the queue.
-      if (!isSessionExpired() || !isCurrent()) return undefined;
-      const outcome = await requestLogin(client, credentials, signal);
-      if (!isCurrent()) return undefined;
-      if (outcome.ok) storeSession(outcome.me, queryClient);
+      if (revision !== currentRevision() || !isCurrent()) return undefined;
+      const outcome = await requestLogin(client, { username: user.username, password }, signal);
+      if (revision !== currentRevision() || !isCurrent()) return undefined;
+      if (outcome.ok) restoreSession(outcome.me, queryClient);
       return outcome;
     });
-    abandonRef.current = run.abandon;
+    track(run);
     const outcome = await run.result;
-    if (outcome?.ok) await refreshAfterLogin(outcome.me, { queryClient, router }, run.isCurrent());
-    else if (outcome) setFailure(outcome.failure);
+    await settleReauth(outcome, run.isCurrent(), { queryClient, router, setFailure });
   });
   return { form, username: user.username, failure, alertRef, submit };
 }

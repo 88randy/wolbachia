@@ -6,20 +6,21 @@ import { useState } from "react";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { ServiceFailure } from "../api/service-failure";
 import { runAuthOperation } from "./auth-operation";
-import { ME_QUERY_KEY } from "./me-query";
 import { forgetIdentity } from "./identity";
 import { clearOrganizationSlug } from "./organization-slug";
 import { requestLogout } from "./request-logout";
 import { endSessionExpiry } from "./session-events";
+import { confirmSignOut, currentRevision } from "./session-revision";
 
 /**
  * Signs out: ends the server session and leaves it. It is queued with the other auth operations
  * and is NEVER abandoned: it completes even if the screen that started it is gone. The queued
- * task only does the request and forgets the organization; going to sign-in and emptying the cache
- * follow outside the queue (the cache only if a sign-in queued behind it did not store a new
- * session meanwhile), so a hung navigation can never block the operations behind it. The cache is
- * emptied after the navigation so the screens still mounted do not refetch into a 401. `isBusy`
- * is true from the click until everything settles.
+ * task only does the request; once the server confirms it, synchronously: the session revision
+ * changes, requests in flight of the closed session are cancelled (their answers are discarded)
+ * and the organization is forgotten. Going to sign-in and emptying the cache follow outside the
+ * queue, so a hung navigation can never block the operations behind it; the cache is emptied only
+ * if the revision is still the one this sign-out produced (a sign-in queued behind it that was
+ * accepted meanwhile keeps its session). `isBusy` is true from the click until everything settles.
  */
 export function useSignOut() {
   const client = useApiClient();
@@ -31,18 +32,19 @@ export function useSignOut() {
     if (isBusy) return;
     setIsBusy(true);
     setFailure(undefined);
-    let endedAt = 0;
+    let revisionAtEnd = -1;
     const run = runAuthOperation("logout", async ({ signal }) => {
       const outcome = await requestLogout(client, signal);
       if (outcome.ok) {
+        revisionAtEnd = confirmSignOut();
+        void queryClient.cancelQueries();
         clearOrganizationSlug();
         endSessionExpiry();
-        endedAt = Date.now();
       }
       return outcome;
     });
     const outcome = await run.result;
-    if (outcome?.ok) await leaveSession(queryClient, router, endedAt);
+    if (outcome?.ok) await leaveSession(queryClient, router, revisionAtEnd);
     else if (outcome) setFailure(outcome.failure);
     setIsBusy(false);
   }
@@ -52,15 +54,15 @@ export function useSignOut() {
 async function leaveSession(
   queryClient: QueryClient,
   router: AnyRouter,
-  endedAt: number,
+  revisionAtEnd: number,
 ): Promise<void> {
   try {
     await router.navigate({ to: "/login" });
   } catch (error) {
     console.error("Could not open the sign-in page after signing out", error);
   } finally {
-    // A sign-in queued behind this sign-out may have stored a new session meanwhile: keep it.
-    if ((queryClient.getQueryState(ME_QUERY_KEY)?.dataUpdatedAt ?? 0) <= endedAt) {
+    // A sign-in accepted after this sign-out changed the revision: keep its session.
+    if (currentRevision() === revisionAtEnd) {
       queryClient.clear();
       forgetIdentity(queryClient);
     }
