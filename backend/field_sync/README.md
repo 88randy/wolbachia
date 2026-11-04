@@ -6,7 +6,7 @@ The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md
 | --- | --- |
 | `models.py` | `FieldEvent`: insert-only (client UUID pk, raw `payload`, status `accepted`/`rejected`/`in_review`); only the void fields can change; a trigger guards raw SQL |
 | `registry.py` | `EventHandler`, `register()`, `find_handler()`, `EventContext`: each epic registers its event types from `AppConfig.ready()` |
-| `services.py` | `sync_batch` (courier try lock, event-id locks, ingest, pull) and `ingest_batch`: `(device_time, id)` order, one savepoint per event, idempotency, rejection storage |
+| `services.py` | `sync_batch` (courier try lock, lock timeout, ingest, pull) and `ingest_batch`: `(device_time, id)` order, one savepoint per event, idempotency, rejection storage |
 | `clock.py` | Clock skew policy (`sent_at` against the server clock, threshold from `get_values_in_force`) |
 | `envelope.py` | Plain dataclasses: `EventEnvelope`, `EventResult`, `BatchContext`, payload facts (size, hash, NUL, depth) |
 | `codes.py` | The per-event result codes (one list; i18n and docs are tested against it) |
