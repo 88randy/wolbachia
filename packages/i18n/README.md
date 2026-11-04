@@ -36,6 +36,8 @@ Keys are flat strings, so no key is the prefix of another. Add new keys to **bot
 
 Messages use simple `{name}` placeholders (letters and digits, no spaces), for example `Espera {seconds} segundos`. There is no ICU syntax: no plurals, selects or formats. Both locales must use the same placeholder names for a key (tested). The runtime library that fills them and handles plurals is chosen later (#6 mobile, #27 web); if it needs ICU, the catalogs will be migrated then.
 
+`{minutes}` in `auth.lockout.message` is a whole number taken from the `Retry-After` header; the unit is the abbreviation "min" in both languages, so no plural agreement is needed. Without a usable header the client shows `auth.lockout.noWait`, which has no number.
+
 `{role}` in `errors.api.blocked` is the **already translated role label** (for example "Supervisor"), never a code. The sentence is built so the label stands alone after a colon: no articles, gender or plural agreement depends on it. Avoid interpolating numbers or nouns into sentences that need agreement; prefer wording without the number (as `errors.api.rateLimited` does) or separate singular and plural keys.
 
 ## Writing messages
@@ -50,6 +52,7 @@ Only shared, cross-screen text. Screen copy lands with each screen.
 - `errors.api.*`: generic, network, validation, notFound, permissionDenied, blocked (`{role}`), sessionRevoked, rateLimited, serverError.
 - `shell.*` (web): brand, skip link, sidebar, top bar, language switch and one `shell.nav.<area>` entry per area of `web/README.md`; `shell.group.*` are the sidebar group headings.
 - `states.*` (web): placeholder, loading, not found, error, configuration error and offline banner. `common.actions.goHome` serves the not-found and error screens.
+- `auth.*` (web, #28): sign-in (`auth.login.*`), lockout (`auth.lockout.*`), password reset request and confirm (`auth.forgot.*`, `auth.reset.*`, including the four password-validator codes), organization choice (`auth.organization.*`) and the re-authentication dialog (`auth.session.*`). `shell.userMenu.*` is the user menu of the top bar; `states.noPermission.*` the "no permission" state.
 - `sync.inbox.*`: title and hint for each sync result status (accepted, rejected, inReview) in the phone inbox.
 - `sync.result.*`: one message per per-event result code of `/field/sync/` (key = camelCase of the code, e.g. `clock_skew` -> `sync.result.clockSkew`); `sync.batch.*`: the batch-level errors (`device_mismatch`, `payload_too_large`, `invalid_cursor`). The code table is `docs/sync.md`; a backend test fails when a code has no key in both languages. Messages carry no placeholders: the `params` of a result are for logs and support.
 

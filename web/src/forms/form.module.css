@@ -1,0 +1,142 @@
+/* Fields, hints, errors and the alert box of forms (.fld / .in / .nt in web.css). */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.submit {
+  width: 100%;
+  height: var(--web-control-xl);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.label {
+  color: var(--color-text-primary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  height: var(--web-control-xl);
+  padding: 0 var(--space-1-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+}
+
+.control:focus-within {
+  border-color: var(--color-action);
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+  box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
+}
+
+.control[data-invalid] {
+  border-color: var(--color-status-critical-fg);
+  background: var(--color-status-critical-bg);
+}
+
+/* The ring is drawn on the whole control (above), not twice on the inner input. */
+.input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.input:disabled {
+  color: var(--color-text-secondary);
+}
+
+.toggle {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--web-control-md);
+  height: var(--web-control-md);
+  margin-right: calc(-1 * var(--space-1));
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.toggle[aria-pressed="true"] {
+  background: var(--color-tint);
+  color: var(--color-action-strong);
+}
+
+.icon {
+  width: var(--web-icon-md);
+  height: var(--web-icon-md);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-label-small-font-size);
+}
+
+.error {
+  margin: 0;
+  color: var(--color-status-critical-fg);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 600;
+}
+
+.alert {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  padding: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-status-critical-bg);
+  color: var(--color-status-critical-fg);
+}
+
+.alert:focus {
+  outline: none;
+}
+
+.alertTitle {
+  margin: 0;
+  font-weight: 700;
+}
+
+.alertText {
+  margin: 0;
+}
+
+.notice {
+  composes: alert;
+  background: var(--color-status-info-bg);
+  color: var(--color-status-info-fg);
+}
+
+.success {
+  composes: alert;
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-fg);
+}

@@ -4,6 +4,7 @@ import { axe } from "jest-axe";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AREAS } from "../router/areas";
 import { STORAGE_KEYS } from "../storage/safe-storage";
+import { makeMe } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 
 beforeEach(() => {
@@ -39,6 +40,19 @@ describe("sidebar navigation", () => {
 
     expect(links).toHaveLength(AREAS.length);
     expect(links.map((link) => link.getAttribute("href"))).toEqual(AREAS.map((area) => area.path));
+  });
+
+  test("hides the areas the user may not open, but never Home", async () => {
+    await renderApp({ me: makeMe({ permissions: [] }) });
+    const nav = screen.getByRole("navigation", { name: "Navegación principal" });
+
+    const hrefs = within(nav)
+      .getAllByRole("link")
+      .map((link) => link.getAttribute("href"));
+
+    expect(hrefs).toContain("/");
+    expect(hrefs).not.toContain("/settings");
+    expect(hrefs).toHaveLength(AREAS.length - 1);
   });
 
   test("groups the areas under headings", async () => {

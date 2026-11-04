@@ -8,6 +8,8 @@ export const STORAGE_KEYS = {
   language: "wolbachia.language",
   theme: "wolbachia.theme",
   sidebarCollapsed: "wolbachia.sidebarCollapsed",
+  /** Slug of the organization chosen by a multi-organization user; cleared on sign-out. */
+  organization: "wolbachia.organization",
 } as const;
 
 /** Returns the stored value, or null when absent or when storage is unavailable. */
@@ -17,6 +19,15 @@ export function readStored(key: string): string | null {
   } catch (error) {
     console.warn(`Could not read "${key}" from localStorage`, error);
     return null;
+  }
+}
+
+/** Removes a stored value; a failure is logged. */
+export function removeStored(key: string): void {
+  try {
+    window.localStorage.removeItem(key);
+  } catch (error) {
+    console.warn(`Could not remove "${key}" from localStorage`, error);
   }
 }
 

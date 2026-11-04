@@ -1,0 +1,36 @@
+import { useCallback, useRef, useState } from "react";
+import styles from "./UserMenu.module.css";
+import { UserMenuButton } from "./UserMenuButton";
+import { UserMenuPanel } from "./UserMenuPanel";
+import { useDismiss } from "./use-dismiss";
+
+const PANEL_ID = "user-menu-panel";
+
+/**
+ * The signed-in user in the top bar. A disclosure (not an ARIA menu): the button reports
+ * `aria-expanded`, Escape closes it and returns focus to the button, and so do an outside press
+ * and moving focus out of it.
+ */
+export function UserMenu() {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const dismiss = useCallback((viaEscape: boolean) => {
+    setIsOpen(false);
+    if (viaEscape) buttonRef.current?.focus();
+  }, []);
+  useDismiss({ isOpen, containerRef, onDismiss: dismiss });
+  return (
+    <div ref={containerRef} className={styles.menu}>
+      <UserMenuButton
+        ref={buttonRef}
+        isOpen={isOpen}
+        panelId={PANEL_ID}
+        onToggle={() => {
+          setIsOpen((open) => !open);
+        }}
+      />
+      {isOpen && <UserMenuPanel id={PANEL_ID} />}
+    </div>
+  );
+}

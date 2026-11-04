@@ -15,8 +15,10 @@ import {
   Users,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { canOpenArea } from "../router/area-access";
 import { AREAS } from "../router/areas";
 import type { Area, AreaGroup, AreaId } from "../router/areas";
+import type { Me } from "../session/me";
 
 export const AREA_ICONS: Record<AreaId, LucideIcon> = {
   home: House,
@@ -59,3 +61,14 @@ export const NAV_GROUPS: readonly NavGroup[] = GROUP_ORDER.map((id) => ({
   headingKey: headingOf(id),
   areas: AREAS.filter((area) => area.group === id),
 }));
+
+/**
+ * The sidebar for one user: only the areas their permissions allow (Home always), and no group
+ * heading for a group left empty. Decided from permission codes, never from profile names.
+ */
+export function visibleNavGroups(me: Pick<Me, "permissions">): readonly NavGroup[] {
+  return NAV_GROUPS.map((group) => ({
+    ...group,
+    areas: group.areas.filter((area) => canOpenArea(me, area)),
+  })).filter((group) => group.areas.length > 0);
+}

@@ -1,27 +1,101 @@
-import { createRootRoute, createRoute, createRouter } from "@tanstack/react-router";
+import { createRootRouteWithContext, createRoute, createRouter } from "@tanstack/react-router";
 import type { RouterHistory } from "@tanstack/react-router";
+import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
+import { LoginPage } from "../auth/LoginPage";
+import { ResetPasswordPage } from "../auth/ResetPasswordPage";
+import { SelectOrganizationPage } from "../auth/SelectOrganizationPage";
 import { AppShell } from "../shell/AppShell";
+import { AreaErrorState } from "../states/AreaErrorState";
 import { AreaPlaceholder } from "../states/AreaPlaceholder";
 import { NotFoundState } from "../states/NotFoundState";
 import { PendingState } from "../states/PendingState";
 import { RouteErrorState } from "../states/RouteErrorState";
 import { AREAS } from "./areas";
+import { requireAreaAccess, requireOrganization, requireOrganizationChoice } from "./guards";
+import type { RouterContext } from "./router-context";
+import { loginSearchSchema, redirectSearchSchema } from "./search-schemas";
+
+export type { RouterContext } from "./router-context";
 
 // Routes are written in code (no file-based generation): the list of areas is one array.
-const rootRoute = createRootRoute({ component: AppShell });
+const rootRoute = createRootRouteWithContext<RouterContext>()();
+
+// Public: no session needed, no shell.
+const loginRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/login",
+  validateSearch: loginSearchSchema,
+  component: LoginPage,
+});
+
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/forgot-password",
+  component: ForgotPasswordPage,
+});
+
+// Must match the backend's WEB_PASSWORD_RESET_PATH ("/reset-password" by default): the reset
+// email links to `<WEB_BASE_URL>/reset-password/{uid}/{token}`.
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset-password/$uid/$token",
+  component: ResetPasswordPage,
+});
+
+// Needs a session but not an organization yet (that is what it is for).
+const selectOrganizationRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/select-organization",
+  validateSearch: redirectSearchSchema,
+  beforeLoad: requireOrganizationChoice,
+  component: SelectOrganizationPage,
+});
+
+// Everything else: a session and an active organization, inside the shell.
+const authenticatedRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  id: "authenticated",
+  beforeLoad: requireOrganization,
+  component: AppShell,
+});
 
 const areaRoutes = AREAS.map((area) =>
   createRoute({
-    getParentRoute: () => rootRoute,
+    getParentRoute: () => authenticatedRoute,
     path: area.path,
+    beforeLoad: ({ context }) => {
+      requireAreaAccess(area, context.me);
+    },
     component: () => <AreaPlaceholder areaId={area.id} />,
+    errorComponent: AreaErrorState,
   }),
 );
 
-/** `history` is only passed by tests (memory history); the browser history is the default. */
-export function createAppRouter(history?: RouterHistory) {
+// An unknown address behind the session is "not found" inside the shell; without a session the
+// guard of the layout sends the visitor to sign in first.
+const notFoundRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "$",
+  component: NotFoundState,
+});
+
+const routeTree = rootRoute.addChildren([
+  loginRoute,
+  forgotPasswordRoute,
+  resetPasswordRoute,
+  selectOrganizationRoute,
+  authenticatedRoute.addChildren([...areaRoutes, notFoundRoute]),
+]);
+
+interface AppRouterOptions extends RouterContext {
+  /** Only passed by tests (memory history); the browser history is the default. */
+  history?: RouterHistory;
+}
+
+export function createAppRouter({ client, queryClient, history }: AppRouterOptions) {
   return createRouter({
-    routeTree: rootRoute.addChildren(areaRoutes),
+    routeTree,
+    context: { client, queryClient },
     ...(history ? { history } : {}),
     defaultNotFoundComponent: NotFoundState,
     defaultErrorComponent: RouteErrorState,

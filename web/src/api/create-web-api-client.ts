@@ -1,6 +1,7 @@
 import { createApiClient } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import type { AppConfig } from "../config/app-config";
+import { getOrganizationSlug } from "../session/organization-slug";
 
 /** Django's default CSRF cookie name. [ASSUMPTION] until backend #4 says otherwise. */
 export const CSRF_COOKIE_NAME = "csrftoken";
@@ -31,7 +32,8 @@ interface WebApiClientOptions {
 
 /**
  * The one API client of the web app: same-origin session cookie plus the CSRF header on unsafe
- * methods. `organization_id` is never sent by the web; the session decides it (docs/api-conventions.md).
+ * methods. `organization_id` is never sent by the web: the active organization is the user's only
+ * one, or the slug they chose, sent as the `X-Organization` header (docs/api-conventions.md).
  */
 export function createWebApiClient(
   config: AppConfig,
@@ -40,6 +42,7 @@ export function createWebApiClient(
   return createApiClient({
     baseUrl: apiOriginOf(config.apiBaseUrl, window.location.origin),
     auth: { kind: "session", getCsrfToken: () => readCookie(CSRF_COOKIE_NAME, document.cookie) },
+    getOrganizationSlug,
     ...(options.fetch ? { fetch: options.fetch } : {}),
   });
 }

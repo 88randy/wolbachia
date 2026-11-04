@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { mockApi } from "./fixtures/mock-api";
 
 // Keys of the preferences the app stores in the browser (see src/storage/safe-storage.ts).
 const THEME_KEY = "wolbachia.theme";
@@ -8,6 +9,12 @@ const LANGUAGE_KEY = "wolbachia.language";
 const EXPANDED_WIDTH = 232;
 const COLLAPSED_WIDTH = 64;
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
+
+// The shell is behind the session guard: every test here runs as a signed-in user with the mocked
+// API (the sign-in flows themselves are in auth.spec.ts).
+test.beforeEach(async ({ page }) => {
+  await mockApi(page);
+});
 
 async function openShell(page: Page, preferences: Record<string, string> = {}) {
   await page.addInitScript((stored) => {

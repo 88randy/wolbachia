@@ -1,24 +1,37 @@
 /**
  * The areas of the back-office (see web/README.md), one placeholder route each until the real
- * screens land. Names follow docs/glossary.md. Which areas a user may open comes from
- * `GET /api/v1/me/` (#28); until then the sidebar lists all of them.
+ * screens land. Names follow docs/glossary.md.
+ *
+ * `requiredPermissions` says who may open the area (decided in #28):
+ * - a list of permission codes: the user needs at least ONE of them (`GET /me/` permissions);
+ * - an empty list: every signed-in member (Home);
+ * - `"pending"`: the issue that builds the area has not defined its permission code yet, so every
+ *   member sees it until then. A test lists these areas; each issue replaces its `"pending"`.
  */
 export type AreaGroup = "main" | "operation" | "resources" | "analysis";
 
+export const PENDING = "pending";
+
 export const AREAS = [
-  { id: "home", path: "/", group: "main" },
-  { id: "incidents", path: "/incidents", group: "main" },
-  { id: "operations", path: "/operations", group: "operation" },
-  { id: "quadrants", path: "/quadrants", group: "operation" },
-  { id: "releases", path: "/releases", group: "operation" },
-  { id: "community", path: "/community", group: "operation" },
-  { id: "inventory", path: "/inventory", group: "resources" },
-  { id: "fleet", path: "/fleet", group: "resources" },
-  { id: "lab", path: "/lab", group: "resources" },
-  { id: "people", path: "/people", group: "resources" },
-  { id: "dashboards", path: "/dashboards", group: "analysis" },
-  { id: "regulatory", path: "/regulatory", group: "analysis" },
-  { id: "settings", path: "/settings", group: "analysis" },
+  { id: "home", path: "/", group: "main", requiredPermissions: [] },
+  { id: "incidents", path: "/incidents", group: "main", requiredPermissions: PENDING },
+  { id: "operations", path: "/operations", group: "operation", requiredPermissions: PENDING },
+  { id: "quadrants", path: "/quadrants", group: "operation", requiredPermissions: PENDING },
+  { id: "releases", path: "/releases", group: "operation", requiredPermissions: PENDING },
+  { id: "community", path: "/community", group: "operation", requiredPermissions: PENDING },
+  { id: "inventory", path: "/inventory", group: "resources", requiredPermissions: PENDING },
+  { id: "fleet", path: "/fleet", group: "resources", requiredPermissions: PENDING },
+  { id: "lab", path: "/lab", group: "resources", requiredPermissions: PENDING },
+  { id: "people", path: "/people", group: "resources", requiredPermissions: PENDING },
+  { id: "dashboards", path: "/dashboards", group: "analysis", requiredPermissions: PENDING },
+  { id: "regulatory", path: "/regulatory", group: "analysis", requiredPermissions: PENDING },
+  {
+    id: "settings",
+    path: "/settings",
+    group: "analysis",
+    // Codes that exist today (docs/api-conventions.md, #3 and #4); W62 to W68 refine them.
+    requiredPermissions: ["catalog.read", "rule_parameter.read", "device.read"],
+  },
 ] as const;
 
 export type Area = (typeof AREAS)[number];

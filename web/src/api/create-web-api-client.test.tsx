@@ -1,6 +1,8 @@
 import { unwrap } from "@wolbachia/api-client";
 import { render, screen } from "@testing-library/react";
-import { afterEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { fakePassword } from "../test/fake-credentials";
+import { clearOrganizationSlug, setOrganizationSlug } from "../session/organization-slug";
 import { ApiClientProvider, useApiClient } from "./ApiClientProvider";
 import { apiOriginOf, createWebApiClient, readCookie } from "./create-web-api-client";
 
@@ -86,6 +88,51 @@ describe("createWebApiClient", () => {
     await (client as unknown as { POST: (path: string) => Promise<unknown> }).POST("/api/v1/x/");
 
     expect(requests[0]?.headers.get("X-CSRFToken")).toBe("secret");
+  });
+});
+
+describe("organization header", () => {
+  beforeEach(() => {
+    clearOrganizationSlug();
+    window.localStorage.clear();
+  });
+
+  test("is not sent while no organization was chosen", async () => {
+    const { fakeFetch, requests } = recordingFetch({});
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: fakeFetch });
+
+    await client.GET("/api/v1/me/");
+
+    expect(requests[0]?.headers.has("X-Organization")).toBe(false);
+  });
+
+  test("carries the chosen slug, and only in the header (never in the URL or the body)", async () => {
+    setOrganizationSlug("norte");
+    const { fakeFetch, requests } = recordingFetch({});
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: fakeFetch });
+
+    await client.GET("/api/v1/me/");
+    await client.POST("/api/v1/auth/login/", {
+      body: { username: "ana", password: fakePassword() },
+    });
+
+    const [get, post] = requests;
+    expect(get?.headers.get("X-Organization")).toBe("norte");
+    expect(post?.headers.get("X-Organization")).toBe("norte");
+    expect(get?.url).not.toContain("norte");
+    expect(post?.url).not.toContain("norte");
+    expect(await post?.text()).not.toContain("norte");
+  });
+
+  test("never sends an organization id", async () => {
+    setOrganizationSlug("norte");
+    const { fakeFetch, requests } = recordingFetch({});
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: fakeFetch });
+
+    await client.GET("/api/v1/me/");
+
+    const names = [...(requests[0]?.headers.keys() ?? [])];
+    expect(names.filter((name) => name.includes("organization"))).toEqual(["x-organization"]);
   });
 });
 
