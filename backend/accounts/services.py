@@ -8,22 +8,27 @@ import hmac
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from typing import cast
 
 from django.conf import settings
+from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
 from django.db import IntegrityError, transaction
 from django.db.models import Q, QuerySet
+from rest_framework.exceptions import Throttled
 
-from accounts.audit import AuditContext, AuthEvent, log_auth_event
+from accounts.audit import AuditContext, AuthEvent, fingerprint, log_auth_event
 from accounts.constants import LAST_USED_UPDATE_INTERVAL_SECONDS
 from accounts.exceptions import (
     DeviceOrganizationMismatchError,
     DeviceRevokedError,
+    InvalidCredentialsError,
     InvalidResetTokenError,
     InvalidTokenError,
     SessionRevokedError,
     TokenExpiredError,
 )
+from accounts.login_attempts import clear_failures, ensure_not_locked_out, register_failure
 from accounts.models import Device, DeviceSession, RevokeReason, User
 from accounts.tokens import generate_token, hash_token
 from core.exceptions import DomainError
@@ -41,6 +46,28 @@ def create_user_without_password(username: str, email: str) -> User:
     user.full_clean()
     user.save()
     return user
+
+
+def authenticate_user(username: str, password: str, ip: str | None) -> User:
+    """Check credentials with the lockout in front (writes the failure counter and the log).
+
+    Bad password, unknown user and inactive user all raise the same `InvalidCredentialsError`;
+    Django's backend hashes a dummy password for unknown users, so timing does not tell them
+    apart either. While the username+address pair is locked, even the right password is refused.
+    """
+    context = AuditContext(ip=ip, username_fingerprint=fingerprint(username))
+    try:
+        ensure_not_locked_out(username, ip)
+    except Throttled:
+        log_auth_event(AuthEvent.LOGIN_LOCKED_OUT, context)
+        raise
+    user = authenticate(username=username, password=password)
+    if user is None:
+        locked = register_failure(username, ip)
+        log_auth_event(AuthEvent.LOGIN_FAILED, context, {"locked": locked})
+        raise InvalidCredentialsError
+    clear_failures(username, ip)
+    return cast(User, user)
 
 
 @dataclass(frozen=True)
