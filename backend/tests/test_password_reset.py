@@ -8,9 +8,12 @@ from unittest import mock
 from urllib.parse import parse_qs, urlsplit
 
 import pytest
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.db import connection
 from django.test import override_settings
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from kombu.exceptions import OperationalError
 from rest_framework.test import APIClient
 from rest_framework.throttling import SimpleRateThrottle
@@ -219,27 +222,29 @@ def test_the_link_is_built_from_the_web_settings() -> None:
     assert build_reset_url(user).startswith("https://app.example.test/reset#")
 
 
+def expected_uid_and_token(user: User) -> tuple[str, str]:
+    return urlsafe_base64_encode(force_bytes(user.pk)), default_token_generator.make_token(user)
+
+
 def test_the_link_carries_uid_and_token_only_in_the_fragment() -> None:
     user = account()
 
-    url = build_reset_url(user)
+    parts = urlsplit(build_reset_url(user))
 
-    parts = urlsplit(url)
-    uid, token = parse_reset_url(url)
     assert (parts.path, parts.query) == ("/reset-password", "")
+    uid, token = expected_uid_and_token(user)
     assert parts.fragment == f"uid={uid}&token={token}"
 
 
-def test_the_emailed_link_never_puts_the_secret_before_the_fragment() -> None:
+def test_the_emailed_link_has_an_empty_query_and_the_fragment_of_that_user() -> None:
     user = account("ana@example.test")
 
     send_password_reset_emails(user.email)
 
     url = next(line for line in mail.outbox[0].body.splitlines() if line.startswith("http"))
-    uid, token = parse_reset_url(url)
-    sent_to_a_server = url.split("#", 1)[0]
-    assert uid not in sent_to_a_server
-    assert token not in sent_to_a_server
+    parts = urlsplit(url)
+    assert parts.query == ""
+    assert parse_reset_url(url) == expected_uid_and_token(user)
 
 
 def test_users_created_without_a_password_can_set_their_first_one() -> None:
