@@ -1,12 +1,23 @@
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 
 from django.db import transaction
 
 from accounts.models import User
 from accounts.services import create_user_without_password
+from catalogs.seeds import seed_default_catalogs
+from core.permission_codes import (
+    CATALOG_ITEM_ACTIVATE,
+    CATALOG_ITEM_CREATE,
+    CATALOG_ITEM_DEACTIVATE,
+    CATALOG_ITEM_UPDATE,
+    CATALOG_READ,
+    RULE_PARAMETER_READ,
+    RULE_PARAMETER_VERSION_CREATE,
+)
 from organizations.exceptions import AdminUserConflictError, ProfileOrganizationMismatchError
 from organizations.models import DEFAULT_LANGUAGE, Membership, Organization, Profile
+from rules.seeds import seed_default_rule_parameters
 
 
 @dataclass(frozen=True)
@@ -43,6 +54,27 @@ DEFAULT_PROFILE_SEEDS = (
 )
 ADMIN_PROFILE_SLUG = "admin"
 
+# Codes granted by default (decision 5 of the plan of #3). Admins can change them per
+# organization afterwards: the seed only adds, it never removes. Every internal profile reads
+# the catalogs and rules (the field snapshots need them); only admin edits them.
+READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ)
+ADMIN_CODES = (
+    CATALOG_READ,
+    CATALOG_ITEM_CREATE,
+    CATALOG_ITEM_UPDATE,
+    CATALOG_ITEM_DEACTIVATE,
+    CATALOG_ITEM_ACTIVATE,
+    RULE_PARAMETER_READ,
+    RULE_PARAMETER_VERSION_CREATE,
+)
+DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
+    "courier": READ_ONLY_CODES,
+    "supervisor": READ_ONLY_CODES,
+    "entomologist": READ_ONLY_CODES,
+    "community_promoter": READ_ONLY_CODES,
+    ADMIN_PROFILE_SLUG: ADMIN_CODES,
+}
+
 
 def seed_default_profiles(organization: Organization) -> list[Profile]:
     """Create the default profiles of an organization (writes Profile). Safe to run twice."""
@@ -57,8 +89,35 @@ def seed_default_profiles(organization: Organization) -> list[Profile]:
     return profiles
 
 
+def seed_default_permission_codes(organization: Organization) -> None:
+    """Add the default permission codes to the organization's profiles (writes Profile).
+
+    Idempotent and additive: it never removes a code an admin granted. Profiles that do not
+    exist (or were renamed) are skipped.
+    """
+    for profile in Profile.objects.filter(
+        organization=organization, slug__in=DEFAULT_PROFILE_PERMISSIONS
+    ):
+        wanted = set(DEFAULT_PROFILE_PERMISSIONS[profile.slug])
+        if not wanted <= set(profile.permission_codes):
+            profile.permission_codes = sorted({*profile.permission_codes, *wanted})
+            profile.save(update_fields=["permission_codes"])
+
+
+def seed_organization_defaults(organization: Organization) -> None:
+    """Seed permission codes, catalogs and rule parameters (writes several tables). Safe to rerun.
+
+    Also the way to bring an organization created before these defaults existed up to date
+    (`manage.py seed_organization_defaults`).
+    """
+    with transaction.atomic():
+        seed_default_permission_codes(organization)
+        seed_default_catalogs(organization)
+        seed_default_rule_parameters(organization)
+
+
 def create_organization(spec: OrganizationSpec) -> Organization:
-    """Create an organization and its default profiles (writes Organization and Profile)."""
+    """Create an organization with its default profiles, catalogs and rule parameters."""
     organization = Organization(
         name=spec.name,
         slug=spec.slug,
@@ -70,6 +129,7 @@ def create_organization(spec: OrganizationSpec) -> Organization:
     with transaction.atomic():
         organization.save()
         seed_default_profiles(organization)
+        seed_organization_defaults(organization)
     return organization
 
 
