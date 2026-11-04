@@ -480,6 +480,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shifts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Shifts of the organization (W28 and W29 read them). Read-only: shifts are written by the
+         *     `shift.open` and `shift.close` sync events; a supervisor's correction is #34.
+         */
+        get: operations["shifts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Shifts of the organization (W28 and W29 read them). Read-only: shifts are written by the
+         *     `shift.open` and `shift.close` sync events; a supervisor's correction is #34.
+         */
+        get: operations["shifts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/{id}/revoke-device-sessions/": {
         parameters: {
             query?: never;
@@ -557,6 +597,13 @@ export interface components {
             rules_version: string | null;
             has_more: boolean;
         };
+        /**
+         * @description * `ok` - Ok
+         *     * `minor` - Minor
+         *     * `severe` - Severe
+         * @enum {string}
+         */
+        CheckResultEnum: "ok" | "minor" | "severe";
         /** @description Read-only view of a device for administrators (W67). */
         Device: {
             /** Format: uuid */
@@ -662,6 +709,16 @@ export interface components {
             /** Format: date-time */
             server_time: string;
         };
+        /** @description One checklist line; `item_code` is the code of the catalog item. */
+        MotorcycleCheck: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly item: string;
+            readonly item_code: string;
+            readonly result: components["schemas"]["CheckResultEnum"];
+            readonly note: string;
+        };
         PaginatedCatalogItemList: {
             /** @example 123 */
             count: number;
@@ -749,6 +806,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["RuleParameterVersion"][];
+        };
+        PaginatedShiftList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Shift"][];
         };
         /** @description Resolves the link first, so a bad link never reveals the password rules. */
         PasswordResetConfirmRequest: {
@@ -890,6 +962,44 @@ export interface components {
             next_change_at: string | null;
             parameters: components["schemas"]["SnapshotParameter"][];
         };
+        /**
+         * @description A shift as the supervisor sees it. Times marked `_device` are the phone's clock; the events
+         *     (`opened_event`, `closed_event`) carry the server receipt time. No user-facing text.
+         */
+        Shift: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly courier: string;
+            /** Format: uuid */
+            readonly device: string;
+            /** Format: uuid */
+            readonly motorcycle: string;
+            readonly motorcycle_code: string;
+            /** @default open */
+            readonly status: components["schemas"]["ShiftStatusEnum"];
+            /** Format: date-time */
+            readonly opened_at_device: string;
+            /** Format: uuid */
+            readonly opened_event: string;
+            readonly odometer_open_km: number;
+            readonly open_note: string;
+            /** Format: date-time */
+            readonly closed_at_device: string | null;
+            /** Format: uuid */
+            readonly closed_event: string | null;
+            readonly odometer_close_km: number | null;
+            readonly close_note: string;
+            readonly checks: components["schemas"]["MotorcycleCheck"][];
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `open` - Open
+         *     * `closed` - Closed
+         * @enum {string}
+         */
+        ShiftStatusEnum: "open" | "closed";
         SnapshotCatalog: {
             slug: string;
             label_es: string;
@@ -1996,6 +2106,84 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleParameterVersion"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    shifts_list: {
+        parameters: {
+            query?: {
+                courier?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /**
+                 * @description * `open` - Open
+                 *     * `closed` - Closed
+                 */
+                status?: "open" | "closed";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedShiftList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    shifts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Shift"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

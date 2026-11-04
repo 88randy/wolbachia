@@ -26,7 +26,7 @@ from rest_framework import serializers
 from accounts.models import Device, User
 from field_sync.codes import UNSUPPORTED_EVENT_TYPE, UNSUPPORTED_SCHEMA_VERSION
 from field_sync.envelope import EventEnvelope
-from field_sync.exceptions import EventRejected
+from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
 from organizations.models import Organization
 from rules.selectors import get_values_in_force
@@ -72,7 +72,10 @@ class EventHandler:
     the registry contract test requires each one in `docs/sync.md` and in both i18n locales.
     `payload_serializer` validates `payload` (it receives `context["request"]` with the
     organization). `on_void` runs when a `record.void` voids an event of this type, inside the
-    same savepoint; it may raise `EventRejected` to refuse the void.
+    same savepoint; it may raise `EventRejected` to refuse the void. `checks_shift` (default
+    True): the pipeline runs the registered envelope checks on the event (`shifts` registers one that
+    validates its `shift_id`: the shift must exist, be the sender's and not be closed before the
+    event); only the shift events and `record.void` opt out.
     """
 
     event_type: str
@@ -81,6 +84,7 @@ class EventHandler:
     apply: ApplyEvent
     on_void: VoidHook | None = None
     codes: tuple[str, ...] = ()
+    checks_shift: bool = True
 
 
 HANDLERS: dict[tuple[str, int], EventHandler] = {}
@@ -95,6 +99,36 @@ def register(handler: EventHandler) -> None:
             "registered."
         )
     HANDLERS[key] = handler
+
+
+type EnvelopeCheck = Callable[[Organization, User, EventEnvelope], EventNeedsReview | None]
+
+ENVELOPE_CHECKS: list[EnvelopeCheck] = []
+
+
+def register_envelope_check(check: EnvelopeCheck) -> None:
+    """Register a check the pipeline runs on every event whose handler has `checks_shift=True`,
+    after the payload is valid and before it is applied (writes the process-wide registry; call
+    it from `AppConfig.ready()`). It reads (no writes), may raise `EventRejected` and may return an
+    `EventNeedsReview` that sends the event to review once it is applied. With none registered
+    the pipeline checks nothing. `shifts` uses it for the `shift_id` of events, so `field_sync`
+    does not import `shifts`."""
+    if check in ENVELOPE_CHECKS:
+        raise ImproperlyConfigured(f"The envelope check {check.__name__!r} is already registered.")
+    ENVELOPE_CHECKS.append(check)
+
+
+def run_envelope_checks(
+    organization: Organization, user: User, envelope: EventEnvelope
+) -> EventNeedsReview | None:
+    """Run every registered check, in order (reads). A rejection raised by any check wins over a
+    review signal returned by an earlier one (rejected over in review); otherwise the first review
+    signal is returned."""
+    signal: EventNeedsReview | None = None
+    for check in ENVELOPE_CHECKS:
+        result = check(organization, user, envelope)
+        signal = signal or result
+    return signal
 
 
 def get_handler(event_type: str, schema_version: int) -> EventHandler | None:
