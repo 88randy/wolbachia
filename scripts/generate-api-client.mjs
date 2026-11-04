@@ -16,6 +16,9 @@ import { fileURLToPath } from "node:url";
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCHEMA_FILE = join(ROOT, "packages/api-client/openapi.yaml");
 const TYPES_FILE = join(ROOT, "packages/api-client/src/generated/schema.ts");
+// Given to `uv` (run from backend/) as a relative path: arguments go through a shell and are not
+// quoted, so an absolute path with spaces would split in two.
+const SCHEMA_FILE_FROM_BACKEND = "../packages/api-client/openapi.yaml";
 
 // Throwaway values, not secrets. They override the caller's environment for the variables that
 // matter, and `backend/.env` is not read, so the export does not depend on local settings. Other
@@ -58,7 +61,7 @@ const exportSchema = [
   "--validate",
   "--fail-on-warn",
   "--file",
-  SCHEMA_FILE,
+  SCHEMA_FILE_FROM_BACKEND,
 ];
 run("uv", exportSchema, SCHEMA_EXPORT_ENV);
 normalizeLineEndings(SCHEMA_FILE);
