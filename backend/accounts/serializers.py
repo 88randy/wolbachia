@@ -2,9 +2,13 @@
 
 from typing import Any
 
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework import serializers
+from rest_framework.fields import get_error_detail
 
 from accounts.models import Device
+from accounts.selectors import find_user_for_password_reset
 from core.serializers import OrgScopedModelSerializer
 from organizations.serializers import MeSerializer
 
@@ -13,6 +17,7 @@ PASSWORD_MAX_LENGTH = 1024  # long passphrases are fine; this only bounds the ha
 APP_VERSION_MAX_LENGTH = 50
 LABEL_MAX_LENGTH = 100
 TOKEN_MAX_LENGTH = 512
+EMAIL_MAX_LENGTH = 254
 
 
 class LoginSerializer(serializers.Serializer[Any]):
@@ -90,3 +95,25 @@ class DeviceFilterSerializer(serializers.Serializer[Any]):
 
 class RevokedSessionsSerializer(serializers.Serializer[Any]):
     revoked_sessions = serializers.IntegerField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer[Any]):
+    email = serializers.EmailField(max_length=EMAIL_MAX_LENGTH)
+
+
+class PasswordResetConfirmSerializer(serializers.Serializer[Any]):
+    """Resolves the link first, so a bad link never reveals the password rules."""
+
+    uid = serializers.CharField(max_length=TOKEN_MAX_LENGTH)
+    token = serializers.CharField(max_length=TOKEN_MAX_LENGTH)
+    new_password = serializers.CharField(
+        max_length=PASSWORD_MAX_LENGTH, trim_whitespace=False, write_only=True
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        user = find_user_for_password_reset(attrs["uid"], attrs["token"])
+        try:
+            validate_password(attrs["new_password"], user)
+        except DjangoValidationError as error:
+            raise serializers.ValidationError({"new_password": get_error_detail(error)}) from error
+        return {**attrs, "user": user}

@@ -1,5 +1,6 @@
 """Authentication endpoints. Public ones declare their own throttles and no authenticators."""
 
+import logging
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -8,6 +9,7 @@ from django.db.models import QuerySet
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
+from kombu.exceptions import OperationalError
 from rest_framework import mixins, status, viewsets
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.decorators import action
@@ -26,6 +28,8 @@ from accounts.serializers import (
     DeviceSerializer,
     LoginSerializer,
     MobileLoginResponseSerializer,
+    PasswordResetConfirmSerializer,
+    PasswordResetRequestSerializer,
     RefreshResponseSerializer,
     RefreshSerializer,
     RevokedSessionsSerializer,
@@ -35,15 +39,19 @@ from accounts.services import (
     DeviceInfo,
     Revocation,
     authenticate_user,
+    reset_password,
     revoke_device,
     revoke_session,
     revoke_user_sessions,
     rotate_refresh_token,
     start_device_session,
 )
+from accounts.tasks import send_password_reset_email
 from accounts.throttling import (
     LoginIpThrottle,
     LoginUserIpThrottle,
+    PasswordResetConfirmThrottle,
+    PasswordResetThrottle,
     RefreshThrottle,
     client_ip,
 )
@@ -52,6 +60,8 @@ from core.constants import ORGANIZATION_HEADER
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
 from organizations.selectors import get_me_context, resolve_active_membership
+
+logger = logging.getLogger("accounts.auth")
 
 LoginResponse = PolymorphicProxySerializer(
     component_name="LoginResponse",
@@ -181,6 +191,60 @@ class RefreshView(APIView):
         )
         body = {"access": issued.access, "refresh": issued.refresh, "server_time": server_now()}
         return Response(RefreshResponseSerializer(body).data)
+
+
+class PasswordResetView(APIView):
+    """`POST /auth/password-reset/ {email}`: always `202`, whether or not the account exists.
+
+    The view neither looks the address up nor waits for the email: it enqueues a task, so the
+    answer, its body and its timing are the same for every address. The worker emails the link.
+    """
+
+    authentication_classes: list[Any] = []
+    permission_classes = [AllowAny]
+    throttle_classes = [PasswordResetThrottle]
+
+    @extend_schema(request=PasswordResetRequestSerializer, responses={202: None}, auth=[])
+    def post(self, request: Request) -> Response:
+        payload = PasswordResetRequestSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        email = payload.validated_data["email"]
+        log_auth_event(
+            AuthEvent.PASSWORD_RESET_REQUESTED,
+            AuditContext(ip=client_ip(request), username_fingerprint=fingerprint(email)),
+        )
+        try:
+            send_password_reset_email.delay(email)
+        except OperationalError:
+            # Broker down: the answer must not tell, so it is still 202; operators see the log.
+            logger.exception("event=password_reset_enqueue_failed")
+        return Response(status=status.HTTP_202_ACCEPTED)
+
+
+class PasswordResetConfirmView(APIView):
+    """`POST /auth/password-reset/confirm/ {uid, token, new_password}`: set the new password.
+
+    Revokes the user's device sessions (`password_changed`; no final upload). Web sessions end by
+    themselves because Django ties them to the password hash.
+    """
+
+    authentication_classes: list[Any] = []
+    permission_classes = [AllowAny]
+    throttle_classes = [PasswordResetConfirmThrottle]
+
+    @extend_schema(request=PasswordResetConfirmSerializer, responses={204: None}, auth=[])
+    def post(self, request: Request) -> Response:
+        payload = PasswordResetConfirmSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        user = payload.validated_data["user"]
+        reset_password(
+            user, payload.validated_data["token"], payload.validated_data["new_password"]
+        )
+        log_auth_event(
+            AuthEvent.PASSWORD_RESET_CONFIRMED,
+            AuditContext(user_id=user.pk, ip=client_ip(request)),
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class LogoutView(APIView):

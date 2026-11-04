@@ -13,6 +13,12 @@ SECRET_KEY = env("DJANGO_SECRET_KEY")
 ALLOWED_HOSTS = env.list("DJANGO_ALLOWED_HOSTS")
 CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 
+# Password reset email: no silent defaults in production (the console backend would print the
+# reset links to the logs). [PENDING] email provider: any django-environ EMAIL_URL works.
+globals().update(env.email_url("EMAIL_URL"))
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
+WEB_BASE_URL = env("WEB_BASE_URL").rstrip("/")
+
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True
 CSRF_COOKIE_HTTPONLY = False  # the web client reads the CSRF token from this cookie

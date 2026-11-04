@@ -18,6 +18,9 @@ PROD_ENV = {
     "DJANGO_CSRF_TRUSTED_ORIGINS": "https://app.example.test",
     "DATABASE_URL": "postgres://user:pw@localhost:5432/db",
     "REDIS_URL": "redis://localhost:6379/0",
+    "EMAIL_URL": "smtp://mailer:pw@smtp.example.test:587",
+    "DEFAULT_FROM_EMAIL": "Wolbachia <no-reply@example.test>",
+    "WEB_BASE_URL": "https://app.example.test",
 }
 
 
@@ -111,3 +114,46 @@ def test_test_settings_load_without_any_environment_variable() -> None:
     result = run_manage("check", env=env)
 
     assert result.returncode == 0, result.stderr
+
+
+@pytest.mark.parametrize("variable", ["EMAIL_URL", "DEFAULT_FROM_EMAIL", "WEB_BASE_URL"])
+def test_prod_settings_require_the_password_reset_email_variables(variable: str) -> None:
+    env = {key: value for key, value in PROD_ENV.items() if key != variable}
+
+    result = run_manage("check", env=env)
+
+    assert result.returncode != 0
+    assert variable in result.stderr
+
+
+def test_prod_email_settings_come_from_the_environment() -> None:
+    result = run_manage(
+        "shell",
+        "--no-imports",
+        "-c",
+        "from django.conf import settings as s; "
+        "print(s.EMAIL_BACKEND, s.EMAIL_HOST, s.EMAIL_PORT, s.WEB_BASE_URL)",
+        env=PROD_ENV,
+    )
+
+    expected = "django.core.mail.backends.smtp.EmailBackend smtp.example.test 587"
+    assert result.stdout.strip() == f"{expected} https://app.example.test"
+
+
+def test_dev_defaults_print_emails_to_the_console() -> None:
+    env = {
+        "DJANGO_READ_DOT_ENV_FILE": "false",
+        "DJANGO_SETTINGS_MODULE": "config.settings.test",
+    }
+
+    result = run_manage(
+        "shell",
+        "--no-imports",
+        "-c",
+        "from django.conf import settings as s; print(s.EMAIL_BACKEND, s.WEB_BASE_URL)",
+        env=env,
+    )
+
+    assert result.stdout.strip() == (
+        "django.core.mail.backends.console.EmailBackend http://localhost:5173"
+    )
