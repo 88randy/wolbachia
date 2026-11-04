@@ -13,13 +13,13 @@ interface UserMenuButtonProps {
 }
 
 /**
- * Avatar and name. The visible text is hidden from assistive technology because the accessible
- * name is set once, and it contains the visible name (WCAG 2.5.3 label in name).
+ * Avatar and name. The accessible name is the visible name plus a hidden "User menu" (so it
+ * contains what is on screen, WCAG 2.5.3); the initials are decoration. On narrow screens the
+ * name is visually hidden, not removed, so the name stays the same.
  */
 export function UserMenuButton({ isOpen, panelId, onToggle, ref }: UserMenuButtonProps) {
   const { t } = useTranslation();
   const { user } = useMe();
-  const name = displayNameOf(user);
   return (
     <button
       ref={ref}
@@ -27,15 +27,13 @@ export function UserMenuButton({ isOpen, panelId, onToggle, ref }: UserMenuButto
       className={styles.button}
       aria-expanded={isOpen}
       aria-controls={panelId}
-      aria-label={`${name}, ${t("shell.userMenu.button")}`}
       onClick={onToggle}
     >
       <span className={styles.avatar} aria-hidden="true">
         {initialsOf(user)}
       </span>
-      <span className={styles.buttonName} aria-hidden="true">
-        {name}
-      </span>
+      <span className={styles.buttonName}>{displayNameOf(user)}</span>{" "}
+      <span className={styles.hiddenLabel}>{t("shell.userMenu.button")}</span>
       <ChevronDown aria-hidden="true" className={styles.chevron} />
     </button>
   );

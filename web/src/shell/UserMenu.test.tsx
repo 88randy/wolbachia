@@ -41,12 +41,12 @@ function menuButton() {
 }
 
 describe("user menu", () => {
-  test("is a closed disclosure named after the user", async () => {
+  test("is a closed disclosure whose name contains the visible name", async () => {
     await openShell();
 
-    const button = menuButton();
+    const button = screen.getByRole("button", { name: "Ana Pérez Menú de usuario" });
 
-    expect(button.getAttribute("aria-label")).toBe("Ana Pérez, Menú de usuario");
+    expect(button.textContent).toContain("Ana Pérez");
     expect(button.getAttribute("aria-expanded")).toBe("false");
     expect(button.getAttribute("aria-controls")).toBe("user-menu-panel");
     expect(screen.queryByText("Cerrar sesión")).toBeNull();
@@ -92,7 +92,7 @@ describe("user menu", () => {
     const me = makeMe({ profiles: [] });
     await openShell({ ...me, user: { ...me.user, first_name: "", last_name: "" } });
 
-    expect(menuButton().getAttribute("aria-label")).toBe("ana.supervisora, Menú de usuario");
+    expect(screen.getByRole("button", { name: "ana.supervisora Menú de usuario" })).toBeDefined();
     await userEvent.click(menuButton());
     expect(screen.getByText("Sin perfil asignado")).toBeDefined();
   });

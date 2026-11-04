@@ -51,11 +51,27 @@
   color: var(--color-text-secondary);
 }
 
-/* Narrow screens (reflow at 320 CSS px): only the avatar stays; the name is in the panel. */
+/* Read by screen readers only: the "User menu" part of the button's name. */
+.hiddenLabel {
+  composes: srOnly from "../styles/utilities.module.css";
+}
+
+/*
+ * Narrow screens (reflow at 320 CSS px): only the avatar shows. The name is visually hidden, not
+ * removed, so the button keeps its accessible name.
+ */
 @media (max-width: 40rem) {
-  .buttonName,
   .chevron {
     display: none;
+  }
+
+  .buttonName {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
   }
 }
 
