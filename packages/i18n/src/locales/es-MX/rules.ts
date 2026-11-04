@@ -43,6 +43,8 @@ export const rules = {
   "rules.detail.back": "Volver a parámetros",
   "rules.detail.key": "Clave",
   "rules.detail.loading": "Cargando el parámetro",
+  "rules.detail.refreshFailed":
+    "No pudimos actualizar este parámetro. Lo que ves puede no estar al día; tu borrador sigue aquí.",
   "rules.summary.title": "Valor vigente",
   "rules.summary.value": "Valor actual",
   "rules.summary.since": "Vigente desde",
@@ -104,6 +106,7 @@ export const rules = {
   "rules.history.voidLabel": "Anular la versión del {date}",
   "rules.history.voidBlocked":
     "Esta versión ya entró en vigor: queda como historial y no se puede anular.",
+  "rules.history.hiddenNote": "Versiones anuladas ocultas en esta página: {count}.",
   "rules.history.voidDone": "Versión anulada. Sigue en el historial, tachada.",
   "rules.history.userRef": "Usuario {id}",
   "rules.history.system": "Sistema",

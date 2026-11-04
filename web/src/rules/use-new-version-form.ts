@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import type { UseFormReturn } from "react-hook-form";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useFocusAlert } from "../forms/use-focus-alert";
+import { useSessionGuard } from "../session/use-session-guard";
 import { createVersion } from "./create-version";
 import type { FieldIssue, ServerBounds, VersionField, VersionOutcome } from "./create-version";
 import { invalidateRuleParameters } from "./rules-query";
@@ -18,7 +19,7 @@ const FIELD_ORDER: readonly VersionField[] = ["value", "effectiveFrom", "reason"
 const EMPTY: VersionValues = { value: "", effectiveFrom: "", reason: "" };
 
 /** A refusal that is not about one field: shown in the form's alert. */
-type Refusal = Exclude<VersionOutcome, { ok: true } | { reason: "fields" }>;
+type Refusal = Exclude<VersionOutcome, { ok: true } | { reason: "fields" | "stale" }>;
 
 /** What the last submit left: nothing, a saved version, field errors or a refusal. */
 type Result =
@@ -51,7 +52,9 @@ async function settle(
   outcome: VersionOutcome,
   form: UseFormReturn<VersionValues>,
   queryClient: QueryClient,
-): Promise<Result> {
+): Promise<Result | undefined> {
+  // A stale answer changes nothing: no form reset, no refresh, no message.
+  if (!outcome.ok && outcome.reason === "stale") return undefined;
   if (outcome.ok) {
     form.reset(EMPTY);
     await invalidateRuleParameters(queryClient);
@@ -67,8 +70,10 @@ async function settle(
 function useSendVersion(parameterKey: string) {
   const client = useApiClient();
   const queryClient = useQueryClient();
-  return (values: VersionValues) =>
-    createVersion(queryClient, () =>
+  const begin = useSessionGuard();
+  return (values: VersionValues) => {
+    const { signal, isStale } = begin();
+    const send = () =>
       client.POST("/api/v1/rule-parameters/{parameter_key}/versions/", {
         params: { path: { parameter_key: parameterKey } },
         body: {
@@ -76,8 +81,10 @@ function useSendVersion(parameterKey: string) {
           effective_from: values.effectiveFrom,
           reason: values.reason.trim(),
         },
-      }),
-    );
+        signal,
+      });
+    return createVersion(queryClient, send, isStale);
+  };
 }
 
 /** Validated on blur (and again on every change after that) against the parameter's limits. */
@@ -117,7 +124,8 @@ export function useNewVersionForm(parameter: RuleParameter) {
     setResult(IDLE);
     const outcome = await send(values);
     isSending.current = false;
-    setResult(await settle(outcome, form, queryClient));
+    const next = await settle(outcome, form, queryClient);
+    if (next !== undefined) setResult(next);
   });
   const onSubmit = (event: SyntheticEvent) => {
     void submit(event);

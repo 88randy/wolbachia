@@ -59,15 +59,21 @@ function HistoryTable({ parameter, canVoid, onVoid }: HistoryTableProps) {
   const authorLabel = useAuthorLabel();
   const formatDateTime = useFormatDateTime();
   const rows = pageTableData(query, controller.state.page, VERSIONS_PAGE_SIZE);
+  const visible = hideVoidedVersions(rows, controller.state.includeVoided);
   return (
     <>
       <FilterBar controller={controller} />
+      {visible.hiddenCount > 0 && (
+        <p className={styles.voidBlocked} role="status">
+          {t("rules.history.hiddenNote", { count: visible.hiddenCount })}
+        </p>
+      )}
       <DataTable
         caption={t("rules.history.caption")}
         columns={columns}
         getRowId={getVersionId}
         controller={controller}
-        data={hideVoidedVersions(rows, controller.state.includeVoided)}
+        data={visible.data}
         voidOf={(version) => voidInfoOf(version, authorLabel, formatDateTime)}
       />
     </>

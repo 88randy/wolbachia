@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import { ApiError } from "@wolbachia/api-client";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useParams } from "@tanstack/react-router";
@@ -24,7 +25,25 @@ import styles from "./rules.module.css";
 const KEY_PATTERN = /^[a-z][a-z0-9_]*$/;
 const HTTP_NOT_FOUND = 404;
 
-function ParameterScreen({ parameter }: { parameter: RuleParameter }) {
+function RefreshFailed({ onRetry }: { onRetry: () => void }) {
+  const { t } = useTranslation();
+  return (
+    <div role="status" className={styles.card}>
+      <p className={styles.hint}>{t("rules.detail.refreshFailed")}</p>
+      <div className={page.actions}>
+        <button
+          type="button"
+          className={classNames(buttons.button, buttons.secondary)}
+          onClick={onRetry}
+        >
+          {t("common.actions.retry")}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ParameterScreen({ parameter, notice }: { parameter: RuleParameter; notice: ReactNode }) {
   const { t } = useTranslation();
   const can = useCan();
   const name = useParameterLabels().name(parameter.key);
@@ -42,6 +61,7 @@ function ParameterScreen({ parameter }: { parameter: RuleParameter }) {
         </span>
       </div>
       <div className={styles.content}>
+        {notice}
         <ParameterSummary parameter={parameter} />
         {can(RULE_VERSION_CREATE) && <NewVersionForm parameter={parameter} />}
         {can(RULE_VERSION_READ) && (
@@ -75,20 +95,19 @@ function ParameterLoader({ parameterKey }: { parameterKey: string }) {
   const client = useApiClient();
   const query = useQuery(parameterQueryOptions(client, parameterKey));
   const { error } = query;
-  if (error instanceof ApiError && error.status === HTTP_NOT_FOUND) {
-    return <NotFoundState />;
+  const retry = () => void query.refetch();
+  // A failed refresh keeps what is on screen (the form holds a draft): only a first load fails.
+  if (query.data !== undefined) {
+    const notice = error === null ? null : <RefreshFailed onRetry={retry} />;
+    return <ParameterScreen parameter={query.data} notice={notice} />;
   }
-  if (error !== null) {
-    return <LoadFailed error={error} onRetry={() => void query.refetch()} />;
-  }
-  if (query.data === undefined) {
-    return (
-      <p className={page.page} role="status">
-        {t("rules.detail.loading")}
-      </p>
-    );
-  }
-  return <ParameterScreen parameter={query.data} />;
+  if (error instanceof ApiError && error.status === HTTP_NOT_FOUND) return <NotFoundState />;
+  if (error !== null) return <LoadFailed error={error} onRetry={retry} />;
+  return (
+    <p className={page.page} role="status">
+      {t("rules.detail.loading")}
+    </p>
+  );
 }
 
 /**

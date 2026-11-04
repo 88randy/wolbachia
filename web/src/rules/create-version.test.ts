@@ -1,5 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, test, vi } from "vitest";
+import { isSessionExpired } from "../session/session-events";
+import { ME_QUERY_KEY } from "../session/me-query";
 import { createVersion, fieldIssuesOf } from "./create-version";
 import type { VersionOutcome } from "./create-version";
 
@@ -77,8 +79,30 @@ function answer(status: number, error?: unknown) {
 }
 
 async function outcomeOf(call: () => Promise<{ response: Response; error?: unknown }>) {
-  return createVersion(new QueryClient(), call);
+  return createVersion(new QueryClient(), call, () => false);
 }
+
+describe("createVersion with a session that changed", () => {
+  test("regression: a late 401 of a closed session is dropped, not reported to the new one", async () => {
+    const queryClient = new QueryClient();
+    queryClient.setQueryData(ME_QUERY_KEY, { user: { id: "B" } });
+    const late = answer(401, { code: "not_authenticated", detail: "Fake." });
+
+    const outcome = await createVersion(queryClient, late, () => true);
+
+    expect(outcome).toEqual({ ok: false, reason: "stale" });
+    expect(isSessionExpired()).toBe(false);
+  });
+
+  test("an aborted request of a closed session is dropped without a log", async () => {
+    const aborted = () => Promise.reject(new DOMException("Aborted", "AbortError"));
+
+    expect(await createVersion(new QueryClient(), aborted, () => true)).toEqual({
+      ok: false,
+      reason: "stale",
+    });
+  });
+});
 
 describe("createVersion", () => {
   test("a created version is ok", async () => {

@@ -2,6 +2,8 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test } from "vitest";
+import { acceptSession, confirmSignOut } from "../session/session-revision";
+import { isSessionExpired } from "../session/session-events";
 import { apiError, makeMe } from "../test/fake-api";
 import {
   CREATE_ROUTE,
@@ -302,4 +304,42 @@ describe("rule parameter page: language and accessibility", () => {
       expect(await axe(app.container)).toHaveNoViolations();
     },
   );
+});
+
+describe("rule parameter page: regressions found in review", () => {
+  test("a late answer of a closed session neither expires the new one nor touches the form", async () => {
+    const user = userEvent.setup();
+    let release: (response: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    await openParameterPage({ routes: { [CREATE_ROUTE]: () => pending } });
+    await fill(user, "40");
+    await save(user);
+    await screen.findByRole("button", { name: "Guardando…" });
+
+    confirmSignOut();
+    acceptSession();
+    release(apiError(401, "not_authenticated"));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Guardando…" })).toBeNull();
+    });
+    expect(isSessionExpired()).toBe(false);
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.getByLabelText<HTMLInputElement>(/Valor nuevo/).value).toBe("40");
+  });
+
+  test("a failed background refresh keeps the form and its draft and offers to retry", async () => {
+    const user = userEvent.setup();
+    const { app, api } = await openParameterPage();
+    await user.type(await screen.findByLabelText(/Valor nuevo/), "40");
+    api.setRoute(PARAMETER_ROUTE, apiError(500, "server_error"));
+
+    await app.queryClient.invalidateQueries({ queryKey: ["rule-parameters"] });
+
+    expect(await screen.findByText(/No pudimos actualizar/)).toBeDefined();
+    expect(screen.getByLabelText<HTMLInputElement>(/Valor nuevo/).value).toBe("40");
+    expect(screen.getByRole("button", { name: "Reintentar" })).toBeDefined();
+  });
 });

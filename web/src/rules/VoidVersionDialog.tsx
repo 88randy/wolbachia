@@ -1,5 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "../api/ApiClientProvider";
+import { useSessionGuard } from "../session/use-session-guard";
 import { useFormatCalendarDate } from "../format/use-formatters";
 import { VoidDialog, submitVoid, useVoidLimits } from "../void";
 import type { VoidResult } from "../void";
@@ -24,14 +25,17 @@ function isStale(result: VoidResult): boolean {
 function useSubmitVoid(parameterKey: string, versionId: string) {
   const client = useApiClient();
   const queryClient = useQueryClient();
+  const begin = useSessionGuard();
   return async (reason: string): Promise<VoidResult> => {
-    const result = await submitVoid(queryClient, () =>
+    const { signal, isStale: isOld } = begin();
+    const send = () =>
       client.POST("/api/v1/rule-parameters/{parameter_key}/versions/{id}/void/", {
         params: { path: { parameter_key: parameterKey, id: versionId } },
         body: { reason },
-      }),
-    );
-    if (result.ok || isStale(result)) void invalidateRuleParameters(queryClient);
+        signal,
+      });
+    const result = await submitVoid(queryClient, send, isOld);
+    if (!isOld() && (result.ok || isStale(result))) void invalidateRuleParameters(queryClient);
     return result;
   };
 }

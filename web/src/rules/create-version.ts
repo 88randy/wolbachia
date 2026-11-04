@@ -26,6 +26,8 @@ export type VersionOutcome =
   /** `400 validation_error`: what to show under each field. */
   | { ok: false; reason: "fields"; issues: Partial<Record<VersionField, FieldIssue>> }
   | { ok: false; reason: "permissionDenied" | "notFound" }
+  /** The answer belongs to another session or the page left: nothing may be done with it. */
+  | { ok: false; reason: "stale" }
   | { ok: false; reason: "service"; failure: ServiceFailure };
 
 /** Field of the API (`fields.<name>`) to the field of the form. */
@@ -90,6 +92,8 @@ function failureOf(status: number, error: unknown): VersionOutcome {
   return { ok: false, reason: "service", failure: serviceFailureOf(status) };
 }
 
+const STALE: VersionOutcome = { ok: false, reason: "stale" };
+
 interface Answer {
   response: Response;
   error?: unknown;
@@ -105,21 +109,26 @@ interface Answer {
 export async function createVersion(
   queryClient: QueryClient,
   call: () => Promise<Answer>,
+  isStale: () => boolean,
 ): Promise<VersionOutcome> {
   try {
     const { response, error } = await call();
+    if (isStale()) return STALE;
     if (response.ok) return { ok: true };
     const envelope = isErrorEnvelope(error) ? error : undefined;
     reportSessionError(new ApiError(response.status, envelope), queryClient);
     return failureOf(response.status, error);
   } catch (caught) {
+    if (isStale()) return STALE;
     console.error("The new rule parameter version request failed", caught);
     return { ok: false, reason: "service", failure: "network" };
   }
 }
 
 /** Catalog key for an outcome that is not about a field (shown in the form's alert). */
-export function outcomeKey(outcome: Exclude<VersionOutcome, { ok: true }>): MessageKey {
+export function outcomeKey(
+  outcome: Exclude<VersionOutcome, { ok: true } | { reason: "stale" }>,
+): MessageKey {
   if (outcome.reason === "service") return SERVICE_FAILURE_KEYS[outcome.failure];
   if (outcome.reason === "fields") return "errors.api.validation";
   return outcome.reason === "notFound" ? "errors.api.notFound" : "errors.api.permissionDenied";

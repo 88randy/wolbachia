@@ -43,6 +43,8 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.detail.back": "Back to parameters",
   "rules.detail.key": "Key",
   "rules.detail.loading": "Loading the parameter",
+  "rules.detail.refreshFailed":
+    "We could not refresh this parameter. What you see may be out of date; your draft is still here.",
   "rules.summary.title": "Value in force",
   "rules.summary.value": "Current value",
   "rules.summary.since": "In force since",
@@ -103,6 +105,7 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.history.voidLabel": "Void the version of {date}",
   "rules.history.voidBlocked":
     "This version is already in force: it stays as history and cannot be voided.",
+  "rules.history.hiddenNote": "Voided versions hidden on this page: {count}.",
   "rules.history.voidDone": "Version voided. It stays in the history, struck through.",
   "rules.history.userRef": "User {id}",
   "rules.history.system": "System",
