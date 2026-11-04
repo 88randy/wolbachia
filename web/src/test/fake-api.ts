@@ -1,0 +1,115 @@
+import type { Me } from "../session/me";
+
+/** One request the app made, as a test wants to inspect it. */
+export interface RecordedRequest {
+  method: string;
+  /** Path and query, without the origin. */
+  path: string;
+  headers: Headers;
+  /** Parsed JSON body, or undefined when there was none. */
+  body: unknown;
+}
+
+type Reply = Response | ((request: RecordedRequest) => Response | Promise<Response>);
+
+/** Routes are keyed `"<METHOD> <path>"`, e.g. `"GET /api/v1/me/"` (query string ignored). */
+export type FakeApiRoutes = Record<string, Reply>;
+
+export interface FakeApi {
+  fetch: (request: Request) => Promise<Response>;
+  requests: RecordedRequest[];
+  /** Replaces or adds a route while the test runs (e.g. the session expires). */
+  setRoute: (key: string, reply: Reply) => void;
+}
+
+async function record(request: Request): Promise<RecordedRequest> {
+  const url = new URL(request.url);
+  const text = await request.clone().text();
+  return {
+    method: request.method,
+    path: `${url.pathname}${url.search}`,
+    headers: request.headers,
+    body: text === "" ? undefined : (JSON.parse(text) as unknown),
+  };
+}
+
+/**
+ * A fake network for unit tests: answers by method and path, records every request. A request
+ * with no route fails the test loudly instead of returning something plausible.
+ */
+export function createFakeApi(initial: FakeApiRoutes = {}): FakeApi {
+  const routes = new Map<string, Reply>(Object.entries(initial));
+  const requests: RecordedRequest[] = [];
+  return {
+    requests,
+    setRoute: (key, reply) => {
+      routes.set(key, reply);
+    },
+    fetch: async (request) => {
+      const recorded = await record(request);
+      requests.push(recorded);
+      const key = `${recorded.method} ${recorded.path.split("?")[0] ?? ""}`;
+      const reply = routes.get(key);
+      if (reply === undefined) throw new Error(`No fake route for ${key}`);
+      return typeof reply === "function" ? reply(recorded) : reply.clone();
+    },
+  };
+}
+
+/** An API error answer: `{code, detail, fields?}` with the status and headers of the real API. */
+export function apiError(
+  status: number,
+  code: string,
+  extra: { headers?: Record<string, string>; fields?: Record<string, { code: string }[]> } = {},
+): Response {
+  const fields =
+    extra.fields === undefined
+      ? {}
+      : {
+          fields: Object.fromEntries(
+            Object.entries(extra.fields).map(([name, errors]) => [
+              name,
+              errors.map(({ code: errorCode }) => ({ code: errorCode, params: {} })),
+            ]),
+          ),
+        };
+  return Response.json(
+    { code, detail: `Fake ${code}.`, ...fields },
+    {
+      status,
+      ...(extra.headers ? { headers: extra.headers } : {}),
+    },
+  );
+}
+
+/** An empty answer, e.g. `204` of logout or `202` of a password reset request. */
+export function noContent(status = 204): Response {
+  return new Response(null, { status });
+}
+
+/** The default signed-in user of the tests: one organization, every permission of Settings. */
+export function makeMe(overrides: Partial<Me> = {}): Me {
+  return {
+    user: {
+      id: "5f5c4c3e-4a0e-4a64-9a60-1a2b3c4d5e6f",
+      username: "ana.supervisora",
+      email: "ana@example.org",
+      first_name: "Ana",
+      last_name: "Pérez",
+    },
+    organization: {
+      id: "0c9e5b2a-8a54-4c7f-9e0d-6a9f5f3a1b21",
+      slug: "norte",
+      name: "Región Norte",
+      country: "MX",
+      timezone: "America/Mexico_City",
+      languages: ["es-MX", "en"],
+      logo_url: null,
+    },
+    profiles: [{ slug: "supervisor", label_es: "Supervisora", label_en: "Supervisor" }],
+    permissions: ["catalog.read", "rule_parameter.read"],
+    scope: { centers: [], quadrants: [] },
+    organizations: [{ slug: "norte", name: "Región Norte" }],
+    ...overrides,
+  };
+}
