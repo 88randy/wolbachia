@@ -24,11 +24,23 @@ class DomainError(Exception):
         self.detail = detail or self.default_detail
         super().__init__(self.detail)
 
+    def response_headers(self) -> dict[str, str]:
+        """Extra response headers of this error (e.g. `Retry-After`); none by default."""
+        return {}
+
 
 class AlreadyVoidedError(DomainError):
     code = "already_voided"
     status_code = HTTPStatus.CONFLICT
     default_detail = "The record is already voided."
+
+
+class PayloadTooLargeError(DomainError):
+    """`413`: the request body (or a batch inside it) is over a technical limit."""
+
+    code = "payload_too_large"
+    status_code = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+    default_detail = "The request is too large."
 
 
 class FieldValidationError(DomainError):

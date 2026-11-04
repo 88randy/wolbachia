@@ -121,7 +121,7 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 
 ### Session, guards and permissions
 
-Built in #28 (decisions 62 to 66 in `docs/decisions.md`). Backend contract: `docs/api-conventions.md` (rows `GET /me/`, "Auth endpoints", "Error codes (#4)", "Login protection") and `packages/api-client`.
+Built in #28 (decisions 77 to 81 in `docs/decisions.md`). Backend contract: `docs/api-conventions.md` (rows `GET /me/`, "Auth endpoints", "Error codes (#4)", "Login protection") and `packages/api-client`.
 
 - **Routes.** Public: `/login?redirect=<internal path>&notice=`, `/forgot-password`, `/reset-password/{uid}/{token}` (the path the backend writes in the reset email, `WEB_PASSWORD_RESET_PATH`). `/select-organization` needs a session but not an organization. Everything else is inside the shell and behind `requireOrganization`.
 - **Session state** is the `["me"]` query (`session/me-query.ts`): fresh for 60 s, refetched on window focus and on guarded navigations after that, so a permission changed by an administrator reaches the navigation. There is no custom auth context.

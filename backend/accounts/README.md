@@ -32,11 +32,12 @@ User rows are locked with `select_for_update(no_key=True)` (`FOR NO KEY UPDATE`)
 | Revoke a user's sessions | `User`, the sessions |
 | Revoke a device | `Device`, the device's sessions |
 | Final upload (`consume_final_upload`) | `User`, `DeviceSession` |
+| Sync batch (`/field/sync/`, #5) | none of the above in a normal request; in a final upload it runs inside the `User` and `DeviceSession` locks above. Its serialization is two kinds of PostgreSQL advisory transaction lock (not row locks), taken after them: first a *try* lock per (organization, user) (never waits: a second batch is `429 sync_in_progress`), then `SET LOCAL lock_timeout` (`SYNC_LOCK_TIMEOUT_MS`) for the rest of the transaction: any other wait (a primary key insert on an id another batch holds, a void target row) ends in `429 sync_in_progress` after the timeout, and a deadlock (`40P01`) does too |
 
 Bookkeeping (`touch_session`, the first-use mark of a lone pair) are single statements outside any transaction of ours. `tests/test_credentials_and_locks.py` runs refresh, login and final upload against reset on threads (`transaction=True`) to catch a deadlock.
 
 Revocation and rotation commit before they raise, so they must not run inside an outer `atomic()`; `ATOMIC_REQUESTS` stays off.
 
-## For #5 (`/field/sync/`)
+## `/field/sync/` (#5)
 
-`FinalUploadMixin` holds the `User` and `DeviceSession` locks for the whole view when a revoked phone makes its final upload: keep sync batches bounded and make no external calls (HTTP, storage, email) inside the view.
+`FinalUploadMixin` holds the `User` and `DeviceSession` locks for the whole view when a revoked phone makes its final upload: sync batches are bounded (`SYNC_MAX_EVENTS`, `SYNC_MAX_BODY_BYTES`) and no handler or pipeline code calls an external service (HTTP, storage, email). The batches of one courier are serialized with `pg_try_advisory_xact_lock` on (organization, user) and every later wait is capped by a lock timeout, not by more locks: a `Device` row lock taken after the session lock would run against the order above, and it would block the `Device.last_seen_at` update that every authenticated request does. The user lock is a try, so it never waits while holding the `User` and `DeviceSession` rows of a final upload; other waits last at most `SYNC_LOCK_TIMEOUT_MS` (then `429 sync_in_progress`, and the final upload is given back), so a final upload never waits long while holding those rows. `authenticate_header` makes a bearer-only view answer a request without credentials `401` (not `403`).

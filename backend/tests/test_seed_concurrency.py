@@ -3,7 +3,7 @@ import threading
 import pytest
 from django.db import connection, transaction
 
-from organizations.defaults import seed_default_permission_codes
+from organizations.defaults import DEFAULT_PROFILE_PERMISSIONS, seed_default_permission_codes
 from organizations.models import Profile
 from organizations.services import OrganizationSpec, create_organization
 
@@ -32,7 +32,7 @@ def test_a_revoke_committed_while_the_seed_waits_is_not_undone() -> None:
                 profile = Profile.objects.select_for_update().get(
                     organization=organization, slug="courier"
                 )
-                profile.seeded_permission_codes = ["catalog.read", "rule_parameter.read"]
+                profile.seeded_permission_codes = list(DEFAULT_PROFILE_PERMISSIONS["courier"])
                 profile.permission_codes = ["catalog.read"]  # granted, then one revoked
                 profile.save()
                 holding.set()

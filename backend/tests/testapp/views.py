@@ -1,5 +1,6 @@
 from typing import Any
 
+from django.core.exceptions import RequestDataTooBig
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
@@ -73,6 +74,17 @@ class BoomView(APIView):
 
     def get(self, request: Request) -> Response:
         raise RuntimeError("boom")
+
+
+class TooBigView(APIView):
+    """Raises Django's own body-size error to exercise its 413 mapping."""
+
+    authentication_classes: list[Any] = []
+    permission_classes: list[Any] = []
+    throttle_classes: list[Any] = []
+
+    def post(self, request: Request) -> Response:
+        raise RequestDataTooBig("Request body exceeded settings.DATA_UPLOAD_MAX_MEMORY_SIZE.")
 
 
 class OnePerMinuteThrottle(AnonRateThrottle):

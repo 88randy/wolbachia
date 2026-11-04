@@ -17,6 +17,8 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     *accounts_urlpatterns,
     path("", include("catalogs.urls")),
     path("", include("rules.urls")),
+    path("", include("field_sync.urls")),
+    path("", include("reviews.urls")),
 ]
 
 urlpatterns = [path("api/v1/", include(api_v1_patterns))]
