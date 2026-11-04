@@ -43,12 +43,15 @@ void describe("catalogs", () => {
 
     assert.deepEqual(mismatches, []);
   });
-  void test("only errors.api.blocked takes a placeholder, and it is {role}", () => {
+  void test("only errors.api.blocked ({role}) and auth.lockout.message ({minutes}) take a placeholder", () => {
     const withPlaceholders = Object.entries(messages["es-MX"])
       .filter(([, text]) => placeholdersOf(text).length > 0)
       .map(([key, text]) => [key, placeholdersOf(text)]);
 
-    assert.deepEqual(withPlaceholders, [["errors.api.blocked", ["role"]]]);
+    assert.deepEqual(withPlaceholders, [
+      ["errors.api.blocked", ["role"]],
+      ["auth.lockout.message", ["minutes"]],
+    ]);
   });
 
   void test("every key follows area.screen.element", () => {
