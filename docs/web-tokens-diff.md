@@ -24,6 +24,8 @@ Typography: Inter with tabular figures in both.
 |---|---|---|---|
 | Soft border | `--line-soft` #E4E8EF | #1F3260 | same light value as `--dis-bg` |
 | Sidebar | `--side` #0A1A3F, `--side-ink` #C9D3EA, `--side-hi` rgba(255,255,255,.12) | `--side` #060E22, `--side-hi` rgba(255,255,255,.10) | `--side` = mobile `--topbar` |
+| Sidebar extras (#26) | group heading `#9EABC8` (`.sb .grp`), active item text `#FFFFFF` (`.nv.on`) | same | new roles `sidebar.groupText` and `sidebar.textActive`; the white is fixed because `color.onAction` turns navy in dark |
+| Offline banner (#26) | text `#FFB547` on `color.navy` (state board) | same | new role `banner.offlineText`; same value as the dark warning foreground, used in both themes because the band is always navy |
 | Map | land #EEF1EC, road #FFFFFF, block #E2E6DF, water #CFE0F2 | #14254A, #25396A, #1B2E58, #16335E | MapLibre style |
 | Chart series | c1 #1A5DFF, c2 #D9620B, c3 #0B6B35, c4 #7A3CC4 | #7FA4FF, #FFA25C, #5FD08F, #C9A2FF | **c2 and c4 are not in the Codequim palette**: provisional, [PENDING] approval |
 | Index bands | opt #E3F5EA, good #F1F8E6, alarm #FFF1D6, emer #FDE8E8 | #123A2A, #1A3424, #3A2A0E, #4A1A22 | opt/alarm/emer reuse status backgrounds; `good` is new |
@@ -34,6 +36,7 @@ Typography: Inter with tabular figures in both.
 - **Spacing:** base 8 with a 4 px half step; 6 → 4 or 8, 10 → 8 or 12, 14 → 12 or 16, 18 → 16 or 20.
 - **Type (web):** body 14/20, labels 12–13, minimum 12 px (some chips and chart labels use 10–11 px in the design; raise them).
 - **Control heights:** 32 / 36 / 40 / 44 px (button default 36) → `control.sm/md/lg/xl`.
+- **Shell sizes (#26):** sidebar 232, collapsed sidebar 64, top bar 56 (`.sb`, `.sb.mini`, `.tp`) → `web.layout.{sidebarWidth,sidebarCollapsedWidth,topBarHeight}` → `--web-layout-*`.
 - **Focus ring:** 2 px solid `action`, 2 px offset, plus a `0 0 0 5px rgba(26,93,255,.22)` halo (`.fo` in `web.css`) → `web.focus.ring.{width,offset,halo}`.
 
 ## 5. Decisions

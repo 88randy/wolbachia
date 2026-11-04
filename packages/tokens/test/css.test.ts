@@ -34,7 +34,7 @@ void describe("css naming and values", () => {
   });
 });
 
-const THEMED_PREFIXES = ["color-", "web-sidebar", "web-map", "web-chart", "web-band"];
+const THEMED_PREFIXES = ["color-", "web-sidebar", "web-banner", "web-map", "web-chart", "web-band"];
 
 function isThemed(name: string): boolean {
   return THEMED_PREFIXES.some((prefix) => name.startsWith(prefix));
@@ -50,6 +50,16 @@ void describe("renderTokensCss", () => {
     assert.equal(light["color-text-primary"], "#0A1A3F");
     assert.equal(light["radius-md"], "12px");
     assert.equal(light["web-chart-2"], "#D9620B");
+  });
+
+  void test("shell sizes are shared lengths in px", () => {
+    const light = parseCustomProperties(css, ":root");
+    const dark = parseCustomProperties(css, DARK_SELECTOR);
+
+    assert.equal(light["web-layout-sidebar-width"], "232px");
+    assert.equal(light["web-layout-sidebar-collapsed-width"], "64px");
+    assert.equal(light["web-layout-top-bar-height"], "56px");
+    assert.equal(dark["web-layout-sidebar-width"], undefined);
   });
 
   void test("dark overrides live under the data-theme selector", () => {
