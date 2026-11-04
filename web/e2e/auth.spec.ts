@@ -177,6 +177,7 @@ test.describe("password reset", () => {
     const api = await mockApi(page, { me: null });
 
     await page.goto("/reset-password/MQ/set-password-link");
+    await expect(page).toHaveURL(/\/reset-password$/); // the token is not left in the address bar
     await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();

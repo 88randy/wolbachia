@@ -16,7 +16,14 @@ export function ResetPasswordPage() {
   const params = useParams({ from: "/reset-password/$uid/$token" });
   const [{ uid, token }] = useState(params);
   useEffect(() => {
-    window.history.replaceState(window.history.state, "", "/reset-password");
+    // The router wraps `history.replaceState` and would navigate to /reset-password (a route that
+    // does not exist); the prototype method rewrites only the address bar.
+    History.prototype.replaceState.call(
+      window.history,
+      window.history.state,
+      "",
+      "/reset-password",
+    );
   }, []);
   return (
     <AuthLayout title={t("auth.reset.title")}>
