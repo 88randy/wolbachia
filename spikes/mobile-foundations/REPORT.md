@@ -43,13 +43,13 @@ Chosen: `____`
 
 Reasons (numbers first, then maintenance, API fit with the outbox in issue #6, sync helpers, team familiarity):
 
-1. 
-2. 
-3. 
+1.
+2.
+3.
 
 Risks and what we do about them:
 
-- 
+-
 
 ## 2. QR scanning (VisionCamera + ML Kit barcode scanner)
 
