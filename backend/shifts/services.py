@@ -13,7 +13,10 @@ batch's `lock_timeout`.
 """
 
 import uuid
+from dataclasses import dataclass
 from typing import Any
+
+from django.db import IntegrityError, transaction
 
 from catalogs.models import CatalogItem
 from field_sync.codes import INVALID_PAYLOAD
@@ -23,6 +26,7 @@ from organizations.models import Organization
 from shifts.codes import (
     MOTORCYCLE_BLOCKED,
     MOTORCYCLE_CHECK_CATALOG_SLUG,
+    MOTORCYCLE_IN_USE,
     MOTORCYCLE_UNKNOWN,
     ODOMETER_DECREASED,
     ODOMETER_OUT_OF_RANGE,
@@ -43,6 +47,17 @@ from shifts.selectors import last_known_km
 # [ASSUMPTION] An odometer shows six digits; above that the reading is a typo or abuse. A physical
 # limit of the instrument, not a business threshold, so it is not a rule parameter.
 MAX_ODOMETER_KM = 999_999
+SHIFT_PRIMARY_KEY_CONSTRAINT = "shifts_shift_pkey"
+
+
+@dataclass(frozen=True)
+class NewShift:
+    """What `shift.open` writes into the `Shift` row."""
+
+    shift_id: uuid.UUID
+    motorcycle: Motorcycle
+    odometer_km: int
+    note: str
 
 
 def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
@@ -50,8 +65,9 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     after a severe check, Motorcycle).
 
     Rejected: `shift_already_open`, `motorcycle_unknown`, `motorcycle_blocked`,
-    `odometer_out_of_range`, `invalid_payload` (unknown checklist item or reused shift id).
-    In review (writes kept): `severe_check`, `odometer_decreased`.
+    `motorcycle_in_use`, `odometer_out_of_range`, `invalid_payload` (unknown checklist item or
+    reused shift id). In review (writes kept): `severe_check`, `odometer_decreased`; when both
+    apply, `severe_check` wins (the decrease is not reported separately).
     """
     shift_id = _require_shift_id(ctx)
     items = _resolve_check_items(ctx.organization, data["checks"])
@@ -61,7 +77,7 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     _ensure_shift_id_is_free(shift_id)
     _ensure_motorcycle_is_usable(motorcycle)
     previous_km = last_known_km(motorcycle)
-    shift = _insert_shift(ctx, motorcycle, data)
+    shift = _insert_shift(ctx, NewShift(shift_id, motorcycle, data["odometer_km"], data["note"]))
     _insert_checks(shift, data["checks"], items)
     if any(line["result"] == CheckResult.SEVERE for line in data["checks"]):
         _block_motorcycle(motorcycle)
@@ -175,23 +191,43 @@ def _ensure_shift_id_is_free(shift_id: uuid.UUID) -> None:
 
 
 def _ensure_motorcycle_is_usable(motorcycle: Motorcycle) -> None:
+    """Not blocked and in no open shift. The motorcycle row is locked by the caller, so two
+    couriers cannot both pass this check for the same motorcycle."""
     if motorcycle.is_blocked:
         raise EventRejected(MOTORCYCLE_BLOCKED, {"reason": motorcycle.blocked_reason})
+    if Shift.objects.filter(motorcycle=motorcycle, status=ShiftStatus.OPEN).exists():
+        raise EventRejected(MOTORCYCLE_IN_USE)
 
 
-def _insert_shift(ctx: EventContext, motorcycle: Motorcycle, data: dict[str, Any]) -> Shift:
-    return Shift.objects.create(
-        id=_require_shift_id(ctx),
-        organization=ctx.organization,
-        created_by=ctx.user,
-        courier=ctx.user,
-        device=ctx.device,
-        motorcycle=motorcycle,
-        opened_at_device=ctx.envelope.device_time,
-        opened_event_id=ctx.envelope.id,
-        odometer_open_km=data["odometer_km"],
-        open_note=data["note"],
-    )
+def _insert_shift(ctx: EventContext, new: NewShift) -> Shift:
+    """Insert the shift in its own savepoint. A client shift id already taken by a shift that a
+    concurrent batch of another courier has just inserted violates the primary key: that is
+    this event's `invalid_payload`, not a failed batch. Any other violation is a real bug and
+    keeps propagating."""
+    try:
+        with transaction.atomic():
+            return Shift.objects.create(
+                id=new.shift_id,
+                organization=ctx.organization,
+                created_by=ctx.user,
+                courier=ctx.user,
+                device=ctx.device,
+                motorcycle=new.motorcycle,
+                opened_at_device=ctx.envelope.device_time,
+                opened_event_id=ctx.envelope.id,
+                odometer_open_km=new.odometer_km,
+                open_note=new.note,
+            )
+    except IntegrityError as error:
+        if _violated_constraint(error) != SHIFT_PRIMARY_KEY_CONSTRAINT:
+            raise
+        raise EventRejected(INVALID_PAYLOAD, {"fields": {"shift_id": ["already_used"]}}) from None
+
+
+def _violated_constraint(error: IntegrityError) -> str | None:
+    """The PostgreSQL constraint name behind an `IntegrityError`, when the driver reports it."""
+    diagnostics = getattr(error.__cause__, "diag", None)
+    return getattr(diagnostics, "constraint_name", None)
 
 
 def _insert_checks(

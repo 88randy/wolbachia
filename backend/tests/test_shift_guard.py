@@ -6,10 +6,13 @@ from datetime import timedelta
 from typing import Any
 
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 from django.utils import timezone
 
+from field_sync import registry
 from field_sync.models import FieldEvent
 from organizations.models import Organization
+from shifts.guard import check_event_shift
 from tests.conftest import MemberFactory
 from tests.factories import ShiftFactory
 from tests.sync_support import Phone, event, make_phone
@@ -104,7 +107,8 @@ def test_an_event_captured_after_the_shift_closed_is_applied_but_goes_to_review(
 
     result = only_result(phone.sync([event(shift_id=str(shift.pk), device_time=captured)]))
 
-    assert (result["status"], result["code"]) == ("in_review", "shift_not_open")
+    assert (result["status"], result["code"]) == ("in_review", "captured_after_shift_close")
+    assert result["params"] == {"shift_id": str(shift.pk)}
     assert Widget.objects.count() == 1
 
 
@@ -130,3 +134,18 @@ def test_only_the_shift_events_and_the_void_opt_out_of_the_shift_check() -> None
     opted_out = {key[0] for key, handler in HANDLERS.items() if not handler.checks_shift}
 
     assert opted_out == {"shift.open", "shift.close", "record.void"}
+
+
+def test_without_a_registered_envelope_check_the_shift_id_is_not_validated(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(registry, "ENVELOPE_CHECKS", [])
+
+    result = only_result(phone.sync([event(shift_id=str(uuid.uuid4()))]))
+
+    assert result["status"] == "accepted"
+
+
+def test_registering_the_same_envelope_check_twice_raises() -> None:
+    with pytest.raises(ImproperlyConfigured, match="already registered"):
+        registry.register_envelope_check(check_event_shift)

@@ -73,8 +73,10 @@ class Shift(ImmutableMixin, OrgScopedModel):
     `shift_id` of every event of that day), so the phone can reference it before it syncs.
 
     `opened_at_device` and `closed_at_device` are the phone's clock; the events keep the server
-    receipt time. A courier has at most one open shift: the partial unique index is the arbiter,
-    and the handler checks first so a race never surfaces as an `IntegrityError`.
+    receipt time. A courier has at most one open shift and a motorcycle is in at most one open
+    shift: the partial unique indexes are the arbiters, and the handler checks first (under the
+    motorcycle row lock) so a race never surfaces as an `IntegrityError`. A database trigger
+    (migration 0001) refuses deletes and any update other than closing an open shift.
     """
 
     mutable_fields: ClassVar[frozenset[str]] = frozenset(
@@ -114,6 +116,11 @@ class Shift(ImmutableMixin, OrgScopedModel):
                 condition=Q(status="open"),
                 name="shift_one_open_per_courier",
             ),
+            models.UniqueConstraint(
+                fields=["motorcycle"],
+                condition=Q(status="open"),
+                name="shift_one_open_per_motorcycle",
+            ),
             models.CheckConstraint(
                 condition=(
                     Q(
@@ -139,7 +146,7 @@ class Shift(ImmutableMixin, OrgScopedModel):
 
 class MotorcycleCheck(ImmutableMixin, OrgScopedModel):
     """One line of the checklist done when the shift opened. `item` is an entry of the closed
-    catalog `motorcycle-check-item`."""
+    catalog `motorcycle-check-item`. A database trigger refuses every update and delete."""
 
     shift = models.ForeignKey(Shift, on_delete=models.PROTECT, related_name="checks")
     item = models.ForeignKey("catalogs.CatalogItem", on_delete=models.PROTECT, related_name="+")

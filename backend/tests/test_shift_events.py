@@ -468,3 +468,104 @@ def test_a_shift_event_cannot_be_voided_by_its_author(
 
     assert status_and_code(result) == ("rejected", "shift_event_not_voidable")
     assert FieldEvent.objects.get(pk=target["id"]).voided_at is None
+
+
+def test_a_motorcycle_already_in_an_open_shift_is_rejected_for_another_courier(
+    org_a: Organization,
+    make_member: MemberFactory,
+    motorcycle: Motorcycle,
+    check_items: dict[str, CatalogItem],
+) -> None:
+    ShiftFactory(organization=org_a, motorcycle=motorcycle)
+    courier = make_phone(make_member, org_a)
+
+    result = only_result(courier.sync([open_event("M-03")]))
+
+    assert status_and_code(result) == ("rejected", "motorcycle_in_use")
+    assert result["params"] == {}
+    assert not Shift.objects.filter(courier=courier.user).exists()
+
+
+def test_a_motorcycle_is_free_again_once_its_shift_closed(
+    org_a: Organization,
+    make_member: MemberFactory,
+    motorcycle: Motorcycle,
+    check_items: dict[str, CatalogItem],
+) -> None:
+    ShiftFactory(
+        organization=org_a, motorcycle=motorcycle, is_closed=True, odometer_close_km=12_000
+    )
+    courier = make_phone(make_member, org_a)
+
+    result = only_result(courier.sync([open_event("M-03")]))
+
+    assert status_and_code(result) == ("accepted", "accepted")
+
+
+def test_a_blocked_motorcycle_is_reported_blocked_before_in_use(
+    org_a: Organization,
+    make_member: MemberFactory,
+    motorcycle: Motorcycle,
+    check_items: dict[str, CatalogItem],
+) -> None:
+    ShiftFactory(organization=org_a, motorcycle=motorcycle)
+    Motorcycle.objects.filter(pk=motorcycle.pk).update(
+        is_blocked=True, blocked_reason="out_of_service"
+    )
+    courier = make_phone(make_member, org_a)
+
+    result = only_result(courier.sync([open_event("M-03")]))
+
+    assert status_and_code(result) == ("rejected", "motorcycle_blocked")
+
+
+def test_a_severe_check_wins_over_a_decreased_odometer(
+    org_a: Organization,
+    make_member: MemberFactory,
+    motorcycle: Motorcycle,
+    check_items: dict[str, CatalogItem],
+) -> None:
+    ShiftFactory(
+        organization=org_a,
+        motorcycle=motorcycle,
+        is_closed=True,
+        odometer_close_km=13_000,
+    )
+    courier = make_phone(make_member, org_a)
+    severe = [{"item": "lights", "result": "severe"}]
+
+    result = only_result(
+        courier.sync([open_event("M-03", payload_odometer_km=12_000, payload_checks=severe)])
+    )
+
+    assert status_and_code(result) == ("in_review", "severe_check")
+
+
+def test_the_last_known_odometer_follows_the_server_receipt_not_the_phone_clock(
+    org_a: Organization,
+    make_member: MemberFactory,
+    motorcycle: Motorcycle,
+    check_items: dict[str, CatalogItem],
+) -> None:
+    now = timezone.now()
+    ShiftFactory(
+        organization=org_a,
+        motorcycle=motorcycle,
+        is_closed=True,
+        odometer_close_km=15_000,
+        opened_at_device=now + timedelta(days=30),  # a wrong phone clock, far in the future
+        opened_event__server_received_at=now - timedelta(days=3),
+    )
+    ShiftFactory(
+        organization=org_a,
+        motorcycle=motorcycle,
+        is_closed=True,
+        odometer_close_km=12_500,
+        opened_at_device=now - timedelta(days=2),
+        opened_event__server_received_at=now - timedelta(days=2),
+    )
+    courier = make_phone(make_member, org_a)
+
+    result = only_result(courier.sync([open_event("M-03", payload_odometer_km=12_500)]))
+
+    assert status_and_code(result) == ("accepted", "accepted")

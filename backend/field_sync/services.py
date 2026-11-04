@@ -58,10 +58,15 @@ from field_sync.exceptions import (
     SyncInProgressError,
 )
 from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent
-from field_sync.registry import EventContext, EventHandler, OrgScopedRequest, find_handler
+from field_sync.registry import (
+    EventContext,
+    EventHandler,
+    OrgScopedRequest,
+    find_handler,
+    run_envelope_checks,
+)
 from field_sync.selectors import Changes, StoredEvent, build_changes, find_stored_event
 from reviews.services import create_review_item
-from shifts.guard import check_event_shift
 
 logger = logging.getLogger(__name__)
 
@@ -136,7 +141,9 @@ def set_batch_lock_timeout() -> None:
 
 
 def check_deferred_constraints_now() -> None:
-    """Run the deferred foreign key checks here, inside `sync_batch`'s error mapping.
+    """Run the deferred foreign key checks here, inside `sync_batch`'s error mapping
+    (`connection.check_constraints()`: Django's own `SET CONSTRAINTS ALL IMMEDIATE` then
+    `ALL DEFERRED` on PostgreSQL).
 
     Django's foreign keys are checked at commit. In a final upload this block is only a savepoint
     and the real commit is the mixin's, outside the `try`: a lock wait (`55P03`) on a referenced
@@ -147,9 +154,7 @@ def check_deferred_constraints_now() -> None:
     transaction ends, and domain rows that point at a `FieldEvent` before the pipeline inserts it
     (`Shift.opened_event`) rely on the deferral for the next event or batch of the same transaction.
     """
-    with connection.cursor() as cursor:
-        cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")
-        cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+    connection.check_constraints()
 
 
 def sync_batch(
@@ -223,7 +228,7 @@ class EventProcessor:
             fields = {name: [item["code"] for item in items] for name, items in codes.items()}
             raise EventRejected(INVALID_PAYLOAD, {"fields": fields}) from None
         shift_signal = (
-            check_event_shift(organization, self.batch.user, envelope)
+            run_envelope_checks(organization, self.batch.user, envelope)
             if handler.checks_shift
             else None
         )

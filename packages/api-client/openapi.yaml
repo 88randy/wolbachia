@@ -2234,6 +2234,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/ShiftStatusEnum'
           readOnly: true
+          default: open
         opened_at_device:
           type: string
           format: date-time

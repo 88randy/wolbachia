@@ -34,6 +34,10 @@ export const sync = {
     "Tu sesión ya había terminado cuando se envió este registro, así que un supervisor lo revisará. Inicia sesión de nuevo si necesitas seguir trabajando.",
   "sync.result.shiftAlreadyOpen":
     "Ya tienes una jornada abierta, así que no se inició otra. Continúa con la jornada abierta o ciérrala primero.",
+  "sync.result.motorcycleInUse":
+    "Esta moto ya está en una jornada abierta. Elige otra o avisa a tu supervisor.",
+  "sync.result.capturedAfterShiftClose":
+    "Este registro se capturó después de cerrar la jornada. Se guardó y un supervisor lo revisará. No tienes que hacer nada.",
   "sync.result.motorcycleUnknown":
     "El servidor no conoce esta moto. Revisa el código e inténtalo de nuevo; si sigue igual, avisa a tu supervisor.",
   "sync.result.motorcycleBlocked":

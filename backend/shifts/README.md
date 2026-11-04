@@ -16,7 +16,8 @@ The courier's shift ("jornada", issue #68): the day that frames all field work. 
 Rules for code here:
 
 - Shifts are written only by the sync handlers. There is no `POST`, `PUT` or `DELETE`; nothing is deleted.
-- A handler validates its own rules and raises `EventRejected` / `EventNeedsReview`; the partial unique index `shift_one_open_per_courier` is only the backstop (an `IntegrityError` would be a `500` for the whole batch).
+- `guard.py` is registered with `field_sync.registry.register_envelope_check` from `ShiftsConfig.ready()`; `field_sync` does not import `shifts`.
+- A handler validates its own rules and raises `EventRejected` / `EventNeedsReview`; the partial unique indexes `shift_one_open_per_courier` and `shift_one_open_per_motorcycle` are only the backstop (and a reused shift id that loses a primary key race is caught in its own savepoint) (an `IntegrityError` would be a `500` for the whole batch).
 - Row locks, in order: `Motorcycle` (open), `Shift` (close). Both come after the account locks of [`accounts/README.md`](../accounts/README.md).
 - A new result code needs a row in `docs/sync.md` and `sync.result.*` keys in both languages of `packages/i18n` (a test checks it).
 - The `Motorcycle` table has no API or admin yet (a seed or a later issue creates them); the clearing of a motorcycle blocked by a severe check is also a later issue.

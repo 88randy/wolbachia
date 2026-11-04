@@ -976,6 +976,7 @@ export interface components {
             /** Format: uuid */
             readonly motorcycle: string;
             readonly motorcycle_code: string;
+            /** @default open */
             readonly status: components["schemas"]["ShiftStatusEnum"];
             /** Format: date-time */
             readonly opened_at_device: string;

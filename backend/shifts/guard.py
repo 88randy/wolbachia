@@ -7,7 +7,7 @@ out with `EventHandler.checks_shift=False`) is checked here by the sync pipeline
   `rejected` with `shift_not_open` (one answer for all three, so nothing leaks);
 - a shift that is closed is fine for an event the phone captured before it closed (`device_time`
   up to `closed_at_device`: offline work reaches the server after the close); a later event is
-  stored `in_review` with `shift_not_open`;
+  stored `in_review` with `captured_after_shift_close`;
 - an open shift accepts it.
 """
 
@@ -15,7 +15,7 @@ from accounts.models import User
 from field_sync.envelope import EventEnvelope
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from organizations.models import Organization
-from shifts.codes import SHIFT_NOT_OPEN
+from shifts.codes import CAPTURED_AFTER_SHIFT_CLOSE, SHIFT_NOT_OPEN
 from shifts.models import Shift, ShiftStatus
 
 
@@ -35,4 +35,4 @@ def check_event_shift(
     closed_at = shift.closed_at_device
     if closed_at is not None and envelope.device_time <= closed_at:
         return None
-    return EventNeedsReview(SHIFT_NOT_OPEN, {"shift_id": str(shift_id)})
+    return EventNeedsReview(CAPTURED_AFTER_SHIFT_CLOSE, {"shift_id": str(shift_id)})

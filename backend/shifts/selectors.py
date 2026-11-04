@@ -37,11 +37,12 @@ def list_shifts(scoped: QuerySet[Any], filters: ShiftFilters) -> QuerySet[Shift]
 
 
 def last_known_km(motorcycle: Motorcycle) -> int | None:
-    """The odometer the motorcycle last reported: the close reading of its latest shift, or its
-    open reading while that shift is still open. `None` for a motorcycle with no shift yet."""
+    """The odometer the motorcycle last reported: the close reading of its latest shift (by the
+    server's receipt of its opening event, not the phone's clock), or its open reading while that
+    shift is still open. `None` for a motorcycle with no shift yet."""
     latest = (
         Shift.objects.filter(motorcycle=motorcycle)
-        .order_by("-opened_at_device", "-id")
+        .order_by("-opened_event__server_received_at", "-id")
         .values_list("odometer_open_km", "odometer_close_km")
         .first()
     )
