@@ -38,9 +38,9 @@ src/locales/
 Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`.
 
 - A new key goes in the file named after its first segment, in **both** languages: `auth.login.title` -> `es-MX/auth.ts` and `en/auth.ts`.
-- A new area (first segment) means: create `es-MX/<area>.ts` and `en/<area>.ts` (copy a small pair such as `common.ts`), then add one line to each `index.ts` and the area to the list in `test/areas.test.ts`.
+- A new area (first segment) means: create `es-MX/<area>.ts` and `en/<area>.ts` (copy a small pair such as `common.ts`), then add one line to each `index.ts`. `test/areas.test.ts` reads the directories, so it needs no edit.
 - Do not create a second file for an existing area and do not put keys of one area in another file. `AreaCatalog<"area">` (`satisfies` in each es-MX file) makes `tsc` fail when a key does not start with its file's area, so a key cannot be defined in two files. `test/areas.test.ts` also checks that no key is overwritten when composing.
-- `test/fixtures/catalogs.snapshot.json` is the catalog as it was before the split (#67). The test only requires that every key in it still exists with the same text, so adding keys never touches the fixture (that would bring back the conflicts the split removes). Changing or removing an existing text on purpose means updating the fixture in the same PR. At the split, the composed catalogs were also checked for exact deep equality with it.
+- The split was verified equal to the previous catalogs in PR #70.
 
 ## Key convention: `area.screen.element`
 
