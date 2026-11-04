@@ -129,7 +129,8 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `SYNC_MAX_EVENTS` | `200` | Events per batch (`413`) [ASSUMPTION] |
 | `SYNC_MAX_EVENT_PAYLOAD_BYTES` | `16384` | Per-event payload (`event_payload_too_large`) [ASSUMPTION] |
 | `THROTTLE_FIELD_SYNC_RATE` | `60/min` | Sync rate limit per device [ASSUMPTION] |
-| `SYNC_CURSOR_MAX_AGE_SECONDS` | `604800` | Lifetime of a `changes.cursor` (7 days) |
+| `SYNC_CURSOR_MAX_AGE_SECONDS` | `2592000` | Lifetime of a `changes.cursor` (30 days) |
+| `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for an event-id bucket lock (then `429 sync_in_progress`) |
 | `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
 
 ## Dependencies (verified on PyPI, 2026-11-03)

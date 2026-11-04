@@ -63,7 +63,7 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 
 | Status | `code` | When |
 |---|---|---|
-| `400` | `validation_error` | Invalid envelope, `device_id`, `sent_at`, UUID, etc. (`fields` says where) |
+| `400` | `validation_error` | Invalid envelope, `device_id`, `sent_at`, UUID, etc. (`fields` says where). `fields.sent_at` with code `out_of_range`: the phone's date and time are wrong. **For the app (#6):** ask the courier to fix the device date and time; nothing is lost, the events stay in the outbox and are sent after the fix |
 | `400` | `invalid_cursor` | The cursor was not issued by this server for this organization and user, or was edited |
 | `400` | `parse_error` | Body is not JSON (or is nested beyond what the parser can follow) |
 | `401` | `not_authenticated`, `invalid_token`, `token_expired`, `session_revoked` | No bearer token, bad or old token, revoked session outside the final upload |
@@ -104,7 +104,7 @@ Handlers of each epic may add their own codes (`EventRejected(code, params)`, `E
 
 ## Guarantees
 
-- **Idempotent.** The event `id` is the primary key. The same id again (also concurrently, also twice in one batch) returns the stored result and creates nothing. Each event runs in its own savepoint: the `INSERT` is the arbiter of a race, and the loser's domain writes roll back with its savepoint. The same id with other content returns the stored result and logs a warning (`payload_sha256` differs). The event ids of a batch are locked in sorted order before processing (a blocking PostgreSQL advisory lock per id; short and ordered, so no deadlock), so two couriers that share an id run one after the other and the second finds the first one's row (decision 72). An id stored by another organization, device or user is `event_id_conflict`.
+- **Idempotent.** The event `id` is the primary key. The same id again (also concurrently, also twice in one batch) returns the stored result and creates nothing. Each event runs in its own savepoint: the `INSERT` is the arbiter of a race, and the loser's domain writes roll back with its savepoint. The same id with other content returns the stored result and logs a warning (`payload_sha256` differs). Before processing, the event ids of a batch are hashed into 16 buckets and the distinct buckets are locked in ascending order (PostgreSQL advisory locks, at most 16 round trips however many events; ordered, so no deadlock; each wait is capped by `SYNC_LOCK_TIMEOUT_MS` and then answers `429 sync_in_progress`). Two couriers that share an id share its bucket, so they run one after the other and the second finds the first one's row (decision 72). An id stored by another organization, device or user is `event_id_conflict`.
 - **One batch per courier at a time.** Batches of one (organization, user) are serialized with a PostgreSQL advisory transaction lock that is *tried*, never waited for: a second batch (for example from another phone of the same courier) is answered `429 sync_in_progress` with `Retry-After` at once, so a burst of retries cannot exhaust workers or connections (decision 71). The pull of `changes` runs inside the same locked transaction. Inside a batch, events are processed in `(device_time, id)` order (a void sent before its original in the array still works). An event older than the last accepted one is still processed: offline is normal.
 - **Partial batches.** An invalid event never blocks the others: its domain writes roll back and the rejected `FieldEvent` is stored with its `ReviewItem`. Its payload is stored as received, except (decision 74) when it is too large, too deep or not storable (lone surrogate, non-finite number): then a marker `{"_not_stored": "<code>", "size_bytes": n}` is stored instead, so a hostile phone cannot fill the table with junk; a NUL character is replaced by U+FFFD.
 - **Precedence** when several statuses apply: `rejected` over `in_review` over `accepted`. Among in-review reasons: `final_upload_after_revoke`, then a handler's own, then `clock_skew`.
@@ -125,12 +125,15 @@ All are environment settings (technical limits, not business rules). Values are 
 | `SYNC_MAX_EVENT_PAYLOAD_BYTES` | `16384` (16 KB) | Per event `event_payload_too_large` (canonical JSON size) |
 | `THROTTLE_FIELD_SYNC_RATE` | `60/min` | `429` per device (not per IP or user) |
 | `API_CURSOR_PAGE_SIZE` | `100` | Page of `changes.reviews` |
-| `SYNC_CURSOR_MAX_AGE_SECONDS` | `604800` (7 days) | A `changes.cursor` older than this is `invalid_cursor` |
+| `SYNC_CURSOR_MAX_AGE_SECONDS` | `2592000` (30 days) | A `changes.cursor` older than this is `invalid_cursor`: after a long inactivity the phone does a clean resync (recovery above) |
+| `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for an event-id bucket lock; then `429 sync_in_progress` |
 | `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
 
 ## The `changes.cursor`
 
-A signed token (`django.core.signing`) bound to the organization and the user and valid for `SYNC_CURSOR_MAX_AGE_SECONDS`: a forged, edited, copied or expired cursor is `400 invalid_cursor` (recovery above). It is a strict `(created_at, id)` keyset position. That is gap-free because every batch of a courier holds the same lock and pulls inside it: a review item cannot commit behind a cursor that was already issued (the `created_at` of every item comes from the server clock; clocks of several app servers are assumed to agree within milliseconds). The phone still deduplicates by `id` (a retry after `invalid_cursor` returns items again).
+A signed token (`django.core.signing`) bound to the organization and the user and valid for `SYNC_CURSOR_MAX_AGE_SECONDS`: a forged, edited, copied or expired cursor is `400 invalid_cursor` (recovery above). It holds the `courier_sequence` of the last item delivered: a counter per (organization, courier), assigned `max + 1` when the review item is created, never a timestamp. A clock that goes back, or two items created in the same instant, cannot make the phone skip an item. That is gap-free because the sequence is assigned, and the pull runs, under the courier's batch lock. The phone still deduplicates by `id` (a retry after `invalid_cursor` returns items again).
+
+> **Rule for every writer of a courier's review items (#22 and any later epic):** take `field_sync.services.lock_courier_batches` for that (organization, courier) first and create the item only through `reviews.services.create_review_item`, which assigns `courier_sequence`. A writer outside the lock could commit a lower sequence behind a cursor already issued. The unique constraint `(organization, courier, courier_sequence)` only catches a writer that forgot the lock; it does not replace it.
 
 ## The handler registry (`field_sync/registry.py`)
 
@@ -165,7 +168,7 @@ Rules for handlers: validate your own unique constraints and raise `EventRejecte
 
 ### `record.void`
 
-`{type: "record.void", payload: {reason}, voids_event_id}`. The author of an event voids it (not when the void itself goes to review: see "Doubtful events" above): the target keeps its row and gets its void fields; the void event references it. Another user's event is `void_target_not_owned`; one of another organization or a missing one `void_target_not_found`; a second void `already_voided`. [ASSUMPTION] Rejected events and void events are not valid targets (`void_target_not_found`). Supervisor corrections from the web are #22.
+`{type: "record.void", payload: {reason}, voids_event_id}`. The author of an event voids it (not when the void itself goes to review: see "Doubtful events" above). **Notes for #22 (accepting a void in review):** applying it must run the target type's `on_void` hook, exactly as an ordinary void does, and may be refused by it; and when two voids in review point at the same target, accepting the first one voids it and the second resolves as `already_voided`. Both can exist because a void in review leaves the target untouched: the target keeps its row and gets its void fields; the void event references it. Another user's event is `void_target_not_owned`; one of another organization or a missing one `void_target_not_found`; a second void `already_voided`. [ASSUMPTION] Rejected events and void events are not valid targets (`void_target_not_found`). Supervisor corrections from the web are #22.
 
 ## Review items
 
