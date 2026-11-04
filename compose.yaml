@@ -1,13 +1,9 @@
 # Local development stack. `docker compose up web` serves the web app on http://localhost:5173.
 #
-# The backend services (api, database, Redis, Celery...) will come from backend/compose.yaml
-# (issue #2). Compose fails on an `include` whose file is missing (checked with v5.4: it has no
-# "optional" switch), so the include is NOT here yet. When #2 merges, add at the top:
-#
-#   include:
-#     - path: backend/compose.yaml
-#
-# and `docker compose up` starts everything; `docker compose up web` keeps starting only this one.
+# The backend services (api, db, redis, worker) come from backend/compose.yaml (issue #2).
+# `docker compose up` starts everything; `docker compose up web` starts only the web app.
+include:
+  - path: backend/compose.yaml
 
 services:
   web:
