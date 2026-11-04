@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import UTC, date, datetime, time
+from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
@@ -8,9 +8,15 @@ from django.utils import timezone
 
 from accounts.models import User
 from core.exceptions import FieldValidationError
+from core.services import lock_record_for_update, void_record
+from core.time import local_today
+from rules.exceptions import VersionNotScheduledError
 from rules.models import RuleParameter, RuleParameterVersion, ValueType
 from rules.selectors import to_number
 
+# A version can be scheduled at most this far ahead: it keeps typos (2206 for 2026) out.
+EFFECTIVE_FROM_HORIZON_DAYS = 365
+TOO_FAR = "effective_from_too_far"
 PAST_DATE = "effective_from_in_past"
 DUPLICATE_DATE = "duplicate_effective_date"
 OUT_OF_RANGE = "out_of_range"
@@ -26,19 +32,18 @@ class RuleVersionSpec:
     reason: str
 
 
-def local_today(timezone_name: str, now: datetime) -> date:
-    return now.astimezone(ZoneInfo(timezone_name)).date()
-
-
 def resolve_effective_from(requested: date, timezone_name: str, now: datetime) -> datetime:
     """The UTC instant a version requested for a local date takes effect.
 
     Today takes effect at `now` (never retroactive); a future date at 00:00 in the organization's
-    timezone; a past date is a field error (`effective_from_in_past`).
+    timezone. A past date is a field error (`effective_from_in_past`), and so is one further than
+    `EFFECTIVE_FROM_HORIZON_DAYS` ahead (`effective_from_too_far`).
     """
     today = local_today(timezone_name, now)
     if requested < today:
         raise FieldValidationError("effective_from", PAST_DATE)
+    if requested > today + timedelta(days=EFFECTIVE_FROM_HORIZON_DAYS):
+        raise FieldValidationError("effective_from", TOO_FAR)
     if requested == today:
         return now
     midnight = datetime.combine(requested, time.min, tzinfo=ZoneInfo(timezone_name))
@@ -69,9 +74,12 @@ def create_rule_version(
 ) -> RuleParameterVersion:
     """Schedule a new value for a parameter (writes RuleParameterVersion). Never edits a version.
 
-    The parameter row is locked, so two admins scheduling the same date cannot both succeed:
-    the second gets `duplicate_effective_date`. Field errors: `effective_from_in_past`,
-    `duplicate_effective_date`, `not_an_integer`, `out_of_range` (with params `{min, max}`).
+    The parameter row is locked, so two admins scheduling the same future date cannot both
+    succeed: the second gets `duplicate_effective_date` (a voided version does not count, so a
+    wrong one is voided first). A version for today is always allowed: it takes effect now and
+    the latest `effective_from` wins, which lets an admin correct a seeded value on day one.
+    Field errors: `effective_from_in_past`, `effective_from_too_far`, `duplicate_effective_date`,
+    `not_an_integer`, `out_of_range` (with params `{min, max}`).
     """
     with transaction.atomic():
         locked = (
@@ -80,10 +88,11 @@ def create_rule_version(
             .get(pk=parameter.pk)
         )
         validate_value(locked, spec.value)
+        now = timezone.now()
         effective_from = resolve_effective_from(
-            spec.effective_date, locked.organization.timezone, timezone.now()
+            spec.effective_date, locked.organization.timezone, now
         )
-        if locked.versions.filter(effective_date=spec.effective_date).exists():
+        if effective_from > now and _is_date_taken(locked, spec.effective_date):
             raise FieldValidationError("effective_from", DUPLICATE_DATE)
         return RuleParameterVersion.objects.create(
             organization_id=locked.organization_id,
@@ -94,3 +103,25 @@ def create_rule_version(
             reason=spec.reason,
             created_by=user,
         )
+
+
+def _is_date_taken(parameter: RuleParameter, effective_date: date) -> bool:
+    return RuleParameterVersion.objects.filter(
+        parameter=parameter, effective_date=effective_date, voided_at__isnull=True
+    ).exists()
+
+
+def void_rule_version(
+    version: RuleParameterVersion, user: User, reason: str
+) -> RuleParameterVersion:
+    """Void a version that has not taken effect yet (writes the void fields). Never deletes.
+
+    A version already in force or superseded is history that records may rely on, so it cannot
+    be voided: `VersionNotScheduledError` (409). A voided version is excluded from the value
+    in force and from the snapshots but stays in the history.
+    """
+    with transaction.atomic():
+        locked = lock_record_for_update(version)
+        if locked.effective_from <= timezone.now():
+            raise VersionNotScheduledError
+        return void_record(locked, user, reason)

@@ -8,13 +8,14 @@ The same value is the `ETag`, which lets a client revalidate with `If-None-Match
 import hashlib
 import json
 from collections.abc import Mapping
-from datetime import UTC, datetime
 from typing import Any
 
 from drf_spectacular.utils import OpenApiParameter
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
+
+from core.constants import ORGANIZATION_HEADER
 
 SNAPSHOT_CACHE_CONTROL = "private, no-cache"
 WEAK_PREFIX = "W/"
@@ -42,11 +43,6 @@ def with_version(payload: Mapping[str, Any]) -> dict[str, Any]:
     return {"version": snapshot_hash(payload), **payload}
 
 
-def format_instant(value: datetime) -> str:
-    """ISO 8601 UTC with a `Z` suffix, as every timestamp of the API."""
-    return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
-
-
 def etag_matches(request: Request, version: str) -> bool:
     """True when `If-None-Match` lists the version (or `*`); weak `W/` prefixes are ignored."""
     parts = {part.strip() for part in request.headers.get("If-None-Match", "").split(",")}
@@ -62,7 +58,12 @@ def snapshot_response(request: Request, snapshot: Mapping[str, Any]) -> Response
     caller who could not read the snapshot.
     """
     version = str(snapshot["version"])
-    headers = {"ETag": f'"{version}"', "Cache-Control": SNAPSHOT_CACHE_CONTROL}
+    headers = {
+        "ETag": f'"{version}"',
+        "Cache-Control": SNAPSHOT_CACHE_CONTROL,
+        # The same URL answers differently per active organization.
+        "Vary": ORGANIZATION_HEADER,
+    }
     if etag_matches(request, version):
         return Response(status=status.HTTP_304_NOT_MODIFIED, headers=headers)
     return Response(dict(snapshot), headers=headers)

@@ -1,12 +1,9 @@
-from datetime import UTC, datetime, timedelta, timezone
-
 import pytest
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
-from core.versioning import (
+from core.snapshots import (
     etag_matches,
-    format_instant,
     snapshot_hash,
     snapshot_response,
     with_version,
@@ -71,8 +68,7 @@ def test_response_is_200_with_etag_when_the_client_is_stale() -> None:
     assert response["ETag"] == f'"{VERSION}"'
 
 
-def test_format_instant_is_utc_with_z_suffix() -> None:
-    local = datetime(2026, 11, 3, 18, 0, tzinfo=timezone(timedelta(hours=-6)))
+def test_response_varies_by_organization_header() -> None:
+    response = snapshot_response(request_with(None), {"version": VERSION})
 
-    assert format_instant(local) == "2026-11-04T00:00:00Z"
-    assert format_instant(datetime(2026, 11, 4, tzinfo=UTC)) == "2026-11-04T00:00:00Z"
+    assert response["Vary"] == "X-Organization"

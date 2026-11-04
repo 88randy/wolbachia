@@ -14,9 +14,9 @@ from decimal import Decimal
 from django.db import transaction
 from django.utils import timezone
 
+from core.time import local_today
 from organizations.models import Organization
 from rules.models import RuleParameter, RuleParameterVersion, Unit, ValueType
-from rules.services import local_today
 
 SEED_REASON = "seed: design brief"
 # [ASSUMPTION] Every parameter is a non-negative quantity (distance, speed, time, count, yield).
@@ -45,6 +45,14 @@ DEFAULT_PARAMETER_SEEDS = (
     ParameterSeed("reminder_minutes_before_end", ValueType.INTEGER, Unit.MINUTES, 60),
     ParameterSeed("max_paddle_reuses", ValueType.INTEGER, Unit.COUNT, 2),
 )
+
+
+def missing_parameter_keys(organization: Organization) -> list[str]:
+    """Read-only: default parameters the organization does not have yet."""
+    existing = set(
+        RuleParameter.objects.filter(organization=organization).values_list("key", flat=True)
+    )
+    return [seed.key for seed in DEFAULT_PARAMETER_SEEDS if seed.key not in existing]
 
 
 def seed_default_rule_parameters(organization: Organization) -> list[RuleParameter]:

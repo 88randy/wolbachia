@@ -3,30 +3,12 @@ from typing import Any
 from django.db.models import Prefetch, QuerySet
 
 from catalogs.models import Catalog, CatalogItem
-from core.versioning import with_version
+from core.snapshots import with_version
 from organizations.models import Organization
 
 
 def list_catalogs(organization: Organization) -> QuerySet[Catalog]:
     return Catalog.objects.for_org(organization).order_by("slug")
-
-
-def list_items(catalog: Catalog) -> QuerySet[CatalogItem]:
-    """Every item of the catalog, active or not, in display order ("Other" last)."""
-    return CatalogItem.objects.filter(catalog=catalog)
-
-
-def find_item(organization: Organization, catalog_slug: str, code: str) -> CatalogItem | None:
-    """An item by catalog slug and code, active or not.
-
-    Sync (#5) uses it for events that reference an item deactivated after the phone downloaded
-    its snapshot: the item still exists and keeps showing on old records.
-    """
-    return (
-        CatalogItem.objects.for_org(organization)
-        .filter(catalog__slug=catalog_slug, code=code)
-        .first()
-    )
 
 
 def _snapshot_item(item: CatalogItem) -> dict[str, Any]:

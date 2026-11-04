@@ -6,19 +6,24 @@ import pytest
 from django.core.management import CommandError, call_command
 from django.utils import timezone
 
+from catalogs import permissions as catalog_codes
 from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
-from core import permission_codes as codes
+from organizations.defaults import (
+    DEFAULT_PROFILE_PERMISSIONS,
+    seed_default_permission_codes,
+    seed_organization_defaults,
+)
 from organizations.models import Organization, Profile
 from organizations.services import (
+    DEFAULT_PROFILE_SEEDS,
     AdminSpec,
     OrganizationSpec,
     bootstrap_organization,
     create_organization,
-    seed_default_permission_codes,
     seed_default_profiles,
-    seed_organization_defaults,
 )
+from rules import permissions as rule_codes
 from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS
 from tests.factories import OrganizationFactory
@@ -201,18 +206,45 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         p.slug: set(p.permission_codes) for p in Profile.objects.filter(organization=organization)
     }
 
-    reader = {codes.CATALOG_READ, codes.RULE_PARAMETER_READ}
+    reader = {catalog_codes.CATALOG_READ, rule_codes.RULE_PARAMETER_READ}
     assert by_slug["courier"] == by_slug["supervisor"] == by_slug["entomologist"] == reader
     assert by_slug["community_promoter"] == reader
     assert by_slug["admin"] == {
-        codes.CATALOG_READ,
-        codes.CATALOG_ITEM_CREATE,
-        codes.CATALOG_ITEM_UPDATE,
-        codes.CATALOG_ITEM_DEACTIVATE,
-        codes.CATALOG_ITEM_ACTIVATE,
-        codes.RULE_PARAMETER_READ,
-        codes.RULE_PARAMETER_VERSION_CREATE,
+        catalog_codes.CATALOG_READ,
+        catalog_codes.CATALOG_ITEM_CREATE,
+        catalog_codes.CATALOG_ITEM_UPDATE,
+        catalog_codes.CATALOG_ITEM_DEACTIVATE,
+        catalog_codes.CATALOG_ITEM_ACTIVATE,
+        rule_codes.RULE_PARAMETER_READ,
+        rule_codes.RULE_PARAMETER_VERSION_READ,
+        rule_codes.RULE_PARAMETER_VERSION_CREATE,
+        rule_codes.RULE_PARAMETER_VERSION_VOID,
     }
+
+
+def test_only_admin_reads_the_version_history_by_default() -> None:
+    organization = create_organization(SPEC)
+
+    holders = [
+        p.slug
+        for p in Profile.objects.filter(organization=organization)
+        if rule_codes.RULE_PARAMETER_VERSION_READ in p.permission_codes
+    ]
+
+    assert holders == ["admin"]
+
+
+def test_default_permission_slugs_are_the_default_profile_slugs() -> None:
+    assert set(DEFAULT_PROFILE_PERMISSIONS) == {seed.slug for seed in DEFAULT_PROFILE_SEEDS}
+
+
+def test_seeded_codes_are_recorded_on_the_profile() -> None:
+    organization = create_organization(SPEC)
+
+    courier = Profile.objects.get(organization=organization, slug="courier")
+
+    assert courier.created_by_seed is True
+    assert courier.seeded_permission_codes == ["catalog.read", "rule_parameter.read"]
 
 
 def test_seed_adds_permission_codes_without_removing_existing() -> None:
@@ -223,36 +255,114 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     )
 
     seed_default_permission_codes(organization)
-    seed_default_permission_codes(organization)
 
     courier = Profile.objects.get(organization=organization, slug="courier")
     assert courier.permission_codes == ["catalog.read", "rule_parameter.read", "widget.read"]
 
 
-def test_seed_skips_organizations_with_other_profile_slugs() -> None:
-    organization = OrganizationFactory()
-    Profile.objects.create(organization=organization, slug="custom", label_es="C", label_en="C")
+def test_seed_never_regrants_a_code_an_admin_revoked() -> None:
+    organization = create_organization(SPEC)
+    Profile.objects.filter(organization=organization, slug="courier").update(
+        permission_codes=["catalog.read"]
+    )
 
     seed_default_permission_codes(organization)
 
+    courier = Profile.objects.get(organization=organization, slug="courier")
+    assert courier.permission_codes == ["catalog.read"]
+
+
+def test_seed_grants_only_codes_never_seeded_before() -> None:
+    organization = create_organization(SPEC)
+    Profile.objects.filter(organization=organization, slug="courier").update(
+        seeded_permission_codes=["catalog.read"], permission_codes=["catalog.read"]
+    )
+
+    plan = seed_default_permission_codes(organization)
+
+    assert plan.grants == {"courier": ("rule_parameter.read",)}
+
+
+def test_seed_skips_profiles_not_created_by_the_seed_and_reports_them() -> None:
+    organization = OrganizationFactory()
+    Profile.objects.create(organization=organization, slug="courier", label_es="C", label_en="C")
+
+    plan = seed_default_permission_codes(organization)
+
+    assert plan.skipped == ("courier",)
+    assert Profile.objects.get(organization=organization, slug="courier").permission_codes == []
+
+
+def test_seed_ignores_profiles_with_other_slugs() -> None:
+    organization = OrganizationFactory()
+    Profile.objects.create(
+        organization=organization,
+        slug="custom",
+        label_es="C",
+        label_en="C",
+        created_by_seed=True,
+    )
+
+    plan = seed_default_permission_codes(organization)
+
+    assert plan.skipped == ()
     assert Profile.objects.get(organization=organization, slug="custom").permission_codes == []
 
 
-def test_seed_organization_defaults_command_updates_an_existing_organization() -> None:
+def run_command(*args: str) -> str:
+    out = StringIO()
+    call_command("seed_organization_defaults", *args, stdout=out)
+    return out.getvalue()
+
+
+def test_command_defaults_to_a_dry_run_that_writes_nothing() -> None:
     organization = OrganizationFactory()
     seed_default_profiles(organization)
 
-    call_command(
-        "seed_organization_defaults", "--organization", organization.slug, stdout=StringIO()
-    )
+    output = run_command("--organization", organization.slug)
 
+    assert "Dry run" in output
+    assert "grant to profile 'courier'" in output
+    assert Catalog.objects.filter(organization=organization).count() == 0
+    assert Profile.objects.get(organization=organization, slug="courier").permission_codes == []
+
+
+def test_command_explicit_dry_run_writes_nothing() -> None:
+    organization = OrganizationFactory()
+
+    run_command("--organization", organization.slug, "--dry-run")
+
+    assert Catalog.objects.filter(organization=organization).count() == 0
+
+
+def test_command_apply_updates_an_existing_organization() -> None:
+    organization = OrganizationFactory()
+    seed_default_profiles(organization)
+
+    output = run_command("--organization", organization.slug, "--apply")
+
+    assert "Applied" in output
     assert Catalog.objects.filter(organization=organization).count() == 9
-    assert (
-        "catalog.read"
-        in Profile.objects.get(organization=organization, slug="courier").permission_codes
-    )
+    assert RuleParameter.objects.filter(organization=organization).count() == 12
+    courier = Profile.objects.get(organization=organization, slug="courier")
+    assert "catalog.read" in courier.permission_codes
 
 
-def test_seed_organization_defaults_command_rejects_an_unknown_organization() -> None:
+def test_command_reports_skipped_profiles_and_a_clean_organization() -> None:
+    organization = OrganizationFactory()
+    Profile.objects.create(organization=organization, slug="admin", label_es="A", label_en="A")
+
+    assert "skip profile 'admin'" in run_command("--organization", organization.slug)
+
+    clean = create_organization(SPEC)
+    assert "nothing to do" in run_command("--organization", clean.slug)
+
+
+def test_command_rejects_apply_with_dry_run() -> None:
+    with pytest.raises(CommandError):
+        call_command("seed_organization_defaults", "--organization", "x", "--apply", "--dry-run")
+
+
+def test_command_rejects_an_unknown_organization() -> None:
     with pytest.raises(CommandError, match="does not exist"):
         call_command("seed_organization_defaults", "--organization", "nope")

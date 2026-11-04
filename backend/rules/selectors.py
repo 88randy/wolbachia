@@ -4,13 +4,17 @@ from typing import Any, cast
 
 from django.db.models import Case, CharField, Min, OuterRef, QuerySet, Subquery, Value, When
 
-from core.versioning import format_instant, with_version
+from core.snapshots import with_version
+from core.time import format_instant
 from organizations.models import Organization
 from rules.models import RuleParameter, RuleParameterVersion, ValueType
 
 STATUS_SCHEDULED = "scheduled"
 STATUS_IN_FORCE = "in_force"
 STATUS_SUPERSEDED = "superseded"
+STATUS_VOIDED = "voided"
+# Latest start wins; `created_at` breaks the tie between versions that start at the same instant.
+IN_FORCE_ORDER = ("-effective_from", "-created_at")
 
 
 def to_number(value_type: str, value: Decimal) -> int | float:
@@ -19,14 +23,23 @@ def to_number(value_type: str, value: Decimal) -> int | float:
 
 
 def get_version_in_force(parameter: RuleParameter, at: datetime) -> RuleParameterVersion | None:
-    """The latest version that started at or before `at`; None if the parameter has no value yet."""
-    return parameter.versions.filter(effective_from__lte=at).order_by("-effective_from").first()
+    """The latest non-voided version that started at or before `at`; None if there is none."""
+    started = RuleParameterVersion.objects.filter(
+        parameter=parameter, effective_from__lte=at, voided_at__isnull=True
+    )
+    return started.order_by(*IN_FORCE_ORDER).first()
 
 
 def list_versions(parameter: RuleParameter, at: datetime) -> QuerySet[RuleParameterVersion]:
-    """Full history, newest first, each version labelled `scheduled`, `in_force` or `superseded`."""
+    """Full history (voided included), newest first, each labelled with its `status`.
+
+    Statuses: `voided`, `scheduled`, `in_force` or `superseded`.
+    """
     in_force = get_version_in_force(parameter, at)
-    cases = [When(effective_from__gt=at, then=Value(STATUS_SCHEDULED))]
+    cases = [
+        When(voided_at__isnull=False, then=Value(STATUS_VOIDED)),
+        When(effective_from__gt=at, then=Value(STATUS_SCHEDULED)),
+    ]
     if in_force is not None:
         cases.append(When(pk=in_force.pk, then=Value(STATUS_IN_FORCE)))
     status = Case(*cases, default=Value(STATUS_SUPERSEDED), output_field=CharField())
@@ -34,7 +47,7 @@ def list_versions(parameter: RuleParameter, at: datetime) -> QuerySet[RuleParame
         RuleParameterVersion.objects.filter(parameter=parameter)
         .select_related("parameter")
         .annotate(status=status)
-        .order_by("-effective_from")
+        .order_by("-effective_from", "-created_at")
     )
     return cast("QuerySet[RuleParameterVersion]", history)
 
@@ -44,15 +57,13 @@ def list_parameters_with_current(
 ) -> QuerySet[RuleParameter]:
     """Parameters of the organization annotated with the version in force at `at` and the next change.
 
-    Annotations: `current_value`, `current_effective_from`, `current_version_id` (null when no
-    version applies yet) and `next_change_at` (the earliest later version). One query, no N+1.
+    Voided versions are ignored. Annotations: `current_value`, `current_effective_from`,
+    `current_version_id` (null when no version applies yet) and `next_change_at` (the earliest
+    later version). One query, no N+1.
     """
-    started = RuleParameterVersion.objects.filter(
-        parameter=OuterRef("pk"), effective_from__lte=at
-    ).order_by("-effective_from")
-    upcoming = RuleParameterVersion.objects.filter(
-        parameter=OuterRef("pk"), effective_from__gt=at
-    ).order_by("effective_from")
+    live = RuleParameterVersion.objects.filter(parameter=OuterRef("pk"), voided_at__isnull=True)
+    started = live.filter(effective_from__lte=at).order_by(*IN_FORCE_ORDER)
+    upcoming = live.filter(effective_from__gt=at).order_by("effective_from")
     return (
         RuleParameter.objects.for_org(organization)
         .annotate(
@@ -66,22 +77,12 @@ def list_parameters_with_current(
 
 
 def get_next_change_at(organization: Organization, at: datetime) -> datetime | None:
-    """When the next scheduled version of any parameter takes effect, or None."""
-    upcoming = RuleParameterVersion.objects.for_org(organization).filter(effective_from__gt=at)
+    """When the next scheduled, non-voided version of any parameter takes effect, or None."""
+    upcoming = RuleParameterVersion.objects.for_org(organization).filter(
+        effective_from__gt=at, voided_at__isnull=True
+    )
     result: datetime | None = upcoming.aggregate(next_change=Min("effective_from"))["next_change"]
     return result
-
-
-def get_values_in_force(organization: Organization, at: datetime) -> dict[str, Decimal | None]:
-    """`{key: value}` as of `at`, None for a parameter with no version yet.
-
-    Sync (#5) uses it to revalidate an event with the values that applied at its `device_time`.
-    """
-    # The stubs do not know the annotations of `list_parameters_with_current`.
-    rows = list_parameters_with_current(organization, at).values_list(  # type: ignore[misc]
-        "key", "current_value"
-    )
-    return dict(rows)
 
 
 def _snapshot_parameter(row: dict[str, Any]) -> dict[str, Any]:
@@ -101,8 +102,8 @@ def _snapshot_parameter(row: dict[str, Any]) -> dict[str, Any]:
 def build_rules_snapshot(organization: Organization, at: datetime) -> dict[str, Any]:
     """The values in force at `at` plus `next_change_at`, hashed into a `version`.
 
-    Versions scheduled for later are left out, but the earliest one is exposed as
-    `next_change_at` (and is part of the hash), so a phone knows when to ask again.
+    Versions scheduled for later (and voided ones) are left out, but the earliest scheduled one
+    is exposed as `next_change_at` (and is part of the hash), so a phone knows when to ask again.
     """
     rows = list_parameters_with_current(organization, at).values(  # type: ignore[misc]
         "key", "value_type", "unit", "current_value", "current_effective_from", "current_version_id"

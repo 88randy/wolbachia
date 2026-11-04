@@ -28,13 +28,21 @@ DEFAULT_CATALOG_SEEDS = (
         "motorcycle-check-item", "Revisión de motocicleta", "Motorcycle checklist", is_open=False
     ),
     CatalogSeed("sample-origin", "Origen de la muestra", "Sample origin"),
-    CatalogSeed("community-activity-type", "Tipo de actividad comunitaria", "Community activity"),
+    CatalogSeed(
+        "community-activity-type", "Tipo de actividad comunitaria", "Community activity type"
+    ),
     CatalogSeed("removal-reason", "Motivo de retiro", "Removal reason"),
     CatalogSeed("replacement-reason", "Motivo de reposición", "Replacement reason"),
     CatalogSeed("damage-reason", "Motivo de daño", "Damage reason"),
     CatalogSeed("ovitrap-finding", "Hallazgo en ovitrampa", "Ovitrap finding", is_open=False),
     CatalogSeed("intervention-type", "Tipo de intervención", "Intervention type"),
 )
+
+
+def missing_catalog_slugs(organization: Organization) -> list[str]:
+    """Read-only: default catalogs the organization does not have yet."""
+    existing = set(Catalog.objects.filter(organization=organization).values_list("slug", flat=True))
+    return [seed.slug for seed in DEFAULT_CATALOG_SEEDS if seed.slug not in existing]
 
 
 def seed_default_catalogs(organization: Organization) -> list[Catalog]:

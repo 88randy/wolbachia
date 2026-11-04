@@ -1,21 +1,25 @@
 """Rule parameters: thresholds the app shows but never decides (decision 5), kept per organization.
 
 Editing a parameter never overwrites a value: it adds a `RuleParameterVersion` with an effective
-date. Versions are immutable, and nothing here is deleted.
+date. Versions are insert-only; a wrong version that has not taken effect yet is voided (never
+deleted) and a corrected one is added.
 """
-
-from typing import Any
 
 from django.core.validators import RegexValidator
 from django.db import models
 
-from core.models import OrgScopedModel, OrgScopedQuerySet
-from rules.exceptions import ImmutableRecordError
+from core.models import (
+    ImmutableMixin,
+    ImmutableQuerySet,
+    OrgScopedModel,
+    VoidableMixin,
+    VoidableQuerySet,
+)
 
 KEY_MAX_LENGTH = 64
+CHOICE_MAX_LENGTH = 10
 VALUE_MAX_DIGITS = 12
 VALUE_DECIMAL_PLACES = 3
-IMMUTABLE_MESSAGE = "Rule parameter versions are never modified; add a new version instead."
 
 validate_parameter_key = RegexValidator(
     r"^[a-z][a-z0-9_]*$", "Use lowercase snake_case, e.g. max_distance_to_point_m."
@@ -44,8 +48,8 @@ class RuleParameter(OrgScopedModel):
     """
 
     key = models.CharField(max_length=KEY_MAX_LENGTH, validators=[validate_parameter_key])
-    value_type = models.CharField(max_length=10, choices=ValueType.choices)
-    unit = models.CharField(max_length=10, choices=Unit.choices)
+    value_type = models.CharField(max_length=CHOICE_MAX_LENGTH, choices=ValueType.choices)
+    unit = models.CharField(max_length=CHOICE_MAX_LENGTH, choices=Unit.choices)
     min_value = models.DecimalField(
         max_digits=VALUE_MAX_DIGITS, decimal_places=VALUE_DECIMAL_PLACES, null=True, blank=True
     )
@@ -64,32 +68,21 @@ class RuleParameter(OrgScopedModel):
         return self.key
 
 
-class ImmutableQuerySet(OrgScopedQuerySet):
-    def update(self, **kwargs: Any) -> int:  # noqa: ANN401
-        raise ImmutableRecordError(IMMUTABLE_MESSAGE)
+class VersionQuerySet(ImmutableQuerySet, VoidableQuerySet):  # type: ignore[override]
+    """Insert-only rows that can still be voided."""
 
 
-class ImmutableMixin(models.Model):
-    """Rows can be inserted but never modified: `save()` on a stored row and `update()` raise."""
-
-    objects = ImmutableQuerySet.as_manager()
-
-    class Meta:
-        abstract = True
-
-    def save(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
-        if not self._state.adding:
-            raise ImmutableRecordError(IMMUTABLE_MESSAGE)
-        super().save(*args, **kwargs)
-
-
-class RuleParameterVersion(ImmutableMixin, OrgScopedModel):
-    """One value of a parameter from `effective_from` on. Never updated, never deleted.
+class RuleParameterVersion(ImmutableMixin, VoidableMixin, OrgScopedModel):
+    """One value of a parameter from `effective_from` on. Insert-only, never deleted.
 
     `effective_from` is the instant it starts to apply (UTC). `effective_date` is the same
-    moment as a calendar date in the organization's timezone, so two versions cannot be
-    scheduled for the same local day. `created_by` is null only for seed data.
+    moment as a calendar date in the organization's timezone: the service allows one non-voided
+    version per future date (the parameter row is locked while checking). Only the void fields
+    can change, and only from null: the migration adds a PostgreSQL trigger that enforces it,
+    and forbids deleting. `created_by` is null only for seed data.
     """
+
+    mutable_fields = frozenset({"voided_at", "voided_by", "void_reason"})
 
     parameter = models.ForeignKey(RuleParameter, on_delete=models.PROTECT, related_name="versions")
     value = models.DecimalField(max_digits=VALUE_MAX_DIGITS, decimal_places=VALUE_DECIMAL_PLACES)
@@ -97,13 +90,9 @@ class RuleParameterVersion(ImmutableMixin, OrgScopedModel):
     effective_date = models.DateField()
     reason = models.TextField()
 
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["parameter", "effective_date"],
-                name="rule_version_unique_date_per_parameter",
-            )
-        ]
+    objects = VersionQuerySet.as_manager()  # type: ignore[misc,assignment]
+
+    class Meta(ImmutableMixin.Meta, VoidableMixin.Meta):
         indexes = [models.Index(fields=["parameter", "-effective_from"])]
 
     def __str__(self) -> str:

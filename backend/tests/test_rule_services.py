@@ -4,17 +4,23 @@ from decimal import Decimal
 import pytest
 from django.utils import timezone
 
-from core.exceptions import FieldValidationError
+from core.exceptions import AlreadyVoidedError, FieldValidationError
+from rules.exceptions import VersionNotScheduledError
 from rules.models import ValueType
 from rules.selectors import (
     build_rules_snapshot,
     get_next_change_at,
-    get_values_in_force,
     get_version_in_force,
     list_parameters_with_current,
     list_versions,
 )
-from rules.services import RuleVersionSpec, create_rule_version, resolve_effective_from
+from rules.services import (
+    EFFECTIVE_FROM_HORIZON_DAYS,
+    RuleVersionSpec,
+    create_rule_version,
+    resolve_effective_from,
+    void_rule_version,
+)
 from tests.factories import (
     OrganizationFactory,
     RuleParameterFactory,
@@ -294,38 +300,6 @@ def test_next_change_at_is_none_without_future_versions() -> None:
     assert get_next_change_at(OrganizationFactory(), NOW) is None
 
 
-def test_values_in_force_cover_every_parameter_including_those_without_value() -> None:
-    organization = OrganizationFactory()
-    with_value = RuleParameterFactory(organization=organization, key="with_value")
-    RuleParameterFactory(organization=organization, key="without_value")
-    RuleParameterVersionFactory(parameter=with_value, value=7)
-
-    assert get_values_in_force(organization, NOW) == {
-        "with_value": Decimal(7),
-        "without_value": None,
-    }
-
-
-def test_values_in_force_look_back_to_an_earlier_instant() -> None:
-    parameter = RuleParameterFactory()
-    RuleParameterVersionFactory(
-        parameter=parameter,
-        value=1,
-        effective_from=NOW - timedelta(days=9),
-        effective_date=date(2026, 10, 26),
-    )
-    RuleParameterVersionFactory(
-        parameter=parameter,
-        value=2,
-        effective_from=NOW - timedelta(days=1),
-        effective_date=date(2026, 11, 3),
-    )
-    org = parameter.organization
-
-    assert get_values_in_force(org, NOW - timedelta(days=5))[parameter.key] == 1
-    assert get_values_in_force(org, NOW)[parameter.key] == 2
-
-
 def test_snapshot_exposes_values_as_numbers_and_null_without_version() -> None:
     organization = OrganizationFactory()
     meters = RuleParameterFactory(
@@ -414,3 +388,119 @@ def test_snapshot_never_includes_other_organizations() -> None:
     snapshot = build_rules_snapshot(mine.organization, NOW)
 
     assert [p["key"] for p in snapshot["parameters"]] == ["mine"]
+
+
+def test_today_version_is_always_allowed_even_if_one_already_started_today(now) -> None:
+    parameter = RuleParameterFactory()
+    seeded = RuleParameterVersionFactory(
+        parameter=parameter,
+        value=50,
+        effective_from=NOW - timedelta(hours=1),
+        effective_date=date(2026, 11, 3),
+    )
+
+    corrected = create_rule_version(parameter, spec("60", date(2026, 11, 3)), UserFactory())
+
+    assert corrected.effective_from == NOW
+    assert get_version_in_force(parameter, NOW) == corrected
+    assert get_version_in_force(parameter, NOW - timedelta(minutes=30)) == seeded
+
+
+def test_a_voided_future_version_frees_its_date(now) -> None:
+    parameter = RuleParameterFactory()
+    wrong = create_rule_version(parameter, spec("99", date(2026, 11, 10)), UserFactory())
+    void_rule_version(wrong, UserFactory(), "typo")
+
+    fixed = create_rule_version(parameter, spec("60", date(2026, 11, 10)), UserFactory())
+
+    assert fixed.value == 60
+
+
+def test_effective_date_beyond_the_horizon_is_rejected(now) -> None:
+    far = date(2026, 11, 3) + timedelta(days=EFFECTIVE_FROM_HORIZON_DAYS + 1)
+
+    with pytest.raises(FieldValidationError) as error:
+        create_rule_version(RuleParameterFactory(), spec(on=far), UserFactory())
+
+    assert field_error(error) == ("effective_from", "effective_from_too_far")
+
+
+def test_effective_date_at_the_horizon_is_accepted(now) -> None:
+    edge = date(2026, 11, 3) + timedelta(days=EFFECTIVE_FROM_HORIZON_DAYS)
+
+    assert create_rule_version(RuleParameterFactory(), spec(on=edge), UserFactory())
+
+
+def test_void_marks_a_scheduled_version_with_author_and_reason(now) -> None:
+    version = create_rule_version(RuleParameterFactory(), spec(), UserFactory())
+    admin = UserFactory()
+
+    voided = void_rule_version(version, admin, "wrong value")
+
+    assert (voided.voided_by, voided.void_reason) == (admin, "wrong value")
+    assert voided.voided_at == NOW
+
+
+@pytest.mark.parametrize("hours", [-48, -1])
+def test_void_refuses_a_version_that_already_took_effect(now, hours) -> None:
+    started = RuleParameterVersionFactory(
+        effective_from=NOW + timedelta(hours=hours), effective_date=date(2026, 11, 1)
+    )
+
+    with pytest.raises(VersionNotScheduledError):
+        void_rule_version(started, UserFactory(), "late")
+
+    started.refresh_from_db()
+    assert started.voided_at is None
+
+
+def test_void_twice_is_already_voided(now) -> None:
+    version = create_rule_version(RuleParameterFactory(), spec(), UserFactory())
+    void_rule_version(version, UserFactory(), "once")
+
+    with pytest.raises(AlreadyVoidedError):
+        void_rule_version(version, UserFactory(), "twice")
+
+
+def test_voided_version_is_excluded_from_value_in_force_and_snapshot(now) -> None:
+    parameter = RuleParameterFactory()
+    RuleParameterVersionFactory(
+        parameter=parameter,
+        value=50,
+        effective_from=NOW - timedelta(days=9),
+        effective_date=date(2026, 10, 25),
+    )
+    future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
+    before = build_rules_snapshot(parameter.organization, NOW)
+
+    void_rule_version(future, UserFactory(), "typo")
+    after = build_rules_snapshot(parameter.organization, NOW)
+
+    assert before["next_change_at"] is not None
+    assert after["next_change_at"] is None
+    assert after["version"] != before["version"]
+    assert get_next_change_at(parameter.organization, NOW) is None
+
+
+def test_voided_version_stays_in_history_with_status_voided(now) -> None:
+    parameter = RuleParameterFactory()
+    future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
+    void_rule_version(future, UserFactory(), "typo")
+
+    assert [v.status for v in list_versions(parameter, NOW)] == ["voided"]
+
+
+def test_a_voided_version_does_not_count_as_in_force_when_it_would_have_started(now) -> None:
+    parameter = RuleParameterFactory()
+    RuleParameterVersionFactory(
+        parameter=parameter,
+        value=50,
+        effective_from=NOW - timedelta(days=9),
+        effective_date=date(2026, 10, 25),
+    )
+    future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
+    void_rule_version(future, UserFactory(), "typo")
+
+    later = NOW + timedelta(days=10)
+
+    assert get_version_in_force(parameter, later).value == 50

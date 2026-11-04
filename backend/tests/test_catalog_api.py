@@ -1,8 +1,8 @@
 import pytest
 from rest_framework.test import APIClient
 
+from catalogs import permissions as catalog_codes
 from catalogs.models import CatalogItem
-from core import permission_codes as codes
 from organizations.models import Organization
 from tests.conftest import MemberFactory
 from tests.factories import CatalogFactory, CatalogItemFactory
@@ -10,11 +10,11 @@ from tests.factories import CatalogFactory, CatalogItemFactory
 pytestmark = pytest.mark.django_db
 
 ADMIN_CODES = (
-    codes.CATALOG_READ,
-    codes.CATALOG_ITEM_CREATE,
-    codes.CATALOG_ITEM_UPDATE,
-    codes.CATALOG_ITEM_DEACTIVATE,
-    codes.CATALOG_ITEM_ACTIVATE,
+    catalog_codes.CATALOG_READ,
+    catalog_codes.CATALOG_ITEM_CREATE,
+    catalog_codes.CATALOG_ITEM_UPDATE,
+    catalog_codes.CATALOG_ITEM_DEACTIVATE,
+    catalog_codes.CATALOG_ITEM_ACTIVATE,
 )
 
 
@@ -240,11 +240,11 @@ def test_an_item_under_the_wrong_catalog_slug_is_404(admin, catalog, org_a) -> N
 @pytest.mark.parametrize(
     ("method", "suffix", "missing_code"),
     [
-        ("get", "", codes.CATALOG_READ),
-        ("post", "", codes.CATALOG_ITEM_CREATE),
-        ("patch", "ITEM/", codes.CATALOG_ITEM_UPDATE),
-        ("post", "ITEM/deactivate/", codes.CATALOG_ITEM_DEACTIVATE),
-        ("post", "ITEM/activate/", codes.CATALOG_ITEM_ACTIVATE),
+        ("get", "", catalog_codes.CATALOG_READ),
+        ("post", "", catalog_codes.CATALOG_ITEM_CREATE),
+        ("patch", "ITEM/", catalog_codes.CATALOG_ITEM_UPDATE),
+        ("post", "ITEM/deactivate/", catalog_codes.CATALOG_ITEM_DEACTIVATE),
+        ("post", "ITEM/activate/", catalog_codes.CATALOG_ITEM_ACTIVATE),
     ],
 )
 def test_each_action_needs_its_own_permission_code(
@@ -263,7 +263,7 @@ def test_each_action_needs_its_own_permission_code(
 
 
 def test_catalog_list_needs_catalog_read(api_client, org_a, make_member) -> None:
-    client = as_member(api_client, org_a, make_member, codes.CATALOG_ITEM_CREATE)
+    client = as_member(api_client, org_a, make_member, catalog_codes.CATALOG_ITEM_CREATE)
 
     assert client.get("/api/v1/catalogs/").status_code == 403
 

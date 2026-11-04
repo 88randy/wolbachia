@@ -9,6 +9,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from catalogs.models import Catalog, CatalogItem
+from catalogs.permissions import (
+    CATALOG_ITEM_ACTIVATE,
+    CATALOG_ITEM_CREATE,
+    CATALOG_ITEM_DEACTIVATE,
+    CATALOG_ITEM_UPDATE,
+    CATALOG_READ,
+)
 from catalogs.selectors import build_catalog_snapshot
 from catalogs.serializers import (
     CatalogItemCreateSerializer,
@@ -24,14 +31,7 @@ from catalogs.services import (
     deactivate_catalog_item,
     update_catalog_item,
 )
-from core.permission_codes import (
-    CATALOG_ITEM_ACTIVATE,
-    CATALOG_ITEM_CREATE,
-    CATALOG_ITEM_DEACTIVATE,
-    CATALOG_ITEM_UPDATE,
-    CATALOG_READ,
-)
-from core.versioning import IF_NONE_MATCH_PARAMETER, snapshot_response
+from core.snapshots import IF_NONE_MATCH_PARAMETER, snapshot_response
 from core.views import OrgScopedViewSetMixin
 
 

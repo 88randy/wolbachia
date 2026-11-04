@@ -59,6 +59,12 @@ class Profile(OrgScopedModel):
         blank=True,
     )
     is_active = models.BooleanField(default=True)
+    # Seed bookkeeping: the default permission seed grants a code at most once (so a code an admin
+    # revoked is never granted again) and only to profiles the seed itself created.
+    seeded_permission_codes = ArrayField(
+        models.CharField(max_length=PERMISSION_CODE_MAX_LENGTH), default=list, blank=True
+    )
+    created_by_seed = models.BooleanField(default=False)
 
     class Meta:
         constraints = [

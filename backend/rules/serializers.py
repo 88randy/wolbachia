@@ -13,7 +13,13 @@ from rules.models import (
     Unit,
     ValueType,
 )
-from rules.selectors import STATUS_IN_FORCE, STATUS_SCHEDULED, STATUS_SUPERSEDED, to_number
+from rules.selectors import (
+    STATUS_IN_FORCE,
+    STATUS_SCHEDULED,
+    STATUS_SUPERSEDED,
+    STATUS_VOIDED,
+    to_number,
+)
 
 REASON_MAX_LENGTH = 1000
 NULLABLE_NUMBER = serializers.FloatField(allow_null=True)
@@ -66,7 +72,8 @@ class RuleParameterVersionSerializer(OrgScopedModelSerializer):
 
     value = serializers.SerializerMethodField(method_name="number")
     status = serializers.ChoiceField(
-        choices=[STATUS_SCHEDULED, STATUS_IN_FORCE, STATUS_SUPERSEDED], read_only=True
+        choices=[STATUS_SCHEDULED, STATUS_IN_FORCE, STATUS_SUPERSEDED, STATUS_VOIDED],
+        read_only=True,
     )
 
     class Meta:
@@ -80,6 +87,9 @@ class RuleParameterVersionSerializer(OrgScopedModelSerializer):
             "status",
             "created_by",
             "created_at",
+            "voided_at",
+            "voided_by",
+            "void_reason",
         ]
         read_only_fields = fields
 

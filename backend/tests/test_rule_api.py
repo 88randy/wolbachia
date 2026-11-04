@@ -4,13 +4,18 @@ from zoneinfo import ZoneInfo
 import pytest
 from django.utils import timezone
 
-from core import permission_codes as codes
+from rules import permissions as rule_codes
 from rules.models import RuleParameterVersion, ValueType
 from tests.factories import RuleParameterFactory, RuleParameterVersionFactory
 
 pytestmark = pytest.mark.django_db
 
-ADMIN_CODES = (codes.RULE_PARAMETER_READ, codes.RULE_PARAMETER_VERSION_CREATE)
+ADMIN_CODES = (
+    rule_codes.RULE_PARAMETER_READ,
+    rule_codes.RULE_PARAMETER_VERSION_READ,
+    rule_codes.RULE_PARAMETER_VERSION_CREATE,
+    rule_codes.RULE_PARAMETER_VERSION_VOID,
+)
 PARAMETERS_URL = "/api/v1/rule-parameters/"
 
 
@@ -53,22 +58,26 @@ def test_list_parameters_returns_current_value_as_a_number(admin, speed) -> None
     assert (row["min_value"], row["max_value"], row["next_change_at"]) == (0, 100, None)
 
 
-def test_list_parameters_shows_next_change_and_hides_other_organizations(
-    admin, speed, org_b
-) -> None:
+def test_list_parameters_shows_the_value_in_force_and_the_next_change(admin, speed) -> None:
     RuleParameterVersionFactory(
         parameter=speed,
         value=12,
         effective_from=timezone.now() + timedelta(days=3),
         effective_date=(timezone.now() + timedelta(days=3)).date(),
     )
-    RuleParameterFactory(organization=org_b, key="foreign")
 
-    response = admin.get(PARAMETERS_URL)
+    [row] = admin.get(PARAMETERS_URL).data["results"]
 
-    [row] = response.data["results"]
     assert row["value"] == 10
     assert row["next_change_at"] is not None
+
+
+def test_list_parameters_hides_other_organizations(admin, speed, org_b) -> None:
+    RuleParameterFactory(organization=org_b, key="foreign")
+
+    keys = [row["key"] for row in admin.get(PARAMETERS_URL).data["results"]]
+
+    assert keys == ["speed_lock_kmh"]
 
 
 def test_parameter_without_version_has_null_value(admin, org_a) -> None:
@@ -244,17 +253,130 @@ def test_create_version_ignores_organization_and_author_in_the_payload(admin, sp
     assert version.organization_id == speed.organization_id
 
 
-def test_put_patch_and_delete_on_versions_return_405(admin, speed) -> None:
+@pytest.mark.parametrize("method", ["put", "patch", "delete"])
+def test_put_patch_and_delete_on_a_version_return_405(admin, speed, method) -> None:
     version = speed.versions.get()
     detail = versions_url("speed_lock_kmh", f"{version.id}/")
 
-    assert admin.get(detail).status_code == 200
-    for method in (admin.put, admin.patch):
-        assert method(detail, {"value": 99}, format="json").status_code == 405
-    assert admin.delete(detail).status_code == 405
-    assert admin.put(versions_url("speed_lock_kmh"), {}, format="json").status_code == 405
+    response = getattr(admin, method)(detail, {"value": 99}, format="json")
+
+    assert response.status_code == 405
     version.refresh_from_db()
     assert version.value == 10
+
+
+def test_put_on_the_versions_list_is_405(admin, speed) -> None:
+    assert admin.put(versions_url("speed_lock_kmh"), {}, format="json").status_code == 405
+
+
+def test_retrieve_a_version(admin, speed) -> None:
+    version = speed.versions.get()
+
+    response = admin.get(versions_url("speed_lock_kmh", f"{version.id}/"))
+
+    assert (response.status_code, response.data["status"]) == (200, "in_force")
+
+
+def test_another_organizations_version_id_under_an_own_key_is_404(admin, speed, org_b) -> None:
+    foreign = RuleParameterVersionFactory(parameter=RuleParameterFactory(organization=org_b))
+
+    assert admin.get(versions_url("speed_lock_kmh", f"{foreign.id}/")).status_code == 404
+    response = admin.post(
+        versions_url("speed_lock_kmh", f"{foreign.id}/void/"), {"reason": "x"}, format="json"
+    )
+    assert response.status_code == 404
+
+
+def scheduled(speed, days: int = 3):
+    moment = timezone.now() + timedelta(days=days)
+    return RuleParameterVersionFactory(
+        parameter=speed, value=12, effective_from=moment, effective_date=moment.date()
+    )
+
+
+def test_void_a_scheduled_version_returns_it_voided(admin, speed) -> None:
+    version = scheduled(speed)
+
+    response = admin.post(
+        versions_url("speed_lock_kmh", f"{version.id}/void/"), {"reason": "typo"}, format="json"
+    )
+
+    assert response.status_code == 200
+    assert (response.data["status"], response.data["void_reason"]) == ("voided", "typo")
+    assert response.data["voided_by"] is not None
+    assert response.data["voided_at"] is not None
+
+
+def test_voided_version_stays_in_the_history(admin, speed) -> None:
+    version = scheduled(speed)
+    admin.post(
+        versions_url("speed_lock_kmh", f"{version.id}/void/"), {"reason": "typo"}, format="json"
+    )
+
+    statuses = [row["status"] for row in admin.get(versions_url("speed_lock_kmh")).data["results"]]
+
+    assert statuses == ["voided", "in_force"]
+
+
+def test_void_a_version_in_force_is_409_version_not_scheduled(admin, speed) -> None:
+    version = speed.versions.get()
+
+    response = admin.post(
+        versions_url("speed_lock_kmh", f"{version.id}/void/"), {"reason": "x"}, format="json"
+    )
+
+    assert response.status_code == 409
+    assert response.data["code"] == "version_not_scheduled"
+
+
+def test_void_twice_is_409_already_voided(admin, speed) -> None:
+    url = versions_url("speed_lock_kmh", f"{scheduled(speed).id}/void/")
+    admin.post(url, {"reason": "once"}, format="json")
+
+    response = admin.post(url, {"reason": "twice"}, format="json")
+
+    assert (response.status_code, response.data["code"]) == (409, "already_voided")
+
+
+def test_void_requires_a_reason(admin, speed) -> None:
+    url = versions_url("speed_lock_kmh", f"{scheduled(speed).id}/void/")
+
+    response = admin.post(url, {"reason": " "}, format="json")
+
+    assert response.status_code == 400
+    assert "reason" in response.data["fields"]
+
+
+def test_a_date_freed_by_voiding_can_be_scheduled_again(admin, speed) -> None:
+    payload = {"value": 15, "effective_from": future_date(), "reason": "first"}
+    created = admin.post(versions_url("speed_lock_kmh"), payload, format="json")
+    admin.post(
+        versions_url("speed_lock_kmh", f"{created.data['id']}/void/"),
+        {"reason": "typo"},
+        format="json",
+    )
+
+    again = admin.post(versions_url("speed_lock_kmh"), {**payload, "value": 16}, format="json")
+
+    assert again.status_code == 201
+
+
+def test_effective_from_beyond_the_horizon_is_400_effective_from_too_far(admin, speed) -> None:
+    payload = {"value": 15, "effective_from": future_date(400), "reason": "typo 2206"}
+
+    response = admin.post(versions_url("speed_lock_kmh"), payload, format="json")
+
+    assert response.status_code == 400
+    assert response.data["fields"]["effective_from"][0]["code"] == "effective_from_too_far"
+
+
+def test_two_versions_for_today_are_allowed_and_the_latest_wins(admin, speed, org_a) -> None:
+    today = timezone.now().astimezone(ZoneInfo(org_a.timezone)).date().isoformat()
+    for value in (15, 16):
+        payload = {"value": value, "effective_from": today, "reason": "correction"}
+        assert admin.post(versions_url("speed_lock_kmh"), payload, format="json").status_code == 201
+
+    assert admin.get(f"{PARAMETERS_URL}speed_lock_kmh/").data["value"] == 16
 
 
 def test_a_version_of_another_parameter_is_404(admin, speed, org_a) -> None:
@@ -269,10 +391,15 @@ def test_a_version_of_another_parameter_is_404(admin, speed, org_a) -> None:
 @pytest.mark.parametrize(
     ("method", "url", "missing_code"),
     [
-        ("get", PARAMETERS_URL, codes.RULE_PARAMETER_READ),
-        ("get", f"{PARAMETERS_URL}speed_lock_kmh/", codes.RULE_PARAMETER_READ),
-        ("get", versions_url("speed_lock_kmh"), codes.RULE_PARAMETER_READ),
-        ("post", versions_url("speed_lock_kmh"), codes.RULE_PARAMETER_VERSION_CREATE),
+        ("get", PARAMETERS_URL, rule_codes.RULE_PARAMETER_READ),
+        ("get", f"{PARAMETERS_URL}speed_lock_kmh/", rule_codes.RULE_PARAMETER_READ),
+        ("get", versions_url("speed_lock_kmh"), rule_codes.RULE_PARAMETER_VERSION_READ),
+        ("post", versions_url("speed_lock_kmh"), rule_codes.RULE_PARAMETER_VERSION_CREATE),
+        (
+            "post",
+            versions_url("speed_lock_kmh", "VERSION/void/"),
+            rule_codes.RULE_PARAMETER_VERSION_VOID,
+        ),
     ],
 )
 def test_each_action_needs_its_own_permission_code(
@@ -281,6 +408,8 @@ def test_each_action_needs_its_own_permission_code(
     granted = [code for code in ADMIN_CODES if code != missing_code]
     user, _ = make_member(org_a, granted)
     api_client.force_authenticate(user)
+
+    url = url.replace("VERSION", str(speed.versions.first().id))
 
     response = getattr(api_client, method)(url, {}, format="json")
 

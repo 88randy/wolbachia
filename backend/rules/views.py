@@ -5,13 +5,19 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, serializers, status, viewsets
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
-from core.permission_codes import RULE_PARAMETER_READ, RULE_PARAMETER_VERSION_CREATE
-from core.versioning import IF_NONE_MATCH_PARAMETER, snapshot_response
-from core.views import OrgScopedViewSetMixin
+from core.snapshots import IF_NONE_MATCH_PARAMETER, snapshot_response
+from core.views import OrgScopedViewSetMixin, VoidSerializer
 from rules.models import RuleParameter, RuleParameterVersion
+from rules.permissions import (
+    RULE_PARAMETER_READ,
+    RULE_PARAMETER_VERSION_CREATE,
+    RULE_PARAMETER_VERSION_READ,
+    RULE_PARAMETER_VERSION_VOID,
+)
 from rules.selectors import build_rules_snapshot, list_parameters_with_current, list_versions
 from rules.serializers import (
     RuleParameterSerializer,
@@ -19,7 +25,7 @@ from rules.serializers import (
     RuleParameterVersionSerializer,
     RulesSnapshotSerializer,
 )
-from rules.services import RuleVersionSpec, create_rule_version
+from rules.services import RuleVersionSpec, create_rule_version, void_rule_version
 
 KEY_REGEX = "[a-z][a-z0-9_]*"
 
@@ -41,6 +47,8 @@ class RuleParameterViewSet(
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return RuleParameter.objects.none()
+        # Organization isolation: the selector filters by organization (it does not go through
+        # the mixin's `for_org`), so any queryset built here must keep doing so.
         return list_parameters_with_current(self.request.organization, timezone.now())  # type: ignore[attr-defined]
 
 
@@ -70,16 +78,18 @@ class RuleParameterVersionViewSet(
 ):
     """History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
 
-    The detail route exists only so PUT, PATCH and DELETE answer 405 instead of 404.
+    A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+    route also makes PUT, PATCH and DELETE answer 405 instead of 404.
     """
 
     queryset = RuleParameterVersion.objects.all()
     serializer_class = RuleParameterVersionSerializer
     http_method_names = ["get", "post", "head", "options"]
     required_permissions = {
-        "list": RULE_PARAMETER_READ,
-        "retrieve": RULE_PARAMETER_READ,
+        "list": RULE_PARAMETER_VERSION_READ,
+        "retrieve": RULE_PARAMETER_VERSION_READ,
         "create": RULE_PARAMETER_VERSION_CREATE,
+        "void": RULE_PARAMETER_VERSION_VOID,
     }
 
     def get_parameter(self) -> RuleParameter:
@@ -109,6 +119,17 @@ class RuleParameterVersionViewSet(
         data = payload.validated_data
         spec = RuleVersionSpec(data["value"], data["effective_from"], data["reason"])
         version = create_rule_version(self.get_parameter(), spec, request.user)  # type: ignore[arg-type]
+        return Response(self._read(version), status=status.HTTP_201_CREATED)
+
+    @extend_schema(request=VoidSerializer, responses={200: RuleParameterVersionSerializer})
+    @action(detail=True, methods=["post"])
+    def void(self, request: Request, *args: object, **kwargs: object) -> Response:
+        version = self.get_object()
+        payload = VoidSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        void_rule_version(version, request.user, payload.validated_data["reason"])  # type: ignore[arg-type]
+        return Response(self._read(version))
+
+    def _read(self, version: RuleParameterVersion) -> Any:  # noqa: ANN401
         stored = self.get_queryset().get(pk=version.pk)
-        body = RuleParameterVersionSerializer(stored, context=self.get_serializer_context()).data
-        return Response(body, status=status.HTTP_201_CREATED)
+        return RuleParameterVersionSerializer(stored, context=self.get_serializer_context()).data

@@ -3,8 +3,9 @@ from datetime import UTC, date, datetime, timedelta
 import pytest
 from django.utils import timezone
 
+from catalogs import permissions as catalog_codes
 from catalogs.services import deactivate_catalog_item, update_catalog_item
-from core import permission_codes as codes
+from rules import permissions as rule_codes
 from tests.factories import (
     CatalogFactory,
     CatalogItemFactory,
@@ -16,7 +17,7 @@ pytestmark = pytest.mark.django_db
 
 CATALOG_URL = "/api/v1/field/catalog/"
 RULES_URL = "/api/v1/field/rules/"
-FIELD_CODES = (codes.CATALOG_READ, codes.RULE_PARAMETER_READ)
+FIELD_CODES = (catalog_codes.CATALOG_READ, rule_codes.RULE_PARAMETER_READ)
 
 
 @pytest.fixture
@@ -200,7 +201,7 @@ def test_304_requires_auth(api_client, url) -> None:
 
 @pytest.mark.parametrize(
     ("url", "granted"),
-    [(CATALOG_URL, codes.RULE_PARAMETER_READ), (RULES_URL, codes.CATALOG_READ)],
+    [(CATALOG_URL, rule_codes.RULE_PARAMETER_READ), (RULES_URL, catalog_codes.CATALOG_READ)],
 )
 def test_304_requires_permission(api_client, org_a, make_member, url, granted) -> None:
     user, _ = make_member(org_a, [granted])
