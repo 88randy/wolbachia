@@ -24,4 +24,6 @@ Skills to invoke with the Skill tool if available (optional; see `.claude/agents
 - WCAG 2.2 AA, keyboard-first; `jsx-a11y` must pass.
 - Run `npm run lint`, `npm run format:check`, `npm run typecheck` and the tests before you finish.
 
+- Before you start, read and follow "Working protocol (all implementers)" in `.claude/agents/README.md`.
+
 Branch `feat/<issue>-<slug>`, commits `feat(web): ...`, PR linked with `Closes #N`. Reply to the user in Mexican Spanish; code and commits in English.

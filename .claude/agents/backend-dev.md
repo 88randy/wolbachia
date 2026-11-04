@@ -23,4 +23,6 @@ Skills to invoke with the Skill tool if available (optional; see `.claude/agents
 - Run `ruff check`, `ruff format --check` and mypy (strict on services/selectors) from `backend/pyproject.toml`, and the tests, before you finish. Every bug fix ships a regression test.
 - If the contract changes, update `docs/` and regenerate `packages/api-client` in the same PR.
 
+- Before you start, read and follow "Working protocol (all implementers)" in `.claude/agents/README.md`.
+
 Branch `feat/<issue>-<slug>`, commits `feat(backend): ...`, PR linked with `Closes #N`. Reply to the user in Mexican Spanish; code and commits in English.
