@@ -6,7 +6,7 @@ export type CustomProperties = Record<string, string>;
 const DECLARATION_PATTERN = /--([\w-]+)\s*:\s*([^;}]+)/g;
 
 function escapeRegExp(text: string): string {
-  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
 /**
@@ -15,7 +15,7 @@ function escapeRegExp(text: string): string {
  * @throws {Error} when no such rule exists.
  */
 export function parseCustomProperties(css: string, selectorStart: string): CustomProperties {
-  const rulePattern = new RegExp(`^${escapeRegExp(selectorStart)}[^{]*\\{([^}]*)\\}`, 'm');
+  const rulePattern = new RegExp(`^${escapeRegExp(selectorStart)}[^{]*\\{([^}]*)\\}`, "m");
   const body = rulePattern.exec(css)?.[1];
   if (body === undefined) {
     throw new Error(`Rule starting with "${selectorStart}" not found`);
@@ -34,7 +34,7 @@ export function parseCustomProperties(css: string, selectorStart: string): Custo
 export function normalizeCssValue(value: string): string {
   return value
     .toLowerCase()
-    .replace(/\s+/g, '')
-    .replace(/(^|[^\d])0\./g, '$1.')
-    .replace(/(^|[^\d.])0px/g, '$10');
+    .replace(/\s+/g, "")
+    .replace(/(^|[^\d])0\./g, "$1.")
+    .replace(/(^|[^\d.])0px/g, "$10");
 }

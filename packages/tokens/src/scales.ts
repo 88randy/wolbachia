@@ -67,11 +67,11 @@ export const mobileTypeScale130: MobileTypeScale = {
 /** Font family and numeric style shared by mobile and web. */
 export const font = {
   /** Family name to bundle in the mobile app and to load on the web. */
-  family: 'Inter',
+  family: "Inter",
   /** CSS font stack for the web. */
-  cssStack: 'Inter, system-ui, sans-serif',
+  cssStack: "Inter, system-ui, sans-serif",
   /** Digits keep a fixed width so counts and times align. CSS `font-variant-numeric`. */
-  tabularFigures: 'tabular-nums',
+  tabularFigures: "tabular-nums",
 } as const;
 
 /** A single drop shadow in a form both React Native and CSS can use. */
@@ -85,10 +85,10 @@ export interface ShadowToken {
 /** Elevation levels. */
 export const shadow = {
   /** Cards and raised controls (`--sh-1`). */
-  level1: { offsetX: 0, offsetY: 1, blur: 2, color: 'rgba(10, 26, 63, 0.08)' },
+  level1: { offsetX: 0, offsetY: 1, blur: 2, color: "rgba(10, 26, 63, 0.08)" },
 } as const satisfies Record<string, ShadowToken>;
 
 /** Formats a shadow as a CSS `box-shadow` value. */
 export function formatShadow(token: ShadowToken): string {
-  return `${token.offsetX}px ${token.offsetY}px ${token.blur}px ${token.color}`;
+  return `${String(token.offsetX)}px ${String(token.offsetY)}px ${String(token.blur)}px ${token.color}`;
 }
