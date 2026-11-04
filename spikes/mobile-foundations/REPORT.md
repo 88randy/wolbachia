@@ -119,6 +119,20 @@ Estimate for one real operating quadrant (area ____ km2, zoom ____ to ____): ___
 
 Attribution displayed correctly? ____
 
+### 3.1 Local PMTiles (issue #64, README 5.3.1)
+
+| Phone | File | File size | Zoom range (header) | Time to render finished | Features rendered per layer (earth / water / roads / landuse / buildings) | Offline (airplane, after app kill) | Errors in the log | Result | Evidence | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Galaxy S24 Ultra (SM-S928B), Android 16 | test-zone-z15.pmtiles (Mérida, about 49 km2) | 1.6 MB | 0 to 15 (v3, tile type 1 = MVT, bounds -89.66, 20.94, -89.59, 21.00) | not measured: `onDidFinishRenderingMapFully` never fired | not read: the field stayed "-" (same cause) | Airplane mode ON (verified with adb, `airplane_mode_on=1`) | no crash, no network use | **works** | owner's test, 2026-11-04 (build 701c2fd) | World renders; after manual zoom into Mérida, blocks, streets, the main avenue and parcel outlines render crisp ABOVE z15 (overzoom of the z15 tiles). |
+
+Issues found on that first phone test of the PMTiles mode, and the fix for each (same branch, `feat/64-pmtiles-poc`):
+
+1. Pinch zoom worked badly. The map was inside the screen's `ScrollView`, which competes for the touch gestures. Fix: a "Full screen map" layout where the map has no scroll container around it, so pinch, pan and rotate get every gesture. [ASSUMPTION] this fixes it; to be confirmed on the phone.
+2. The camera stayed at the world view after "Load file". Fix: `fitBounds` to the header bounds once the style (or the map) finishes loading, logged, with an error line if it fails; the fixed `center`/`zoom` from the header and the `maxBounds` limit were removed.
+3. "Time to render finished" and "Features rendered" stayed "-" for over 30 s although tiles were drawn, and the log said "first frame after n/a". `onDidFinishRenderingMapFully` does not fire in this setup, and the timer was only started inside `onWillStartLoadingMap`. Fix: the clock starts when the map is mounted (Load file, Reload, full screen toggle); the screen counts the rendered features per layer every 500 ms with `queryRenderedFeatures` and reports the first count above zero as "time to first features" (20 s timeout with a warning).
+
+Did `pmtiles://file://...` load through `@maplibre/maplibre-react-native` 11.5.1 (native 13.6.1)? ____ Were the Protomaps layer names and `kind` values right? ____
+
 ## 4. How to get there (Organic Maps via `geo:`)
 
 | Phone | Organic Maps installed | Button | Behavior | Returns to app with Back | Result | Evidence | Notes |
