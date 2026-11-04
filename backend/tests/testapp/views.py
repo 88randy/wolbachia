@@ -25,7 +25,16 @@ WIDGET_PERMISSIONS = {
 class WidgetSerializer(OrgScopedModelSerializer):
     class Meta:
         model = Widget
-        fields = ["id", "name", "related", "created_at", "voided_at", "voided_by", "void_reason"]
+        fields = [
+            "id",
+            "name",
+            "code",
+            "related",
+            "created_at",
+            "voided_at",
+            "voided_by",
+            "void_reason",
+        ]
         read_only_fields = ["id", "created_at", "voided_at", "voided_by", "void_reason"]
 
 
@@ -33,6 +42,7 @@ class WidgetViewSet(VoidActionMixin, OrgScopedViewSet):
     queryset = Widget.objects.order_by("created_at", "id")
     serializer_class = WidgetSerializer
     required_permissions = WIDGET_PERMISSIONS
+    code_lookup_field = "code"
 
 
 class UndeclaredPermissionsViewSet(OrgScopedViewSet):
@@ -47,6 +57,7 @@ class StreamWidgetViewSet(OrgScopedViewSet):
     serializer_class = WidgetSerializer
     pagination_class = StreamCursorPagination
     required_permissions = WIDGET_PERMISSIONS
+    code_lookup_field = "code"
 
 
 class BoomView(APIView):
