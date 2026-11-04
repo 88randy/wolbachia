@@ -19,13 +19,15 @@ export const ME_STALE_TIME_MS = 60_000;
  * `GET /me/`. A stored organization slug that no longer matches an active membership is
  * answered with `403 no_active_membership`: the slug is forgotten and the call retried once
  * without the header, so the user lands on organization selection instead of a dead end.
+ *
+ * SIDE EFFECT on module state: a valid answer to a request that started in the current session
+ * revision calls `recoverSession()`. If the page was signed out, another tab signed in again, so
+ * real 401s count as expiry again. An answer to a request that started before a sign-out carries
+ * an older revision and changes nothing.
  */
 export async function fetchMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
   const revision = currentRevision();
   const me = await requestMe(client, signal);
-  // Answered for the same session revision it started in: if the page was signed out, another tab
-  // signed in again, so real 401s count as expiry again. An answer to a request that started
-  // before a sign-out carries an older revision and changes nothing.
   if (revision === currentRevision()) recoverSession();
   return me;
 }

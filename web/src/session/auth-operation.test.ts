@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { runAuthOperation } from "./auth-operation";
 
 function deferred() {
@@ -23,8 +23,9 @@ describe("auth operations are queued, never rejected", () => {
       return Promise.resolve();
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-    expect(order).toEqual(["first starts"]);
+    await vi.waitFor(() => {
+      expect(order).toEqual(["first starts"]);
+    });
     first.release();
     await Promise.all([one.result, two.result]);
 
@@ -123,7 +124,9 @@ describe("generations and abandonment", () => {
       context.commit();
       await gate.promise;
     });
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await vi.waitFor(() => {
+      expect(signal).toBeDefined();
+    });
 
     login.abandon();
 

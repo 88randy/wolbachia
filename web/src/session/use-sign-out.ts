@@ -34,19 +34,16 @@ export function useSignOut() {
     setFailure(undefined);
     const run = runAuthOperation("logout", async ({ signal }) => {
       const outcome = await requestLogout(client, signal);
-      if (!outcome.ok) return { outcome, revision: -1 };
+      if (!outcome.ok) return { ok: false as const, failure: outcome.failure };
       const revision = confirmSignOut();
       void queryClient.cancelQueries();
       clearOrganizationSlug();
       endSessionExpiry();
-      return { outcome, revision };
+      return { ok: true as const, revision };
     });
     const done = await run.result;
-    if (done !== undefined) {
-      const { outcome, revision } = done;
-      if (outcome.ok) await leaveSession(queryClient, router, revision);
-      else setFailure(outcome.failure);
-    }
+    if (done?.ok) await leaveSession(queryClient, router, done.revision);
+    else if (done) setFailure(done.failure);
     setIsBusy(false);
   }
   return { signOut, isBusy, failure };

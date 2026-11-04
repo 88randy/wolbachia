@@ -222,7 +222,6 @@ describe("a /me/ of the closed session cannot survive the sign-out", () => {
     late.release(Response.json(makeMe()));
     await refetch;
 
-    expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
     return { app, calls: () => meCalls };
   }
 

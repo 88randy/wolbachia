@@ -1,5 +1,5 @@
 import { ApiError } from "@wolbachia/api-client";
-import { beforeEach, describe, expect, test } from "vitest";
+import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
 import { createAppQueryClient } from "../api/query-client";
@@ -45,7 +45,9 @@ describe("fetchMe and the signed-out state", () => {
     });
     const api = createFakeApi({ [ME_PATH]: () => late });
     const pending = fetchMe(clientFor(api));
-    await new Promise((resolve) => setTimeout(resolve, 0));
+    await vi.waitFor(() => {
+      expect(api.requests).toHaveLength(1);
+    });
 
     confirmSignOut();
     release(Response.json(makeMe()));

@@ -38,8 +38,8 @@ interface Queued {
   kind: AuthOperation;
   generation: number;
   isAbandoned: boolean;
-  /** The task finished: abandoning it no longer means anything. */
-  isSettled: boolean; // finished, or committed to applying its result
+  /** The task finished or committed to applying its result: abandoning it is then a no-op. */
+  isCommitted: boolean;
   controller: AbortController;
 }
 
@@ -56,7 +56,7 @@ function contextOf(operation: Queued): AuthOperationContext {
     signal: operation.controller.signal,
     isCurrent: () => isWanted(operation),
     commit: () => {
-      operation.isSettled = true;
+      operation.isCommitted = true;
     },
   };
 }
@@ -66,7 +66,7 @@ function createOperation(kind: AuthOperation): Queued {
     kind,
     generation,
     isAbandoned: false,
-    isSettled: false,
+    isCommitted: false,
     controller: new AbortController(),
   };
 }
@@ -93,14 +93,14 @@ export function runAuthOperation<T>(
       return task(contextOf(operation));
     })
     .finally(() => {
-      operation.isSettled = true;
+      operation.isCommitted = true;
     });
   tail = result.catch(() => undefined);
   return {
     result,
     isCurrent: () => isWanted(operation),
     abandon: () => {
-      if (kind === "logout" || operation.isSettled) return;
+      if (kind === "logout" || operation.isCommitted) return;
       operation.isAbandoned = true;
       operation.controller.abort();
     },
