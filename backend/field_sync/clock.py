@@ -17,6 +17,9 @@ from rules.selectors import get_values_in_force
 
 logger = logging.getLogger(__name__)
 
+# Organizations already warned about in this process: the warning is once, not once per sync.
+_warned_organizations: set[object] = set()
+
 CLOCK_SKEW_PARAMETER = "clock_skew_review_seconds"
 
 
@@ -52,7 +55,8 @@ def build_clock_policy(batch: BatchContext) -> ClockPolicy:
     """The skew of the batch and the threshold in force when the server received it (reads)."""
     skew_seconds = round((batch.sent_at - batch.received_at).total_seconds())
     threshold = get_values_in_force(batch.organization, batch.received_at).get(CLOCK_SKEW_PARAMETER)
-    if threshold is None:
+    if threshold is None and batch.organization.pk not in _warned_organizations:
+        _warned_organizations.add(batch.organization.pk)
         logger.warning(
             "Clock skew threshold not configured: organization=%s device=%s skew_seconds=%s",
             batch.organization.pk,

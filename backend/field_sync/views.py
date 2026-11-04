@@ -6,6 +6,7 @@ from django.conf import settings
 from drf_spectacular.utils import extend_schema
 from rest_framework import viewsets
 from rest_framework.exceptions import NotAuthenticated, ParseError
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
@@ -13,19 +14,19 @@ from accounts.authentication import DeviceBearerAuthentication
 from accounts.final_upload import FinalUploadMixin
 from accounts.models import DeviceSession, User
 from core.exceptions import PayloadTooLargeError
+from core.permissions import HasPermissionCode
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
 from field_sync.cursor import decode_cursor
 from field_sync.envelope import BatchContext, EventEnvelope
 from field_sync.exceptions import DeviceMismatchError
-from field_sync.permissions import FIELD_EVENT_SYNC
-from field_sync.selectors import Changes, build_changes
+from field_sync.permissions import FIELD_EVENT_SYNC, BodySizeWithinLimit
 from field_sync.serializers import (
     SyncBatchSerializer,
     SyncResponseSerializer,
     build_envelopes,
 )
-from field_sync.services import ingest_batch
+from field_sync.services import sync_batch
 from field_sync.throttling import FieldSyncDeviceThrottle
 
 
@@ -34,14 +35,6 @@ def ensure_batch_size_within_limit(data: object) -> None:
     events = data.get("events") if isinstance(data, dict) else None
     if isinstance(events, list) and len(events) > settings.SYNC_MAX_EVENTS:
         raise PayloadTooLargeError
-
-
-def declared_body_size(request: Request) -> int:
-    """The `Content-Length` of the request; 0 when it is missing or not a number."""
-    try:
-        return int(request.META.get("CONTENT_LENGTH") or 0)
-    except ValueError:
-        return 0
 
 
 class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.GenericViewSet):
@@ -59,17 +52,8 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
     serializer_class = SyncBatchSerializer
     pagination_class = None
     http_method_names = ["post", "options"]
+    permission_classes = [IsAuthenticated, HasPermissionCode, BodySizeWithinLimit]
     required_permissions = {"create": FIELD_EVENT_SYNC}
-
-    def check_throttles(self, request: Request) -> None:
-        """Throttle, then refuse an over-size body before it is read.
-
-        This runs inside `initial`, after authentication and before `FinalUploadMixin` spends
-        a final upload, so an oversize request never costs a revoked phone its one upload.
-        """
-        super().check_throttles(request)
-        if declared_body_size(request) > settings.SYNC_MAX_BODY_BYTES:
-            raise PayloadTooLargeError
 
     @extend_schema(request=SyncBatchSerializer, responses={200: SyncResponseSerializer})
     def create(self, request: Request, *args: object, **kwargs: object) -> Response:
@@ -95,9 +79,8 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
             received_at=received_at,
             is_final_upload=self.is_final_upload,
         )
-        results = ingest_batch(batch, self._envelopes(data))
-        changes = Changes() if cursor is None else build_changes(batch, cursor)
-        body = {"server_time": server_now(), "results": results, "changes": changes}
+        outcome = sync_batch(batch, self._envelopes(data), cursor)
+        body = {"server_time": server_now(), "results": outcome.results, "changes": outcome.changes}
         return Response(SyncResponseSerializer(body).data)
 
     @staticmethod

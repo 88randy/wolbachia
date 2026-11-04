@@ -1,20 +1,28 @@
 """Sync batch ingest: idempotent, one savepoint per event, nothing stored half-way.
 
-Order of work for a batch (`ingest_batch`), all in one transaction:
+`sync_batch` is the whole use case, in one transaction:
 
-1. An advisory lock serializes the batches of one device (not a row lock: see
-   `lock_device_batches`).
-2. Events are processed in `(device_time, id)` order; results go back in request order.
-3. Per event: a stored event with the same id returns its stored result (or
-   `event_id_conflict` when it belongs to another organization, device or user); otherwise the
-   payload is validated, the handler applies the event and the `FieldEvent` is inserted, all in
-   one savepoint. The primary key arbitrates a race: the loser's INSERT fails, its savepoint
-   (domain writes included) rolls back and it returns the winner's result.
-4. `EventRejected` rolls the savepoint back and the rejected event is stored in a second step,
-   with its raw payload and its `ReviewItem`. Precedence: rejected, in review, accepted.
+1. A transaction advisory lock per (organization, user) is *tried*: if another batch of the same
+   courier is running the request fails at once with `sync_in_progress` (429, `Retry-After`).
+   Nothing waits, so a burst of retries cannot pile up workers or connections. With every batch of
+   a courier serialized, the pull of `changes` inside the same transaction can use a strict
+   keyset cursor (decision 71).
+2. A blocking advisory lock per event id, taken in sorted order (short and ordered: no deadlock),
+   so two couriers that share an id run one after the other and the second one finds the first's
+   row (decision 72) instead of running its handler for nothing.
+3. Events are processed in `(device_time, id)` order; results go back in request order. Per event:
+   a stored event with the same id returns its stored result (or `event_id_conflict` when it
+   belongs to another organization, device or user); otherwise the payload is validated, the
+   handler applies the event and the `FieldEvent` is inserted, all in one savepoint. The primary
+   key is still the final arbiter.
+4. `EventRejected` rolls the savepoint back and the rejected event is stored in a second step with
+   its `ReviewItem` (its payload only when the database can hold it, see `storable_payload`).
+   Precedence: rejected, in review, accepted.
 
-Nothing here calls an external service: the view may hold the user and session locks of a
-final upload for the whole batch (accounts/README.md, "For #5").
+None of these locks are row locks, so the global row lock order (accounts/README.md) is untouched:
+the user lock is a *try* (never waits) and the event-id locks wait only for short transactions.
+Nothing here calls an external service: the view may hold the user and session locks of a final
+upload for the whole batch.
 """
 
 import hashlib
@@ -26,8 +34,7 @@ from django.conf import settings
 from django.db import IntegrityError, connection, transaction
 from rest_framework.exceptions import ValidationError
 
-from accounts.models import Device
-from core.exception_handler import flatten_error_codes
+from core.validation import flatten_error_codes
 from field_sync.clock import ClockPolicy, build_clock_policy
 from field_sync.codes import (
     EVENT_ID_CONFLICT,
@@ -36,18 +43,29 @@ from field_sync.codes import (
     INVALID_PAYLOAD,
     VOID_EVENT_TYPE,
 )
-from field_sync.envelope import BatchContext, EventEnvelope, EventResult
-from field_sync.exceptions import EventNeedsReview, EventOutcome, EventRejected
+from field_sync.cursor import ChangesCursor
+from field_sync.envelope import (
+    BatchContext,
+    EventEnvelope,
+    EventResult,
+    is_plausible_time,
+)
+from field_sync.exceptions import (
+    EventNeedsReview,
+    EventRejected,
+    EventSignal,
+    SyncInProgressError,
+)
 from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent
 from field_sync.registry import EventContext, EventHandler, OrgScopedRequest, find_handler
-from field_sync.selectors import StoredEvent, find_stored_event
+from field_sync.selectors import Changes, StoredEvent, build_changes, find_stored_event
 from reviews.services import create_review_item
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
-class Outcome:
+class Verdict:
     """The final status of one event: what is stored and what the phone is told."""
 
     status: EventStatus
@@ -55,41 +73,73 @@ class Outcome:
     params: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
-    def from_signal(cls, status: EventStatus, signal: EventOutcome) -> Self:
+    def from_signal(cls, status: EventStatus, signal: EventSignal) -> Self:
         return cls(status, signal.code, signal.params)
 
     def result_for(self, event: EventEnvelope) -> EventResult:
         return EventResult(event.id, self.status, self.code, self.params)
 
 
-def lock_device_batches(device: Device) -> None:
-    """Make concurrent batches of one device run one after the other (waits; no writes).
+@dataclass(frozen=True)
+class SyncOutcome:
+    results: list[EventResult]
+    changes: Changes
 
-    A PostgreSQL advisory transaction lock, released at commit or rollback. It is not a row lock
-    on purpose: a final upload already holds the `DeviceSession` lock, and taking the `Device`
-    row after it would run against the global lock order (User, Device, DeviceSession), while the
-    row lock would also block the device bookkeeping that authentication does on every request.
-    A hash collision between two devices only serializes them, it never breaks anything.
+
+def advisory_key(*parts: object) -> int:
+    """A stable signed 64-bit key for `pg_advisory_*lock` from named parts (a hash: a collision
+    only makes two unrelated things wait for each other, it never breaks anything)."""
+    digest = hashlib.sha256(":".join(["field_sync", *map(str, parts)]).encode()).digest()
+    return int.from_bytes(digest[:8], "big", signed=True)
+
+
+def lock_courier_batches(batch: BatchContext) -> None:
+    """Take the (organization, user) batch lock or raise `SyncInProgressError` (never waits).
+
+    A PostgreSQL advisory transaction lock, released at commit or rollback. It is not a row
+    lock on purpose (a final upload already holds the `DeviceSession` row; see accounts/README.md).
     """
-    digest = hashlib.sha256(f"field_sync:{device.pk}".encode()).digest()
-    key = int.from_bytes(digest[:8], "big", signed=True)
+    key = advisory_key("courier", batch.organization.pk, batch.user.pk)
     with connection.cursor() as cursor:
-        cursor.execute("SELECT pg_advisory_xact_lock(%s)", [key])
+        cursor.execute("SELECT pg_try_advisory_xact_lock(%s)", [key])
+        row = cursor.fetchone()
+    if row is None or not row[0]:
+        raise SyncInProgressError
+
+
+def lock_event_ids(envelopes: list[EventEnvelope]) -> None:
+    """Wait for the lock of every event id of the batch, in one global sorted order."""
+    keys = sorted({advisory_key("event", envelope.id) for envelope in envelopes})
+    with connection.cursor() as cursor:
+        for key in keys:
+            cursor.execute("SELECT pg_advisory_xact_lock(%s)", [key])
+
+
+def sync_batch(
+    batch: BatchContext, envelopes: list[EventEnvelope], cursor: ChangesCursor | None
+) -> SyncOutcome:
+    """Ingest a batch and pull the courier's changes in one locked transaction (writes).
+
+    `cursor` None means "do not pull" (a revoked phone's final upload).
+    """
+    with transaction.atomic():
+        lock_courier_batches(batch)
+        lock_event_ids(envelopes)
+        results = ingest_batch(batch, envelopes)
+        changes = Changes() if cursor is None else build_changes(batch, cursor)
+    return SyncOutcome(results, changes)
 
 
 def ingest_batch(batch: BatchContext, envelopes: list[EventEnvelope]) -> list[EventResult]:
     """Apply the events of one batch (writes FieldEvent, ReviewItem and whatever handlers write).
 
-    Returns one result per event in request order. Runs in its own transaction (a savepoint
-    when the caller already has one, as in a final upload).
+    Returns one result per event in request order. Call it inside `sync_batch`'s transaction.
     """
-    with transaction.atomic():
-        lock_device_batches(batch.device)
-        processor = EventProcessor(batch, build_clock_policy(batch))
-        by_index = {
-            envelope.index: processor.process(envelope)
-            for envelope in sorted(envelopes, key=lambda item: (item.device_time, item.id))
-        }
+    processor = EventProcessor(batch, build_clock_policy(batch))
+    by_index = {
+        envelope.index: processor.process(envelope)
+        for envelope in sorted(envelopes, key=lambda item: (item.device_time, item.id))
+    }
     return [by_index[index] for index in range(len(envelopes))]
 
 
@@ -133,12 +183,16 @@ class EventProcessor:
         info = envelope.payload_info
         if info.is_too_deep:
             raise EventRejected(INVALID_PAYLOAD, {"fields": {"payload": ["too_deep"]}})
+        if info.is_unstorable:
+            raise EventRejected(INVALID_PAYLOAD, {"fields": {"payload": ["not_storable"]}})
         if info.size_bytes > settings.SYNC_MAX_EVENT_PAYLOAD_BYTES:
             raise EventRejected(
                 EVENT_PAYLOAD_TOO_LARGE, {"max_bytes": settings.SYNC_MAX_EVENT_PAYLOAD_BYTES}
             )
         if info.has_null_character:
             raise EventRejected(INVALID_PAYLOAD, {"fields": {"payload": ["null_character"]}})
+        if not is_plausible_time(envelope.device_time):
+            raise EventRejected(INVALID_PAYLOAD, {"fields": {"device_time": ["out_of_range"]}})
         if envelope.voids_event_id is not None and envelope.type != VOID_EVENT_TYPE:
             raise EventRejected(INVALID_PAYLOAD, {"fields": {"voids_event_id": ["not_allowed"]}})
 
@@ -157,8 +211,10 @@ class EventProcessor:
 
     def _apply(
         self, envelope: EventEnvelope, handler: EventHandler, data: dict[str, Any]
-    ) -> Outcome:
-        batch_signal = self._final_upload_signal() or self.clock.review_signal(envelope.device_time)
+    ) -> Verdict:
+        final_upload = self._final_upload_signal()
+        clock = self.clock.review_signal(envelope.device_time)
+        batch_signal = final_upload or clock
         context = EventContext(
             organization=self.batch.organization,
             user=self.batch.user,
@@ -172,10 +228,10 @@ class EventProcessor:
             handler.apply(context, data)
         except EventNeedsReview as needs_review:
             handler_signal = needs_review
-        signal = self._final_upload_signal() or handler_signal or batch_signal
+        signal = final_upload or handler_signal or clock
         if signal is None:
-            return Outcome(EventStatus.ACCEPTED)
-        return Outcome.from_signal(EventStatus.IN_REVIEW, signal)
+            return Verdict(EventStatus.ACCEPTED)
+        return Verdict.from_signal(EventStatus.IN_REVIEW, signal)
 
     def _final_upload_signal(self) -> EventNeedsReview | None:
         if not self.batch.is_final_upload:
@@ -185,7 +241,10 @@ class EventProcessor:
     # --- rejected events --------------------------------------------------------------------
 
     def _reject(self, envelope: EventEnvelope, rejection: EventRejected) -> EventResult:
-        outcome = Outcome.from_signal(EventStatus.REJECTED, rejection)
+        params = dict(rejection.params)
+        if envelope.voids_event_id is not None:
+            params["voids_event_id"] = str(envelope.voids_event_id)  # the link is not stored
+        outcome = Verdict(EventStatus.REJECTED, rejection.code, params)
         try:
             with transaction.atomic():
                 self._store(envelope, outcome)
@@ -203,13 +262,13 @@ class EventProcessor:
 
     # --- storing ----------------------------------------------------------------------------
 
-    def _store(self, envelope: EventEnvelope, outcome: Outcome) -> None:
+    def _store(self, envelope: EventEnvelope, outcome: Verdict) -> None:
         """Insert the event and, unless it is plainly accepted, its review item (writes both)."""
         event = FieldEvent.objects.create(**self._event_fields(envelope, outcome))
         if outcome.status != EventStatus.ACCEPTED:
             create_review_item(event)
 
-    def _event_fields(self, envelope: EventEnvelope, outcome: Outcome) -> dict[str, Any]:
+    def _event_fields(self, envelope: EventEnvelope, outcome: Verdict) -> dict[str, Any]:
         batch, gps = self.batch, envelope.gps
         # A rejected void may point at an id that does not exist (or is not ours): only a
         # verified target is linked, so the foreign key can never fail at commit.

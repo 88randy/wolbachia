@@ -1,14 +1,11 @@
 """Idempotency of `/field/sync/`: the event id is the primary key, so a retry never duplicates."""
 
 import logging
-import time
 from typing import Any
 
 import pytest
-from django.db import connection, transaction
 
 from field_sync.models import FieldEvent
-from field_sync.services import lock_device_batches
 from organizations.models import Organization
 from reviews.models import ReviewItem
 from tests.conftest import MemberFactory
@@ -140,18 +137,22 @@ def test_a_conflict_does_not_stop_the_rest_of_the_batch(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_concurrent_duplicates_from_one_device_store_one_row_and_return_equal_results(
+def test_concurrent_retries_of_one_event_from_one_phone_store_one_row(
     org_a: Organization, make_member: MemberFactory
 ) -> None:
+    """The courier lock lets one retry run and tells the others to come back (429); whichever
+    ran stored the event once and the answers agree."""
     phone = make_phone(make_member, org_a)
     sent = event()
 
     outcomes = run_in_threads(*[lambda: phone.sync([sent]) for _ in range(4)])
 
     assert all(not isinstance(outcome, Exception) for outcome in outcomes), outcomes
-    results = [results_of(outcome)[0] for outcome in outcomes]
-    assert results == [results[0]] * 4
-    assert results[0]["status"] == "accepted"
+    answered = [results_of(o)[0] for o in outcomes if o.status_code == 200]
+    assert answered
+    assert all(o.status_code in (200, 429) for o in outcomes)
+    assert answered == [answered[0]] * len(answered)
+    assert answered[0]["status"] == "accepted"
     assert FieldEvent.objects.filter(pk=sent["id"]).count() == 1
     assert Widget.objects.count() == 1
 
@@ -174,46 +175,20 @@ def test_concurrent_duplicates_from_two_organizations_leave_exactly_one_winner(
 
 
 @pytest.mark.django_db(transaction=True)
-def test_concurrent_batches_of_one_device_never_deadlock_and_lose_nothing(
+def test_concurrent_batches_of_one_courier_run_one_at_a_time_and_the_rest_are_told_to_retry(
     org_a: Organization, make_member: MemberFactory
 ) -> None:
+    """Nothing waits for the courier lock: a batch either runs whole or gets 429 at once."""
     phone = make_phone(make_member, org_a)
     batches = [[event() for _ in range(5)] for _ in range(4)]
 
     outcomes = run_in_threads(*[lambda b=b: phone.sync(b) for b in batches])
 
     assert all(not isinstance(outcome, Exception) for outcome in outcomes), outcomes
-    assert all(
-        result["status"] == "accepted" for outcome in outcomes for result in results_of(outcome)
-    )
-    assert FieldEvent.objects.count() == 20
-
-
-@pytest.mark.django_db(transaction=True)
-def test_a_device_batch_waits_for_the_advisory_lock_of_the_same_device(
-    org_a: Organization, make_member: MemberFactory
-) -> None:
-    """While one batch holds the device lock, another batch of that device must not run."""
-    phone = make_phone(make_member, org_a)
-    device = phone.issued.session.device
-    started: list[str] = []
-
-    def hold_the_lock() -> str:
-        with transaction.atomic():
-            lock_device_batches(device)
-            started.append("holder")
-            with connection.cursor() as cursor:
-                cursor.execute("SELECT pg_sleep(0.6)")
-            started.append("holder-done")
-        return "holder"
-
-    def sync_meanwhile() -> str:
-        while "holder" not in started:
-            time.sleep(0.01)
-        phone.sync([event()])
-        started.append("sync-done")
-        return "sync"
-
-    run_in_threads(hold_the_lock, sync_meanwhile)
-
-    assert started == ["holder", "holder-done", "sync-done"]
+    answered = [outcome for outcome in outcomes if outcome.status_code == 200]
+    refused = [outcome for outcome in outcomes if outcome.status_code == 429]
+    assert len(answered) + len(refused) == 4
+    assert answered, "at least one batch must run"
+    assert all(outcome.data["code"] == "sync_in_progress" for outcome in refused)
+    assert all(int(outcome.headers["Retry-After"]) > 0 for outcome in refused)
+    assert FieldEvent.objects.count() == 5 * len(answered)  # a refused batch stored nothing

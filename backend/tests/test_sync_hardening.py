@@ -1,5 +1,7 @@
 """Edge paths of the sync endpoint: hostile input, unexpected failures and races on rejections."""
 
+import json
+import logging
 from types import SimpleNamespace
 from typing import Any
 
@@ -9,9 +11,9 @@ from rest_framework.test import APIClient
 
 from field_sync import registry
 from field_sync.models import FieldEvent
+from field_sync.permissions import declared_body_size
 from field_sync.registry import HANDLERS, EventContext, EventHandler
 from field_sync.throttling import FieldSyncDeviceThrottle
-from field_sync.views import declared_body_size
 from organizations.models import Organization
 from tests.conftest import MemberFactory
 from tests.sync_support import SYNC, Phone, batch, event, make_phone, run_in_threads
@@ -110,3 +112,121 @@ def test_concurrent_rejected_duplicates_from_two_organizations_leave_one_winner(
     codes = sorted(outcome.data["results"][0]["code"] for outcome in outcomes)
     assert codes == ["event_id_conflict", "unsupported_event_type"]
     assert FieldEvent.objects.filter(pk=contested["id"]).count() == 1
+
+
+# --- values the database cannot hold, and implausible times -------------------------------
+
+
+def post_raw(
+    phone: Phone,
+    body: dict[str, Any],
+    replacements: dict[str, str] | None = None,
+) -> Any:  # noqa: ANN401
+    """Send JSON text exactly as written: `ensure_ascii` keeps a lone surrogate as an escape, and
+    placeholders stand in for numbers (`1e400`) that Python would not serialize."""
+    text = json.dumps(body)
+    for placeholder, literal in (replacements or {}).items():
+        text = text.replace(f'"{placeholder}"', literal)
+    return phone.client.post(SYNC, text, content_type="application/json")
+
+
+def test_a_lone_surrogate_rejects_that_event_only_and_stores_a_marker(phone: Phone) -> None:
+    bad, good = event(payload={"text": "a\ud800b"}), event()
+
+    response = post_raw(phone, batch(phone, [bad, good]))
+
+    first, second = response.data["results"]
+    assert response.status_code == 200
+    assert (first["code"], first["params"]) == (
+        "invalid_payload",
+        {"fields": {"payload": ["not_storable"]}},
+    )
+    assert second["status"] == "accepted"
+    assert FieldEvent.objects.get(pk=bad["id"]).payload == {
+        "_not_stored": "invalid_payload",
+        "size_bytes": None,
+    }
+
+
+@pytest.mark.parametrize("literal", ["1e400", "-1e400"])
+def test_a_non_finite_number_rejects_that_event_only(phone: Phone, literal: str) -> None:
+    bad = event(payload={"n": "NUMBER"})
+
+    response = post_raw(phone, batch(phone, [bad, event()]), {"NUMBER": literal})
+
+    assert response.status_code == 200
+    assert response.data["results"][0]["params"] == {"fields": {"payload": ["not_storable"]}}
+    assert response.data["results"][1]["status"] == "accepted"
+    assert FieldEvent.objects.get(pk=bad["id"]).payload["_not_stored"] == "invalid_payload"
+
+
+def test_a_lone_surrogate_in_a_version_token_is_a_validation_error_not_a_500(phone: Phone) -> None:
+    response = post_raw(phone, batch(phone, [event(rules_version="x\ud800")]))
+
+    assert (response.status_code, response.data["code"]) == (400, "validation_error")
+    assert "events.0.rules_version" in response.data["fields"]
+
+
+def test_a_lone_surrogate_in_the_cursor_is_a_validation_error_not_a_500(phone: Phone) -> None:
+    response = post_raw(phone, batch(phone, [], cursor="x\ud800"))
+
+    assert (response.status_code, response.data["code"]) == (400, "validation_error")
+
+
+@pytest.mark.parametrize(
+    "sent_at", ["2019-12-31T23:59:59Z", "2100-01-01T00:00:00Z", "0001-01-01T00:00:00Z"]
+)
+def test_a_send_time_outside_the_plausible_range_is_a_validation_error(
+    phone: Phone, sent_at: str
+) -> None:
+    response = phone.sync([event()], sent_at=sent_at)
+
+    assert (response.status_code, response.data["code"]) == (400, "validation_error")
+    assert response.data["fields"]["sent_at"][0]["code"] == "out_of_range"
+    assert not FieldEvent.objects.exists()
+
+
+@pytest.mark.parametrize("device_time", ["2019-12-31T23:59:59Z", "2100-01-01T00:00:00Z"])
+def test_an_event_time_outside_the_plausible_range_rejects_that_event_only(
+    phone: Phone, device_time: str
+) -> None:
+    response = phone.sync([event(device_time=device_time), event()])
+
+    first, second = response.data["results"]
+    assert (first["code"], first["params"]) == (
+        "invalid_payload",
+        {"fields": {"device_time": ["out_of_range"]}},
+    )
+    assert second["status"] == "accepted"
+
+
+@pytest.mark.parametrize(
+    "extreme", ["0001-01-01T00:00:00+14:00", "9999-12-31T23:59:59-14:00", "9999-12-31T23:59:59Z"]
+)
+def test_extreme_timestamps_are_never_a_server_error(phone: Phone, extreme: str) -> None:
+    answers = (phone.sync([event(device_time=extreme)]), phone.sync([event()], sent_at=extreme))
+
+    assert answers[0].status_code in (200, 400)  # rejected event, or an overflow refused
+    assert answers[1].status_code == 400
+
+
+def test_the_largest_plausible_skew_fits_the_column(
+    org_a: Organization, make_member: MemberFactory
+) -> None:
+    phone = make_phone(make_member, org_a)
+    sent = event()
+
+    response = phone.sync([sent], sent_at="2099-12-31T00:00:00Z")
+
+    assert response.status_code == 200
+    assert FieldEvent.objects.get(pk=sent["id"]).clock_skew_seconds > 2**31
+
+
+def test_the_no_threshold_warning_is_logged_once_per_organization(
+    phone: Phone, caplog: pytest.LogCaptureFixture
+) -> None:
+    with caplog.at_level(logging.WARNING, logger="field_sync.clock"):
+        for _ in range(3):
+            phone.sync([])
+
+    assert caplog.text.count("threshold not configured") == 1

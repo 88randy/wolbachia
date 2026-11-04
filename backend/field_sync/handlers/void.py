@@ -20,7 +20,7 @@ from field_sync.codes import (
 )
 from field_sync.exceptions import EventRejected
 from field_sync.models import EventStatus, FieldEvent
-from field_sync.registry import HANDLERS, EventContext, EventHandler, register
+from field_sync.registry import EventContext, EventHandler, get_handler, register
 
 VOID_REASON_MAX_LENGTH = 1000
 
@@ -51,16 +51,34 @@ def find_void_target(ctx: EventContext) -> FieldEvent:
 
 def apply_void(ctx: EventContext, data: dict[str, Any]) -> None:
     """Void the target (writes the void fields of the target); refused for another user's event,
-    one already voided, or when the target type's `on_void` hook says no."""
+    one already voided, or when the target type's `on_void` hook says no.
+
+    When the void itself is going to be reviewed (`ctx.review_code`: a final upload or a skewed
+    clock) the target is validated but **left intact**: the void event lands `in_review` and a
+    supervisor applies it when they accept it (#22). A doubtful event must not change records
+    (decision 73).
+    """
     target = find_void_target(ctx)
+    if target.voided_at is not None:
+        raise EventRejected(ALREADY_VOIDED)
+    if ctx.review_code is not None:
+        return
     try:
         voided = void_record(target, ctx.user, data["reason"])
     except AlreadyVoidedError:
         raise EventRejected(ALREADY_VOIDED) from None
-    target_handler = HANDLERS.get((target.type, target.schema_version))
+    target_handler = get_handler(target.type, target.schema_version)
     if target_handler is not None and target_handler.on_void is not None:
         target_handler.on_void(ctx, voided)
 
 
 def register_void_handler() -> None:
-    register(EventHandler(VOID_EVENT_TYPE, 1, VoidPayloadSerializer, apply_void))
+    register(
+        EventHandler(
+            VOID_EVENT_TYPE,
+            1,
+            VoidPayloadSerializer,
+            apply_void,
+            codes=(VOID_TARGET_NOT_FOUND, VOID_TARGET_NOT_OWNED, ALREADY_VOIDED),
+        )
+    )

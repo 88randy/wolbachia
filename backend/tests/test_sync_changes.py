@@ -1,10 +1,11 @@
 """`changes` of the sync answer: the courier's review items behind a signed cursor, snapshot versions."""
 
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
+from django.core import signing
 from django.test import override_settings
 from django.utils import timezone
 
@@ -16,7 +17,7 @@ from organizations.models import Organization
 from rules.selectors import build_rules_snapshot
 from tests.conftest import MemberFactory
 from tests.factories import CatalogFactory, CatalogItemFactory
-from tests.sync_support import Phone, event, make_phone
+from tests.sync_support import SYNC, Phone, batch, event, make_phone
 
 pytestmark = pytest.mark.django_db
 
@@ -97,24 +98,41 @@ def test_a_long_backlog_is_paged_with_no_repeats_and_ends(phone: Phone) -> None:
     assert len(set(flat)) == 5
 
 
-def test_a_caught_up_phone_gets_the_last_seconds_again_so_late_commits_are_not_lost(
-    phone: Phone, monkeypatch: pytest.MonkeyPatch
+def test_a_caught_up_pull_returns_nothing_twice_and_the_cursor_never_moves_back(
+    phone: Phone,
 ) -> None:
-    start = timezone.now()  # the phone's token was issued with the real clock
     first = phone.sync(rejected_events(1))
     item = review_ids(first)
 
-    def pull_at(offset_seconds: int, cursor: str) -> Any:  # noqa: ANN401
-        monkeypatch.setattr(timezone, "now", lambda: start + timedelta(seconds=offset_seconds))
-        return phone.sync([], cursor=cursor)
+    second = phone.sync([], cursor=first.data["changes"]["cursor"])
+    third = phone.sync([], cursor=second.data["changes"]["cursor"])
 
-    second = pull_at(1, first.data["changes"]["cursor"])
-    third = pull_at(60, second.data["changes"]["cursor"])
-    fourth = pull_at(61, third.data["changes"]["cursor"])
+    assert len(item) == 1
+    assert (review_ids(second), review_ids(third)) == ([], [])  # strict: no overlap, no repeats
 
-    assert review_ids(second) == item  # still inside the overlap: delivered again, deduped by id
-    assert review_ids(third) == item  # the watermark of the previous cursor is not past it yet
-    assert review_ids(fourth) == []  # and now it is: the phone stops getting it
+
+def test_a_cursor_older_than_its_maximum_age_is_refused(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cursor = phone.sync([]).data["changes"]["cursor"]
+    real_time = signing.time.time
+    monkeypatch.setattr(signing.time, "time", lambda: real_time() + 8 * 24 * 3600)
+
+    refused = phone.client.post(SYNC, batch(phone, [], cursor=cursor), format="json")
+
+    assert (refused.status_code, refused.data["code"]) == (400, "invalid_cursor")
+
+
+def test_a_cursor_within_its_maximum_age_is_accepted(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    cursor = phone.sync([]).data["changes"]["cursor"]
+    real_time = signing.time.time
+    monkeypatch.setattr(signing.time, "time", lambda: real_time() + 6 * 24 * 3600)
+
+    accepted = phone.client.post(SYNC, batch(phone, [], cursor=cursor), format="json")
+
+    assert accepted.status_code == 200
 
 
 @pytest.mark.parametrize("token", ["garbage", "a.b.c", "x" * 300])
@@ -168,7 +186,7 @@ def test_the_versions_are_the_hashes_of_the_snapshots_and_move_when_the_content_
 
 def test_cursor_roundtrip_keeps_position_and_mode() -> None:
     organization_id, user_id, item_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
-    position = ChangesCursor(NOW, item_id, is_tail=False)
+    position = ChangesCursor(NOW, item_id)
 
     token = encode_cursor(organization_id, user_id, position)
 

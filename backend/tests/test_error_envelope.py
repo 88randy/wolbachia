@@ -6,7 +6,7 @@ import pytest
 from django.db import connection
 from rest_framework.test import APIClient
 
-from core.exception_handler import flatten_error_codes
+from core.validation import flatten_error_codes
 from organizations.models import Organization
 from tests.testapp.models import Widget
 

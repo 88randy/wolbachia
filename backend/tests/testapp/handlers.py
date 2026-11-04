@@ -1,5 +1,6 @@
 """Test-only event handlers: they write `Widget` rows so tests can see which writes survived."""
 
+import threading
 from typing import Any
 
 from rest_framework import serializers
@@ -11,6 +12,10 @@ from field_sync.registry import EventContext, EventHandler, register
 from tests.testapp.models import Widget
 
 LOCKED_TEXT = "locked"
+# A handler that holds its batch open until the test lets go (real-concurrency tests).
+SLOW_STARTED = threading.Event()
+SLOW_RELEASE = threading.Event()
+SLOW_TIMEOUT_SECONDS = 20
 
 
 class NotePayload(serializers.Serializer[Any]):
@@ -44,6 +49,12 @@ def apply_context_probe(ctx: EventContext, data: dict[str, Any]) -> None:
     write_widget(ctx, f"review:{ctx.review_code}")
 
 
+def apply_slow(ctx: EventContext, data: dict[str, Any]) -> None:
+    SLOW_STARTED.set()
+    SLOW_RELEASE.wait(SLOW_TIMEOUT_SECONDS)
+    write_widget(ctx, "slow")
+
+
 def apply_related(ctx: EventContext, data: dict[str, Any]) -> None:
     write_widget(ctx, f"related:{data['widget'].pk}")
 
@@ -59,5 +70,6 @@ def register_test_handlers() -> None:
     register(EventHandler("test.reject_after_write", 1, NotePayload, apply_reject_after_write))
     register(EventHandler("test.needs_review", 1, NotePayload, apply_needs_review))
     register(EventHandler("test.context_probe", 1, NotePayload, apply_context_probe))
+    register(EventHandler("test.slow", 1, NotePayload, apply_slow))
     register(EventHandler("test.related", 1, RelatedPayload, apply_related))
     register(EventHandler("test.with_void_hook", 1, NotePayload, apply_note, refuse_locked_void))

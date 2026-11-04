@@ -10,7 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 from rest_framework import serializers
 
 from field_sync import registry
-from field_sync.codes import IN_REVIEW_CODES, REJECTED_CODES, STATUS_BY_CODE
+from field_sync.codes import IN_REVIEW_CODES, REJECTED_CODES
 from field_sync.exceptions import EventRejected
 from field_sync.registry import HANDLERS, EventContext, EventHandler, find_handler, register
 
@@ -79,28 +79,43 @@ def test_every_registered_handler_keeps_the_registry_contract() -> None:
         assert handler.on_void is None or callable(handler.on_void), event_type
 
 
-def test_result_codes_have_one_status_each_and_no_overlap() -> None:
-    assert set(REJECTED_CODES).isdisjoint(IN_REVIEW_CODES)
-    assert set(STATUS_BY_CODE) == {*REJECTED_CODES, *IN_REVIEW_CODES}
-
-
 def camel(code: str) -> str:
     first, *rest = code.split("_")
     return first + "".join(part.capitalize() for part in rest)
 
 
-def test_every_result_code_is_translated_in_both_languages_and_documented() -> None:
+def translated_and_documented(code: str, prefix: str) -> None:
     locales = REPO_ROOT / "packages" / "i18n" / "src" / "locales"
-    spanish = (locales / "es-MX.ts").read_text(encoding="utf-8")
-    english = (locales / "en.ts").read_text(encoding="utf-8")
+    key = f'"sync.{prefix}.{camel(code)}"'
+    for name in ("es-MX.ts", "en.ts"):
+        assert key in (locales / name).read_text(encoding="utf-8"), f"{key} missing in {name}"
     documentation = (REPO_ROOT / "docs" / "sync.md").read_text(encoding="utf-8")
+    assert f"`{code}`" in documentation, f"{code} missing in docs/sync.md"
 
+
+def test_every_builtin_result_code_is_translated_in_both_languages_and_documented() -> None:
     for code in (*REJECTED_CODES, *IN_REVIEW_CODES):
-        key = f'"sync.result.{camel(code)}"'
-        assert key in spanish, f"{key} missing in es-MX"
-        assert key in english, f"{key} missing in en"
-        assert f"`{code}`" in documentation, f"{code} missing in docs/sync.md"
-    for code in ("device_mismatch", "payload_too_large", "invalid_cursor"):
-        assert f'"sync.batch.{camel(code)}"' in spanish
-        assert f'"sync.batch.{camel(code)}"' in english
-        assert f"`{code}`" in documentation
+        translated_and_documented(code, "result")
+    for code in ("device_mismatch", "payload_too_large", "invalid_cursor", "sync_in_progress"):
+        translated_and_documented(code, "batch")
+
+
+def test_every_code_an_epic_handler_declares_is_translated_and_documented() -> None:
+    """The contract an epic signs when it registers: declare your codes, translate them, document
+    them. Test-only handlers (tests/) are exempt."""
+    declared = {
+        code
+        for handler in HANDLERS.values()
+        if not handler.apply.__module__.startswith("tests.")
+        for code in handler.codes
+    }
+
+    assert {"void_target_not_found", "void_target_not_owned", "already_voided"} <= declared
+    for code in declared:
+        translated_and_documented(code, "result")
+
+
+def test_get_handler_returns_none_for_an_unregistered_pair() -> None:
+    assert registry.get_handler("record.void", 1) is not None
+    assert registry.get_handler("record.void", 2) is None
+    assert registry.get_handler("nothing.here", 1) is None

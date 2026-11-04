@@ -2,16 +2,21 @@
 
 import hashlib
 import json
+import math
 import uuid
-from collections.abc import Iterator
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
+
+from django.conf import settings
 
 from accounts.models import Device, User
 from field_sync.models import ACCEPTED_CODE, EventStatus
 from organizations.models import Organization
 
+# Event and send times outside this range are a broken phone clock or abuse, never real work.
+MIN_PLAUSIBLE_TIME = datetime(2020, 1, 1, tzinfo=UTC)
+MAX_PLAUSIBLE_TIME = datetime(2100, 1, 1, tzinfo=UTC)
 MAX_PAYLOAD_DEPTH = 32  # a payload is a flat-ish record; deeper only comes from abuse
 NULL_CHARACTER_REPLACEMENT = "�"
 
@@ -27,14 +32,16 @@ class GpsFix:
 class PayloadInfo:
     """Facts about the raw JSON payload, computed once when the envelope is built.
 
-    A payload deeper than `MAX_PAYLOAD_DEPTH` is not serialized at all (`size_bytes` is 0 and
-    `sha256` empty): the pipeline rejects it before anything needs them.
+    A payload that is too deep or cannot be stored (a lone surrogate or a non-finite number)
+    is not serialized at all: `size_bytes` is 0 and `sha256` empty, and the pipeline rejects it
+    before anything needs them.
     """
 
     size_bytes: int
     sha256: str
     has_null_character: bool
     depth: int
+    is_unstorable: bool = False
 
     @property
     def is_too_deep(self) -> bool:
@@ -42,40 +49,58 @@ class PayloadInfo:
 
 
 def describe_payload(payload: dict[str, Any]) -> PayloadInfo:
-    """Canonical size and SHA-256 of a payload, its nesting depth and whether it holds NUL.
+    """Canonical size and SHA-256 of a payload, its nesting depth and what the database cannot hold.
 
-    PostgreSQL's `jsonb` refuses `\\u0000` in strings, which would be a 500 that blocks the whole
-    batch forever, so the pipeline rejects such an event up front instead. The walk is iterative:
-    a hostile nesting depth cannot hit the recursion limit.
+    PostgreSQL's `jsonb` refuses `\\u0000` in strings, and JSON cannot carry lone surrogates or
+    non-finite numbers (`1e400`): each would be a 500 that blocks the whole batch forever, so the
+    pipeline rejects such an event up front instead. The walk is iterative: a hostile nesting
+    depth cannot hit the recursion limit.
     """
-    depth, has_null = _walk(payload)
-    if depth > MAX_PAYLOAD_DEPTH:
-        return PayloadInfo(0, "", has_null, depth)
+    walk = _walk(payload)
+    if walk.depth > MAX_PAYLOAD_DEPTH or walk.is_unstorable:
+        return PayloadInfo(0, "", walk.has_null, walk.depth, walk.is_unstorable)
     canonical = json.dumps(
         payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False
     ).encode("utf-8")
-    return PayloadInfo(len(canonical), hashlib.sha256(canonical).hexdigest(), has_null, depth)
+    sha256 = hashlib.sha256(canonical).hexdigest()
+    return PayloadInfo(len(canonical), sha256, walk.has_null, walk.depth)
 
 
-def _walk(root: object) -> tuple[int, bool]:
-    """Nesting depth of a JSON document and whether any key or string holds a NUL character."""
-    deepest, has_null = 0, False
+@dataclass
+class _Walk:
+    depth: int = 0
+    has_null: bool = False
+    is_unstorable: bool = False
+
+    def see_text(self, text: str) -> None:
+        self.has_null = self.has_null or "\x00" in text
+        if not self.is_unstorable:
+            try:
+                text.encode("utf-8")
+            except UnicodeEncodeError:
+                self.is_unstorable = True
+
+
+def _walk(root: object) -> _Walk:
+    """Depth of a JSON document, and whether a key or string holds NUL or a lone surrogate, or a
+    number is not finite."""
+    walk = _Walk()
     pending = [(root, 1)]
     while pending:
         current, depth = pending.pop()
-        deepest = max(deepest, depth)
+        walk.depth = max(walk.depth, depth)
         if isinstance(current, str):
-            has_null = has_null or "\x00" in current
+            walk.see_text(current)
+        elif isinstance(current, float) and not math.isfinite(current):
+            walk.is_unstorable = True
         elif isinstance(current, dict):
-            has_null = has_null or any("\x00" in key for key in _string_keys(current))
+            for key in current:
+                if isinstance(key, str):
+                    walk.see_text(key)
             pending.extend((value, depth + 1) for value in current.values())
         elif isinstance(current, list):
             pending.extend((item, depth + 1) for item in current)
-    return deepest, has_null
-
-
-def _string_keys(mapping: dict[Any, Any]) -> Iterator[str]:
-    return (key for key in mapping if isinstance(key, str))
+    return walk
 
 
 @dataclass(frozen=True)
@@ -102,15 +127,27 @@ class EventEnvelope:
 
     @property
     def storable_payload(self) -> dict[str, Any]:
-        """The payload as it is stored: exactly as received, except where the database cannot
-        hold it (NUL characters become U+FFFD; a too deep payload becomes a marker). Both are
-        rejected events, so nothing downstream reads them."""
-        if self.payload_info.is_too_deep:
-            return {"_not_stored": "payload_too_deep"}
-        if self.payload_info.has_null_character:
+        """The payload as it is stored (decision 74).
+
+        Exactly as received, except where it must not or cannot be kept: a payload that is too
+        large, too deep or not storable is replaced by a marker (`_not_stored`: the code the
+        phone got, `size_bytes`: its size when it was measured), so a hostile phone cannot fill
+        the table with rejected junk; NUL characters become U+FFFD. All of these are rejected
+        events, so nothing downstream reads them.
+        """
+        info = self.payload_info
+        if info.is_too_deep or info.is_unstorable:
+            return {"_not_stored": "invalid_payload", "size_bytes": None}
+        if info.size_bytes > settings.SYNC_MAX_EVENT_PAYLOAD_BYTES:
+            return {"_not_stored": "event_payload_too_large", "size_bytes": info.size_bytes}
+        if info.has_null_character:
             scrubbed: dict[str, Any] = _scrub_null_characters(self.payload)
             return scrubbed
         return self.payload
+
+
+def is_plausible_time(value: datetime) -> bool:
+    return MIN_PLAUSIBLE_TIME <= value < MAX_PLAUSIBLE_TIME
 
 
 def _scrub_null_characters(value: Any) -> Any:  # noqa: ANN401

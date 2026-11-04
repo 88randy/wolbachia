@@ -136,6 +136,9 @@ def test_a_payload_over_the_event_limit_is_rejected_not_the_batch(phone: Phone) 
         {"max_bytes": 100},
     )
     assert second["status"] == "accepted"
+    stored = FieldEvent.objects.get(pk=big["id"]).payload
+    assert stored["_not_stored"] == "event_payload_too_large"  # the junk is not kept (decision 74)
+    assert stored["size_bytes"] > 100
 
 
 def test_a_nul_character_in_the_payload_is_rejected_instead_of_breaking_the_database(
@@ -179,13 +182,16 @@ def test_a_payload_nested_deeper_than_the_limit_is_rejected_and_not_stored_as_is
         {"fields": {"payload": ["too_deep"]}},
     )
     assert second["status"] == "accepted"
-    assert FieldEvent.objects.get(pk=sent["id"]).payload == {"_not_stored": "payload_too_deep"}
+    assert FieldEvent.objects.get(pk=sent["id"]).payload == {
+        "_not_stored": "invalid_payload",
+        "size_bytes": None,
+    }
 
 
 def test_a_voids_event_id_on_another_event_type_is_rejected(phone: Phone) -> None:
     response = phone.sync([event(voids_event_id=str(uuid.uuid4()))])
 
-    assert results_of(response)[0]["params"] == {"fields": {"voids_event_id": ["not_allowed"]}}
+    assert results_of(response)[0]["params"]["fields"] == {"voids_event_id": ["not_allowed"]}
 
 
 def test_a_partial_batch_keeps_the_valid_events_and_leaves_no_trace_of_the_invalid_one(

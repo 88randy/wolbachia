@@ -3,7 +3,7 @@ from typing import Any
 from rest_framework import serializers
 
 from core.serializers import OrgScopedModelSerializer
-from reviews.models import ReviewItem, ReviewKind
+from reviews.models import CODE_MAX_LENGTH, ReviewItem, ReviewKind
 
 
 class ReviewItemSerializer(OrgScopedModelSerializer):
@@ -32,4 +32,4 @@ class ReviewItemFilterSerializer(serializers.Serializer[Any]):
     """Query parameters of `GET /review-items/`."""
 
     kind = serializers.ChoiceField(choices=ReviewKind.choices, required=False)
-    code = serializers.CharField(max_length=64, required=False)
+    code = serializers.CharField(max_length=CODE_MAX_LENGTH, required=False)

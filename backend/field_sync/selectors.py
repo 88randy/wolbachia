@@ -1,15 +1,14 @@
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any
 
 from catalogs.selectors import build_catalog_snapshot
 from core.time import server_now
-from field_sync.cursor import TAIL_OVERLAP, ChangesCursor, encode_cursor
+from field_sync.cursor import ChangesCursor, encode_cursor
 from field_sync.envelope import BatchContext
 from field_sync.models import FieldEvent
 from reviews.models import ReviewItem
-from reviews.selectors import ReviewPage, ReviewPosition, list_courier_reviews
+from reviews.selectors import ReviewPosition, list_courier_reviews
 from rules.selectors import build_rules_snapshot
 
 
@@ -66,30 +65,20 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor) -> Changes:
     the catalog and rules snapshots (the phone refreshes them when they changed).
 
     Scoped to the batch's organization and user. At most one page (`API_CURSOR_PAGE_SIZE`);
-    `has_more` tells the phone to pull again. See `field_sync.cursor` for the two cursor modes.
+    `has_more` tells the phone to pull again. Call it inside the courier's batch lock (see
+    `field_sync.services.sync_batch`): that is what makes the strict cursor gap-free.
     """
     organization, user = batch.organization, batch.user
     page = list_courier_reviews(
         organization, user, ReviewPosition(cursor.created_at, cursor.item_id)
     )
-    now = server_now()
+    if page.items:
+        last = page.items[-1]
+        cursor = ChangesCursor(last.created_at, last.pk)
     return Changes(
-        cursor=encode_cursor(organization.pk, user.pk, next_cursor(cursor, page, now)),
+        cursor=encode_cursor(organization.pk, user.pk, cursor),
         reviews=page.items,
         catalog_version=str(build_catalog_snapshot(organization)["version"]),
-        rules_version=str(build_rules_snapshot(organization, now)["version"]),
+        rules_version=str(build_rules_snapshot(organization, server_now())["version"]),
         has_more=page.has_more,
     )
-
-
-def next_cursor(current: ChangesCursor, page: ReviewPage, now: datetime) -> ChangesCursor:
-    """Mid-backlog: a strict keyset position after the last item. Caught up: a watermark
-    `TAIL_OVERLAP` behind `now` (never moving back), so rows that commit late with an earlier
-    `created_at` are still delivered by one of the next pulls."""
-    if page.has_more:
-        last = page.items[-1]
-        return ChangesCursor(last.created_at, last.pk, is_tail=False)
-    watermark = now - TAIL_OVERLAP
-    if current.is_tail and current.created_at is not None:
-        watermark = max(watermark, current.created_at)
-    return ChangesCursor(watermark, None, is_tail=True)

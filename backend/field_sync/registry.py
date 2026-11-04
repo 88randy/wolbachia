@@ -68,6 +68,8 @@ type VoidHook = Callable[[EventContext, FieldEvent], None]
 class EventHandler:
     """One event type at one schema version.
 
+    `codes` lists every result code the handler may raise (`EventRejected` / `EventNeedsReview`):
+    the registry contract test requires each one in `docs/sync.md` and in both i18n locales.
     `payload_serializer` validates `payload` (it receives `context["request"]` with the
     organization). `on_void` runs when a `record.void` voids an event of this type, inside the
     same savepoint; it may raise `EventRejected` to refuse the void.
@@ -78,6 +80,7 @@ class EventHandler:
     payload_serializer: type[serializers.Serializer[Any]]
     apply: ApplyEvent
     on_void: VoidHook | None = None
+    codes: tuple[str, ...] = ()
 
 
 HANDLERS: dict[tuple[str, int], EventHandler] = {}
@@ -94,9 +97,14 @@ def register(handler: EventHandler) -> None:
     HANDLERS[key] = handler
 
 
+def get_handler(event_type: str, schema_version: int) -> EventHandler | None:
+    """The registered handler for the pair, or None."""
+    return HANDLERS.get((event_type, schema_version))
+
+
 def find_handler(event_type: str, schema_version: int) -> EventHandler:
     """The handler for the pair, or `EventRejected` with the right code and `{type, schema_version}`."""
-    handler = HANDLERS.get((event_type, schema_version))
+    handler = get_handler(event_type, schema_version)
     if handler is not None:
         return handler
     known_type = any(registered_type == event_type for registered_type, _ in HANDLERS)

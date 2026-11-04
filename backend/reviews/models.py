@@ -9,6 +9,7 @@ from django.conf import settings
 from django.db import models
 
 from core.models import ImmutableMixin, OrgScopedModel
+from field_sync.models import STATUS_MAX_LENGTH
 
 CODE_MAX_LENGTH = 64
 EVENT_TYPE_MAX_LENGTH = 64
@@ -29,7 +30,7 @@ class ReviewItem(ImmutableMixin, OrgScopedModel):
     field_event = models.OneToOneField(
         "field_sync.FieldEvent", on_delete=models.PROTECT, related_name="review_item"
     )
-    kind = models.CharField(max_length=20, choices=ReviewKind.choices)
+    kind = models.CharField(max_length=STATUS_MAX_LENGTH, choices=ReviewKind.choices)
     code = models.CharField(max_length=CODE_MAX_LENGTH)
     params = models.JSONField(default=dict)
     event_type = models.CharField(max_length=EVENT_TYPE_MAX_LENGTH)

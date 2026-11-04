@@ -6,16 +6,43 @@ from typing import Any
 from rest_framework import serializers
 
 from field_sync.cursor import CURSOR_MAX_LENGTH
-from field_sync.envelope import EventEnvelope, GpsFix, describe_payload
-from field_sync.models import EventStatus
+from field_sync.envelope import (
+    MAX_PLAUSIBLE_TIME,
+    MIN_PLAUSIBLE_TIME,
+    EventEnvelope,
+    GpsFix,
+    describe_payload,
+)
+from field_sync.models import TYPE_MAX_LENGTH, VERSION_MAX_LENGTH, EventStatus
 from reviews.models import ReviewKind
 
 MAX_LATITUDE = 90
 MAX_LONGITUDE = 180
 MAX_SCHEMA_VERSION = 32767  # PositiveSmallIntegerField
 EVENT_TYPE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$")
-EVENT_TYPE_MAX_LENGTH = 64
-VERSION_TOKEN_MAX_LENGTH = 64
+
+
+def reject_unencodable_text(value: str) -> None:
+    """A lone surrogate cannot be stored (PostgreSQL text is UTF-8): refuse it at the edge."""
+    try:
+        value.encode("utf-8")
+    except UnicodeEncodeError:
+        raise serializers.ValidationError("Not valid text.", code="invalid_text") from None
+
+
+class SafeDateTimeField(serializers.DateTimeField):
+    """A datetime that never raises `OverflowError` for extreme values near the calendar limits."""
+
+    def to_internal_value(self, value: Any) -> Any:  # noqa: ANN401
+        try:
+            return super().to_internal_value(value)
+        except OverflowError:
+            self.fail("invalid", format=self.format)
+
+
+def validate_plausible_time(value: Any) -> None:  # noqa: ANN401
+    if not MIN_PLAUSIBLE_TIME <= value < MAX_PLAUSIBLE_TIME:
+        raise serializers.ValidationError("Out of range.", code="out_of_range")
 
 
 class GpsSerializer(serializers.Serializer[Any]):
@@ -28,14 +55,18 @@ class SyncEventSerializer(serializers.Serializer[Any]):
     """The envelope of one event. `payload` is a JSON object; its content is the handler's."""
 
     id = serializers.UUIDField()
-    type = serializers.RegexField(EVENT_TYPE_PATTERN, max_length=EVENT_TYPE_MAX_LENGTH)
+    type = serializers.RegexField(EVENT_TYPE_PATTERN, max_length=TYPE_MAX_LENGTH)
     schema_version = serializers.IntegerField(min_value=1, max_value=MAX_SCHEMA_VERSION)
-    device_time = serializers.DateTimeField()
+    device_time = SafeDateTimeField()
     payload = serializers.DictField()
     shift_id = serializers.UUIDField(required=False, allow_null=True, default=None)
     gps = GpsSerializer(required=False, allow_null=True, default=None)
-    rules_version = serializers.CharField(max_length=VERSION_TOKEN_MAX_LENGTH, allow_blank=True)
-    catalog_version = serializers.CharField(max_length=VERSION_TOKEN_MAX_LENGTH, allow_blank=True)
+    rules_version = serializers.CharField(
+        max_length=VERSION_MAX_LENGTH, allow_blank=True, validators=[reject_unencodable_text]
+    )
+    catalog_version = serializers.CharField(
+        max_length=VERSION_MAX_LENGTH, allow_blank=True, validators=[reject_unencodable_text]
+    )
     manual_capture = serializers.BooleanField(default=False)
     voids_event_id = serializers.UUIDField(required=False, allow_null=True, default=None)
 
@@ -48,9 +79,13 @@ class SyncBatchSerializer(serializers.Serializer[Any]):
     """
 
     device_id = serializers.UUIDField()
-    sent_at = serializers.DateTimeField()
+    sent_at = SafeDateTimeField(validators=[validate_plausible_time])
     cursor = serializers.CharField(
-        required=False, allow_null=True, allow_blank=False, max_length=CURSOR_MAX_LENGTH
+        required=False,
+        allow_null=True,
+        allow_blank=False,
+        max_length=CURSOR_MAX_LENGTH,
+        validators=[reject_unencodable_text],
     )
     events = SyncEventSerializer(many=True, allow_empty=True)
 

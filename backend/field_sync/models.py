@@ -23,6 +23,7 @@ TYPE_MAX_LENGTH = 64
 VERSION_MAX_LENGTH = 64
 SHA256_HEX_LENGTH = 64
 CODE_MAX_LENGTH = 64
+STATUS_MAX_LENGTH = 20
 ACCEPTED_CODE = "accepted"
 
 
@@ -59,7 +60,7 @@ class FieldEvent(ImmutableMixin, VoidableMixin, OrgScopedModel):
     shift_id = models.UUIDField(null=True, blank=True)
     device_time = models.DateTimeField()
     server_received_at = models.DateTimeField()
-    clock_skew_seconds = models.IntegerField(null=True, blank=True)
+    clock_skew_seconds = models.BigIntegerField(null=True, blank=True)
     gps_lat = models.FloatField(null=True, blank=True)
     gps_lng = models.FloatField(null=True, blank=True)
     gps_accuracy_m = models.FloatField(null=True, blank=True)
@@ -69,7 +70,7 @@ class FieldEvent(ImmutableMixin, VoidableMixin, OrgScopedModel):
     voids_event = models.ForeignKey(
         "self", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
     )
-    status = models.CharField(max_length=20, choices=EventStatus.choices)
+    status = models.CharField(max_length=STATUS_MAX_LENGTH, choices=EventStatus.choices)
     status_code = models.CharField(max_length=CODE_MAX_LENGTH)
     status_params = models.JSONField(default=dict)
     is_final_upload = models.BooleanField(default=False)

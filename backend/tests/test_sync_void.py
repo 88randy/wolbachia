@@ -7,10 +7,19 @@ from typing import Any
 import pytest
 from django.utils import timezone
 
+from accounts.models import RevokeReason
+from accounts.revocation import Revocation, revoke_session
 from field_sync.models import FieldEvent
 from organizations.models import Organization
 from tests.conftest import MemberFactory
-from tests.sync_support import Phone, event, make_phone, run_in_threads, second_device_of
+from tests.sync_support import (
+    Phone,
+    configure_clock_skew,
+    event,
+    make_phone,
+    run_in_threads,
+    second_device_of,
+)
 from tests.testapp.models import Widget
 
 pytestmark = pytest.mark.django_db
@@ -84,14 +93,16 @@ def test_voiding_an_event_of_another_organization_looks_exactly_like_a_missing_o
     foreign_result = one_result(phone.sync([void_event(theirs["id"])]))
     missing_result = one_result(phone.sync([void_event(uuid.uuid4())]))
 
-    assert (foreign_result["status"], foreign_result["code"], foreign_result["params"]) == (
+    assert (foreign_result["status"], foreign_result["code"]) == (
         "rejected",
         "void_target_not_found",
-        {},
     )
-    assert {k: v for k, v in foreign_result.items() if k != "id"} == {
-        k: v for k, v in missing_result.items() if k != "id"
-    }
+    assert foreign_result["params"] == {"voids_event_id": theirs["id"]}  # only what the phone sent
+
+    def shape(result: dict[str, Any]) -> tuple[Any, Any, Any]:
+        return result["status"], result["code"], sorted(result["params"])
+
+    assert shape(foreign_result) == shape(missing_result)  # nothing tells them apart
     assert FieldEvent.objects.get(pk=theirs["id"]).voided_at is None
 
 
@@ -132,7 +143,7 @@ def test_a_void_needs_a_target_and_a_reason(
 
     result = one_result(phone.sync([voiding]))
 
-    assert (result["code"], result["params"]) == ("invalid_payload", {"fields": fields})
+    assert (result["code"], result["params"]["fields"]) == ("invalid_payload", fields)
     assert FieldEvent.objects.get(pk=original["id"]).voided_at is None
 
 
@@ -169,10 +180,77 @@ def test_the_on_void_hook_can_refuse_and_then_the_void_leaves_no_trace(phone: Ph
     assert not Widget.objects.filter(name="void-hook-ran").exists()
 
 
-@pytest.mark.django_db(transaction=True)
-def test_two_concurrent_voids_of_one_event_leave_exactly_one_winner(
+def test_a_rejected_void_keeps_the_submitted_target_id_in_its_params(phone: Phone) -> None:
+    missing = uuid.uuid4()
+    voiding = void_event(missing)
+
+    phone.sync([voiding])
+
+    stored = FieldEvent.objects.get(pk=voiding["id"])
+    assert stored.status_params == {"voids_event_id": str(missing)}
+
+
+def test_a_void_that_will_be_reviewed_leaves_the_target_intact(
     org_a: Organization, make_member: MemberFactory
 ) -> None:
+    """A final upload (a revoked phone) must not change records: a supervisor decides (#22)."""
+    phone = make_phone(make_member, org_a)
+    original = event()
+    phone.sync([original])
+    revoke_session(
+        phone.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+    )
+    voiding = void_event(original["id"])
+
+    response = phone.sync([voiding])
+
+    result = response.data["results"][0]
+    assert (result["status"], result["code"]) == ("in_review", "final_upload_after_revoke")
+    target = FieldEvent.objects.get(pk=original["id"])
+    assert (target.voided_at, target.void_reason) == (None, "")
+    stored = FieldEvent.objects.get(pk=voiding["id"])
+    assert (stored.status, stored.voids_event_id) == ("in_review", target.pk)
+
+
+def test_a_void_in_a_skewed_batch_also_waits_for_review(
+    org_a: Organization, make_member: MemberFactory
+) -> None:
+    phone = make_phone(make_member, org_a)
+    configure_clock_skew(org_a, 300)
+    original = event()
+    phone.sync([original])
+    far_future = (timezone.now() + timedelta(hours=3)).isoformat()
+
+    response = phone.sync([void_event(original["id"])], sent_at=far_future)
+
+    assert response.data["results"][0]["code"] == "clock_skew"
+    assert FieldEvent.objects.get(pk=original["id"]).voided_at is None
+
+
+def test_a_void_in_review_still_validates_its_target(
+    org_a: Organization, make_member: MemberFactory
+) -> None:
+    phone = make_phone(make_member, org_a)
+    original = event()
+    phone.sync([original, void_event(original["id"])])
+    revoke_session(
+        phone.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+    )
+
+    response = phone.sync([void_event(original["id"], "again"), void_event(uuid.uuid4())])
+
+    assert [r["code"] for r in response.data["results"]] == [
+        "already_voided",
+        "void_target_not_found",
+    ]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_concurrent_voids_of_one_event_from_two_phones_void_it_once(
+    org_a: Organization, make_member: MemberFactory
+) -> None:
+    """One courier's batches are serialized: the loser of the race is told to retry (429) or,
+    if it ran second, sees the event already voided. Never two voids."""
     first_phone = make_phone(make_member, org_a)
     second_phone = second_device_of(first_phone)
     original = event()
@@ -184,6 +262,8 @@ def test_two_concurrent_voids_of_one_event_leave_exactly_one_winner(
     )
 
     assert all(not isinstance(outcome, Exception) for outcome in outcomes), outcomes
-    codes = sorted(one_result(outcome)["code"] for outcome in outcomes)
-    assert codes == ["accepted", "already_voided"]
+    answers = [o.data["results"][0]["code"] for o in outcomes if o.status_code == 200]
+    assert answers.count("accepted") == 1
+    assert set(answers) <= {"accepted", "already_voided"}
+    assert all(o.status_code in (200, 429) for o in outcomes)
     assert FieldEvent.objects.get(pk=original["id"]).voided_at is not None

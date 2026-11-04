@@ -4,8 +4,6 @@ The phone translates each code with `packages/i18n` (keys `sync.result.*`); the 
 returns user-facing text. `ACCEPTED_CODE` lives in `models` because it is stored on events.
 """
 
-from field_sync.models import EventStatus
-
 VOID_EVENT_TYPE = "record.void"
 
 UNSUPPORTED_EVENT_TYPE = "unsupported_event_type"
@@ -30,7 +28,3 @@ REJECTED_CODES = (
     ALREADY_VOIDED,
 )
 IN_REVIEW_CODES = (CLOCK_SKEW, FINAL_UPLOAD_AFTER_REVOKE)
-STATUS_BY_CODE = {
-    **dict.fromkeys(REJECTED_CODES, EventStatus.REJECTED),
-    **dict.fromkeys(IN_REVIEW_CODES, EventStatus.IN_REVIEW),
-}

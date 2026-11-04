@@ -124,6 +124,8 @@ THROTTLE_FIELD_SYNC_RATE = env("THROTTLE_FIELD_SYNC_RATE", default="60/min")  # 
 SYNC_MAX_BODY_BYTES = env.int("SYNC_MAX_BODY_BYTES", default=1_048_576)  # 1 MB
 SYNC_MAX_EVENTS = env.int("SYNC_MAX_EVENTS", default=200)
 SYNC_MAX_EVENT_PAYLOAD_BYTES = env.int("SYNC_MAX_EVENT_PAYLOAD_BYTES", default=16_384)  # 16 KB
+SYNC_CURSOR_MAX_AGE_SECONDS = env.int("SYNC_CURSOR_MAX_AGE_SECONDS", default=604_800)  # 7 days
+SYNC_RETRY_AFTER_SECONDS = env.int("SYNC_RETRY_AFTER_SECONDS", default=2)
 
 REST_FRAMEWORK = {
     # Session first: it sends the `WWW-Authenticate: Session` challenge that keeps 401s as 401.
