@@ -3,6 +3,7 @@ import { useRouter } from "@tanstack/react-router";
 import { useApiClient } from "../api/ApiClientProvider";
 import { safeRedirect } from "../router/safe-redirect";
 import { ME_QUERY_KEY } from "../session/me-query";
+import { endSessionExpiry } from "../session/session-events";
 import type { LoginFailure } from "./login-failure";
 import { requestLogin } from "./request-login";
 import type { Credentials } from "./request-login";
@@ -21,6 +22,7 @@ export function useLogin(requestedTarget: string | undefined) {
     if (!outcome.ok) return outcome.failure;
     queryClient.clear();
     queryClient.setQueryData(ME_QUERY_KEY, outcome.me);
+    endSessionExpiry();
     const target = safeRedirect(requestedTarget);
     if (outcome.me.organization === null) {
       const search = target === "/" ? {} : { redirect: target };

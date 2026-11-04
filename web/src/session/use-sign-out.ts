@@ -5,6 +5,7 @@ import { useApiClient } from "../api/ApiClientProvider";
 import type { ServiceFailure } from "../api/service-failure";
 import { clearOrganizationSlug } from "./organization-slug";
 import { requestLogout } from "./request-logout";
+import { endSessionExpiry } from "./session-events";
 
 /**
  * Signs out: ends the server session, forgets the chosen organization, empties the query cache
@@ -23,6 +24,7 @@ export function useSignOut() {
     const outcome = await requestLogout(client);
     if (outcome.ok) {
       clearOrganizationSlug();
+      endSessionExpiry();
       await router.navigate({ to: "/login" });
       queryClient.clear();
     } else {

@@ -1,5 +1,6 @@
 import { ApiError } from "@wolbachia/api-client";
-import { QueryClient } from "@tanstack/react-query";
+import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { reportSessionError } from "../session/session-events";
 
 /** Retries of a failed query that is worth retrying (network or 5xx). */
 const MAX_RETRIES = 2;
@@ -21,10 +22,24 @@ interface AppQueryClientOptions {
   retry?: boolean;
 }
 
-/** The one server-state cache of the app (ADR 0001, decision 3). */
+/**
+ * The one server-state cache of the app (ADR 0001, decision 3). Every failed query and mutation
+ * is also reported to the session (an expired session, a lost membership), whichever screen
+ * made the request.
+ */
 export function createAppQueryClient(options: AppQueryClientOptions = {}): QueryClient {
   const { retry = true } = options;
-  return new QueryClient({
+  const client: QueryClient = new QueryClient({
+    queryCache: new QueryCache({
+      onError: (error, query) => {
+        reportSessionError(error, client, query.queryKey);
+      },
+    }),
+    mutationCache: new MutationCache({
+      onError: (error) => {
+        reportSessionError(error, client);
+      },
+    }),
     defaultOptions: {
       // "always": the browser's online flag is only a hint and the web is not offline-first.
       // With the default ("online") a request made while the flag says offline never starts, and
@@ -33,4 +48,5 @@ export function createAppQueryClient(options: AppQueryClientOptions = {}): Query
       mutations: { networkMode: "always" },
     },
   });
+  return client;
 }
