@@ -13,6 +13,7 @@ STATUS_SCHEDULED = "scheduled"
 STATUS_IN_FORCE = "in_force"
 STATUS_SUPERSEDED = "superseded"
 STATUS_VOIDED = "voided"
+VERSION_STATUSES = (STATUS_SCHEDULED, STATUS_IN_FORCE, STATUS_SUPERSEDED, STATUS_VOIDED)
 # Latest start wins; `created_at` breaks the tie between versions that start at the same instant.
 IN_FORCE_ORDER = ("-effective_from", "-created_at")
 
@@ -74,6 +75,21 @@ def list_parameters_with_current(
         )
         .order_by("key")
     )
+
+
+def get_values_in_force(organization: Organization, at: datetime) -> dict[str, int | float | None]:
+    """Every parameter of the organization mapped to its value at `at` (one query).
+
+    `None` means "not configured": the parameter has no non-voided version that started at or
+    before `at`. Callers that apply a threshold must treat `None` as "no rule", never as zero.
+    """
+    rows = list_parameters_with_current(organization, at).values_list(  # type: ignore[misc]
+        "key", "value_type", "current_value"
+    )
+    return {
+        key: None if value is None else to_number(value_type, value)
+        for key, value_type, value in rows
+    }
 
 
 def get_next_change_at(organization: Organization, at: datetime) -> datetime | None:
