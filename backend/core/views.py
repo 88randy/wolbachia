@@ -18,20 +18,14 @@ from accounts.request_context import requested_organization_slug
 from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
 from core.permissions import HasPermissionCode
 from core.services import lock_record_for_update, void_record
+from core.void_reason import VoidSerializer
 from organizations.selectors import resolve_active_membership
 
 INCLUDE_VOIDED_PARAM = "include_voided"
-VOID_REASON_MAX_LENGTH = 1000
 
 
 class HealthSerializer(serializers.Serializer[Any]):
     status = serializers.CharField()
-
-
-class VoidSerializer(serializers.Serializer[Any]):
-    reason = serializers.CharField(
-        allow_blank=False, trim_whitespace=True, max_length=VOID_REASON_MAX_LENGTH
-    )
 
 
 class HealthView(APIView):

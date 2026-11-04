@@ -6,7 +6,7 @@ import pytest
 from django.db import connection
 from rest_framework.test import APIClient
 
-from core.validation import flatten_error_codes
+from core.validation import flatten_error_details, params_message
 from organizations.models import Organization
 from tests.testapp.models import Widget
 
@@ -96,10 +96,14 @@ def test_django_request_body_limit_is_a_413_envelope(api_client: APIClient) -> N
     assert response.data["code"] == "payload_too_large"
 
 
-def test_flatten_error_codes_handles_nested_and_non_field_errors() -> None:
-    codes = {"items": [{}, {"qty": ["min_value"]}], "non_field_errors": ["invalid"]}
+def leaf(code: str, message: str = "x") -> dict[str, str]:
+    return {"message": message, "code": code}
 
-    flat = flatten_error_codes(codes)
+
+def test_flatten_error_details_handles_nested_and_non_field_errors() -> None:
+    details = {"items": [{}, {"qty": [leaf("min_value")]}], "non_field_errors": [leaf("invalid")]}
+
+    flat = flatten_error_details(details)
 
     assert flat == {
         "items.1.qty": [{"code": "min_value", "params": {}}],
@@ -107,10 +111,25 @@ def test_flatten_error_codes_handles_nested_and_non_field_errors() -> None:
     }
 
 
-def test_flatten_error_codes_wraps_a_top_level_list_as_non_field_errors() -> None:
-    assert flatten_error_codes(["invalid"]) == {
+def test_flatten_error_details_wraps_a_top_level_list_as_non_field_errors() -> None:
+    assert flatten_error_details([leaf("invalid")]) == {
         "non_field_errors": [{"code": "invalid", "params": {}}]
     }
+
+
+def test_flatten_error_details_keeps_the_params_a_message_carries() -> None:
+    details = {"reason": [leaf("too_short", params_message({"min_length": 10}))]}
+
+    assert flatten_error_details(details) == {
+        "reason": [{"code": "too_short", "params": {"min_length": 10}}]
+    }
+
+
+def test_flatten_error_details_ignores_a_params_marker_that_is_not_json() -> None:
+    """A message that merely starts with the marker must not turn an error into a 500."""
+    details = {"reason": [leaf("too_short", "params:{not json")]}
+
+    assert flatten_error_details(details) == {"reason": [{"code": "too_short", "params": {}}]}
 
 
 def test_domain_error_rolls_back_writes_made_during_an_atomic_request(

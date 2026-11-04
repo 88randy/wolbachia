@@ -411,7 +411,7 @@ def test_today_version_is_always_allowed_even_if_one_already_started_today(now) 
 def test_a_voided_future_version_frees_its_date(now) -> None:
     parameter = RuleParameterFactory()
     wrong = create_rule_version(parameter, spec("99", date(2026, 11, 10)), UserFactory())
-    void_rule_version(wrong, UserFactory(), "typo")
+    void_rule_version(wrong, UserFactory(), "a typo in the value")
 
     fixed = create_rule_version(parameter, spec("60", date(2026, 11, 10)), UserFactory())
 
@@ -450,7 +450,7 @@ def test_void_refuses_a_version_that_already_took_effect(now, hours) -> None:
     )
 
     with pytest.raises(VersionNotScheduledError):
-        void_rule_version(started, UserFactory(), "late")
+        void_rule_version(started, UserFactory(), "already in force, too late")
 
     started.refresh_from_db()
     assert started.voided_at is None
@@ -458,10 +458,10 @@ def test_void_refuses_a_version_that_already_took_effect(now, hours) -> None:
 
 def test_void_twice_is_already_voided(now) -> None:
     version = create_rule_version(RuleParameterFactory(), spec(), UserFactory())
-    void_rule_version(version, UserFactory(), "once")
+    void_rule_version(version, UserFactory(), "first void, with reason")
 
     with pytest.raises(AlreadyVoidedError):
-        void_rule_version(version, UserFactory(), "twice")
+        void_rule_version(version, UserFactory(), "second void, with reason")
 
 
 def test_voided_version_is_excluded_from_value_in_force_and_snapshot(now) -> None:
@@ -475,7 +475,7 @@ def test_voided_version_is_excluded_from_value_in_force_and_snapshot(now) -> Non
     future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
     before = build_rules_snapshot(parameter.organization, NOW)
 
-    void_rule_version(future, UserFactory(), "typo")
+    void_rule_version(future, UserFactory(), "a typo in the value")
     after = build_rules_snapshot(parameter.organization, NOW)
 
     assert before["next_change_at"] is not None
@@ -487,7 +487,7 @@ def test_voided_version_is_excluded_from_value_in_force_and_snapshot(now) -> Non
 def test_voided_version_stays_in_history_with_status_voided(now) -> None:
     parameter = RuleParameterFactory()
     future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
-    void_rule_version(future, UserFactory(), "typo")
+    void_rule_version(future, UserFactory(), "a typo in the value")
 
     assert [v.status for v in list_versions(parameter, NOW)] == ["voided"]
 
@@ -501,7 +501,7 @@ def test_a_voided_version_does_not_count_as_in_force_when_it_would_have_started(
         effective_date=date(2026, 10, 25),
     )
     future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
-    void_rule_version(future, UserFactory(), "typo")
+    void_rule_version(future, UserFactory(), "a typo in the value")
 
     later = NOW + timedelta(days=10)
 
@@ -553,7 +553,7 @@ def test_values_in_force_ignores_voided_versions_and_other_organizations() -> No
         value=999,
         effective_from=NOW - timedelta(days=1),
     )
-    void_record(voided, UserFactory(), "typo")
+    void_record(voided, UserFactory(), "a typo in the value")
 
     values = get_values_in_force(parameter.organization, NOW)
 

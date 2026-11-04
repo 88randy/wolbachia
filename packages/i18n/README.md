@@ -35,7 +35,7 @@ src/locales/
   en/index.ts        composes every area
 ```
 
-Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`, `table`, `phones`.
+Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`, `table`, `phones`, `voiding`.
 
 - A new key goes in the file named after its first segment, in **both** languages: `auth.login.title` -> `es-MX/auth.ts` and `en/auth.ts`.
 - A new area (first segment) means: create `es-MX/<area>.ts` and `en/<area>.ts` (copy a small pair such as `common.ts`), then add one line to each `index.ts`. `test/areas.test.ts` reads the directories, so it needs no edit.
@@ -77,6 +77,7 @@ Only shared, cross-screen text. Screen copy lands with each screen.
 - `auth.*` (web, #28): sign-in (`auth.login.*`), lockout (`auth.lockout.*`), password reset request and confirm (`auth.forgot.*`, `auth.reset.*`, including the four password-validator codes), organization choice (`auth.organization.*`) and the re-authentication dialog (`auth.session.*`). `shell.userMenu.*` is the user menu of the top bar; `states.noPermission.*` the "no permission" state.
 - `table.*` (web, #29): the shared `DataTable` and `FilterBar`: sort announcements (`{column}` is the translated header), result range and count, pager, filters and chips, the notice for ignored URL parameters, empty states, row selection, voided rows and export. No plurals: counts are written as "Showing {from} to {to} of {total}" and "Selected: {count}".
 - `phones.*` (web, #29): the phones list of W67 (title, column headers, status, filter label, empty cells).
+- `voiding.*` (web, #32): the void dialog (`voiding.dialog.*`, placeholders `{record}`, `{count}`, `{min}`, `{max}`), its errors (`voiding.error.*`, `{min}`). The area is named `voiding` because `void` is a reserved word in TypeScript imports.
 - `sync.inbox.*`: title and hint for each sync result status (accepted, rejected, inReview) in the phone inbox.
 - `sync.result.*`: one message per per-event result code of `/field/sync/` (key = camelCase of the code, e.g. `clock_skew` -> `sync.result.clockSkew`); `sync.batch.*`: the batch-level errors (`device_mismatch`, `payload_too_large`, `invalid_cursor`). The code table is `docs/sync.md`; a backend test fails when a code has no key in both languages. Messages carry no placeholders: the `params` of a result are for logs and support.
 

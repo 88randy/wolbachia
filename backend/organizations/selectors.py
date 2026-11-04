@@ -3,8 +3,17 @@ from dataclasses import dataclass, field
 from django.db.models import QuerySet
 
 from accounts.models import User
+from core.void_reason import VOID_REASON_MAX_LENGTH, void_reason_min_length
 from organizations.exceptions import NoActiveMembershipError, OrganizationHeaderRequiredError
 from organizations.models import Membership, Organization, Profile, default_scope
+
+
+def default_limits() -> dict[str, int]:
+    """Server limits the web mirrors in its forms (it still shows the server's answer)."""
+    return {
+        "void_reason_min_length": void_reason_min_length(),
+        "void_reason_max_length": VOID_REASON_MAX_LENGTH,
+    }
 
 
 @dataclass(frozen=True)
@@ -17,6 +26,7 @@ class MeContext:
     permissions: list[str]
     scope: dict[str, list[str]] = field(default_factory=default_scope)
     organizations: list[Organization] = field(default_factory=list)
+    limits: dict[str, int] = field(default_factory=default_limits)
 
 
 def _active_memberships(user: User) -> QuerySet[Membership]:

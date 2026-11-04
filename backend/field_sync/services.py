@@ -35,7 +35,7 @@ from django.conf import settings
 from django.db import IntegrityError, OperationalError, connection, transaction
 from rest_framework.exceptions import ValidationError
 
-from core.validation import flatten_error_codes
+from core.validation import flatten_error_details
 from field_sync.clock import ClockPolicy, build_clock_policy
 from field_sync.codes import (
     EVENT_ID_CONFLICT,
@@ -224,9 +224,7 @@ class EventProcessor:
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError as error:
-            codes = flatten_error_codes(error.get_codes())
-            fields = {name: [item["code"] for item in items] for name, items in codes.items()}
-            raise EventRejected(INVALID_PAYLOAD, {"fields": fields}) from None
+            raise EventRejected(INVALID_PAYLOAD, _rejection_params(error)) from None
         shift_signal = (
             run_envelope_checks(organization, self.batch.user, envelope)
             if handler.checks_shift
@@ -385,3 +383,20 @@ class EventProcessor:
         if stored is None:
             raise error
         return self._replay(envelope, stored)
+
+
+def _rejection_params(error: ValidationError) -> dict[str, Any]:
+    """`{"fields": {name: [code]}}`, plus `field_params: {name: {code: params}}` when a code
+    carries params (the phone needs `min_length` of `void_reason_too_short`)."""
+    flat = flatten_error_details(error.get_full_details())
+    params: dict[str, Any] = {
+        "fields": {n: [i["code"] for i in items] for n, items in flat.items()}
+    }
+    carried = {
+        name: {item["code"]: item["params"] for item in items if item["params"]}
+        for name, items in flat.items()
+    }
+    carried = {name: codes for name, codes in carried.items() if codes}
+    if carried:
+        params["field_params"] = carried
+    return params

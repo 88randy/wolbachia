@@ -18,6 +18,7 @@ export function VoidedDetail({ info }: { info: VoidInfo }) {
       </span>
       <span>{t("table.voided.reason", { reason: info.reason })}</span>
       <span>{t("table.voided.author", { author: info.author })}</span>
+      {info.when !== undefined && <span>{t("table.voided.when", { when: info.when })}</span>}
     </div>
   );
 }

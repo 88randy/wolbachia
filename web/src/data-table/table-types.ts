@@ -120,6 +120,8 @@ export interface VoidInfo {
   reason: string;
   /** Already formatted for display (a name, never an id). */
   author: string;
+  /** Already formatted in the organization's time zone; shown only when present. */
+  when?: string;
 }
 
 export interface DataTableColumn<Row> {
