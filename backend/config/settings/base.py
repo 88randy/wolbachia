@@ -75,8 +75,47 @@ API_CURSOR_PAGE_SIZE = env.int("API_CURSOR_PAGE_SIZE", default=100)
 THROTTLE_ANON_RATE = env("THROTTLE_ANON_RATE", default="60/min")
 THROTTLE_USER_RATE = env("THROTTLE_USER_RATE", default="600/min")
 
+# Authentication (#4). Token lifetimes, grace windows and lockout thresholds are global (the
+# organization is unknown before login), env-configurable defaults [PENDING client].
+AUTH_ACCESS_TOKEN_TTL_SECONDS = env.int("AUTH_ACCESS_TOKEN_TTL_SECONDS", default=900)
+AUTH_REFRESH_TOKEN_TTL_DAYS = env.int("AUTH_REFRESH_TOKEN_TTL_DAYS", default=30)  # idle, slides
+AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", default=60)
+AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
+AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)
+AUTH_LOGIN_LOCKOUT_MINUTES = env.int("AUTH_LOGIN_LOCKOUT_MINUTES", default=15)
+AUTH_WEB_SESSION_AGE_SECONDS = env.int("AUTH_WEB_SESSION_AGE_SECONDS", default=43_200)  # 12 h
+SESSION_COOKIE_AGE = AUTH_WEB_SESSION_AGE_SECONDS
+PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=3_600)
+
+# Password reset email. `EMAIL_URL` is a django-environ URL (`consolemail://` prints to the
+# console, `smtp://user:pass@host:587`...); production requires it explicitly (see prod.py).
+globals().update(env.email_url("EMAIL_URL", default="consolemail://"))
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL", default="Wolbachia <no-reply@localhost>")
+WEB_BASE_URL = env("WEB_BASE_URL", default="http://localhost:5173").rstrip("/")  # [ASSUMPTION]
+WEB_PASSWORD_RESET_PATH = env("WEB_PASSWORD_RESET_PATH", default="/reset-password")  # [ASSUMPTION]
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "APP_DIRS": True,
+        "OPTIONS": {},
+    }
+]
+
+THROTTLE_LOGIN_USER_IP_RATE = env("THROTTLE_LOGIN_USER_IP_RATE", default="10/min")
+THROTTLE_LOGIN_IP_RATE = env("THROTTLE_LOGIN_IP_RATE", default="30/min")
+THROTTLE_REFRESH_RATE = env("THROTTLE_REFRESH_RATE", default="30/min")
+THROTTLE_PASSWORD_RESET_RATE = env("THROTTLE_PASSWORD_RESET_RATE", default="5/hour")
+THROTTLE_PASSWORD_RESET_CONFIRM_RATE = env(
+    "THROTTLE_PASSWORD_RESET_CONFIRM_RATE", default="20/hour"
+)
+
 REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": ["core.authentication.ApiSessionAuthentication"],
+    # Session first: it sends the `WWW-Authenticate: Session` challenge that keeps 401s as 401.
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "core.authentication.ApiSessionAuthentication",
+        "accounts.authentication.DeviceBearerAuthentication",
+    ],
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     "DEFAULT_PARSER_CLASSES": ["rest_framework.parsers.JSONParser"],
@@ -84,7 +123,15 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.AnonRateThrottle",
         "rest_framework.throttling.UserRateThrottle",
     ],
-    "DEFAULT_THROTTLE_RATES": {"anon": THROTTLE_ANON_RATE, "user": THROTTLE_USER_RATE},
+    "DEFAULT_THROTTLE_RATES": {
+        "anon": THROTTLE_ANON_RATE,
+        "user": THROTTLE_USER_RATE,
+        "login_user_ip": THROTTLE_LOGIN_USER_IP_RATE,
+        "login_ip": THROTTLE_LOGIN_IP_RATE,
+        "refresh": THROTTLE_REFRESH_RATE,
+        "password_reset": THROTTLE_PASSWORD_RESET_RATE,
+        "password_reset_confirm": THROTTLE_PASSWORD_RESET_CONFIRM_RATE,
+    },
     # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a
     # client cannot dodge the anonymous throttle by rotating that header.
     "NUM_PROXIES": env.int("DRF_NUM_PROXIES", default=0),

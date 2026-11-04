@@ -14,6 +14,7 @@ from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import exception_handler, set_rollback
 
+from core.authentication import SESSION_AUTH_SCHEME
 from core.exceptions import DomainError
 
 logger = logging.getLogger(__name__)
@@ -71,10 +72,21 @@ def _log_unhandled(exc: Exception, context: dict[str, Any]) -> None:
     )
 
 
+def _challenge_headers(exc: DomainError) -> dict[str, str] | None:
+    """A 401 carries `WWW-Authenticate`, like the 401s DRF builds from authenticators."""
+    if exc.status_code == HTTPStatus.UNAUTHORIZED:
+        return {"WWW-Authenticate": SESSION_AUTH_SCHEME}
+    return None
+
+
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     if isinstance(exc, DomainError):
         set_rollback()
-        return Response({"code": exc.code, "detail": exc.detail}, status=exc.status_code)
+        return Response(
+            {"code": exc.code, "detail": exc.detail},
+            status=exc.status_code,
+            headers=_challenge_headers(exc),
+        )
 
     exc = _normalize(exc)
     response = exception_handler(exc, context)

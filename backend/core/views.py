@@ -14,7 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.constants import ORGANIZATION_HEADER
+from accounts.selectors import requested_organization_slug
 from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
 from core.permissions import HasPermissionCode
 from core.services import lock_record_for_update, void_record
@@ -67,7 +67,7 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
             raise MethodNotAllowed(request.method or "")
         if request.user.is_authenticated:
             membership = resolve_active_membership(
-                request.user, request.headers.get(ORGANIZATION_HEADER)
+                request.user, requested_organization_slug(request)
             )
             request.membership = membership  # type: ignore[attr-defined]
             request.organization = membership.organization  # type: ignore[attr-defined]
