@@ -31,17 +31,6 @@ def test_void_endpoint_records_who_when_and_why(
     assert response.data["void_reason"] == "duplicate entry"
 
 
-def test_void_without_reason_is_a_validation_error(
-    client_a: APIClient, org_a: Organization
-) -> None:
-    widget = WidgetFactory(organization=org_a)
-
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "  "}, format="json")
-
-    assert response.status_code == 400
-    assert response.data["fields"]["reason"][0]["code"] == "blank"
-
-
 def test_voiding_twice_returns_409_already_voided(client_a: APIClient, org_a: Organization) -> None:
     widget = WidgetFactory(organization=org_a)
     client_a.post(

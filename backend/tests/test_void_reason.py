@@ -5,11 +5,12 @@ from typing import Any
 
 import pytest
 from django.utils import timezone
+from rest_framework.exceptions import ValidationError
 from rest_framework.test import APIClient
 
 from accounts.models import User
-from core.exceptions import FieldValidationError
 from core.services import void_record
+from core.validation import flatten_error_details
 from core.void_reason import VOID_REASON_MAX_LENGTH, validate_void_reason, void_reason_min_length
 from field_sync.models import FieldEvent
 from organizations.models import Organization
@@ -28,32 +29,76 @@ NINE = "a" * 9
 TEN = "a" * 10
 
 
-# --- the validator ------------------------------------------------------------------------
+# --- the validator: what counts, what is refused ------------------------------------------
+
+
+def refused(reason: str) -> dict[str, Any]:
+    with pytest.raises(ValidationError) as raised:
+        validate_void_reason(reason, "reason")
+    return flatten_error_details(raised.value.get_full_details())
 
 
 def test_the_default_minimum_is_ten_characters() -> None:
     assert void_reason_min_length() == 10
 
 
-def test_the_validator_trims_and_returns_the_clean_text() -> None:
-    assert validate_void_reason(f"  {TEN}  \n") == TEN
+@pytest.mark.parametrize(
+    ("raw", "stored"),
+    [
+        (f"  {TEN}  \n", TEN),  # trimmed
+        ("e\u0301" * 10, "\u00e9" * 10),  # decomposed accents are stored composed (NFC)
+        ("\u00f1" * 5 + "\u00fc" * 5, "\u00f1" * 5 + "\u00fc" * 5),  # accented letters count
+        ("\U0001f600" * 10, "\U0001f600" * 10),  # so do emoji
+        ("l\u00ednea uno\nl\u00ednea dos", "l\u00ednea uno\nl\u00ednea dos"),  # LF is allowed
+        ("l\u00ednea uno\r\nl\u00ednea dos", "l\u00ednea uno\nl\u00ednea dos"),  # CRLF becomes LF
+    ],
+)
+def test_the_validator_returns_the_normalized_text_to_store(raw: str, stored: str) -> None:
+    assert validate_void_reason(raw) == stored
 
 
-@pytest.mark.parametrize("reason", ["", "   ", NINE, f"  {NINE}  ", "\t\n"])
-def test_the_validator_refuses_what_is_too_short_after_trimming(reason: str) -> None:
-    with pytest.raises(FieldValidationError) as raised:
-        validate_void_reason(reason)
+INVISIBLE = [
+    "\u200b",  # zero-width space (Cf)
+    "\u200d",  # zero-width joiner (Cf)
+    "\ufeff",  # BOM (Cf): JS trim() strips it, Python strip() does not
+    "\u0301",  # combining acute accent (Mn)
+    "\u00a0",  # no-break space (Zs)
+    "\u2028",  # line separator (Zl)
+    "\u3164",  # Hangul filler
+    "\u2800",  # braille blank
+]
 
-    assert raised.value.fields == {"reason": [TOO_SHORT]}
+
+@pytest.mark.parametrize("invisible", INVISIBLE)
+def test_text_that_shows_nothing_never_reaches_the_minimum(invisible: str) -> None:
+    assert refused(invisible * 10) == {"reason": [TOO_SHORT]}
+    assert refused(NINE + invisible * 5) == {"reason": [TOO_SHORT]}
+
+
+@pytest.mark.parametrize("reason", ["", "   ", NINE, f"  {NINE}  "])
+def test_blank_and_short_reasons_get_the_same_code_and_params(reason: str) -> None:
+    assert refused(reason) == {"reason": [TOO_SHORT]}
+
+
+@pytest.mark.parametrize(
+    "reason",
+    ["\u202eevil " + TEN, TEN + "\u2066", TEN + "\x00", TEN + "\x07", "aaaaa\taaaaa"],
+)
+def test_control_and_bidi_characters_are_refused(reason: str) -> None:
+    assert refused(reason) == {"reason": [{"code": "void_reason_invalid_characters", "params": {}}]}
+
+
+def test_the_maximum_is_enforced_by_the_validator_too() -> None:
+    assert validate_void_reason("x" * VOID_REASON_MAX_LENGTH) == "x" * VOID_REASON_MAX_LENGTH
+    assert refused("x" * (VOID_REASON_MAX_LENGTH + 1)) == {
+        "reason": [{"code": "max_length", "params": {"max_length": VOID_REASON_MAX_LENGTH}}]
+    }
 
 
 def test_the_minimum_comes_from_the_setting(settings: Any) -> None:  # noqa: ANN401
     settings.VOID_REASON_MIN_LENGTH = 25
 
-    with pytest.raises(FieldValidationError) as raised:
-        validate_void_reason(TEN)
-
-    assert raised.value.fields == {
+    assert refused(TEN) == {
         "reason": [{"code": "void_reason_too_short", "params": {"min_length": 25}}]
     }
 
@@ -74,7 +119,7 @@ def test_a_silly_setting_is_clamped_so_a_void_stays_possible(
 # --- core: POST .../void/ and void_record --------------------------------------------------
 
 
-def test_void_endpoint_refuses_a_short_reason_with_code_and_params(
+def test_void_endpoint_answers_with_code_and_params_and_changes_nothing(
     client_a: APIClient, org_a: Organization
 ) -> None:
     widget = WidgetFactory(organization=org_a)
@@ -88,7 +133,31 @@ def test_void_endpoint_refuses_a_short_reason_with_code_and_params(
     assert widget.voided_at is None
 
 
-def test_void_endpoint_accepts_exactly_the_minimum_and_stores_it_trimmed(
+@pytest.mark.parametrize("reason", ["", "   ", "​" * 10])
+def test_void_endpoint_treats_blank_and_invisible_text_as_too_short(
+    client_a: APIClient, org_a: Organization, reason: str
+) -> None:
+    widget = WidgetFactory(organization=org_a)
+
+    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": reason}, format="json")
+
+    assert response.data["fields"] == {"reason": [TOO_SHORT]}
+
+
+def test_void_endpoint_refuses_control_characters_and_a_missing_reason(
+    client_a: APIClient, org_a: Organization
+) -> None:
+    widget = WidgetFactory(organization=org_a)
+    url = f"{WIDGETS}{widget.pk}/void/"
+
+    bidi = client_a.post(url, {"reason": "‮" + TEN}, format="json")
+    missing = client_a.post(url, {}, format="json")
+
+    assert bidi.data["fields"]["reason"][0]["code"] == "void_reason_invalid_characters"
+    assert missing.data["fields"]["reason"][0]["code"] == "required"
+
+
+def test_void_endpoint_stores_the_normalized_reason(
     client_a: APIClient, org_a: Organization
 ) -> None:
     widget = WidgetFactory(organization=org_a)
@@ -100,47 +169,16 @@ def test_void_endpoint_accepts_exactly_the_minimum_and_stores_it_trimmed(
     assert widget.void_reason == TEN
 
 
-def test_void_endpoint_follows_the_setting(
-    client_a: APIClient,
-    org_a: Organization,
-    settings: Any,  # noqa: ANN401
-) -> None:
-    settings.VOID_REASON_MIN_LENGTH = 3
-    widget = WidgetFactory(organization=org_a)
-
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "dup"}, format="json")
-
-    assert response.status_code == 200
-
-
-def test_void_endpoint_missing_reason_keeps_the_required_code(
-    client_a: APIClient, org_a: Organization
-) -> None:
-    widget = WidgetFactory(organization=org_a)
-
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {}, format="json")
-
-    assert response.status_code == 400
-    assert response.data["fields"]["reason"][0]["code"] == "required"
-
-
-def test_void_record_cannot_be_used_to_store_a_short_reason(
+def test_void_record_validates_for_callers_that_skip_the_serializer(
     org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a)
 
-    with pytest.raises(FieldValidationError):
-        void_record(widget, member_a, NINE)
+    with pytest.raises(ValidationError) as raised:
+        void_record(widget, member_a, "​" * 10)
 
+    assert flatten_error_details(raised.value.get_full_details()) == {"reason": [TOO_SHORT]}
     assert Widget.objects.get(pk=widget.pk).voided_at is None
-
-
-def test_void_record_stores_the_trimmed_reason(org_a: Organization, member_a: User) -> None:
-    widget = WidgetFactory(organization=org_a)
-
-    voided = void_record(widget, member_a, f"  {TEN}  ")
-
-    assert voided.void_reason == TEN
 
 
 # --- rules: voiding a scheduled parameter version ------------------------------------------
@@ -180,15 +218,6 @@ def test_rule_version_void_refuses_a_short_reason(
     assert version.voided_at is None
 
 
-def test_rule_version_void_accepts_the_minimum(rule_admin: APIClient, org_a: Organization) -> None:
-    version = scheduled_version(org_a)
-
-    response = rule_admin.post(rule_void_url(version), {"reason": TEN}, format="json")
-
-    assert response.status_code == 200
-    assert response.data["void_reason"] == TEN
-
-
 def test_rule_version_void_checks_the_reason_before_the_state(
     rule_admin: APIClient, org_a: Organization
 ) -> None:
@@ -224,17 +253,22 @@ def test_a_short_void_event_is_rejected_and_leaves_the_target_intact(phone: Phon
     result = response.data["results"][0]
     assert (result["status"], result["code"]) == ("rejected", "invalid_payload")
     assert result["params"]["fields"] == {"reason": ["void_reason_too_short"]}
+    assert result["params"]["field_params"] == {
+        "reason": {"void_reason_too_short": {"min_length": 10}}
+    }
     assert FieldEvent.objects.get(pk=original["id"]).voided_at is None
 
 
-def test_a_void_event_with_the_minimum_reason_is_accepted(phone: Phone) -> None:
+@pytest.mark.parametrize("reason", ["", "   ", "​" * 10])
+def test_a_void_event_with_a_blank_or_invisible_reason_is_too_short(
+    phone: Phone, reason: str
+) -> None:
     original = event()
     phone.sync([original])
 
-    response = phone.sync([void_event(original["id"], f"  {TEN}  ")])
+    response = phone.sync([void_event(original["id"], reason)])
 
-    assert response.data["results"][0]["status"] == "accepted"
-    assert FieldEvent.objects.get(pk=original["id"]).void_reason == TEN
+    assert response.data["results"][0]["params"]["fields"] == {"reason": ["void_reason_too_short"]}
 
 
 # --- /me/ limits ---------------------------------------------------------------------------

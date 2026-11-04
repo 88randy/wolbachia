@@ -18,7 +18,7 @@ def void_record[VoidableT: VoidableMixin](
     `AlreadyVoidedError` (409). The reason goes through `validate_void_reason` (trimmed, minimum
     length), so no caller can store a shorter one: `FieldValidationError` (400).
     """
-    cleaned_reason = validate_void_reason(reason)
+    cleaned_reason = validate_void_reason(reason, "reason")
     with transaction.atomic():
         locked = cast(
             VoidableT, type(instance)._default_manager.select_for_update().get(pk=instance.pk)

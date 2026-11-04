@@ -22,7 +22,7 @@ from core.exceptions import (
     DomainError,
     PayloadTooLargeError,
 )
-from core.validation import flatten_error_codes
+from core.validation import flatten_error_details
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +43,7 @@ def _api_exception_body(exc: exceptions.APIException) -> dict[str, Any]:
         return {
             "code": VALIDATION_ERROR_CODE,
             "detail": VALIDATION_ERROR_DETAIL,
-            "fields": flatten_error_codes(exc.get_codes()),
+            "fields": flatten_error_details(exc.get_full_details()),
         }
     return {"code": str(exc.get_codes()), "detail": str(exc.detail)}
 

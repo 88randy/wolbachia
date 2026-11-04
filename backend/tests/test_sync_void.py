@@ -129,7 +129,7 @@ def test_voiding_twice_is_refused_the_second_time(phone: Phone) -> None:
     ("overrides", "fields"),
     [
         ({"voids_event_id": None}, {"voids_event_id": ["required"]}),
-        ({"payload": {"reason": "   "}}, {"reason": ["blank"]}),
+        ({"payload": {"reason": "   "}}, {"reason": ["void_reason_too_short"]}),
         ({"payload": {}}, {"reason": ["required"]}),
         ({"payload": {"reason": "x" * 1001}}, {"reason": ["max_length"]}),
     ],
