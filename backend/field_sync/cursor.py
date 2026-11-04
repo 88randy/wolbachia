@@ -4,7 +4,7 @@ The cursor says how far the phone has read its review items: the `courier_sequen
 item delivered (a counter per courier, not a timestamp). It is signed with Django's `signing` (the secret
 key), so it cannot be forged or edited; it carries the organization and user it was issued for,
 so a token copied to another session is refused; and it expires after
-`SYNC_CURSOR_MAX_AGE_SECONDS` (default 7 days). It is not secret: the position is visible to
+`SYNC_CURSOR_MAX_AGE_SECONDS` (default 30 days). It is not secret: the position is visible to
 whoever holds it.
 
 Position by sequence is safe because every writer of a courier's review items holds the same

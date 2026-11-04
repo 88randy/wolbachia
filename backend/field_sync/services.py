@@ -7,9 +7,10 @@
    Nothing waits, so a burst of retries cannot pile up workers or connections. With every batch of
    a courier serialized, the pull of `changes` inside the same transaction can use a strict
    keyset cursor (decision 71).
-2. Blocking advisory locks on the (at most 16) buckets the event ids hash into, in ascending order
-   and with a lock timeout, so two couriers that share an id run one after the other and the second
-   one finds the first's row (decision 72) instead of running its handler for nothing.
+2. `SET LOCAL lock_timeout` for the whole transaction: a lock wait that takes too long
+   (`55P03`), or a deadlock with another courier's batch over a shared event id (`40P01`), is
+   also `429 sync_in_progress` (decision 72). There are no per-id locks: shared ids are arbitrated
+   by the primary key and the savepoint, as for any duplicate.
 3. Events are processed in `(device_time, id)` order; results go back in request order. Per event:
    a stored event with the same id returns its stored result (or `event_id_conflict` when it
    belongs to another organization, device or user); otherwise the payload is validated, the
@@ -19,8 +20,8 @@
    its `ReviewItem` (its payload only when the database can hold it, see `storable_payload`).
    Precedence: rejected, in review, accepted.
 
-None of these locks are row locks, so the global row lock order (accounts/README.md) is untouched:
-the user lock is a *try* (never waits) and the event-id locks wait only for short transactions.
+The advisory lock is not a row lock and is a *try* (never waits), so the global row lock order
+(accounts/README.md) is untouched.
 Nothing here calls an external service: the view may hold the user and session locks of a final
 upload for the whole batch.
 """
@@ -63,8 +64,8 @@ from reviews.services import create_review_item
 
 logger = logging.getLogger(__name__)
 
-EVENT_LOCK_BUCKETS = 16
-LOCK_NOT_AVAILABLE = "55P03"  # PostgreSQL `lock_not_available` (lock_timeout expired)
+# PostgreSQL `lock_not_available` (lock_timeout expired) and `deadlock_detected`.
+RETRYABLE_SQLSTATES = frozenset({"55P03", "40P01"})
 
 
 @dataclass(frozen=True)
@@ -110,30 +111,17 @@ def lock_courier_batches(batch: BatchContext) -> None:
         raise SyncInProgressError
 
 
-def lock_event_ids(envelopes: list[EventEnvelope]) -> None:
-    """Wait for the lock of the buckets of the batch's event ids, in sorted order (at most
-    `EVENT_LOCK_BUCKETS` locks and round trips, however many events).
+def set_batch_lock_timeout() -> None:
+    """Cap how long any lock wait of this transaction may last (`SYNC_LOCK_TIMEOUT_MS`).
 
-    Each id hashes into one of 16 buckets: two batches that share an id always share its bucket,
-    so they run one after the other. Locks are taken in ascending bucket order (no deadlock) and
-    never wait longer than `SYNC_LOCK_TIMEOUT_MS`: after that the batch is `429 sync_in_progress`
-    (a held lock means another sync is busy; retry). The timeout is set only for these waits.
+    `SET LOCAL` semantics (`is_local`): it lasts until the transaction ends and is rolled back
+    with it, so it never leaks to another request. It covers every wait of the batch: a primary key
+    insert blocked by another batch that shares an event id, a row lock on a void target...
     """
-    buckets = sorted(
-        {advisory_key("event-bucket", e.id.int % EVENT_LOCK_BUCKETS) for e in envelopes}
-    )
     with connection.cursor() as cursor:
         cursor.execute(
             "SELECT set_config('lock_timeout', %s, true)", [f"{settings.SYNC_LOCK_TIMEOUT_MS}ms"]
         )
-        try:
-            for key in buckets:
-                cursor.execute("SELECT pg_advisory_xact_lock(%s)", [key])
-        except OperationalError as error:
-            if getattr(error.__cause__, "sqlstate", None) == LOCK_NOT_AVAILABLE:
-                raise SyncInProgressError from None
-            raise
-        cursor.execute("SELECT set_config('lock_timeout', '0', true)")
 
 
 def sync_batch(
@@ -141,13 +129,21 @@ def sync_batch(
 ) -> SyncOutcome:
     """Ingest a batch and pull the courier's changes in one locked transaction (writes).
 
-    `cursor` None means "do not pull" (a revoked phone's final upload).
+    `cursor` None means "do not pull" (a revoked phone's final upload). A lock wait that exceeds
+    the timeout (`55P03`) or a deadlock with another courier's batch over a shared event id
+    (`40P01`) is `429 sync_in_progress`: the transaction rolls back (a final upload is given
+    back) and the phone retries the same batch, which event ids make safe (decision 72).
     """
-    with transaction.atomic():
-        lock_courier_batches(batch)
-        lock_event_ids(envelopes)
-        results = ingest_batch(batch, envelopes)
-        changes = Changes() if cursor is None else build_changes(batch, cursor)
+    try:
+        with transaction.atomic():
+            lock_courier_batches(batch)
+            set_batch_lock_timeout()
+            results = ingest_batch(batch, envelopes)
+            changes = Changes() if cursor is None else build_changes(batch, cursor)
+    except OperationalError as error:
+        if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
+            raise SyncInProgressError from None
+        raise
     return SyncOutcome(results, changes)
 
 

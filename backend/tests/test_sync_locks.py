@@ -2,14 +2,14 @@
 ordered locks on shared event ids (never deadlocking)."""
 
 import threading
+import time
 import uuid
 from datetime import timedelta
 from functools import partial
 from typing import Any
 
 import pytest
-from django.db import IntegrityError, connection
-from django.test.utils import CaptureQueriesContext
+from django.db import IntegrityError, OperationalError, connection
 from django.utils import timezone
 
 from accounts.models import RevokeReason
@@ -17,7 +17,6 @@ from accounts.revocation import Revocation, revoke_session
 from field_sync import registry
 from field_sync.models import FieldEvent
 from field_sync.registry import HANDLERS, EventContext, EventHandler
-from field_sync.services import EVENT_LOCK_BUCKETS
 from organizations.models import Organization
 from tests.conftest import MemberFactory
 from tests.sync_support import Phone, event, make_phone, run_in_threads, second_device_of
@@ -154,68 +153,86 @@ def test_a_final_upload_refused_with_sync_in_progress_is_not_spent(
     assert (retried.status_code, retried.headers["X-Session-Revoked"]) == (200, "true")
 
 
-def test_a_batch_that_waits_too_long_for_a_shared_event_id_bucket_is_told_to_retry(
+def test_a_primary_key_insert_blocked_beyond_the_timeout_is_told_to_retry(
     org_a: Organization, org_b: Organization, make_member: MemberFactory, settings: Any
 ) -> None:
-    """Another courier holds a batch open on an id of the same bucket: no queueing forever."""
+    """Another courier's open batch has already inserted the same event id (uncommitted): our
+    insert waits on the unique index, and past the timeout the batch is 429, not a hang."""
     settings.SYNC_LOCK_TIMEOUT_MS = 300
     holder = make_phone(make_member, org_a)
     waiter = make_phone(make_member, org_b)
-    held_id = str(uuid.UUID(int=16 * 1000))
-    same_bucket = str(uuid.UUID(int=16 * 2000))
+    shared = event(device_time=(timezone.now() - timedelta(seconds=30)).isoformat())
     answers: dict[str, Any] = {}
     thread = run_long_batch(
-        holder, [event(id=held_id, type="test.slow", payload={"text": "slow"})], answers
+        holder, [shared, event(type="test.slow", payload={"text": "slow"})], answers
     )
     assert SLOW_STARTED.wait(10)
 
-    refused = waiter.sync([event(id=same_bucket)])
-    other_bucket = waiter.sync([event(id=str(uuid.UUID(int=16 * 3000 + 1)))])
+    refused = waiter.sync([shared])
     SLOW_RELEASE.set()
     thread.join(20)
-    retried = waiter.sync([event(id=same_bucket)])
+    retried = waiter.sync([shared])
 
     assert (refused.status_code, refused.data["code"]) == (429, "sync_in_progress")
     assert int(refused.headers["Retry-After"]) > 0
-    assert other_bucket.status_code == 200
-    assert retried.status_code == 200
-    assert FieldEvent.objects.filter(pk=same_bucket).count() == 1
+    assert retried.data["results"][0]["code"] == "event_id_conflict"
+    assert FieldEvent.objects.filter(pk=shared["id"]).count() == 1
 
 
-def test_the_lock_timeout_does_not_leak_into_the_rest_of_the_batch(
-    org_a: Organization, make_member: MemberFactory
+def test_a_final_upload_blocked_beyond_the_timeout_is_not_spent(
+    org_a: Organization, org_b: Organization, make_member: MemberFactory, settings: Any
 ) -> None:
-    phone = make_phone(make_member, org_a)
-    original = event()
-    phone.sync([original])
+    settings.SYNC_LOCK_TIMEOUT_MS = 300
+    holder = make_phone(make_member, org_a)
+    revoked = make_phone(make_member, org_b)
+    revoke_session(
+        revoked.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+    )
+    shared = event(device_time=(timezone.now() - timedelta(seconds=30)).isoformat())
+    answers: dict[str, Any] = {}
+    thread = run_long_batch(
+        holder, [shared, event(type="test.slow", payload={"text": "slow"})], answers
+    )
+    assert SLOW_STARTED.wait(10)
 
-    phone.sync([void_event_for(original["id"])])
+    refused = revoked.sync([shared])
+    SLOW_RELEASE.set()
+    thread.join(20)
+    retried = revoked.sync([event()])
 
-    with connection.cursor() as cursor:
-        cursor.execute("SHOW lock_timeout")
-        assert cursor.fetchone() == ("0",)
+    assert (refused.status_code, refused.data["code"]) == (429, "sync_in_progress")
+    assert (retried.status_code, retried.headers["X-Session-Revoked"]) == (200, "true")
 
 
-def test_the_event_id_locks_are_at_most_one_per_bucket(
-    org_a: Organization, make_member: MemberFactory
+def test_any_other_database_error_is_not_hidden_as_a_retry(
+    org_a: Organization, make_member: MemberFactory, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    def fails(batch: Any, envelopes: Any) -> Any:  # noqa: ANN401
+        raise OperationalError("connection lost")
+
+    monkeypatch.setattr("field_sync.services.ingest_batch", fails)
     phone = make_phone(make_member, org_a)
-    events = [event() for _ in range(200)]
 
-    with CaptureQueriesContext(connection) as captured:
-        phone.sync(events)
+    response = phone.sync([event()])
 
-    locks = [q for q in captured.captured_queries if "pg_advisory_xact_lock" in q["sql"]]
-    assert 1 <= len(locks) <= EVENT_LOCK_BUCKETS
+    assert (response.status_code, response.data["code"]) == (500, "server_error")
 
 
-def void_event_for(target_id: str) -> dict[str, Any]:
-    return event(type="record.void", payload={"reason": "typo"}, voids_event_id=target_id)
+def sync_until_answered(phone: Phone, events: list[dict[str, Any]]) -> Any:  # noqa: ANN401
+    """What the app does on `sync_in_progress`: wait `Retry-After` and send the same batch."""
+    for _ in range(20):
+        response = phone.sync(events)
+        if response.status_code != 429:
+            return response
+        time.sleep(0.2)
+    return response
 
 
-def test_batches_sharing_event_ids_in_opposite_orders_never_deadlock(
+def test_batches_sharing_event_ids_in_opposite_orders_end_consistent(
     org_a: Organization, org_b: Organization, make_member: MemberFactory
 ) -> None:
+    """Without per-id locks the two batches can deadlock on the primary key: PostgreSQL aborts
+    one (40P01), the server answers 429, and the retry resolves per event."""
     mine = make_phone(make_member, org_a)
     theirs = make_phone(make_member, org_b)
     base = timezone.now()
@@ -230,7 +247,10 @@ def test_batches_sharing_event_ids_in_opposite_orders_never_deadlock(
             for n, i in enumerate(ids)
         ]
 
-        outcomes = run_in_threads(partial(mine.sync, forwards), partial(theirs.sync, backwards))
+        outcomes = run_in_threads(
+            partial(sync_until_answered, mine, forwards),
+            partial(sync_until_answered, theirs, backwards),
+        )
 
         assert all(not isinstance(o, Exception) for o in outcomes), outcomes
         assert [o.status_code for o in outcomes] == [200, 200]
