@@ -42,7 +42,7 @@ from shifts.models import (
     Shift,
     ShiftStatus,
 )
-from shifts.selectors import last_known_km
+from shifts.selectors import highest_recorded_km
 
 # [ASSUMPTION] An odometer shows six digits; above that the reading is a typo or abuse. A physical
 # limit of the instrument, not a business threshold, so it is not a rule parameter.
@@ -76,7 +76,7 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     _ensure_no_open_shift(ctx)
     _ensure_shift_id_is_free(shift_id)
     _ensure_motorcycle_is_usable(motorcycle)
-    previous_km = last_known_km(motorcycle)
+    previous_km = highest_recorded_km(motorcycle)
     shift = _insert_shift(ctx, NewShift(shift_id, motorcycle, data["odometer_km"], data["note"]))
     _insert_checks(shift, data["checks"], items)
     if any(line["result"] == CheckResult.SEVERE for line in data["checks"]):

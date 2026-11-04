@@ -32,6 +32,8 @@ OPEN_CODES = (
     SEVERE_CHECK,
     SHIFT_EVENT_NOT_VOIDABLE,
 )
+# `captured_after_shift_close` is emitted by the envelope check (`guard.py`), not by a handler; it is
+# declared here because the registry contract test only reads the codes handlers declare.
 CLOSE_CODES = (
     SHIFT_NOT_OPEN,
     CAPTURED_AFTER_SHIFT_CLOSE,

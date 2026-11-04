@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from django.db.models import QuerySet
+from django.db.models import Max, QuerySet
 
 from shifts.models import Motorcycle, Shift
 
@@ -36,17 +36,15 @@ def list_shifts(scoped: QuerySet[Any], filters: ShiftFilters) -> QuerySet[Shift]
     return shifts.order_by("-opened_at_device", "-id")
 
 
-def last_known_km(motorcycle: Motorcycle) -> int | None:
-    """The odometer the motorcycle last reported: the close reading of its latest shift (by the
-    server's receipt of its opening event, not the phone's clock), or its open reading while that
-    shift is still open. `None` for a motorcycle with no shift yet."""
-    latest = (
-        Shift.objects.filter(motorcycle=motorcycle)
-        .order_by("-opened_event__server_received_at", "-id")
-        .values_list("odometer_open_km", "odometer_close_km")
-        .first()
+def highest_recorded_km(motorcycle: Motorcycle) -> int | None:
+    """The highest odometer reading ever recorded for the motorcycle (open or close, of any of its
+    shifts), or `None` for a motorcycle with no shift yet (reads, one aggregate).
+
+    An odometer only goes up, so the maximum is the reference. It needs no ordering of shifts:
+    the events of one batch share one receipt time and the phone's clock cannot be trusted.
+    """
+    readings = Shift.objects.filter(motorcycle=motorcycle).aggregate(
+        highest_open=Max("odometer_open_km"), highest_close=Max("odometer_close_km")
     )
-    if latest is None:
-        return None
-    opened_km, closed_km = latest
-    return int(closed_km if closed_km is not None else opened_km)
+    values = [value for value in readings.values() if value is not None]
+    return max(values) if values else None

@@ -172,6 +172,7 @@ def test_a_severe_check_and_another_courier_opening_the_same_motorcycle_stay_con
     assert all(not isinstance(answer, Exception) for answer in answers), answers
     assert all(answer.status_code in (200, 429) for answer in answers)
     moto.refresh_from_db()
+    assert Shift.objects.filter(motorcycle=moto).exists()
     assert moto.is_blocked == Shift.objects.filter(courier=severe.user).exists()
     assert Shift.objects.filter(motorcycle=moto, status=ShiftStatus.OPEN).count() == 1
 

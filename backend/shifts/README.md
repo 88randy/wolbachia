@@ -9,7 +9,7 @@ The courier's shift ("jornada", issue #68): the day that frames all field work. 
 | `services.py` | `open_shift` and `close_shift`: the apply functions (rules, writes, `EventRejected` / `EventNeedsReview`) |
 | `handlers.py` | Registers both handlers from `AppConfig.ready()` (`checks_shift=False`: they are the shift) |
 | `guard.py` | `check_event_shift`: what the pipeline does with the `shift_id` of any other event |
-| `selectors.py` | `list_shifts` (filters), `last_known_km` |
+| `selectors.py` | `list_shifts` (filters), `highest_recorded_km` |
 | `serializers.py`, `views.py`, `urls.py` | `GET /shifts/` and `GET /shifts/{id}/` (`shift.read`, read-only) |
 | `codes.py`, `permissions.py` | Event types, result codes, permission code |
 

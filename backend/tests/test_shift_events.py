@@ -541,7 +541,7 @@ def test_a_severe_check_wins_over_a_decreased_odometer(
     assert status_and_code(result) == ("in_review", "severe_check")
 
 
-def test_the_last_known_odometer_follows_the_server_receipt_not_the_phone_clock(
+def test_the_odometer_reference_is_the_highest_reading_whatever_the_clocks_say(
     org_a: Organization,
     make_member: MemberFactory,
     motorcycle: Motorcycle,
@@ -554,7 +554,6 @@ def test_the_last_known_odometer_follows_the_server_receipt_not_the_phone_clock(
         is_closed=True,
         odometer_close_km=15_000,
         opened_at_device=now + timedelta(days=30),  # a wrong phone clock, far in the future
-        opened_event__server_received_at=now - timedelta(days=3),
     )
     ShiftFactory(
         organization=org_a,
@@ -562,10 +561,34 @@ def test_the_last_known_odometer_follows_the_server_receipt_not_the_phone_clock(
         is_closed=True,
         odometer_close_km=12_500,
         opened_at_device=now - timedelta(days=2),
-        opened_event__server_received_at=now - timedelta(days=2),
     )
     courier = make_phone(make_member, org_a)
 
-    result = only_result(courier.sync([open_event("M-03", payload_odometer_km=12_500)]))
+    below = only_result(courier.sync([open_event("M-03", payload_odometer_km=14_999)]))
 
-    assert status_and_code(result) == ("accepted", "accepted")
+    assert status_and_code(below) == ("in_review", "odometer_decreased")
+    assert below["params"] == {"previous_km": 15_000, "odometer_km": 14_999}
+
+
+def test_two_shifts_of_one_batch_with_inverted_ids_still_set_the_highest_reference(
+    phone: Phone, motorcycle: Motorcycle, check_items: dict[str, CatalogItem]
+) -> None:
+    """The events of a batch share one receipt time, so no tiebreak by id may pick the reference."""
+    larger_id, smaller_id = sorted([uuid.uuid4(), uuid.uuid4()], reverse=True)
+    start = timezone.now() - timedelta(hours=6)
+
+    def at(minutes: int) -> str:
+        return (start + timedelta(minutes=minutes)).isoformat()
+
+    batch = [
+        open_event("M-03", larger_id, payload_odometer_km=100, device_time=at(0)),
+        close_event(larger_id, 200, device_time=at(10)),
+        open_event("M-03", smaller_id, payload_odometer_km=300, device_time=at(20)),
+        close_event(smaller_id, 400, device_time=at(30)),
+    ]
+    assert [r["status"] for r in phone.sync(batch).data["results"]] == ["accepted"] * 4
+
+    later = only_result(phone.sync([open_event("M-03", payload_odometer_km=350)]))
+
+    assert status_and_code(later) == ("in_review", "odometer_decreased")
+    assert later["params"] == {"previous_km": 400, "odometer_km": 350}

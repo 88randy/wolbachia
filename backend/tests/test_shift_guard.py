@@ -10,6 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.utils import timezone
 
 from field_sync import registry
+from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
 from organizations.models import Organization
 from shifts.guard import check_event_shift
@@ -149,3 +150,35 @@ def test_without_a_registered_envelope_check_the_shift_id_is_not_validated(
 def test_registering_the_same_envelope_check_twice_raises() -> None:
     with pytest.raises(ImproperlyConfigured, match="already registered"):
         registry.register_envelope_check(check_event_shift)
+
+
+def test_a_rejection_of_a_later_check_wins_over_a_review_signal_of_an_earlier_one(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def asks_for_review(*args: object) -> EventNeedsReview:
+        return EventNeedsReview("first_check")
+
+    def rejects(*args: object) -> None:
+        raise EventRejected("second_check")
+
+    monkeypatch.setattr(registry, "ENVELOPE_CHECKS", [asks_for_review, rejects])
+
+    result = only_result(phone.sync([event()]))
+
+    assert (result["status"], result["code"]) == ("rejected", "second_check")
+
+
+def test_the_first_review_signal_wins_when_no_check_rejects(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def review(code: str) -> registry.EnvelopeCheck:
+        def check(*args: object) -> EventNeedsReview:
+            return EventNeedsReview(code)
+
+        return check
+
+    monkeypatch.setattr(registry, "ENVELOPE_CHECKS", [review("first"), review("second")])
+
+    result = only_result(phone.sync([event()]))
+
+    assert (result["status"], result["code"]) == ("in_review", "first")

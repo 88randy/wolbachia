@@ -121,10 +121,13 @@ def register_envelope_check(check: EnvelopeCheck) -> None:
 def run_envelope_checks(
     organization: Organization, user: User, envelope: EventEnvelope
 ) -> EventNeedsReview | None:
-    """Run the registered checks in order; the first review signal wins (reads)."""
+    """Run every registered check, in order (reads). A rejection raised by any check wins over a
+    review signal returned by an earlier one (rejected over in review); otherwise the first review
+    signal is returned."""
     signal: EventNeedsReview | None = None
     for check in ENVELOPE_CHECKS:
-        signal = signal or check(organization, user, envelope)
+        result = check(organization, user, envelope)
+        signal = signal or result
     return signal
 
 
