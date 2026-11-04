@@ -1,0 +1,12 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    // The shared packages are TypeScript sources whose internal imports keep the .ts extension
+    // (Node runs them directly), so the web compiler must accept that too.
+    "allowImportingTsExtensions": true,
+    "types": ["vite/client", "node"]
+  },
+  "include": ["src", "e2e", "*.config.ts"]
+}

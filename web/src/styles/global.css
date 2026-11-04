@@ -1,0 +1,37 @@
+/* Global base. Every value is a variable from @wolbachia/tokens (imported before this file). */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--color-background);
+  color: var(--color-text-primary);
+  font-family: var(--font-family);
+  font-size: var(--web-type-body-font-size);
+  line-height: var(--web-type-body-line-height);
+  font-variant-numeric: var(--font-variant-numeric);
+}
+
+/* Focus ring from the design (.fo): solid line, offset, soft halo. Never removed. */
+:focus-visible {
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+  box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
+}
