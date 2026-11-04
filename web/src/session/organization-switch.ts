@@ -33,7 +33,7 @@ export async function switchOrganization(
   try {
     return await queryClient.query({
       queryKey: ME_QUERY_KEY,
-      queryFn: () => fetchMe(client),
+      queryFn: ({ signal }) => fetchMe(client, signal),
       staleTime: 0,
     });
   } catch (error) {

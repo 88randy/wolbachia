@@ -7,8 +7,8 @@ export type LogoutOutcome = { ok: true } | { ok: false; failure: ServiceFailure 
 
 const HTTP_FORBIDDEN = 403;
 
-async function postLogout(client: ApiClient): Promise<Response> {
-  const { response } = await client.POST("/api/v1/auth/logout/");
+async function postLogout(client: ApiClient, signal?: AbortSignal): Promise<Response> {
+  const { response } = await client.POST("/api/v1/auth/logout/", signal ? { signal } : {});
   return response;
 }
 
@@ -18,13 +18,16 @@ async function postLogout(client: ApiClient): Promise<Response> {
  * If the server cannot be reached the session is NOT ended, and the user is told, instead of
  * pretending to be signed out while the session cookie still works.
  */
-export async function requestLogout(client: ApiClient): Promise<LogoutOutcome> {
+export async function requestLogout(
+  client: ApiClient,
+  signal?: AbortSignal,
+): Promise<LogoutOutcome> {
   try {
     await ensureCsrfCookie(client);
-    let response = await postLogout(client);
+    let response = await postLogout(client, signal);
     if (response.status === HTTP_FORBIDDEN) {
       await fetchCsrfCookie(client);
-      response = await postLogout(client);
+      response = await postLogout(client, signal);
     }
     return response.ok ? { ok: true } : { ok: false, failure: serviceFailureOf(response.status) };
   } catch (error) {

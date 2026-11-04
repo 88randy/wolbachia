@@ -9,6 +9,7 @@ import {
 } from "../session/organization-slug";
 import { apiError, createFakeApi, makeMe, noContent } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
+import { startAuthOperation } from "../session/auth-operation";
 import { renderApp } from "../test/render-app";
 import type { Me } from "../session/me";
 
@@ -191,6 +192,24 @@ describe("sign out", () => {
     await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
     expect(getOrganizationSlug()).toBeUndefined();
     expect(window.localStorage.getItem("wolbachia.organization")).toBeNull();
+  });
+
+  test("sign-out empties the cache and frees the lock even if the navigation fails", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    const { app } = await openShell();
+    app.queryClient.setQueryData(["incidents"], [{ id: "x" }]);
+    vi.spyOn(app.router, "navigate").mockRejectedValue(new Error("navigation failed"));
+    await userEvent.click(menuButton());
+
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+
+    // The shell is still mounted, so its own observer may refetch /me/: use another query.
+    await vi.waitFor(() => {
+      expect(app.queryClient.getQueryData(["incidents"])).toBeUndefined();
+    });
+    await vi.waitFor(() => {
+      expect(startAuthOperation("login")).toBeDefined();
+    });
   });
 
   test("sign-out empties the query cache", async () => {

@@ -19,16 +19,19 @@ export const ME_STALE_TIME_MS = 60_000;
  * answered with `403 no_active_membership`: the slug is forgotten and the call retried once
  * without the header, so the user lands on organization selection instead of a dead end.
  */
-export async function fetchMe(client: ApiClient): Promise<Me> {
-  const first = await client.GET("/api/v1/me/");
-  const isStaleSlug =
+export async function fetchMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
+  const options = signal ? { signal } : {};
+  const slug = getOrganizationSlug();
+  const first = await client.GET("/api/v1/me/", options);
+  const isRefused =
     first.response.status === 403 &&
     isErrorEnvelope(first.error) &&
-    first.error.code === NO_ACTIVE_MEMBERSHIP &&
-    getOrganizationSlug() !== undefined;
-  if (!isStaleSlug) return unwrap(first);
+    first.error.code === NO_ACTIVE_MEMBERSHIP;
+  // Only recover from the slug THIS request was sent with: if the user chose another one while it
+  // was in flight, a late refusal is about the old organization and must not touch the new slug.
+  if (!isRefused || slug === undefined || getOrganizationSlug() !== slug) return unwrap(first);
   clearOrganizationSlug();
-  return unwrap(await client.GET("/api/v1/me/"));
+  return unwrap(await client.GET("/api/v1/me/", options));
 }
 
 /**
@@ -38,7 +41,7 @@ export async function fetchMe(client: ApiClient): Promise<Me> {
 export function loadMe(queryClient: QueryClient, client: ApiClient): Promise<Me> {
   return queryClient.query({
     queryKey: ME_QUERY_KEY,
-    queryFn: () => fetchMe(client),
+    queryFn: ({ signal }) => fetchMe(client, signal),
     staleTime: ME_STALE_TIME_MS,
   });
 }
@@ -46,7 +49,7 @@ export function loadMe(queryClient: QueryClient, client: ApiClient): Promise<Me>
 export function meQueryOptions(client: ApiClient) {
   return queryOptions({
     queryKey: ME_QUERY_KEY,
-    queryFn: () => fetchMe(client),
+    queryFn: ({ signal }) => fetchMe(client, signal),
     staleTime: ME_STALE_TIME_MS,
     refetchOnWindowFocus: true,
   });

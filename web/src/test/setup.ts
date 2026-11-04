@@ -1,12 +1,15 @@
 import { cleanup } from "@testing-library/react";
 import { toHaveNoViolations } from "jest-axe";
 import { afterEach, expect } from "vitest";
+import { resetAuthOperation } from "../session/auth-operation";
 
 // jest-axe works under Vitest with this shim (vitest-axe is stale, see ADR 0001).
 expect.extend(toHaveNoViolations);
 
 // Vitest has no globals by default, so Testing Library's automatic cleanup does not run.
 afterEach(cleanup);
+// Sign-in and sign-out share a lock in module state; no test may leave it held.
+afterEach(resetAuthOperation);
 
 // jsdom does not implement scrolling; the router calls it on navigation and logs noise otherwise.
 window.scrollTo = () => undefined;

@@ -50,6 +50,35 @@ describe("switchOrganization", () => {
     expect(api.requests.at(-1)?.headers.get("X-Organization")).toBe("sur");
   });
 
+  test("a late refusal of the previous organization's /me/ does not clear the new slug", async () => {
+    setOrganizationSlug("norte");
+    let release: (response: Response) => void = () => undefined;
+    const late = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    let calls = 0;
+    const api = createFakeApi({
+      [ME]: (request) => {
+        calls += 1;
+        // The first (north) request is not abortable here: its answer arrives late.
+        return calls === 1
+          ? late
+          : Response.json(meOf(request.headers.get("X-Organization") ?? ""));
+      },
+    });
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
+    const queryClient = createAppQueryClient({ retry: false });
+    const inFlight = loadMe(queryClient, client).catch(() => undefined);
+
+    await switchOrganization(queryClient, client, "sur");
+    release(apiError(403, "no_active_membership"));
+    await inFlight;
+
+    expect(getOrganizationSlug()).toBe("sur");
+    expect(api.requests).toHaveLength(2);
+    expect(api.requests[0]?.signal.aborted).toBe(true);
+  });
+
   test("restores the previous slug when the new /me/ fails", async () => {
     setOrganizationSlug("norte");
     const api = createFakeApi({ [ME]: apiError(500, "server_error") });

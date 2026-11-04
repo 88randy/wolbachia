@@ -9,7 +9,12 @@ import { useApiClient } from "../api/ApiClientProvider";
 import type { LoginFailure } from "../auth/login-failure";
 import { requestLogin } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
-import { finishAuthOperation, isCurrentOperation, startAuthOperation } from "./auth-operation";
+import {
+  finishAuthOperation,
+  isCurrentOperation,
+  startAuthOperation,
+  useAbandonOnUnmount,
+} from "./auth-operation";
 import { recordIdentity } from "./identity";
 import type { Me } from "./me";
 import { ME_QUERY_KEY } from "./me-query";
@@ -41,21 +46,24 @@ export function useReauthenticate() {
   const router = useRouter();
   const [failure, setFailure] = useState<LoginFailure | undefined>();
   const alertRef = useFocusAlert(failure);
+  const tokenRef = useAbandonOnUnmount();
   const form = useForm<ReauthValues>({
     resolver: zodResolver(reauthSchema),
     defaultValues: { password: "" },
   });
   const submit = form.handleSubmit(async ({ password }) => {
-    const token = startAuthOperation("login");
-    if (token === undefined) return;
-    setFailure(undefined);
-    const outcome = await requestLogin(client, { username: user.username, password });
+    const operation = startAuthOperation("login");
+    if (operation === undefined) return;
+    tokenRef.current = operation.token;
     try {
-      if (!isCurrentOperation(token)) return;
+      setFailure(undefined);
+      const credentials = { username: user.username, password };
+      const outcome = await requestLogin(client, credentials, operation.signal);
+      if (!isCurrentOperation(operation.token)) return;
       if (outcome.ok) await acceptLogin(outcome.me, queryClient, router);
       else setFailure(outcome.failure);
     } finally {
-      finishAuthOperation(token);
+      finishAuthOperation(operation.token);
     }
   });
   return { form, username: user.username, failure, alertRef, submit };

@@ -106,6 +106,39 @@ describe("re-authentication and sign-out never overlap", () => {
   });
 });
 
+describe("leaving a pending re-authentication", () => {
+  test("Back to /login, a new sign-in, then sign-out still sends its request", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let logins = 0;
+    const { api, app } = await openExpired({
+      [LOGIN]: (request) => {
+        logins += 1;
+        if (logins > 1) return Response.json({ me: makeMe(), server_time: "2026-11-04T12:00:00Z" });
+        return new Promise<Response>((_, reject) => {
+          request.signal.addEventListener("abort", () => {
+            reject(new DOMException("Aborted", "AbortError"));
+          });
+        });
+      },
+    });
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    app.router.history.push("/login");
+    await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
+    await userEvent.type(screen.getByLabelText("Usuario"), "ana.supervisora");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    await userEvent.click(screen.getByRole("button", { name: /Menú de usuario/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+
+    await vi.waitFor(() => {
+      expect(logoutRequests(api)).toHaveLength(1);
+    });
+  });
+});
+
 describe("re-authentication landing somewhere else", () => {
   test("another organization drops the old cache and runs the guards again", async () => {
     const before = makeMe({ permissions: ["catalog.read"] });

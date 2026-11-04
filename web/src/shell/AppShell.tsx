@@ -1,6 +1,6 @@
 import { Outlet } from "@tanstack/react-router";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
-import { useMembershipLost } from "../session/use-membership-lost";
+import { useSessionChanges } from "../session/use-session-changes";
 import styles from "./AppShell.module.css";
 import { MAIN_ID } from "./ids";
 import { OfflineBanner } from "./OfflineBanner";
@@ -17,7 +17,7 @@ export function AppShell() {
   const isCompact = useCompactViewport();
   const collapsed = isCompact || preferCollapsed;
   useFocusMainOnNavigation();
-  useMembershipLost();
+  useSessionChanges();
   return (
     <div className={styles.shell}>
       <SkipLink />

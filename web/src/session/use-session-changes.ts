@@ -14,7 +14,7 @@ import { subscribeToMembershipLost } from "./session-events";
  * - a new `/me/` for another user or organization (the cache was already emptied): run the guards
  *   again so the current page is reconsidered.
  */
-export function useMembershipLost(): void {
+export function useSessionChanges(): void {
   const queryClient = useQueryClient();
   const router = useRouter();
   useEffect(

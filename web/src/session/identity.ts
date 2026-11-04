@@ -16,17 +16,20 @@ function identityOf(me: Me): string {
   return `${me.user.id}|${me.organization?.slug ?? ""}`;
 }
 
-/** Remembers the identity of a fresh `/me/`; returns true when it differs from the last one. */
-export function recordIdentity(queryClient: QueryClient, me: Me): boolean {
+/**
+ * Remembers the identity of a fresh `/me/`. SIDE EFFECTS when it differs from the last one: it
+ * removes every cached query except `/me/` and notifies the listeners (the shell re-runs the
+ * route guards).
+ */
+export function recordIdentity(queryClient: QueryClient, me: Me): void {
   const next = identityOf(me);
   const previous = known.get(queryClient);
   known.set(queryClient, next);
-  if (previous === undefined || previous === next) return false;
+  if (previous === undefined || previous === next) return;
   removeOrganizationQueries(queryClient);
   listeners.forEach((listener) => {
     listener();
   });
-  return true;
 }
 
 /** Nobody is signed in any more (the cache was cleared). */

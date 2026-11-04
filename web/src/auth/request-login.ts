@@ -20,8 +20,12 @@ interface RawResult {
   response: Response;
 }
 
-function postLogin(client: ApiClient, credentials: Credentials): Promise<RawResult> {
-  return client.POST("/api/v1/auth/login/", { body: credentials });
+function postLogin(
+  client: ApiClient,
+  credentials: Credentials,
+  signal?: AbortSignal,
+): Promise<RawResult> {
+  return client.POST("/api/v1/auth/login/", { body: credentials, ...(signal ? { signal } : {}) });
 }
 
 /** A `403 permission_denied` on login means the CSRF cookie or token was missing or stale. */
@@ -66,16 +70,20 @@ function outcomeOf(result: RawResult): LoginOutcome {
   return { ok: false, failure };
 }
 
-async function attemptLogin(client: ApiClient, credentials: Credentials): Promise<RawResult> {
+async function attemptLogin(
+  client: ApiClient,
+  credentials: Credentials,
+  signal?: AbortSignal,
+): Promise<RawResult> {
   await ensureCsrfCookie(client);
-  let result = await postLogin(client, credentials);
+  let result = await postLogin(client, credentials, signal);
   if (isCsrfRejection(result)) {
     await fetchCsrfCookie(client);
-    result = await postLogin(client, credentials);
+    result = await postLogin(client, credentials, signal);
   }
   if (isStaleSlugRefusal(result)) {
     clearOrganizationSlug();
-    result = await postLogin(client, credentials);
+    result = await postLogin(client, credentials, signal);
   }
   return result;
 }
@@ -88,9 +96,10 @@ async function attemptLogin(client: ApiClient, credentials: Credentials): Promis
 export async function requestLogin(
   client: ApiClient,
   credentials: Credentials,
+  signal?: AbortSignal,
 ): Promise<LoginOutcome> {
   try {
-    return outcomeOf(await attemptLogin(client, credentials));
+    return outcomeOf(await attemptLogin(client, credentials, signal));
   } catch (error) {
     console.error("The sign-in request failed", error);
     return { ok: false, failure: { kind: "network" } };

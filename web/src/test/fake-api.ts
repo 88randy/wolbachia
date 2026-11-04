@@ -6,6 +6,8 @@ export interface RecordedRequest {
   /** Path and query, without the origin. */
   path: string;
   headers: Headers;
+  /** Aborted when the app cancels the request. */
+  signal: AbortSignal;
   /** Parsed JSON body, or undefined when there was none. */
   body: unknown;
 }
@@ -29,6 +31,7 @@ async function record(request: Request): Promise<RecordedRequest> {
     method: request.method,
     path: `${url.pathname}${url.search}`,
     headers: request.headers,
+    signal: request.signal,
     body: text === "" ? undefined : (JSON.parse(text) as unknown),
   };
 }
