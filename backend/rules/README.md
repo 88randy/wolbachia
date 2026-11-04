@@ -6,18 +6,20 @@ Versioned rule parameters per organization: the thresholds the app shows but nev
 
 - No threshold is hard-coded anywhere else: code reads it from here (`get_values_in_force`).
 - A `RuleParameter` is the definition (key, `integer` or `decimal`, unit, optional `min_value`/`max_value`). It is created by the seed only.
-- Editing adds a `RuleParameterVersion`; versions are **never updated or deleted**: `save()` on a stored row and queryset `update()` raise `ImmutableRecordError`, and there is no PUT/PATCH/DELETE route.
-- Value in force = the latest version with `effective_from <= now`. A parameter with no such version has no value (`null`, "not configured").
-- `effective_from` is requested as a local date: today takes effect at `now()` (never retroactive), a future date at 00:00 in the organization's timezone, a past date is rejected. One version per parameter per local day (`effective_date`). No regional override.
-- Field errors a client can get on `POST .../versions/`: `effective_from_in_past`, `duplicate_effective_date`, `not_an_integer`, `out_of_range` (params `{min, max}`).
+- Editing adds a `RuleParameterVersion`; versions are **insert-only** (`core.models.ImmutableMixin`): `save()` of a stored row, queryset `update()`, bulk upserts and the base manager raise `ImmutableRecordError`, and a PostgreSQL trigger (migration `0002`) rejects raw `UPDATE` and `DELETE`. Only the void fields can be written, once. There is no PUT/PATCH/DELETE route.
+- A wrong version that has not taken effect yet is voided (`POST .../versions/{id}/void/`, `409 version_not_scheduled` otherwise); it stays in the history, leaves the value in force and the snapshots, and frees its date.
+- Value in force = the latest non-voided version with `effective_from <= now`. A parameter with no such version has no value (`null`, "not configured").
+- `effective_from` is requested as a local date: today takes effect at `now()` (never retroactive), a future date at 00:00 in the organization's timezone, a past date is rejected and so is one more than 365 days ahead. One non-voided version per future date; several for today are allowed (the latest `effective_from` wins). No regional override.
+- Field errors a client can get on `POST .../versions/`: `effective_from_in_past`, `effective_from_too_far`, `duplicate_effective_date`, `not_an_integer`, `out_of_range` (params `{min, max}`).
 
 ## Layout
 
 | File | What it does |
 | --- | --- |
 | `models.py` | `RuleParameter`, `RuleParameterVersion` (immutable), `ValueType`, `Unit` |
-| `services.py` | `create_rule_version` (locks the parameter, validates value and date), `resolve_effective_from` |
-| `selectors.py` | `get_version_in_force`, `list_versions` (status `scheduled`/`in_force`/`superseded`), `list_parameters_with_current` (one query), `get_next_change_at`, `get_values_in_force(org, at)` (sync #5 revalidates events with the values at their `device_time`), `build_rules_snapshot` |
+| `services.py` | `create_rule_version` (locks the parameter, validates value and date), `void_rule_version`, `resolve_effective_from` |
+| `permissions.py` | Permission codes of this app (`rule_parameter_version.read` is the history, admin only by default) |
+| `selectors.py` | `get_version_in_force`, `list_versions` (status `scheduled`/`in_force`/`superseded`/`voided`), `list_parameters_with_current` (one query), `get_next_change_at`, `build_rules_snapshot` |
 | `seeds.py` | `seed_default_rule_parameters`: the twelve parameters and the brief's values |
 | `views.py`, `serializers.py`, `urls.py` | Thin DRF layer; nested routes by regex prefix |
 

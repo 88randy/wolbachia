@@ -22,7 +22,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `organizations/` | `Organization`, `Profile`, `Membership`; services, selectors, `GET /me/`, `bootstrap_organization` |
 | `catalogs/` | `Catalog`, `CatalogItem`; item services, catalog snapshot, `/catalogs/...` and `/field/catalog/` (see its README) |
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
-| `core/` | Org-scoped base model and viewset, void service, error handler, pagination, permissions, schema hooks, health |
+| `core/` | Org-scoped and insert-only base models, snapshots (hash, ETag, `304`), time helpers, base viewset, void service, error handler, pagination, permissions, schema hooks, health |
 | `tests/` | pytest suite; `tests/testapp` is a test-only app (installed by `config.settings.test`) |
 
 ## Run with Docker
@@ -73,10 +73,11 @@ uv run python manage.py changepassword boss     # a new admin is created without
 # An existing username with a different email is refused unless you pass --reuse-existing-user
 ```
 
-Profiles are data configured per organization. A new organization also gets the default catalogs, the rule parameters with the design brief's values and the catalog/rule permission codes (`admin`: all; the other profiles: `catalog.read` and `rule_parameter.read`). The seed is idempotent and additive (it never removes a code or edits an item). Bring an organization created earlier up to date with:
+Profiles are data configured per organization. A new organization also gets the default catalogs, the rule parameters with the design brief's values and the catalog/rule permission codes (`admin`: all; the other profiles: `catalog.read` and `rule_parameter.read`). Each code is granted once and only to profiles the seed created (`Profile.created_by_seed`, `seeded_permission_codes`), so a code an admin revoked is never granted again; nothing is removed or edited. Bring an organization created earlier up to date: the command prints a plan and writes only with `--apply`:
 
 ```bash
-uv run python manage.py seed_organization_defaults --organization acme
+uv run python manage.py seed_organization_defaults --organization acme          # dry run (default)
+uv run python manage.py seed_organization_defaults --organization acme --apply  # write
 ```
 
 The seeded values come from the design brief and must be validated with the program entomologist; parameters the brief gives no value for have no version (`value: null`, "not configured") until an admin sets one.
