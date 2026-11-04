@@ -11,12 +11,24 @@ from collections.abc import Mapping
 from datetime import UTC, datetime
 from typing import Any
 
+from drf_spectacular.utils import OpenApiParameter
 from rest_framework import status
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 SNAPSHOT_CACHE_CONTROL = "private, no-cache"
 WEAK_PREFIX = "W/"
+
+IF_NONE_MATCH_PARAMETER = OpenApiParameter(
+    name="If-None-Match",
+    type=str,
+    location=OpenApiParameter.HEADER,
+    required=False,
+    description=(
+        "The `ETag` (the snapshot `version`) the client already holds. When it is still current "
+        "the answer is `304` with no body."
+    ),
+)
 
 
 def snapshot_hash(payload: Mapping[str, Any]) -> str:

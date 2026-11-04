@@ -1,3 +1,7 @@
+from typing import Any
+
+from rest_framework import serializers
+
 from catalogs.models import Catalog, CatalogItem
 from core.serializers import OrgScopedModelSerializer
 
@@ -44,3 +48,31 @@ class CatalogItemUpdateSerializer(OrgScopedModelSerializer):
     class Meta:
         model = CatalogItem
         fields = ["label_es", "label_en", "icon", "sort", "requires_photo"]
+
+
+class SnapshotItemSerializer(serializers.Serializer[Any]):
+    """Documents the field snapshot (the payload is built by `build_catalog_snapshot`)."""
+
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    label_es = serializers.CharField()
+    label_en = serializers.CharField(help_text="Blank: fall back to `label_es`.")
+    icon = serializers.CharField()
+    sort = serializers.IntegerField()
+    is_other = serializers.BooleanField()
+    requires_photo = serializers.BooleanField()
+
+
+class SnapshotCatalogSerializer(serializers.Serializer[Any]):
+    slug = serializers.SlugField()
+    label_es = serializers.CharField()
+    label_en = serializers.CharField()
+    is_open = serializers.BooleanField()
+    items = SnapshotItemSerializer(many=True)
+
+
+class CatalogSnapshotSerializer(serializers.Serializer[Any]):
+    """Every catalog with its active items. `version` is also the `ETag`."""
+
+    version = serializers.CharField()
+    catalogs = SnapshotCatalogSerializer(many=True)

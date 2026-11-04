@@ -9,13 +9,15 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from core.permission_codes import RULE_PARAMETER_READ, RULE_PARAMETER_VERSION_CREATE
+from core.versioning import IF_NONE_MATCH_PARAMETER, snapshot_response
 from core.views import OrgScopedViewSetMixin
 from rules.models import RuleParameter, RuleParameterVersion
-from rules.selectors import list_parameters_with_current, list_versions
+from rules.selectors import build_rules_snapshot, list_parameters_with_current, list_versions
 from rules.serializers import (
     RuleParameterSerializer,
     RuleParameterVersionCreateSerializer,
     RuleParameterVersionSerializer,
+    RulesSnapshotSerializer,
 )
 from rules.services import RuleVersionSpec, create_rule_version
 
@@ -40,6 +42,23 @@ class RuleParameterViewSet(
         if getattr(self, "swagger_fake_view", False):
             return RuleParameter.objects.none()
         return list_parameters_with_current(self.request.organization, timezone.now())  # type: ignore[attr-defined]
+
+
+class RulesSnapshotViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
+    """`GET /field/rules/`: the values in force now, for phones to keep offline."""
+
+    queryset = RuleParameter.objects.all()
+    serializer_class = RulesSnapshotSerializer
+    pagination_class = None
+    required_permissions = {"list": RULE_PARAMETER_READ}
+
+    @extend_schema(
+        parameters=[IF_NONE_MATCH_PARAMETER],
+        responses={200: RulesSnapshotSerializer, 304: None},
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        snapshot = build_rules_snapshot(request.organization, timezone.now())  # type: ignore[attr-defined]
+        return snapshot_response(request, snapshot)
 
 
 class RuleParameterVersionViewSet(

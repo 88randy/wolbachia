@@ -1,4 +1,5 @@
 from decimal import Decimal
+from typing import Any
 
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
@@ -9,6 +10,8 @@ from rules.models import (
     VALUE_MAX_DIGITS,
     RuleParameter,
     RuleParameterVersion,
+    Unit,
+    ValueType,
 )
 from rules.selectors import STATUS_IN_FORCE, STATUS_SCHEDULED, STATUS_SUPERSEDED, to_number
 
@@ -99,6 +102,27 @@ class RuleParameterVersionCreateSerializer(OrgScopedModelSerializer):
     class Meta:
         model = RuleParameterVersion
         fields = ["value", "effective_from", "reason"]
+
+
+class SnapshotParameterSerializer(serializers.Serializer[Any]):
+    """Documents the field rules snapshot (the payload is built by `build_rules_snapshot`)."""
+
+    key = serializers.CharField()
+    value_type = serializers.ChoiceField(choices=ValueType.choices)
+    unit = serializers.ChoiceField(choices=Unit.choices)
+    value = serializers.FloatField(allow_null=True, help_text="Null: not configured yet.")
+    effective_from = serializers.DateTimeField(allow_null=True)
+    version_id = serializers.UUIDField(allow_null=True)
+
+
+class RulesSnapshotSerializer(serializers.Serializer[Any]):
+    """The values in force now. `version` is also the `ETag`."""
+
+    version = serializers.CharField()
+    next_change_at = serializers.DateTimeField(
+        allow_null=True, help_text="When the next scheduled version takes effect, if any."
+    )
+    parameters = SnapshotParameterSerializer(many=True)
 
 
 def _number_or_none(value_type: str, value: Decimal | None) -> int | float | None:

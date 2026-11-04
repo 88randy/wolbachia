@@ -9,11 +9,13 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from catalogs.models import Catalog, CatalogItem
+from catalogs.selectors import build_catalog_snapshot
 from catalogs.serializers import (
     CatalogItemCreateSerializer,
     CatalogItemSerializer,
     CatalogItemUpdateSerializer,
     CatalogSerializer,
+    CatalogSnapshotSerializer,
 )
 from catalogs.services import (
     CatalogItemSpec,
@@ -29,6 +31,7 @@ from core.permission_codes import (
     CATALOG_ITEM_UPDATE,
     CATALOG_READ,
 )
+from core.versioning import IF_NONE_MATCH_PARAMETER, snapshot_response
 from core.views import OrgScopedViewSetMixin
 
 
@@ -38,6 +41,23 @@ class CatalogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.Gene
     queryset = Catalog.objects.order_by("slug")
     serializer_class = CatalogSerializer
     required_permissions = {"list": CATALOG_READ}
+
+
+class CatalogSnapshotViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
+    """`GET /field/catalog/`: the compact copy of every catalog that phones keep offline."""
+
+    queryset = Catalog.objects.all()
+    serializer_class = CatalogSnapshotSerializer
+    pagination_class = None
+    required_permissions = {"list": CATALOG_READ}
+
+    @extend_schema(
+        parameters=[IF_NONE_MATCH_PARAMETER],
+        responses={200: CatalogSnapshotSerializer, 304: None},
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        snapshot = build_catalog_snapshot(request.organization)  # type: ignore[attr-defined]
+        return snapshot_response(request, snapshot)
 
 
 class CatalogItemViewSet(
