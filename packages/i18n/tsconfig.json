@@ -1,21 +1,11 @@
 {
+  "extends": "../../tsconfig.base.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "ESNext",
-    "moduleResolution": "Bundler",
-    "lib": ["ES2023"],
-    "types": ["node"],
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "noImplicitOverride": true,
-    "noFallthroughCasesInSwitch": true,
-    "verbatimModuleSyntax": true,
-    "erasableSyntaxOnly": true,
+    // Node runs the .ts files directly (--experimental-strip-types): imports keep the .ts
+    // extension and only erasable syntax (no enums or namespaces) is allowed.
     "allowImportingTsExtensions": true,
-    "isolatedModules": true,
-    "skipLibCheck": true,
-    "noEmit": true
+    "erasableSyntaxOnly": true,
+    "types": ["node"]
   },
   "include": ["src", "test"]
 }
