@@ -31,7 +31,8 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 
 - `sent_at` is the **phone's clock at send time**. The server compares it with its own clock to measure skew.
 - `events` may be empty: that is a pure pull.
-- `payload` is a JSON object, at most 32 levels deep, without `\u0000` characters. Its content belongs to the event type's handler.
+- `payload` is a JSON object, at most 32 levels deep, without `\u0000` characters, lone surrogates or non-finite numbers (`1e400`). Its content belongs to the event type's handler.
+- `sent_at` must fall between 2020-01-01 and 2100-01-01 (UTC), else `400 validation_error` on `sent_at` (`out_of_range`). An event's `device_time` outside the same range rejects only that event (`invalid_payload`, `device_time: out_of_range`). Version tokens and the cursor cannot contain lone surrogates.
 - The envelope is validated as a whole (`400 validation_error`, `fields` like `events.3.type`): a batch with a malformed envelope is refused and nothing in it is stored. [ASSUMPTION] A phone that keeps sending a malformed envelope would retry forever; the app must build envelopes from typed code, and the field test (#13) will tell if poison events need a quarantine.
 
 ## Response `200`
@@ -70,8 +71,18 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 | `403` | `permission_denied`, `no_active_membership` | Missing `field_event.sync`; `X-Organization` names another organization |
 | `413` | `payload_too_large` | `Content-Length` over `SYNC_MAX_BODY_BYTES` (checked before the body is read), more than `SYNC_MAX_EVENTS` events, or Django's own body limit |
 | `429` | `throttled` | Rate limit per device, with `Retry-After` |
+| `429` | `sync_in_progress` | Another batch of the same courier is running; nothing waited. `Retry-After` says when to retry (`SYNC_RETRY_AFTER_SECONDS`) |
 
 A failed request leaves nothing behind (and gives a final upload back).
+
+### What the phone does after a batch error
+
+| Error | Recovery |
+|---|---|
+| `invalid_cursor` | Drop the cursor and send the request again without it. The server returns the whole backlog from the start; the phone deduplicates review items by `id`. Events in that request were not ingested, so resend them too. |
+| `payload_too_large` | Split the batch (fewer events per request) and send the parts one after the other. |
+| `sync_in_progress` or `throttled` | Wait `Retry-After` seconds and send the same batch again (event ids make the retry safe). |
+| `device_mismatch`, `session_revoked`, `invalid_token` | Not retryable with the same session: sign in again. |
 
 ## Per-event codes
 
@@ -83,9 +94,9 @@ A failed request leaves nothing behind (and gives a final upload back).
 | `rejected` | `invalid_payload` | `{fields: {<field>: [<code>]}}` | The handler's serializer failed, `voids_event_id` on a non-void event, a NUL character, or nesting deeper than 32 levels |
 | `rejected` | `event_payload_too_large` | `{max_bytes}` | Payload over `SYNC_MAX_EVENT_PAYLOAD_BYTES` |
 | `rejected` | `event_id_conflict` | `{}` | The id is already used by another organization, device or user. Nothing is stored and nothing is revealed |
-| `rejected` | `void_target_not_found` | `{}` | The event to void does not exist, is of another organization (same answer, no leak), is a rejected event or a void event |
-| `rejected` | `void_target_not_owned` | `{}` | The event to void was sent by another user |
-| `rejected` | `already_voided` | `{}` | The event to void is already voided |
+| `rejected` | `void_target_not_found` | `{voids_event_id}` | The event to void does not exist, is of another organization (same answer, no leak), is a rejected event or a void event |
+| `rejected` | `void_target_not_owned` | `{voids_event_id}` | The event to void was sent by another user |
+| `rejected` | `already_voided` | `{voids_event_id}` | The event to void is already voided |
 | `in_review` | `clock_skew` | `{skew_seconds, threshold_seconds}` | The phone's clock is off (see below) |
 | `in_review` | `final_upload_after_revoke` | `{}` | The event came in the final upload of a revoked session |
 
@@ -93,11 +104,12 @@ Handlers of each epic may add their own codes (`EventRejected(code, params)`, `E
 
 ## Guarantees
 
-- **Idempotent.** The event `id` is the primary key. The same id again (also concurrently, also twice in one batch) returns the stored result and creates nothing. Each event runs in its own savepoint: the `INSERT` is the arbiter of a race, and the loser's domain writes roll back with its savepoint. The same id with other content returns the stored result and logs a warning (`payload_sha256` differs). An id stored by another organization, device or user is `event_id_conflict`.
-- **Serialized per device.** Batches of one device run one after the other (a PostgreSQL advisory lock, decision 64). Inside a batch, events are processed in `(device_time, id)` order (a void sent before its original in the array still works). An event older than the last accepted one is still processed: offline is normal.
-- **Partial batches.** An invalid event never blocks the others: its domain writes roll back, the rejected `FieldEvent` is stored with its raw payload (a NUL character is replaced by U+FFFD and a too-deep payload by a marker, because the database cannot hold them) plus its `ReviewItem`.
+- **Idempotent.** The event `id` is the primary key. The same id again (also concurrently, also twice in one batch) returns the stored result and creates nothing. Each event runs in its own savepoint: the `INSERT` is the arbiter of a race, and the loser's domain writes roll back with its savepoint. The same id with other content returns the stored result and logs a warning (`payload_sha256` differs). The event ids of a batch are locked in sorted order before processing (a blocking PostgreSQL advisory lock per id; short and ordered, so no deadlock), so two couriers that share an id run one after the other and the second finds the first one's row (decision 72). An id stored by another organization, device or user is `event_id_conflict`.
+- **One batch per courier at a time.** Batches of one (organization, user) are serialized with a PostgreSQL advisory transaction lock that is *tried*, never waited for: a second batch (for example from another phone of the same courier) is answered `429 sync_in_progress` with `Retry-After` at once, so a burst of retries cannot exhaust workers or connections (decision 71). The pull of `changes` runs inside the same locked transaction. Inside a batch, events are processed in `(device_time, id)` order (a void sent before its original in the array still works). An event older than the last accepted one is still processed: offline is normal.
+- **Partial batches.** An invalid event never blocks the others: its domain writes roll back and the rejected `FieldEvent` is stored with its `ReviewItem`. Its payload is stored as received, except (decision 74) when it is too large, too deep or not storable (lone surrogate, non-finite number): then a marker `{"_not_stored": "<code>", "size_bytes": n}` is stored instead, so a hostile phone cannot fill the table with junk; a NUL character is replaced by U+FFFD.
 - **Precedence** when several statuses apply: `rejected` over `in_review` over `accepted`. Among in-review reasons: `final_upload_after_revoke`, then a handler's own, then `clock_skew`.
 - **Clock skew** (decision 62). `skew = sent_at - server_received_at`. If `|skew|` is over `clock_skew_review_seconds` (the value in force when the server received the batch, `rules.selectors.get_values_in_force`), every event of the batch is `in_review` with `clock_skew`; so is an event with `device_time > sent_at + threshold`. Never rejected for skew alone, and an old event sent late is not flagged for being old. With no value configured **[PENDING client]** nothing is flagged, `clock_skew_seconds` is stored on every event and a warning is logged.
+- **Doubtful events do not change records** (decision 73). When an event will land `in_review` anyway (`ctx.review_code` is set: final upload or clock skew), a `record.void` is validated but does **not** void its target: the void event is stored `in_review` and the target stays intact until a supervisor accepts it (#22 applies it). Handlers of other types decide for themselves with `ctx.review_code`.
 - **Final upload.** A revoked session may upload once when an administrator revoked it with `allow_final_upload` (#4). The events are stored `in_review` with `final_upload_after_revoke`, the answer carries `X-Session-Revoked: true`, the second attempt is `401 session_revoked`. The request holds the user and session locks for its whole duration, so the batch is bounded and nothing in the pipeline or a handler calls an external service.
 - **Immutable.** `FieldEvent` and `ReviewItem` are insert-only (model, manager and a PostgreSQL trigger). Only the void fields of an event can change, once.
 - **Isolation.** Every row carries `organization_id`. The organization comes from the token, never from the body. A void of another organization's event looks like a missing one.
@@ -113,10 +125,12 @@ All are environment settings (technical limits, not business rules). Values are 
 | `SYNC_MAX_EVENT_PAYLOAD_BYTES` | `16384` (16 KB) | Per event `event_payload_too_large` (canonical JSON size) |
 | `THROTTLE_FIELD_SYNC_RATE` | `60/min` | `429` per device (not per IP or user) |
 | `API_CURSOR_PAGE_SIZE` | `100` | Page of `changes.reviews` |
+| `SYNC_CURSOR_MAX_AGE_SECONDS` | `604800` (7 days) | A `changes.cursor` older than this is `invalid_cursor` |
+| `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
 
 ## The `changes.cursor`
 
-A signed token (`django.core.signing`) bound to the organization and the user: a forged, edited or copied cursor is `400 invalid_cursor`. Mid-backlog it is a strict `(created_at, id)` position; once caught up it is a watermark 5 seconds behind the server clock, so rows that commit late with an earlier `created_at` are still delivered. The phone **deduplicates review items by `id`**, because an item can show up in up to three consecutive pulls.
+A signed token (`django.core.signing`) bound to the organization and the user and valid for `SYNC_CURSOR_MAX_AGE_SECONDS`: a forged, edited, copied or expired cursor is `400 invalid_cursor` (recovery above). It is a strict `(created_at, id)` keyset position. That is gap-free because every batch of a courier holds the same lock and pulls inside it: a review item cannot commit behind a cursor that was already issued (the `created_at` of every item comes from the server clock; clocks of several app servers are assumed to agree within milliseconds). The phone still deduplicates by `id` (a retry after `invalid_cursor` returns items again).
 
 ## The handler registry (`field_sync/registry.py`)
 
@@ -137,7 +151,7 @@ def ready(self) -> None:
 | `ctx` | `organization`, `user`, `device`, `envelope` (the validated event), `server_received_at`, `review_code` (set when the event will be reviewed anyway, so a handler can mark its records provisional) and `rules_at(at)` (lazy: the rule values in force at `at`, usually `device_time`). |
 | `on_void(ctx, voided_event)` | Optional. Runs in the savepoint of a `record.void` that voids an event of this type; may raise `EventRejected` to refuse. |
 
-Rules for handlers: write only through the current transaction and only domain tables (no code outside the savepoint, or a rejection would leave debris); no external calls (HTTP, storage, email: the view may hold locks); no user-facing text; never trust `organization_id` from the payload. Registering a pair twice raises `ImproperlyConfigured`. `tests/test_sync_registry.py` checks the contract of every registered handler, so a new epic gets that check for free.
+Rules for handlers: validate your own unique constraints and raise `EventRejected`, never let the database detect them (an `IntegrityError` from a handler is a `500` for the whole batch, because it cannot be told from a corrupted state); declare every code you raise in `EventHandler.codes`; write only through the current transaction and only domain tables (no code outside the savepoint, or a rejection would leave debris); no external calls (HTTP, storage, email: the view may hold locks); no user-facing text; never trust `organization_id` from the payload. Registering a pair twice raises `ImproperlyConfigured`. `tests/test_sync_registry.py` checks the contract of every registered handler (shape, and that each declared `codes` entry has its `sync.result.*` key in both locales and a row in this document), so a new epic gets that check for free.
 
 ### Event types and who registers them
 
@@ -151,7 +165,7 @@ Rules for handlers: write only through the current transaction and only domain t
 
 ### `record.void`
 
-`{type: "record.void", payload: {reason}, voids_event_id}`. The author of an event voids it: the target keeps its row and gets its void fields; the void event references it. Another user's event is `void_target_not_owned`; one of another organization or a missing one `void_target_not_found`; a second void `already_voided`. [ASSUMPTION] Rejected events and void events are not valid targets (`void_target_not_found`). Supervisor corrections from the web are #22.
+`{type: "record.void", payload: {reason}, voids_event_id}`. The author of an event voids it (not when the void itself goes to review: see "Doubtful events" above): the target keeps its row and gets its void fields; the void event references it. Another user's event is `void_target_not_owned`; one of another organization or a missing one `void_target_not_found`; a second void `already_voided`. [ASSUMPTION] Rejected events and void events are not valid targets (`void_target_not_found`). Supervisor corrections from the web are #22.
 
 ## Review items
 

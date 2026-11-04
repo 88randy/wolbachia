@@ -9,4 +9,6 @@ Review items (issue #5): what a supervisor must look at because the server did n
 | `selectors.py` | The supervisor list (filters) and the courier's pull used by `changes.reviews` |
 | `views.py`, `serializers.py` | `GET /review-items/` (`review_item.read`; cursor paging, `?kind=`, `?code=`) |
 
+Dependency: `reviews` depends on `field_sync.models` (the foreign key and the status constants); `field_sync.services` calls `reviews.services.create_review_item` and `field_sync.selectors` calls `reviews.selectors`. Imports stay one-way at module level (models never import services).
+
 Decisions (accept, void, open an incident) are new insert-only rows added by #22; nothing here is ever edited. The Spanish label for the web is [ASSUMPTION] "elemento de revisión" (glossary).

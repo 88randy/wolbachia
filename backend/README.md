@@ -121,7 +121,7 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 
 ## Field sync (#5)
 
-`POST /api/v1/field/sync/` (bearer device token, permission `field_event.sync`) uploads a **sync batch** of events and pulls the courier's review items. Contract, code tables, guarantees and how an epic registers its event types: [`docs/sync.md`](../docs/sync.md). The pipeline is in `field_sync/services.py` and never calls an external service (a final upload holds user and session locks for the whole request); batches of one device are serialized with an advisory lock (decision 64). `GET /review-items/` (`review_item.read`) lists rejected and in-review events for supervisors.
+`POST /api/v1/field/sync/` (bearer device token, permission `field_event.sync`) uploads a **sync batch** of events and pulls the courier's review items. Contract, code tables, guarantees and how an epic registers its event types: [`docs/sync.md`](../docs/sync.md). The pipeline is in `field_sync/services.py` and never calls an external service (a final upload holds user and session locks for the whole request); batches of one courier are serialized with a try advisory lock (`429 sync_in_progress`, decision 71) and shared event ids with ordered locks (decision 72). `GET /review-items/` (`review_item.read`) lists rejected and in-review events for supervisors.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
@@ -129,6 +129,8 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `SYNC_MAX_EVENTS` | `200` | Events per batch (`413`) [ASSUMPTION] |
 | `SYNC_MAX_EVENT_PAYLOAD_BYTES` | `16384` | Per-event payload (`event_payload_too_large`) [ASSUMPTION] |
 | `THROTTLE_FIELD_SYNC_RATE` | `60/min` | Sync rate limit per device [ASSUMPTION] |
+| `SYNC_CURSOR_MAX_AGE_SECONDS` | `604800` | Lifetime of a `changes.cursor` (7 days) |
+| `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
 
 ## Dependencies (verified on PyPI, 2026-11-03)
 
