@@ -5,13 +5,14 @@ COPY --from=ghcr.io/astral-sh/uv:0.12.11 /uv /usr/local/bin/uv
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    UV_PROJECT_ENVIRONMENT=/app/.venv \
+    # The venv lives outside /app so the dev bind mount never hides or stales it.
+    UV_PROJECT_ENVIRONMENT=/opt/venv \
     UV_LINK_MODE=copy \
-    PATH="/app/.venv/bin:$PATH"
+    PATH="/opt/venv/bin:$PATH"
 
 WORKDIR /app
 
-RUN useradd --create-home --uid 1000 app && chown app:app /app
+RUN useradd --create-home --uid 1000 app && mkdir /opt/venv && chown app:app /app /opt/venv
 USER app
 
 COPY --chown=app:app pyproject.toml uv.lock ./

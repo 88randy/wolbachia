@@ -64,8 +64,11 @@ jobs:
       # Strict only for services.py and selectors.py (overrides in pyproject.toml).
       - name: Mypy
         run: uv run mypy .
+      # Test settings include the test-only app, so its migration is checked too.
       - name: Migrations are up to date
         run: uv run python manage.py makemigrations --check --dry-run
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
       - name: Tests and coverage (gate in pyproject.toml)
         run: uv run pytest --cov
       - name: OpenAPI schema is valid
