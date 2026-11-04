@@ -8,6 +8,7 @@ import { errors } from "./errors.ts";
 import { shell } from "./shell.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
+import { voiding } from "./voiding.ts";
 
 export const esMX = {
   ...common,
@@ -16,6 +17,7 @@ export const esMX = {
   ...states,
   ...auth,
   ...sync,
+  ...voiding,
 } as const;
 
 /** Every key of the catalog. */

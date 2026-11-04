@@ -1,0 +1,71 @@
+/* A voided record (design: tr.void td.vx line-through, "Anulado" neutral badge with the ban icon). */
+.row {
+  color: var(--color-text-tertiary);
+}
+
+.text {
+  color: var(--color-text-tertiary);
+  text-decoration: line-through;
+}
+
+.cell {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.wrapper {
+  position: relative;
+  display: inline-block;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  min-height: calc(var(--web-control-sm) * 3 / 4);
+  padding: 0 var(--space-1);
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-status-neutral-bg);
+  color: var(--color-status-neutral-fg);
+  font: inherit;
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.icon {
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+}
+
+/* Right under the badge and inside the wrapper, so the pointer can move onto it (WCAG 1.4.13). */
+.detail {
+  position: absolute;
+  z-index: 10;
+  top: 100%;
+  inset-inline-start: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  width: max-content;
+  max-width: 20rem;
+  margin-top: var(--space-0-5);
+  padding: var(--space-1) var(--space-1-5);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-level-1);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 400;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.detail[hidden] {
+  display: none;
+}

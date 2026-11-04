@@ -6,6 +6,7 @@ import { errors } from "./errors.ts";
 import { shell } from "./shell.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
+import { voiding } from "./voiding.ts";
 
 export const en: Record<MessageKey, string> = {
   ...common,
@@ -14,4 +15,5 @@ export const en: Record<MessageKey, string> = {
   ...states,
   ...auth,
   ...sync,
+  ...voiding,
 };
