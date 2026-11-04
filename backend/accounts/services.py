@@ -15,6 +15,7 @@ from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
 from django.db import IntegrityError, transaction
 from django.db.models import Q, QuerySet
+from django.views.decorators.debug import sensitive_variables
 from rest_framework.exceptions import Throttled
 
 from accounts.audit import AuditContext, AuthEvent, fingerprint, log_auth_event
@@ -48,6 +49,7 @@ def create_user_without_password(username: str, email: str) -> User:
     return user
 
 
+@sensitive_variables("password")
 def authenticate_user(username: str, password: str, ip: str | None) -> User:
     """Check credentials with the lockout in front (writes the failure counter and the log).
 
@@ -373,6 +375,7 @@ def touch_session(session: DeviceSession) -> None:
 # --- Password reset ----------------------------------------------------------------------------
 
 
+@sensitive_variables("new_password", "token")
 def reset_password(user: User, token: str, new_password: str) -> None:
     """Set a new password from a reset token (writes User) and end the user's device sessions.
 

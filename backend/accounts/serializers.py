@@ -4,6 +4,7 @@ from typing import Any
 
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
+from django.views.decorators.debug import sensitive_variables
 from rest_framework import serializers
 from rest_framework.fields import get_error_detail
 
@@ -110,6 +111,7 @@ class PasswordResetConfirmSerializer(serializers.Serializer[Any]):
         max_length=PASSWORD_MAX_LENGTH, trim_whitespace=False, write_only=True
     )
 
+    @sensitive_variables()
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         user = find_user_for_password_reset(attrs["uid"], attrs["token"])
         try:

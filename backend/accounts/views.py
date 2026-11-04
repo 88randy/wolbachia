@@ -7,7 +7,9 @@ from typing import Any
 from django.contrib.auth import login, logout
 from django.db.models import QuerySet
 from django.utils.decorators import method_decorator
+from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.debug import sensitive_variables
 from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
 from kombu.exceptions import OperationalError
 from rest_framework import mixins, status, viewsets
@@ -101,6 +103,7 @@ class CsrfView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
+@method_decorator(never_cache, name="dispatch")
 class LoginView(APIView):
     """`POST /auth/login/`. With `device_id`: mobile tokens. Without: a web session (CSRF)."""
 
@@ -109,6 +112,7 @@ class LoginView(APIView):
     throttle_classes = [LoginIpThrottle, LoginUserIpThrottle]
 
     @extend_schema(request=LoginSerializer, responses={200: LoginResponse}, auth=[])
+    @sensitive_variables()
     def post(self, request: Request) -> Response:
         payload = LoginSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
@@ -165,6 +169,7 @@ class LoginView(APIView):
         return Response(WebLoginResponseSerializer({"me": me, "server_time": server_now()}).data)
 
 
+@method_decorator(never_cache, name="dispatch")
 class RefreshView(APIView):
     """`POST /auth/refresh/`: rotate the token pair of a device session (mobile)."""
 
@@ -193,6 +198,7 @@ class RefreshView(APIView):
         return Response(RefreshResponseSerializer(body).data)
 
 
+@method_decorator(never_cache, name="dispatch")
 class PasswordResetView(APIView):
     """`POST /auth/password-reset/ {email}`: always `202`, whether or not the account exists.
 
@@ -221,6 +227,7 @@ class PasswordResetView(APIView):
         return Response(status=status.HTTP_202_ACCEPTED)
 
 
+@method_decorator(never_cache, name="dispatch")
 class PasswordResetConfirmView(APIView):
     """`POST /auth/password-reset/confirm/ {uid, token, new_password}`: set the new password.
 
@@ -233,6 +240,7 @@ class PasswordResetConfirmView(APIView):
     throttle_classes = [PasswordResetConfirmThrottle]
 
     @extend_schema(request=PasswordResetConfirmSerializer, responses={204: None}, auth=[])
+    @sensitive_variables()
     def post(self, request: Request) -> Response:
         payload = PasswordResetConfirmSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
