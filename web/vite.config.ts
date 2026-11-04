@@ -10,7 +10,14 @@ export default defineConfig({
   plugins: [react()],
   server: {
     port: DEV_SERVER_PORT,
-    proxy: { "/api": process.env["API_PROXY_TARGET"] ?? DEFAULT_API_PROXY_TARGET },
+    proxy: {
+      // Keep the browser's Host: the string shorthand sets changeOrigin, which sends the target's
+      // host (`api:8000` in docker compose), so Django rejects it and the CSRF Origin check fails.
+      "/api": {
+        target: process.env["API_PROXY_TARGET"] ?? DEFAULT_API_PROXY_TARGET,
+        changeOrigin: false,
+      },
+    },
   },
   test: {
     environment: "jsdom",
