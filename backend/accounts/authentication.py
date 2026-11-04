@@ -1,5 +1,6 @@
 """Bearer authentication for the mobile app: opaque access tokens bound to a device session."""
 
+from datetime import datetime
 from typing import NoReturn
 
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
@@ -82,7 +83,7 @@ class DeviceBearerAuthentication(BaseAuthentication):
         if session.revoked_at is not None:
             # The access token may have expired while the phone was offline: the final upload
             # does not depend on it (its own deadline applies).
-            if self._opts_in_to_final_upload(request) and is_final_upload_available(session, now):
+            if self._final_upload_allowed(session, request, now):
                 return
             fail(SessionRevokedError)
         if session.device.is_revoked:
@@ -94,9 +95,11 @@ class DeviceBearerAuthentication(BaseAuthentication):
             fail(TokenExpiredError)
 
     @staticmethod
-    def _opts_in_to_final_upload(request: Request) -> bool:
+    def _final_upload_allowed(session: DeviceSession, request: Request, now: datetime) -> bool:
+        """Revoked session, opt-in view, deadline not passed, not used yet, user still active."""
         view = request.parser_context.get("view") if request.parser_context else None
-        return bool(getattr(view, "allows_revoked_final_upload", False))
+        opted_in = bool(getattr(view, "allows_revoked_final_upload", False))
+        return opted_in and session.user.is_active and is_final_upload_available(session, now)
 
 
 class EndedSessionBearerAuthentication(DeviceBearerAuthentication):

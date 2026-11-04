@@ -6,6 +6,7 @@ from rest_framework.routers import SimpleRouter
 from config.urls import urlpatterns as api_urlpatterns
 from tests.testapp.views import (
     BoomView,
+    FinalUploadView,
     StreamWidgetViewSet,
     ThrottledView,
     UndeclaredPermissionsViewSet,
@@ -22,6 +23,7 @@ urlpatterns = [
     *api_urlpatterns,
     path("api/v1/", include(router.urls)),
     path("api/v1/boom/", BoomView.as_view()),
+    path("api/v1/final-upload/", FinalUploadView.as_view()),
     path("api/v1/throttled/", ThrottledView.as_view()),
     path("api/v1/write-then-fail/", WriteThenFailView.as_view()),
 ]

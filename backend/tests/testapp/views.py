@@ -5,6 +5,8 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
+from accounts.models import DeviceSession
+from accounts.services import consume_final_upload
 from core.exceptions import AlreadyVoidedError
 from core.pagination import StreamCursorPagination
 from core.serializers import OrgScopedModelSerializer
@@ -97,3 +99,19 @@ class WriteThenFailView(APIView):
     def post(self, request: Request) -> Response:
         Widget.objects.create(organization=Organization.objects.first(), name="leaked")
         raise AlreadyVoidedError
+
+
+class FinalUploadView(APIView):
+    """Stands in for `/field/sync/` (#5): opts in and spends the final upload of a revoked session."""
+
+    allows_revoked_final_upload = True
+
+    def post(self, request: Request) -> Response:
+        session = request.auth
+        is_revoked = isinstance(session, DeviceSession) and session.revoked_at is not None
+        if is_revoked:
+            consume_final_upload(session)
+        response = Response({"accepted": True})
+        if is_revoked:
+            response["X-Session-Revoked"] = "true"
+        return response
