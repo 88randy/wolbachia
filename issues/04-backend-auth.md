@@ -52,3 +52,4 @@ Decided (`docs/decisions.md`): web uses Django session cookie + CSRF; mobile use
 [PENDING] Email provider: `EMAIL_URL` (console in dev).
 Seed: `admin` profile gets `device.read`, `device.revoke`, `user.revoke_device_sessions` via an idempotent service.
 Full implementation plan: see the planner comment on this issue.
+Decided in review: refresh tokens form families (`TokenPair` rows): reuse of a consumed refresh token revokes the session, except a duplicate inside the 60 s grace window while no later token was used. Final upload only when an admin revokes with `allow_final_upload: true`; it is enforced by `FinalUploadMixin` and #5 marks those events `in_review`. Same-device re-login revokes the old session as `superseded`. Production requires `DRF_NUM_PROXIES` and an https `WEB_BASE_URL`.

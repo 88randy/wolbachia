@@ -34,3 +34,4 @@ N/A.
 
 ## Notes
 [PENDING] Droplet size, region, domain names, registry choice (DigitalOcean Container Registry vs GHCR), and who approves production deploys. Needs the client/infra owner.
+From #4: production needs `DRF_NUM_PROXIES` (no default), `EMAIL_URL`, `DEFAULT_FROM_EMAIL` and an https `WEB_BASE_URL`. The TLS proxy must overwrite `X-Forwarded-For` and the app servers must never be reachable directly (throttles and login lockout key on the client address). Schedule `manage.py clearsessions` for web sessions.
