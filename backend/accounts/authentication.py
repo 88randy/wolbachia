@@ -114,7 +114,10 @@ class DeviceBearerAuthentication(BaseAuthentication):
             fail(SessionRevokedError)
         if pair.access_expires_at <= now:
             fail(TokenExpiredError)
-        self._check_current(pair, now)
+        # A retired sibling is not rejected here: `claim_access_use` resolves it atomically and
+        # revokes the session (the copy of a token that was already used), so it is not skipped.
+        if is_access_superseded(pair, now):
+            fail(InvalidTokenError)
 
     @staticmethod
     def _final_upload_allowed(session: DeviceSession, request: Request, now: datetime) -> bool:

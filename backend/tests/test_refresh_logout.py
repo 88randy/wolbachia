@@ -11,7 +11,7 @@ from rest_framework.throttling import SimpleRateThrottle
 
 from accounts.models import DeviceSession, RevokeReason, TokenPair, User
 from accounts.services import DeviceInfo, start_device_session
-from accounts.token_pairs import IssuedTokens
+from accounts.token_pairs import MAX_SIBLING_PAIRS, IssuedTokens
 from organizations.models import Organization
 from tests.conftest import MemberFactory
 from tests.factories import UserFactory
@@ -345,3 +345,38 @@ def test_refreshing_a_second_sibling_after_the_first_was_used_revokes_the_sessio
     assert (
         DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == RevokeReason.REFRESH_REUSE
     )
+
+
+def test_the_losing_siblings_access_token_revokes_the_session_through_the_api(
+    api_client: APIClient,
+    org_a: Organization,
+    make_member: MemberFactory,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    issued = session_for(make_member, org_a)
+    winner = refresh(api_client, issued).data
+    loser = refresh(api_client, issued).data  # a duplicate inside the window
+    assert bearer(APIClient(), winner["access"]).get(ME).status_code == 200  # first use wins
+    caplog.set_level(logging.DEBUG)
+
+    response = bearer(APIClient(), loser["access"]).get(ME)
+
+    assert (response.status_code, response.data["code"]) == (401, "session_revoked")
+    session = DeviceSession.objects.get(pk=issued.session.pk)
+    assert session.revoke_reason == RevokeReason.REFRESH_REUSE  # committed before the answer
+    assert "event=refresh_reuse_detected" in caplog.text
+    assert bearer(APIClient(), winner["access"]).get(ME).data["code"] == "session_revoked"
+
+
+def test_duplicates_past_the_sibling_cap_answer_429_and_keep_the_session(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    issued = session_for(make_member, org_a)
+    for _ in range(MAX_SIBLING_PAIRS):
+        assert refresh(api_client, issued).status_code == 200
+
+    response = refresh(api_client, issued)
+
+    assert (response.status_code, response.data["code"]) == (429, "throttled")
+    assert int(response.headers["Retry-After"]) >= 1
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None

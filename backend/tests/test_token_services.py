@@ -5,9 +5,10 @@ import uuid
 from datetime import timedelta
 
 import pytest
-from django.db import connection
+from django.db import connection, transaction
 from django.test import override_settings
 from django.utils import timezone
+from rest_framework.exceptions import Throttled
 
 from accounts.exceptions import (
     DeviceOrganizationMismatchError,
@@ -32,6 +33,7 @@ from accounts.token_pairs import (
     claim_access_use,
     is_access_superseded,
     is_retired_sibling,
+    issue_pair,
     rotate_refresh_token,
 )
 from accounts.tokens import hash_token
@@ -302,16 +304,84 @@ def test_the_same_sibling_can_be_used_again(org_a: Organization) -> None:
     assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
 
 
-def test_duplicates_beyond_the_sibling_cap_count_as_reuse(org_a: Organization) -> None:
+def test_duplicates_beyond_the_sibling_cap_are_throttled_not_revoked(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
     for _ in range(MAX_SIBLING_PAIRS):
         refresh(issued)  # the exchange plus accepted duplicates
 
+    with pytest.raises(Throttled) as refused:
+        refresh(issued)
+
+    assert 1 <= refused.value.wait <= 60  # until the grace window closes
+    assert TokenPair.objects.filter(parent_id=issued.pair.pk).count() == MAX_SIBLING_PAIRS
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+
+
+def test_past_the_window_the_same_duplicate_is_a_reuse(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+    for _ in range(MAX_SIBLING_PAIRS):
+        refresh(issued)
+    age_consumption(issued.pair, 120)
+
     with pytest.raises(SessionRevokedError):
         refresh(issued)
 
-    assert TokenPair.objects.filter(parent_id=issued.pair.pk).count() == MAX_SIBLING_PAIRS
     assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_first_use_of_a_sibling_and_a_duplicate_refresh_never_adopt_two_pairs(
+    org_a: Organization,
+) -> None:
+    """B's first use races a duplicate refresh of the parent that creates and adopts C."""
+    for _ in range(12):
+        issued = login(UserFactory(), org_a)
+        child_b = refresh(issued)
+        results: dict[str, str] = {}
+        barrier = threading.Barrier(2)
+
+        def use_b(
+            pair: TokenPair = child_b.pair,
+            results: dict[str, str] = results,
+            barrier: threading.Barrier = barrier,
+        ) -> None:
+            try:
+                barrier.wait(timeout=10)
+                failure = claim_access_use(fresh(pair))
+                results["b"] = "ok" if failure is None else "revoked"
+            finally:
+                connection.close()
+
+        def duplicate_then_use_c(
+            issued: IssuedTokens = issued,
+            results: dict[str, str] = results,
+            barrier: threading.Barrier = barrier,
+        ) -> None:
+            try:
+                barrier.wait(timeout=10)
+                try:
+                    child_c = refresh(issued)
+                except SessionRevokedError:
+                    results["c"] = "refused"  # B was already used: the duplicate is a copy
+                    return
+                failure = claim_access_use(fresh(child_c.pair))
+                results["c"] = "ok" if failure is None else "revoked"
+            finally:
+                connection.close()
+
+        threads = [threading.Thread(target=use_b), threading.Thread(target=duplicate_then_use_c)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join(timeout=60)
+        assert not any(thread.is_alive() for thread in threads)
+
+        adopted = TokenPair.objects.filter(parent_id=issued.pair.pk, access_used_at__isnull=False)
+        assert adopted.count() <= 1  # never two siblings adopted
+        if results["c"] == "revoked" or results["b"] == "revoked":
+            assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
+        else:
+            assert adopted.count() == 1 or results["c"] == "refused"
 
 
 @pytest.mark.django_db(transaction=True)
@@ -649,3 +719,53 @@ def test_two_concurrent_refreshes_of_the_same_token_both_end_consistent(
     assert results == ["ok", "ok"]
     assert TokenPair.objects.filter(parent_id=issued.pair.pk).count() == 2
     assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+
+
+@pytest.mark.django_db(transaction=True)
+def test_claiming_a_sibling_waits_for_the_parent_lock_before_looking_at_siblings(
+    org_a: Organization,
+) -> None:
+    """A duplicate refresh holds the locks and adopts C; B's first use must wait, then revoke.
+
+    Deterministic interleaving: a lock-free decision based on B being the only child would
+    adopt B too.
+    """
+    issued = login(UserFactory(), org_a)
+    child_b = refresh(issued)
+    holding, release = threading.Event(), threading.Event()
+    result: dict[str, object] = {}
+
+    def duplicate_adopting_c() -> None:
+        try:
+            with transaction.atomic():
+                User.objects.select_for_update(no_key=True).get(pk=issued.session.user_id)
+                session = DeviceSession.objects.select_for_update().get(pk=issued.session.pk)
+                TokenPair.objects.select_for_update().get(pk=issued.pair.pk)
+                child_c = issue_pair(session, parent=issued.pair)
+                TokenPair.objects.filter(pk=child_c.pair.pk).update(access_used_at=timezone.now())
+                holding.set()
+                release.wait(timeout=20)
+        finally:
+            connection.close()
+
+    def use_b() -> None:
+        try:
+            result["failure"] = claim_access_use(fresh(child_b.pair))
+        finally:
+            connection.close()
+
+    holder = threading.Thread(target=duplicate_adopting_c)
+    holder.start()
+    assert holding.wait(timeout=20)
+    user = threading.Thread(target=use_b)
+    user.start()
+    user.join(timeout=1.5)
+    assert user.is_alive(), "the claim decided without waiting for the parent lock"
+    release.set()
+    holder.join(timeout=30)
+    user.join(timeout=30)
+
+    assert isinstance(result["failure"], SessionRevokedError)
+    adopted = TokenPair.objects.filter(parent_id=issued.pair.pk, access_used_at__isnull=False)
+    assert adopted.count() == 1
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"

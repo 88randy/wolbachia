@@ -7,8 +7,9 @@ Rules (decision 36, docs/api-conventions.md):
   allowed only if no token issued after it has been used yet (no child access token used, no child
   refresh consumed) and the parent has fewer than `MAX_SIBLING_PAIRS` children. It then issues one
   more sibling pair.
-* A consumed refresh token presented outside the window, after a later token was used, or once the
-  sibling cap is exceeded, means a copy exists: the whole session is revoked (`refresh_reuse`).
+* Past the sibling cap a duplicate is refused with `429 throttled` and `Retry-After` until the window
+  closes; it does not revoke. A consumed refresh token presented outside the window or after a later
+  token was used means a copy exists: the whole session is revoked (`refresh_reuse`).
 * Per parent, only the first sibling ever used (its access token used or its refresh exchanged) is
   valid. Using or refreshing any other sibling afterwards revokes the session (`refresh_reuse`).
 
@@ -17,6 +18,7 @@ first. The revocation is committed before the error is raised, so none of this m
 outer `atomic()` (see `accounts.revocation`).
 """
 
+import math
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -24,6 +26,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
+from rest_framework.exceptions import Throttled
 
 from accounts.audit import AuditContext, AuthEvent, log_auth_event
 from accounts.exceptions import (
@@ -120,15 +123,15 @@ def _reuse(session: DeviceSession) -> DomainError:
 def claim_access_use(pair: TokenPair) -> DomainError | None:
     """Record the first use of the pair's access token (writes TokenPair.access_used_at).
 
-    Returns the error to raise, or None. A pair with siblings is claimed under the locks of the
-    global order (user, session, parent pair): if another sibling was used first, this is a copy
-    and the session is revoked. Raise the result only after this function returned, so the
-    revocation is committed.
+    Returns the error to raise, or None. Any pair that has a parent is claimed under the locks of
+    the global order (user, session, parent pair) before looking at its siblings: no decision
+    depends on a count taken without the lock, because a duplicate refresh may create a sibling
+    at any moment. If another sibling was used first, this is a copy and the session is revoked.
+    Raise the result only after this function returned, so the revocation is committed.
     """
     if pair.access_used_at is not None:
         return None
-    siblings = 0 if pair.parent_id is None else pair.parent.children.count()  # type: ignore[union-attr]
-    if siblings <= 1:
+    if pair.parent_id is None:  # the pair of a login has no siblings
         TokenPair.objects.filter(pk=pair.pk, access_used_at__isnull=True).update(
             access_used_at=server_now()
         )
@@ -174,17 +177,23 @@ def _session_failure(session: DeviceSession) -> DomainError | None:
     return None
 
 
-def _consumed_failure(pair: TokenPair, consumed_at: datetime, now: datetime) -> DomainError | None:
-    """A consumed refresh token came back: a grace retry (None) or a reuse (session revoked)."""
-    in_window = now <= consumed_at + _grace()
-    room = pair.children.count() < MAX_SIBLING_PAIRS
-    if in_window and room and not has_used_descendants(pair):
-        log_auth_event(AuthEvent.REFRESH_GRACE_RETRY, _audit(pair.session))
-        return None
-    return _reuse(pair.session)
+def _consumed_failure(pair: TokenPair, consumed_at: datetime, now: datetime) -> Exception | None:
+    """A consumed refresh token came back: a grace retry (None), a throttle or a reuse.
+
+    Reaching the sibling cap does not revoke: the duplicate is refused with `429 throttled` and
+    `Retry-After` until the grace window closes (nothing proves a copy exists). Revocation is for
+    a token that was actually used after this one, or one presented outside the window.
+    """
+    window_end = consumed_at + _grace()
+    if now > window_end or has_used_descendants(pair):
+        return _reuse(pair.session)
+    if pair.children.count() >= MAX_SIBLING_PAIRS:
+        return Throttled(wait=max(1, math.ceil((window_end - now).total_seconds())))
+    log_auth_event(AuthEvent.REFRESH_GRACE_RETRY, _audit(pair.session))
+    return None
 
 
-def _refresh_failure(pair: TokenPair, now: datetime) -> DomainError | None:
+def _refresh_failure(pair: TokenPair, now: datetime) -> Exception | None:
     """Why a refresh must be refused, or None when the pair may be exchanged."""
     failure = _session_failure(pair.session)
     if failure is not None:
@@ -231,7 +240,7 @@ def rotate_refresh_token(refresh_token: str, device_id: uuid.UUID) -> IssuedToke
     """
     digest = hash_token(refresh_token)
     now = server_now()
-    failure: DomainError
+    failure: Exception
     with transaction.atomic():
         pair = _lock_pair(digest)
         if pair is None or pair.session.device_id != device_id:

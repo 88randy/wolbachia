@@ -36,3 +36,7 @@ User rows are locked with `select_for_update(no_key=True)` (`FOR NO KEY UPDATE`)
 Bookkeeping (`touch_session`, the first-use mark of a lone pair) are single statements outside any transaction of ours. `tests/test_credentials_and_locks.py` runs refresh, login and final upload against reset on threads (`transaction=True`) to catch a deadlock.
 
 Revocation and rotation commit before they raise, so they must not run inside an outer `atomic()`; `ATOMIC_REQUESTS` stays off.
+
+## For #5 (`/field/sync/`)
+
+`FinalUploadMixin` holds the `User` and `DeviceSession` locks for the whole view when a revoked phone makes its final upload: keep sync batches bounded and make no external calls (HTTP, storage, email) inside the view.
