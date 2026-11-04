@@ -77,6 +77,8 @@ export class WatermelonStore implements EventStore {
     this.adapter = adapter;
     this.database = new Database({ adapter, modelClasses: [EventModel] });
     await Promise.race([adapter.initializingPromise, setupFailed]);
+    // Setup succeeded: a later onSetUpError must not become an unhandled rejection.
+    setupFailed.catch(() => undefined);
     await this.applyAndReadPragmas();
   }
 

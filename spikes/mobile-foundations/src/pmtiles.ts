@@ -8,6 +8,7 @@ export const PMTILES_HEADER_BYTES = 127;
 const MAGIC = 'PMTiles';
 const SUPPORTED_VERSION = 3;
 const TILE_TYPE_MVT = 1;
+const TILE_TYPE_MLT = 6;
 const E7 = 10_000_000;
 
 export type PmtilesHeader = {
@@ -50,9 +51,23 @@ export function parsePmtilesHeader(bytes: Uint8Array): PmtilesHeader {
   };
 }
 
-export function isVectorTiles(header: PmtilesHeader): boolean {
-  return header.tileType === TILE_TYPE_MVT;
+/**
+ * Returns a warning when the tiles are not Mapbox Vector Tiles, or null when they are.
+ * Tile type 6 is MLT (MapLibre Tile), a different vector encoding. [ASSUMPTION] this style and the native
+ * MapLibre 13.6.1 read MVT only; MLT needs a newer native version and a re-export of the file as MVT.
+ */
+export function tileTypeWarning(header: PmtilesHeader): string | null {
+  if (header.tileType === TILE_TYPE_MVT) return null;
+  if (header.tileType === TILE_TYPE_MLT) {
+    return 'WARNING: tile type 6 is MLT (MapLibre Tile), not MVT. This style expects MVT: export the file as MVT.';
+  }
+  return `WARNING: tile type ${header.tileType} is not MVT (vector): the vector style will show nothing`;
 }
+
+/** Layer ids of the style below, one per Protomaps source-layer. */
+export const PMTILES_LAYER_IDS = ['earth', 'water', 'roads', 'landuse', 'buildings'] as const;
+
+const ROAD_KINDS = ['highway', 'major_road', 'minor_road', 'path'];
 
 const COLOR = {
   background: '#f2efe9',
@@ -123,6 +138,8 @@ export function buildPmtilesStyle(filePath: string): StyleSpecification {
         type: 'line',
         source,
         'source-layer': 'roads',
+        // Only the road kinds we style: rail, ferry, aeroway, pier and aerialway lines are left out.
+        filter: ['match', ['get', 'kind'], ROAD_KINDS, true, false],
         layout: { 'line-cap': 'round', 'line-join': 'round' },
         paint: {
           'line-color': [

@@ -111,7 +111,7 @@ export function OfflinePackMap() {
             );
             packStartedAt.current = null;
           }
-          if (next.state === 'complete') setDownloading(false);
+          if (next.state !== 'active') setDownloading(false);
         },
         (_pack, error) => {
           log(`ERROR pack ${error.id}: ${error.message}`);
