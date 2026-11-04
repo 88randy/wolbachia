@@ -56,18 +56,76 @@ Rules that do not depend on that decision:
 
 ## Running locally
 
-**[ASSUMPTION]** Everything below is a placeholder until the scaffold (issue 26) lands.
-
-- Runs as a `web` service in the repo's Docker Compose setup, next to `backend`.
-- The API base URL comes from an environment variable (name **[PENDING]**). No secrets in the web bundle.
-- `packages/api-client` is regenerated from the backend OpenAPI schema; do not edit generated code by hand.
-- Stack (decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md)): Vite, TanStack Router, TanStack Query, TanStack Table, React Hook Form + Zod, Recharts, MapLibre via `react-map-gl/maplibre`, i18next, Vitest + Testing Library + jest-axe, Playwright. Node version to pin: **[PENDING]** (issue 26).
-- Deploy: GitHub Actions to DigitalOcean, as the rest of the stack. Static hosting vs container: **[PENDING]**.
+Node **22.13.0** (`.nvmrc`; `engines.node >=22.13`). Run everything from the repo root.
 
 ```bash
-# [ASSUMPTION] final commands to be defined in issue 26
+npm ci                                   # once, installs every workspace
+cp web/.env.example web/.env             # then adjust if needed
+npm run dev -w @wolbachia/web            # http://localhost:5173
+```
+
+Or in Docker, as the rest of the stack (Vite dev server with live reload, port 5173):
+
+```bash
 docker compose up web
 ```
+
+`backend/compose.yaml` (issue #2) is not part of `compose.yaml` yet: Compose fails on an `include` whose file does not exist, so the include is documented in `compose.yaml` and gets added when #2 merges (`include: [{path: backend/compose.yaml}]`). After that, `docker compose up` starts everything and `docker compose up web` still starts only this service. **[ASSUMPTION]** the Django service will be called `api` and listen on 8000: `API_PROXY_TARGET` in `compose.yaml` and `vite.config.ts` use that.
+
+| Command (root) | What it does |
+|---|---|
+| `npm run dev -w @wolbachia/web` | Generates `packages/tokens/dist/tokens.css`, starts Vite |
+| `npm run build -w @wolbachia/web` | Same CSS step, then `vite build` into `web/dist/` (needs `VITE_API_BASE_URL`) |
+| `npm run preview -w @wolbachia/web` | Serves `web/dist/` |
+| `npm test --workspaces --if-present` | Unit and component tests (Vitest, Testing Library, jest-axe) |
+| `npm run e2e -w @wolbachia/web` | Playwright on a production build: layout, keyboard flow, axe (WCAG 2.2 AA) in light and dark. First time: `npx playwright install chromium`. `E2E_BASE_URL=<url>` runs it against a running instance (e.g. the container) instead |
+| `npm run lint`, `npm run format:check`, `npm run typecheck` | As in CI |
+
+### Configuration
+
+| Variable | Required | Meaning |
+|---|---|---|
+| `VITE_API_BASE_URL` | yes | Base URL of the API: an absolute `http(s)` URL or a same-origin path such as `/api/v1`. No default in code |
+
+`VITE_*` variables are **read at build time and written into the public bundle**: never put a secret in them. If the variable is missing or invalid the app shows a translated "not ready" screen and logs `Invalid app configuration: VITE_API_BASE_URL ...` to the console, instead of a blank page. Each environment needs its own build (or image build argument `VITE_API_BASE_URL`).
+
+### Layout of `src/`
+
+| Folder | What |
+|---|---|
+| `app/` | `startApp` (theme, language, configuration check, first render) and `App` |
+| `config/` | `readAppConfig`: validates the environment (the only place that exposes `apiBaseUrl`) |
+| `i18n/` | i18next fed by `@wolbachia/i18n` (typed keys, `{param}`), `useLanguage` |
+| `theme/` | light by default; `data-theme="dark"` on `<html>`; stored per browser |
+| `router/` | code-based TanStack Router routes: one placeholder per area (`areas.ts`) |
+| `shell/` | skip link, sidebar (232 px, 64 px collapsed), top bar, offline banner |
+| `states/` | placeholder, not found, route error, loading skeleton, configuration error |
+| `styles/` | global CSS, shared CSS modules, `no-style-literals.test.ts` |
+| `storage/` | `localStorage` wrapper that never throws (preferences are conveniences) |
+
+Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/tokens` (a test fails on hex/rgb colors, literal `font-family`, px font sizes or radii and inline `style`); every user-facing string is an i18n key; one component per file, ESLint clean-code limits apply.
+
+### What the shell does today
+
+- Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists **all** areas: filtering by permission comes with `GET /api/v1/me/` in #28.
+- Top bar slots: search (the `/` key focuses it; no backend yet), notifications (no panel, no count yet), es-MX / en switch (no reload; remembered). The center selector and the user menu are left for #28.
+- Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
+- Not found and route errors render inside the shell, with a way home (and retry).
+- Keyboard: the first Tab stop is "Skip to content"; every link and button is reachable; the focus ring comes from the tokens. The active sidebar item uses `color.action` (4.5:1) instead of `color.brand` (4.2:1 with white text, fails AA).
+- Not built here: sign-in and permissions (#28), `packages/api-client` and TanStack Query (#12), DataTable and FilterBar (#29), the void pattern (#32), the public portal layout (#25).
+
+Screenshots of the shell (light, dark, es-MX, en, collapsed, offline): [`docs/screenshots/`](docs/screenshots/).
+
+### Stack
+
+Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md). **Installed so far:** React 19, Vite 8, TanStack Router, i18next + react-i18next, Zod, Lucide icons, Inter (self-hosted with `@fontsource/inter`, no CDN: privacy, CSP and a working app without internet), Vitest + Testing Library + jest-axe, Playwright + `@axe-core/playwright`. TanStack Query, TanStack Table, React Hook Form, Recharts and MapLibre are added by the issues that first use them. TypeScript is the root version (6.0.3).
+
+### Build and deploy
+
+- `web/Dockerfile` (build context = repo root): `dev` stage for compose; `runtime` stage = unprivileged nginx 1.30 serving `dist/` on port 8080 with SPA fallback, CSP, `X-Content-Type-Options`, immutable cache on `/assets/` and never on `index.html`. Build it with `docker build -f web/Dockerfile --target runtime .`.
+- CI (`.github/workflows/web.yml`): lint, format, type-check, tests and build; Playwright e2e; and the image build (no push).
+- **Default deploy target (decided in #26, [PENDING] client confirmation): the nginx container on the DigitalOcean droplet, next to the backend.** Static hosting remains possible because the output is plain files. The deploy workflow is not part of #26.
+- **[ASSUMPTION]** the API is on the same origin as the web (a reverse proxy routes `/api/` to Django), so the CSP says `connect-src 'self'` and `VITE_API_BASE_URL=/api/v1`. For another origin, extend the CSP in `web/nginx/security-headers.conf` and settle cookies/CORS in backend #4 (ADR 0001, open point 2).
 
 ## Design source
 

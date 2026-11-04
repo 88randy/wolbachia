@@ -170,6 +170,7 @@ Sources: npm registry; recharts type definitions (`accessibilityLayer`, "@defaul
 
 ## Consequences
 
+- **Decided in #26:** code-based routes; `VITE_API_BASE_URL` (build time, required); Node pinned to 22.13.0 in `.nvmrc`, Docker and CI (`jsdom` is held at 29.1.1 because 30 needs Node >=22.22); default deploy target is the nginx container (client confirmation pending); icons from `lucide-react`, font self-hosted with `@fontsource/inter`.
 - #26 scaffolds with: Vite, TanStack Router, TanStack Query, i18next, Vitest, Playwright; pins Node; decides route style, env var name and static-vs-container deploy.
 - #28 uses Query for `/me/` and a `can()` helper; route guards use router `beforeLoad` [ASSUMPTION: API not exercised in the PoC].
 - #29 builds `DataTable` on TanStack Table with the URL as state, as the PoC shows. It adds cursor mode, selection, voided rows and export.

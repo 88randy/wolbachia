@@ -35,3 +35,8 @@
 | 31 | Custom `accounts.User` (UUID primary key) from the first migration; Django admin is not mounted (it can delete) | Accepted (2026-11-03) | PYROBYTE |
 | 32 | `Profile` carries `label_es` / `label_en` as organization data (like catalog items) instead of a single `name`; the API returns no other user-facing text | Accepted (2026-11-03) | PYROBYTE |
 | 33 | Profile assignment changes (`Membership.profiles`, M2M `set()`) are configuration, not business records, so they are not voided; an audit log arrives with the role editor (W65) | Accepted (2026-11-03) | PYROBYTE |
+| 34 | Web routes are written in code (TanStack Router, no file-based generation): one array of areas (`web/src/router/areas.ts`) | Accepted (#26) | PYROBYTE |
+| 35 | The web reads its API base URL from `VITE_API_BASE_URL`, required, validated at startup, no default in code. It is baked into the bundle at build time, so it never holds a secret; same-origin `/api/v1` is the default deployment | Accepted (#26); same-origin vs cross-origin still open (ADR 0001, point 2) | PYROBYTE |
+| 36 | Node 22.13.0 is pinned in `.nvmrc` and used by CI and the web Dockerfile; `engines.node >=22.13` | Accepted (#26) | PYROBYTE |
+| 37 | Default web deploy target: unprivileged nginx container serving the static build on the DigitalOcean droplet. The deploy workflow is a separate issue | Accepted as default (#26); client confirmation pending | PYROBYTE / Client |
+| 38 | Web icons: `lucide-react` (ISC). Web font: Inter self-hosted via `@fontsource/inter` (OFL-1.1), no external font CDN | Accepted (#26) | PYROBYTE |

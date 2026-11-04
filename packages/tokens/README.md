@@ -70,7 +70,7 @@ Light is the default (`:root`). Set `data-theme="dark"` on `<html>` (or any ance
 npm run build:css      # writes dist/tokens.css from src/
 ```
 
-`dist/tokens.css` is **generated and not committed** (`dist/` is gitignored). One source of truth, no stale copy. The web build runs `build:css` before bundling (wired in the web bootstrap issue). The generator is a plain Node script run with `--experimental-strip-types` (Node >= 22.6; verified on 22.13), so there are no runtime or build dependencies.
+`dist/tokens.css` is **generated and not committed** (`dist/` is gitignored). One source of truth, no stale copy. The `dev`, `build` and `test` scripts of `web/` run `build:css` first (issue #26). The generator is a plain Node script run with `--experimental-strip-types` (Node >= 22.6; verified on 22.13), so there are no runtime or build dependencies.
 
 ## Develop
 
