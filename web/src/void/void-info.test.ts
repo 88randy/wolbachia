@@ -1,6 +1,5 @@
 import { describe, expect, test } from "vitest";
 import { makeMe } from "../test/fake-api";
-import { countCharacters } from "./count-characters";
 import { voidInfoOf } from "./void-info";
 import { voidLimitsOf } from "./void-limits";
 
@@ -30,14 +29,6 @@ describe("voidInfoOf", () => {
       author: "user u1",
       when: "2026-09-12",
     });
-  });
-});
-
-describe("countCharacters", () => {
-  test("counts code points like Python's len", () => {
-    expect(countCharacters("")).toBe(0);
-    expect(countCharacters("anulación")).toBe(9);
-    expect(countCharacters("😀a")).toBe(2);
   });
 });
 

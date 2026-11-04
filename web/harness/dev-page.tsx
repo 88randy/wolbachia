@@ -1,5 +1,5 @@
 /**
- * DEV ONLY: entry of `web/harness/void.html`, served by `npm run dev -w @wolbachia/web` at
+ * DEV ONLY: entry of `web/harness/void.html` (with `VoidHarness.tsx`), served by `npm run dev -w @wolbachia/web` at
  * `/harness/void.html`. It is not part of the production build (Vite builds `index.html` only) and
  * not a route of the app. `?answer=` picks what the pretend server says: `ok` (default),
  * `tooShort`, `alreadyVoided`, `blocked`, `network`, `slow`. `?lang=en` and `?theme=dark` switch.
@@ -9,10 +9,10 @@ import "@fontsource/inter/latin-700.css";
 import "@wolbachia/tokens/tokens.css";
 import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
-import "../../styles/global.css";
-import { setupI18n } from "../../i18n/setup-i18n";
-import { applyTheme } from "../../theme/theme";
-import type { VoidResult } from "../submit-void";
+import "../src/styles/global.css";
+import { setupI18n } from "../src/i18n/setup-i18n";
+import { applyTheme } from "../src/theme/theme";
+import type { VoidResult } from "../src/void/submit-void";
 import { VoidHarness } from "./VoidHarness";
 
 const params = new URLSearchParams(window.location.search);

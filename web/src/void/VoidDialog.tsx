@@ -23,6 +23,22 @@ export interface VoidDialogProps {
 const REASON_FIELD = "textarea";
 
 /**
+ * A browser can close a modal `<dialog>` by itself (a second Escape, the close-watcher rule) even
+ * when `cancel` was prevented. While a request is in flight it is opened again and focus goes
+ * back to the reason; otherwise the user gave up. A dialog that React already removed (it is not
+ * connected) or that is open is left alone.
+ */
+function keepOpenWhileBusy(dialog: HTMLDialogElement, isBusy: boolean, onCancel: () => void) {
+  if (!dialog.isConnected || dialog.open) return;
+  if (isBusy) {
+    dialog.showModal();
+    dialog.querySelector<HTMLElement>(REASON_FIELD)?.focus();
+  } else {
+    onCancel();
+  }
+}
+
+/**
  * The shared "Void with reason" modal (#32). Mount it to open it, unmount it to close it. It is a
  * native modal `<dialog>`: the page behind is inert, Tab stays inside, and focus returns to the
  * button that opened it. It starts on the reason field; Escape and Cancel give up, unless a
@@ -41,6 +57,9 @@ export function VoidDialog({ record, limits, submit, onVoided, onCancel }: VoidD
       onCancel={(event) => {
         event.preventDefault();
         if (!form.isBusy) onCancel();
+      }}
+      onClose={(event) => {
+        keepOpenWhileBusy(event.currentTarget, form.isBusy, onCancel);
       }}
     >
       <h2 id={titleId} className={styles.title}>

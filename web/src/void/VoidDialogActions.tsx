@@ -10,20 +10,25 @@ interface VoidDialogActionsProps {
 }
 
 /**
- * Cancel (outlined) and the destructive confirmation. While busy the confirmation is
- * `aria-disabled`, not `disabled`, so keyboard focus is not lost and a second press sends nothing.
+ * Cancel (outlined) and the destructive confirmation. While busy both are `aria-disabled`, not
+ * `disabled`, so keyboard focus is not lost, a second press sends nothing and the dialog cannot
+ * be left while the server may still void the record.
  */
 export function VoidDialogActions({ isBusy, onCancel }: VoidDialogActionsProps) {
   const { t } = useTranslation();
   function ignoreWhileBusy(event: MouseEvent) {
     if (isBusy) event.preventDefault();
   }
+  function cancel() {
+    if (!isBusy) onCancel();
+  }
   return (
     <div className={styles.actions}>
       <button
         type="button"
         className={classNames(buttons.button, buttons.secondary)}
-        onClick={onCancel}
+        aria-disabled={isBusy}
+        onClick={cancel}
       >
         {t("common.actions.cancel")}
       </button>

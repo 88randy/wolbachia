@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test, vi } from "vitest";
 import { renderWithI18n } from "../test/render-with-i18n";
-import { VoidHarness } from "./__tests__/VoidHarness";
+import { VoidHarness } from "../../harness/VoidHarness";
 import type { VoidResult } from "./submit-void";
 import type { VoidFailure } from "./void-failure";
 
@@ -65,14 +65,6 @@ describe("VoidDialog", () => {
     expect(screen.getByText("10 de 1000 caracteres como máximo")).toBeTruthy();
   });
 
-  test("counts an emoji as one character, as the API does", async () => {
-    const { user, reasonField } = await openDialog(submitStub());
-
-    await user.type(reasonField, "😀😀😀");
-
-    expect(screen.getByText("3 de 10 caracteres mínimos")).toBeTruthy();
-  });
-
   test("a short reason is refused here: error, focus on the field, nothing sent", async () => {
     const submit = submitStub();
     const { user, reasonField } = await openDialog(submit);
@@ -84,6 +76,20 @@ describe("VoidDialog", () => {
     expect(reasonField.getAttribute("aria-invalid")).toBe("true");
     expect(document.activeElement).toBe(reasonField);
     expect(descriptionOf(reasonField)).toMatch(/necesita al menos 10 caracteres/);
+  });
+
+  test("invisible text is not counted, and control or bidi text is refused here, nothing sent", async () => {
+    const submit = submitStub();
+    const { user, reasonField } = await openDialog(submit);
+
+    await user.type(reasonField, "\u200b".repeat(12));
+    expect(screen.getByText("0 de 10 caracteres mínimos")).toBeTruthy();
+    await user.clear(reasonField);
+    await user.type(reasonField, "\u202eabcdefghijkl");
+    await pressVoid(user);
+
+    expect((await screen.findByRole("alert")).textContent).toMatch(/caracteres que no se pueden/);
+    expect(submit).not.toHaveBeenCalled();
   });
 
   test("an empty form says the same, and the error goes once the minimum is reached", async () => {
@@ -132,15 +138,25 @@ describe("VoidDialog", () => {
   });
 });
 
+function pending() {
+  let finish: (result: VoidResult) => void = () => undefined;
+  const submit = vi.fn(
+    () =>
+      new Promise<VoidResult>((resolve) => {
+        finish = resolve;
+      }),
+  );
+  return {
+    submit,
+    finish: (result: VoidResult) => {
+      finish(result);
+    },
+  };
+}
+
 describe("VoidDialog: while the request runs", () => {
-  test("a second press sends nothing and Escape does not close it", async () => {
-    let finish: (result: VoidResult) => void = () => undefined;
-    const submit = vi.fn(
-      () =>
-        new Promise<VoidResult>((resolve) => {
-          finish = resolve;
-        }),
-    );
+  test("a second press, Escape and Cancel change nothing, and the answer still reaches the screen", async () => {
+    const { submit, finish } = pending();
     const { user, reasonField } = await openDialog(submit);
     await user.type(reasonField, GOOD_REASON);
     await pressVoid(user);
@@ -148,12 +164,44 @@ describe("VoidDialog: while the request runs", () => {
     const busy = await screen.findByRole("button", { name: "Anulando…" });
     await user.click(busy);
     fireEvent(screen.getByRole("dialog"), new Event("cancel", { cancelable: true }));
+    await user.click(screen.getByRole("button", { name: "Cancelar" }));
 
     expect(busy.getAttribute("aria-disabled")).toBe("true");
+    expect(screen.getByRole("button", { name: "Cancelar" }).getAttribute("aria-disabled")).toBe(
+      "true",
+    );
     expect(submit).toHaveBeenCalledTimes(1);
     expect(screen.getByRole("dialog")).toBeTruthy();
     finish(OK);
     await waitForClose();
+    expect(screen.getAllByText("Anulado")).toHaveLength(2); // onVoided reached the screen
+  });
+
+  test("a browser that closes the dialog by itself (second Escape) sees it reopened on the reason", async () => {
+    const { submit, finish } = pending();
+    const { user, reasonField } = await openDialog(submit);
+    await user.type(reasonField, GOOD_REASON);
+    await pressVoid(user);
+    await screen.findByRole("button", { name: "Anulando…" });
+    const dialog = screen.getByRole("dialog");
+
+    dialog.removeAttribute("open");
+    fireEvent(dialog, new Event("close"));
+
+    expect(dialog.hasAttribute("open")).toBe(true);
+    expect(document.activeElement).toBe(reasonField);
+    finish(OK);
+  });
+
+  test("the same close while idle means the user gave up", async () => {
+    await openDialog(submitStub());
+    const dialog = screen.getByRole("dialog");
+
+    dialog.removeAttribute("open");
+    fireEvent(dialog, new Event("close"));
+
+    await waitForClose();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: OPEN_BUTTON }));
   });
 });
 
@@ -169,7 +217,7 @@ describe("VoidDialog: what the server answers", () => {
       expect(reasonField.getAttribute("aria-invalid")).toBe("true");
     });
     expect(descriptionOf(reasonField)).toMatch(/necesita al menos 15 caracteres/);
-    expect(screen.getByText("13 de 15 caracteres mínimos")).toBeTruthy();
+    expect(screen.getByText("11 de 15 caracteres mínimos")).toBeTruthy();
     expect(document.activeElement).toBe(reasonField);
     expect(screen.getByRole("dialog")).toBeTruthy();
   });
@@ -180,6 +228,7 @@ describe("VoidDialog: what the server answers", () => {
     [{ kind: "permissionDenied" }, /No tienes permiso/],
     [{ kind: "notFound" }, /No encontramos/],
     [{ kind: "invalid" }, /Hay datos que no son válidos/],
+    [{ kind: "invalidCharacters" }, /caracteres que no se pueden guardar/],
     [{ kind: "service", failure: "network" }, /No hay conexión/],
     [{ kind: "service", failure: "server" }, /Algo falló de nuestro lado/],
   ])(

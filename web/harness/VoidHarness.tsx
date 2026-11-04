@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { classNames } from "../../styles/class-names";
-import type { VoidResult } from "../submit-void";
-import { VoidDialog } from "../VoidDialog";
-import { VoidedCell } from "../VoidedCell";
-import { voidedRowClass } from "../voided-row";
-import { DEFAULT_VOID_LIMITS } from "../void-limits";
-import type { VoidLimits } from "../void-limits";
-import type { VoidInfo } from "../void-info";
+import { classNames } from "../src/styles/class-names";
+import type { VoidResult } from "../src/void/submit-void";
+import { VoidDialog } from "../src/void/VoidDialog";
+import { VoidedCell } from "../src/void/VoidedCell";
+import { voidedRowClass } from "../src/void/voided-row";
+import { DEFAULT_VOID_LIMITS } from "../src/void/void-limits";
+import type { VoidLimits } from "../src/void/void-limits";
+import type { VoidInfo } from "../src/void/void-info";
 
 interface HarnessProps {
   /** What the pretend server answers; receives the trimmed reason. */

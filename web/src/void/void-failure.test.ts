@@ -1,5 +1,13 @@
-import { describe, expect, test, vi } from "vitest";
+import { afterEach, describe, expect, test, vi } from "vitest";
 import { messages } from "@wolbachia/i18n";
+import { createAppQueryClient } from "../api/query-client";
+import { ME_QUERY_KEY } from "../session/me-query";
+import {
+  endSessionExpiry,
+  isSessionExpired,
+  subscribeToMembershipLost,
+} from "../session/session-events";
+import { makeMe } from "../test/fake-api";
 import { submitVoid } from "./submit-void";
 import { voidFailureKey, voidFailureOf } from "./void-failure";
 import type { VoidFailure } from "./void-failure";
@@ -30,6 +38,14 @@ describe("voidFailureOf", () => {
     });
   });
 
+  test("reads void_reason_invalid_characters", () => {
+    const body = envelope("validation_error", {
+      reason: [{ code: "void_reason_invalid_characters", params: {} }],
+    });
+
+    expect(voidFailureOf(400, body)).toEqual({ kind: "invalidCharacters" });
+  });
+
   test.each<[number, unknown, VoidFailure]>([
     [
       400,
@@ -56,6 +72,7 @@ describe("voidFailureKey", () => {
     const failures: VoidFailure[] = [
       { kind: "reasonTooShort", minLength: 10 },
       { kind: "invalid" },
+      { kind: "invalidCharacters" },
       { kind: "permissionDenied" },
       { kind: "notFound" },
       { kind: "alreadyVoided" },
@@ -71,29 +88,50 @@ describe("voidFailureKey", () => {
 });
 
 describe("submitVoid", () => {
-  test("a 2xx answer is ok", async () => {
-    const result = await submitVoid(() =>
-      Promise.resolve({ response: new Response(null, { status: 200 }) }),
-    );
+  function client() {
+    const queryClient = createAppQueryClient({ retry: false });
+    queryClient.setQueryData(ME_QUERY_KEY, makeMe()); // someone is signed in
+    return queryClient;
+  }
+  const answer = (status: number, error?: unknown) =>
+    Promise.resolve({ response: new Response(null, { status }), error });
 
-    expect(result).toEqual({ ok: true });
+  afterEach(() => {
+    endSessionExpiry();
+  });
+
+  test("a 2xx answer is ok", async () => {
+    expect(await submitVoid(client(), () => answer(200))).toEqual({ ok: true });
   });
 
   test("an error answer becomes a failure read from its body", async () => {
-    const result = await submitVoid(() =>
-      Promise.resolve({
-        response: new Response(null, { status: 409 }),
-        error: envelope("already_voided"),
-      }),
-    );
+    const result = await submitVoid(client(), () => answer(409, envelope("already_voided")));
 
     expect(result).toEqual({ ok: false, failure: { kind: "alreadyVoided" } });
+  });
+
+  test("a 401 reports the expired session, so the re-authentication dialog opens", async () => {
+    await submitVoid(client(), () => answer(401, envelope("not_authenticated")));
+
+    expect(isSessionExpired()).toBe(true);
+  });
+
+  test("a 403 no_active_membership reports the lost membership; another 403 does not", async () => {
+    const lost = vi.fn();
+    const unsubscribe = subscribeToMembershipLost(lost);
+
+    await submitVoid(client(), () => answer(403, envelope("permission_denied")));
+    expect(lost).not.toHaveBeenCalled();
+    await submitVoid(client(), () => answer(403, envelope("no_active_membership")));
+    unsubscribe();
+
+    expect(lost).toHaveBeenCalledTimes(1);
   });
 
   test("a thrown network error is a network failure, not an exception", async () => {
     const log = vi.spyOn(console, "error").mockImplementation(() => undefined);
 
-    const result = await submitVoid(() => Promise.reject(new TypeError("Failed to fetch")));
+    const result = await submitVoid(client(), () => Promise.reject(new TypeError("Failed")));
 
     expect(result).toEqual({ ok: false, failure: { kind: "service", failure: "network" } });
     expect(log).toHaveBeenCalled();

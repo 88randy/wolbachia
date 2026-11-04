@@ -16,6 +16,8 @@ export const voiding: Record<keyof typeof source, string> = {
   // What went wrong. Generic failures use `errors.api.*`.
   "voiding.error.title": "We could not void it",
   "voiding.error.tooShort": "The reason needs at least {min} characters. Tell us a bit more.",
+  "voiding.error.invalidCharacters":
+    "The reason has characters that cannot be saved (control or text-direction characters). Remove them and try again.",
   "voiding.error.alreadyVoided": "Someone already voided this record. Refresh the page to see it.",
   "voiding.error.blocked":
     "This record can no longer be voided, because another part of the system depends on it.",

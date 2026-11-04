@@ -14,6 +14,7 @@ export interface VoidRequest {
   /** The minimum the server asked for when it refused a reason; `undefined` until then. */
   serverMin: number | undefined;
   markTooShort: () => void;
+  markFailed: (failure: VoidFailure) => void;
   send: (reason: string) => Promise<void>;
 }
 
@@ -59,6 +60,9 @@ export function useVoidRequest(
     serverMin,
     markTooShort: () => {
       setStatus({ kind: "tooShort" });
+    },
+    markFailed: (failure) => {
+      setStatus({ kind: "failed", failure });
     },
     send,
   };

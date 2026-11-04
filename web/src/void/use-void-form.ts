@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { SyntheticEvent } from "react";
-import { countCharacters } from "./count-characters";
+import { countCharacters, hasForbiddenCharacters, normalizeReason } from "./count-characters";
 import type { VoidResult } from "./submit-void";
 import { useVoidRequest } from "./use-void-request";
 import type { VoidFailure } from "./void-failure";
@@ -16,7 +16,7 @@ interface VoidFormOptions {
 export interface VoidForm {
   reason: string;
   setReason: (reason: string) => void;
-  /** Characters of the trimmed reason, counted as the API does. */
+  /** Visible characters of the normalized reason, counted as the API does. */
   count: number;
   /** The server's value when it refused the reason, else the one the form was given. */
   minLength: number;
@@ -37,13 +37,15 @@ export function useVoidForm({ limits, submit, onVoided }: VoidFormOptions): Void
   const request = useVoidRequest(submit, onVoided);
   const { status } = request;
   const minLength = request.serverMin ?? limits.minLength;
-  const count = countCharacters(reason.trim());
+  const normalized = normalizeReason(reason);
+  const count = countCharacters(normalized);
 
   function handleSubmit(event: SyntheticEvent) {
     event.preventDefault();
     if (status.kind === "busy") return;
-    if (count < minLength) request.markTooShort();
-    else void request.send(reason.trim());
+    if (hasForbiddenCharacters(normalized)) request.markFailed({ kind: "invalidCharacters" });
+    else if (count < minLength) request.markTooShort();
+    else void request.send(normalized);
   }
 
   return {

@@ -8,6 +8,8 @@ import type { ServiceFailure } from "../api/service-failure";
 export type VoidFailure =
   /** `400 validation_error`, `fields.reason`: `void_reason_too_short` with `{min_length}`. */
   | { kind: "reasonTooShort"; minLength: number | undefined }
+  /** `400`, `fields.reason`: `void_reason_invalid_characters` (control or bidirectional text). */
+  | { kind: "invalidCharacters" }
   /** Another `400`: a blank, missing or too long reason that the form should have stopped. */
   | { kind: "invalid" }
   | { kind: "permissionDenied" }
@@ -23,6 +25,7 @@ const HTTP_FORBIDDEN = 403;
 const HTTP_NOT_FOUND = 404;
 const HTTP_CONFLICT = 409;
 const TOO_SHORT_CODE = "void_reason_too_short";
+const INVALID_CHARACTERS_CODE = "void_reason_invalid_characters";
 
 function tooShortOf(envelope: ErrorEnvelope): VoidFailure | undefined {
   const issue = envelope.fields?.["reason"]?.find(({ code }) => code === TOO_SHORT_CODE);
@@ -34,8 +37,14 @@ function tooShortOf(envelope: ErrorEnvelope): VoidFailure | undefined {
   };
 }
 
+function hasReasonCode(envelope: ErrorEnvelope, wanted: string): boolean {
+  return envelope.fields?.["reason"]?.some(({ code }) => code === wanted) ?? false;
+}
+
 function badRequestOf(error: unknown): VoidFailure {
-  return (isErrorEnvelope(error) ? tooShortOf(error) : undefined) ?? { kind: "invalid" };
+  if (!isErrorEnvelope(error)) return { kind: "invalid" };
+  if (hasReasonCode(error, INVALID_CHARACTERS_CODE)) return { kind: "invalidCharacters" };
+  return tooShortOf(error) ?? { kind: "invalid" };
 }
 
 function conflictOf(error: unknown): VoidFailure {
@@ -54,6 +63,7 @@ export function voidFailureOf(status: number, error: unknown): VoidFailure {
 
 const KEYS: Record<Exclude<VoidFailure["kind"], "service">, MessageKey> = {
   reasonTooShort: "voiding.error.tooShort",
+  invalidCharacters: "voiding.error.invalidCharacters",
   invalid: "errors.api.validation",
   permissionDenied: "errors.api.permissionDenied",
   notFound: "errors.api.notFound",
