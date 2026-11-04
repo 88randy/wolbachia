@@ -23,6 +23,10 @@ Skills to invoke with the Skill tool if available (optional; see `.claude/agents
 - Rate limiting on auth and sync, safe file uploads, safe error messages (no stack traces or internals to clients).
 - Dependencies: new ones justified, maintained, no known advisories.
 
+## How you verify
+
+Reproduce instead of reasoning only: run the real validator, endpoint or build with crafted payloads (path tricks, Unicode/invisible characters, oversized input, other organization's ids) and report what passed and what was rejected. Use your own compose project and a free host port from 55432 upward if you need a database (never 5432), and `down -v` afterwards.
+
 ## Output
 
 Findings by severity (critical, high, medium, low) with `file:line`, impact, exploit sketch and fix. State what you could not verify. Reply in Mexican Spanish.

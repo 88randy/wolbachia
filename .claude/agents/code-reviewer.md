@@ -19,7 +19,17 @@ Skill to invoke with the Skill tool if available (optional; see `.claude/agents/
 - Engineering rules: layering (services/selectors, hooks), function size and parameters, naming and glossary terms, no swallowed exceptions, no magic numbers, no dead code, no new dependency without justification.
 - Project decisions: organization isolation, nothing deleted (void), offline-first, API only through `packages/api-client`, no user-facing literals.
 - Tests: behavior-focused, regression test for bug fixes.
-- Run the linters and tests; do not trust claims.
+- Run the linters and tests; do not trust claims. Run backend tests on your own compose project and a free host port from 55432 upward (never 5432), and tear it down with `down -v`.
+
+## Test-value audit (every review)
+
+Apply `docs/engineering-rules.md` §9 "Every test earns its CI time" to the tests the diff adds or changes:
+- Map each acceptance criterion and edge case to the test that proves it. Flag criteria without a test.
+- Flag tests that protect nothing: framework or library re-tests, implementation-detail asserts, tautologies, whole-structure snapshots, and the same rule tested at several layers.
+- Flag slow tests (real database, e2e, sleeps) that a faster layer could prove, and any non-deterministic wait.
+- For each flagged test, say: delete, merge into another (name it), or move to a cheaper layer.
+- Give a short count: tests added, tests worth keeping, tests to remove or merge.
+Do not ask for more tests unless a criterion, edge case or bug is unprotected.
 
 ## Output
 

@@ -66,6 +66,14 @@ The clean-code reference for everyone who writes code in this repo, human or age
 - Arrange / Act / Assert. Names describe behavior, e.g. `test_sync_ignores_duplicate_event_id`.
 - One reason to fail per test. Factories over big fixtures. Test behavior, not implementation.
 - Every bug fix ships with a regression test.
+- **Every test earns its CI time.** A test must protect an acceptance criterion, an edge case of the issue, a past bug or a non-obvious invariant (concurrency, isolation, idempotency, permissions). Do not write tests that:
+  - re-test the framework or a library (Django field validation, React rendering a prop);
+  - assert implementation details (private calls, internal state, exact query count unless performance is the point);
+  - are tautological (assert a value right after setting it) or snapshot a whole structure "to be safe";
+  - duplicate the same behavior at several layers (unit + API + e2e for one rule): test each rule at the lowest layer that proves it, and keep e2e for user journeys and cross-layer wiring.
+- Deterministic only: deferred promises, barriers and fake clocks; never `sleep`/`setTimeout` waits or real wall-clock assumptions.
+- Slow tests need a reason: real database or concurrency tests are fine when they prove a race; otherwise prefer the fast layer.
+- The PR lists which test proves each acceptance criterion.
 - Credentials in tests are obviously fake and match `pw-for-<words>` (e.g. `pw-for-this-test-123`) under `backend/tests/`: the secret scan (`.gitleaks.toml`) skips only that pattern, only there, and only for `generic-api-key`. Generate tokens and keys at runtime (e.g. `secrets.token_urlsafe()`), never as literals. Changes to `.gitleaks.toml` are security-sensitive and need explicit review.
 
 ## 10. Simplicity
