@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 const PORT = 4173;
-const BASE_URL = `http://127.0.0.1:${String(PORT)}`;
+// E2E_BASE_URL points the tests at an already running instance (e.g. the container) instead.
+const EXTERNAL_BASE_URL = process.env["E2E_BASE_URL"];
+const BASE_URL = EXTERNAL_BASE_URL ?? `http://127.0.0.1:${String(PORT)}`;
 const IS_CI = process.env["CI"] !== undefined && process.env["CI"] !== "";
 const DESKTOP_VIEWPORT = { width: 1280, height: 800 };
 const BUILD_TIMEOUT_MS = 180_000;
@@ -20,11 +22,14 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: DESKTOP_VIEWPORT },
     },
   ],
-  webServer: {
-    command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${String(PORT)} --strictPort`,
-    url: BASE_URL,
-    reuseExistingServer: !IS_CI,
-    timeout: BUILD_TIMEOUT_MS,
-    env: { VITE_API_BASE_URL: "/api/v1" },
-  },
+  webServer:
+    EXTERNAL_BASE_URL !== undefined
+      ? undefined
+      : {
+          command: `npm run build && npm run preview -- --host 127.0.0.1 --port ${String(PORT)} --strictPort`,
+          url: BASE_URL,
+          reuseExistingServer: !IS_CI,
+          timeout: BUILD_TIMEOUT_MS,
+          env: { VITE_API_BASE_URL: "/api/v1" },
+        },
 });

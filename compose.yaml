@@ -1,0 +1,30 @@
+# Local development stack. `docker compose up web` serves the web app on http://localhost:5173.
+#
+# The backend services (api, database, Redis, Celery...) will come from backend/compose.yaml
+# (issue #2). Compose fails on an `include` whose file is missing (checked with v5.4: it has no
+# "optional" switch), so the include is NOT here yet. When #2 merges, add at the top:
+#
+#   include:
+#     - path: backend/compose.yaml
+#
+# and `docker compose up` starts everything; `docker compose up web` keeps starting only this one.
+
+services:
+  web:
+    build:
+      context: .
+      dockerfile: web/Dockerfile
+      target: dev
+    ports:
+      - "5173:5173"
+    environment:
+      # Browser-side: same-origin path, proxied by the Vite dev server to API_PROXY_TARGET.
+      VITE_API_BASE_URL: /api/v1
+      # [ASSUMPTION] the Django service is named `api` and listens on 8000 (issue #2).
+      API_PROXY_TARGET: http://api:8000
+    volumes:
+      # Live reload: the sources of the web app and the shared packages it consumes.
+      - ./web/src:/repo/web/src
+      - ./web/index.html:/repo/web/index.html
+      - ./packages/tokens/src:/repo/packages/tokens/src
+      - ./packages/i18n/src:/repo/packages/i18n/src

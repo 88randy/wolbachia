@@ -64,6 +64,30 @@ test.describe("shell layout", () => {
   });
 });
 
+test.describe("startup", () => {
+  test("loads without console errors or blocked resources", async ({ page }) => {
+    const problems: string[] = [];
+    page.on("console", (message) => {
+      if (message.type() === "error") problems.push(message.text());
+    });
+    page.on("pageerror", (error) => problems.push(error.message));
+
+    await openShell(page);
+    await page.getByRole("link", { name: "Flota" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Flota" })).toBeVisible();
+
+    expect(problems).toEqual([]);
+  });
+
+  test("serves the app on a deep link (single-page fallback)", async ({ page }) => {
+    await page.goto("/quadrants");
+
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Cuadrantes y muestreo" }),
+    ).toBeVisible();
+  });
+});
+
 test.describe("keyboard", () => {
   test("skip link appears on the first Tab and moves focus to main", async ({ page }) => {
     await openShell(page);
