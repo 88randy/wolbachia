@@ -70,7 +70,7 @@ Or in Docker, as the rest of the stack (Vite dev server with live reload, port 5
 docker compose up web
 ```
 
-`backend/compose.yaml` (issue #2) is not part of `compose.yaml` yet: Compose fails on an `include` whose file does not exist, so the include is documented in `compose.yaml` and gets added when #2 merges (`include: [{path: backend/compose.yaml}]`). After that, `docker compose up` starts everything and `docker compose up web` still starts only this service. **[ASSUMPTION]** the Django service will be called `api` and listen on 8000: `API_PROXY_TARGET` in `compose.yaml` and `vite.config.ts` use that.
+`compose.yaml` includes `backend/compose.yaml` (issue #2), so `docker compose up` starts the whole stack and `docker compose up web` only this service. The Django service is `api` on port 8000; `API_PROXY_TARGET` in `compose.yaml` and `vite.config.ts` point to it.
 
 | Command (root) | What it does |
 |---|---|
@@ -111,7 +111,7 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 - Top bar slots: search (the `/` key focuses it; no backend yet), notifications (no panel, no count yet), es-MX / en switch (no reload; remembered). The center selector and the user menu are left for #28.
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
-- Keyboard: the first Tab stop is "Skip to content"; every link and button is reachable; the focus ring comes from the tokens. The active sidebar item uses `color.action` (4.5:1) instead of `color.brand` (4.2:1 with white text, fails AA).
+- Keyboard: the first Tab stop is "Skip to content"; after each navigation focus moves to `<main>`; every link and button is reachable; the focus ring comes from the tokens. The active sidebar item uses `color.action` (4.5:1) instead of `color.brand` (4.2:1 with white text, fails AA).
 - Not built here: sign-in and permissions (#28), `packages/api-client` and TanStack Query (#12), DataTable and FilterBar (#29), the void pattern (#32), the public portal layout (#25).
 
 Screenshots of the shell (light, dark, es-MX, en, collapsed, offline): [`docs/screenshots/`](docs/screenshots/).

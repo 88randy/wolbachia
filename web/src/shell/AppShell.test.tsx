@@ -119,6 +119,23 @@ describe("keyboard", () => {
   });
 });
 
+describe("focus on navigation", () => {
+  test("does not steal focus on the first load", async () => {
+    await renderApp({ path: "/fleet" });
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  test("moves focus to main after following a sidebar link", async () => {
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));
+
+    await screen.findByRole("heading", { level: 1, name: "Laboratorio" });
+    expect(document.activeElement).toBe(screen.getByRole("main"));
+  });
+});
+
 describe("collapse button", () => {
   test("starts expanded and exposes its state", async () => {
     await renderApp();
