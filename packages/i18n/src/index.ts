@@ -2,11 +2,11 @@
  * @wolbachia/i18n: shared message catalogs for mobile and web.
  * Clients translate by key; the API never returns user-facing text.
  */
-import { en } from "./locales/en.ts";
-import { esMX } from "./locales/es-MX.ts";
-import type { MessageKey } from "./locales/es-MX.ts";
+import { en } from "./locales/en/index.ts";
+import { esMX } from "./locales/es-MX/index.ts";
+import type { MessageKey } from "./locales/es-MX/index.ts";
 
-export type { MessageKey } from "./locales/es-MX.ts";
+export type { MessageKey } from "./locales/es-MX/index.ts";
 
 /** Supported locales. */
 export type Locale = "es-MX" | "en";

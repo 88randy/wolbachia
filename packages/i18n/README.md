@@ -16,11 +16,31 @@ const text = messages['es-MX']['common.actions.save']; // "Guardar"
 | Export | What |
 |---|---|
 | `messages` | `Record<Locale, Record<MessageKey, string>>` |
-| `MessageKey` | Union of every key, derived from `src/locales/es-MX.ts` |
+| `MessageKey` | Union of every key, derived from `src/locales/es-MX/index.ts` |
 | `Locale` | `'es-MX' \| 'en'` |
 | `defaultLocale` | `'es-MX'` |
 
 `es-MX` is the source of the key list. `en` is typed `Record<MessageKey, string>`, so a missing or extra key fails `tsc` (checked), and a test also compares both key sets.
+
+## Where new keys go (one file per area)
+
+Catalogs are split so parallel PRs touch different files (#67):
+
+```
+src/locales/
+  area.ts            AreaCatalog<"area"> type
+  es-MX/<area>.ts    es-MX messages of one area (source of that area's keys)
+  es-MX/index.ts     composes every area; derives MessageKey
+  en/<area>.ts       en messages of the same area (typed from the es-MX file)
+  en/index.ts        composes every area
+```
+
+Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`.
+
+- A new key goes in the file named after its first segment, in **both** languages: `auth.login.title` -> `es-MX/auth.ts` and `en/auth.ts`.
+- A new area (first segment) means: create `es-MX/<area>.ts` and `en/<area>.ts` (copy a small pair such as `common.ts`), then add one line to each `index.ts` and the area to the list in `test/areas.test.ts`.
+- Do not create a second file for an existing area and do not put keys of one area in another file. `AreaCatalog<"area">` (`satisfies` in each es-MX file) makes `tsc` fail when a key does not start with its file's area, so a key cannot be defined in two files. `test/areas.test.ts` also checks that no key is overwritten when composing.
+- `test/fixtures/catalogs.snapshot.json` is the catalog as it was before the split (#67). The test only requires that every key in it still exists with the same text, so adding keys never touches the fixture (that would bring back the conflicts the split removes). Changing or removing an existing text on purpose means updating the fixture in the same PR. At the split, the composed catalogs were also checked for exact deep equality with it.
 
 ## Key convention: `area.screen.element`
 
