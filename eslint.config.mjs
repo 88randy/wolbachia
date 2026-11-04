@@ -59,6 +59,7 @@ export default defineConfig([
     "design/**", // external design export, not our code
     "packages/api-client/src/generated/**", // generated from OpenAPI, never edited by hand
     "backend/**", // Python, linted by ruff
+    "spikes/**", // throwaway proofs of concept with their own dependencies (#27)
   ]),
 
   // Base rules for every JS/TS file.

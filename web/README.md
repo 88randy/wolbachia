@@ -56,12 +56,12 @@ Rules that do not depend on that decision:
 
 ## Running locally
 
-**[ASSUMPTION]** Everything below is a placeholder until the stack spike (issue 27) closes.
+**[ASSUMPTION]** Everything below is a placeholder until the scaffold (issue 26) lands.
 
 - Runs as a `web` service in the repo's Docker Compose setup, next to `backend`.
 - The API base URL comes from an environment variable (name **[PENDING]**). No secrets in the web bundle.
 - `packages/api-client` is regenerated from the backend OpenAPI schema; do not edit generated code by hand.
-- Build tool, router, data-fetching, table and chart libraries: **[PENDING]** (issue 27).
+- Stack (decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md)): Vite, TanStack Router, TanStack Query, TanStack Table, React Hook Form + Zod, Recharts, MapLibre via `react-map-gl/maplibre`, i18next, Vitest + Testing Library + jest-axe, Playwright. Node version to pin: **[PENDING]** (issue 26).
 - Deploy: GitHub Actions to DigitalOcean, as the rest of the stack. Static hosting vs container: **[PENDING]**.
 
 ```bash
