@@ -6,10 +6,9 @@ client. Open catalogs start with the fixed "Other (specify)" item only: admins a
 
 from dataclasses import dataclass
 
-from catalogs.models import Catalog, CatalogItem
+from catalogs.models import OTHER_ITEM_CODE, Catalog, CatalogItem
 from organizations.models import Organization
 
-OTHER_ITEM_CODE = "other"
 OTHER_ITEM_LABEL_ES = "Otro (especificar)"
 OTHER_ITEM_LABEL_EN = "Other (specify)"
 

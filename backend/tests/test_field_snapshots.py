@@ -217,3 +217,11 @@ def test_snapshots_are_read_only(phone, url) -> None:
     for method in (phone.post, phone.put, phone.patch):
         assert method(url, {}, format="json").status_code == 405
     assert phone.delete(url).status_code == 405
+
+
+@pytest.mark.parametrize("url", [CATALOG_URL, RULES_URL])
+def test_snapshots_vary_by_organization_header_also_on_304(phone, catalog, speed, url) -> None:
+    ok = phone.get(url)
+    not_modified = revalidate(phone, url, ok["ETag"])
+
+    assert ok["Vary"] == not_modified["Vary"] == "X-Organization"

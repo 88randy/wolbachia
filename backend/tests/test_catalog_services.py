@@ -1,6 +1,8 @@
 import pytest
 
-from catalogs.exceptions import OtherItemLockedError
+from catalogs import services
+from catalogs.exceptions import CatalogItemLimitError, OtherItemLockedError
+from catalogs.models import MAX_SORT
 from catalogs.selectors import build_catalog_snapshot
 from catalogs.services import (
     CatalogItemSpec,
@@ -48,10 +50,69 @@ def test_create_item_copies_the_organization_of_the_catalog() -> None:
     assert item.organization_id == catalog.organization_id
 
 
-def test_create_item_never_creates_the_other_item() -> None:
-    item = create_catalog_item(CatalogFactory(), CatalogItemSpec("other", "Otro"), UserFactory())
+def test_create_item_rejects_the_reserved_other_code() -> None:
+    with pytest.raises(FieldValidationError) as error:
+        create_catalog_item(CatalogFactory(), CatalogItemSpec("other", "Otro"), UserFactory())
+
+    assert error.value.fields == {"code": [{"code": "reserved_code", "params": {}}]}
+
+
+def test_create_item_never_flags_the_new_item_as_other() -> None:
+    item = create_catalog_item(CatalogFactory(), CatalogItemSpec("another", "Otro"), UserFactory())
 
     assert item.is_other is False
+
+
+def test_create_item_without_sort_fails_cleanly_when_the_order_is_exhausted() -> None:
+    catalog = CatalogFactory()
+    CatalogItemFactory(catalog=catalog, code="last", sort=MAX_SORT, is_active=False)
+
+    with pytest.raises(FieldValidationError) as error:
+        create_catalog_item(catalog, CatalogItemSpec("new", "Nuevo"), UserFactory())
+
+    assert error.value.fields == {"sort": [{"code": "sort_exhausted", "params": {}}]}
+
+
+def test_create_item_may_still_use_an_explicit_sort_when_the_order_is_exhausted() -> None:
+    catalog = CatalogFactory()
+    CatalogItemFactory(catalog=catalog, code="last", sort=MAX_SORT)
+
+    item = create_catalog_item(catalog, CatalogItemSpec("new", "Nuevo", sort=1), UserFactory())
+
+    assert item.sort == 1
+
+
+@pytest.fixture
+def two_item_limit(monkeypatch):
+    monkeypatch.setattr(services, "MAX_ACTIVE_ITEMS_PER_CATALOG", 2)
+
+
+def test_create_item_beyond_the_active_limit_is_refused(two_item_limit) -> None:
+    catalog = CatalogFactory()
+    CatalogItemFactory.create_batch(2, catalog=catalog)
+
+    with pytest.raises(CatalogItemLimitError):
+        create_catalog_item(catalog, CatalogItemSpec("one-more", "Una mas"), UserFactory())
+
+
+def test_inactive_items_do_not_count_toward_the_limit(two_item_limit) -> None:
+    catalog = CatalogFactory()
+    CatalogItemFactory(catalog=catalog)
+    CatalogItemFactory(catalog=catalog, is_active=False)
+
+    assert create_catalog_item(catalog, CatalogItemSpec("fits", "Cabe"), UserFactory())
+
+
+def test_activate_beyond_the_active_limit_is_refused(two_item_limit) -> None:
+    catalog = CatalogFactory()
+    CatalogItemFactory.create_batch(2, catalog=catalog)
+    inactive = CatalogItemFactory(catalog=catalog, is_active=False)
+
+    with pytest.raises(CatalogItemLimitError):
+        activate_catalog_item(inactive)
+
+    inactive.refresh_from_db()
+    assert inactive.is_active is False
 
 
 def test_create_item_with_a_taken_code_is_a_field_error() -> None:
@@ -133,15 +194,23 @@ def test_snapshot_never_includes_other_organizations() -> None:
     assert [catalog["slug"] for catalog in snapshot["catalogs"]] == ["mine"]
 
 
-def test_snapshot_version_is_stable_and_changes_with_content() -> None:
+def test_snapshot_version_is_stable_while_nothing_changes() -> None:
+    catalog = CatalogFactory()
+    CatalogItemFactory(catalog=catalog)
+
+    first = build_catalog_snapshot(catalog.organization)["version"]
+
+    assert build_catalog_snapshot(catalog.organization)["version"] == first
+
+
+def test_snapshot_version_changes_when_a_label_changes() -> None:
     catalog = CatalogFactory()
     item = CatalogItemFactory(catalog=catalog)
-    before = build_catalog_snapshot(catalog.organization)
+    before = build_catalog_snapshot(catalog.organization)["version"]
 
-    assert build_catalog_snapshot(catalog.organization)["version"] == before["version"]
     update_catalog_item(item, {"label_es": "Otro texto"})
 
-    assert build_catalog_snapshot(catalog.organization)["version"] != before["version"]
+    assert build_catalog_snapshot(catalog.organization)["version"] != before
 
 
 def test_snapshot_version_changes_when_an_item_is_deactivated() -> None:

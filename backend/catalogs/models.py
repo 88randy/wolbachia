@@ -1,6 +1,7 @@
 """Configurable option lists per organization (decision 5). They are configuration, not records:
 items are deactivated instead of deleted, and `OrgScopedModel` already forbids `delete()`."""
 
+from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 
@@ -9,6 +10,15 @@ from core.models import OrgScopedModel
 CODE_MAX_LENGTH = 64
 LABEL_MAX_LENGTH = 200
 ICON_MAX_LENGTH = 64
+# The sort of an item is bounded so `max + 1` can never overflow the column.
+MAX_SORT = 10_000
+# The fixed "Other (specify)" item: only the seed creates it, so admins cannot take its code.
+OTHER_ITEM_CODE = "other"
+
+validate_item_code = RegexValidator(
+    r"^[a-z0-9][a-z0-9_-]*$", "Use lowercase letters, digits, hyphens and underscores."
+)
+validate_icon = RegexValidator(r"^[a-z0-9-]+$", "Use lowercase letters, digits and hyphens.")
 
 
 class Catalog(OrgScopedModel):
@@ -37,11 +47,11 @@ class CatalogItem(OrgScopedModel):
     """One option of a catalog. `label_en` may be blank: clients fall back to `label_es`."""
 
     catalog = models.ForeignKey(Catalog, on_delete=models.PROTECT, related_name="items")
-    code = models.SlugField(max_length=CODE_MAX_LENGTH)
+    code = models.CharField(max_length=CODE_MAX_LENGTH, validators=[validate_item_code])
     label_es = models.CharField(max_length=LABEL_MAX_LENGTH)
     label_en = models.CharField(max_length=LABEL_MAX_LENGTH, blank=True)
-    icon = models.CharField(max_length=ICON_MAX_LENGTH, blank=True)
-    sort = models.PositiveIntegerField(default=0)
+    icon = models.CharField(max_length=ICON_MAX_LENGTH, blank=True, validators=[validate_icon])
+    sort = models.PositiveIntegerField(default=0, validators=[MaxValueValidator(MAX_SORT)])
     is_active = models.BooleanField(default=True)
     is_other = models.BooleanField(default=False)
     requires_photo = models.BooleanField(default=False)

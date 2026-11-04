@@ -2,6 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from catalogs import permissions as catalog_codes
+from catalogs import services
 from catalogs.models import CatalogItem
 from organizations.models import Organization
 from tests.conftest import MemberFactory
@@ -67,7 +68,7 @@ def test_list_items_in_display_order_with_other_last(admin, catalog) -> None:
     assert [row["code"] for row in response.data["results"]] == ["a", "b", "off", "other"]
 
 
-def test_retrieve_item(admin, catalog) -> None:
+def test_retrieve_returns_the_item_by_id(admin, catalog) -> None:
     item = CatalogItemFactory(catalog=catalog, code="a")
 
     response = admin.get(items_url("removal-reason", f"{item.id}/"))
@@ -184,14 +185,20 @@ def test_delete_on_an_item_is_405(admin, catalog) -> None:
     assert CatalogItem.objects.filter(pk=item.pk).exists()
 
 
-def test_deactivate_and_activate_an_item(admin, catalog) -> None:
+def test_deactivate_an_item(admin, catalog) -> None:
     item = CatalogItemFactory(catalog=catalog)
 
-    off = admin.post(items_url("removal-reason", f"{item.id}/deactivate/"))
-    on = admin.post(items_url("removal-reason", f"{item.id}/activate/"))
+    response = admin.post(items_url("removal-reason", f"{item.id}/deactivate/"))
 
-    assert (off.status_code, off.data["is_active"]) == (200, False)
-    assert (on.status_code, on.data["is_active"]) == (200, True)
+    assert (response.status_code, response.data["is_active"]) == (200, False)
+
+
+def test_activate_an_item(admin, catalog) -> None:
+    item = CatalogItemFactory(catalog=catalog, is_active=False)
+
+    response = admin.post(items_url("removal-reason", f"{item.id}/activate/"))
+
+    assert (response.status_code, response.data["is_active"]) == (200, True)
 
 
 def test_deactivate_other_returns_409_other_item_cannot_be_deactivated(admin, catalog) -> None:
@@ -271,3 +278,81 @@ def test_catalog_list_needs_catalog_read(api_client, org_a, make_member) -> None
 def test_anonymous_requests_are_401(api_client, catalog) -> None:
     assert api_client.get("/api/v1/catalogs/").status_code == 401
     assert api_client.get(items_url("removal-reason")).status_code == 401
+
+
+@pytest.mark.parametrize(
+    ("payload", "field", "code"),
+    [
+        ({"code": "other", "label_es": "X"}, "code", "reserved_code"),
+        ({"code": "Upper", "label_es": "X"}, "code", "invalid"),
+        ({"code": "-lead", "label_es": "X"}, "code", "invalid"),
+        ({"code": "x", "label_es": "X", "icon": "Bad Icon"}, "icon", "invalid"),
+        ({"code": "x", "label_es": "X", "icon": "a" * 65}, "icon", "max_length"),
+        ({"code": "x", "label_es": "X", "sort": 10_001}, "sort", "max_value"),
+        ({"code": "x", "label_es": "X", "sort": -1}, "sort", "min_value"),
+    ],
+)
+def test_create_item_input_is_validated(admin, catalog, payload, field, code) -> None:
+    response = admin.post(items_url("removal-reason"), payload, format="json")
+
+    assert response.status_code == 400
+    assert response.data["fields"][field][0]["code"] == code
+
+
+def test_create_item_accepts_a_valid_icon_and_the_maximum_sort(admin, catalog) -> None:
+    payload = {"code": "ok", "label_es": "Ok", "icon": "alert-circle", "sort": 10_000}
+
+    assert admin.post(items_url("removal-reason"), payload, format="json").status_code == 201
+
+
+def test_patch_validates_icon_and_sort(admin, catalog) -> None:
+    item = CatalogItemFactory(catalog=catalog)
+    url = items_url("removal-reason", f"{item.id}/")
+
+    assert admin.patch(url, {"sort": 10_001}, format="json").status_code == 400
+    assert admin.patch(url, {"icon": "No Good"}, format="json").status_code == 400
+
+
+def test_create_item_when_the_order_is_exhausted_is_400_sort_exhausted(admin, catalog) -> None:
+    CatalogItemFactory(catalog=catalog, code="last", sort=10_000, is_active=False)
+
+    response = admin.post(
+        items_url("removal-reason"), {"code": "x", "label_es": "X"}, format="json"
+    )
+
+    assert response.status_code == 400
+    assert response.data["fields"]["sort"] == [{"code": "sort_exhausted", "params": {}}]
+
+
+def test_create_item_beyond_the_active_limit_is_409(admin, catalog, monkeypatch) -> None:
+    monkeypatch.setattr(services, "MAX_ACTIVE_ITEMS_PER_CATALOG", 1)
+    CatalogItemFactory(catalog=catalog)
+
+    response = admin.post(
+        items_url("removal-reason"), {"code": "x", "label_es": "X"}, format="json"
+    )
+
+    assert (response.status_code, response.data["code"]) == (409, "catalog_item_limit_reached")
+
+
+def test_activate_beyond_the_active_limit_is_409(admin, catalog, monkeypatch) -> None:
+    monkeypatch.setattr(services, "MAX_ACTIVE_ITEMS_PER_CATALOG", 1)
+    CatalogItemFactory(catalog=catalog)
+    off = CatalogItemFactory(catalog=catalog, is_active=False)
+
+    response = admin.post(items_url("removal-reason", f"{off.id}/activate/"))
+
+    assert (response.status_code, response.data["code"]) == (409, "catalog_item_limit_reached")
+
+
+def test_patch_activate_and_deactivate_of_another_organizations_item_are_404(
+    admin, catalog, org_b
+) -> None:
+    foreign = CatalogItemFactory(catalog=CatalogFactory(organization=org_b, slug="foreign"))
+    base = items_url("removal-reason", f"{foreign.id}/")
+
+    assert admin.patch(base, {"label_es": "Hacked"}, format="json").status_code == 404
+    assert admin.post(f"{base}activate/").status_code == 404
+    assert admin.post(f"{base}deactivate/").status_code == 404
+    foreign.refresh_from_db()
+    assert (foreign.label_es, foreign.is_active) != ("Hacked", False)
