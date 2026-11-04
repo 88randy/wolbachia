@@ -14,6 +14,7 @@ from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import exception_handler, set_rollback
 
+from core.authentication import SESSION_AUTH_SCHEME
 from core.exceptions import VALIDATION_ERROR_CODE, VALIDATION_ERROR_DETAIL, DomainError
 
 logger = logging.getLogger(__name__)
@@ -71,18 +72,28 @@ def _log_unhandled(exc: Exception, context: dict[str, Any]) -> None:
     )
 
 
+def _challenge_headers(exc: DomainError) -> dict[str, str] | None:
+    """A 401 carries `WWW-Authenticate`: the error's own scheme, else `Session`."""
+    if exc.status_code == HTTPStatus.UNAUTHORIZED:
+        return {"WWW-Authenticate": exc.challenge or SESSION_AUTH_SCHEME}
+    return None
+
+
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     if isinstance(exc, DomainError):
         set_rollback()
         body: dict[str, Any] = {"code": exc.code, "detail": exc.detail}
         if exc.fields:
             body["fields"] = exc.fields
-        return Response(body, status=exc.status_code)
+        return Response(body, status=exc.status_code, headers=_challenge_headers(exc))
 
     exc = _normalize(exc)
     response = exception_handler(exc, context)
     if response is not None and isinstance(exc, exceptions.APIException):
         response.data = _api_exception_body(exc)
+        challenge = getattr(exc, "challenge", None)
+        if challenge:
+            response["WWW-Authenticate"] = challenge
         return response
 
     set_rollback()

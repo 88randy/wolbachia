@@ -16,6 +16,8 @@ class DomainError(Exception):
     code = "domain_error"
     status_code = HTTPStatus.BAD_REQUEST
     default_detail = "The request could not be processed."
+    # `WWW-Authenticate` scheme of a 401 answer; None means the API's default (`Session`).
+    challenge: str | None = None
     fields: dict[str, list[dict[str, Any]]] | None = None
 
     def __init__(self, detail: str | None = None) -> None:

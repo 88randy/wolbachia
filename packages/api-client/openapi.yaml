@@ -4,6 +4,148 @@ info:
   version: 1.0.0
   description: Single API for the mobile app and the web (see docs/api-conventions.md).
 paths:
+  /api/v1/auth/csrf/:
+    get:
+      operationId: auth_csrf_retrieve
+      description: Sets the CSRF cookie for the web client, which sends it back as
+        `X-CSRFToken`.
+      tags:
+      - auth
+      responses:
+        '204':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/login/:
+    post:
+      operationId: auth_login_create
+      description: '`POST /auth/login/`. With `device_id`: mobile tokens. Without:
+        a web session (CSRF).'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/logout/:
+    post:
+      operationId: auth_logout_create
+      description: |-
+        `POST /auth/logout/`: end the web session or revoke the device session of the token.
+
+        Idempotent: with no active session there is nothing to end and it still answers 204. The
+        bearer variant accepts an expired or already revoked token, so the app can always log out.
+        A web session is CSRF-protected like any authenticated request.
+      tags:
+      - auth
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/password-reset/:
+    post:
+      operationId: auth_password_reset_create
+      description: |-
+        `POST /auth/password-reset/ {email}`: always `202`, whether or not the account exists.
+
+        The view neither looks the address up nor waits for the email: it enqueues a task, so the
+        answer, its body and its timing are the same for every address. The worker emails the link.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetRequestRequest'
+        required: true
+      responses:
+        '202':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/password-reset/confirm/:
+    post:
+      operationId: auth_password_reset_confirm_create
+      description: |-
+        `POST /auth/password-reset/confirm/ {uid, token, new_password}`: set the new password.
+
+        Revokes the user's device sessions (`password_changed`; no final upload). Web sessions end by
+        themselves because Django ties them to the password hash.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRequest'
+        required: true
+      responses:
+        '204':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/auth/refresh/:
+    post:
+      operationId: auth_refresh_create
+      description: '`POST /auth/refresh/`: rotate the token pair of a device session
+        (mobile).'
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshRequest'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/catalogs/:
     get:
       operationId: catalogs_list
@@ -32,6 +174,7 @@ paths:
       - catalogs
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -79,6 +222,7 @@ paths:
       - catalogs
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -119,6 +263,7 @@ paths:
         required: true
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '201':
           content:
@@ -161,6 +306,7 @@ paths:
       - catalogs
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -207,6 +353,7 @@ paths:
               $ref: '#/components/schemas/PatchedCatalogItemUpdateRequest'
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -249,6 +396,7 @@ paths:
       - catalogs
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -291,12 +439,146 @@ paths:
       - catalogs
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CatalogItem'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/devices/:
+    get:
+      operationId: devices_list
+      description: Registered phones of the active organization (W67) and remote revocation
+        of a lost one.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: is_revoked
+        schema:
+          type: boolean
+          nullable: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: user
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - devices
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDeviceList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/devices/{id}/:
+    get:
+      operationId: devices_retrieve
+      description: Registered phones of the active organization (W67) and remote revocation
+        of a lost one.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this device.
+        required: true
+      tags:
+      - devices
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/devices/{id}/revoke/:
+    post:
+      operationId: devices_revoke_create
+      description: |-
+        Lost phone: the device can no longer log in and every session on it is revoked.
+
+        `allow_final_upload: true` leaves the phone one last upload (default: none).
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this device.
+        required: true
+      tags:
+      - devices
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequestRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Device'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -326,6 +608,7 @@ paths:
       - field
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -365,6 +648,7 @@ paths:
       - field
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -420,6 +704,7 @@ paths:
       - me
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -461,6 +746,7 @@ paths:
       - rule-parameters
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -496,6 +782,7 @@ paths:
       - rule-parameters
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -546,6 +833,7 @@ paths:
       - rule-parameters
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -589,6 +877,7 @@ paths:
         required: true
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '201':
           content:
@@ -634,6 +923,7 @@ paths:
       - rule-parameters
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
@@ -685,12 +975,57 @@ paths:
         required: true
       security:
       - cookieAuth: []
+      - bearerAuth: []
       responses:
         '200':
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/RuleParameterVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/users/{id}/revoke-device-sessions/:
+    post:
+      operationId: users_revoke_device_sessions_create
+      description: |-
+        Revoke every phone session the user has in the active organization (W49).
+
+        `allow_final_upload: true` leaves each phone one last upload (default: none).
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevokeRequestRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevokedSessions'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -827,6 +1162,66 @@ components:
       required:
       - catalogs
       - version
+    Device:
+      type: object
+      description: Read-only view of a device for administrators (W67).
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        serial:
+          type: string
+          readOnly: true
+        app_version:
+          type: string
+          readOnly: true
+        last_seen_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_user:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        last_user_username:
+          type: string
+          readOnly: true
+          nullable: true
+        is_revoked:
+          type: boolean
+          readOnly: true
+        revoked_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        revoked_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - app_version
+      - created_at
+      - id
+      - is_revoked
+      - label
+      - last_seen_at
+      - last_user
+      - last_user_username
+      - revoked_at
+      - revoked_by
+      - serial
     Health:
       type: object
       properties:
@@ -834,6 +1229,36 @@ components:
           type: string
       required:
       - status
+    LoginRequest:
+      type: object
+      description: With `device_id` the login is a mobile one (tokens); without it,
+        a web session.
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 150
+        password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 1024
+        device_id:
+          type: string
+          format: uuid
+        app_version:
+          type: string
+          maxLength: 50
+        label:
+          type: string
+          maxLength: 100
+      required:
+      - password
+      - username
+    LoginResponse:
+      oneOf:
+      - $ref: '#/components/schemas/MobileLoginResponse'
+      - $ref: '#/components/schemas/WebLoginResponse'
     Me:
       type: object
       description: '`organization` is null when the user has several organizations
@@ -957,6 +1382,23 @@ components:
       - id
       - last_name
       - username
+    MobileLoginResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        me:
+          $ref: '#/components/schemas/Me'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - access
+      - me
+      - refresh
+      - server_time
     PaginatedCatalogItemList:
       type: object
       required:
@@ -1003,6 +1445,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Catalog'
+    PaginatedDeviceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Device'
     PaginatedRuleParameterList:
       type: object
       required:
@@ -1049,6 +1514,38 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RuleParameterVersion'
+    PasswordResetConfirmRequest:
+      type: object
+      description: Resolves the link first, so a bad link never reveals the password
+        rules.
+      properties:
+        uid:
+          type: string
+          minLength: 1
+          maxLength: 512
+        token:
+          type: string
+          minLength: 1
+          maxLength: 512
+        new_password:
+          type: string
+          writeOnly: true
+          minLength: 1
+          maxLength: 1024
+      required:
+      - new_password
+      - token
+      - uid
+    PasswordResetRequestRequest:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 254
+      required:
+      - email
     PatchedCatalogItemUpdateRequest:
       type: object
       description: '`code`, `is_other` and `is_active` are not editable here: unknown
@@ -1074,6 +1571,48 @@ components:
           minimum: 0
         requires_photo:
           type: boolean
+    RefreshRequest:
+      type: object
+      properties:
+        refresh:
+          type: string
+          minLength: 1
+          maxLength: 512
+        device_id:
+          type: string
+          format: uuid
+      required:
+      - device_id
+      - refresh
+    RefreshResponse:
+      type: object
+      properties:
+        access:
+          type: string
+        refresh:
+          type: string
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - access
+      - refresh
+      - server_time
+    RevokeRequestRequest:
+      type: object
+      description: 'Body of the two revoke actions. Everything is optional: an empty
+        body is accepted.'
+      properties:
+        allow_final_upload:
+          type: boolean
+          default: false
+    RevokedSessions:
+      type: object
+      properties:
+        revoked_sessions:
+          type: integer
+      required:
+      - revoked_sessions
     RuleParameter:
       type: object
       description: |-
@@ -1363,6 +1902,17 @@ components:
           maxLength: 1000
       required:
       - reason
+    WebLoginResponse:
+      type: object
+      properties:
+        me:
+          $ref: '#/components/schemas/Me'
+        server_time:
+          type: string
+          format: date-time
+      required:
+      - me
+      - server_time
     FieldError:
       type: object
       description: 'One validation failure of a field: a machine code plus its parameters.'
@@ -1415,6 +1965,10 @@ components:
       - code
       - detail
   securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: Opaque access token.
     cookieAuth:
       type: apiKey
       in: cookie

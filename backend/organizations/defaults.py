@@ -9,6 +9,7 @@ from dataclasses import dataclass
 
 from django.db import transaction
 
+from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from catalogs.permissions import (
     CATALOG_ITEM_ACTIVATE,
     CATALOG_ITEM_CREATE,
@@ -39,6 +40,7 @@ ADMIN_CODES = (
     RULE_PARAMETER_VERSION_READ,
     RULE_PARAMETER_VERSION_CREATE,
     RULE_PARAMETER_VERSION_VOID,
+    *ADMIN_AUTH_PERMISSION_CODES,  # device and session administration (#4)
 )
 # Keys are the slugs of `organizations.services.DEFAULT_PROFILE_SEEDS`.
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {

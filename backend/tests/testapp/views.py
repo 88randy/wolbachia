@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
+from accounts.final_upload import FinalUploadMixin
 from core.exceptions import AlreadyVoidedError
 from core.pagination import StreamCursorPagination
 from core.serializers import OrgScopedModelSerializer
@@ -97,3 +98,16 @@ class WriteThenFailView(APIView):
     def post(self, request: Request) -> Response:
         Widget.objects.create(organization=Organization.objects.first(), name="leaked")
         raise AlreadyVoidedError
+
+
+class FinalUploadView(FinalUploadMixin, APIView):
+    """Stands in for `/field/sync/` (#5): the mixin does the whole final-upload handling."""
+
+    def post(self, request: Request) -> Response:
+        Widget.objects.create(
+            organization=Organization.objects.first(),
+            name="final-upload" if self.is_final_upload else "normal-upload",
+        )
+        if request.query_params.get("fail"):
+            raise AlreadyVoidedError
+        return Response({"accepted": True, "in_review": self.is_final_upload})

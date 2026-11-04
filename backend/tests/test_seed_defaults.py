@@ -6,6 +6,7 @@ import pytest
 from django.core.management import CommandError, call_command
 from django.utils import timezone
 
+from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from catalogs import permissions as catalog_codes
 from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
@@ -219,6 +220,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         rule_codes.RULE_PARAMETER_VERSION_READ,
         rule_codes.RULE_PARAMETER_VERSION_CREATE,
         rule_codes.RULE_PARAMETER_VERSION_VOID,
+        *ADMIN_AUTH_PERMISSION_CODES,
     }
 
 

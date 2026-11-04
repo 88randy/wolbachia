@@ -1,7 +1,14 @@
-"""Time helpers shared by the apps: API timestamp format and organization-local dates."""
+"""Time helpers shared by the apps: the server clock, API timestamp format, local dates."""
 
 from datetime import UTC, date, datetime
 from zoneinfo import ZoneInfo
+
+from django.utils import timezone
+
+
+def server_now() -> datetime:
+    """Current server time, timezone-aware UTC. Sent as `server_time` so clients detect clock skew."""
+    return timezone.now()
 
 
 def format_instant(value: datetime) -> str:
