@@ -62,7 +62,7 @@ import { web } from '@wolbachia/tokens';
 .card { background: var(--color-surface); border-radius: var(--radius-md); }
 ```
 
-Light is the default (`:root`). Set `data-theme="dark"` on `<html>` (or any ancestor) for the dark theme. Variable names: `--color-<role>`, `--web-<group>-<name>`, `--radius-<step>`, `--space-<multiple>` (`--space-0-5` = 4 px), `--shadow-level-1`, `--web-control-*`, `--web-icon-*`, `--web-layout-*` (`sidebar-width` 232, `sidebar-collapsed-width` 64, `top-bar-height` 56), `--web-focus-ring-*` (width, offset, halo spread and color), `--web-type-*`, `--font-family`. The mobile type scale is not in the CSS.
+Light is the default (`:root`). Set `data-theme="dark"` on `<html>` (or any ancestor) for the dark theme. Variable names: `--color-<role>`, `--web-<group>-<name>`, `--radius-<step>`, `--space-<multiple>` (`--space-0-5` = 4 px), `--shadow-level-1`, `--web-control-*`, `--web-icon-*`, `--web-layout-*` (`compact-breakpoint` 768 is for TypeScript, `useCompactViewport`; `sidebar-width` 232, `sidebar-collapsed-width` 64, `top-bar-height` 56), `--web-focus-ring-*` (width, offset, halo spread and color), `--web-type-*`, `--font-family`. The mobile type scale is not in the CSS.
 
 ## Generate the CSS
 

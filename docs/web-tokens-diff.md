@@ -37,6 +37,7 @@ Typography: Inter with tabular figures in both.
 - **Type (web):** page title 24/32 (`titleFontSize`, added in #26), body 14/20, labels 12–13, minimum 12 px (some chips and chart labels use 10–11 px in the design; raise them).
 - **Control heights:** 32 / 36 / 40 / 44 px (button default 36) → `control.sm/md/lg/xl`.
 - **Icon sizes (#26):** 16 / 20 / 24 (`.i.s16`, `.i`, `.i.s24`) → `web.icon.{sm,md,lg}` → `--web-icon-*`.
+- **Compact breakpoint (#26):** 768 px, new: below it the sidebar stays collapsed (WCAG 1.4.10 reflow at 320 px) -> `web.layout.compactBreakpoint`.
 - **Shell sizes (#26):** sidebar 232, collapsed sidebar 64, top bar 56 (`.sb`, `.sb.mini`, `.tp`) → `web.layout.{sidebarWidth,sidebarCollapsedWidth,topBarHeight}` → `--web-layout-*`.
 - **Focus ring:** 2 px solid `action`, 2 px offset, plus a `0 0 0 5px rgba(26,93,255,.22)` halo (`.fo` in `web.css`) → `web.focus.ring.{width,offset,halo}`.
 

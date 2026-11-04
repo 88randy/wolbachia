@@ -100,6 +100,8 @@ export interface ShellLayout {
   readonly sidebarWidth: number;
   readonly sidebarCollapsedWidth: number;
   readonly topBarHeight: number;
+  /** Viewport width in px at or below which the sidebar stays collapsed (read in TypeScript: media queries cannot use variables). */
+  readonly compactBreakpoint: number;
 }
 
 /** Web-only tokens. `light` and `dark` follow the same shape. */
@@ -113,6 +115,7 @@ export const web = {
     sidebarWidth: 232,
     sidebarCollapsedWidth: 64,
     topBarHeight: 56,
+    compactBreakpoint: 768,
   } satisfies ShellLayout,
   /**
    * Focus ring: solid line in `color.action` offset from the element, plus a soft halo
