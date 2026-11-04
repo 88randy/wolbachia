@@ -11,6 +11,8 @@ const INVISIBLE = [
   "\u2028", // line separator
   "\u3164", // Hangul filler
   "\u2800", // braille blank
+  "\ue000", // private use
+  "\u0378", // unassigned
 ];
 
 describe("countCharacters", () => {
