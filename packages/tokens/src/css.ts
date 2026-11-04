@@ -70,6 +70,8 @@ export function sharedVariables(): CssVariables {
     "--font-variant-numeric": font.tabularFigures,
     "--shadow-level-1": formatShadow(shadow.level1),
     ...flattenToCssVariables(web.control, "--web-control"),
+    ...flattenToCssVariables(web.icon, "--web-icon"),
+    ...flattenToCssVariables(web.layout, "--web-layout"),
     ...flattenToCssVariables(web.focus, "--web-focus"),
     ...flattenToCssVariables(web.typography, "--web-type"),
   };

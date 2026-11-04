@@ -16,10 +16,12 @@ export {
 export type { MobileTypeScale, ShadowToken } from "./scales.ts";
 export { web } from "./web.ts";
 export type {
+  BannerColors,
   ChartColors,
   ControlHeights,
   IndexBandColors,
   MapColors,
+  ShellLayout,
   SidebarColors,
   WebThemeColors,
 } from "./web.ts";

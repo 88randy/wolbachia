@@ -1,0 +1,23 @@
+# Build context of web/Dockerfile (the repo root). Keep it to what the web image needs.
+.git
+.github
+.claude
+.pre-commit-config.yaml
+**/node_modules
+**/dist
+**/test-results
+**/playwright-report
+**/.env
+**/*.env
+**/.env.*
+!**/.env.example
+backend
+# npm ci checks every workspace of package-lock.json, so keep the manifest of the others.
+mobile/*
+!mobile/package.json
+design
+issues
+spikes
+docs
+web/docs
+*.md
