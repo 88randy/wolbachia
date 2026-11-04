@@ -1,0 +1,63 @@
+# Local development stack: `docker compose -f backend/compose.yaml up --build` from the repo root.
+# Dev-only credentials below are placeholders for a throwaway local database, not secrets.
+name: wolbachia-backend
+
+x-django-env: &django-env
+  DJANGO_SETTINGS_MODULE: config.settings.dev
+  DJANGO_SECRET_KEY: dev-only-change-me
+  DATABASE_URL: postgres://wolbachia:wolbachia@db:5432/wolbachia
+  REDIS_URL: redis://redis:6379/0
+
+services:
+  web:
+    build: .
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    environment: *django-env
+    ports:
+      - "127.0.0.1:${WEB_PORT:-8000}:8000"
+    volumes:
+      - .:/app
+      - venv:/app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    command: celery -A config worker --loglevel=INFO
+    environment: *django-env
+    volumes:
+      - .:/app
+      - venv:/app/.venv
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  db:
+    # Keep the major version equal to the DigitalOcean managed cluster [PENDING: confirm in #18].
+    image: postgres:18-alpine
+    environment:
+      POSTGRES_USER: wolbachia
+      POSTGRES_PASSWORD: wolbachia
+      POSTGRES_DB: wolbachia
+    ports:
+      # Host port is configurable when 5432 is taken: POSTGRES_PORT=55432 docker compose ...
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U wolbachia -d wolbachia"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:8-alpine
+
+volumes:
+  pgdata:
+  venv:
