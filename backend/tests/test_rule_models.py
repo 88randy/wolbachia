@@ -155,9 +155,9 @@ def test_voiding_through_save_is_allowed_once() -> None:
     version = RuleParameterVersionFactory()
     user = UserFactory()
 
-    voided = void_record(version, user, "typo")
+    voided = void_record(version, user, "a typo in the value")
 
-    assert (voided.voided_at is not None, voided.void_reason) == (True, "typo")
+    assert (voided.voided_at is not None, voided.void_reason) == (True, "a typo in the value")
 
 
 def test_raw_update_of_a_value_is_rejected_by_the_database() -> None:
@@ -178,7 +178,7 @@ def test_raw_delete_is_rejected_by_the_database() -> None:
 
 def test_raw_update_cannot_change_a_stored_void_or_unvoid_it() -> None:
     version = RuleParameterVersionFactory()
-    void_record(version, UserFactory(), "typo")
+    void_record(version, UserFactory(), "a typo in the value")
 
     with pytest.raises(DatabaseError, match="insert-only"), connection.cursor() as cursor:
         cursor.execute(

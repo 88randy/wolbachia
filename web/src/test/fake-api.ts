@@ -126,6 +126,7 @@ export function makeMe(overrides: Partial<Me> = {}): Me {
     permissions: ["catalog.read", "rule_parameter.read"],
     scope: { centers: [], quadrants: [] },
     organizations: [{ slug: "norte", name: "Región Norte" }],
+    limits: { void_reason_min_length: 10, void_reason_max_length: 1000 },
     ...overrides,
   };
 }

@@ -118,7 +118,7 @@ def test_a_void_may_name_any_shift_because_it_corrects_an_old_event(phone: Phone
     phone.sync([target])
     void = event(
         type="record.void",
-        payload={"reason": "typo"},
+        payload={"reason": "a typo in the value"},
         voids_event_id=target["id"],
         shift_id=str(uuid.uuid4()),
     )

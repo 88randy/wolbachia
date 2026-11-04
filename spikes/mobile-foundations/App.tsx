@@ -1,6 +1,7 @@
 import { StatusBar } from 'expo-status-bar';
 import { useState } from 'react';
-import { Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { DedicatedScreen } from './src/screens/DedicatedScreen';
 import { GoThereScreen } from './src/screens/GoThereScreen';
@@ -38,12 +39,17 @@ function renderTab(tab: TabKey) {
   }
 }
 
-export default function App() {
+/**
+ * Android 16 (targetSdk 36) draws edge-to-edge: the app sits behind the status bar and the gesture bar.
+ * The insets pad the top content and the bottom tab bar so neither overlaps the system bars.
+ */
+function Shell() {
+  const insets = useSafeAreaInsets();
   const [tab, setTab] = useState<TabKey>('store');
   return (
-    <SafeAreaView style={styles.root}>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
       <View style={styles.content}>{renderTab(tab)}</View>
-      <View style={styles.tabs}>
+      <View style={[styles.tabs, { paddingBottom: insets.bottom }]}>
         {TABS.map((item) => (
           <Pressable
             key={item.key}
@@ -56,12 +62,20 @@ export default function App() {
         ))}
       </View>
       <StatusBar style="auto" />
-    </SafeAreaView>
+    </View>
+  );
+}
+
+export default function App() {
+  return (
+    <SafeAreaProvider>
+      <Shell />
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: colors.bg, paddingTop: 28 },
+  root: { flex: 1, backgroundColor: colors.bg },
   content: { flex: 1 },
   tabs: { flexDirection: 'row', borderTopWidth: 1, borderTopColor: colors.border },
   tab: { flex: 1, paddingVertical: 14, alignItems: 'center' },

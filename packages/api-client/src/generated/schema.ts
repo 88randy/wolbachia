@@ -669,6 +669,11 @@ export interface components {
             permissions: string[];
             scope: components["schemas"]["MeScope"];
             organizations: components["schemas"]["MeOrganizationChoice"][];
+            limits: components["schemas"]["MeLimits"];
+        };
+        MeLimits: {
+            void_reason_min_length: number;
+            void_reason_max_length: number;
         };
         MeOrganization: {
             /** Format: uuid */
@@ -1101,6 +1106,7 @@ export interface components {
          * @enum {string}
          */
         ValueTypeEnum: "integer" | "decimal";
+        /** @description Body of `POST .../void/`. */
         VoidRequest: {
             reason: string;
         };

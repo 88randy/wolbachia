@@ -1,4 +1,5 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MutableRefObject } from 'react';
 import type { ReactNode } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -81,6 +82,18 @@ export function LogView(props: { logger: Logger }) {
       ))}
     </View>
   );
+}
+
+/** True while the component is mounted. Read it after every await before touching state. */
+export function useIsMounted(): MutableRefObject<boolean> {
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+    };
+  }, []);
+  return mounted;
 }
 
 export function errorMessage(error: unknown): string {

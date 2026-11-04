@@ -18,6 +18,8 @@ function describe(result: GeoOpenResult): string {
       return 'Organic Maps is not installed. The real app must show a clear message with the next step.';
     case 'no_handler':
       return 'No installed app can handle geo: links.';
+    case 'blocked_by_lock_task':
+      return 'Lock task mode is on and the map app is not in the allowlist, so Android would refuse to open it.';
   }
 }
 

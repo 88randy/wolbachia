@@ -47,6 +47,7 @@ export const table = {
   "table.voided.badge": "Anulado",
   "table.voided.reason": "Motivo: {reason}",
   "table.voided.author": "Anuló: {author}",
+  "table.voided.when": "Fecha: {when}",
 
   // Export (the file is built by the backend)
   "table.export.button": "Exportar",

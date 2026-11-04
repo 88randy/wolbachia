@@ -462,7 +462,9 @@ def test_a_shift_event_cannot_be_voided_by_its_author(
     if kind == "close":
         phone.sync([open_event("M-03", shift_id)])
     phone.sync([target])
-    void = event(type="record.void", payload={"reason": "mistake"}, voids_event_id=target["id"])
+    void = event(
+        type="record.void", payload={"reason": "mistake in the shift"}, voids_event_id=target["id"]
+    )
 
     result = only_result(phone.sync([void]))
 

@@ -129,6 +129,10 @@ SYNC_CURSOR_MAX_AGE_SECONDS = env.int("SYNC_CURSOR_MAX_AGE_SECONDS", default=2_5
 SYNC_LOCK_TIMEOUT_MS = env.int("SYNC_LOCK_TIMEOUT_MS", default=3_000)
 SYNC_RETRY_AFTER_SECONDS = env.int("SYNC_RETRY_AFTER_SECONDS", default=2)
 
+# Void reasons (#32): minimum characters after trimming, shared by every void path and sent to
+# the web in `GET /me/` (`limits`). Owner delegated the value to the orchestrator (2026-11-04).
+VOID_REASON_MIN_LENGTH = env.int("VOID_REASON_MIN_LENGTH", default=10)
+
 REST_FRAMEWORK = {
     # Session first: it sends the `WWW-Authenticate: Session` challenge that keeps 401s as 401.
     "DEFAULT_AUTHENTICATION_CLASSES": [

@@ -19,7 +19,7 @@ def test_patch_on_a_voided_widget_is_409_already_voided(
     client_a: APIClient, org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a, name="before")
-    void_record(widget, member_a, "mistake")
+    void_record(widget, member_a, "a clear mistake")
 
     response = client_a.patch(f"{WIDGETS}{widget.pk}/", {"name": "after"}, format="json")
 
@@ -33,7 +33,7 @@ def test_put_on_a_voided_widget_is_409_already_voided(
     client_a: APIClient, org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a)
-    void_record(widget, member_a, "mistake")
+    void_record(widget, member_a, "a clear mistake")
 
     response = client_a.put(f"{WIDGETS}{widget.pk}/", {"name": "after"}, format="json")
 

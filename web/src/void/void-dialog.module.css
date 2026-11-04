@@ -1,0 +1,99 @@
+/* "Void with reason" modal (design-system: Diálogo de anulación): a card over a dimmed page. */
+.dialog {
+  width: min(26rem, calc(100vw - var(--space-3)));
+  padding: var(--space-3);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-level-1);
+}
+
+.dialog::backdrop {
+  background: var(--color-navy);
+  opacity: 0.6;
+}
+
+.title {
+  margin: 0 0 var(--space-0-5);
+  font-size: var(--web-type-title-font-size);
+  line-height: var(--web-type-title-line-height);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.hint {
+  margin: 0 0 var(--space-2);
+  color: var(--color-text-secondary);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-0-5);
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+}
+
+.required {
+  color: var(--color-text-secondary);
+  font-weight: 400;
+}
+
+.textarea {
+  width: 100%;
+  min-height: calc(var(--web-control-xl) * 2);
+  padding: var(--space-1) var(--space-1-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: inherit;
+  font: inherit;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.textarea:focus-visible {
+  border-color: var(--color-action);
+  box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
+}
+
+.invalid {
+  border-color: var(--color-status-critical-fg);
+  background: var(--color-status-critical-bg);
+}
+
+.counter {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-label-small-font-size);
+  text-align: end;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-1);
+}
+
+/* Critical foreground as the fill and `on-action` as the text: both flip with the theme, so the
+   contrast holds in light (white on red) and in dark (navy on light red). */
+.danger {
+  background: var(--color-status-critical-fg);
+  color: var(--color-on-action);
+}
+
+.danger[aria-disabled="true"] {
+  cursor: progress;
+}

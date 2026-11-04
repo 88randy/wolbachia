@@ -11,7 +11,13 @@ import globals from "globals";
 import tseslint from "typescript-eslint";
 
 const TS_FILES = ["**/*.{ts,tsx,mts,cts}"];
-const TEST_FILES = ["**/*.test.{ts,tsx}", "**/*.spec.{ts,tsx}", "**/__tests__/**"];
+// `web/harness/**` is dev-only demo code (no user copy, never built), treated like test code.
+const TEST_FILES = [
+  "**/*.test.{ts,tsx}",
+  "**/*.spec.{ts,tsx}",
+  "**/__tests__/**",
+  "web/harness/**",
+];
 const WEB = "web/**";
 const MOBILE = "mobile/**";
 

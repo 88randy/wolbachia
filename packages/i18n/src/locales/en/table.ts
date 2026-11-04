@@ -47,6 +47,7 @@ export const table: Record<keyof typeof source, string> = {
   "table.voided.badge": "Voided",
   "table.voided.reason": "Reason: {reason}",
   "table.voided.author": "Voided by: {author}",
+  "table.voided.when": "Date: {when}",
 
   // Export (the file is built by the backend)
   "table.export.button": "Export",

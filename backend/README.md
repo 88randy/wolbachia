@@ -134,6 +134,14 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for any lock in a batch transaction (then `429 sync_in_progress`) |
 | `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
 
+## Void reasons (#32)
+
+Nothing is deleted: a correction is a void with a reason. `core/void_reason.py` is the only place that judges a reason: `validate_void_reason` normalizes it (NFC), trims it, refuses control and bidi characters, requires at least `VOID_REASON_MIN_LENGTH` visible characters (default 10, between 1 and 1000; zero-width, combining, space and filler characters do not count) and at most 1000, and `VoidReasonField` / `VoidSerializer` are what every body uses. It raises a DRF `ValidationError` whose `params` reach the response (`core.validation.params_message` / `flatten_error_details`) and the sync rejection (`params.field_params`). Void paths today: `VoidActionMixin` (`POST .../void/`), rule parameter versions, the phone's `record.void` event, and `core.services.void_record`, which validates again so no caller can store a shorter reason. A new void endpoint reuses `VoidSerializer` and `void_record`; it does not write its own check. Error: `400 validation_error`, `fields.reason: [{code: "void_reason_too_short", params: {min_length}}]` (contract in `docs/api-conventions.md`, decision 87). `GET /me/` exposes the limits (`limits`) for the web. Catalog items are deactivated, not voided, so they have no void path.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `VOID_REASON_MIN_LENGTH` | `10` | Minimum characters of a void reason after trimming |
+
 ## Dependencies (verified on PyPI, 2026-11-03)
 
 | Package | Pinned range | Why |

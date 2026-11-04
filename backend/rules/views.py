@@ -10,7 +10,8 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 
 from core.snapshots import IF_NONE_MATCH_PARAMETER, snapshot_response
-from core.views import OrgScopedViewSetMixin, VoidSerializer
+from core.views import OrgScopedViewSetMixin
+from core.void_reason import VoidSerializer
 from rules.models import RuleParameter, RuleParameterVersion
 from rules.permissions import (
     RULE_PARAMETER_READ,

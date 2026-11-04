@@ -11,6 +11,7 @@ from rest_framework import serializers
 
 from core.exceptions import AlreadyVoidedError
 from core.services import void_record
+from core.void_reason import VoidReasonField
 from field_sync.codes import (
     ALREADY_VOIDED,
     INVALID_PAYLOAD,
@@ -22,13 +23,9 @@ from field_sync.exceptions import EventRejected
 from field_sync.models import EventStatus, FieldEvent
 from field_sync.registry import EventContext, EventHandler, get_handler, register
 
-VOID_REASON_MAX_LENGTH = 1000
-
 
 class VoidPayloadSerializer(serializers.Serializer[Any]):
-    reason = serializers.CharField(
-        allow_blank=False, trim_whitespace=True, max_length=VOID_REASON_MAX_LENGTH
-    )
+    reason = VoidReasonField()
 
 
 def find_void_target(ctx: EventContext) -> FieldEvent:
