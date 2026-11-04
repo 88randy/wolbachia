@@ -4,6 +4,8 @@ from typing import Any
 
 from rest_framework import serializers
 
+from accounts.models import Device
+from core.serializers import OrgScopedModelSerializer
 from organizations.serializers import MeSerializer
 
 USERNAME_MAX_LENGTH = 150
@@ -52,3 +54,39 @@ class RefreshResponseSerializer(serializers.Serializer[Any]):
     access = serializers.CharField()
     refresh = serializers.CharField()
     server_time = serializers.DateTimeField()
+
+
+class DeviceSerializer(OrgScopedModelSerializer):
+    """Read-only view of a device for administrators (W67)."""
+
+    last_user_username = serializers.CharField(
+        source="last_user.username", read_only=True, allow_null=True, default=None
+    )
+
+    class Meta:
+        model = Device
+        fields = [
+            "id",
+            "label",
+            "serial",
+            "app_version",
+            "last_seen_at",
+            "last_user",
+            "last_user_username",
+            "is_revoked",
+            "revoked_at",
+            "revoked_by",
+            "created_at",
+        ]
+        read_only_fields = fields
+
+
+class DeviceFilterSerializer(serializers.Serializer[Any]):
+    """Query parameters of `GET /devices/`."""
+
+    is_revoked = serializers.BooleanField(required=False, allow_null=True)
+    user = serializers.UUIDField(required=False)
+
+
+class RevokedSessionsSerializer(serializers.Serializer[Any]):
+    revoked_sessions = serializers.IntegerField()

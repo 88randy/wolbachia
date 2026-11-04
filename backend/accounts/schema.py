@@ -15,6 +15,14 @@ class DeviceBearerAuthenticationScheme(OpenApiAuthenticationExtension):
 
 
 class EndedSessionBearerAuthenticationScheme(DeviceBearerAuthenticationScheme):
-    """Same scheme for the logout variant, which also accepts expired or revoked tokens."""
+    """The logout variant also accepts expired or revoked tokens, so it is its own scheme."""
 
     target_class = "accounts.authentication.EndedSessionBearerAuthentication"
+    name = "bearerAuthLogout"
+
+    def get_security_definition(self, auto_schema: AutoSchema) -> dict[str, Any]:
+        return {
+            "type": "http",
+            "scheme": "bearer",
+            "description": "Opaque access token; logout also accepts an expired or revoked one.",
+        }
