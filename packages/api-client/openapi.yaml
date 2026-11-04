@@ -1,0 +1,245 @@
+openapi: 3.0.3
+info:
+  title: Wolbachia field API
+  version: 1.0.0
+  description: Single API for the mobile app and the web (see docs/api-conventions.md).
+paths:
+  /api/v1/health/:
+    get:
+      operationId: health_retrieve
+      description: 'Liveness probe: no authentication, no organization, no throttling.'
+      tags:
+      - health
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Health'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/me/:
+    get:
+      operationId: me_retrieve
+      description: |-
+        Who am I: user, active organization, profiles, permissions and scope.
+
+        Unlike scoped resources, several memberships without `X-Organization` is not an error here:
+        it answers `organization: null` plus the `organizations` list to choose from.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - me
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+components:
+  schemas:
+    Health:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+      - status
+    Me:
+      type: object
+      description: '`organization` is null when the user has several organizations
+        and sent no header.'
+      properties:
+        user:
+          $ref: '#/components/schemas/MeUser'
+        organization:
+          allOf:
+          - $ref: '#/components/schemas/MeOrganization'
+          nullable: true
+        profiles:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeProfile'
+        permissions:
+          type: array
+          items:
+            type: string
+        scope:
+          $ref: '#/components/schemas/MeScope'
+        organizations:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeOrganizationChoice'
+      required:
+      - organization
+      - organizations
+      - permissions
+      - profiles
+      - scope
+      - user
+    MeOrganization:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+        country:
+          type: string
+        timezone:
+          type: string
+        languages:
+          type: array
+          items:
+            type: string
+        logo_url:
+          type: string
+          nullable: true
+          readOnly: true
+      required:
+      - country
+      - id
+      - languages
+      - logo_url
+      - name
+      - slug
+      - timezone
+    MeOrganizationChoice:
+      type: object
+      properties:
+        slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        name:
+          type: string
+      required:
+      - name
+      - slug
+    MeProfile:
+      type: object
+      properties:
+        slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        label_es:
+          type: string
+        label_en:
+          type: string
+      required:
+      - label_en
+      - label_es
+      - slug
+    MeScope:
+      type: object
+      properties:
+        centers:
+          type: array
+          items:
+            type: string
+        quadrants:
+          type: array
+          items:
+            type: string
+      required:
+      - centers
+      - quadrants
+    MeUser:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        first_name:
+          type: string
+        last_name:
+          type: string
+      required:
+      - email
+      - first_name
+      - id
+      - last_name
+      - username
+    FieldError:
+      type: object
+      description: 'One validation failure of a field: a machine code plus its parameters.'
+      properties:
+        code:
+          type: string
+        params:
+          type: object
+          additionalProperties: {}
+      required:
+      - code
+      - params
+    BlockedBy:
+      type: object
+      description: Why a `409` action is blocked and who can unblock it.
+      properties:
+        reason:
+          type: string
+        unblocked_by_role:
+          type: string
+        link:
+          type: string
+      required:
+      - reason
+      - unblocked_by_role
+      - link
+    ErrorEnvelope:
+      type: object
+      description: Body of every 4xx/5xx response (docs/api-conventions.md). Clients
+        translate `code` with packages/i18n; `detail` is English, for logs, and is
+        never shown to users.
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+        fields:
+          type: object
+          description: 'Only on `400` validation errors: field name to its errors.'
+          additionalProperties:
+            type: array
+            items:
+              $ref: '#/components/schemas/FieldError'
+        blocked_by:
+          type: array
+          description: Only on `409` blocked actions.
+          items:
+            $ref: '#/components/schemas/BlockedBy'
+      required:
+      - code
+      - detail
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
