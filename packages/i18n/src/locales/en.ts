@@ -23,9 +23,9 @@ export const en: Record<MessageKey, string> = {
   "errors.api.notFound": "We couldn't find what you're looking for. Go back and try again.",
   "errors.api.permissionDenied":
     "You don't have permission to do this. Ask your supervisor for access.",
-  "errors.api.blocked": "This action is blocked for now. Let {role} know so they can unblock it.",
+  "errors.api.blocked": "This action is blocked for now. Who can unblock it: {role}.",
   "errors.api.sessionRevoked": "Your session ended. Sign in again to continue.",
-  "errors.api.rateLimited": "Too many requests in a row. Wait {seconds} seconds and try again.",
+  "errors.api.rateLimited": "Too many requests in a row. Wait a moment and try again.",
   "errors.api.serverError":
     "Something went wrong on our side. Try again in a few minutes; if it keeps happening, contact support.",
 

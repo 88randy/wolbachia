@@ -36,6 +36,8 @@ Keys are flat strings, so no key is the prefix of another. Add new keys to **bot
 
 Messages use simple `{name}` placeholders (letters and digits, no spaces), for example `Espera {seconds} segundos`. There is no ICU syntax: no plurals, selects or formats. Both locales must use the same placeholder names for a key (tested). The runtime library that fills them and handles plurals is chosen later (#6 mobile, #27 web); if it needs ICU, the catalogs will be migrated then.
 
+`{role}` in `errors.api.blocked` is the **already translated role label** (for example "Supervisor"), never a code. The sentence is built so the label stands alone after a colon: no articles, gender or plural agreement depends on it. Avoid interpolating numbers or nouns into sentences that need agreement; prefer wording without the number (as `errors.api.rateLimited` does) or separate singular and plural keys.
+
 ## Writing messages
 
 Plain, blameless, with a next step. Mexican Spanish (tuteo, no regional slang) and natural English. Say what happened and what the person can do, without codes or blame ("No pudimos..." instead of "Error del usuario").
@@ -45,7 +47,7 @@ Plain, blameless, with a next step. Mexican Spanish (tuteo, no regional slang) a
 Only shared, cross-screen text. Screen copy lands with each screen.
 
 - `common.actions.*`: save, cancel, retry, close, void. `common.fields.*`: void reason label, "Other (specify)" label.
-- `errors.api.*`: generic, network, validation, notFound, permissionDenied, blocked (`{role}`), sessionRevoked, rateLimited (`{seconds}`), serverError.
+- `errors.api.*`: generic, network, validation, notFound, permissionDenied, blocked (`{role}`), sessionRevoked, rateLimited, serverError.
 - `sync.inbox.*`: title and hint for each sync result status (accepted, rejected, inReview) in the phone inbox.
 
 Mapping from API `code` to `errors.api.*` key: the machine codes are not yet fixed in `docs/api-conventions.md`. Assumption: they will be the snake_case form of the key element (`not_found` -> `errors.api.notFound`, `permission_denied` -> `errors.api.permissionDenied`). Unknown codes fall back to `errors.api.generic`. Confirm when the API issues define the codes.

@@ -23,11 +23,10 @@ export const esMX = {
   "errors.api.notFound": "No encontramos lo que buscas. Regresa e inténtalo de nuevo.",
   "errors.api.permissionDenied":
     "No tienes permiso para hacer esto. Pídele acceso a tu supervisor.",
-  "errors.api.blocked":
-    "Esta acción está bloqueada por ahora. Avisa a {role} para que la desbloquee.",
+  "errors.api.blocked": "Esta acción está bloqueada por ahora. Quien puede desbloquearla: {role}.",
   "errors.api.sessionRevoked": "Tu sesión terminó. Inicia sesión de nuevo para continuar.",
   "errors.api.rateLimited":
-    "Hiciste muchas solicitudes seguidas. Espera {seconds} segundos e inténtalo de nuevo.",
+    "Hiciste muchas solicitudes seguidas. Espera un momento e inténtalo de nuevo.",
   "errors.api.serverError":
     "Algo falló de nuestro lado. Inténtalo en unos minutos; si sigue igual, avisa a soporte.",
 
