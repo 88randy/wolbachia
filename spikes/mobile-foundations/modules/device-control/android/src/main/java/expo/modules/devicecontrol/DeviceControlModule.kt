@@ -88,7 +88,8 @@ class DeviceControlModule : Module() {
       withContext(Dispatchers.IO) { installApk(path) }
     }
 
-    AsyncFunction("discardDownloadedApk") Coroutine {
+    // Explicit empty parameter list: a bare lambda is ambiguous between the zero- and one-parameter overloads.
+    AsyncFunction("discardDownloadedApk") Coroutine { ->
       withContext(Dispatchers.IO) { discardDownloadedApk() }
     }
   }
@@ -297,7 +298,7 @@ class DeviceControlModule : Module() {
     }
     try {
       val code = connection.responseCode
-      if (code == HttpURLConnection.HTTP_BAD_RANGE) throw RangeRejected()
+      if (code == HTTP_RANGE_NOT_SATISFIABLE) throw RangeRejected()
       val append = code == HttpURLConnection.HTTP_PARTIAL
       if (code != HttpURLConnection.HTTP_OK && !append) {
         throw DeviceControlException("Download failed: HTTP $code")
@@ -426,6 +427,9 @@ class DeviceControlModule : Module() {
   }
 
   companion object {
+    /** HttpURLConnection has no constant for 416 (RFC 9110 "Range Not Satisfiable"). */
+    private const val HTTP_RANGE_NOT_SATISFIABLE = 416
+
     @Volatile
     private var instance: DeviceControlModule? = null
 
