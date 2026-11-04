@@ -26,7 +26,8 @@ Skill to invoke with the Skill tool if available (optional; see `.claude/agents/
 Apply `docs/engineering-rules.md` §9 "Every test earns its CI time" to the tests the diff adds or changes:
 - Map each acceptance criterion and edge case to the test that proves it. Flag criteria without a test.
 - Flag tests that protect nothing: framework or library re-tests, implementation-detail asserts, tautologies, whole-structure snapshots, and the same rule tested at several layers.
-- Flag slow tests (real database, e2e, sleeps) that a faster layer could prove, and any non-deterministic wait.
+- Flag slow tests that a faster layer could prove: a pure function (validator, parser, formatter) tested through the API or the database, an e2e that repeats a unit-tested rule, and any fixed-duration wait. A real database is the normal backend layer and is not a flag by itself.
+- Measure: run the new and changed test files with timings (`pytest --durations=15`, Vitest's per-file time, Playwright's report) and list any new test over 2 s with its reason, or a cheaper alternative.
 - For each flagged test, say: delete, merge into another (name it), or move to a cheaper layer.
 - Give a short count: tests added, tests worth keeping, tests to remove or merge.
 Do not ask for more tests unless a criterion, edge case or bug is unprotected.
