@@ -66,7 +66,7 @@ The clean-code reference for everyone who writes code in this repo, human or age
 - Arrange / Act / Assert. Names describe behavior, e.g. `test_sync_ignores_duplicate_event_id`.
 - One reason to fail per test. Factories over big fixtures. Test behavior, not implementation.
 - Every bug fix ships with a regression test.
-- Credentials in tests are obviously fake (e.g. `pw-for-this-test-123`) and live under `backend/tests/`, the only path the secret scan allowlists (`.gitleaks.toml`).
+- Credentials in tests are obviously fake and match `pw-for-<words>` (e.g. `pw-for-this-test-123`) under `backend/tests/`: the secret scan (`.gitleaks.toml`) skips only that pattern, only there, and only for `generic-api-key`. Generate tokens and keys at runtime (e.g. `secrets.token_urlsafe()`), never as literals. Changes to `.gitleaks.toml` are security-sensitive and need explicit review.
 
 ## 10. Simplicity
 
