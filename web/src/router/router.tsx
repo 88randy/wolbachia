@@ -1,6 +1,8 @@
 import { createRootRouteWithContext, createRoute, createRouter } from "@tanstack/react-router";
 import type { RouterHistory } from "@tanstack/react-router";
+import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
 import { LoginPage } from "../auth/LoginPage";
+import { ResetPasswordPage } from "../auth/ResetPasswordPage";
 import { SelectOrganizationPage } from "../auth/SelectOrganizationPage";
 import { AppShell } from "../shell/AppShell";
 import { AreaErrorState } from "../states/AreaErrorState";
@@ -24,6 +26,20 @@ const loginRoute = createRoute({
   path: "/login",
   validateSearch: loginSearchSchema,
   component: LoginPage,
+});
+
+const forgotPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/forgot-password",
+  component: ForgotPasswordPage,
+});
+
+// Must match the backend's WEB_PASSWORD_RESET_PATH ("/reset-password" by default): the reset
+// email links to `<WEB_BASE_URL>/reset-password/{uid}/{token}`.
+const resetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset-password/$uid/$token",
+  component: ResetPasswordPage,
 });
 
 // Needs a session but not an organization yet (that is what it is for).
@@ -65,6 +81,8 @@ const notFoundRoute = createRoute({
 
 const routeTree = rootRoute.addChildren([
   loginRoute,
+  forgotPasswordRoute,
+  resetPasswordRoute,
   selectOrganizationRoute,
   authenticatedRoute.addChildren([...areaRoutes, notFoundRoute]),
 ]);
