@@ -101,7 +101,7 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 | GET | /relocations/ | field proposals | SUP | W31 |
 | POST | /relocations/{id}/approve/ · /reject/ | rejection creates a next-day task | SUP | W31 |
 | GET/POST | /third-party-interventions/ | type (catalog), product, blocks, dates, source | SUP, ENT | W32 |
-| GET | /quadrants/{id}/closure/ | trap status and removal progress, blockers | SUP, COO | W33 |
+| GET | /quadrants/{id}/closure/ | ovitrap status and removal progress, blockers | SUP, COO | W33 |
 | POST | /quadrants/{id}/close/ | closed; `409` with blockers | SUP, COO | W33 |
 
 ## Entomology lab
@@ -173,7 +173,7 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 | GET/POST/PATCH | /incident-types/ | severity, owner, response time, escalation, blocks, required evidence | ADM | W64 |
 | GET | /roles/ · PUT /roles/{id}/permissions/ | matrix profile × action with scope; external roles read-only | ADM | W65 |
 | GET/POST | /api-keys/ · POST /api-keys/{id}/revoke/ | secret returned only in the create response | ADM | W66 |
-| GET/POST | /mobile-releases/ · PATCH /mobile-releases/minimum/ | published versions, signed APK upload, minimum version | ADM | W67 |
+| GET/POST | /app-versions/ · PATCH /app-versions/minimum/ | published versions, signed APK upload, minimum version | ADM | W67 |
 | GET | /devices/ | phones with app version | ADM | W67 |
 | GET/PATCH | /organization/ | name, country, tz, epi week, languages, logo, label phone | ADM | W68 |
 

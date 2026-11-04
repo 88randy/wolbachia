@@ -17,8 +17,8 @@ Source of truth for visuals is the Claude Design canvas "Wolbachia · App Repart
 | S02-Inicio, S03-Moto, S04-Insumos | P3–P8 open shift | #8 |
 | S05-Dia | P9–P10 day view, map | #8 |
 | S06-Escaner | P11, P12, P21 scanner, supply, invalid code | #9 |
-| S07-Colocar | P13 place trap | #9 |
-| S08-Revisar | P14 check trap (pending: Yes/No eggs step, issue #14) | #9, #14 |
+| S07-Colocar | P13 place ovitrap | #9 |
+| S08-Revisar | P14 check ovitrap (pending: Yes/No eggs step, issue #14) | #9, #14 |
 | S09-Ovitrampa | P15–P17 replace, relocate, remove | #9 |
 | S10-Liberar | P18–P20 release, blocked release, sample | #10 |
 | S11-Fijos | P22–P25 fuel, incident, emergency, community | #11 |

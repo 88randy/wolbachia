@@ -12,7 +12,7 @@ Catalogs and per-key versioned rule parameters, editable by ADM, readable by eve
 **Out:** web UI; full `incident-types` model (incidents epic).
 
 ## 4. Data model
-- `Catalog` (OrgScoped): slug (incident-type, bike-check-item, sample-origin, community-activity-type, removal-reason, replacement-reason, damage-reason, trap-finding, intervention-type…), name.
+- `Catalog` (OrgScoped): slug (incident-type, motorcycle-check-item, sample-origin, community-activity-type, removal-reason, replacement-reason, damage-reason, ovitrap-finding, intervention-type…), name.
 - `CatalogItem`: catalog, code, label_es, label_en, icon, sort, is_active, is_other (fixed "Other (specify)", cannot be deactivated), requires_photo.
 - `RuleParameter` (OrgScoped): key, value_type, unit.
 - `RuleParameterVersion`: parameter, value, effective_from, created_by. Never updated in place.

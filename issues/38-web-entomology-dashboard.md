@@ -20,7 +20,7 @@ Entomologists and coordinators see weekly indices per block and quadrant, compar
 **Out of scope:** prevalence (W54); official exports (W57).
 
 ## 4. Data model
-Read model: index per block per epidemiological week, with numerator, denominator and excluded count.
+Read model: index per block per epi week, with numerator, denominator and excluded count.
 
 ## 5. Contract (API / interfaces)
 - `GET /api/v1/dashboards/entomology/?week=&quadrant=&center=` returns indices, bands (if configured), exclusions, and `link_filters` per figure.

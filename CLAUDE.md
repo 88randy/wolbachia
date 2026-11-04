@@ -21,12 +21,34 @@
 - **El backend es la fuente del contrato.** El esquema OpenAPI (drf-spectacular) se genera en CI y de él sale `packages/api-client`. Si cambia la API, se regenera el cliente en el mismo PR; móvil y web no definen tipos de la API a mano.
 - **Tokens e i18n compartidos.** Móvil y web consumen `packages/tokens` y `packages/i18n`; no se copian colores ni textos en cada app.
 - **CI y despliegue por carpeta.** Cada carpeta tiene su workflow con filtros de ruta (`paths:`). Backend y web se despliegan en DigitalOcean; móvil se compila y se publica en el servidor interno de actualizaciones.
-- **Convención de ramas y commits:** `feat/<issue>-<slug>`, `fix/<issue>-<slug>`; commits con prefijo de ámbito: `feat(mobile): ...`, `fix(backend): ...`, `chore(web): ...`.
+- **Convención de ramas y commits:** `feat/<issue>-<slug>`, `fix/<issue>-<slug>`, `chore/<issue>-<slug>`; commits con prefijo de ámbito: `feat(mobile): ...`, `fix(backend): ...`, `chore(web): ...`.
+- **Reglas de ingeniería y glosario.** Todo el código sigue [`docs/engineering-rules.md`](docs/engineering-rules.md) (limpieza, capas, tipado, errores, pruebas; los linters las aplican) y usa un solo nombre en inglés por término de dominio según [`docs/glossary.md`](docs/glossary.md). Los agentes del proyecto están en `.claude/agents/`.
 - **Diseño:** antes de implementar una pantalla, lee `design/mobile/README.md`, su PNG en `design/mobile/screens/` y su HTML en `design/mobile/source/`. Los tokens salen de `design/mobile/source/codequim.css`. Si el código y el diseño no coinciden, gana el issue; avisa la diferencia en el PR.
 - **Diseño web:** antes de implementar una pantalla W, lee `design/web/README.md`, su PNG en `design/web/screens/` y su fuente en `design/web/source/`. Los tokens se unifican en `packages/tokens`; si hay diferencias con `design/mobile/source/codequim.css`, se resuelven en un PR, no en el código de una pantalla.
 - **Issues:** GitHub Issues son la fuente de verdad; `issues/NN-*.md` es un espejo con `NN` = número de GitHub (ver `issues/README.md`).
 - **Términos del dominio:** un solo nombre en inglés en backend, móvil y web (glosario en `docs/glossary.md`, #16). Papeleta = **egg paddle** (`paddle_present`, `has_eggs`).
 - **Textos al usuario:** la API nunca devuelve texto para el usuario; devuelve `code` + `params` y los clientes traducen con `packages/i18n`.
+
+### Forma de trabajo (equipo de agentes)
+El orquestador (sesión principal) planea, delega, revisa, integra y decide; no implementa a medias. Es responsable de todo lo que se entrega.
+
+**Equipo** (`.claude/agents/`): `planner` (opus), `backend-dev`, `mobile-dev`, `web-dev`, `qa` (sonnet), `code-reviewer`, `security-reviewer` (opus), `docs-writer` (haiku). Antes de crear un agente nuevo se reutilizan los existentes (por ejemplo `ecc:django-reviewer`, `ecc:database-reviewer`, `ecc:react-reviewer`, `ecc:a11y-architect`). Modelo según la tarea: opus para planear, arquitectura y revisión final; sonnet para implementación acotada; haiku para tareas mecánicas.
+
+**Flujo por issue**
+1. `planner` parte el issue en tareas, interfaces y riesgos.
+2. El implementador trabaja en su propio git worktree y rama (`feat|fix|chore/<n>-<slug>`). Solo se paralelizan issues sin dependencias entre sí ni archivos compartidos.
+3. Cada delegación lleva: el issue, los archivos relevantes, el PNG y la fuente de diseño de la pantalla y los criterios de aceptación. Nada de instrucciones vagas.
+4. Revisión: `qa` (pruebas y casos borde), `code-reviewer` (siempre) y `security-reviewer` (si toca datos, permisos, auth o entradas). En PRs con riesgo (sync, auth, permisos, migraciones) además una revisión de Codex (`/codex:adversarial-review`).
+5. Si algo no cumple, regresa al agente con observaciones concretas. Si un agente se atora dos veces en lo mismo: cambiar de enfoque o de modelo, o escalar al dueño con opciones.
+6. Tablero en el PR: tarea · agente · estado.
+
+**Definición de terminado:** criterios de aceptación cumplidos · pruebas · lint y formato limpios · reglas de `docs/engineering-rules.md` · documentación actualizada · CI en verde · revisión aprobada. Sin TODOs sueltos (lo que queda fuera se abre como issue con las 9 secciones y se liga en el PR), sin código muerto, cada dependencia nueva justificada en el PR.
+
+**Codex** (autorizado por el dueño el 2026-11-03): segundo revisor y apoyo en tareas acotadas (`/codex:review`, `/codex:adversarial-review`, `/codex:rescue`; CLI `codex exec` solo si el plugin no cubre la tarea). Nunca se le envían secretos, `.env`, llaves ni datos reales de personas. Si contradice a otro revisor, se resuelve con evidencia (prueba o documentación oficial) y se anota en el PR. Si no está disponible, se sigue sin él.
+
+**Git y reportes:** sin push forzado, sin borrar ramas ajenas, sin mezclar PRs, sin merge a `master` sin aprobación del dueño (o su autorización vigente para PRs que cumplen la definición de terminado). Al cerrar cada issue: 3–4 líneas (qué quedó y quién lo hizo, link del PR, pendientes, siguiente issue). Al cerrar cada fase: actualizar "Lecciones aprendidas", `docs/decisions.md` y `docs/glossary.md`, y proponer ajustes al equipo o al proceso.
+
+**[PENDING] del cliente:** no se deciden; se dejan configurables o con un default documentado y se avisa al dueño.
 
 ### Web
 
@@ -65,7 +87,7 @@
 - Strings come from `packages/i18n` (es-MX default, en). No hard-coded copy. Layouts must survive +30 % text length.
 
 **Formats**
-- Dates and times in the organization's time zone. Weeks use the organization's epidemiological week.
+- Dates and times in the organization's time zone. Weeks use the organization's epi week.
 - Numbers use es-MX or en formatting according to the user's language.
 
 ### Estructura del monorepo

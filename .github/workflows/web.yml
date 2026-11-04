@@ -1,0 +1,44 @@
+name: web
+
+# Runs only when web/, a shared package or the root JS tooling changes.
+on:
+  pull_request:
+    paths:
+      - "web/**"
+      - "packages/**"
+      - "package.json"
+      - "package-lock.json"
+      - "eslint.config.mjs"
+      - "tsconfig.base.json"
+      - ".prettierrc.json"
+      - ".prettierignore"
+      - "scripts/**"
+      - ".github/workflows/web.yml"
+      - ".github/workflows/js-checks.yml"
+  push:
+    branches: [master]
+    paths:
+      - "web/**"
+      - "packages/**"
+      - "package.json"
+      - "package-lock.json"
+      - "eslint.config.mjs"
+      - "tsconfig.base.json"
+      - ".prettierrc.json"
+      - ".prettierignore"
+      - "scripts/**"
+      - ".github/workflows/web.yml"
+      - ".github/workflows/js-checks.yml"
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    uses: ./.github/workflows/js-checks.yml
+    with:
+      folder: web

@@ -1,4 +1,4 @@
-TITLE: [Research] Field test of the prototype with 3–5 delivery workers
+TITLE: [Research] Field test of the prototype with 3–5 couriers
 LABELS: research,design
 ## 1. Context
 Prototype with 7 routes exists in the design canvas.
