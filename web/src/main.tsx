@@ -1,14 +1,10 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { App } from "./app/App";
+import { startApp } from "./app/start-app";
 
 const container = document.getElementById("root");
 if (container === null) {
   throw new Error("Missing #root element in index.html");
 }
 
-createRoot(container).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
+startApp(container, import.meta.env).catch((error: unknown) => {
+  console.error("The app failed to start", error);
+});
