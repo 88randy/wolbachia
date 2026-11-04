@@ -1,10 +1,26 @@
 import { Outlet } from "@tanstack/react-router";
+import { MAIN_ID } from "./ids";
+import styles from "./AppShell.module.css";
+import { Sidebar } from "./Sidebar";
+import { SkipLink } from "./SkipLink";
+import { TopBar } from "./TopBar";
+import { useSidebarCollapsed } from "./use-sidebar-collapsed";
 
-/** Provisional frame (sidebar and top bar come next): the page lives in the main landmark. */
+/** Frame of every page: skip link, sidebar, top bar and the main landmark with the route. */
 export function AppShell() {
+  const { collapsed, toggle } = useSidebarCollapsed();
   return (
-    <main id="main" tabIndex={-1}>
-      <Outlet />
-    </main>
+    <div className={styles.shell}>
+      <SkipLink />
+      <div className={styles.body}>
+        <Sidebar collapsed={collapsed} onToggle={toggle} />
+        <div className={styles.column}>
+          <TopBar />
+          <main id={MAIN_ID} className={styles.main} tabIndex={-1}>
+            <Outlet />
+          </main>
+        </div>
+      </div>
+    </div>
   );
 }

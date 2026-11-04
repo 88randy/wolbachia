@@ -1,0 +1,191 @@
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
+import { axe } from "jest-axe";
+import { beforeEach, describe, expect, test } from "vitest";
+import { AREAS } from "../router/areas";
+import { STORAGE_KEYS } from "../storage/safe-storage";
+import { renderApp } from "../test/render-app";
+
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
+describe("landmarks", () => {
+  test("has banner, navigation, search and main, each once", async () => {
+    await renderApp();
+
+    expect(screen.getAllByRole("banner")).toHaveLength(1);
+    expect(screen.getAllByRole("main")).toHaveLength(1);
+    expect(screen.getByRole("navigation", { name: "Navegación principal" })).toBeDefined();
+    expect(screen.getByRole("search", { name: "Buscar" })).toBeDefined();
+  });
+
+  test("the main landmark holds the single page heading", async () => {
+    await renderApp({ path: "/fleet" });
+
+    const main = screen.getByRole("main");
+
+    expect(within(main).getByRole("heading", { level: 1, name: "Flota" })).toBeDefined();
+    expect(screen.getAllByRole("heading", { level: 1 })).toHaveLength(1);
+  });
+});
+
+describe("sidebar navigation", () => {
+  test("lists every area as a link inside lists", async () => {
+    await renderApp();
+    const nav = screen.getByRole("navigation", { name: "Navegación principal" });
+
+    const links = within(nav).getAllByRole("link");
+
+    expect(links).toHaveLength(AREAS.length);
+    expect(links.map((link) => link.getAttribute("href"))).toEqual(AREAS.map((area) => area.path));
+  });
+
+  test("groups the areas under headings", async () => {
+    await renderApp();
+
+    expect(screen.getByRole("list", { name: "Operación" })).toBeDefined();
+    expect(screen.getByRole("list", { name: "Recursos" })).toBeDefined();
+    expect(screen.getByRole("list", { name: "Análisis y administración" })).toBeDefined();
+  });
+
+  test("marks only the current page with aria-current", async () => {
+    await renderApp({ path: "/incidents" });
+
+    const current = screen.getAllByRole("link", { current: "page" });
+
+    expect(current.map((link) => link.textContent)).toEqual(["Incidentes"]);
+  });
+
+  test("home is current only at the root, not on every page", async () => {
+    await renderApp({ path: "/inventory" });
+
+    expect(screen.getByRole("link", { name: "Inicio" }).getAttribute("aria-current")).toBeNull();
+  });
+
+  test("navigating by keyboard changes the page", async () => {
+    await renderApp();
+
+    screen.getByRole("link", { name: "Laboratorio" }).focus();
+    await userEvent.keyboard("{Enter}");
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Laboratorio" })).toBeDefined();
+  });
+});
+
+describe("keyboard", () => {
+  test("the skip link is the first tab stop and moves focus to main", async () => {
+    await renderApp();
+
+    await userEvent.tab();
+    const skipLink = screen.getByRole("link", { name: "Saltar al contenido" });
+    expect(document.activeElement).toBe(skipLink);
+    await userEvent.keyboard("{Enter}");
+
+    expect(document.activeElement).toBe(screen.getByRole("main"));
+  });
+
+  test("tab order is skip link, sidebar links, collapse button, search, bell, language", async () => {
+    await renderApp();
+    const names: string[] = [];
+
+    for (let step = 0; step < AREAS.length + 5; step += 1) {
+      await userEvent.tab();
+      names.push(
+        document.activeElement?.getAttribute("aria-label") ??
+          document.activeElement?.textContent ??
+          "",
+      );
+    }
+
+    expect(names.slice(0, 2)).toEqual(["Saltar al contenido", "Inicio"]);
+    expect(names.slice(AREAS.length + 1)).toEqual([
+      "Colapsar menú",
+      "Buscar",
+      "Notificaciones",
+      "ES: cambiar idioma a inglés",
+    ]);
+  });
+
+  test("/ focuses the search unless the user is already typing", async () => {
+    await renderApp();
+    const search = screen.getByRole("searchbox", { name: "Buscar" });
+
+    await userEvent.keyboard("/");
+    expect(document.activeElement).toBe(search);
+
+    await userEvent.keyboard("/");
+    expect((search as HTMLInputElement).value).toBe("/");
+  });
+});
+
+describe("collapse button", () => {
+  test("starts expanded and exposes its state", async () => {
+    await renderApp();
+
+    const toggle = screen.getByRole("button", { name: "Colapsar menú" });
+
+    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.getAttribute("aria-controls")).toBe("sidebar");
+  });
+
+  test("collapsing keeps every link named and remembers the choice", async () => {
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("button", { name: "Colapsar menú" }));
+
+    const toggle = screen.getByRole("button", { name: "Expandir menú" });
+    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    expect(screen.getByRole("link", { name: "Incidentes" })).toBeDefined();
+    expect(window.localStorage.getItem(STORAGE_KEYS.sidebarCollapsed)).toBe("true");
+  });
+
+  test("a stored collapsed state is restored", async () => {
+    window.localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, "true");
+
+    await renderApp();
+
+    expect(screen.getByRole("button", { name: "Expandir menú" })).toBeDefined();
+  });
+});
+
+describe("top bar", () => {
+  test("switches language without reload and updates <html lang>", async () => {
+    await renderApp();
+
+    await userEvent.click(screen.getByRole("button", { name: "ES: cambiar idioma a inglés" }));
+
+    expect(screen.getByRole("link", { name: "Incidents" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "EN: change language to Spanish" })).toBeDefined();
+    expect(document.documentElement.lang).toBe("en");
+  });
+
+  test("notifications button has a name and no invented count", async () => {
+    await renderApp();
+
+    const bell = screen.getByRole("button", { name: "Notificaciones" });
+
+    expect(bell.textContent).toBe("");
+  });
+});
+
+describe("accessibility", () => {
+  test.each(["es-MX", "en"] as const)("shell has no axe violations in %s", async (language) => {
+    const { container } = await renderApp({ language });
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  test("collapsed shell has no axe violations", async () => {
+    window.localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, "true");
+    const { container } = await renderApp({ path: "/people" });
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  test("not-found page inside the shell has no axe violations", async () => {
+    const { container } = await renderApp({ path: "/nope" });
+
+    expect(await axe(container)).toHaveNoViolations();
+  });
+});

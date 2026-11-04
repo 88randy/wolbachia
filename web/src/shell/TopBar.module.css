@@ -1,0 +1,100 @@
+/* White top bar (.tp in web.css): search on the left, notifications and language on the right. */
+.topBar {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--web-layout-top-bar-height);
+  padding: 0 var(--space-2);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border-default);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.search {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 32rem;
+  height: var(--web-control-md);
+  padding: 0 var(--space-1-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-tertiary);
+}
+
+.search:focus-within {
+  border-color: var(--color-action);
+  color: var(--color-text-primary);
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+  box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
+}
+
+/* The ring is drawn on the whole field (above), not twice on the inner input. */
+.input {
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--web-type-label-font-size);
+}
+
+.input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+.shortcut {
+  padding: 0 var(--space-0-5);
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-xs);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 600;
+}
+
+.icon {
+  flex: none;
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+}
+
+.iconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: var(--web-control-md);
+  height: var(--web-control-md);
+  padding: 0 var(--space-0-5);
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font: inherit;
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.iconButton:hover {
+  background: var(--color-background);
+}
+
+.iconButton .icon {
+  width: var(--web-icon-md);
+  height: var(--web-icon-md);
+}
