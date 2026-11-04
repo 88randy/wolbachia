@@ -91,7 +91,9 @@ describe("re-authentication and sign-out are queued, not rejected", () => {
     logout.release(noContent(204));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Inicia sesión" })).toBeDefined();
-    expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
+    await vi.waitFor(() => {
+      expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
+    });
     expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(false);
   });
 
@@ -188,6 +190,41 @@ describe("leaving the page during a pending sign-out", () => {
 
     await screen.findByRole("heading", { level: 1, name: "Inicio" });
     expect(order(api)).toEqual(["logout/", "logout/", "login/"]);
+  });
+});
+
+describe("a hung /me/ after signing in again cannot block a sign-out", () => {
+  test("re-authentication returning no organization, /me/ never answering: the logout is sent", async () => {
+    const chooser = makeMe({
+      organization: null,
+      profiles: [],
+      permissions: [],
+      organizations: [
+        { slug: "norte", name: "Región Norte" },
+        { slug: "sur", name: "Región Sur" },
+      ],
+    });
+    let meCalls = 0;
+    const { api } = await openExpired({
+      [ME]: () => {
+        meCalls += 1;
+        // The first answer is the page's own; every refetch after it hangs forever.
+        return meCalls === 1 ? Response.json(makeMe()) : new Promise<Response>(() => undefined);
+      },
+      [LOGIN]: Response.json({ me: chooser, server_time: "2026-11-04T12:00:00Z" }),
+    });
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+
+    await userEvent.click(screen.getByRole("button", { name: /Menú de usuario/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+
+    await vi.waitFor(() => {
+      expect(logoutRequests(api)).toHaveLength(1);
+    });
   });
 });
 

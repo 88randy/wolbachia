@@ -26,6 +26,8 @@ export interface AuthOperationRun<T> {
   result: Promise<T | undefined>;
   /** Abandons a login (no effect on a sign-out). */
   abandon: () => void;
+  /** Whether the result may still be acted on (also after the task settled). */
+  isCurrent: () => boolean;
 }
 
 interface Queued {
@@ -44,18 +46,31 @@ function isWanted(operation: Queued): boolean {
   return !operation.isAbandoned && operation.generation === generation;
 }
 
-/** Queues `task` behind every earlier auth operation. */
-export function runAuthOperation<T>(
-  kind: AuthOperation,
-  task: (context: AuthOperationContext) => Promise<T>,
-): AuthOperationRun<T> {
+function createOperation(kind: AuthOperation): Queued {
   if (kind === "logout") generation += 1;
-  const operation: Queued = {
+  return {
     kind,
     generation,
     isAbandoned: false,
     controller: new AbortController(),
   };
+}
+
+/**
+ * Queues `task behind every earlier auth operation.
+ *
+ * RULE: a task may only await signal-bound auth network calls (CSRF, login, logout and their
+ * retries, all through `withAuthTimeout(signal)`), plus synchronous cache and identity updates.
+ * Navigation, query invalidation or refetch, and anything else that can wait on something
+ * unbounded happen AFTER the task: `result` resolves with the task's value and the caller acts on
+ * it outside the queue (use `isCurrent()` first). One unbounded await here would block every
+ * operation queued behind it, including a sign-out.
+ */
+export function runAuthOperation<T>(
+  kind: AuthOperation,
+  task: (context: AuthOperationContext) => Promise<T>,
+): AuthOperationRun<T> {
+  const operation = createOperation(kind);
   active.add(operation);
   const result = tail.then(async () => {
     if (!isWanted(operation)) return undefined;
@@ -67,6 +82,7 @@ export function runAuthOperation<T>(
   tail = settled.catch(() => undefined);
   return {
     result,
+    isCurrent: () => isWanted(operation),
     abandon: () => {
       if (kind === "logout") return;
       operation.isAbandoned = true;

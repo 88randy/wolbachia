@@ -14,17 +14,21 @@ import type { LoginFailure } from "./login-failure";
 import { requestLogin } from "./request-login";
 import type { Credentials } from "./request-login";
 
-/** The server accepted the credentials: replace whatever a previous user left and move on. */
-async function enterSession(
-  me: Me,
-  requestedTarget: string | undefined,
-  { queryClient, router }: { queryClient: QueryClient; router: RegisteredRouter },
-): Promise<void> {
+/** The server accepted the credentials: replace whatever a previous user left (synchronous). */
+function storeSession(me: Me, queryClient: QueryClient): void {
   queryClient.clear();
   forgetIdentity(queryClient);
   recordIdentity(queryClient, me);
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
+}
+
+/** Where the user goes after signing in. Runs outside the auth queue (navigation can wait). */
+async function continueAfterLogin(
+  me: Me,
+  requestedTarget: string | undefined,
+  router: RegisteredRouter,
+): Promise<void> {
   const target = safeRedirect(requestedTarget);
   if (me.organization === null) {
     const search = target === "/" ? {} : { redirect: target };
@@ -38,8 +42,9 @@ async function enterSession(
  * Signs in and, on success, stores `me`, clears whatever a previous user left in the cache and
  * goes where the user was headed: the (validated) `redirect` target, or the organization chooser
  * first when they belong to several organizations. Returns the failure, or undefined on success.
- * It is queued with the other auth operations; leaving the page abandons (aborts) it, and its
- * result is ignored if a sign-out was queued after it.
+ * The queued task only does the request and the synchronous cache update; navigation follows
+ * outside the queue. Leaving the page abandons (aborts) it, and its result is ignored if a
+ * sign-out was queued after it.
  */
 export function useLogin(requestedTarget: string | undefined) {
   const client = useApiClient();
@@ -50,11 +55,14 @@ export function useLogin(requestedTarget: string | undefined) {
     const run = runAuthOperation("login", async ({ signal, isCurrent }) => {
       const outcome = await requestLogin(client, credentials, signal);
       if (!isCurrent()) return undefined;
-      if (!outcome.ok) return outcome.failure;
-      await enterSession(outcome.me, requestedTarget, { queryClient, router });
-      return undefined;
+      if (outcome.ok) storeSession(outcome.me, queryClient);
+      return outcome;
     });
     abandonRef.current = run.abandon;
-    return run.result;
+    const outcome = await run.result;
+    if (outcome === undefined) return undefined;
+    if (!outcome.ok) return outcome.failure;
+    if (run.isCurrent()) await continueAfterLogin(outcome.me, requestedTarget, router);
+    return undefined;
   };
 }
