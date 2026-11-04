@@ -27,6 +27,7 @@ The clean-code reference for everyone who writes code in this repo, human or age
 - Views and serializers are thin: validate and delegate.
 - Business logic lives in `services.py` of each app. Complex reads live in `selectors.py`. Both are type-checked strictly. **(tool: mypy strict)**
 - Models do not call external services. Celery tasks only orchestrate services.
+- Serializer fields that point to an org-scoped model use `core.fields.OrgScopedPrimaryKeyRelatedField`, never a plain `PrimaryKeyRelatedField`; viewsets declare `required_permissions` per action (default is deny).
 - Use explicit transactions when a use case writes more than one table.
 - ORM or parametrized queries only. Never build SQL or formulas by concatenation. **(tool: ruff `S`)**
 - Type hints on public functions and services. **(tool: ruff `ANN`)**

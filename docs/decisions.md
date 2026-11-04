@@ -34,3 +34,4 @@
 | 30 | Active organization is resolved in a viewset mixin (`initial()`) from the user's membership and `X-Organization`, not in middleware, so token auth (#4) and Channels (#19) reuse `resolve_active_membership`. `/me/` is exempt from the multi-membership `400` | Accepted (2026-11-03) | PYROBYTE |
 | 31 | Custom `accounts.User` (UUID primary key) from the first migration; Django admin is not mounted (it can delete) | Accepted (2026-11-03) | PYROBYTE |
 | 32 | `Profile` carries `label_es` / `label_en` as organization data (like catalog items) instead of a single `name`; the API returns no other user-facing text | Accepted (2026-11-03) | PYROBYTE |
+| 33 | Profile assignment changes (`Membership.profiles`, M2M `set()`) are configuration, not business records, so they are not voided; an audit log arrives with the role editor (W65) | Accepted (2026-11-03) | PYROBYTE |

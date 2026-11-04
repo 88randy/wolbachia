@@ -8,7 +8,8 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 - Thin views and serializers; business logic in `services.py`, complex reads in `selectors.py` (both type-checked strictly by mypy).
 - API contract: [`docs/api-conventions.md`](../docs/api-conventions.md). If the API changes, update `docs/` and regenerate `packages/api-client` in the same PR.
 - Every business table inherits `core.models.OrgScopedModel` (and `VoidableMixin` when it can be voided). Nothing is deleted: model and queryset `delete()` raise `PhysicalDeleteForbiddenError`.
-- New org-scoped resources subclass `core.views.OrgScopedViewSet` (no destroy) and, when voidable, add `VoidActionMixin`. Restrict by profile with `HasPermissionCode` + `required_permission`.
+- New org-scoped resources subclass `core.views.OrgScopedViewSet` (no destroy) and, when voidable, add `VoidActionMixin`. Every viewset must declare `required_permissions = {"<action>": "<resource>.<action>"}` (list, retrieve, create, update, partial_update, void...): the base class already uses `HasPermissionCode`, which denies any action missing from the map. Updates lock the row and answer `409 already_voided` on voided records.
+- **Mandatory:** every serializer field that points to an org-scoped model uses `core.fields.OrgScopedPrimaryKeyRelatedField` (never a plain `PrimaryKeyRelatedField`), so an id from another organization fails like a nonexistent one.
 - Django admin is not mounted on purpose (it can delete).
 
 ## Layout
@@ -27,10 +28,10 @@ From the repo root (needs Docker with Compose):
 
 ```bash
 docker compose -f backend/compose.yaml up --build
-curl http://127.0.0.1:8000/api/v1/health/    # {"status":"ok"}
+curl http://127.0.0.1:8000/api/v1/health/   # port: API_PORT    # {"status":"ok"}
 ```
 
-Services: `web` (migrate + runserver), `worker` (Celery), `db` (PostgreSQL 18; keep the major equal to the DigitalOcean managed cluster [PENDING: #18]), `redis`. If a host port is taken: `POSTGRES_PORT=55432 WEB_PORT=18000 docker compose -f backend/compose.yaml up`. The compose file carries throwaway dev credentials only; production deploy is #18.
+Services: `api` (migrate + runserver), `worker` (Celery), `db` (PostgreSQL 18; keep the major equal to the DigitalOcean managed cluster [PENDING: #18]), `redis`. If a host port is taken: `POSTGRES_PORT=55432 REDIS_PORT=56379 API_PORT=18000 docker compose -f backend/compose.yaml up`. Postgres and Redis are published on 127.0.0.1 so the code can also run outside Docker; the venv lives in the image (`/opt/venv`), so rebuild with `--build` after changing `uv.lock`. In dev a Redis outage makes throttled requests fail with 500 (the cache backend does not ignore errors). The compose file carries throwaway dev credentials only; production deploy is #18.
 
 ## Run and test without Docker
 
@@ -48,13 +49,13 @@ uv run python manage.py makemigrations --check --dry-run
 uv run python manage.py spectacular --file schema.yml --validate --fail-on-warn
 ```
 
-Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache). `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
+Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
 ## Settings and environment
 
 All variables are documented in [`.env.example`](.env.example). Required everywhere: `DATABASE_URL`, `REDIS_URL`; `DJANGO_SECRET_KEY` in dev and prod (tests use a fixed key). Production also requires `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; `manage.py check --deploy` is clean with `config.settings.prod`.
 
-Defaults (all env-configurable): page size 50 (max 200 via `?page_size=`), cursor page 100, throttles 60/min anonymous and 600/min per user, schema endpoint public only in dev.
+Defaults (all env-configurable): page size 50 (max 200 via `?page_size=`), cursor page 100, throttles 60/min anonymous and 600/min per user (`DRF_NUM_PROXIES`=0: `X-Forwarded-For` is ignored), schema endpoint public only in dev.
 
 ## Organizations and the first admin
 
@@ -64,7 +65,8 @@ Create an organization with its default profiles (`courier`, `supervisor`, `ento
 uv run python manage.py bootstrap_organization --name "Acme" --slug acme \
   --country MX --timezone America/Mexico_City \
   --admin-username boss --admin-email boss@example.com
-uv run python manage.py changepassword boss     # the admin is created without a password
+uv run python manage.py changepassword boss     # a new admin is created without a password
+# An existing username with a different email is refused unless you pass --reuse-existing-user
 ```
 
 Profiles start with no permission codes; they are data configured per organization.
