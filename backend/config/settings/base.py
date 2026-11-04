@@ -4,16 +4,12 @@ Environment-specific modules (dev, test, prod) import everything from here. Valu
 environment variables (django-environ); see `backend/.env.example` for the full list.
 """
 
-from pathlib import Path
-
 import environ
 
-BASE_DIR = Path(__file__).resolve().parent.parent.parent
+from ._env import BASE_DIR, load_dotenv
 
+load_dotenv()  # optional backend/.env (untracked); real environment variables always win
 env = environ.Env()
-# Optional local file, git-ignored. Real environment variables always win.
-if env.bool("DJANGO_READ_DOT_ENV_FILE", default=True):
-    environ.Env.read_env(BASE_DIR / ".env", overwrite=False)
 
 DEBUG = False
 
@@ -89,6 +85,9 @@ REST_FRAMEWORK = {
         "rest_framework.throttling.UserRateThrottle",
     ],
     "DEFAULT_THROTTLE_RATES": {"anon": THROTTLE_ANON_RATE, "user": THROTTLE_USER_RATE},
+    # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a
+    # client cannot dodge the anonymous throttle by rotating that header.
+    "NUM_PROXIES": env.int("DRF_NUM_PROXIES", default=0),
     "EXCEPTION_HANDLER": "core.exception_handler.api_exception_handler",
     "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardPagination",
     "PAGE_SIZE": API_PAGE_SIZE,

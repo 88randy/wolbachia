@@ -10,6 +10,8 @@ from tests.factories import MembershipFactory, OrganizationFactory, ProfileFacto
 
 MemberFactory = Callable[..., tuple[User, Membership]]
 
+WIDGET_CODES = ("widget.read", "widget.create", "widget.update", "widget.void")
+
 
 @pytest.fixture(autouse=True)
 def _clear_cache() -> None:
@@ -52,7 +54,7 @@ def make_member() -> MemberFactory:
 
 @pytest.fixture
 def member_a(org_a: Organization, make_member: MemberFactory) -> User:
-    return make_member(org_a)[0]
+    return make_member(org_a, WIDGET_CODES)[0]
 
 
 @pytest.fixture

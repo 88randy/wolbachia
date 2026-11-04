@@ -110,3 +110,25 @@ def test_voidable_queryset_filters_voided_and_not_voided(
 
     assert list(Widget.objects.not_voided()) == [kept]
     assert list(Widget.objects.voided()) == [voided]
+
+
+def test_void_reason_longer_than_1000_characters_is_a_validation_error(
+    client_a: APIClient, org_a: Organization
+) -> None:
+    widget = WidgetFactory(organization=org_a)
+
+    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "x" * 1001}, format="json")
+
+    assert response.status_code == 400
+    assert response.data["fields"]["reason"][0]["code"] == "max_length"
+
+
+def test_session_post_without_csrf_token_is_forbidden(member_a: User) -> None:
+    client = APIClient(enforce_csrf_checks=True)
+    client.force_login(member_a)
+
+    response = client.post(WIDGETS, {"name": "x"}, format="json")
+
+    assert response.status_code == 403
+    assert response.data["code"] == "permission_denied"
+    assert not Widget.objects.exists()

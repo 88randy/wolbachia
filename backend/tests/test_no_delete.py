@@ -1,7 +1,6 @@
 """Nothing is deleted: no DELETE routes, and models refuse physical deletion."""
 
 import pytest
-from django.urls import reverse
 from drf_spectacular.generators import SchemaGenerator
 from rest_framework.test import APIClient
 
@@ -52,8 +51,3 @@ def test_queryset_delete_raises(org_a: Organization) -> None:
 
     with pytest.raises(PhysicalDeleteForbiddenError):
         Widget.objects.all().delete()
-
-
-def test_every_api_route_is_reachable_by_name() -> None:
-    assert reverse("health") == "/api/v1/health/"
-    assert reverse("me") == "/api/v1/me/"

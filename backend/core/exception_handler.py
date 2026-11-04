@@ -73,6 +73,7 @@ def _log_unhandled(exc: Exception, context: dict[str, Any]) -> None:
 
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     if isinstance(exc, DomainError):
+        set_rollback()
         return Response({"code": exc.code, "detail": exc.detail}, status=exc.status_code)
 
     exc = _normalize(exc)

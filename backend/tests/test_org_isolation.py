@@ -5,6 +5,7 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from organizations.models import Organization
+from tests.conftest import WIDGET_CODES
 from tests.factories import WidgetFactory
 from tests.testapp.models import Widget
 
@@ -101,8 +102,8 @@ def test_update_cannot_move_a_widget_to_another_organization(
 def test_organization_header_selects_the_active_organization(
     api_client: APIClient, org_a: Organization, org_b: Organization, make_member
 ) -> None:
-    user, _ = make_member(org_a)
-    make_member(org_b, user=user)
+    user, _ = make_member(org_a, WIDGET_CODES)
+    make_member(org_b, WIDGET_CODES, user=user)
     WidgetFactory(organization=org_a)
     in_b = WidgetFactory(organization=org_b)
     api_client.force_authenticate(user)

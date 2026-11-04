@@ -1,12 +1,37 @@
-"""Health, schema, permissions and pagination wiring."""
+"""Health, schema, throttling and pagination wiring."""
+
+from datetime import timedelta
 
 import pytest
+from django.urls import reverse
+from django.utils import timezone
 from rest_framework.test import APIClient
 
 from organizations.models import Organization
-from tests.factories import WidgetFactory
+from tests.testapp.models import Widget
 
 pytestmark = pytest.mark.django_db
+
+
+def make_widgets(organization: Organization, count: int) -> list[Widget]:
+    now = timezone.now()
+    widgets = [
+        Widget(
+            organization=organization, name=f"w{index}", created_at=now + timedelta(seconds=index)
+        )
+        for index in range(count)
+    ]
+    created = Widget.objects.bulk_create(widgets)
+    # auto_now_add overrides created_at on insert; set the distinct values explicitly.
+    for widget, original in zip(created, widgets, strict=True):
+        Widget.objects.filter(pk=widget.pk).update(created_at=original.created_at)
+    return created
+
+
+def test_named_routes_resolve_under_the_api_prefix() -> None:
+    assert reverse("health") == "/api/v1/health/"
+    assert reverse("me") == "/api/v1/me/"
+    assert reverse("schema") == "/api/v1/schema/"
 
 
 def test_health_answers_ok_without_authentication(api_client: APIClient) -> None:
@@ -16,7 +41,7 @@ def test_health_answers_ok_without_authentication(api_client: APIClient) -> None
     assert response.data == {"status": "ok"}
 
 
-def test_health_is_not_throttled(api_client: APIClient, settings) -> None:
+def test_health_is_not_throttled(api_client: APIClient) -> None:
     responses = [api_client.get("/api/v1/health/").status_code for _ in range(70)]
 
     assert set(responses) == {200}
@@ -40,50 +65,47 @@ def test_schema_documents_the_organization_header(client_a: APIClient) -> None:
     assert any(p["name"] == "X-Organization" and p["in"] == "header" for p in me_parameters)
 
 
-def test_anonymous_requests_are_throttled(api_client: APIClient, settings) -> None:
+def test_anonymous_requests_are_throttled(api_client: APIClient) -> None:
     # Rates are read at import time, so this uses the dedicated one-per-minute view.
     api_client.get("/api/v1/throttled/")
 
     assert api_client.get("/api/v1/throttled/").status_code == 429
 
 
-def test_permission_code_grants_access_when_present_in_a_profile(
-    api_client: APIClient, org_a: Organization, make_member
-) -> None:
-    user, _ = make_member(org_a, permission_codes=["widget.manage"])
-    api_client.force_authenticate(user)
+def test_rotating_x_forwarded_for_does_not_evade_the_throttle(api_client: APIClient) -> None:
+    api_client.get("/api/v1/throttled/", headers={"X-Forwarded-For": "203.0.113.1"})
 
-    assert api_client.get("/api/v1/restricted-widgets/").status_code == 200
+    response = api_client.get("/api/v1/throttled/", headers={"X-Forwarded-For": "203.0.113.2"})
 
-
-def test_permission_code_is_denied_when_missing(
-    api_client: APIClient, org_a: Organization, make_member
-) -> None:
-    user, _ = make_member(org_a, permission_codes=["widget.read"])
-    api_client.force_authenticate(user)
-
-    assert api_client.get("/api/v1/restricted-widgets/").status_code == 403
+    assert response.status_code == 429
 
 
-def test_page_number_pagination_uses_the_default_size_and_cap(
+def test_page_number_pagination_defaults_to_50_results(
     client_a: APIClient, org_a: Organization
 ) -> None:
-    for _ in range(3):
-        WidgetFactory(organization=org_a)
+    make_widgets(org_a, 51)
 
-    default = client_a.get("/api/v1/widgets/")
-    capped = client_a.get("/api/v1/widgets/", {"page_size": 100000})
+    response = client_a.get("/api/v1/widgets/")
 
-    assert set(default.data) == {"count", "next", "previous", "results"}
-    assert default.data["count"] == 3
-    assert capped.status_code == 200
+    assert set(response.data) == {"count", "next", "previous", "results"}
+    assert response.data["count"] == 51
+    assert len(response.data["results"]) == 50
+
+
+def test_page_number_pagination_caps_page_size_at_200(
+    client_a: APIClient, org_a: Organization
+) -> None:
+    make_widgets(org_a, 201)
+
+    response = client_a.get("/api/v1/widgets/", {"page_size": 1000})
+
+    assert len(response.data["results"]) == 200
 
 
 def test_cursor_pagination_orders_newest_first_and_has_no_count(
     client_a: APIClient, org_a: Organization
 ) -> None:
-    first = WidgetFactory(organization=org_a)
-    second = WidgetFactory(organization=org_a)
+    first, second = make_widgets(org_a, 2)
 
     response = client_a.get("/api/v1/stream-widgets/")
 

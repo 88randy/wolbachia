@@ -5,7 +5,8 @@ from rest_framework.test import APIClient
 
 from accounts.models import User
 from organizations.models import Membership, Organization
-from tests.factories import MembershipFactory, OrganizationFactory, UserFactory
+from tests.conftest import WIDGET_CODES
+from tests.factories import OrganizationFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -43,8 +44,10 @@ def test_inactive_organization_gets_403(client_a: APIClient, org_a: Organization
     assert response.data["code"] == "no_active_membership"
 
 
-def test_several_memberships_without_header_gets_400(api_client: APIClient, member_a: User) -> None:
-    MembershipFactory(user=member_a, organization=OrganizationFactory(slug="org-c"))
+def test_several_memberships_without_header_gets_400(
+    api_client: APIClient, member_a: User, make_member
+) -> None:
+    make_member(OrganizationFactory(slug="org-c"), WIDGET_CODES, user=member_a)
     api_client.force_authenticate(member_a)
 
     response = api_client.get(URL)
@@ -55,9 +58,9 @@ def test_several_memberships_without_header_gets_400(api_client: APIClient, memb
 
 
 def test_several_memberships_with_valid_header_gets_200(
-    api_client: APIClient, member_a: User
+    api_client: APIClient, member_a: User, make_member
 ) -> None:
-    MembershipFactory(user=member_a, organization=OrganizationFactory(slug="org-c"))
+    make_member(OrganizationFactory(slug="org-c"), WIDGET_CODES, user=member_a)
     api_client.force_authenticate(member_a)
 
     response = api_client.get(URL, headers={HEADER: "org-c"})

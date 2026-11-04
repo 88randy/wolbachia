@@ -2,22 +2,26 @@
 
 from typing import Any, cast
 
+from django.db import transaction
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, serializers, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.exceptions import MethodNotAllowed
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import ORGANIZATION_HEADER
 from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
-from core.services import void_record
-from organizations.services import resolve_active_membership
+from core.permissions import HasPermissionCode
+from core.services import lock_record_for_update, void_record
+from organizations.selectors import resolve_active_membership
 
 INCLUDE_VOIDED_PARAM = "include_voided"
+VOID_REASON_MAX_LENGTH = 1000
 
 
 class HealthSerializer(serializers.Serializer[Any]):
@@ -25,7 +29,9 @@ class HealthSerializer(serializers.Serializer[Any]):
 
 
 class VoidSerializer(serializers.Serializer[Any]):
-    reason = serializers.CharField(allow_blank=False, trim_whitespace=True)
+    reason = serializers.CharField(
+        allow_blank=False, trim_whitespace=True, max_length=VOID_REASON_MAX_LENGTH
+    )
 
 
 class HealthView(APIView):
@@ -49,8 +55,13 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
     """
 
     uses_organization_header = True
+    # Fails closed: a viewset must declare `required_permissions` per action to be reachable.
+    permission_classes = [IsAuthenticated, HasPermissionCode]
 
     def initial(self, request: Request, *args: object, **kwargs: object) -> None:
+        # A method with no route (e.g. DELETE) has no action to authorize: answer 405, not 403.
+        if getattr(self, "action", None) is None:
+            raise MethodNotAllowed(request.method or "")
         if request.user.is_authenticated:
             membership = resolve_active_membership(
                 request.user, request.headers.get(ORGANIZATION_HEADER)
@@ -78,7 +89,9 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
         )
 
     def perform_update(self, serializer: serializers.BaseSerializer[Any]) -> None:
-        serializer.save(organization=self.request.organization)  # type: ignore[attr-defined]
+        with transaction.atomic():
+            lock_record_for_update(serializer.instance)  # type: ignore[arg-type]
+            serializer.save(organization=self.request.organization)  # type: ignore[attr-defined]
 
 
 class OrgScopedViewSet(

@@ -6,7 +6,6 @@ import pytest
 from rest_framework.test import APIClient
 
 from core.exception_handler import _flatten_codes
-from organizations.models import Organization
 
 pytestmark = pytest.mark.django_db
 
@@ -35,7 +34,7 @@ def test_unauthenticated_error_has_code_and_detail_only(api_client: APIClient) -
 def test_permission_error_uses_permission_denied_code(
     client_a: APIClient,
 ) -> None:
-    response = client_a.get("/api/v1/restricted-widgets/")
+    response = client_a.get("/api/v1/undeclared-widgets/")
 
     assert response.status_code == 403
     assert response.data["code"] == "permission_denied"
@@ -68,7 +67,7 @@ def test_throttled_error_uses_throttled_code_and_keeps_retry_after(
 
 
 def test_unhandled_error_returns_500_envelope_and_logs_context(
-    client_a: APIClient, caplog: pytest.LogCaptureFixture, org_a: Organization
+    client_a: APIClient, caplog: pytest.LogCaptureFixture
 ) -> None:
     with caplog.at_level(logging.ERROR, logger="core.exception_handler"):
         response = client_a.get("/api/v1/boom/")
@@ -100,3 +99,14 @@ def test_flatten_codes_handles_nested_and_non_field_errors() -> None:
 
 def test_flatten_codes_wraps_a_top_level_list_as_non_field_errors() -> None:
     assert _flatten_codes(["invalid"]) == {"non_field_errors": [{"code": "invalid", "params": {}}]}
+
+
+def test_domain_errors_roll_back_the_request_transaction(
+    client_a: APIClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    calls: list[bool] = []
+    monkeypatch.setattr("core.exception_handler.set_rollback", lambda: calls.append(True))
+
+    client_a.get("/api/v1/widgets/", headers={"X-Organization": "nope"})
+
+    assert calls == [True]

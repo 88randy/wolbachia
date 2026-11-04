@@ -14,7 +14,7 @@ from organizations.services import (
     create_organization,
     seed_default_profiles,
 )
-from tests.factories import MembershipFactory, OrganizationFactory, ProfileFactory
+from tests.factories import MembershipFactory, OrganizationFactory, ProfileFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -137,3 +137,56 @@ def test_bootstrap_command_fails_cleanly_on_invalid_country() -> None:
 
     assert not Organization.objects.filter(slug="acme").exists()
     assert not User.objects.filter(username="boss").exists()
+
+
+BOOTSTRAP_ARGS = [
+    "--name=Acme",
+    "--slug=acme",
+    "--country=MX",
+    "--timezone=UTC",
+    "--admin-username=boss",
+]
+
+
+def test_bootstrap_refuses_an_existing_username_with_a_different_email() -> None:
+    other = UserFactory(username="boss", email="someone.else@example.test")
+
+    with pytest.raises(CommandError):
+        call_command("bootstrap_organization", *BOOTSTRAP_ARGS, "--admin-email=boss@example.test")
+
+    assert not Organization.objects.filter(slug="acme").exists()
+    assert not Membership.objects.filter(user=other).exists()
+
+
+def test_bootstrap_reuses_an_existing_user_with_the_same_email() -> None:
+    existing = UserFactory(username="boss", email="boss@example.test")
+
+    call_command("bootstrap_organization", *BOOTSTRAP_ARGS, "--admin-email=boss@example.test")
+
+    assert Membership.objects.filter(user=existing, organization__slug="acme").exists()
+
+
+def test_bootstrap_reuses_a_user_with_a_different_email_when_asked() -> None:
+    existing = UserFactory(username="boss", email="someone.else@example.test")
+
+    call_command(
+        "bootstrap_organization",
+        *BOOTSTRAP_ARGS,
+        "--admin-email=boss@example.test",
+        "--reuse-existing-user",
+    )
+
+    assert Membership.objects.filter(user=existing, organization__slug="acme").exists()
+
+
+@pytest.mark.parametrize("scope", [[], "x", {"centers": "c1"}, {"quadrants": {"a": 1}}])
+def test_membership_rejects_a_malformed_scope(scope: object, org_a: Organization) -> None:
+    membership = Membership(user=UserFactory(), organization=org_a, scope=scope)
+
+    with pytest.raises(ValidationError):
+        membership.clean()
+
+
+def test_membership_accepts_the_default_and_a_partial_scope(org_a: Organization) -> None:
+    Membership(user=UserFactory(), organization=org_a).clean()
+    Membership(user=UserFactory(), organization=org_a, scope={"centers": ["c1"]}).clean()

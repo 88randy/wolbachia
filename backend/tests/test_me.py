@@ -105,3 +105,32 @@ def test_me_does_not_list_organizations_with_inactive_membership(
 
     assert response.data["organization"]["slug"] == "org-a"
     assert [o["slug"] for o in response.data["organizations"]] == ["org-a"]
+
+
+@pytest.mark.parametrize("stored", [{}, {"centers": "c1"}, ["x"], "garbage", {"centers": [1]}])
+def test_me_survives_a_malformed_scope(
+    api_client: APIClient, org_a: Organization, stored: object
+) -> None:
+    user = UserFactory()
+    MembershipFactory(user=user, organization=org_a, scope=stored)
+    api_client.force_authenticate(user)
+
+    response = api_client.get(URL)
+
+    assert response.status_code == 200
+    assert set(response.data["scope"]) == {"centers", "quadrants"}
+    assert response.data["scope"]["quadrants"] == []
+
+
+def test_me_ignores_profiles_of_another_organization_attached_to_the_membership(
+    api_client: APIClient, org_a: Organization, org_b: Organization
+) -> None:
+    user = UserFactory()
+    membership = MembershipFactory(user=user, organization=org_a)
+    membership.profiles.add(ProfileFactory(organization=org_b, permission_codes=["x.read"]))
+    api_client.force_authenticate(user)
+
+    response = api_client.get(URL)
+
+    assert response.data["profiles"] == []
+    assert response.data["permissions"] == []

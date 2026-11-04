@@ -2,6 +2,7 @@ import uuid
 
 from django.conf import settings
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 from django.db import models
 
 from core.models import OrgScopedModel
@@ -79,6 +80,17 @@ class Membership(OrgScopedModel):
     profiles = models.ManyToManyField(Profile, related_name="memberships", blank=True)
     scope = models.JSONField(default=default_scope)
     is_active = models.BooleanField(default=True)
+
+    def clean(self) -> None:
+        """`scope` is a JSON object whose known keys hold lists (ids of centers and quadrants)."""
+        known_keys = default_scope().keys()
+        scope = self.scope
+        if not isinstance(scope, dict) or not all(
+            isinstance(scope.get(key, []), list) for key in known_keys
+        ):
+            raise ValidationError(
+                {"scope": "Use an object with list values for centers and quadrants."}
+            )
 
     class Meta:
         constraints = [

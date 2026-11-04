@@ -6,15 +6,15 @@ from rest_framework.routers import SimpleRouter
 from config.urls import urlpatterns as api_urlpatterns
 from tests.testapp.views import (
     BoomView,
-    RestrictedWidgetViewSet,
     StreamWidgetViewSet,
     ThrottledView,
+    UndeclaredPermissionsViewSet,
     WidgetViewSet,
 )
 
 router = SimpleRouter()
 router.register("widgets", WidgetViewSet, basename="widget")
-router.register("restricted-widgets", RestrictedWidgetViewSet, basename="restricted-widget")
+router.register("undeclared-widgets", UndeclaredPermissionsViewSet, basename="undeclared-widget")
 router.register("stream-widgets", StreamWidgetViewSet, basename="stream-widget")
 
 urlpatterns = [

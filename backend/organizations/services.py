@@ -4,11 +4,8 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from accounts.models import User
-from organizations.exceptions import (
-    NoActiveMembershipError,
-    OrganizationHeaderRequiredError,
-    ProfileOrganizationMismatchError,
-)
+from accounts.services import create_user_without_password
+from organizations.exceptions import AdminUserConflictError, ProfileOrganizationMismatchError
 from organizations.models import DEFAULT_LANGUAGE, Membership, Organization, Profile
 
 
@@ -19,6 +16,13 @@ class OrganizationSpec:
     country: str
     timezone: str
     languages: tuple[str, ...] = (DEFAULT_LANGUAGE,)
+
+
+@dataclass(frozen=True)
+class AdminSpec:
+    username: str
+    email: str
+    reuse_existing_user: bool = False
 
 
 @dataclass(frozen=True)
@@ -87,24 +91,25 @@ def create_membership(
     return membership
 
 
-def resolve_active_membership(user: User, organization_slug: str | None) -> Membership:
-    """Pick the membership that defines the active organization of a request.
+def _get_or_create_admin(admin: AdminSpec) -> User:
+    existing = User.objects.filter(username=admin.username).first()
+    if existing is None:
+        return create_user_without_password(admin.username, admin.email)
+    if existing.email != admin.email and not admin.reuse_existing_user:
+        raise AdminUserConflictError
+    return existing
 
-    Active means the membership and its organization are both active. A given slug is always
-    validated, even for users with one membership. Raises `NoActiveMembershipError` (403) or,
-    for several memberships and no slug, `OrganizationHeaderRequiredError` (400).
+
+def bootstrap_organization(spec: OrganizationSpec, admin: AdminSpec) -> tuple[Organization, User]:
+    """Create an organization, its default profiles and an admin membership (writes several tables).
+
+    A new admin user has no password (set it with `manage.py changepassword`). An existing user
+    with the same username is reused only when the email matches or `reuse_existing_user` is set;
+    otherwise `AdminUserConflictError` stops the command from granting admin to the wrong person.
     """
-    memberships = Membership.objects.filter(
-        user=user, is_active=True, organization__is_active=True
-    ).select_related("organization")
-    if organization_slug:
-        membership = memberships.filter(organization__slug=organization_slug).first()
-        if membership is None:
-            raise NoActiveMembershipError
-        return membership
-    candidates = list(memberships[:2])
-    if not candidates:
-        raise NoActiveMembershipError
-    if len(candidates) > 1:
-        raise OrganizationHeaderRequiredError
-    return candidates[0]
+    with transaction.atomic():
+        user = _get_or_create_admin(admin)
+        organization = create_organization(spec)
+        admin_profile = Profile.objects.get(organization=organization, slug=ADMIN_PROFILE_SLUG)
+        create_membership(user, organization, [admin_profile])
+    return organization, user

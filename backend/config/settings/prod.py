@@ -1,7 +1,12 @@
 """Production settings. `python manage.py check --deploy` must stay clean with these."""
 
-from .base import *  # noqa: F403
-from .base import env
+import os
+
+# Production never reads backend/.env unless explicitly asked: real environment only.
+os.environ.setdefault("DJANGO_READ_DOT_ENV_FILE", "false")
+
+from .base import *  # noqa: E402, F403
+from .base import env  # noqa: E402
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")
