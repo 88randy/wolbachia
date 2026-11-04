@@ -33,6 +33,13 @@ jobs:
         run: npx prettier --check "$FOLDER" --ignore-unknown
       - name: Type-check
         run: node scripts/typecheck.mjs "$FOLDER"
-      # Workspaces without a "test" script are skipped.
+      # Only the folder under check. --workspace=<folder> also matches every workspace below it
+      # (packages -> tokens, i18n); --if-present skips workspaces without a "test" script.
+      # npm fails on a folder with no package.json yet, so that case is a pass.
       - name: Tests
-        run: npm test --workspaces --if-present
+        run: |
+          if find "$FOLDER" -name package.json -not -path "*/node_modules/*" | grep -q .; then
+            npm test --workspace="$FOLDER" --if-present
+          else
+            echo "No workspace in $FOLDER yet: nothing to test."
+          fi
