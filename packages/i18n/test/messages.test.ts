@@ -19,6 +19,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["auth.lockout.message", ["minutes"]],
   ["errors.api.blocked", ["role"]],
   ["table.filters.ignoredBody", ["names"]],
+  ["table.filters.ignoredMore", ["count"]],
   ["table.filters.remove", ["filter", "value"]],
   ["table.pager.position", ["page", "pages"]],
   ["table.selection.count", ["count"]],

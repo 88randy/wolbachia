@@ -29,6 +29,7 @@ export const table = {
   "table.filters.ignoredTitle": "Ignoramos parte de la dirección",
   "table.filters.ignoredBody":
     "Estos parámetros no son válidos para esta lista y no se aplicaron: {names}.",
+  "table.filters.ignoredMore": "y {count} más",
   "table.filters.ignoredDismiss": "Quitar de la dirección",
 
   // Empty state

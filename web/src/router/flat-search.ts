@@ -13,14 +13,25 @@ export function parseFlatSearch(searchStr: string): Record<string, string> {
   return Object.fromEntries(new URLSearchParams(searchStr));
 }
 
-/** Writes search values as `?a=1&b=x`. `undefined`, `null` and objects are left out. */
+/**
+ * Writes search values as `?a=1&b=x`. `undefined` and `null` are left out. An object or array is
+ * a programming error (the format is flat): it throws in development and tests, and is reported
+ * with `console.error` and left out in production, so a bad value never breaks a navigation.
+ */
 export function stringifyFlatSearch(search: Record<string, unknown>): string {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(search)) {
     if (typeof value === "string") params.set(key, value);
     else if (typeof value === "number" || typeof value === "boolean")
       params.set(key, String(value));
+    else if (typeof value === "object" && value !== null) rejectNested(key);
   }
   const text = params.toString();
   return text === "" ? "" : `?${text}`;
+}
+
+function rejectNested(key: string): void {
+  const message = `Search parameter "${key}" is an object or array; query strings are flat.`;
+  if (import.meta.env.PROD) console.error(message);
+  else throw new TypeError(message);
 }

@@ -4,7 +4,16 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { apiError, createFakeApi } from "../test/fake-api";
 import { renderTable } from "../test/render-table";
 import type { TableTestProps } from "../test/render-table";
-import { fileNameOf } from "./request-export";
+import { ApiError } from "@wolbachia/api-client";
+import { createWebApiClient } from "../api/create-web-api-client";
+import { ME_QUERY_KEY } from "../session/me-query";
+import {
+  endSessionExpiry,
+  isSessionExpired,
+  subscribeToMembershipLost,
+} from "../session/session-events";
+import { makeMe } from "../test/fake-api";
+import { fileNameOf, requestExport } from "./request-export";
 import type { TableQueryConfig } from "./table-types";
 
 const EXPORT = "GET /api/v1/lab/bags/export/";
@@ -147,6 +156,67 @@ describe("export button", () => {
       expect(screen.getByRole("alert")).toBeDefined();
     });
     expect(api.requests).toHaveLength(0);
+  });
+});
+
+describe("export failures and the session", () => {
+  async function failWith(status: number, code: string) {
+    const user = userEvent.setup();
+    const api = createFakeApi({ [EXPORT]: () => apiError(status, code) });
+    const app = await renderTable(propsOf(), { fetch: api.fetch });
+    app.queryClient.setQueryData(ME_QUERY_KEY, makeMe());
+    await user.click(screen.getByRole("button", { name: "Exportar" }));
+    await screen.findByRole("alert");
+  }
+
+  test("the JSON error body survives the blob parsing: requestExport throws its code", async () => {
+    const api = createFakeApi({ [EXPORT]: () => apiError(403, "no_active_membership") });
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
+
+    const failure = await requestExport(client, "/api/v1/lab/bags/export/", {}).catch(
+      (error: unknown) => error,
+    );
+
+    expect(failure).toBeInstanceOf(ApiError);
+    expect((failure as ApiError).code).toBe("no_active_membership");
+    expect((failure as ApiError).status).toBe(403);
+  });
+
+  test("a body that is not JSON (a proxy page) still fails, with the generic code", async () => {
+    const api = createFakeApi({
+      [EXPORT]: () => new Response("<html>bad gateway</html>", { status: 502 }),
+    });
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
+
+    const failure = await requestExport(client, "/api/v1/lab/bags/export/", {}).catch(
+      (error: unknown) => error,
+    );
+
+    expect((failure as ApiError).status).toBe(502);
+    expect((failure as ApiError).code).toBe("unknown_error");
+  });
+
+  test("a 401 opens the re-authentication flow like any other request", async () => {
+    await failWith(401, "session_revoked");
+
+    expect(isSessionExpired()).toBe(true);
+    endSessionExpiry();
+  });
+
+  test("a lost membership is reported to the session", async () => {
+    const lost = vi.fn();
+    const unsubscribe = subscribeToMembershipLost(lost);
+
+    await failWith(403, "no_active_membership");
+
+    expect(lost).toHaveBeenCalledOnce();
+    unsubscribe();
+  });
+
+  test("a plain refusal does not touch the session", async () => {
+    await failWith(403, "permission_denied");
+
+    expect(isSessionExpired()).toBe(false);
   });
 });
 

@@ -9,7 +9,7 @@ import { tableSearchSchema } from "../data-table/table-search-schema";
 import { PhonesPage } from "../devices/PhonesPage";
 import { AppShell } from "../shell/AppShell";
 import { SettingsPage } from "../settings/SettingsPage";
-import { PHONES_PERMISSION } from "../settings/settings-screens";
+import { PHONES_PERMISSION } from "../devices/permissions";
 import { AreaErrorState } from "../states/AreaErrorState";
 import { AreaPlaceholder } from "../states/AreaPlaceholder";
 import { NotFoundState } from "../states/NotFoundState";

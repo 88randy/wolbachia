@@ -286,6 +286,24 @@ describe("filters in the URL", () => {
   });
 });
 
+describe("ignored parameters from a crafted link", () => {
+  test("long names are cut and only a few are listed, with how many more", async () => {
+    const long = "a".repeat(200);
+    const many = Array.from(
+      { length: 12 },
+      (_unused, index) => `p${String(index).padStart(2, "0")}=1`,
+    );
+    await renderTable(propsOf(), { path: `/?${long}=1&${many.join("&")}` });
+
+    const notice = screen.getByText(/no se aplicaron/);
+
+    expect(notice.textContent).toContain(`${"a".repeat(32)}…`);
+    expect(notice.textContent).not.toContain("a".repeat(33));
+    expect(notice.textContent).toContain("y 8 más");
+    expect(notice.textContent).not.toContain("p11");
+  });
+});
+
 describe("voided records", () => {
   test("the toggle writes include_voided to the URL and back", async () => {
     const user = userEvent.setup();

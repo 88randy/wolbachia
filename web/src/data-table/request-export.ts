@@ -1,5 +1,5 @@
 import { ApiError, isErrorEnvelope } from "@wolbachia/api-client";
-import type { ApiClient } from "@wolbachia/api-client";
+import type { ApiClient, ErrorEnvelope } from "@wolbachia/api-client";
 
 /** `/api/v1/<resource>/export/`: the shape of an export endpoint (docs/api-conventions.md, "Exports"). */
 const EXPORT_PATH =
@@ -51,11 +51,41 @@ export async function requestExport(
     } as never,
   );
   const { data, error, response } = result as RawResult;
-  if (!response.ok) throw new ApiError(response.status, isErrorEnvelope(error) ? error : undefined);
+  if (!response.ok) throw new ApiError(response.status, await envelopeOf(error, data));
   return {
     blob: data ?? new Blob(),
     fileName: fileNameOf(response.headers.get("content-disposition")),
   };
+}
+
+/**
+ * The error envelope of a failed export. With `parseAs: "blob"` the client may hand the JSON body
+ * back as text or as a Blob instead of an object; without the envelope the code (a membership
+ * loss, for instance) would be lost and the session would not react.
+ */
+async function envelopeOf(error: unknown, data: unknown): Promise<ErrorEnvelope | undefined> {
+  for (const candidate of [error, data]) {
+    const envelope = await parseEnvelope(candidate);
+    if (envelope !== undefined) return envelope;
+  }
+  return undefined;
+}
+
+async function parseEnvelope(candidate: unknown): Promise<ErrorEnvelope | undefined> {
+  if (isErrorEnvelope(candidate)) return candidate;
+  const text = await textOf(candidate);
+  if (text === undefined) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(text);
+    return isErrorEnvelope(parsed) ? parsed : undefined;
+  } catch {
+    return undefined; // Not JSON (a proxy page): no envelope.
+  }
+}
+
+async function textOf(value: unknown): Promise<string | undefined> {
+  if (typeof value === "string") return value;
+  return value instanceof Blob ? value.text() : undefined;
 }
 
 /** What openapi-fetch resolves to for a call: the parsed body, the error body, the response. */

@@ -1,4 +1,6 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
+import { reportSessionError } from "../session/session-events";
 import { useApiClient } from "../api/ApiClientProvider";
 import { requestExport } from "./request-export";
 import type { ExportFile } from "./request-export";
@@ -24,6 +26,7 @@ function saveFile({ blob, fileName }: ExportFile): void {
  */
 export function useExport(exportPath: string, query: Readonly<Record<string, string | boolean>>) {
   const client = useApiClient();
+  const queryClient = useQueryClient();
   const [status, setStatus] = useState<ExportStatus>({ kind: "idle" });
   const start = async (): Promise<void> => {
     if (status.kind === "pending") return;
@@ -32,6 +35,9 @@ export function useExport(exportPath: string, query: Readonly<Record<string, str
       saveFile(await requestExport(client, exportPath, query));
       setStatus({ kind: "done" });
     } catch (error) {
+      // Not a query, so the cache does not report it: an expired session or a lost membership
+      // must still reach the session (re-authentication dialog).
+      reportSessionError(error, queryClient);
       setStatus({ kind: "failed", error });
     }
   };

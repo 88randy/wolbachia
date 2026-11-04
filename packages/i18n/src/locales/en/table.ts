@@ -29,6 +29,7 @@ export const table: Record<keyof typeof source, string> = {
   "table.filters.ignoredTitle": "We ignored part of the address",
   "table.filters.ignoredBody":
     "These parameters are not valid for this list and were not applied: {names}.",
+  "table.filters.ignoredMore": "and {count} more",
   "table.filters.ignoredDismiss": "Remove from the address",
 
   // Empty state

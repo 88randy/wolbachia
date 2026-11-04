@@ -94,7 +94,7 @@
   color: var(--color-action-strong);
   font-weight: 600;
   text-decoration: underline;
-  text-underline-offset: 3px;
+  text-underline-offset: var(--space-0-5);
 }
 
 /* Voided: struck through AND badged, so the meaning never rests on a line alone. */

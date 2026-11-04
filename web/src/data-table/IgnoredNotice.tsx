@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import buttons from "../styles/button.module.css";
 import { classNames } from "../styles/class-names";
+import { summarizeIgnored } from "./ignored-names";
 import styles from "./filter-bar.module.css";
 
 interface IgnoredNoticeProps {
@@ -17,11 +18,13 @@ interface IgnoredNoticeProps {
 export function IgnoredNotice({ names, onDismiss }: IgnoredNoticeProps) {
   const { t } = useTranslation();
   if (names.length === 0) return null;
+  const { shown, hidden } = summarizeIgnored(names);
   return (
     <div className={styles.notice} role="status">
       <p className={styles.noticeTitle}>{t("table.filters.ignoredTitle")}</p>
       <p className={styles.noticeBody}>
-        {t("table.filters.ignoredBody", { names: names.join(", ") })}
+        {t("table.filters.ignoredBody", { names: shown.join(", ") })}
+        {hidden > 0 && ` ${t("table.filters.ignoredMore", { count: hidden })}`}
       </p>
       <button
         type="button"

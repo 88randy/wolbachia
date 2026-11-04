@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useCan } from "../session/use-can";
 import { useDocumentTitle } from "../shell/use-document-title";
 import styles from "../styles/page.module.css";
-import { PHONES_PERMISSION } from "./settings-screens";
+import { PHONES_PERMISSION } from "../devices/permissions";
 
 /**
  * Settings home: still a placeholder for the screens that do not exist, plus a link to each one

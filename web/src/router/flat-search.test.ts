@@ -1,4 +1,4 @@
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { parseFlatSearch, stringifyFlatSearch } from "./flat-search";
 
 describe("parseFlatSearch", () => {
@@ -40,8 +40,24 @@ describe("stringifyFlatSearch", () => {
     expect(stringifyFlatSearch({ code: "4471" })).toBe("?code=4471");
   });
 
-  test("leaves out undefined, null and objects, and is empty when nothing is left", () => {
-    expect(stringifyFlatSearch({ a: undefined, b: null, c: { d: 1 } })).toBe("");
+  test("leaves out undefined and null, and is empty when nothing is left", () => {
+    expect(stringifyFlatSearch({ a: undefined, b: null })).toBe("");
+  });
+
+  test("an object or array throws in development and tests instead of vanishing", () => {
+    expect(() => stringifyFlatSearch({ c: { d: 1 } })).toThrow(/"c" is an object or array/);
+    expect(() => stringifyFlatSearch({ list: [1, 2] })).toThrow(TypeError);
+  });
+
+  test("in production it reports the problem and leaves the value out", () => {
+    vi.stubEnv("PROD", true);
+    const report = vi.spyOn(console, "error").mockImplementation(() => undefined);
+
+    expect(stringifyFlatSearch({ a: "1", c: { d: 1 } })).toBe("?a=1");
+    expect(report).toHaveBeenCalledOnce();
+
+    vi.unstubAllEnvs();
+    report.mockRestore();
   });
 
   test("round-trips text with spaces and reserved characters", () => {

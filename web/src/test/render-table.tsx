@@ -97,15 +97,16 @@ export async function renderTable(initial: TableTestProps, options: RenderTableO
   const fetchOption = options.fetch === undefined ? {} : { fetch: options.fetch };
   const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, fetchOption);
   const i18n = await setupI18n("es-MX");
+  const queryClient = createAppQueryClient({ retry: false });
   await router.load();
   const result = render(
     <I18nextProvider i18n={i18n}>
-      <QueryClientProvider client={createAppQueryClient({ retry: false })}>
+      <QueryClientProvider client={queryClient}>
         <ApiClientProvider client={client}>
           <RouterProvider router={router} />
         </ApiClientProvider>
       </QueryClientProvider>
     </I18nextProvider>,
   );
-  return { ...result, router, setProps: store.set };
+  return { ...result, router, queryClient, setProps: store.set };
 }
