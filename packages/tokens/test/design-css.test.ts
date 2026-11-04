@@ -1,6 +1,9 @@
 /**
  * Every custom property of the design CSS files must map to a token with the same value.
  * Sources: design/mobile/source/codequim.css (baseline) and design/web/source/web.css.
+ *
+ * Not covered here: web.control, web.focus, web.typography, radius.xs, radius.full and spacing.
+ * They come from the approved proposal in docs/web-tokens-diff.md, not from CSS variables.
  */
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

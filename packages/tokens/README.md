@@ -24,6 +24,10 @@ Color roles (`theme.color`): `brand`, `action`, `actionStrong`, `onAction`, `nav
 - `actionStrong` and `status.info.fg` share a value today but are separate roles on purpose.
 - Web sidebar background is `color.chrome`; the soft border is `color.border.soft`.
 
+### Where the values come from
+
+Colors, the mobile type scale, `radius.sm`..`xl` and `shadow` come from the design CSS variables, and the design-CSS test compares them. `web.control`, `web.focus`, `web.typography`, `radius.xs`, `radius.full` and `spacing` come from the approved proposal in `docs/web-tokens-diff.md` (section 4), not from CSS variables, so that test does not cover them.
+
 ### Provisional chart colors
 
 `web.*.chart[2]` (#D9620B light, #FFA25C dark) and `web.*.chart[4]` (#7A3CC4, #C9A2FF) are **not in the Codequim palette**. They ship as provisional until the client approves or replaces them ([PENDING] in issue #17). Use them only for chart series.
@@ -58,7 +62,7 @@ import { web } from '@wolbachia/tokens';
 .card { background: var(--color-surface); border-radius: var(--radius-md); }
 ```
 
-Light is the default (`:root`). Set `data-theme="dark"` on `<html>` (or any ancestor) for the dark theme. Variable names: `--color-<role>`, `--web-<group>-<name>`, `--radius-<step>`, `--space-<multiple>` (`--space-0-5` = 4 px), `--shadow-level-1`, `--web-control-*`, `--web-focus-*`, `--web-type-*`, `--font-family`. The mobile type scale is not in the CSS.
+Light is the default (`:root`). Set `data-theme="dark"` on `<html>` (or any ancestor) for the dark theme. Variable names: `--color-<role>`, `--web-<group>-<name>`, `--radius-<step>`, `--space-<multiple>` (`--space-0-5` = 4 px), `--shadow-level-1`, `--web-control-*`, `--web-focus-ring-*` (width, offset, halo spread and color), `--web-type-*`, `--font-family`. The mobile type scale is not in the CSS.
 
 ## Generate the CSS
 
