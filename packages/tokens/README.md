@@ -26,7 +26,7 @@ Color roles (`theme.color`): `brand`, `action`, `actionStrong`, `onAction`, `nav
 
 ### Where the values come from
 
-Colors, the mobile type scale, `radius.sm`..`xl` and `shadow` come from the design CSS variables, and the design-CSS test compares them. `web.control`, `web.layout`, `web.focus`, `web.typography`, `web.*.banner`, the sidebar `groupText` / `textActive` roles, `radius.xs`, `radius.full` and `spacing` come from the approved proposal in `docs/web-tokens-diff.md` (section 4), not from CSS variables, so that test does not cover them.
+Colors, the mobile type scale, `radius.sm`..`xl` and `shadow` come from the design CSS variables, and the design-CSS test compares them. `web.control`, `web.layout`, `web.focus`, `web.typography`, `web.*.banner`, the sidebar `groupText` role, `radius.xs`, `radius.full` and `spacing` come from the approved proposal in `docs/web-tokens-diff.md` (section 4), not from CSS variables, so that test does not cover them.
 
 ### Provisional chart colors
 

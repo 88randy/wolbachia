@@ -60,6 +60,7 @@ void describe("renderTokensCss", () => {
     assert.equal(light["web-layout-sidebar-collapsed-width"], "64px");
     assert.equal(light["web-layout-top-bar-height"], "56px");
     assert.equal(dark["web-layout-sidebar-width"], undefined);
+    assert.equal(light["web-type-title-font-size"], "24px");
   });
 
   void test("dark overrides live under the data-theme selector", () => {

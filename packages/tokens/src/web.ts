@@ -12,8 +12,6 @@ export interface SidebarColors {
   readonly hover: ColorValue;
   /** Group headings ("Operación", ...) and the footer text. */
   readonly groupText: ColorValue;
-  /** Text and icon of the current item, on `color.brand`. */
-  readonly textActive: ColorValue;
 }
 
 /** Colors of the banners that sit above the page (offline, critical). */
@@ -69,7 +67,6 @@ const lightWebColors: WebThemeColors = {
     text: "#C9D3EA",
     hover: "rgba(255, 255, 255, 0.12)",
     groupText: "#9EABC8",
-    textActive: "#FFFFFF",
   },
   banner: { offlineText: "#FFB547" },
   map: { land: "#EEF1EC", road: "#FFFFFF", block: "#E2E6DF", water: "#CFE0F2" },
@@ -82,7 +79,6 @@ const darkWebColors: WebThemeColors = {
     text: "#C9D3EA",
     hover: "rgba(255, 255, 255, 0.10)",
     groupText: "#9EABC8",
-    textActive: "#FFFFFF",
   },
   banner: { offlineText: "#FFB547" },
   map: { land: "#14254A", road: "#25396A", block: "#1B2E58", water: "#16335E" },
@@ -124,6 +120,9 @@ export const web = {
     ring: { width: 2, offset: 2, halo: { spread: 5, color: "rgba(26, 93, 255, 0.22)" } },
   },
   typography: {
+    /** Page title (h1): 24/32 in the design. */
+    titleFontSize: 24,
+    titleLineHeight: 32,
     /** Body text size and line height. */
     bodyFontSize: 14,
     bodyLineHeight: 20,
