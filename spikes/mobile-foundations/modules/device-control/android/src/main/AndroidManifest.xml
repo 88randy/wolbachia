@@ -1,0 +1,39 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+  <!-- Needed only for the non-Device-Owner install path (the user confirms the install). -->
+  <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+  <!-- Android 11+ package visibility: lets us check whether Organic Maps is installed. -->
+  <queries>
+    <package android:name="app.organicmaps" />
+    <intent>
+      <action android:name="android.intent.action.VIEW" />
+      <data android:scheme="geo" />
+    </intent>
+  </queries>
+
+  <application>
+    <receiver
+      android:name="expo.modules.devicecontrol.SpikeDeviceAdminReceiver"
+      android:exported="true"
+      android:permission="android.permission.BIND_DEVICE_ADMIN">
+      <meta-data
+        android:name="android.app.device_admin"
+        android:resource="@xml/device_admin" />
+      <intent-filter>
+        <action android:name="android.app.action.DEVICE_ADMIN_ENABLED" />
+      </intent-filter>
+    </receiver>
+
+    <receiver
+      android:name="expo.modules.devicecontrol.InstallStatusReceiver"
+      android:exported="false" />
+
+    <receiver
+      android:name="expo.modules.devicecontrol.PackageReplacedReceiver"
+      android:exported="false">
+      <intent-filter>
+        <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+      </intent-filter>
+    </receiver>
+  </application>
+</manifest>
