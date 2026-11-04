@@ -47,3 +47,11 @@ export const ORGANIC_MAPS_PACKAGE = 'app.organicmaps';
 
 /** Fixed test destination for "How to get there": Zocalo, Mexico City (public landmark). */
 export const GO_THERE_TARGET = { lat: 19.4326, lng: -99.1332, label: 'Test destination' };
+
+/**
+ * Local PMTiles test file: <app external files dir>/<PMTILES_DIR_NAME>/<PMTILES_FILE_NAME>.
+ * On a phone that is /sdcard/Android/data/mx.pyrobyte.spikes.foundations/files/tiles/test-zone-z15.pmtiles,
+ * writable with `adb push` and needing no permission.
+ */
+export const PMTILES_DIR_NAME = 'tiles';
+export const PMTILES_FILE_NAME = 'test-zone-z15.pmtiles';

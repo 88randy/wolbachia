@@ -39,6 +39,8 @@ declare class DeviceControlNative extends NativeModule<DeviceControlEvents> {
   enableLockTask(extraPackages: string[]): Promise<void>;
   disableLockTask(clearAllowlist: boolean): Promise<void>;
   clearDeviceOwner(): Promise<void>;
+  /** App-specific external files dir (no permission needed), or null when unavailable. */
+  getExternalFilesDir(): string | null;
   isPackageInstalled(packageName: string): boolean;
   openGeoUri(uri: string, packageName: string | null): Promise<GeoOpenResult>;
   downloadApk(url: string, expectedSha256: string, allowHttp: boolean): Promise<DownloadResult>;

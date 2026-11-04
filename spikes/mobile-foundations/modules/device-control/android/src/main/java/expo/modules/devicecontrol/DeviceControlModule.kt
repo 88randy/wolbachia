@@ -71,6 +71,8 @@ class DeviceControlModule : Module() {
 
     // ---- "How to get there" ---------------------------------------------------------------
 
+    Function("getExternalFilesDir") { context.getExternalFilesDir(null)?.absolutePath }
+
     Function("isPackageInstalled") { packageName: String -> isPackageInstalled(packageName) }
 
     AsyncFunction("openGeoUri") { uri: String, packageName: String? -> openGeoUri(uri, packageName) }

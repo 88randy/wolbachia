@@ -132,6 +132,29 @@ Limitation, read before comparing: WatermelonDB's fast mode (JSI) on Android nee
 6. Storage: note the pack size next to "Free storage" (Admin tab).
 7. [ASSUMPTION] A `file://` style URL works for creating a pack (used when you enter a tile template). If the pack fails with a style error, host the style JSON on your server and put its https URL in `DEFAULT_MAP_STYLE_URL`.
 
+#### 5.3.1 Map tab, mode "Local PMTiles" (issue #64)
+
+Proof of concept for an offline source that needs no tile server at render time: one `.pmtiles` file read from the phone. It does **not** use `OfflineManager` (MapLibre Native's docs say PMTiles sources do not support offline packs or caching: https://maplibre.org/maplibre-native/android/examples/data/PMTiles/). The app does not download tiles; you copy a file you already have.
+
+How it works: the app builds a small vector style in code (`src/pmtiles.ts`) whose source URL is `pmtiles://file://<absolute path>`, the form the MapLibre docs give for a local file. The native library under `@maplibre/maplibre-react-native` 11.5.1 is MapLibre Native Android 13.6.1; the docs ask for 11.7.0 or newer. The JS wrapper passes the style (object or URL) to native as is. The style has no `glyphs` and no `sprite`, so it needs no network and shows no labels. Layers: Protomaps basemap source-layers `earth`, `landuse`, `water`, `buildings`, `roads` (names from https://docs.protomaps.com/basemaps/layers; [ASSUMPTION] the test file uses that schema). The "© OpenStreetMap contributors" attribution is always visible.
+
+Steps (the phone needs USB debugging, as in section 2; the package id is `mx.pyrobyte.spikes.foundations`):
+
+1. Install the APK and open the app once (Android creates the app's external files folder on first use).
+2. Create the folder and copy the file. Use your real local path for the `.pmtiles`:
+   ```powershell
+   adb shell mkdir -p /sdcard/Android/data/mx.pyrobyte.spikes.foundations/files/tiles
+   adb push C:\path\to\test-zone-z15.pmtiles /sdcard/Android/data/mx.pyrobyte.spikes.foundations/files/tiles/test-zone-z15.pmtiles
+   adb shell ls -l /sdcard/Android/data/mx.pyrobyte.spikes.foundations/files/tiles
+   ```
+   The folder is the app's own external storage, so the app needs no storage permission. [ASSUMPTION] `adb push` can write there on Android 16 (adb shell has access to `Android/data` of apps; file manager apps do not). If it fails, record the exact error in REPORT.md.
+3. In the app: Map tab, button "Local PMTiles", button "Load file". The log shows the path, the size, the header (version, tile type, zoom range, bounds) and any error. The map opens at the center and zoom stored in the file's header and cannot be panned outside its bounds.
+4. Write down: file size, "Time to first full render" (and the "first frame" line in the log), and anything under `ERROR`. Reload the map a few times.
+5. Offline proof: airplane mode on, force-stop the app, reopen, Load file again. It must render the same. Film it.
+6. If the map is blank: check the log for `tile type` (must be 1, vector) and `adb logcat | findstr /i "maplibre pmtiles"` for native errors, and note the first one in REPORT.md.
+
+The test file is not part of this repository. Keep it in the shared evidence folder.
+
 ### 5.4 Go tab: Organic Maps via `geo:`
 
 1. Install Organic Maps (package `app.organicmaps`, F-Droid listing `https://f-droid.org/en/packages/app.organicmaps/`).

@@ -117,6 +117,14 @@ Estimate for one real operating quadrant (area ____ km2, zoom ____ to ____): ___
 
 Attribution displayed correctly? ____
 
+### 3.1 Local PMTiles (issue #64, README 5.3.1)
+
+| Phone | File | File size | Zoom range (header) | Time to first full render | Offline (airplane, after app kill) | Errors in the log | Result | Evidence | Notes |
+|---|---|---|---|---|---|---|---|---|---|
+| | test-zone-z15.pmtiles | | | | | | | | |
+
+Did `pmtiles://file://...` load through `@maplibre/maplibre-react-native` 11.5.1 (native 13.6.1)? ____ Were the Protomaps layer names and `kind` values right? ____
+
 ## 4. How to get there (Organic Maps via `geo:`)
 
 | Phone | Organic Maps installed | Button | Behavior | Returns to app with Back | Result | Evidence | Notes |
