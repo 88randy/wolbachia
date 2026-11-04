@@ -39,6 +39,7 @@ export const esMX = {
   "shell.sidebar.collapse": "Colapsar menú",
   "shell.topBar.searchLabel": "Buscar",
   "shell.topBar.searchPlaceholder": "Busca o escanea",
+  "shell.topBar.notificationsSoon": "Todavía no está disponible.",
   "shell.topBar.notifications": "Notificaciones",
   "shell.language.toEnglish": "ES: cambiar idioma a inglés",
   "shell.language.toSpanish": "EN: cambiar idioma a español",

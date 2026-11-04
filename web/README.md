@@ -70,7 +70,7 @@ Or in Docker, as the rest of the stack (Vite dev server with live reload, port 5
 docker compose up web
 ```
 
-`compose.yaml` includes `backend/compose.yaml` (issue #2), so `docker compose up` starts the whole stack and `docker compose up web` only this service. The Django service is `api` on port 8000; `API_PROXY_TARGET` in `compose.yaml` and `vite.config.ts` point to it.
+The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only from the repo root**: `backend/compose.yaml` has its own project name, so `-f backend/compose.yaml` creates a second, separate stack. `compose.yaml` includes `backend/compose.yaml` (issue #2), so `docker compose up` starts the whole stack and `docker compose up web` only this service. The Django service is `api` on port 8000; `API_PROXY_TARGET` in `compose.yaml` and `vite.config.ts` point to it.
 
 | Command (root) | What it does |
 |---|---|
@@ -85,7 +85,7 @@ docker compose up web
 
 | Variable | Required | Meaning |
 |---|---|---|
-| `VITE_API_BASE_URL` | yes | Base URL of the API: an absolute `http(s)` URL or a same-origin path such as `/api/v1`. No default in code |
+| `VITE_API_BASE_URL` | yes | Base URL of the API: an absolute URL or a same-origin path such as `/api/v1` (no `//host`, no backslashes). In a production build (`vite build`) an absolute URL must be `https:`. No default in code |
 
 `VITE_*` variables are **read at build time and written into the public bundle**: never put a secret in them. If the variable is missing or invalid the app shows a translated "not ready" screen and logs `Invalid app configuration: VITE_API_BASE_URL ...` to the console, instead of a blank page. Each environment needs its own build (or image build argument `VITE_API_BASE_URL`).
 
@@ -108,7 +108,8 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 ### What the shell does today
 
 - Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists **all** areas: filtering by permission comes with `GET /api/v1/me/` in #28.
-- Top bar slots: search (the `/` key focuses it; no backend yet), notifications (no panel, no count yet), es-MX / en switch (no reload; remembered). The center selector and the user menu are left for #28.
+- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered). The center selector and the user menu are left for #28.
+- Below 768 px (`web.layout.compactBreakpoint`) the sidebar stays collapsed, so the page reflows at 320 CSS px without two-axis scroll (WCAG 1.4.10; e2e checks it). Each page sets its own `document.title` ("<page> · Wolbachia", WCAG 2.4.2).
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
 - Keyboard: the first Tab stop is "Skip to content"; after each navigation focus moves to `<main>`; every link and button is reachable; the focus ring comes from the tokens. The active sidebar item uses `color.action` (4.5:1) instead of `color.brand` (4.2:1 with white text, fails AA).
@@ -125,6 +126,7 @@ Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-st
 - `web/Dockerfile` (build context = repo root): `dev` stage for compose; `runtime` stage = unprivileged nginx 1.30 serving `dist/` on port 8080 with SPA fallback, CSP, `X-Content-Type-Options`, immutable cache on `/assets/` and never on `index.html`. Build it with `docker build -f web/Dockerfile --target runtime .`.
 - CI (`.github/workflows/web.yml`): lint, format, type-check, tests and build; Playwright e2e; and the image build (no push).
 - **Default deploy target (decided in #26, [PENDING] client confirmation): the nginx container on the DigitalOcean droplet, next to the backend.** Static hosting remains possible because the output is plain files. The deploy workflow is not part of #26.
+- TLS and HSTS: the container serves plain HTTP on 8080. The TLS-terminating proxy in front (backend deploy, #18) must provide HTTPS and the `Strict-Transport-Security` header; nginx here does not set it.
 - **[ASSUMPTION]** the API is on the same origin as the web (a reverse proxy routes `/api/` to Django), so the CSP says `connect-src 'self'` and `VITE_API_BASE_URL=/api/v1`. For another origin, extend the CSP in `web/nginx/security-headers.conf` and settle cookies/CORS in backend #4 (ADR 0001, open point 2).
 
 ## Design source

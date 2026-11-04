@@ -239,6 +239,11 @@ describe("top bar", () => {
     const bell = screen.getByRole("button", { name: "Notificaciones" });
 
     expect(bell.textContent).toBe("");
+    expect(bell.getAttribute("aria-disabled")).toBe("true");
+    expect(bell.getAttribute("aria-describedby")).toBe("notifications-hint");
+    expect(document.getElementById("notifications-hint")?.textContent).toBe(
+      "Todavía no está disponible.",
+    );
   });
 });
 

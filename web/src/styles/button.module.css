@@ -24,3 +24,10 @@
   color: var(--color-action-strong);
   box-shadow: inset 0 0 0 2px var(--color-action);
 }
+
+/* Keep the border and add the halo: the global focus ring would replace this shadow. */
+.secondary:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px var(--color-action),
+    0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
+}

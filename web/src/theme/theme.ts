@@ -1,4 +1,4 @@
-import { readStored, STORAGE_KEYS, writeStored } from "../storage/safe-storage";
+import { readStored, STORAGE_KEYS } from "../storage/safe-storage";
 
 export type ThemeName = "light" | "dark";
 
@@ -17,10 +17,4 @@ export function getInitialTheme(): ThemeName {
 /** `data-theme="dark"` on <html> switches every token variable (see packages/tokens). */
 export function applyTheme(theme: ThemeName): void {
   document.documentElement.dataset["theme"] = theme;
-}
-
-/** Applies a theme and remembers it for the next visit. */
-export function setTheme(theme: ThemeName): void {
-  applyTheme(theme);
-  writeStored(STORAGE_KEYS.theme, theme);
 }

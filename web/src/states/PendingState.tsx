@@ -5,12 +5,7 @@ import styles from "./PendingState.module.css";
 export function PendingState() {
   const { t } = useTranslation();
   return (
-    <div
-      className={styles.pending}
-      role="status"
-      aria-busy="true"
-      aria-label={t("states.loading.label")}
-    >
+    <div className={styles.pending} role="status" aria-label={t("states.loading.label")}>
       <div className={styles.title} />
       <div className={styles.cards}>
         <div className={styles.card} />

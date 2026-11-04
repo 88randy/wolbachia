@@ -124,8 +124,7 @@ describe("pending state", () => {
   test("announces loading with a skeleton instead of a blank page", async () => {
     await renderWithI18n(<PendingState />);
 
-    const status = screen.getByRole("status", { name: "Cargando contenido" });
-    expect(status.getAttribute("aria-busy")).toBe("true");
+    expect(screen.getByRole("status", { name: "Cargando contenido" })).toBeDefined();
   });
 });
 

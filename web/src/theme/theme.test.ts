@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, test } from "vitest";
 import { STORAGE_KEYS } from "../storage/safe-storage";
-import { applyTheme, getInitialTheme, setTheme } from "./theme";
+import { applyTheme, getInitialTheme } from "./theme";
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -18,16 +18,16 @@ describe("theme", () => {
     expect(getInitialTheme()).toBe("light");
   });
 
-  test("setTheme switches <html data-theme> and is remembered", () => {
-    setTheme("dark");
-
-    expect(document.documentElement.dataset["theme"]).toBe("dark");
-    expect(getInitialTheme()).toBe("dark");
-  });
-
-  test("applyTheme does not touch the stored preference", () => {
+  test("applyTheme sets <html data-theme> without touching the stored preference", () => {
     applyTheme("dark");
 
+    expect(document.documentElement.dataset["theme"]).toBe("dark");
     expect(window.localStorage.getItem(STORAGE_KEYS.theme)).toBeNull();
+  });
+
+  test("a stored dark theme is the initial theme", () => {
+    window.localStorage.setItem(STORAGE_KEYS.theme, "dark");
+
+    expect(getInitialTheme()).toBe("dark");
   });
 });
