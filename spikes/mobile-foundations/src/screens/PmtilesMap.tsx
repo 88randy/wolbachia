@@ -1,5 +1,5 @@
 import { Camera, Map } from '@maplibre/maplibre-react-native';
-import type { MapRef } from '@maplibre/maplibre-react-native';
+import type { CameraRef, MapRef } from '@maplibre/maplibre-react-native';
 import { File, FileMode } from 'expo-file-system';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
@@ -14,12 +14,15 @@ import {
   tileTypeWarning,
 } from '../pmtiles';
 import type { PmtilesHeader } from '../pmtiles';
-import { Button, KeyValue, LogView, Note, Screen, Section, errorMessage, formatBytes, formatMs, useLog } from '../ui';
+import { Button, KeyValue, LogView, Note, Screen, Section, colors, errorMessage, formatBytes, formatMs, useLog } from '../ui';
 
 type LoadedFile = { path: string; bytes: number; header: PmtilesHeader };
+type FeatureCount = { summary: string; total: number };
 
-/** The map must finish rendering within this time or the screen logs a render timeout (same as the pack mode). */
+/** No features within this time after loading: logged as a timeout (same limit as the pack mode). */
 const RENDER_TIMEOUT_MS = 20_000;
+const POLL_INTERVAL_MS = 500;
+const FIT_PADDING = 24;
 
 /**
  * Reads the size and the header of the .pmtiles file in the app's external files dir. That folder needs no
@@ -40,34 +43,54 @@ function inspectFile(): LoadedFile {
   }
 }
 
+/** Counts the features currently rendered for each style layer (queryRenderedFeatures, whole viewport). */
+async function countRenderedFeatures(map: MapRef): Promise<FeatureCount> {
+  const counts: string[] = [];
+  let total = 0;
+  for (const layer of PMTILES_LAYER_IDS) {
+    const features = await map.queryRenderedFeatures({ layers: [layer] });
+    total += features.length;
+    counts.push(`${layer}=${features.length}`);
+  }
+  return { summary: `${counts.join(', ')} (total ${total})`, total };
+}
+
 /**
  * "Local PMTiles" mode. It never touches OfflineManager: PMTiles sources do not support offline packs or
  * the ambient cache (MapLibre Native Android docs, "PMTiles", Limitations); the file itself is the offline data.
  *
- * onDidFinishRenderingMapFully also fires when the source could not be read or the layer names are wrong (the
- * background still renders), so "rendered" is not proof of data. After the render the features drawn per layer
- * are counted; zero in total is shown as a warning.
+ * Measuring: on the S24 Ultra onDidFinishRenderingMapFully never fired although tiles were drawn, so it is not
+ * used. Instead the rendered features are counted every 500 ms after the map mounts and the first count above
+ * zero is reported as "time to first features". Zero until the timeout is shown as a warning.
+ *
+ * Gestures: the map has two layouts. Embedded (inside the screen's ScrollView, which competes for touches) and
+ * full screen (no scroll container around it), where pinch, pan and rotate get every gesture.
  */
 export function PmtilesMap() {
   const logger = useLog();
   const { log } = logger;
   const mapRef = useRef<MapRef>(null);
+  const cameraRef = useRef<CameraRef>(null);
   const [loaded, setLoaded] = useState<LoadedFile | null>(null);
   const [mapKey, setMapKey] = useState(0);
-  const [firstRender, setFirstRender] = useState('-');
+  const [fullScreen, setFullScreen] = useState(false);
+  const [firstFeatures, setFirstFeatures] = useState('-');
   const [featureSummary, setFeatureSummary] = useState('-');
-  const loadStartedAt = useRef<number | null>(null);
+  const loadStartedAt = useRef<number>(performance.now());
   const firstFrameLogged = useRef(false);
-  const renderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fitted = useRef(false);
 
   const style = useMemo(() => (loaded === null ? null : buildPmtilesStyle(loaded.path)), [loaded]);
 
-  const clearRenderTimer = useCallback(() => {
-    if (renderTimer.current !== null) clearTimeout(renderTimer.current);
-    renderTimer.current = null;
+  /** Restarts the clock and mounts a fresh map. Every measurement is relative to this moment. */
+  const remountMap = useCallback(() => {
+    loadStartedAt.current = performance.now();
+    firstFrameLogged.current = false;
+    fitted.current = false;
+    setFirstFeatures('-');
+    setFeatureSummary('-');
+    setMapKey((key) => key + 1);
   }, []);
-
-  useEffect(() => clearRenderTimer, [clearRenderTimer]);
 
   const load = () => {
     try {
@@ -82,67 +105,119 @@ export function PmtilesMap() {
       const warning = tileTypeWarning(header);
       if (warning !== null) log(warning);
       setLoaded(result);
-      setFirstRender('-');
-      setFeatureSummary('-');
-      setMapKey((key) => key + 1);
+      remountMap();
     } catch (error) {
       setLoaded(null);
       log(`ERROR ${errorMessage(error)}`);
     }
   };
 
-  const onWillStartLoadingMap = useCallback(() => {
-    loadStartedAt.current = performance.now();
-    firstFrameLogged.current = false;
-    log('map: will start loading');
-    clearRenderTimer();
-    renderTimer.current = setTimeout(() => {
-      log(`ERROR map did not finish rendering within ${RENDER_TIMEOUT_MS / 1000} s (render timeout)`);
-    }, RENDER_TIMEOUT_MS);
-  }, [clearRenderTimer, log]);
+  const toggleFullScreen = () => {
+    setFullScreen((value) => !value);
+    remountMap();
+  };
 
-  const elapsed = (): string =>
-    loadStartedAt.current === null ? 'n/a' : formatMs(performance.now() - loadStartedAt.current);
+  // Poll the feature count until the first one shows up, or the timeout.
+  useEffect(() => {
+    if (loaded === null) return undefined;
+    let cancelled = false;
+    let busy = false;
+    const timer = setInterval(() => {
+      if (busy || mapRef.current === null) return;
+      busy = true;
+      countRenderedFeatures(mapRef.current)
+        .then((count) => {
+          if (cancelled) return;
+          const sinceStart = performance.now() - loadStartedAt.current;
+          if (count.total > 0) {
+            clearInterval(timer);
+            setFirstFeatures(formatMs(sinceStart));
+            setFeatureSummary(count.summary);
+            log(`first features after ${formatMs(sinceStart)}: ${count.summary}`);
+          } else if (sinceStart > RENDER_TIMEOUT_MS) {
+            clearInterval(timer);
+            setFeatureSummary(count.summary);
+            log(`ERROR no features within ${RENDER_TIMEOUT_MS / 1000} s (render timeout)`);
+            log('WARNING: no features rendered (wrong file, schema or source)');
+          }
+        })
+        // The map may not be ready to be queried yet: keep polling, report only the timeout.
+        .catch(() => undefined)
+        .finally(() => {
+          busy = false;
+        });
+    }, POLL_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [loaded, log, mapKey]);
+
+  const fitToFile = useCallback(
+    (source: string) => {
+      if (loaded === null || fitted.current) return;
+      try {
+        cameraRef.current?.fitBounds(loaded.header.bounds, {
+          padding: { top: FIT_PADDING, right: FIT_PADDING, bottom: FIT_PADDING, left: FIT_PADDING },
+          duration: 0,
+        });
+        fitted.current = true;
+        log(`camera fitted to file bounds (after ${source})`);
+      } catch (error) {
+        log(`ERROR fitting camera to bounds: ${errorMessage(error)}`);
+      }
+    },
+    [loaded, log]
+  );
+
+  const onDidFinishLoadingStyle = useCallback(() => {
+    log(`map: style loaded after ${formatMs(performance.now() - loadStartedAt.current)}`);
+    fitToFile('style load');
+  }, [fitToFile, log]);
+
+  const onDidFinishLoadingMap = useCallback(() => {
+    log(`map: loading finished after ${formatMs(performance.now() - loadStartedAt.current)}`);
+    fitToFile('map load');
+  }, [fitToFile, log]);
 
   const onDidFinishRenderingFrame = useCallback(() => {
     if (firstFrameLogged.current) return;
     firstFrameLogged.current = true;
-    log(`map: first frame after ${elapsed()}`);
+    log(`map: first frame after ${formatMs(performance.now() - loadStartedAt.current)}`);
   }, [log]);
-
-  /** Counts the features currently rendered for each style layer (queryRenderedFeatures, viewport). */
-  const countRenderedFeatures = useCallback(async () => {
-    const counts: string[] = [];
-    let total = 0;
-    for (const layer of PMTILES_LAYER_IDS) {
-      try {
-        const features = (await mapRef.current?.queryRenderedFeatures({ layers: [layer] })) ?? [];
-        total += features.length;
-        counts.push(`${layer}=${features.length}`);
-      } catch (error) {
-        counts.push(`${layer}=error(${errorMessage(error)})`);
-      }
-    }
-    const summary = counts.join(', ');
-    setFeatureSummary(`${summary} (total ${total})`);
-    log(`rendered features: ${summary}; total ${total}`);
-    if (total === 0) log('WARNING: no features rendered (wrong file, schema or source)');
-  }, [log]);
-
-  const onDidFinishRenderingMapFully = useCallback(() => {
-    if (loadStartedAt.current === null) return;
-    const time = elapsed();
-    loadStartedAt.current = null;
-    clearRenderTimer();
-    setFirstRender(time);
-    log(`map render finished in ${time} (this does not prove tiles were drawn, see feature counts)`);
-    void countRenderedFeatures();
-  }, [clearRenderTimer, countRenderedFeatures, log]);
 
   const onDidFailLoadingMap = useCallback(() => {
-    clearRenderTimer();
     log('ERROR map failed to load (style or PMTiles source could not be read)');
-  }, [clearRenderTimer, log]);
+  }, [log]);
+
+  const mapView =
+    loaded !== null && style !== null ? (
+      <Map
+        ref={mapRef}
+        key={mapKey}
+        style={StyleSheet.absoluteFill}
+        mapStyle={style}
+        onDidFinishLoadingStyle={onDidFinishLoadingStyle}
+        onDidFinishLoadingMap={onDidFinishLoadingMap}
+        onDidFinishRenderingFrame={onDidFinishRenderingFrame}
+        onDidFailLoadingMap={onDidFailLoadingMap}
+      >
+        <Camera ref={cameraRef} initialViewState={{ bounds: loaded.header.bounds }} />
+      </Map>
+    ) : null;
+
+  if (fullScreen) {
+    return (
+      <View style={styles.full}>
+        {mapView}
+        <Text style={styles.attribution}>{MAP_ATTRIBUTION}</Text>
+        <View style={styles.fullBar}>
+          <Button label="Close full screen" onPress={toggleFullScreen} />
+          <Text style={styles.fullStatus}>First features: {firstFeatures}</Text>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <Screen>
@@ -150,38 +225,28 @@ export function PmtilesMap() {
         <Note>
           Copy the file with adb (README, "Local PMTiles"), then press "Load file". The style has no glyphs and no
           sprite: roads, water polygons, land use and buildings only. No labels, and river and stream lines are not
-          drawn (only water polygons). Turn on airplane mode to prove it works offline.
+          drawn (only water polygons). Turn on airplane mode to prove it works offline. Pinch and pan work badly
+          inside this scrolling screen: use "Full screen map" for gestures.
         </Note>
         <KeyValue label="Expected file" value={`${PMTILES_DIR_NAME}/${PMTILES_FILE_NAME}`} />
         <Button label="Load file" onPress={load} />
         <KeyValue label="File size" value={loaded === null ? '-' : formatBytes(loaded.bytes)} />
         <KeyValue label="Zoom range in file" value={loaded === null ? '-' : `${loaded.header.minZoom} to ${loaded.header.maxZoom}`} />
-        <KeyValue label="Time to render finished" value={firstRender} />
+        <KeyValue label="Time to first features" value={firstFeatures} />
         <KeyValue label="Features rendered" value={featureSummary} />
         {featureSummary.endsWith('(total 0)') ? (
           <Text style={styles.warn}>WARNING: no features rendered (wrong file, schema or source)</Text>
         ) : null}
-        {loaded !== null && style !== null ? (
-          <View style={styles.map}>
-            <Map
-              ref={mapRef}
-              key={mapKey}
-              style={StyleSheet.absoluteFill}
-              mapStyle={style}
-              onWillStartLoadingMap={onWillStartLoadingMap}
-              onDidFinishRenderingFrame={onDidFinishRenderingFrame}
-              onDidFinishRenderingMapFully={onDidFinishRenderingMapFully}
-              onDidFailLoadingMap={onDidFailLoadingMap}
-            >
-              <Camera
-                initialViewState={{ center: loaded.header.center, zoom: loaded.header.centerZoom }}
-                maxBounds={loaded.header.bounds}
-              />
-            </Map>
-            <Text style={styles.attribution}>{MAP_ATTRIBUTION}</Text>
-          </View>
+        {mapView !== null ? (
+          <>
+            <View style={styles.map}>
+              {mapView}
+              <Text style={styles.attribution}>{MAP_ATTRIBUTION}</Text>
+            </View>
+            <Button label="Full screen map (pinch, pan, rotate)" onPress={toggleFullScreen} />
+            <Button label="Reload map (re-time render)" onPress={remountMap} />
+          </>
         ) : null}
-        {loaded !== null ? <Button label="Reload map (re-time render)" onPress={() => setMapKey((key) => key + 1)} /> : null}
       </Section>
       <Section title="Log (newest first)">
         <LogView logger={logger} />
@@ -193,6 +258,9 @@ export function PmtilesMap() {
 const styles = StyleSheet.create({
   map: { height: 360, borderRadius: 6, overflow: 'hidden', backgroundColor: '#e8e8e8' },
   warn: { color: '#b00020', fontWeight: '700' },
+  full: { flex: 1, backgroundColor: '#e8e8e8' },
+  fullBar: { position: 'absolute', top: 8, left: 8, right: 8, gap: 4 },
+  fullStatus: { backgroundColor: 'rgba(255,255,255,0.85)', color: colors.fg, padding: 4, fontSize: 12 },
   attribution: {
     position: 'absolute',
     right: 4,
