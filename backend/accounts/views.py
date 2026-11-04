@@ -3,7 +3,7 @@
 from dataclasses import dataclass, replace
 from typing import Any
 
-from django.contrib.auth import login
+from django.contrib.auth import login, logout
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
 from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
@@ -15,14 +15,30 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.audit import AuditContext, AuthEvent, fingerprint, log_auth_event
-from accounts.models import User
+from accounts.authentication import EndedSessionBearerAuthentication
+from accounts.models import DeviceSession, RevokeReason, User
 from accounts.serializers import (
     LoginSerializer,
     MobileLoginResponseSerializer,
+    RefreshResponseSerializer,
+    RefreshSerializer,
     WebLoginResponseSerializer,
 )
-from accounts.services import DeviceInfo, authenticate_user, start_device_session
-from accounts.throttling import LoginIpThrottle, LoginUserIpThrottle, client_ip
+from accounts.services import (
+    DeviceInfo,
+    Revocation,
+    authenticate_user,
+    revoke_session,
+    rotate_refresh_token,
+    start_device_session,
+)
+from accounts.throttling import (
+    LoginIpThrottle,
+    LoginUserIpThrottle,
+    RefreshThrottle,
+    client_ip,
+)
+from core.authentication import ApiSessionAuthentication
 from core.constants import ORGANIZATION_HEADER
 from core.time import server_now
 from organizations.selectors import get_me_context, resolve_active_membership
@@ -127,3 +143,59 @@ class LoginView(APIView):
             {"channel": "web"},
         )
         return Response(WebLoginResponseSerializer({"me": me, "server_time": server_now()}).data)
+
+
+class RefreshView(APIView):
+    """`POST /auth/refresh/`: rotate the token pair of a device session (mobile)."""
+
+    authentication_classes: list[Any] = []
+    permission_classes = [AllowAny]
+    throttle_classes = [RefreshThrottle]
+
+    @extend_schema(request=RefreshSerializer, responses=RefreshResponseSerializer, auth=[])
+    def post(self, request: Request) -> Response:
+        payload = RefreshSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        issued = rotate_refresh_token(
+            payload.validated_data["refresh"], payload.validated_data["device_id"]
+        )
+        session = issued.session
+        log_auth_event(
+            AuthEvent.REFRESH,
+            AuditContext(
+                organization_id=session.organization_id,
+                user_id=session.user_id,
+                device_id=session.device_id,
+                ip=client_ip(request),
+            ),
+        )
+        body = {"access": issued.access, "refresh": issued.refresh, "server_time": server_now()}
+        return Response(RefreshResponseSerializer(body).data)
+
+
+class LogoutView(APIView):
+    """`POST /auth/logout/`: end the web session or revoke the device session of the token.
+
+    Idempotent: with no active session there is nothing to end and it still answers 204. The
+    bearer variant accepts an expired or already revoked token, so the app can always log out.
+    A web session is CSRF-protected like any authenticated request.
+    """
+
+    authentication_classes = [ApiSessionAuthentication, EndedSessionBearerAuthentication]
+    permission_classes = [AllowAny]
+
+    @extend_schema(request=None, responses={204: None})
+    def post(self, request: Request) -> Response:
+        user = request.user
+        audit = AuditContext(user_id=user.pk, ip=client_ip(request))
+        if isinstance(request.auth, DeviceSession):
+            session = request.auth
+            revoke_session(session, Revocation(RevokeReason.LOGOUT, revoked_by=user))  # type: ignore[arg-type]
+            audit = replace(
+                audit, organization_id=session.organization_id, device_id=session.device_id
+            )
+            log_auth_event(AuthEvent.LOGOUT, audit)
+        elif user.is_authenticated:
+            logout(request._request)
+            log_auth_event(AuthEvent.LOGOUT, audit)
+        return Response(status=status.HTTP_204_NO_CONTENT)
