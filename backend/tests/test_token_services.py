@@ -162,10 +162,10 @@ def test_a_session_is_refused_when_the_password_changed_after_authentication(
     org_a: Organization,
 ) -> None:
     user = UserFactory()
-    user.set_password("the password that was verified")
+    user.set_password("pw-for-verified-hash")
     user.save(update_fields=["password"])
     changed = User.objects.get(pk=user.pk)
-    changed.set_password("the password set by a concurrent reset")
+    changed.set_password("pw-for-concurrent-reset")
     changed.save(update_fields=["password"])
 
     with pytest.raises(InvalidCredentialsError):

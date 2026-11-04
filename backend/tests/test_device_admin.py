@@ -11,15 +11,15 @@ from rest_framework.test import APIClient
 from accounts.models import Device, RevokeReason, User
 from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from accounts.services import DeviceInfo, start_device_session
+from organizations.defaults import DEFAULT_PROFILE_PERMISSIONS
 from organizations.models import Organization, Profile
 from organizations.services import (
     AdminSpec,
     OrganizationSpec,
-    add_permission_codes_to_admin_profiles,
     bootstrap_organization,
 )
 from tests.conftest import MemberFactory
-from tests.factories import DeviceFactory, MembershipFactory, OrganizationFactory, UserFactory
+from tests.factories import DeviceFactory, MembershipFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -365,71 +365,72 @@ def test_a_token_session_can_use_the_admin_endpoints_in_its_pinned_organization(
     assert response.data["count"] == 2  # the admin's own phone and the other device of org A
 
 
-# --- seed of admin permission codes -------------------------------------------------------------
+# --- seed of admin permission codes (#3 seed tracking) ------------------------------------------
 
 
-def test_bootstrap_gives_the_admin_profile_the_device_codes() -> None:
+def seeded_organization(slug: str = "acme") -> Organization:
     organization, _ = bootstrap_organization(
-        OrganizationSpec(name="Acme", slug="acme", country="MX", timezone="UTC"),
-        AdminSpec(username="boss", email="boss@example.test"),
+        OrganizationSpec(name="Acme", slug=slug, country="MX", timezone="UTC"),
+        AdminSpec(username=f"boss-{slug}", email=f"boss-{slug}@example.test"),
     )
+    return organization
+
+
+def test_a_new_organization_gives_the_admin_profile_the_device_codes() -> None:
+    organization = seeded_organization()
 
     admin = Profile.objects.get(organization=organization, slug="admin")
     courier = Profile.objects.get(organization=organization, slug="courier")
-    assert set(admin.permission_codes) == set(ADMIN_AUTH_PERMISSION_CODES)
-    assert courier.permission_codes == []
+    assert set(ADMIN_AUTH_PERMISSION_CODES) <= set(admin.permission_codes)
+    assert set(ADMIN_AUTH_PERMISSION_CODES) <= set(admin.seeded_permission_codes)
+    assert not set(ADMIN_AUTH_PERMISSION_CODES) & set(courier.permission_codes)
 
 
-def test_adding_admin_codes_is_idempotent_and_keeps_existing_codes() -> None:
-    organization = OrganizationFactory()
-    Profile.objects.create(
-        organization=organization,
-        slug="admin",
-        label_es="A",
-        label_en="A",
-        permission_codes=["custom.code", "device.read"],
+def test_the_device_codes_are_registered_in_the_default_admin_codes() -> None:
+    assert set(ADMIN_AUTH_PERMISSION_CODES) <= set(DEFAULT_PROFILE_PERMISSIONS["admin"])
+    assert not any(
+        set(ADMIN_AUTH_PERMISSION_CODES) & set(codes)
+        for slug, codes in DEFAULT_PROFILE_PERMISSIONS.items()
+        if slug != "admin"
     )
 
-    first = add_permission_codes_to_admin_profiles(organization=organization)
-    second = add_permission_codes_to_admin_profiles(organization=organization)
 
-    codes = Profile.objects.get(organization=organization, slug="admin").permission_codes
-    assert (first, second) == (1, 0)
-    assert codes == ["custom.code", "device.read", "device.revoke", "user.revoke_device_sessions"]
+def test_apply_grants_the_device_codes_to_an_organization_seeded_before_they_existed() -> None:
+    organization = seeded_organization()
+    admin = Profile.objects.get(organization=organization, slug="admin")
+    Profile.objects.filter(pk=admin.pk).update(
+        permission_codes=[
+            c for c in admin.permission_codes if c not in ADMIN_AUTH_PERMISSION_CODES
+        ],
+        seeded_permission_codes=[
+            c for c in admin.seeded_permission_codes if c not in ADMIN_AUTH_PERMISSION_CODES
+        ],
+    )
 
+    call_command("seed_organization_defaults", organization=organization.slug, apply=True)
 
-def test_adding_admin_codes_leaves_other_profiles_and_organizations_alone() -> None:
-    target, other = OrganizationFactory(), OrganizationFactory()
-    for organization in (target, other):
-        Profile.objects.create(organization=organization, slug="admin", label_es="A", label_en="A")
-    Profile.objects.create(organization=target, slug="courier", label_es="C", label_en="C")
-
-    add_permission_codes_to_admin_profiles(organization=target)
-
-    assert Profile.objects.get(organization=other, slug="admin").permission_codes == []
-    assert Profile.objects.get(organization=target, slug="courier").permission_codes == []
-
-
-def test_the_management_command_updates_existing_organizations(
-    capsys: pytest.CaptureFixture[str],
-) -> None:
-    organization = OrganizationFactory()
-    Profile.objects.create(organization=organization, slug="admin", label_es="A", label_en="A")
-
-    call_command("grant_admin_permissions")
-    call_command("grant_admin_permissions", organization=organization.slug)
-
-    out = capsys.readouterr().out
-    assert "Admin profiles updated: 1" in out
-    assert "Admin profiles updated: 0" in out
-    assert set(
-        Profile.objects.get(organization=organization, slug="admin").permission_codes
-    ) == set(ADMIN_AUTH_PERMISSION_CODES)
+    admin.refresh_from_db()
+    assert set(ADMIN_AUTH_PERMISSION_CODES) <= set(admin.permission_codes)
 
 
-def test_the_management_command_rejects_an_unknown_organization() -> None:
+@pytest.mark.parametrize("code", ADMIN_AUTH_PERMISSION_CODES)
+def test_a_device_code_an_admin_revoked_is_not_granted_again_by_apply(code: str) -> None:
+    organization = seeded_organization()
+    admin = Profile.objects.get(organization=organization, slug="admin")
+    Profile.objects.filter(pk=admin.pk).update(
+        permission_codes=[c for c in admin.permission_codes if c != code]
+    )
+
+    call_command("seed_organization_defaults", organization=organization.slug, apply=True)
+
+    admin.refresh_from_db()
+    assert code not in admin.permission_codes
+    assert code in admin.seeded_permission_codes  # remembered as seeded: never re-granted
+
+
+def test_the_old_backfill_command_is_gone() -> None:
     with pytest.raises(CommandError):
-        call_command("grant_admin_permissions", organization="nope")
+        call_command("grant_admin_permissions")
 
 
 # --- final upload flag --------------------------------------------------------------------------

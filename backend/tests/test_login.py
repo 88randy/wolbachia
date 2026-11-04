@@ -21,7 +21,7 @@ pytestmark = pytest.mark.django_db
 LOGIN = "/api/v1/auth/login/"
 CSRF = "/api/v1/auth/csrf/"
 ME = "/api/v1/me/"
-PASSWORD = "correct horse battery staple"  # noqa: S105
+PASSWORD = "pw-for-login-tests"  # noqa: S105
 
 
 def user_with_password(password: str = PASSWORD, **kwargs: object) -> User:
@@ -188,7 +188,7 @@ def test_bad_password_unknown_user_and_inactive_user_get_the_same_401(
     unusable.set_unusable_password()
     unusable.save(update_fields=["password"])
     attempts = [
-        {"username": active.username, "password": "wrong"},
+        {"username": active.username, "password": "pw-for-wrong-guess"},
         {"username": "nobody-at-all", "password": PASSWORD},
         {"username": inactive.username, "password": PASSWORD},
         {"username": unusable.username, "password": PASSWORD},
@@ -341,7 +341,7 @@ def test_web_login_with_bad_credentials_is_the_generic_401() -> None:
 def fail(client: APIClient, username: str, **headers: str):
     return client.post(
         LOGIN,
-        {"username": username, "password": "wrong", "device_id": str(uuid.uuid4())},
+        {"username": username, "password": "pw-for-wrong-guess", "device_id": str(uuid.uuid4())},
         format="json",
         headers=headers,
     )
@@ -485,14 +485,24 @@ def test_login_logs_never_contain_passwords_tokens_or_emails(
     ok = api_client.post(LOGIN, mobile_body(user), format="json")
     api_client.post(
         LOGIN,
-        {"username": user.username, "password": "wrong-pw-123", "device_id": str(uuid.uuid4())},
+        {
+            "username": user.username,
+            "password": "pw-for-wrong-login-123",
+            "device_id": str(uuid.uuid4()),
+        },
         format="json",
     )
 
     text = caplog.text
     assert "event=login_succeeded" in text
     assert "event=login_failed" in text
-    for secret in (PASSWORD, "wrong-pw-123", ok.data["access"], ok.data["refresh"], user.email):
+    for secret in (
+        PASSWORD,
+        "pw-for-wrong-login-123",
+        ok.data["access"],
+        ok.data["refresh"],
+        user.email,
+    ):
         assert secret not in text
     assert user.username not in text  # only its keyed fingerprint is logged
     assert str(user.pk) in text

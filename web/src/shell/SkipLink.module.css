@@ -1,0 +1,18 @@
+/* Off-screen until it receives focus. */
+.skipLink {
+  position: absolute;
+  top: var(--space-1);
+  left: var(--space-1);
+  z-index: 10;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--color-action);
+  color: var(--color-on-action);
+  font-weight: 600;
+  text-decoration: none;
+  transform: translateY(-200%);
+}
+
+.skipLink:focus {
+  transform: none;
+}

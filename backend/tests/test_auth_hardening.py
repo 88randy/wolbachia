@@ -15,8 +15,8 @@ from tests.factories import UserFactory
 
 pytestmark = pytest.mark.django_db
 
-PASSWORD = "correct horse battery staple"  # noqa: S105
-SECRET = "s3cret-value-for-the-report"  # noqa: S105
+PASSWORD = "pw-for-login-tests"  # noqa: S105
+SECRET = "pw-for-error-report"  # noqa: S105
 
 
 def mobile_user(make_member: MemberFactory, organization: Organization) -> str:

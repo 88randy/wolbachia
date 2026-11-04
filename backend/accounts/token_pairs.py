@@ -1,6 +1,6 @@
 """Token pairs of a device session: issuing, rotation with reuse detection, validity.
 
-Rules (decision 36, docs/api-conventions.md):
+Rules (decision 48, docs/api-conventions.md):
 
 * A refresh token is single use. Exchanging it consumes its pair and issues a child pair.
 * A consumed refresh token presented again *inside the grace window* is a lost response: it is

@@ -23,7 +23,7 @@ LOGOUT = "/api/v1/auth/logout/"
 LOGIN = "/api/v1/auth/login/"
 CSRF = "/api/v1/auth/csrf/"
 ME = "/api/v1/me/"
-PASSWORD = "correct horse battery staple"  # noqa: S105
+PASSWORD = "pw-for-login-tests"  # noqa: S105
 
 
 def session_for(make_member: MemberFactory, organization: Organization) -> IssuedTokens:

@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from django.db import transaction
 
 from accounts.models import User
-from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from accounts.services import create_user_without_password
+from organizations.defaults import seed_organization_defaults
 from organizations.exceptions import AdminUserConflictError, ProfileOrganizationMismatchError
 from organizations.models import DEFAULT_LANGUAGE, Membership, Organization, Profile
 
@@ -45,50 +45,29 @@ DEFAULT_PROFILE_SEEDS = (
 ADMIN_PROFILE_SLUG = "admin"
 
 
-def add_permission_codes_to_admin_profiles(
-    codes: Iterable[str] = ADMIN_AUTH_PERMISSION_CODES, organization: Organization | None = None
-) -> int:
-    """Add permission codes to the `admin` profile(s) (writes Profile); returns profiles changed.
-
-    Idempotent: codes already present are left alone and nothing else changes, so running it
-    again, or on organizations created before a code existed, is safe. `organization=None`
-    covers every organization.
-    """
-    wanted = list(codes)
-    admin_profiles = Profile.objects.select_for_update().filter(slug=ADMIN_PROFILE_SLUG)
-    if organization is not None:
-        admin_profiles = admin_profiles.filter(organization=organization)
-    changed = 0
-    with transaction.atomic():
-        for profile in admin_profiles:
-            missing = [code for code in wanted if code not in profile.permission_codes]
-            if missing:
-                profile.permission_codes = [*profile.permission_codes, *missing]
-                profile.save(update_fields=["permission_codes"])
-                changed += 1
-    return changed
-
-
 def seed_default_profiles(organization: Organization) -> list[Profile]:
     """Create the default profiles of an organization (writes Profile). Safe to run twice.
 
-    The `admin` profile starts with the codes of the device and session administration (#4);
-    other profiles start with no codes and are configured per organization.
+    Profiles it creates carry `created_by_seed`, which is what lets the permission seed grant
+    them default codes later.
     """
     profiles = []
     for seed in DEFAULT_PROFILE_SEEDS:
         profile, _ = Profile.objects.get_or_create(
             organization=organization,
             slug=seed.slug,
-            defaults={"label_es": seed.label_es, "label_en": seed.label_en},
+            defaults={
+                "label_es": seed.label_es,
+                "label_en": seed.label_en,
+                "created_by_seed": True,
+            },
         )
         profiles.append(profile)
-    add_permission_codes_to_admin_profiles(organization=organization)
     return profiles
 
 
 def create_organization(spec: OrganizationSpec) -> Organization:
-    """Create an organization and its default profiles (writes Organization and Profile)."""
+    """Create an organization with its default profiles, catalogs and rule parameters."""
     organization = Organization(
         name=spec.name,
         slug=spec.slug,
@@ -100,6 +79,7 @@ def create_organization(spec: OrganizationSpec) -> Organization:
     with transaction.atomic():
         organization.save()
         seed_default_profiles(organization)
+        seed_organization_defaults(organization)
     return organization
 
 

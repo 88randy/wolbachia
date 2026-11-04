@@ -7,7 +7,9 @@ from factory.django import DjangoModelFactory
 
 from accounts.models import Device, DeviceSession, TokenPair, User
 from accounts.tokens import hash_token
+from catalogs.models import Catalog, CatalogItem
 from organizations.models import Membership, Organization, Profile
+from rules.models import RuleParameter, RuleParameterVersion, Unit, ValueType
 from tests.testapp.models import Widget
 
 
@@ -88,3 +90,49 @@ class TokenPairFactory(DjangoModelFactory):
     refresh_hash = factory.LazyFunction(lambda: hash_token(uuid.uuid4().hex))
     access_expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(minutes=15))
     refresh_expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(days=30))
+
+
+class CatalogFactory(DjangoModelFactory):
+    class Meta:
+        model = Catalog
+
+    organization = factory.SubFactory(OrganizationFactory)
+    slug = factory.Sequence(lambda n: f"catalog-{n}")
+    label_es = factory.LazyAttribute(lambda catalog: f"Catálogo {catalog.slug}")
+    label_en = factory.LazyAttribute(lambda catalog: f"Catalog {catalog.slug}")
+
+
+class CatalogItemFactory(DjangoModelFactory):
+    class Meta:
+        model = CatalogItem
+
+    catalog = factory.SubFactory(CatalogFactory)
+    organization = factory.SelfAttribute("catalog.organization")
+    code = factory.Sequence(lambda n: f"item-{n}")
+    label_es = factory.LazyAttribute(lambda item: f"Opción {item.code}")
+    label_en = factory.LazyAttribute(lambda item: f"Option {item.code}")
+    sort = factory.Sequence(lambda n: n + 1)
+
+
+class RuleParameterFactory(DjangoModelFactory):
+    class Meta:
+        model = RuleParameter
+
+    organization = factory.SubFactory(OrganizationFactory)
+    key = factory.Sequence(lambda n: f"parameter_{n}")
+    value_type = ValueType.INTEGER
+    unit = Unit.METERS
+
+
+class RuleParameterVersionFactory(DjangoModelFactory):
+    """`effective_from` defaults to a moment in the past; `effective_date` follows it (UTC)."""
+
+    class Meta:
+        model = RuleParameterVersion
+
+    parameter = factory.SubFactory(RuleParameterFactory)
+    organization = factory.SelfAttribute("parameter.organization")
+    value = 50
+    effective_from = factory.LazyFunction(lambda: timezone.now() - timedelta(days=30))
+    effective_date = factory.LazyAttribute(lambda version: version.effective_from.date())
+    reason = "test"

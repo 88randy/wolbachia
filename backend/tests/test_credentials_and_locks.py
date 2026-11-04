@@ -33,8 +33,8 @@ from tests.factories import MembershipFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
-OLD_PASSWORD = "an old and long passphrase"  # noqa: S105
-NEW_PASSWORD = "a brand new passphrase 42"  # noqa: S105
+OLD_PASSWORD = "pw-for-old-credentials"  # noqa: S105
+NEW_PASSWORD = "pw-for-new-credentials-42"  # noqa: S105
 HASHERS = [
     "django.contrib.auth.hashers.PBKDF2PasswordHasher",
     "django.contrib.auth.hashers.MD5PasswordHasher",
@@ -71,7 +71,7 @@ def test_an_outdated_hash_is_upgraded_on_a_good_login() -> None:
 def test_a_wrong_password_never_upgrades_anything() -> None:
     user = user_with_old_hash()
 
-    assert verify_credentials(user.username, "wrong") is None
+    assert verify_credentials(user.username, "pw-for-wrong-guess") is None
 
     assert User.objects.get(pk=user.pk).password == user.password
 

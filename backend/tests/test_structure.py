@@ -91,6 +91,7 @@ ORGANIZATION_HEADER_READERS = {
     "accounts/request_context.py",  # the only place that parses the header
     "core/constants.py",  # defines the name
     "core/schema.py",  # documents it in OpenAPI
+    "core/snapshots.py",  # names it in `Vary` (a response header, not a read)
 }
 
 

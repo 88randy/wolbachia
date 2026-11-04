@@ -1,0 +1,30 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+.column {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.main {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  background: var(--color-background);
+}
+
+/* Focus lands here from the skip link; the ring would be noise around the whole page. */
+.main:focus {
+  outline: none;
+}

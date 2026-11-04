@@ -15,7 +15,7 @@ from rest_framework.response import Response
 from rest_framework.views import exception_handler, set_rollback
 
 from core.authentication import SESSION_AUTH_SCHEME
-from core.exceptions import DomainError
+from core.exceptions import VALIDATION_ERROR_CODE, VALIDATION_ERROR_DETAIL, DomainError
 
 logger = logging.getLogger(__name__)
 
@@ -52,8 +52,8 @@ def _normalize(exc: Exception) -> Exception:
 def _api_exception_body(exc: exceptions.APIException) -> dict[str, Any]:
     if isinstance(exc, exceptions.ValidationError):
         return {
-            "code": "validation_error",
-            "detail": "Validation failed.",
+            "code": VALIDATION_ERROR_CODE,
+            "detail": VALIDATION_ERROR_DETAIL,
             "fields": _flatten_codes(exc.get_codes()),
         }
     return {"code": str(exc.get_codes()), "detail": str(exc.detail)}
@@ -82,11 +82,10 @@ def _challenge_headers(exc: DomainError) -> dict[str, str] | None:
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     if isinstance(exc, DomainError):
         set_rollback()
-        return Response(
-            {"code": exc.code, "detail": exc.detail},
-            status=exc.status_code,
-            headers=_challenge_headers(exc),
-        )
+        body: dict[str, Any] = {"code": exc.code, "detail": exc.detail}
+        if exc.fields:
+            body["fields"] = exc.fields
+        return Response(body, status=exc.status_code, headers=_challenge_headers(exc))
 
     exc = _normalize(exc)
     response = exception_handler(exc, context)

@@ -31,8 +31,8 @@ CONFIRM = "/api/v1/auth/password-reset/confirm/"
 LOGIN = "/api/v1/auth/login/"
 CSRF = "/api/v1/auth/csrf/"
 ME = "/api/v1/me/"
-OLD_PASSWORD = "an old and long passphrase"  # noqa: S105
-NEW_PASSWORD = "a brand new passphrase 42"  # noqa: S105
+OLD_PASSWORD = "pw-for-old-credentials"  # noqa: S105
+NEW_PASSWORD = "pw-for-new-credentials-42"  # noqa: S105
 DELAY = "accounts.views.send_password_reset_email.apply_async"
 
 
@@ -270,7 +270,9 @@ def test_a_link_works_only_once(api_client: APIClient) -> None:
     body = {"uid": uid, "token": token, "new_password": NEW_PASSWORD}
     api_client.post(CONFIRM, body, format="json")
 
-    again = api_client.post(CONFIRM, {**body, "new_password": "another good one 77"}, format="json")
+    again = api_client.post(
+        CONFIRM, {**body, "new_password": "pw-for-another-reset-77"}, format="json"
+    )
 
     assert (again.status_code, again.data["code"]) == (400, "invalid_reset_token")
     user.refresh_from_db()
@@ -421,7 +423,7 @@ def test_a_spent_token_is_refused_by_the_recheck_inside_the_lock() -> None:
     reset_password(user, token, NEW_PASSWORD)
 
     with pytest.raises(InvalidResetTokenError):
-        reset_password(user, token, "yet another passphrase 9")
+        reset_password(user, token, "pw-for-yet-another-reset-9")
 
 
 @pytest.mark.django_db(transaction=True)
@@ -443,7 +445,7 @@ def test_two_concurrent_resets_with_the_same_token_only_one_wins() -> None:
 
     threads = [
         threading.Thread(target=attempt, args=(NEW_PASSWORD,)),
-        threading.Thread(target=attempt, args=("a second good passphrase 7",)),
+        threading.Thread(target=attempt, args=("pw-for-second-reset-7",)),
     ]
     for thread in threads:
         thread.start()
