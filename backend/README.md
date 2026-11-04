@@ -117,7 +117,7 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `THROTTLE_LOGIN_USER_IP_RATE`, `THROTTLE_LOGIN_IP_RATE`, `THROTTLE_REFRESH_RATE`, `THROTTLE_PASSWORD_RESET_RATE`, `THROTTLE_PASSWORD_RESET_CONFIRM_RATE` | `10/min`, `30/min`, `30/min`, `5/hour`, `20/hour` | DRF throttle rates |
 | `EMAIL_URL` | `consolemail://` (required in prod) | django-environ email URL, e.g. `smtp://user:pass@host:587` [PENDING provider] |
 | `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` | local defaults (required in prod) | Sender and web origin used to build the reset link |
-| `WEB_PASSWORD_RESET_PATH` | `/reset-password` | Web route that receives `/{uid}/{token}` [ASSUMPTION: agree with W1] |
+| `WEB_PASSWORD_RESET_PATH` | `/reset-password` | Web route that receives the link: `<WEB_BASE_URL><path>#uid=<uid>&token=<token>`, secret in the fragment, never in path or query (#58) [ASSUMPTION: agree with W1] |
 
 ## Field sync (#5)
 
