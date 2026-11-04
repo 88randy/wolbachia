@@ -1112,14 +1112,17 @@ components:
           type: string
           format: date-time
           readOnly: true
+          nullable: true
         version_id:
           type: string
           format: uuid
           readOnly: true
+          nullable: true
         next_change_at:
           type: string
           format: date-time
           readOnly: true
+          nullable: true
       required:
       - effective_from
       - key

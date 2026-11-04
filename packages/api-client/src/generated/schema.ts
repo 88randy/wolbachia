@@ -448,11 +448,11 @@ export interface components {
             /** Format: double */
             readonly value: number | null;
             /** Format: date-time */
-            readonly effective_from: string;
+            readonly effective_from: string | null;
             /** Format: uuid */
-            readonly version_id: string;
+            readonly version_id: string | null;
             /** Format: date-time */
-            readonly next_change_at: string;
+            readonly next_change_at: string | null;
         };
         /** @description Read shape of a version, with its `status` at the time of the request. */
         RuleParameterVersion: {
