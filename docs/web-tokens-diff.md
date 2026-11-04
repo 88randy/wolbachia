@@ -34,7 +34,7 @@ Typography: Inter with tabular figures in both.
 - **Spacing:** base 8 with a 4 px half step; 6 → 4 or 8, 10 → 8 or 12, 14 → 12 or 16, 18 → 16 or 20.
 - **Type (web):** body 14/20, labels 12–13, minimum 12 px (some chips and chart labels use 10–11 px in the design; raise them).
 - **Control heights:** 32 / 36 / 40 / 44 px (button default 36) → `control.sm/md/lg/xl`.
-- **Focus ring:** 2 px solid `action`, 2 px offset → `focus.ring`.
+- **Focus ring:** 2 px solid `action`, 2 px offset, plus a `0 0 0 5px rgba(26,93,255,.22)` halo (`.fo` in `web.css`) → `web.focus.ring.{width,offset,halo}`.
 
 ## 5. Decisions
 

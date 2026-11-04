@@ -1,0 +1,25 @@
+{
+  "name": "@wolbachia/i18n",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared es-MX and en message catalogs with typed keys.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "files": [
+    "src"
+  ],
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test \"test/**/*.test.ts\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5"
+  },
+  "engines": {
+    "node": ">=22.13"
+  }
+}
