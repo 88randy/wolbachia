@@ -4,6 +4,384 @@ info:
   version: 1.0.0
   description: Single API for the mobile app and the web (see docs/api-conventions.md).
 paths:
+  /api/v1/catalogs/:
+    get:
+      operationId: catalogs_list
+      description: 'The catalogs of the organization. They are created by the seed:
+        there is no POST.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - catalogs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCatalogList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/catalogs/{catalog_slug}/items/:
+    get:
+      operationId: catalogs_items_list
+      description: 'Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE:
+        items are deactivated.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: catalog_slug
+        schema:
+          type: string
+          pattern: ^[\w-]+$
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - catalogs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedCatalogItemList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: catalogs_items_create
+      description: 'Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE:
+        items are deactivated.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: catalog_slug
+        schema:
+          type: string
+          pattern: ^[\w-]+$
+        required: true
+      tags:
+      - catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogItemCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItem'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/catalogs/{catalog_slug}/items/{id}/:
+    get:
+      operationId: catalogs_items_retrieve
+      description: 'Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE:
+        items are deactivated.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: catalog_slug
+        schema:
+          type: string
+          pattern: ^[\w-]+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this catalog item.
+        required: true
+      tags:
+      - catalogs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItem'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: catalogs_items_partial_update
+      description: 'Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE:
+        items are deactivated.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: catalog_slug
+        schema:
+          type: string
+          pattern: ^[\w-]+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this catalog item.
+        required: true
+      tags:
+      - catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedCatalogItemUpdateRequest'
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItem'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/catalogs/{catalog_slug}/items/{id}/activate/:
+    post:
+      operationId: catalogs_items_activate_create
+      description: 'Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE:
+        items are deactivated.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: catalog_slug
+        schema:
+          type: string
+          pattern: ^[\w-]+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this catalog item.
+        required: true
+      tags:
+      - catalogs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItem'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/catalogs/{catalog_slug}/items/{id}/deactivate/:
+    post:
+      operationId: catalogs_items_deactivate_create
+      description: 'Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE:
+        items are deactivated.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: catalog_slug
+        schema:
+          type: string
+          pattern: ^[\w-]+$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this catalog item.
+        required: true
+      tags:
+      - catalogs
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogItem'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/catalog/:
+    get:
+      operationId: field_catalog_list
+      description: '`GET /field/catalog/`: the compact copy of every catalog that
+        phones keep offline.'
+      parameters:
+      - in: header
+        name: If-None-Match
+        schema:
+          type: string
+        description: The `ETag` (the snapshot `version`) the client already holds.
+          When it is still current the answer is `304` with no body.
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - field
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CatalogSnapshot'
+          description: ''
+        '304':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/rules/:
+    get:
+      operationId: field_rules_list
+      description: '`GET /field/rules/`: the values in force now, for phones to keep
+        offline.'
+      parameters:
+      - in: header
+        name: If-None-Match
+        schema:
+          type: string
+        description: The `ETag` (the snapshot `version`) the client already holds.
+          When it is still current the answer is `304` with no body.
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - field
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RulesSnapshot'
+          description: ''
+        '304':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/health/:
     get:
       operationId: health_retrieve
@@ -55,8 +433,400 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/rule-parameters/:
+    get:
+      operationId: rule_parameters_list
+      description: Parameters of the organization with their current value. They are
+        created by the seed.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - rule-parameters
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRuleParameterList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/rule-parameters/{key}/:
+    get:
+      operationId: rule_parameters_retrieve
+      description: Parameters of the organization with their current value. They are
+        created by the seed.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: key
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+        required: true
+      tags:
+      - rule-parameters
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleParameter'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/rule-parameters/{parameter_key}/versions/:
+    get:
+      operationId: rule_parameters_versions_list
+      description: |-
+        History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+
+        A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+        route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: parameter_key
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+        required: true
+      tags:
+      - rule-parameters
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRuleParameterVersionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: rule_parameters_versions_create
+      description: |-
+        History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+
+        A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+        route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: parameter_key
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+        required: true
+      tags:
+      - rule-parameters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RuleParameterVersionCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleParameterVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/rule-parameters/{parameter_key}/versions/{id}/:
+    get:
+      operationId: rule_parameters_versions_retrieve
+      description: |-
+        History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+
+        A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+        route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this rule parameter version.
+        required: true
+      - in: path
+        name: parameter_key
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+        required: true
+      tags:
+      - rule-parameters
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleParameterVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/rule-parameters/{parameter_key}/versions/{id}/void/:
+    post:
+      operationId: rule_parameters_versions_void_create
+      description: |-
+        History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+
+        A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+        route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this rule parameter version.
+        required: true
+      - in: path
+        name: parameter_key
+        schema:
+          type: string
+          pattern: ^[a-z][a-z0-9_]*$
+        required: true
+      tags:
+      - rule-parameters
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RuleParameterVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
+    Catalog:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        slug:
+          type: string
+          readOnly: true
+          pattern: ^[-a-zA-Z0-9_]+$
+        label_es:
+          type: string
+          readOnly: true
+        label_en:
+          type: string
+          readOnly: true
+        is_open:
+          type: boolean
+          readOnly: true
+      required:
+      - is_open
+      - label_en
+      - label_es
+      - slug
+    CatalogItem:
+      type: object
+      description: Read shape of an item. `is_active` and `is_other` change only through
+        their own rules.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        label_es:
+          type: string
+          readOnly: true
+        label_en:
+          type: string
+          readOnly: true
+        icon:
+          type: string
+          readOnly: true
+        sort:
+          type: integer
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        is_other:
+          type: boolean
+          readOnly: true
+        requires_photo:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - icon
+      - id
+      - is_active
+      - is_other
+      - label_en
+      - label_es
+      - requires_photo
+      - sort
+      - updated_at
+    CatalogItemCreateRequest:
+      type: object
+      description: '`sort` is optional: an omitted value appends the item at the end
+        of the catalog.'
+      properties:
+        code:
+          type: string
+          minLength: 1
+          pattern: ^[a-z0-9][a-z0-9_-]*$
+          maxLength: 64
+        label_es:
+          type: string
+          minLength: 1
+          maxLength: 200
+        label_en:
+          type: string
+          maxLength: 200
+        icon:
+          oneOf:
+          - type: string
+            pattern: ^[a-z0-9-]+$
+            maxLength: 64
+          - type: string
+            maxLength: 0
+        sort:
+          type: integer
+          maximum: 10000
+          minimum: 0
+        requires_photo:
+          type: boolean
+      required:
+      - code
+      - label_es
+    CatalogSnapshot:
+      type: object
+      description: Every catalog with its active items. `version` is also the `ETag`.
+      properties:
+        version:
+          type: string
+        catalogs:
+          type: array
+          items:
+            $ref: '#/components/schemas/SnapshotCatalog'
+      required:
+      - catalogs
+      - version
     Health:
       type: object
       properties:
@@ -187,6 +957,412 @@ components:
       - id
       - last_name
       - username
+    PaginatedCatalogItemList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+    PaginatedCatalogList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Catalog'
+    PaginatedRuleParameterList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleParameter'
+    PaginatedRuleParameterVersionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RuleParameterVersion'
+    PatchedCatalogItemUpdateRequest:
+      type: object
+      description: '`code`, `is_other` and `is_active` are not editable here: unknown
+        keys are ignored.'
+      properties:
+        label_es:
+          type: string
+          minLength: 1
+          maxLength: 200
+        label_en:
+          type: string
+          maxLength: 200
+        icon:
+          oneOf:
+          - type: string
+            pattern: ^[a-z0-9-]+$
+            maxLength: 64
+          - type: string
+            maxLength: 0
+        sort:
+          type: integer
+          maximum: 10000
+          minimum: 0
+        requires_photo:
+          type: boolean
+    RuleParameter:
+      type: object
+      description: |-
+        A parameter with the value in force now. Values are JSON numbers; null means no version yet.
+
+        `value`, `effective_from`, `version_id` and `next_change_at` come from the annotations of
+        `rules.selectors.list_parameters_with_current`.
+      properties:
+        key:
+          type: string
+          readOnly: true
+        value_type:
+          allOf:
+          - $ref: '#/components/schemas/ValueTypeEnum'
+          readOnly: true
+        unit:
+          allOf:
+          - $ref: '#/components/schemas/UnitEnum'
+          readOnly: true
+        min_value:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+        max_value:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+        value:
+          type: number
+          format: double
+          nullable: true
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        version_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        next_change_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - effective_from
+      - key
+      - max_value
+      - min_value
+      - next_change_at
+      - unit
+      - value
+      - value_type
+      - version_id
+    RuleParameterVersion:
+      type: object
+      description: Read shape of a version, with its `status` at the time of the request.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        value:
+          type: number
+          format: double
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+        effective_date:
+          type: string
+          format: date
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusEnum'
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        voided_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - effective_date
+      - effective_from
+      - id
+      - reason
+      - status
+      - value
+      - void_reason
+      - voided_at
+      - voided_by
+    RuleParameterVersionCreateRequest:
+      type: object
+      description: '`effective_from` is a local calendar date (`YYYY-MM-DD`): the
+        server resolves the instant.'
+      properties:
+        value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+        effective_from:
+          type: string
+          format: date
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - effective_from
+      - reason
+      - value
+    RulesSnapshot:
+      type: object
+      description: The values in force now. `version` is also the `ETag`.
+      properties:
+        version:
+          type: string
+        next_change_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: When the next scheduled version takes effect, if any.
+        parameters:
+          type: array
+          items:
+            $ref: '#/components/schemas/SnapshotParameter'
+      required:
+      - next_change_at
+      - parameters
+      - version
+    SnapshotCatalog:
+      type: object
+      properties:
+        slug:
+          type: string
+          pattern: ^[-a-zA-Z0-9_]+$
+        label_es:
+          type: string
+        label_en:
+          type: string
+        is_open:
+          type: boolean
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/SnapshotItem'
+      required:
+      - is_open
+      - items
+      - label_en
+      - label_es
+      - slug
+    SnapshotItem:
+      type: object
+      description: Documents the field snapshot (the payload is built by `build_catalog_snapshot`).
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        label_es:
+          type: string
+        label_en:
+          type: string
+          description: 'Blank: fall back to `label_es`.'
+        icon:
+          type: string
+        sort:
+          type: integer
+        is_other:
+          type: boolean
+        requires_photo:
+          type: boolean
+      required:
+      - code
+      - icon
+      - id
+      - is_other
+      - label_en
+      - label_es
+      - requires_photo
+      - sort
+    SnapshotParameter:
+      type: object
+      description: Documents the field rules snapshot (the payload is built by `build_rules_snapshot`).
+      properties:
+        key:
+          type: string
+        value_type:
+          $ref: '#/components/schemas/ValueTypeEnum'
+        unit:
+          $ref: '#/components/schemas/UnitEnum'
+        value:
+          type: number
+          format: double
+          nullable: true
+          description: 'Null: not configured yet.'
+        effective_from:
+          type: string
+          format: date-time
+          nullable: true
+        version_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - effective_from
+      - key
+      - unit
+      - value
+      - value_type
+      - version_id
+    StatusEnum:
+      enum:
+      - scheduled
+      - in_force
+      - superseded
+      - voided
+      type: string
+      description: |-
+        * `scheduled` - scheduled
+        * `in_force` - in_force
+        * `superseded` - superseded
+        * `voided` - voided
+    UnitEnum:
+      enum:
+      - m
+      - km_h
+      - s
+      - min
+      - week
+      - count
+      - km_l
+      type: string
+      description: |-
+        * `m` - Meters
+        * `km_h` - Kilometers Per Hour
+        * `s` - Seconds
+        * `min` - Minutes
+        * `week` - Weeks
+        * `count` - Count
+        * `km_l` - Kilometers Per Liter
+    ValueTypeEnum:
+      enum:
+      - integer
+      - decimal
+      type: string
+      description: |-
+        * `integer` - Integer
+        * `decimal` - Decimal
+    VoidRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
     FieldError:
       type: object
       description: 'One validation failure of a field: a machine code plus its parameters.'

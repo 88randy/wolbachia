@@ -5,6 +5,7 @@ from django.db import transaction
 
 from accounts.models import User
 from accounts.services import create_user_without_password
+from organizations.defaults import seed_organization_defaults
 from organizations.exceptions import AdminUserConflictError, ProfileOrganizationMismatchError
 from organizations.models import DEFAULT_LANGUAGE, Membership, Organization, Profile
 
@@ -45,20 +46,28 @@ ADMIN_PROFILE_SLUG = "admin"
 
 
 def seed_default_profiles(organization: Organization) -> list[Profile]:
-    """Create the default profiles of an organization (writes Profile). Safe to run twice."""
+    """Create the default profiles of an organization (writes Profile). Safe to run twice.
+
+    Profiles it creates carry `created_by_seed`, which is what lets the permission seed grant
+    them default codes later.
+    """
     profiles = []
     for seed in DEFAULT_PROFILE_SEEDS:
         profile, _ = Profile.objects.get_or_create(
             organization=organization,
             slug=seed.slug,
-            defaults={"label_es": seed.label_es, "label_en": seed.label_en},
+            defaults={
+                "label_es": seed.label_es,
+                "label_en": seed.label_en,
+                "created_by_seed": True,
+            },
         )
         profiles.append(profile)
     return profiles
 
 
 def create_organization(spec: OrganizationSpec) -> Organization:
-    """Create an organization and its default profiles (writes Organization and Profile)."""
+    """Create an organization with its default profiles, catalogs and rule parameters."""
     organization = Organization(
         name=spec.name,
         slug=spec.slug,
@@ -70,6 +79,7 @@ def create_organization(spec: OrganizationSpec) -> Organization:
     with transaction.atomic():
         organization.save()
         seed_default_profiles(organization)
+        seed_organization_defaults(organization)
     return organization
 
 

@@ -4,6 +4,127 @@
  */
 
 export interface paths {
+    "/api/v1/catalogs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The catalogs of the organization. They are created by the seed: there is no POST. */
+        get: operations["catalogs_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalogs/{catalog_slug}/items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE: items are deactivated. */
+        get: operations["catalogs_items_list"];
+        put?: never;
+        /** @description Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE: items are deactivated. */
+        post: operations["catalogs_items_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalogs/{catalog_slug}/items/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE: items are deactivated. */
+        get: operations["catalogs_items_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** @description Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE: items are deactivated. */
+        patch: operations["catalogs_items_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/catalogs/{catalog_slug}/items/{id}/activate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE: items are deactivated. */
+        post: operations["catalogs_items_activate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/catalogs/{catalog_slug}/items/{id}/deactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE: items are deactivated. */
+        post: operations["catalogs_items_deactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/catalog/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /field/catalog/`: the compact copy of every catalog that phones keep offline. */
+        get: operations["field_catalog_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/field/rules/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /field/rules/`: the values in force now, for phones to keep offline. */
+        get: operations["field_rules_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/": {
         parameters: {
             query?: never;
@@ -43,10 +164,161 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/rule-parameters/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Parameters of the organization with their current value. They are created by the seed. */
+        get: operations["rule_parameters_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-parameters/{key}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Parameters of the organization with their current value. They are created by the seed. */
+        get: operations["rule_parameters_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-parameters/{parameter_key}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+         *
+         *     A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+         *     route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+         */
+        get: operations["rule_parameters_versions_list"];
+        put?: never;
+        /**
+         * @description History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+         *
+         *     A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+         *     route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+         */
+        post: operations["rule_parameters_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-parameters/{parameter_key}/versions/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+         *
+         *     A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+         *     route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+         */
+        get: operations["rule_parameters_versions_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/rule-parameters/{parameter_key}/versions/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+         *
+         *     A version that has not taken effect yet can be voided (`POST .../{id}/void/`). The detail
+         *     route also makes PUT, PATCH and DELETE answer 405 instead of 404.
+         */
+        post: operations["rule_parameters_versions_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Catalog: {
+            readonly slug: string;
+            readonly label_es: string;
+            readonly label_en: string;
+            readonly is_open: boolean;
+        };
+        /** @description Read shape of an item. `is_active` and `is_other` change only through their own rules. */
+        CatalogItem: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly label_es: string;
+            readonly label_en: string;
+            readonly icon: string;
+            readonly sort: number;
+            readonly is_active: boolean;
+            readonly is_other: boolean;
+            readonly requires_photo: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly updated_at: string;
+        };
+        /** @description `sort` is optional: an omitted value appends the item at the end of the catalog. */
+        CatalogItemCreateRequest: {
+            code: string;
+            label_es: string;
+            label_en?: string;
+            icon?: string;
+            sort?: number;
+            requires_photo?: boolean;
+        };
+        /** @description Every catalog with its active items. `version` is also the `ETag`. */
+        CatalogSnapshot: {
+            version: string;
+            catalogs: components["schemas"]["SnapshotCatalog"][];
+        };
         Health: {
             status: string;
         };
@@ -91,6 +363,200 @@ export interface components {
             first_name: string;
             last_name: string;
         };
+        PaginatedCatalogItemList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CatalogItem"][];
+        };
+        PaginatedCatalogList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Catalog"][];
+        };
+        PaginatedRuleParameterList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RuleParameter"][];
+        };
+        PaginatedRuleParameterVersionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RuleParameterVersion"][];
+        };
+        /** @description `code`, `is_other` and `is_active` are not editable here: unknown keys are ignored. */
+        PatchedCatalogItemUpdateRequest: {
+            label_es?: string;
+            label_en?: string;
+            icon?: string;
+            sort?: number;
+            requires_photo?: boolean;
+        };
+        /**
+         * @description A parameter with the value in force now. Values are JSON numbers; null means no version yet.
+         *
+         *     `value`, `effective_from`, `version_id` and `next_change_at` come from the annotations of
+         *     `rules.selectors.list_parameters_with_current`.
+         */
+        RuleParameter: {
+            readonly key: string;
+            readonly value_type: components["schemas"]["ValueTypeEnum"];
+            readonly unit: components["schemas"]["UnitEnum"];
+            /** Format: double */
+            readonly min_value: number | null;
+            /** Format: double */
+            readonly max_value: number | null;
+            /** Format: double */
+            readonly value: number | null;
+            /** Format: date-time */
+            readonly effective_from: string | null;
+            /** Format: uuid */
+            readonly version_id: string | null;
+            /** Format: date-time */
+            readonly next_change_at: string | null;
+        };
+        /** @description Read shape of a version, with its `status` at the time of the request. */
+        RuleParameterVersion: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: double */
+            readonly value: number;
+            /** Format: date-time */
+            readonly effective_from: string;
+            /** Format: date */
+            readonly effective_date: string;
+            readonly reason: string;
+            readonly status: components["schemas"]["StatusEnum"];
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            /** Format: uuid */
+            readonly voided_by: string | null;
+            readonly void_reason: string;
+        };
+        /** @description `effective_from` is a local calendar date (`YYYY-MM-DD`): the server resolves the instant. */
+        RuleParameterVersionCreateRequest: {
+            /** Format: decimal */
+            value: string;
+            /** Format: date */
+            effective_from: string;
+            reason: string;
+        };
+        /** @description The values in force now. `version` is also the `ETag`. */
+        RulesSnapshot: {
+            version: string;
+            /**
+             * Format: date-time
+             * @description When the next scheduled version takes effect, if any.
+             */
+            next_change_at: string | null;
+            parameters: components["schemas"]["SnapshotParameter"][];
+        };
+        SnapshotCatalog: {
+            slug: string;
+            label_es: string;
+            label_en: string;
+            is_open: boolean;
+            items: components["schemas"]["SnapshotItem"][];
+        };
+        /** @description Documents the field snapshot (the payload is built by `build_catalog_snapshot`). */
+        SnapshotItem: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            label_es: string;
+            /** @description Blank: fall back to `label_es`. */
+            label_en: string;
+            icon: string;
+            sort: number;
+            is_other: boolean;
+            requires_photo: boolean;
+        };
+        /** @description Documents the field rules snapshot (the payload is built by `build_rules_snapshot`). */
+        SnapshotParameter: {
+            key: string;
+            value_type: components["schemas"]["ValueTypeEnum"];
+            unit: components["schemas"]["UnitEnum"];
+            /**
+             * Format: double
+             * @description Null: not configured yet.
+             */
+            value: number | null;
+            /** Format: date-time */
+            effective_from: string | null;
+            /** Format: uuid */
+            version_id: string | null;
+        };
+        /**
+         * @description * `scheduled` - scheduled
+         *     * `in_force` - in_force
+         *     * `superseded` - superseded
+         *     * `voided` - voided
+         * @enum {string}
+         */
+        StatusEnum: "scheduled" | "in_force" | "superseded" | "voided";
+        /**
+         * @description * `m` - Meters
+         *     * `km_h` - Kilometers Per Hour
+         *     * `s` - Seconds
+         *     * `min` - Minutes
+         *     * `week` - Weeks
+         *     * `count` - Count
+         *     * `km_l` - Kilometers Per Liter
+         * @enum {string}
+         */
+        UnitEnum: "m" | "km_h" | "s" | "min" | "week" | "count" | "km_l";
+        /**
+         * @description * `integer` - Integer
+         *     * `decimal` - Decimal
+         * @enum {string}
+         */
+        ValueTypeEnum: "integer" | "decimal";
+        VoidRequest: {
+            reason: string;
+        };
         /** @description One validation failure of a field: a machine code plus its parameters. */
         FieldError: {
             code: string;
@@ -124,6 +590,341 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    catalogs_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCatalogList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalogs_items_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                catalog_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCatalogItemList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalogs_items_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                catalog_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogItemCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalogs_items_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                catalog_slug: string;
+                /** @description A UUID string identifying this catalog item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalogs_items_partial_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                catalog_slug: string;
+                /** @description A UUID string identifying this catalog item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedCatalogItemUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalogs_items_activate_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                catalog_slug: string;
+                /** @description A UUID string identifying this catalog item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalogs_items_deactivate_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                catalog_slug: string;
+                /** @description A UUID string identifying this catalog item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    field_catalog_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The `ETag` (the snapshot `version`) the client already holds. When it is still current the answer is `304` with no body. */
+                "If-None-Match"?: string;
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogSnapshot"][];
+                };
+            };
+            /** @description No response body */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    field_rules_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The `ETag` (the snapshot `version`) the client already holds. When it is still current the answer is `304` with no body. */
+                "If-None-Match"?: string;
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RulesSnapshot"][];
+                };
+            };
+            /** @description No response body */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     health_retrieve: {
         parameters: {
             query?: never;
@@ -170,6 +971,224 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rule_parameters_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRuleParameterList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rule_parameters_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleParameter"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rule_parameters_versions_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                parameter_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRuleParameterVersionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rule_parameters_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                parameter_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RuleParameterVersionCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleParameterVersion"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rule_parameters_versions_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this rule parameter version. */
+                id: string;
+                parameter_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleParameterVersion"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    rule_parameters_versions_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this rule parameter version. */
+                id: string;
+                parameter_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RuleParameterVersion"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
