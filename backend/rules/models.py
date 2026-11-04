@@ -69,7 +69,21 @@ class ImmutableQuerySet(OrgScopedQuerySet):
         raise ImmutableRecordError(IMMUTABLE_MESSAGE)
 
 
-class RuleParameterVersion(OrgScopedModel):
+class ImmutableMixin(models.Model):
+    """Rows can be inserted but never modified: `save()` on a stored row and `update()` raise."""
+
+    objects = ImmutableQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
+
+    def save(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
+        if not self._state.adding:
+            raise ImmutableRecordError(IMMUTABLE_MESSAGE)
+        super().save(*args, **kwargs)
+
+
+class RuleParameterVersion(ImmutableMixin, OrgScopedModel):
     """One value of a parameter from `effective_from` on. Never updated, never deleted.
 
     `effective_from` is the instant it starts to apply (UTC). `effective_date` is the same
@@ -83,8 +97,6 @@ class RuleParameterVersion(OrgScopedModel):
     effective_date = models.DateField()
     reason = models.TextField()
 
-    objects = ImmutableQuerySet.as_manager()
-
     class Meta:
         constraints = [
             models.UniqueConstraint(
@@ -93,11 +105,6 @@ class RuleParameterVersion(OrgScopedModel):
             )
         ]
         indexes = [models.Index(fields=["parameter", "-effective_from"])]
-
-    def save(self, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
-        if not self._state.adding:
-            raise ImmutableRecordError(IMMUTABLE_MESSAGE)
-        super().save(*args, **kwargs)
 
     def __str__(self) -> str:
         return f"{self.parameter_id}@{self.effective_date}"
