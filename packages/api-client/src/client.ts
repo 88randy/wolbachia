@@ -19,7 +19,10 @@ export interface ApiClientOptions {
   /** Origin of the API without the `/api/v1` prefix (paths already include it). */
   baseUrl: string;
   auth: ApiAuth;
-  /** Slug of the active organization; sent as `X-Organization` while it returns a value. */
+  /**
+   * Slug of the active organization; sent as `X-Organization` while it returns a value. A header
+   * passed explicitly in a call (`params.header`) takes precedence, like `Authorization`.
+   */
   getOrganizationSlug?: () => string | undefined;
   /** Replaces the global `fetch` (tests, React Native polyfills). */
   fetch?: (request: Request) => Promise<Response>;
@@ -27,15 +30,20 @@ export interface ApiClientOptions {
 
 export type ApiClient = ReturnType<typeof createClient<paths>>;
 
+// A header passed explicitly in the call (`params.header`) wins over the global getters.
+function setUnlessPresent(request: Request, name: string, value: string): void {
+  if (!request.headers.has(name)) request.headers.set(name, value);
+}
+
 async function applyAuth(request: Request, auth: ApiAuth): Promise<void> {
   if (auth.kind === "bearer") {
     const token = await auth.getAccessToken();
-    if (token !== undefined) request.headers.set("Authorization", `Bearer ${token}`);
+    if (token !== undefined) setUnlessPresent(request, "Authorization", `Bearer ${token}`);
     return;
   }
   const token = auth.getCsrfToken();
   if (token !== undefined && !SAFE_METHODS.has(request.method.toUpperCase())) {
-    request.headers.set(CSRF_HEADER, token);
+    setUnlessPresent(request, CSRF_HEADER, token);
   }
 }
 
@@ -44,7 +52,7 @@ function authMiddleware(options: ApiClientOptions): Middleware {
     async onRequest({ request }) {
       await applyAuth(request, options.auth);
       const slug = options.getOrganizationSlug?.();
-      if (slug !== undefined && slug !== "") request.headers.set(ORGANIZATION_HEADER, slug);
+      if (slug !== undefined && slug !== "") setUnlessPresent(request, ORGANIZATION_HEADER, slug);
       return request;
     },
   };

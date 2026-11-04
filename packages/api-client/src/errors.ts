@@ -31,21 +31,23 @@ export function isErrorEnvelope(value: unknown): value is ErrorEnvelope {
   return typeof candidate["code"] === "string" && typeof candidate["detail"] === "string";
 }
 
-interface FetchResult<Data, Error> {
-  data?: Data;
-  error?: Error;
+interface FetchResult<D, E> {
+  data?: D;
+  error?: E;
   response: Response;
 }
 
 /**
  * Returns `data` of a call or throws an `ApiError`. Use it when the caller cannot do anything
  * with the error itself (query functions, form submit handlers); inspect `result.error` instead
- * when a status needs special handling.
+ * when a status needs special handling. It decides by `response.ok`, not by `result.error`:
+ * openapi-fetch leaves `error` undefined for an error response with an empty body (502, 401 or
+ * 429 from a proxy), and that must still throw.
  */
-export function unwrap<Data, Error>(result: FetchResult<Data, Error>): Data {
-  if (result.error !== undefined) {
+export function unwrap<D, E>(result: FetchResult<D, E>): D {
+  if (!result.response.ok) {
     const { error, response } = result;
     throw new ApiError(response.status, isErrorEnvelope(error) ? error : undefined);
   }
-  return result.data as Data;
+  return result.data as D;
 }

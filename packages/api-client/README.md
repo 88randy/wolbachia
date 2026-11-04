@@ -10,10 +10,10 @@ Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 import { createApiClient, unwrap } from "@wolbachia/api-client";
 
 const client = createApiClient({
-  baseUrl: "https://api.example.com", // origin only: paths already start with /api/v1
+  baseUrl: "", // web: same origin as the API. Mobile: the API origin, e.g. "https://api.example.com"
   auth: { kind: "session", getCsrfToken: () => readCookie("csrftoken") }, // web
   // auth: { kind: "bearer", getAccessToken: () => tokenStore.access },   // mobile
-  getOrganizationSlug: () => activeOrganizationSlug, // sent as X-Organization when set
+  getOrganizationSlug: () => activeOrganizationSlug, // sent as X-Organization when set (an explicit header in a call wins)
 });
 
 const me = unwrap(await client.GET("/api/v1/me/")); // typed `Schemas["Me"]`, throws ApiError
@@ -22,8 +22,8 @@ if (result.error) result.error.code; // typed ErrorEnvelope: translate `code` wi
 ```
 
 - Calls are `client.GET | POST | PUT | PATCH | DELETE(path, { params, body })`; path, params, body and response are checked against the schema. There are no hand-written per-endpoint functions and no React hooks: web wraps calls in `queryOptions` (TanStack Query), mobile calls them directly (docs/adr/0001-web-stack.md).
-- `auth.kind: "session"` uses same-origin cookies and sends `X-CSRFToken` on unsafe methods only. `auth.kind: "bearer"` sends `Authorization: Bearer <token>` and no cookies.
-- Every non-2xx response is typed as `ErrorEnvelope` (the `default` response of each operation). `unwrap(result)` returns `data` or throws `ApiError { status, code, envelope }`; a body that is not an envelope (proxy page) gives `code: "unknown_error"`. Network failures are the `TypeError` that `fetch` throws.
+- `auth.kind: "session"` uses same-origin cookies and sends `X-CSRFToken` on unsafe methods only; it assumes web and API share an origin (not decided yet, see ADR 0001 and #4; another origin needs CORS and cookie settings). `baseUrl` is the origin without `/api/v1`; use `""` for same origin. A header passed explicitly in a call (`params.header` or `headers`) takes precedence over `Authorization`, `X-CSRFToken` and `X-Organization` from the options. `auth.kind: "bearer"` sends `Authorization: Bearer <token>` and no cookies.
+- Every non-2xx response is typed as `ErrorEnvelope` (the `default` response of each operation). `unwrap(result)` returns `data` or throws `ApiError { status, code, envelope }` whenever the response is not `ok` (even with an empty body, where `result.error` is `undefined`); a body that is not an envelope (proxy page) gives `code: "unknown_error"`. Network failures are the `TypeError` that `fetch` throws.
 - Token refresh is not here (issues #4 and #6). The hook point is `client.use(middleware)` from `openapi-fetch`.
 - `fetch` can be injected (`options.fetch`) for tests.
 - `paths`, `components`, `operations` and `Schemas` (`Schemas["Me"]`) are re-exported for typing screens and forms.

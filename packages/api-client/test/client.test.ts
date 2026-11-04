@@ -109,6 +109,15 @@ void describe("bearer auth", () => {
     assert.deepEqual(sent, ["Bearer token-1", "Bearer token-2"]);
   });
 
+  void it("keeps an Authorization header passed explicitly in the call", async () => {
+    const { fetch, requests } = recordingFetch();
+    const client = clientWith({ fetch, auth: bearerAuth });
+
+    await client.GET(ME_PATH, { headers: { Authorization: "Bearer explicit" } });
+
+    assert.equal(lastRequest(requests).headers.get("Authorization"), "Bearer explicit");
+  });
+
   void it("sends no Authorization header without a token", async () => {
     const { fetch, requests } = recordingFetch();
     const auth = { kind: "bearer", getAccessToken: () => undefined } as const;
@@ -141,7 +150,7 @@ void describe("X-Organization", () => {
 
     await client.GET(ME_PATH, { params: { header: { "X-Organization": "other" } } });
 
-    assert.equal(lastRequest(requests).headers.get(ORGANIZATION_HEADER), "acme");
+    assert.equal(lastRequest(requests).headers.get(ORGANIZATION_HEADER), "other");
   });
 });
 
@@ -183,6 +192,27 @@ void describe("unwrap", () => {
       (error: unknown) =>
         error instanceof ApiError && error.envelope?.fields?.["name"]?.[0]?.code === "required",
     );
+  });
+
+  void it("throws on an error response with an empty body (error is undefined)", async () => {
+    const { fetch } = recordingFetch(
+      () => new Response(null, { status: 502, headers: { "Content-Length": "0" } }),
+    );
+    const result = await clientWith({ fetch }).GET(ME_PATH);
+
+    assert.equal(result.error, undefined);
+    assert.throws(
+      () => unwrap(result),
+      (error: unknown) =>
+        error instanceof ApiError && error.status === 502 && error.code === "unknown_error",
+    );
+  });
+
+  void it("returns undefined data for a 204 without throwing", async () => {
+    const { fetch } = recordingFetch(() => new Response(null, { status: 204 }));
+    const result = await clientWith({ fetch }).GET(ME_PATH);
+
+    assert.equal(unwrap(result), undefined);
   });
 
   void it("maps a body that is not an envelope (proxy error page) to unknown_error", async () => {
