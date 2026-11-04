@@ -1,5 +1,6 @@
 import { isErrorEnvelope } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
+import { withAuthTimeout } from "../api/auth-timeout";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { ensureCsrfCookie, fetchCsrfCookie } from "../api/csrf";
 import type { Me } from "../session/me";
@@ -25,7 +26,7 @@ function postLogin(
   credentials: Credentials,
   signal?: AbortSignal,
 ): Promise<RawResult> {
-  return client.POST("/api/v1/auth/login/", { body: credentials, ...(signal ? { signal } : {}) });
+  return client.POST("/api/v1/auth/login/", { body: credentials, signal: withAuthTimeout(signal) });
 }
 
 /** A `403 permission_denied` on login means the CSRF cookie or token was missing or stale. */

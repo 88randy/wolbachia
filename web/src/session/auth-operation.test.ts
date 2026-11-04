@@ -1,42 +1,118 @@
 import { describe, expect, test } from "vitest";
-import {
-  abandonAuthOperation,
-  finishAuthOperation,
-  isCurrentOperation,
-  startAuthOperation,
-} from "./auth-operation";
+import { runAuthOperation } from "./auth-operation";
 
-describe("auth operations", () => {
-  test("only one runs at a time, until its request settles", () => {
-    const first = startAuthOperation("login");
+function deferred() {
+  let release: () => void = () => undefined;
+  const promise = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { promise, release };
+}
 
-    expect(first).toBeDefined();
-    expect(startAuthOperation("logout")).toBeUndefined();
-    finishAuthOperation(first?.token ?? -1);
-    expect(startAuthOperation("logout")).toBeDefined();
+describe("auth operations are queued, never rejected", () => {
+  test("a new one waits for the previous one to settle, then runs", async () => {
+    const order: string[] = [];
+    const first = deferred();
+    const one = runAuthOperation("logout", async () => {
+      order.push("first starts");
+      await first.promise;
+      order.push("first ends");
+    });
+    const two = runAuthOperation("login", () => {
+      order.push("second starts");
+      return Promise.resolve();
+    });
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+    expect(order).toEqual(["first starts"]);
+    first.release();
+    await Promise.all([one.result, two.result]);
+
+    expect(order).toEqual(["first starts", "first ends", "second starts"]);
   });
 
-  test("abandoning aborts the request and ignores the result, but keeps the lock", () => {
-    const login = startAuthOperation("login");
-    const token = login?.token ?? -1;
+  test("a task that throws does not stop the queue", async () => {
+    const failing = runAuthOperation("logout", () => {
+      throw new Error("boom");
+    });
+    const next = runAuthOperation("login", () => Promise.resolve("ran"));
 
-    abandonAuthOperation(token);
+    await expect(failing.result).rejects.toThrow("boom");
 
-    expect(login?.signal.aborted).toBe(true);
-    expect(isCurrentOperation(token)).toBe(false);
-    expect(startAuthOperation("login")).toBeUndefined();
-    finishAuthOperation(token);
-    expect(startAuthOperation("login")).toBeDefined();
+    await expect(next.result).resolves.toBe("ran");
+  });
+});
+
+describe("generations and abandonment", () => {
+  test("a login queued before a sign-out is superseded: its result must be ignored", async () => {
+    const gate = deferred();
+    let isCurrentAtEnd: boolean | undefined;
+    const blocker = runAuthOperation("login", () => gate.promise);
+    const login = runAuthOperation("login", (context) => {
+      isCurrentAtEnd = context.isCurrent();
+      return Promise.resolve();
+    });
+    runAuthOperation("logout", () => Promise.resolve());
+
+    gate.release();
+    await blocker.result;
+    await login.result;
+
+    // It was superseded while queued, so it did not even run.
+    expect(isCurrentAtEnd).toBeUndefined();
   });
 
-  test("a stale token cannot release a newer operation", () => {
-    const first = startAuthOperation("login");
-    finishAuthOperation(first?.token ?? -1);
-    const second = startAuthOperation("logout");
+  test("a login queued after a sign-out runs", async () => {
+    runAuthOperation("logout", () => Promise.resolve());
+    const login = runAuthOperation("login", (context) => Promise.resolve(context.isCurrent()));
 
-    finishAuthOperation(first?.token ?? -1);
+    await expect(login.result).resolves.toBe(true);
+  });
 
-    expect(isCurrentOperation(second?.token ?? -1)).toBe(true);
-    expect(startAuthOperation("login")).toBeUndefined();
+  test("an abandoned login that has not started never runs, and its signal is aborted", async () => {
+    const gate = deferred();
+    runAuthOperation("login", () => gate.promise);
+    let ran = false;
+    const abandoned = runAuthOperation("login", () => {
+      ran = true;
+      return Promise.resolve();
+    });
+
+    abandoned.abandon();
+    gate.release();
+    await abandoned.result;
+
+    expect(ran).toBe(false);
+  });
+
+  test("abandoning a running login aborts its signal and marks its result as stale", async () => {
+    const gate = deferred();
+    let seen: { aborted: boolean; current: boolean } | undefined;
+    const login = runAuthOperation("login", async (context) => {
+      await gate.promise;
+      seen = { aborted: context.signal.aborted, current: context.isCurrent() };
+    });
+
+    await Promise.resolve();
+    login.abandon();
+    gate.release();
+    await login.result;
+
+    expect(seen).toEqual({ aborted: true, current: false });
+  });
+
+  test("a sign-out is never abandoned", async () => {
+    const gate = deferred();
+    let seen: { aborted: boolean; current: boolean } | undefined;
+    const logout = runAuthOperation("logout", async (context) => {
+      await gate.promise;
+      seen = { aborted: context.signal.aborted, current: context.isCurrent() };
+    });
+
+    logout.abandon();
+    gate.release();
+    await logout.result;
+
+    expect(seen).toEqual({ aborted: false, current: true });
   });
 });

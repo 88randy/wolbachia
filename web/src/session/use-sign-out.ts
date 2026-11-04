@@ -5,7 +5,7 @@ import type { AnyRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { ServiceFailure } from "../api/service-failure";
-import { finishAuthOperation, startAuthOperation, usePendingAuthOperation } from "./auth-operation";
+import { runAuthOperation } from "./auth-operation";
 import { forgetIdentity } from "./identity";
 import { clearOrganizationSlug } from "./organization-slug";
 import { requestLogout } from "./request-logout";
@@ -30,26 +30,28 @@ async function leaveSession(queryClient: QueryClient, router: AnyRouter): Promis
 }
 
 /**
- * Signs out: ends the server session and leaves it. It never overlaps a sign-in (`isBusy` is
- * also true while one is running) and always releases its lock.
+ * Signs out: ends the server session and leaves it. It is queued with the other auth operations
+ * and is NEVER abandoned: it completes even if the screen that started it is gone. `isBusy` is
+ * true from the click until it settles.
  */
 export function useSignOut() {
   const client = useApiClient();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const pending = usePendingAuthOperation();
+  const [isBusy, setIsBusy] = useState(false);
   const [failure, setFailure] = useState<ServiceFailure | undefined>();
   async function signOut(): Promise<void> {
-    const operation = startAuthOperation("logout");
-    if (operation === undefined) return;
-    try {
-      setFailure(undefined);
-      const outcome = await requestLogout(client, operation.signal);
+    if (isBusy) return;
+    setIsBusy(true);
+    setFailure(undefined);
+    const { result } = runAuthOperation("logout", async ({ signal }) => {
+      const outcome = await requestLogout(client, signal);
       if (outcome.ok) await leaveSession(queryClient, router);
-      else setFailure(outcome.failure);
-    } finally {
-      finishAuthOperation(operation.token);
-    }
+      return outcome;
+    });
+    const outcome = await result;
+    if (outcome && !outcome.ok) setFailure(outcome.failure);
+    setIsBusy(false);
   }
-  return { signOut, isBusy: pending !== null, failure };
+  return { signOut, isBusy, failure };
 }

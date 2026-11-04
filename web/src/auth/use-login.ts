@@ -5,12 +5,7 @@ import type { RegisteredRouter } from "@tanstack/react-router";
 
 import { useApiClient } from "../api/ApiClientProvider";
 import { safeRedirect } from "../router/safe-redirect";
-import {
-  finishAuthOperation,
-  isCurrentOperation,
-  startAuthOperation,
-  useAbandonOnUnmount,
-} from "../session/auth-operation";
+import { runAuthOperation, useAbandonOnUnmount } from "../session/auth-operation";
 import { forgetIdentity, recordIdentity } from "../session/identity";
 import type { Me } from "../session/me";
 import { ME_QUERY_KEY } from "../session/me-query";
@@ -43,25 +38,23 @@ async function enterSession(
  * Signs in and, on success, stores `me`, clears whatever a previous user left in the cache and
  * goes where the user was headed: the (validated) `redirect` target, or the organization chooser
  * first when they belong to several organizations. Returns the failure, or undefined on success.
- * It shares the sign-in/sign-out lock; leaving the page abandons (aborts) a pending request.
+ * It is queued with the other auth operations; leaving the page abandons (aborts) it, and its
+ * result is ignored if a sign-out was queued after it.
  */
 export function useLogin(requestedTarget: string | undefined) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   const router = useRouter();
-  const tokenRef = useAbandonOnUnmount();
+  const abandonRef = useAbandonOnUnmount();
   return async (credentials: Credentials): Promise<LoginFailure | undefined> => {
-    const operation = startAuthOperation("login");
-    if (operation === undefined) return { kind: "generic" };
-    tokenRef.current = operation.token;
-    try {
-      const outcome = await requestLogin(client, credentials, operation.signal);
-      if (!isCurrentOperation(operation.token)) return undefined;
+    const run = runAuthOperation("login", async ({ signal, isCurrent }) => {
+      const outcome = await requestLogin(client, credentials, signal);
+      if (!isCurrent()) return undefined;
       if (!outcome.ok) return outcome.failure;
       await enterSession(outcome.me, requestedTarget, { queryClient, router });
       return undefined;
-    } finally {
-      finishAuthOperation(operation.token);
-    }
+    });
+    abandonRef.current = run.abandon;
+    return run.result;
   };
 }

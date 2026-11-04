@@ -1,18 +1,16 @@
 import { useTranslation } from "react-i18next";
 import { ServiceFailureAlert } from "../forms/ServiceFailureAlert";
 import { SubmitButton } from "../forms/SubmitButton";
-import { usePendingAuthOperation } from "./auth-operation";
 import styles from "./SessionExpiredDialog.module.css";
 import { useSignOut } from "./use-sign-out";
 
 /**
- * Continue (submit) or sign out: the two ways out of the re-authentication dialog. Each is
- * disabled while the other is running, and a failed sign-out is reported.
+ * Continue (submit) or sign out: the two ways out of the re-authentication dialog. Each shows
+ * busy while it runs (they are queued, never rejected), and a failed sign-out is reported.
  */
 export function ReauthActions({ isSubmitting }: { isSubmitting: boolean }) {
   const { t } = useTranslation();
   const { signOut, isBusy, failure } = useSignOut();
-  const pending = usePendingAuthOperation();
   return (
     <>
       <ServiceFailureAlert id="reauth-sign-out-alert" failure={failure} />
@@ -30,7 +28,7 @@ export function ReauthActions({ isSubmitting }: { isSubmitting: boolean }) {
         <SubmitButton
           label={t("auth.session.submit")}
           busyLabel={t("auth.login.submitting")}
-          isBusy={isSubmitting || pending === "logout"}
+          isBusy={isSubmitting}
         />
       </div>
     </>

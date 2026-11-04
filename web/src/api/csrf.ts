@@ -1,12 +1,13 @@
 import type { ApiClient } from "@wolbachia/api-client";
+import { withAuthTimeout } from "./auth-timeout";
 import { CSRF_COOKIE_NAME, readCookie } from "./create-web-api-client";
 
 /**
  * Asks the server to set the `csrftoken` cookie (`GET /auth/csrf/`, `204`). Inside a sign-in or
- * sign-out, pass the operation's `signal`: abandoning it must abort this request too.
+ * sign-out, pass the operation's `signal`: abandoning it aborts this request too. It also times out.
  */
 export async function fetchCsrfCookie(client: ApiClient, signal?: AbortSignal): Promise<void> {
-  await client.GET("/api/v1/auth/csrf/", signal ? { signal } : {});
+  await client.GET("/api/v1/auth/csrf/", { signal: withAuthTimeout(signal) });
 }
 
 /** Whether the browser already holds the CSRF cookie. */

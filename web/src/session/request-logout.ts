@@ -1,4 +1,5 @@
 import type { ApiClient } from "@wolbachia/api-client";
+import { withAuthTimeout } from "../api/auth-timeout";
 import { ensureCsrfCookie, fetchCsrfCookie } from "../api/csrf";
 import { serviceFailureOf } from "../api/service-failure";
 import type { ServiceFailure } from "../api/service-failure";
@@ -8,7 +9,9 @@ export type LogoutOutcome = { ok: true } | { ok: false; failure: ServiceFailure 
 const HTTP_FORBIDDEN = 403;
 
 async function postLogout(client: ApiClient, signal?: AbortSignal): Promise<Response> {
-  const { response } = await client.POST("/api/v1/auth/logout/", signal ? { signal } : {});
+  const { response } = await client.POST("/api/v1/auth/logout/", {
+    signal: withAuthTimeout(signal),
+  });
   return response;
 }
 

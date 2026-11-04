@@ -9,7 +9,7 @@ import {
 } from "../session/organization-slug";
 import { apiError, createFakeApi, makeMe, noContent } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
-import { startAuthOperation } from "../session/auth-operation";
+import { runAuthOperation } from "../session/auth-operation";
 import { renderApp } from "../test/render-app";
 import type { Me } from "../session/me";
 
@@ -207,9 +207,9 @@ describe("sign out", () => {
     await vi.waitFor(() => {
       expect(app.queryClient.getQueryData(["incidents"])).toBeUndefined();
     });
-    await vi.waitFor(() => {
-      expect(startAuthOperation("login")).toBeDefined();
-    });
+    await expect(runAuthOperation("login", () => Promise.resolve("ran")).result).resolves.toBe(
+      "ran",
+    );
   });
 
   test("sign-out empties the query cache", async () => {

@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { AUTH_REQUEST_TIMEOUT_MS } from "../api/auth-timeout";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { requestLogin } from "../auth/request-login";
 import { apiError, createFakeApi } from "../test/fake-api";
 import type { FakeApiRoutes, RecordedRequest } from "../test/fake-api";
-import { abandonAuthOperation, finishAuthOperation, startAuthOperation } from "./auth-operation";
-import type { AuthOperation } from "./auth-operation";
+import { runAuthOperation } from "./auth-operation";
 import { requestLogout } from "./request-logout";
 
 const CSRF = "GET /api/v1/auth/csrf/";
@@ -32,6 +32,11 @@ function setCsrfCookie() {
   document.cookie = "csrftoken=test-csrf; path=/";
 }
 
+/** Lets the first request of the operation start before the test acts. */
+function tick() {
+  return new Promise((resolve) => setTimeout(resolve, 20));
+}
+
 beforeEach(() => {
   document.cookie = "csrftoken=; Max-Age=0; path=/";
   vi.spyOn(console, "error").mockImplementation(() => undefined);
@@ -42,88 +47,110 @@ afterEach(() => {
   document.cookie = "csrftoken=; Max-Age=0; path=/";
 });
 
-/** Runs an operation like the hooks do, abandons it while it waits, and returns the next start. */
-async function abandonWhileWaiting(
-  kind: AuthOperation,
-  run: (signal: AbortSignal) => Promise<unknown>,
-) {
-  const operation = startAuthOperation(kind);
-  if (operation === undefined) throw new Error("the lock was already held");
-  const settled = run(operation.signal).finally(() => {
-    finishAuthOperation(operation.token);
-  });
-  abandonAuthOperation(operation.token);
-  await settled;
-  return startAuthOperation(kind);
+async function nextOperationRuns(): Promise<void> {
+  const next = runAuthOperation("login", () => Promise.resolve("ran"));
+  await expect(next.result).resolves.toBe("ran");
 }
 
-describe("abandoning an auth operation always releases the lock", () => {
-  test("login, during the CSRF bootstrap request", async () => {
+describe("abandoning a login aborts every request it waits for", () => {
+  test("during the CSRF bootstrap request", async () => {
     const client = clientFor({ [CSRF]: hangUntilAborted });
-
-    const next = await abandonWhileWaiting("login", (signal) =>
+    const login = runAuthOperation("login", ({ signal }) =>
       requestLogin(client, CREDENTIALS, signal),
     );
+    await tick();
 
-    expect(next).toBeDefined();
+    login.abandon();
+
+    await login.result;
+    await nextOperationRuns();
   });
 
-  test("login, during the CSRF refresh after a 403", async () => {
+  test("during the CSRF refresh after a 403", async () => {
     setCsrfCookie();
     const client = clientFor({
       [LOGIN]: apiError(403, "permission_denied"),
       [CSRF]: hangUntilAborted,
     });
-
-    const operation = startAuthOperation("login");
-    const settled = requestLogin(client, CREDENTIALS, operation?.signal).finally(() => {
-      finishAuthOperation(operation?.token ?? -1);
-    });
-    // The login answered 403 and the refresh is now waiting: leave the screen.
-    await vi.waitFor(() => {
-      expect(operation?.signal.aborted).toBe(false);
-    });
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    abandonAuthOperation(operation?.token ?? -1);
-    await settled;
-
-    expect(startAuthOperation("login")).toBeDefined();
-  });
-
-  test("login, during the login request itself", async () => {
-    setCsrfCookie();
-    const client = clientFor({ [LOGIN]: hangUntilAborted });
-
-    const next = await abandonWhileWaiting("login", (signal) =>
+    const login = runAuthOperation("login", ({ signal }) =>
       requestLogin(client, CREDENTIALS, signal),
     );
+    await tick();
 
-    expect(next).toBeDefined();
+    login.abandon();
+
+    await login.result;
+    await nextOperationRuns();
   });
 
-  test("sign-out, during the CSRF bootstrap request", async () => {
-    const client = clientFor({ [CSRF]: hangUntilAborted });
-
-    const next = await abandonWhileWaiting("logout", (signal) => requestLogout(client, signal));
-
-    expect(next).toBeDefined();
-  });
-
-  test("sign-out, during the CSRF refresh after a 403", async () => {
+  test("during the login request itself", async () => {
     setCsrfCookie();
+    const client = clientFor({ [LOGIN]: hangUntilAborted });
+    const login = runAuthOperation("login", ({ signal }) =>
+      requestLogin(client, CREDENTIALS, signal),
+    );
+    await tick();
+
+    login.abandon();
+
+    await login.result;
+    await nextOperationRuns();
+  });
+});
+
+describe("a hung auth request is released by its timeout", () => {
+  /** The real timeout is 15 s: its signal is replaced by one the test fires. */
+  function stubTimeout() {
+    const timeout = new AbortController();
+    const spy = vi.spyOn(AbortSignal, "timeout").mockReturnValue(timeout.signal);
+    return {
+      fire: () => {
+        timeout.abort();
+      },
+      spy,
+    };
+  }
+
+  test("a sign-out waiting for the CSRF cookie", async () => {
+    const { fire, spy } = stubTimeout();
+    const client = clientFor({ [CSRF]: hangUntilAborted });
+    const logout = runAuthOperation("logout", ({ signal }) => requestLogout(client, signal));
+    const queued = runAuthOperation("login", () => Promise.resolve("ran"));
+    await tick();
+
+    fire();
+
+    await expect(logout.result).resolves.toMatchObject({ ok: false });
+    await expect(queued.result).resolves.toBe("ran");
+    expect(spy).toHaveBeenCalledWith(AUTH_REQUEST_TIMEOUT_MS);
+  });
+
+  test("a login request that never answers", async () => {
+    setCsrfCookie();
+    const { fire } = stubTimeout();
+    const client = clientFor({ [LOGIN]: hangUntilAborted });
+    const login = runAuthOperation("login", ({ signal }) =>
+      requestLogin(client, CREDENTIALS, signal),
+    );
+    await tick();
+
+    fire();
+
+    await expect(login.result).resolves.toMatchObject({ ok: false });
+  });
+
+  test("a sign-out request that never answers keeps working after the 403 refresh timeout", async () => {
+    setCsrfCookie();
+    const { fire } = stubTimeout();
     const client = clientFor({
       [LOGOUT]: apiError(403, "permission_denied"),
       [CSRF]: hangUntilAborted,
     });
+    const logout = runAuthOperation("logout", ({ signal }) => requestLogout(client, signal));
+    await tick();
 
-    const operation = startAuthOperation("logout");
-    const settled = requestLogout(client, operation?.signal).finally(() => {
-      finishAuthOperation(operation?.token ?? -1);
-    });
-    await new Promise((resolve) => setTimeout(resolve, 20));
-    abandonAuthOperation(operation?.token ?? -1);
-    await settled;
+    fire();
 
-    expect(startAuthOperation("logout")).toBeDefined();
+    await expect(logout.result).resolves.toMatchObject({ ok: false });
   });
 });

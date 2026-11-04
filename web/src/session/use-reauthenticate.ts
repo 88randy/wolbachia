@@ -9,12 +9,7 @@ import { useApiClient } from "../api/ApiClientProvider";
 import type { LoginFailure } from "../auth/login-failure";
 import { requestLogin } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
-import {
-  finishAuthOperation,
-  isCurrentOperation,
-  startAuthOperation,
-  useAbandonOnUnmount,
-} from "./auth-operation";
+import { runAuthOperation, useAbandonOnUnmount } from "./auth-operation";
 import { recordIdentity } from "./identity";
 import type { Me } from "./me";
 import { ME_QUERY_KEY } from "./me-query";
@@ -37,7 +32,7 @@ async function acceptLogin(me: Me, queryClient: QueryClient, router: AnyRouter):
  * typed is lost. Afterwards every active query is refetched; the request that failed with the
  * 401 is NOT repeated, the user sends it again. If the session lands in another organization
  * (the stored slug was refused) the old organization's cache is dropped and the guards run again.
- * It never overlaps a sign-out: an answer for an older operation is dropped.
+ * It is queued with the other auth operations and abandoned if the dialog goes away.
  */
 export function useReauthenticate() {
   const { user } = useMe();
@@ -46,25 +41,22 @@ export function useReauthenticate() {
   const router = useRouter();
   const [failure, setFailure] = useState<LoginFailure | undefined>();
   const alertRef = useFocusAlert(failure);
-  const tokenRef = useAbandonOnUnmount();
+  const abandonRef = useAbandonOnUnmount();
   const form = useForm<ReauthValues>({
     resolver: zodResolver(reauthSchema),
     defaultValues: { password: "" },
   });
   const submit = form.handleSubmit(async ({ password }) => {
-    const operation = startAuthOperation("login");
-    if (operation === undefined) return;
-    tokenRef.current = operation.token;
-    try {
-      setFailure(undefined);
-      const credentials = { username: user.username, password };
-      const outcome = await requestLogin(client, credentials, operation.signal);
-      if (!isCurrentOperation(operation.token)) return;
+    setFailure(undefined);
+    const credentials = { username: user.username, password };
+    const run = runAuthOperation("login", async ({ signal, isCurrent }) => {
+      const outcome = await requestLogin(client, credentials, signal);
+      if (!isCurrent()) return;
       if (outcome.ok) await acceptLogin(outcome.me, queryClient, router);
       else setFailure(outcome.failure);
-    } finally {
-      finishAuthOperation(operation.token);
-    }
+    });
+    abandonRef.current = run.abandon;
+    await run.result;
   });
   return { form, username: user.username, failure, alertRef, submit };
 }

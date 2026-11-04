@@ -2,7 +2,7 @@ import { ApiError } from "@wolbachia/api-client";
 import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { createFakeApi, makeMe, makeOrganization, noContent } from "../test/fake-api";
+import { apiError, createFakeApi, makeMe, makeOrganization, noContent } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
@@ -13,6 +13,7 @@ import { endSessionExpiry } from "./session-events";
 const ME = "GET /api/v1/me/";
 const LOGIN = "POST /api/v1/auth/login/";
 const LOGOUT = "POST /api/v1/auth/logout/";
+const CSRF = "GET /api/v1/auth/csrf/";
 const PASSWORD = fakePassword();
 
 beforeEach(() => {
@@ -33,7 +34,12 @@ function deferred() {
   const promise = new Promise<Response>((resolve) => {
     release = resolve;
   });
-  return { promise, release };
+  const state = { promise, release, pending: false, hold: () => promise };
+  state.hold = () => {
+    state.pending = true;
+    return promise;
+  };
+  return state;
 }
 
 async function openExpired(routes: FakeApiRoutes = {}, path = "/", me: Me = makeMe()) {
@@ -58,10 +64,10 @@ function logoutRequests(api: { requests: { path: string }[] }) {
   return api.requests.filter((request) => request.path === "/api/v1/auth/logout/");
 }
 
-describe("re-authentication and sign-out never overlap", () => {
-  test("sign-out is disabled while the login is pending, and the late login still lands", async () => {
+describe("re-authentication and sign-out are queued, not rejected", () => {
+  test("a sign-out clicked while the login is pending runs after it and wins", async () => {
     const login = deferred();
-    const { api } = await openExpired({ [LOGIN]: () => login.promise });
+    const { api, app } = await openExpired({ [LOGIN]: () => login.promise });
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
     await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
 
@@ -69,25 +75,24 @@ describe("re-authentication and sign-out never overlap", () => {
     expect(logoutRequests(api)).toEqual([]);
     login.release(Response.json({ me: makeMe(), server_time: "2026-11-04T12:00:00Z" }));
 
-    await vi.waitFor(() => {
-      expect(screen.queryByRole("dialog")).toBeNull();
-    });
-    expect(logoutRequests(api)).toEqual([]);
+    expect(await screen.findByRole("heading", { level: 1, name: "Inicia sesión" })).toBeDefined();
+    expect(logoutRequests(api)).toHaveLength(1);
+    expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
   });
 
-  test("the login is ignored while the sign-out is pending: nothing repopulates /me/", async () => {
+  test("a login submitted while the sign-out is pending is not sent: the dialog is gone", async () => {
     const logout = deferred();
     const { api, app } = await openExpired({ [LOGOUT]: () => logout.promise });
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
-    // While the sign-out runs the button already reads "Entrando…" (busy).
-    await userEvent.click(screen.getByRole("button", { name: "Entrando…" }));
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
     expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(false);
     logout.release(noContent(204));
 
     expect(await screen.findByRole("heading", { level: 1, name: "Inicia sesión" })).toBeDefined();
     expect(app.queryClient.getQueryData(["me"])).toBeUndefined();
+    expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(false);
   });
 
   test("a failed sign-out is reported inside the dialog", async () => {
@@ -103,6 +108,86 @@ describe("re-authentication and sign-out never overlap", () => {
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain("No hay conexión con el servidor");
     expect(screen.getByRole("dialog")).toBeDefined();
+  });
+});
+
+describe("leaving the page during a pending sign-out", () => {
+  const SESSION = { me: makeMe(), server_time: "2026-11-04T12:00:00Z" };
+
+  /** Sign-out waits on `held`; the user goes to /login and signs in again meanwhile. */
+  async function signOutThenSignInAgain(routes: FakeApiRoutes, held: ReturnType<typeof deferred>) {
+    const api = createFakeApi({
+      [ME]: Response.json(makeMe()),
+      [LOGIN]: Response.json(SESSION),
+      ...routes,
+    });
+    const app = await renderApp({ fetch: api.fetch });
+    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    await userEvent.click(screen.getByRole("button", { name: /Menú de usuario/ }));
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+    await vi.waitFor(() => {
+      expect(held.pending).toBe(true);
+    });
+    app.router.history.push("/login");
+    await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
+    await userEvent.type(screen.getByLabelText("Usuario"), "ana.supervisora");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    return api;
+  }
+
+  function order(api: { requests: { method: string; path: string }[] }) {
+    return api.requests
+      .filter((request) => request.method === "POST")
+      .map((request) => request.path.replace("/api/v1/auth/", ""));
+  }
+
+  test("during the CSRF bootstrap: the login is sent after the logout settles", async () => {
+    document.cookie = "csrftoken=; Max-Age=0; path=/";
+    const held = deferred();
+    let csrfCalls = 0;
+    const api = await signOutThenSignInAgain(
+      {
+        [CSRF]: () => {
+          csrfCalls += 1;
+          document.cookie = "csrftoken=test-csrf; path=/";
+          return csrfCalls === 1 ? held.hold() : noContent(204);
+        },
+        [LOGOUT]: noContent(204),
+      },
+      held,
+    );
+    expect(order(api)).toEqual([]);
+
+    held.release(noContent(204));
+
+    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    expect(order(api)).toEqual(["logout/", "login/"]);
+  });
+
+  test("during the CSRF refresh after a 403: the login is sent after the logout settles", async () => {
+    const held = deferred();
+    let logouts = 0;
+    let csrfCalls = 0;
+    const api = await signOutThenSignInAgain(
+      {
+        [CSRF]: () => {
+          csrfCalls += 1;
+          return csrfCalls === 1 ? held.hold() : noContent(204);
+        },
+        [LOGOUT]: () => {
+          logouts += 1;
+          return logouts === 1 ? apiError(403, "permission_denied") : noContent(204);
+        },
+      },
+      held,
+    );
+    expect(order(api)).toEqual(["logout/"]);
+
+    held.release(noContent(204));
+
+    await screen.findByRole("heading", { level: 1, name: "Inicio" });
+    expect(order(api)).toEqual(["logout/", "logout/", "login/"]);
   });
 });
 

@@ -1,99 +1,101 @@
-import { useEffect, useRef, useSyncExternalStore } from "react";
+import { useEffect, useRef } from "react";
 import type { RefObject } from "react";
 
 /**
- * Sign-in (login page or re-authentication) and sign-out never overlap: a late login answer
- * would fill `/me/` after the user signed out, and could even install a new session cookie.
- * Only one operation runs at a time. The lock is released when its HTTP request settles or is
- * aborted, never earlier. An operation that is abandoned (its screen went away) is aborted and
- * its late result is ignored.
+ * Auth operations (sign-in on the login page, re-authentication, sign-out) run strictly one after
+ * another: a new one waits for the previous one to settle and is never rejected because another
+ * is pending. Waiting is bounded because every network call of an operation has a timeout
+ * (`withAuthTimeout`).
+ *
+ * - A login is superseded by any sign-out queued after it: its result is ignored (generation).
+ * - A login may be abandoned (its screen went away): its request is aborted and, if it has not
+ *   started, it never runs. A sign-out is never abandoned: it always completes, even after the
+ *   screen that started it is gone.
  */
 export type AuthOperation = "login" | "logout";
 
-export interface AuthOperationHandle {
-  token: number;
-  /** Aborted when the operation is abandoned: pass it to the request. */
+export interface AuthOperationContext {
+  /** Aborted when a login is abandoned; pass it to every request of the operation. */
   signal: AbortSignal;
+  /** False once the result must be ignored (abandoned, or a sign-out came after it). */
+  isCurrent: () => boolean;
 }
 
-interface Running {
+export interface AuthOperationRun<T> {
+  /** The task's result; undefined when the operation was skipped without running. */
+  result: Promise<T | undefined>;
+  /** Abandons a login (no effect on a sign-out). */
+  abandon: () => void;
+}
+
+interface Queued {
   kind: AuthOperation;
-  token: number;
-  controller: AbortController;
+  generation: number;
   isAbandoned: boolean;
+  controller: AbortController;
 }
-
-type Listener = () => void;
 
 let generation = 0;
-let running: Running | null = null;
-const listeners = new Set<Listener>();
+let tail: Promise<unknown> = Promise.resolve();
+const active = new Set<Queued>();
 
-function notify(): void {
-  listeners.forEach((listener) => {
-    listener();
+function isWanted(operation: Queued): boolean {
+  if (operation.kind === "logout") return true;
+  return !operation.isAbandoned && operation.generation === generation;
+}
+
+/** Queues `task` behind every earlier auth operation. */
+export function runAuthOperation<T>(
+  kind: AuthOperation,
+  task: (context: AuthOperationContext) => Promise<T>,
+): AuthOperationRun<T> {
+  if (kind === "logout") generation += 1;
+  const operation: Queued = {
+    kind,
+    generation,
+    isAbandoned: false,
+    controller: new AbortController(),
+  };
+  active.add(operation);
+  const result = tail.then(async () => {
+    if (!isWanted(operation)) return undefined;
+    return task({ signal: operation.controller.signal, isCurrent: () => isWanted(operation) });
   });
-}
-
-/** Starts an operation; undefined when another one is still running. */
-export function startAuthOperation(kind: AuthOperation): AuthOperationHandle | undefined {
-  if (running !== null) return undefined;
-  generation += 1;
-  const controller = new AbortController();
-  running = { kind, token: generation, controller, isAbandoned: false };
-  notify();
-  return { token: generation, signal: controller.signal };
-}
-
-/** Whether `token` is the running operation and still wanted (its result may be applied). */
-export function isCurrentOperation(token: number): boolean {
-  return running?.token === token && !running.isAbandoned;
-}
-
-/** The screen that started `token` went away: abort its request and ignore its result. */
-export function abandonAuthOperation(token: number): void {
-  if (running?.token !== token) return;
-  running.isAbandoned = true;
-  running.controller.abort();
-}
-
-/** Releases the lock. Call it when the request has settled (success, failure or abort). */
-export function finishAuthOperation(token: number): void {
-  if (running?.token !== token) return;
-  running = null;
-  notify();
+  const settled = result.finally(() => {
+    active.delete(operation);
+  });
+  tail = settled.catch(() => undefined);
+  return {
+    result,
+    abandon: () => {
+      if (kind === "logout") return;
+      operation.isAbandoned = true;
+      operation.controller.abort();
+    },
+  };
 }
 
 /** Forgets everything (tests only: module state must not leak between them). */
 export function resetAuthOperation(): void {
-  running?.controller.abort();
-  running = null;
-  notify();
-}
-
-function subscribe(listener: Listener): () => void {
-  listeners.add(listener);
-  return () => {
-    listeners.delete(listener);
-  };
-}
-
-/** The operation in flight, if any (to disable the other action). */
-export function usePendingAuthOperation(): AuthOperation | null {
-  return useSyncExternalStore(subscribe, () => running?.kind ?? null);
+  active.forEach((operation) => {
+    operation.controller.abort();
+  });
+  active.clear();
+  tail = Promise.resolve();
+  generation = 0;
 }
 
 /**
- * Keeps the token of the sign-in this component started (assign `ref.current`); when the component
- * unmounts (the user left the screen) that operation is abandoned.
+ * Keeps the `abandon` of the login this component started (assign `ref.current`); when the
+ * component unmounts (the user left the screen) that login is abandoned.
  */
-export function useAbandonOnUnmount(): RefObject<number | undefined> {
-  const tokenRef = useRef<number | undefined>(undefined);
+export function useAbandonOnUnmount(): RefObject<(() => void) | undefined> {
+  const abandonRef = useRef<(() => void) | undefined>(undefined);
   useEffect(
     () => () => {
-      if (tokenRef.current !== undefined) abandonAuthOperation(tokenRef.current);
+      abandonRef.current?.();
     },
     [],
   );
-  return tokenRef;
+  return abandonRef;
 }
