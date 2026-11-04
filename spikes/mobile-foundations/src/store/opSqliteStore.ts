@@ -5,6 +5,17 @@ import type { EventStatus, EventStore, FakeEvent } from './types';
 
 const DB_NAME = 'spike_opsqlite.db';
 
+/**
+ * Same durability settings requested from both stores (WatermelonDB's JSI code asks for WAL + FULL, see
+ * node_modules/@nozbe/watermelondb/native/shared/Database.cpp). The values really in effect are read back
+ * and logged by describe(), so the comparison is honest even if a library ignores the request.
+ */
+const PRAGMAS = ['PRAGMA journal_mode = WAL', 'PRAGMA synchronous = FULL'];
+
+function firstValue(rows: Record<string, unknown>[]): string {
+  return String(Object.values(rows[0] ?? {})[0]);
+}
+
 const INSERT_SQL = 'INSERT OR REPLACE INTO event (id, type, payload, device_time, status) VALUES (?, ?, ?, ?, ?)';
 
 function toParams(event: FakeEvent): Scalar[] {
@@ -30,18 +41,26 @@ function readStatus(value: Scalar | undefined): EventStatus {
 export class OpSqliteStore implements EventStore {
   readonly name = 'op-sqlite';
   private db: DB | null = null;
+  private settings = 'not read';
 
   async open(): Promise<void> {
     const db = open({ name: DB_NAME });
     await db.execute(
       'CREATE TABLE IF NOT EXISTS event (id TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, payload TEXT NOT NULL, device_time INTEGER NOT NULL, status TEXT NOT NULL)'
     );
-    await db.execute('CREATE INDEX IF NOT EXISTS event_status_time ON event (status, device_time)');
+    // Same index as WatermelonDB's schema (isIndexed on status only), so neither store has an edge.
+    await db.execute('CREATE INDEX IF NOT EXISTS event_status ON event (status)');
+    for (const pragma of PRAGMAS) await db.execute(pragma);
+    const journal = await db.execute('PRAGMA journal_mode');
+    const synchronous = await db.execute('PRAGMA synchronous');
+    this.settings =
+      `journal_mode=${firstValue(journal.rows)}, synchronous=${firstValue(synchronous.rows)} ` +
+      '(0=OFF 1=NORMAL 2=FULL 3=EXTRA)';
     this.db = db;
   }
 
   describe(): string {
-    return 'op-sqlite, async execute, SQLite file in app storage';
+    return `op-sqlite, async execute, SQLite file in app storage, ${this.settings}`;
   }
 
   private get handle(): DB {

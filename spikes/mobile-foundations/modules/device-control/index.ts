@@ -27,7 +27,7 @@ export type InstallStatusEvent = {
 
 export type DownloadResult = { path: string; bytes: number; sha256: string };
 
-export type GeoOpenResult = 'opened' | 'not_installed' | 'no_handler';
+export type GeoOpenResult = 'opened' | 'not_installed' | 'no_handler' | 'blocked_by_lock_task';
 
 type DeviceControlEvents = {
   onDownloadProgress: (progress: DownloadProgress) => void;

@@ -53,8 +53,15 @@ export class WatermelonStore implements EventStore {
   readonly name = 'WatermelonDB';
   private database: Database | null = null;
   private adapter: SQLiteAdapter | null = null;
+  private settings = 'not read';
 
   async open(): Promise<void> {
+    // onSetUpError fires asynchronously and initializingPromise does not report it: turn it into a
+    // rejection so the screen log shows it and open() fails instead of hanging or looking fine.
+    let failSetup: (error: Error) => void = () => undefined;
+    const setupFailed = new Promise<never>((_resolve, reject) => {
+      failSetup = reject;
+    });
     const adapter = new SQLiteAdapter({
       dbName: 'spike_watermelon',
       schema,
@@ -64,16 +71,39 @@ export class WatermelonStore implements EventStore {
       jsi: true,
       onSetUpError: (error: Error) => {
         console.error('WatermelonDB setup failed', error);
+        failSetup(error);
       },
     });
     this.adapter = adapter;
     this.database = new Database({ adapter, modelClasses: [EventModel] });
-    await adapter.initializingPromise;
+    await Promise.race([adapter.initializingPromise, setupFailed]);
+    await this.applyAndReadPragmas();
+  }
+
+  /**
+   * Best effort: asks for the same WAL + FULL as op-sqlite and reads back what is in effect.
+   * [ASSUMPTION] Q.unsafeSqlQuery accepts a PRAGMA on the Android async bridge; if it does not, the
+   * failure is shown in describe() instead of aborting the benchmark.
+   */
+  private async applyAndReadPragmas(): Promise<void> {
+    const read = async (pragma: string): Promise<string> => {
+      const rows = await this.collection.query(Q.unsafeSqlQuery(pragma)).unsafeFetchRaw();
+      return String(Object.values((rows[0] ?? {}) as Record<string, unknown>)[0]);
+    };
+    try {
+      await read('PRAGMA journal_mode = WAL');
+      await read('PRAGMA synchronous = FULL');
+      const journal = await read('PRAGMA journal_mode');
+      const synchronous = await read('PRAGMA synchronous');
+      this.settings = `journal_mode=${journal}, synchronous=${synchronous} (0=OFF 1=NORMAL 2=FULL 3=EXTRA)`;
+    } catch (error) {
+      this.settings = `could not set or read PRAGMAs: ${error instanceof Error ? error.message : String(error)}`;
+    }
   }
 
   describe(): string {
     const mode = this.adapter?._dispatcherType ?? 'unknown';
-    return `WatermelonDB over SQLite, dispatcher: ${mode}`;
+    return `WatermelonDB over SQLite, dispatcher: ${mode}, ${this.settings}`;
   }
 
   private get db(): Database {

@@ -24,6 +24,7 @@ export function DedicatedScreen() {
   const [allowHttp, setAllowHttp] = useState(true);
   const [downloaded, setDownloaded] = useState<DownloadResult | null>(null);
   const [progress, setProgress] = useState('-');
+  const [busy, setBusy] = useState(false);
 
   const refresh = () => {
     const next = readStatus();
@@ -46,12 +47,14 @@ export function DedicatedScreen() {
   }, [log]);
 
   const attempt = async (label: string, work: () => Promise<void>) => {
+    setBusy(true);
     try {
       await work();
       log(`${label}: ok`);
     } catch (error) {
       log(`ERROR ${label}: ${errorMessage(error)}`);
     } finally {
+      setBusy(false);
       refresh();
     }
   };
@@ -122,6 +125,7 @@ export function DedicatedScreen() {
         </View>
         <Button
           label="Download (resumes if interrupted)"
+          disabled={busy}
           onPress={() =>
             void attempt('download', async () => {
               const result = await DeviceControl.downloadApk(url.trim(), sha.trim(), allowHttp);
@@ -134,7 +138,7 @@ export function DedicatedScreen() {
         <KeyValue label="Downloaded file" value={downloaded === null ? '-' : formatBytes(downloaded.bytes)} />
         <Button
           label="Install downloaded APK"
-          disabled={downloaded === null}
+          disabled={downloaded === null || busy}
           onPress={() =>
             void attempt('install', async () => {
               if (downloaded === null) throw new Error('Nothing downloaded yet');
