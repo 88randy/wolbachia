@@ -14,7 +14,7 @@
     "typecheck": "node scripts/typecheck.mjs"
   },
   "engines": {
-    "node": ">=22"
+    "node": ">=22.13"
   },
   "devDependencies": {
     "@eslint/js": "9.39.5",
