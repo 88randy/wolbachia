@@ -2,7 +2,8 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test } from "vitest";
-import { apiError, createFakeApi, makeMe } from "../test/fake-api";
+import { ME_QUERY_KEY } from "../session/me-query";
+import { apiError, createFakeApi, makeMe, makeOrganization } from "../test/fake-api";
 import type { RecordedRequest } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 import type { Phone } from "./phones-query";
@@ -168,6 +169,24 @@ describe("phones list (W67)", () => {
 
     expect(await screen.findByRole("row", { name: /Teléfono de Luis/ })).toBeDefined();
     expect(devicesRequests(api)).toHaveLength(2);
+  });
+
+  test("after an identity change the new organization's pending request never shows the old rows (#82)", async () => {
+    const { api, app } = await open(pageOf([phone({ label: "Teléfono de Norte" })]));
+    await screen.findByRole("row", { name: /Teléfono de Norte/ });
+    let release: (response: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    api.setRoute(ME, Response.json({ ...ALLOWED, organization: makeOrganization("sur", "Sur") }));
+    api.setRoute(DEVICES, () => pending);
+
+    await app.queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+
+    expect(await screen.findByText("Cargando resultados")).toBeDefined();
+    expect(screen.queryByText("Teléfono de Norte")).toBeNull();
+    release(pageOf([phone({ label: "Teléfono de Sur" })]));
+    expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
   });
 
   test("is in English when the language is English", async () => {
