@@ -51,6 +51,7 @@ Only shared, cross-screen text. Screen copy lands with each screen.
 - `shell.*` (web): brand, skip link, sidebar, top bar, language switch and one `shell.nav.<area>` entry per area of `web/README.md`; `shell.group.*` are the sidebar group headings.
 - `states.*` (web): placeholder, loading, not found, error, configuration error and offline banner. `common.actions.goHome` serves the not-found and error screens.
 - `sync.inbox.*`: title and hint for each sync result status (accepted, rejected, inReview) in the phone inbox.
+- `sync.result.*`: one message per per-event result code of `/field/sync/` (key = camelCase of the code, e.g. `clock_skew` -> `sync.result.clockSkew`); `sync.batch.*`: the batch-level errors (`device_mismatch`, `payload_too_large`, `invalid_cursor`). The code table is `docs/sync.md`; a backend test fails when a code has no key in both languages. Messages carry no placeholders: the `params` of a result are for logs and support.
 
 Mapping from API `code` to `errors.api.*` key: the machine codes are not yet fixed in `docs/api-conventions.md`. Assumption: they will be the snake_case form of the key element (`not_found` -> `errors.api.notFound`, `permission_denied` -> `errors.api.permissionDenied`). Unknown codes fall back to `errors.api.generic`. Confirm when the API issues define the codes.
 

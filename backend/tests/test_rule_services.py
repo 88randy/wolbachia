@@ -5,11 +5,13 @@ import pytest
 from django.utils import timezone
 
 from core.exceptions import AlreadyVoidedError, FieldValidationError
+from core.services import void_record
 from rules.exceptions import VersionNotScheduledError
 from rules.models import ValueType
 from rules.selectors import (
     build_rules_snapshot,
     get_next_change_at,
+    get_values_in_force,
     get_version_in_force,
     list_parameters_with_current,
     list_versions,
@@ -504,3 +506,55 @@ def test_a_voided_version_does_not_count_as_in_force_when_it_would_have_started(
     later = NOW + timedelta(days=10)
 
     assert get_version_in_force(parameter, later).value == 50
+
+
+def test_values_in_force_maps_every_parameter_to_its_value_at_that_instant() -> None:
+    organization = OrganizationFactory()
+    skew = RuleParameterFactory(organization=organization, key="clock_skew_review_seconds")
+    ratio = RuleParameterFactory(
+        organization=organization, key="fuel_ratio", value_type=ValueType.DECIMAL
+    )
+    RuleParameterFactory(organization=organization, key="not_configured")
+    started = NOW - timedelta(days=10)
+    RuleParameterVersionFactory(parameter=skew, value=300, effective_from=started)
+    RuleParameterVersionFactory(parameter=skew, value=600, effective_from=NOW + timedelta(days=1))
+    RuleParameterVersionFactory(parameter=ratio, value=Decimal("7.5"), effective_from=started)
+
+    values = get_values_in_force(organization, NOW)
+
+    assert values == {"clock_skew_review_seconds": 300, "fuel_ratio": 7.5, "not_configured": None}
+
+
+def test_values_in_force_uses_the_value_that_applied_at_a_past_instant() -> None:
+    parameter = RuleParameterFactory(key="clock_skew_review_seconds")
+    RuleParameterVersionFactory(
+        parameter=parameter, value=300, effective_from=NOW - timedelta(days=10)
+    )
+    RuleParameterVersionFactory(
+        parameter=parameter, value=60, effective_from=NOW - timedelta(days=1)
+    )
+
+    past = get_values_in_force(parameter.organization, NOW - timedelta(days=5))
+    current = get_values_in_force(parameter.organization, NOW)
+
+    assert (past["clock_skew_review_seconds"], current["clock_skew_review_seconds"]) == (300, 60)
+
+
+def test_values_in_force_ignores_voided_versions_and_other_organizations() -> None:
+    parameter = RuleParameterFactory(key="clock_skew_review_seconds")
+    RuleParameterVersionFactory(
+        parameter=parameter, value=300, effective_from=NOW - timedelta(days=10)
+    )
+    voided = RuleParameterVersionFactory(
+        parameter=parameter, value=1, effective_from=NOW - timedelta(days=1)
+    )
+    RuleParameterVersionFactory(
+        parameter=RuleParameterFactory(key="clock_skew_review_seconds"),
+        value=999,
+        effective_from=NOW - timedelta(days=1),
+    )
+    void_record(voided, UserFactory(), "typo")
+
+    values = get_values_in_force(parameter.organization, NOW)
+
+    assert values == {"clock_skew_review_seconds": 300}

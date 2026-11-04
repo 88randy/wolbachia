@@ -298,6 +298,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/sync/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Ingest the events idempotently and answer with one result per event plus `changes`. */
+        post: operations["field_sync_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/": {
         parameters: {
             query?: never;
@@ -329,6 +346,26 @@ export interface paths {
          *     it answers `organization: null` plus the `organizations` list to choose from.
          */
         get: operations["me_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/review-items/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Events the server rejected or flagged for review (W30). Read-only: review items are created
+         *     with their event, and decisions (accept, void, open an incident) arrive with #22.
+         */
+        get: operations["review_items_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -513,6 +550,13 @@ export interface components {
             version: string;
             catalogs: components["schemas"]["SnapshotCatalog"][];
         };
+        Changes: {
+            cursor: string | null;
+            reviews: components["schemas"]["ReviewChange"][];
+            catalog_version: string | null;
+            rules_version: string | null;
+            has_more: boolean;
+        };
         /** @description Read-only view of a device for administrators (W67). */
         Device: {
             /** Format: uuid */
@@ -532,6 +576,30 @@ export interface components {
             readonly revoked_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        EventResult: {
+            /** Format: uuid */
+            id: string;
+            status: components["schemas"]["EventStatusEnum"];
+            code: string;
+            params: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * @description * `accepted` - Accepted
+         *     * `rejected` - Rejected
+         *     * `in_review` - In Review
+         * @enum {string}
+         */
+        EventStatusEnum: "accepted" | "rejected" | "in_review";
+        GpsRequest: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            /** Format: double */
+            accuracy_m: number;
         };
         Health: {
             status: string;
@@ -639,6 +707,19 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Device"][];
         };
+        PaginatedReviewItemList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["ReviewItem"][];
+        };
         PaginatedRuleParameterList: {
             /** @example 123 */
             count: number;
@@ -698,6 +779,46 @@ export interface components {
             /** Format: date-time */
             server_time: string;
         };
+        /** @description A review item as the phone's inbox sees it (the courier's own events only). */
+        ReviewChange: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            event_id: string;
+            kind: components["schemas"]["ReviewKindEnum"];
+            code: string;
+            params: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description A review item for the supervisor's list: what was flagged, why (`code` + `params`) and who
+         *     sent it. The event itself (payload, times) comes with the review screens of #22.
+         */
+        ReviewItem: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly event_id: string;
+            readonly event_type: string;
+            readonly kind: components["schemas"]["ReviewKindEnum"];
+            readonly code: string;
+            readonly params: unknown;
+            /** Format: uuid */
+            readonly courier: string;
+            /** Format: uuid */
+            readonly device: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `rejected` - Rejected
+         *     * `in_review` - In Review
+         * @enum {string}
+         */
+        ReviewKindEnum: "rejected" | "in_review";
         /** @description Body of the two revoke actions. Everything is optional: an empty body is accepted. */
         RevokeRequestRequest: {
             /** @default false */
@@ -812,6 +933,47 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "scheduled" | "in_force" | "superseded" | "voided";
+        /**
+         * @description The batch: who sends it, the phone's clock at send time, the pull cursor and the events.
+         *
+         *     An empty `events` list is a pure pull. The number of events is limited before this runs
+         *     (`413`), so the limit is not a validation error.
+         */
+        SyncBatchRequest: {
+            /** Format: uuid */
+            device_id: string;
+            /** Format: date-time */
+            sent_at: string;
+            cursor?: string | null;
+            events: components["schemas"]["SyncEventRequest"][];
+        };
+        /** @description The envelope of one event. `payload` is a JSON object; its content is the handler's. */
+        SyncEventRequest: {
+            /** Format: uuid */
+            id: string;
+            type: string;
+            schema_version: number;
+            /** Format: date-time */
+            device_time: string;
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Format: uuid */
+            shift_id?: string | null;
+            gps?: components["schemas"]["GpsRequest"] | null;
+            rules_version: string;
+            catalog_version: string;
+            /** @default false */
+            manual_capture: boolean;
+            /** Format: uuid */
+            voids_event_id?: string | null;
+        };
+        SyncResponse: {
+            /** Format: date-time */
+            server_time: string;
+            results: components["schemas"]["EventResult"][];
+            changes: components["schemas"]["Changes"];
+        };
         /**
          * @description * `m` - Meters
          *     * `km_h` - Kilometers Per Hour
@@ -1495,6 +1657,41 @@ export interface operations {
             };
         };
     };
+    field_sync_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SyncBatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SyncResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     health_retrieve: {
         parameters: {
             query?: never;
@@ -1541,6 +1738,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Me"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    review_items_list: {
+        parameters: {
+            query?: {
+                code?: string;
+                /** @description The pagination cursor value. */
+                cursor?: string;
+                /**
+                 * @description * `rejected` - Rejected
+                 *     * `in_review` - In Review
+                 */
+                kind?: "rejected" | "in_review";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedReviewItemList"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

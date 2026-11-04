@@ -666,6 +666,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/sync/:
+    post:
+      operationId: field_sync_create
+      description: Ingest the events idempotently and answer with one result per event
+        plus `changes`.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - field
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SyncBatchRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SyncResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/health/:
     get:
       operationId: health_retrieve
@@ -711,6 +746,60 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Me'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/review-items/:
+    get:
+      operationId: review_items_list
+      description: |-
+        Events the server rejected or flagged for review (W30). Read-only: review items are created
+        with their event, and decisions (accept, void, open an incident) arrive with #22.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 64
+      - name: cursor
+        required: false
+        in: query
+        description: The pagination cursor value.
+        schema:
+          type: string
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - rejected
+          - in_review
+          type: string
+          minLength: 1
+        description: |-
+          * `rejected` - Rejected
+          * `in_review` - In Review
+      tags:
+      - review-items
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReviewItemList'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -1162,6 +1251,30 @@ components:
       required:
       - catalogs
       - version
+    Changes:
+      type: object
+      properties:
+        cursor:
+          type: string
+          nullable: true
+        reviews:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewChange'
+        catalog_version:
+          type: string
+          nullable: true
+        rules_version:
+          type: string
+          nullable: true
+        has_more:
+          type: boolean
+      required:
+      - catalog_version
+      - cursor
+      - has_more
+      - reviews
+      - rules_version
     Device:
       type: object
       description: Read-only view of a device for administrators (W67).
@@ -1222,6 +1335,55 @@ components:
       - revoked_at
       - revoked_by
       - serial
+    EventResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/EventStatusEnum'
+        code:
+          type: string
+        params:
+          type: object
+          additionalProperties: {}
+      required:
+      - code
+      - id
+      - params
+      - status
+    EventStatusEnum:
+      enum:
+      - accepted
+      - rejected
+      - in_review
+      type: string
+      description: |-
+        * `accepted` - Accepted
+        * `rejected` - Rejected
+        * `in_review` - In Review
+    GpsRequest:
+      type: object
+      properties:
+        lat:
+          type: number
+          format: double
+          maximum: 90
+          minimum: -90
+        lng:
+          type: number
+          format: double
+          maximum: 180
+          minimum: -180
+        accuracy_m:
+          type: number
+          format: double
+          minimum: 0
+      required:
+      - accuracy_m
+      - lat
+      - lng
     Health:
       type: object
       properties:
@@ -1468,6 +1630,25 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Device'
+    PaginatedReviewItemList:
+      type: object
+      required:
+      - results
+      properties:
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cD00ODY%3D"
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReviewItem'
     PaginatedRuleParameterList:
       type: object
       required:
@@ -1598,6 +1779,90 @@ components:
       - access
       - refresh
       - server_time
+    ReviewChange:
+      type: object
+      description: A review item as the phone's inbox sees it (the courier's own events
+        only).
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ReviewKindEnum'
+        code:
+          type: string
+        params:
+          type: object
+          additionalProperties: {}
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - code
+      - created_at
+      - event_id
+      - id
+      - kind
+      - params
+    ReviewItem:
+      type: object
+      description: |-
+        A review item for the supervisor's list: what was flagged, why (`code` + `params`) and who
+        sent it. The event itself (payload, times) comes with the review screens of #22.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_id:
+          type: string
+          format: uuid
+          readOnly: true
+        event_type:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ReviewKindEnum'
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        params:
+          readOnly: true
+        courier:
+          type: string
+          format: uuid
+          readOnly: true
+        device:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - courier
+      - created_at
+      - device
+      - event_id
+      - event_type
+      - id
+      - kind
+      - params
+    ReviewKindEnum:
+      enum:
+      - rejected
+      - in_review
+      type: string
+      description: |-
+        * `rejected` - Rejected
+        * `in_review` - In Review
     RevokeRequestRequest:
       type: object
       description: 'Body of the two revoke actions. Everything is optional: an empty
@@ -1867,6 +2132,101 @@ components:
         * `in_force` - in_force
         * `superseded` - superseded
         * `voided` - voided
+    SyncBatchRequest:
+      type: object
+      description: |-
+        The batch: who sends it, the phone's clock at send time, the pull cursor and the events.
+
+        An empty `events` list is a pure pull. The number of events is limited before this runs
+        (`413`), so the limit is not a validation error.
+      properties:
+        device_id:
+          type: string
+          format: uuid
+        sent_at:
+          type: string
+          format: date-time
+        cursor:
+          type: string
+          nullable: true
+          minLength: 1
+          maxLength: 512
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/SyncEventRequest'
+      required:
+      - device_id
+      - events
+      - sent_at
+    SyncEventRequest:
+      type: object
+      description: The envelope of one event. `payload` is a JSON object; its content
+        is the handler's.
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$
+        schema_version:
+          type: integer
+          maximum: 32767
+          minimum: 1
+        device_time:
+          type: string
+          format: date-time
+        payload:
+          type: object
+          additionalProperties: {}
+        shift_id:
+          type: string
+          format: uuid
+          nullable: true
+        gps:
+          allOf:
+          - $ref: '#/components/schemas/GpsRequest'
+          nullable: true
+        rules_version:
+          type: string
+          maxLength: 64
+        catalog_version:
+          type: string
+          maxLength: 64
+        manual_capture:
+          type: boolean
+          default: false
+        voids_event_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - catalog_version
+      - device_time
+      - id
+      - payload
+      - rules_version
+      - schema_version
+      - type
+    SyncResponse:
+      type: object
+      properties:
+        server_time:
+          type: string
+          format: date-time
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/EventResult'
+        changes:
+          $ref: '#/components/schemas/Changes'
+      required:
+      - changes
+      - results
+      - server_time
     UnitEnum:
       enum:
       - m

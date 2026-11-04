@@ -9,6 +9,7 @@ from tests.testapp.views import (
     FinalUploadView,
     StreamWidgetViewSet,
     ThrottledView,
+    TooBigView,
     UndeclaredPermissionsViewSet,
     WidgetViewSet,
     WriteThenFailView,
@@ -25,5 +26,6 @@ urlpatterns = [
     path("api/v1/boom/", BoomView.as_view()),
     path("api/v1/final-upload/", FinalUploadView.as_view()),
     path("api/v1/throttled/", ThrottledView.as_view()),
+    path("api/v1/too-big/", TooBigView.as_view()),
     path("api/v1/write-then-fail/", WriteThenFailView.as_view()),
 ]

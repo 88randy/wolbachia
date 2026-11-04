@@ -18,7 +18,9 @@ from catalogs.permissions import (
     CATALOG_READ,
 )
 from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
+from field_sync.permissions import FIELD_EVENT_SYNC
 from organizations.models import Organization, Profile
+from reviews.permissions import REVIEW_ITEM_READ
 from rules.permissions import (
     RULE_PARAMETER_READ,
     RULE_PARAMETER_VERSION_CREATE,
@@ -41,11 +43,14 @@ ADMIN_CODES = (
     RULE_PARAMETER_VERSION_CREATE,
     RULE_PARAMETER_VERSION_VOID,
     *ADMIN_AUTH_PERMISSION_CODES,  # device and session administration (#4)
+    REVIEW_ITEM_READ,
 )
+COURIER_CODES = (*READ_ONLY_CODES, FIELD_EVENT_SYNC)  # the phone syncs (#5)
+SUPERVISOR_CODES = (*READ_ONLY_CODES, REVIEW_ITEM_READ)  # supervisors read the review items (#5)
 # Keys are the slugs of `organizations.services.DEFAULT_PROFILE_SEEDS`.
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
-    "courier": READ_ONLY_CODES,
-    "supervisor": READ_ONLY_CODES,
+    "courier": COURIER_CODES,
+    "supervisor": SUPERVISOR_CODES,
     "entomologist": READ_ONLY_CODES,
     "community_promoter": READ_ONLY_CODES,
     "admin": ADMIN_CODES,

@@ -22,6 +22,8 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `organizations/` | `Organization`, `Profile`, `Membership`; services, selectors, `GET /me/`, `bootstrap_organization` |
 | `catalogs/` | `Catalog`, `CatalogItem`; item services, catalog snapshot, `/catalogs/...` and `/field/catalog/` (see its README) |
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
+| `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
+| `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `core/` | Org-scoped and insert-only base models, snapshots (hash, ETag, `304`), time helpers, base viewset, void service, error handler, pagination, permissions, schema hooks, health |
 | `tests/` | pytest suite; `tests/testapp` is a test-only app (installed by `config.settings.test`) |
 
@@ -94,7 +96,7 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 - **Password reset**: the request endpoint only enqueues the Celery task `accounts.tasks.send_password_reset_email`; run the `worker` service to get emails. In dev `EMAIL_URL=consolemail://` prints the message (with the link) in the worker log. Texts: `accounts/templates/accounts/email/` (es-MX, en).
 - **Admin permission codes**: `device.read`, `device.revoke` and `user.revoke_device_sessions` (`accounts/permissions.py`) are registered in the default `admin` codes (`organizations/defaults.py`), so new organizations get them and `seed_organization_defaults --organization <slug> --apply` brings older ones up to date without re-granting a code an administrator revoked.
 - **Web sessions** are stored in the database: schedule `python manage.py clearsessions` (daily) when the deployment exists (#18).
-- **Final upload (for #5)**: only when an administrator revokes with `allow_final_upload: true`. A view that accepts it is declared `class SyncView(FinalUploadMixin, APIView)` (`accounts/final_upload.py`): the mixin opts the view in for `final_upload_methods` (default `POST`; `OPTIONS`/`GET` never spend it), opens one transaction after authentication, spends the single final upload first (a failed request gives it back), adds `X-Session-Revoked: true` and sets `self.is_final_upload`, which the view must use to mark the events it records as `in_review`. Nothing else to remember. `tests/testapp/views.py::FinalUploadView` is the reference.
+- **Final upload**: only when an administrator revokes with `allow_final_upload: true`. A view that accepts it is declared like `class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, GenericViewSet)` (`field_sync/views.py`, #5) (`accounts/final_upload.py`): the mixin opts the view in for `final_upload_methods` (default `POST`; `OPTIONS`/`GET` never spend it), opens one transaction after authentication, spends the single final upload first (a failed request gives it back), adds `X-Session-Revoked: true` and sets `self.is_final_upload`, which the view must use to mark the events it records as `in_review`. Nothing else to remember. `tests/testapp/views.py::FinalUploadView` is the reference.
 - **Lock order**: User, Device, DeviceSession, TokenPair everywhere ([`accounts/README.md`](accounts/README.md)).
 - **Transactions**: revocation and rotation commit before they raise, so they must not run inside an outer `atomic()`; `ATOMIC_REQUESTS` stays off (a test checks it).
 - **Token rows**: every refresh adds a `TokenPair` (hashes only); rows are never deleted, so the table grows with use [PENDING retention policy].
@@ -117,6 +119,20 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` | local defaults (required in prod) | Sender and web origin used to build the reset link |
 | `WEB_PASSWORD_RESET_PATH` | `/reset-password` | Web route that receives `/{uid}/{token}` [ASSUMPTION: agree with W1] |
 
+## Field sync (#5)
+
+`POST /api/v1/field/sync/` (bearer device token, permission `field_event.sync`) uploads a **sync batch** of events and pulls the courier's review items. Contract, code tables, guarantees and how an epic registers its event types: [`docs/sync.md`](../docs/sync.md). The pipeline is in `field_sync/services.py` and never calls an external service (a final upload holds user and session locks for the whole request); batches of one courier are serialized with a try advisory lock (`429 sync_in_progress`, decision 71) and a `lock_timeout` plus deadlock detection turn a wait on another courier's shared event id into `429 sync_in_progress` (decision 72). `GET /review-items/` (`review_item.read`) lists rejected and in-review events for supervisors.
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `SYNC_MAX_BODY_BYTES` | `1048576` | Request body limit (`413` by `Content-Length`) [ASSUMPTION] |
+| `SYNC_MAX_EVENTS` | `200` | Events per batch (`413`) [ASSUMPTION] |
+| `SYNC_MAX_EVENT_PAYLOAD_BYTES` | `16384` | Per-event payload (`event_payload_too_large`) [ASSUMPTION] |
+| `THROTTLE_FIELD_SYNC_RATE` | `60/min` | Sync rate limit per device [ASSUMPTION] |
+| `SYNC_CURSOR_MAX_AGE_SECONDS` | `2592000` | Lifetime of a `changes.cursor` (30 days) |
+| `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for any lock in a batch transaction (then `429 sync_in_progress`) |
+| `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
+
 ## Dependencies (verified on PyPI, 2026-11-03)
 
 | Package | Pinned range | Why |
@@ -137,4 +153,4 @@ Tool config lives in [`pyproject.toml`](pyproject.toml) (ruff, mypy, pytest, cov
 
 ## Next
 
-Deploy: #18. Sync API (uses the final-upload hook): #5.
+Deploy: #18. Each epic registers its event handlers with `field_sync.registry` (#8 onward); review decisions: #22.

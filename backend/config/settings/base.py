@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     "organizations",
     "catalogs",
     "rules",
+    "field_sync",
+    "reviews",
 ]
 
 MIDDLEWARE = [
@@ -116,6 +118,16 @@ THROTTLE_PASSWORD_RESET_CONFIRM_RATE = env(
     "THROTTLE_PASSWORD_RESET_CONFIRM_RATE", default="20/hour"
 )
 
+# Field sync (#5): technical limits, not business rules, so they are env settings and not rule
+# parameters. [ASSUMPTION] values, to be tuned with real batches from the field test (#13).
+THROTTLE_FIELD_SYNC_RATE = env("THROTTLE_FIELD_SYNC_RATE", default="60/min")  # per device
+SYNC_MAX_BODY_BYTES = env.int("SYNC_MAX_BODY_BYTES", default=1_048_576)  # 1 MB
+SYNC_MAX_EVENTS = env.int("SYNC_MAX_EVENTS", default=200)
+SYNC_MAX_EVENT_PAYLOAD_BYTES = env.int("SYNC_MAX_EVENT_PAYLOAD_BYTES", default=16_384)  # 16 KB
+SYNC_CURSOR_MAX_AGE_SECONDS = env.int("SYNC_CURSOR_MAX_AGE_SECONDS", default=2_592_000)  # 30 days
+SYNC_LOCK_TIMEOUT_MS = env.int("SYNC_LOCK_TIMEOUT_MS", default=3_000)
+SYNC_RETRY_AFTER_SECONDS = env.int("SYNC_RETRY_AFTER_SECONDS", default=2)
+
 REST_FRAMEWORK = {
     # Session first: it sends the `WWW-Authenticate: Session` challenge that keeps 401s as 401.
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -137,6 +149,7 @@ REST_FRAMEWORK = {
         "refresh": THROTTLE_REFRESH_RATE,
         "password_reset": THROTTLE_PASSWORD_RESET_RATE,
         "password_reset_confirm": THROTTLE_PASSWORD_RESET_CONFIRM_RATE,
+        "field_sync": THROTTLE_FIELD_SYNC_RATE,
     },
     # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a
     # client cannot dodge the anonymous throttle by rotating that header.
@@ -156,6 +169,12 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
     "COMPONENT_SPLIT_REQUEST": True,
+    # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
+    "ENUM_NAME_OVERRIDES": {
+        "EventStatusEnum": "field_sync.models.EventStatus",
+        "ReviewKindEnum": "reviews.models.ReviewKind",
+        "StatusEnum": "rules.selectors.VERSION_STATUSES",
+    },
     # The enum hook is spectacular's default; ours adds ErrorEnvelope and the `default` error
     # response to every operation (packages/api-client types errors from it).
     "POSTPROCESSING_HOOKS": [

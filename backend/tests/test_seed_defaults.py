@@ -10,6 +10,7 @@ from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from catalogs import permissions as catalog_codes
 from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
+from field_sync.permissions import FIELD_EVENT_SYNC
 from organizations.defaults import (
     DEFAULT_PROFILE_PERMISSIONS,
     seed_default_permission_codes,
@@ -24,6 +25,7 @@ from organizations.services import (
     create_organization,
     seed_default_profiles,
 )
+from reviews.permissions import REVIEW_ITEM_READ
 from rules import permissions as rule_codes
 from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS
@@ -208,8 +210,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
 
     reader = {catalog_codes.CATALOG_READ, rule_codes.RULE_PARAMETER_READ}
-    assert by_slug["courier"] == by_slug["supervisor"] == by_slug["entomologist"] == reader
-    assert by_slug["community_promoter"] == reader
+    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC}
+    assert by_slug["supervisor"] == {*reader, REVIEW_ITEM_READ}
+    assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
     assert by_slug["admin"] == {
         catalog_codes.CATALOG_READ,
         catalog_codes.CATALOG_ITEM_CREATE,
@@ -221,6 +224,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         rule_codes.RULE_PARAMETER_VERSION_CREATE,
         rule_codes.RULE_PARAMETER_VERSION_VOID,
         *ADMIN_AUTH_PERMISSION_CODES,
+        REVIEW_ITEM_READ,
     }
 
 
@@ -246,7 +250,11 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     courier = Profile.objects.get(organization=organization, slug="courier")
 
     assert courier.created_by_seed is True
-    assert courier.seeded_permission_codes == ["catalog.read", "rule_parameter.read"]
+    assert courier.seeded_permission_codes == [
+        "catalog.read",
+        "field_event.sync",
+        "rule_parameter.read",
+    ]
 
 
 def test_seed_adds_permission_codes_without_removing_existing() -> None:
@@ -259,7 +267,12 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     seed_default_permission_codes(organization)
 
     courier = Profile.objects.get(organization=organization, slug="courier")
-    assert courier.permission_codes == ["catalog.read", "rule_parameter.read", "widget.read"]
+    assert courier.permission_codes == [
+        "catalog.read",
+        "field_event.sync",
+        "rule_parameter.read",
+        "widget.read",
+    ]
 
 
 def test_seed_never_regrants_a_code_an_admin_revoked() -> None:
@@ -282,7 +295,7 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     plan = seed_default_permission_codes(organization)
 
-    assert plan.grants == {"courier": ("rule_parameter.read",)}
+    assert plan.grants == {"courier": ("rule_parameter.read", FIELD_EVENT_SYNC)}
 
 
 def test_seed_skips_profiles_not_created_by_the_seed_and_reports_them() -> None:
@@ -368,3 +381,57 @@ def test_command_rejects_apply_with_dry_run() -> None:
 def test_command_rejects_an_unknown_organization() -> None:
     with pytest.raises(CommandError, match="does not exist"):
         call_command("seed_organization_defaults", "--organization", "nope")
+
+
+# --- sync permission codes (#5) -------------------------------------------------------------
+
+
+def seeded_profile(slug: str) -> tuple[Organization, Profile]:
+    organization = create_organization(SPEC)
+    return organization, Profile.objects.get(organization=organization, slug=slug)
+
+
+@pytest.mark.parametrize(
+    ("slug", "code"),
+    [("courier", FIELD_EVENT_SYNC), ("supervisor", REVIEW_ITEM_READ), ("admin", REVIEW_ITEM_READ)],
+)
+def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_existed(
+    slug: str, code: str
+) -> None:
+    organization, profile = seeded_profile(slug)
+    Profile.objects.filter(pk=profile.pk).update(
+        permission_codes=[c for c in profile.permission_codes if c != code],
+        seeded_permission_codes=[c for c in profile.seeded_permission_codes if c != code],
+    )
+
+    call_command("seed_organization_defaults", organization=organization.slug, apply=True)
+
+    profile.refresh_from_db()
+    assert code in profile.permission_codes
+    assert code in profile.seeded_permission_codes
+
+
+@pytest.mark.parametrize(
+    ("slug", "code"), [("courier", FIELD_EVENT_SYNC), ("supervisor", REVIEW_ITEM_READ)]
+)
+def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str) -> None:
+    organization, profile = seeded_profile(slug)
+    Profile.objects.filter(pk=profile.pk).update(
+        permission_codes=[c for c in profile.permission_codes if c != code]
+    )
+
+    call_command("seed_organization_defaults", organization=organization.slug, apply=True)
+
+    profile.refresh_from_db()
+    assert code not in profile.permission_codes
+    assert code in profile.seeded_permission_codes
+
+
+def test_only_the_courier_syncs_and_only_supervisor_and_admin_read_review_items() -> None:
+    by_slug = DEFAULT_PROFILE_PERMISSIONS
+
+    assert [s for s, codes in by_slug.items() if FIELD_EVENT_SYNC in codes] == ["courier"]
+    assert sorted(s for s, codes in by_slug.items() if REVIEW_ITEM_READ in codes) == [
+        "admin",
+        "supervisor",
+    ]
