@@ -131,7 +131,7 @@ def test_session_of_a_revoked_device_is_refused_even_if_not_marked(
     assert (response.status_code, response.data["code"]) == (401, "session_revoked")
 
 
-def test_deactivated_user_is_refused_and_the_sessions_are_revoked(
+def test_deactivated_user_is_refused_without_writing_a_revocation(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory
 ) -> None:
     user, _ = make_member(org_a)
@@ -143,7 +143,9 @@ def test_deactivated_user_is_refused_and_the_sessions_are_revoked(
 
     issued.session.refresh_from_db()
     assert (response.status_code, response.data["code"]) == (401, "session_revoked")
-    assert issued.session.revoke_reason == RevokeReason.USER_DEACTIVATED
+    # Authentication only rejects: the revocation happens on refresh and on deactivation, so
+    # nothing here can be rolled back by an enclosing transaction.
+    assert issued.session.revoked_at is None
 
 
 def test_token_pins_the_organization_even_for_multi_organization_users(

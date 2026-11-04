@@ -27,10 +27,11 @@ from accounts.revocation import (
 )
 from accounts.services import DeviceInfo, start_device_session
 from accounts.token_pairs import (
+    MAX_SIBLING_PAIRS,
     IssuedTokens,
+    claim_access_use,
     is_access_superseded,
     is_retired_sibling,
-    mark_access_used,
     rotate_refresh_token,
 )
 from accounts.tokens import hash_token
@@ -240,15 +241,18 @@ def test_a_duplicate_refresh_inside_the_window_issues_a_sibling_and_both_stay_us
     assert fresh(issued.pair).consumed_at is not None
 
 
-def test_the_other_sibling_can_still_be_exchanged_after_the_first_was(org_a: Organization) -> None:
+def test_exchanging_a_second_sibling_after_the_first_was_used_revokes_the_session(
+    org_a: Organization,
+) -> None:
     issued = login(UserFactory(), org_a)
     first, second = refresh(issued), refresh(issued)
 
-    refresh(first)
-    later = refresh(second)  # inside the window: the client received the second response last
+    refresh(first)  # the first sibling used is the valid one
 
-    assert later.pair.parent_id == second.pair.pk
-    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+    with pytest.raises(SessionRevokedError):
+        refresh(second)  # exchanging another sibling of the same parent is a copy
+
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
 
 
 def test_an_attacker_replaying_r0_after_the_client_used_the_new_access_token_is_caught(
@@ -256,7 +260,7 @@ def test_an_attacker_replaying_r0_after_the_client_used_the_new_access_token_is_
 ) -> None:
     issued = login(UserFactory(), org_a)
     legit = refresh(issued)
-    mark_access_used(legit.pair)  # the phone used A1
+    assert claim_access_use(fresh(legit.pair)) is None  # the phone used A1
 
     with pytest.raises(SessionRevokedError):
         refresh(issued)  # the attacker presents the stolen R0, still inside the window
@@ -264,20 +268,75 @@ def test_an_attacker_replaying_r0_after_the_client_used_the_new_access_token_is_
     assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
 
 
-def test_a_sibling_never_used_is_retired_once_the_window_closes_and_another_one_was(
+def test_a_sibling_is_retired_as_soon_as_another_one_was_used(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+    winner, loser = refresh(issued), refresh(issued)
+    assert claim_access_use(fresh(winner.pair)) is None
+
+    assert is_retired_sibling(fresh(loser.pair))
+    assert not is_retired_sibling(fresh(winner.pair))
+    with pytest.raises(SessionRevokedError):
+        refresh(loser)  # a retired sibling presented to refresh is a copy
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
+
+
+def test_using_the_access_token_of_a_second_sibling_revokes_the_session(
     org_a: Organization,
 ) -> None:
     issued = login(UserFactory(), org_a)
     winner, loser = refresh(issued), refresh(issued)
-    mark_access_used(winner.pair)
-    age_consumption(issued.pair, 120)
+    assert claim_access_use(fresh(winner.pair)) is None
 
-    now = timezone.now()
-    assert is_retired_sibling(fresh(loser.pair), now)
-    assert not is_retired_sibling(fresh(winner.pair), now)
-    with pytest.raises(InvalidTokenError):
-        refresh(loser)
+    failure = claim_access_use(fresh(loser.pair))
+
+    assert isinstance(failure, SessionRevokedError)
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
+
+
+def test_the_same_sibling_can_be_used_again(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+    winner, _ = refresh(issued), refresh(issued)
+
+    assert claim_access_use(fresh(winner.pair)) is None
+    assert claim_access_use(fresh(winner.pair)) is None
     assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+
+
+def test_duplicates_beyond_the_sibling_cap_count_as_reuse(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+    for _ in range(MAX_SIBLING_PAIRS):
+        refresh(issued)  # the exchange plus accepted duplicates
+
+    with pytest.raises(SessionRevokedError):
+        refresh(issued)
+
+    assert TokenPair.objects.filter(parent_id=issued.pair.pk).count() == MAX_SIBLING_PAIRS
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_siblings_used_at_the_same_time_only_one_wins(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+    first, second = refresh(issued), refresh(issued)
+    outcomes: list[str] = []
+    barrier = threading.Barrier(2)
+
+    def use(pair: TokenPair) -> None:
+        try:
+            barrier.wait(timeout=10)
+            failure = claim_access_use(fresh(pair))
+            outcomes.append("ok" if failure is None else "revoked")
+        finally:
+            connection.close()
+
+    threads = [threading.Thread(target=use, args=(p.pair,)) for p in (first, second)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+
+    assert sorted(outcomes) == ["ok", "revoked"]
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
 
 
 def test_siblings_all_stay_valid_after_the_window_when_none_was_used(org_a: Organization) -> None:
@@ -285,8 +344,8 @@ def test_siblings_all_stay_valid_after_the_window_when_none_was_used(org_a: Orga
     first, second = refresh(issued), refresh(issued)
     age_consumption(issued.pair, 120)
 
-    assert not is_retired_sibling(fresh(first.pair), timezone.now())
-    assert not is_retired_sibling(fresh(second.pair), timezone.now())
+    assert not is_retired_sibling(fresh(first.pair))
+    assert not is_retired_sibling(fresh(second.pair))
     assert refresh(second).pair.parent_id == second.pair.pk
 
 

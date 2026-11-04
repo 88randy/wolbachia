@@ -328,3 +328,20 @@ def test_refresh_is_refused_and_the_session_revoked_when_the_membership_ended(
     assert (response.status_code, response.data["code"]) == (401, "session_revoked")
     issued.session.refresh_from_db()
     assert issued.session.revoke_reason == RevokeReason.MEMBERSHIP_INACTIVE
+
+
+def test_refreshing_a_second_sibling_after_the_first_was_used_revokes_the_session(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    issued = session_for(make_member, org_a)
+    first = refresh(api_client, issued).data
+    second = refresh(api_client, issued).data  # a duplicate inside the window
+
+    used = refresh(api_client, issued, token=first["refresh"])
+    copy = refresh(api_client, issued, token=second["refresh"])
+
+    assert used.status_code == 200
+    assert (copy.status_code, copy.data["code"]) == (401, "session_revoked")
+    assert (
+        DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == RevokeReason.REFRESH_REUSE
+    )

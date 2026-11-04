@@ -106,3 +106,39 @@ def test_the_organization_header_is_read_in_one_place_only() -> None:
             offenders.append(relative)
 
     assert offenders == []
+
+
+FINAL_UPLOAD_OPT_IN = re.compile(r"^\s*allows_revoked_final_upload\s*[:=]", re.MULTILINE)
+ENDED_SESSIONS_OPT_IN = re.compile(r"^\s*accepts_ended_sessions\s*[:=]", re.MULTILINE)
+
+
+def source_files() -> Iterator[tuple[str, str]]:
+    for path in BACKEND_DIR.rglob("*.py"):
+        relative = path.relative_to(BACKEND_DIR).as_posix()
+        if not relative.startswith((".venv/", "tests/")) and "/migrations/" not in relative:
+            yield relative, path.read_text(encoding="utf-8")
+
+
+def test_only_the_final_upload_mixin_opts_views_in_to_revoked_sessions() -> None:
+    """A view must get `allows_revoked_final_upload` from `FinalUploadMixin`, which spends it."""
+    assigners = [name for name, text in source_files() if FINAL_UPLOAD_OPT_IN.search(text)]
+    assert assigners == ["accounts/final_upload.py"]
+
+    from accounts.final_upload import FinalUploadMixin
+
+    for callback in iter_callbacks(get_resolver(settings.ROOT_URLCONF).url_patterns):
+        view_class = getattr(callback, "cls", None)
+        if view_class is not None and getattr(view_class, "allows_revoked_final_upload", False):
+            assert issubclass(view_class, FinalUploadMixin), view_class
+
+
+def test_only_logout_accepts_ended_sessions() -> None:
+    assigners = [name for name, text in source_files() if ENDED_SESSIONS_OPT_IN.search(text)]
+    assert assigners == ["accounts/views.py"]
+
+    from accounts.views import LogoutView
+
+    for callback in iter_callbacks(get_resolver(settings.ROOT_URLCONF).url_patterns):
+        view_class = getattr(callback, "cls", None)
+        if view_class is not None and getattr(view_class, "accepts_ended_sessions", False):
+            assert view_class is LogoutView, view_class

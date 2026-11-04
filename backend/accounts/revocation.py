@@ -1,5 +1,7 @@
 """Revoking device sessions and devices, and the single final upload of a revoked phone.
 
+Lock order is User, Device, DeviceSession, TokenPair (accounts/README.md).
+
 None of these functions may run inside a caller's outer `transaction.atomic()` (nor with
 `ATOMIC_REQUESTS`): they take row locks and some callers raise right after revoking, relying on
 the revocation having already been committed. `tests/test_settings.py` checks that
@@ -69,7 +71,10 @@ def revoke_user_sessions(
     sessions = DeviceSession.objects.filter(user=user)
     if organization is not None:
         sessions = sessions.filter(organization=organization)
-    return revoke_active(sessions, revocation)
+    with transaction.atomic():
+        # Global lock order: the user comes before its sessions (accounts/README.md).
+        User.objects.select_for_update(no_key=True).filter(pk=user.pk).first()
+        return revoke_active(sessions, revocation)
 
 
 def revoke_session(session: DeviceSession, revocation: Revocation) -> int:
@@ -134,6 +139,9 @@ def consume_final_upload(session: DeviceSession) -> None:
     """
     now = server_now()
     with transaction.atomic():
+        # Global lock order: user, then session. Holding the user also keeps a password reset
+        # (which takes the user lock first) from interleaving with the upload's own writes.
+        User.objects.select_for_update(no_key=True).get(pk=session.user_id)
         locked = DeviceSession.objects.select_for_update().get(pk=session.pk)
         if not is_final_upload_available(locked, now):
             raise SessionRevokedError

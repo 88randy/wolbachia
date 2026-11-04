@@ -2,15 +2,15 @@
 
 Everything that writes says so in its docstring. Rows are locked with `select_for_update` wherever
 two requests could race. Lock order is always User, then Device, then DeviceSession, then
-TokenPair. Revocation and rotation must not run inside an outer `atomic()` (accounts.revocation).
+TokenPair (accounts/README.md). Revocation and rotation must not run inside an outer `atomic()`
+(accounts.revocation).
 """
 
 import hmac
 import uuid
 from dataclasses import dataclass
-from typing import cast
 
-from django.contrib.auth import authenticate
+from django.contrib.auth.hashers import check_password
 from django.contrib.auth.tokens import default_token_generator
 from django.db import IntegrityError, transaction
 from django.views.decorators.debug import sensitive_variables
@@ -47,6 +47,48 @@ def create_user_without_password(username: str, email: str) -> User:
 
 
 @sensitive_variables("password")
+def verify_credentials(username: str, password: str) -> User | None:
+    """The active user with this password, or None. Upgrades an outdated hash safely.
+
+    Replaces `django.contrib.auth.authenticate`, whose hash upgrade saves the password later
+    without a lock and could restore an old password after a reset committed in between. Here
+    the slow hash check runs without any lock; only if the hash must be upgraded do we lock the
+    user row (same lock as `reset_password`) and save the upgraded hash when the stored hash is
+    still the one that was verified. If it changed meanwhile the login fails.
+    Unknown users still pay one hash, so timing does not tell them apart.
+    """
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        User().set_password(password)  # same cost as a real check
+        return None
+    upgrade = False
+
+    def request_upgrade(raw_password: str) -> None:
+        nonlocal upgrade
+        upgrade = True
+
+    verified = check_password(password, user.password, setter=request_upgrade)
+    if not verified or not user.is_active:
+        return None
+    if upgrade and not _upgrade_hash(user, password):
+        return None
+    return user
+
+
+@sensitive_variables("password")
+def _upgrade_hash(user: User, password: str) -> bool:
+    """Save an upgraded hash under the user lock; False if the password changed meanwhile."""
+    with transaction.atomic():
+        locked = User.objects.select_for_update(no_key=True).get(pk=user.pk)
+        if not hmac.compare_digest(locked.password, user.password):
+            return False
+        locked.set_password(password)
+        locked.save(update_fields=["password"])
+        user.password = locked.password
+    return True
+
+
+@sensitive_variables("password")
 def authenticate_user(username: str, password: str, ip: str | None) -> User:
     """Check credentials with the lockout in front (writes the failure counter and the log).
 
@@ -60,13 +102,13 @@ def authenticate_user(username: str, password: str, ip: str | None) -> User:
     except Throttled:
         log_auth_event(AuthEvent.LOGIN_LOCKED_OUT, context)
         raise
-    user = authenticate(username=username, password=password)
+    user = verify_credentials(username, password)
     if user is None:
         locked = register_failure(username, ip)
         log_auth_event(AuthEvent.LOGIN_FAILED, context, {"locked": locked})
         raise InvalidCredentialsError
     clear_failures(username, ip)
-    return cast(User, user)
+    return user
 
 
 @dataclass(frozen=True)
@@ -122,7 +164,7 @@ def _lock_authenticated_user(user: User) -> User:
     (a concurrent request) must not be followed by a session: the account must be active and
     its password hash the very one that was verified.
     """
-    locked = User.objects.select_for_update().get(pk=user.pk)
+    locked = User.objects.select_for_update(no_key=True).get(pk=user.pk)
     if not locked.is_active or not hmac.compare_digest(locked.password, user.password):
         raise InvalidCredentialsError
     return locked
@@ -185,7 +227,7 @@ def reset_password(user: User, token: str, new_password: str) -> None:
     Django ties them to the password hash.
     """
     with transaction.atomic():
-        locked = User.objects.select_for_update().get(pk=user.pk)
+        locked = User.objects.select_for_update(no_key=True).get(pk=user.pk)
         if not locked.is_active or not default_token_generator.check_token(locked, token):
             raise InvalidResetTokenError
         locked.set_password(new_password)

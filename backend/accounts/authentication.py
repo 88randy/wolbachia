@@ -1,7 +1,7 @@
 """Bearer authentication for the mobile app: opaque access tokens bound to a device session."""
 
 from datetime import datetime
-from typing import Any, NoReturn
+from typing import NoReturn
 
 from rest_framework.authentication import BaseAuthentication, get_authorization_header
 from rest_framework.exceptions import AuthenticationFailed
@@ -12,10 +12,10 @@ from accounts.exceptions import (
     SessionRevokedError,
     TokenExpiredError,
 )
-from accounts.models import DeviceSession, RevokeReason, TokenPair, User
-from accounts.revocation import Revocation, is_final_upload_available, revoke_user_sessions
+from accounts.models import DeviceSession, TokenPair, User
+from accounts.revocation import is_final_upload_available
 from accounts.services import touch_session
-from accounts.token_pairs import is_access_superseded, is_retired_sibling, mark_access_used
+from accounts.token_pairs import claim_access_use, is_access_superseded, is_retired_sibling
 from accounts.tokens import hash_token
 from core.exceptions import DomainError
 from core.time import server_now
@@ -34,9 +34,9 @@ def fail(error: type[DomainError]) -> NoReturn:
     raise failure
 
 
-def _view_flag(request: Request, name: str) -> bool:
+def _view_attribute(request: Request, name: str, default: object) -> object:
     view = request.parser_context.get("view") if request.parser_context else None
-    return bool(getattr(view, name, False))
+    return getattr(view, name, default)
 
 
 class DeviceBearerAuthentication(BaseAuthentication):
@@ -44,16 +44,20 @@ class DeviceBearerAuthentication(BaseAuthentication):
 
     Looks the token up by its SHA-256 digest (unique index), so no plaintext is stored and no
     secret is compared in Python. Everything is revalidated on every request: revocation (also
-    of the device), expiry, supersession by a newer pair (after the grace window) and whether the
-    user is still active. 401 answers carry `WWW-Authenticate: Bearer`.
+    of the device), expiry, supersession by a newer pair (after the grace window), retirement of
+    an unused sibling pair and whether the user is still active. It never writes a revocation:
+    it only rejects (a deactivated user's sessions are revoked on refresh and on deactivation).
+    401 answers carry `WWW-Authenticate: Bearer`.
 
-    Two opt-in flags on the view (read from `request.parser_context["view"]`, verified in DRF
-    3.18):
+    Two opt-in attributes of the view (read from `request.parser_context["view"]`, verified in
+    DRF 3.18):
 
-    * `allows_revoked_final_upload`: a revoked session is accepted while its single final upload
-      is available. Set by `accounts.final_upload.FinalUploadMixin`, which also spends it.
-    * `accepts_ended_sessions`: expired, superseded and revoked sessions are accepted (logout
-      only, so the app can always end its session).
+    * `allows_revoked_final_upload` with `final_upload_methods`: a revoked session is accepted
+      for those HTTP methods only, while its single final upload is available. Set by
+      `accounts.final_upload.FinalUploadMixin`, which also spends it.
+    * `accepts_ended_sessions`: expired and revoked sessions are accepted (logout only, so the
+      app can always end its session). The pair must still be the current leaf: not superseded
+      beyond the grace window and not a retired sibling.
     """
 
     def authenticate(self, request: Request) -> tuple[User, DeviceSession] | None:
@@ -68,11 +72,15 @@ class DeviceBearerAuthentication(BaseAuthentication):
         if pair is None:
             fail(InvalidTokenError)
         session = pair.session
-        if not _view_flag(request, "accepts_ended_sessions"):
-            self._check_usable(pair, request)
-            if session.revoked_at is None:
-                mark_access_used(pair)
-                touch_session(session)
+        if _view_attribute(request, "accepts_ended_sessions", False):
+            self._check_current(pair, server_now())
+            return session.user, session
+        self._check_usable(pair, request)
+        if session.revoked_at is None:
+            failure = claim_access_use(pair)
+            if failure is not None:
+                fail(type(failure))
+            touch_session(session)
         return session.user, session
 
     @staticmethod
@@ -87,34 +95,34 @@ class DeviceBearerAuthentication(BaseAuthentication):
         except UnicodeDecodeError:
             fail(InvalidTokenError)
 
+    @staticmethod
+    def _check_current(pair: TokenPair, now: datetime) -> None:
+        """The pair must be the current one: not replaced for good, not a retired sibling."""
+        if is_access_superseded(pair, now) or is_retired_sibling(pair):
+            fail(InvalidTokenError)
+
     def _check_usable(self, pair: TokenPair, request: Request) -> None:
         session, now = pair.session, server_now()
         if session.revoked_at is not None:
             # The access token may have expired while the phone was offline: the final upload
-            # does not depend on it (its own deadline applies).
+            # does not depend on it (its own deadline applies), but it must be the current pair.
             if self._final_upload_allowed(session, request, now):
+                self._check_current(pair, now)
                 return
             fail(SessionRevokedError)
-        if session.device.is_revoked:
-            fail(SessionRevokedError)
-        if not session.user.is_active:
-            revoke_user_sessions(session.user, Revocation(RevokeReason.USER_DEACTIVATED))
+        if session.device.is_revoked or not session.user.is_active:
             fail(SessionRevokedError)
         if pair.access_expires_at <= now:
             fail(TokenExpiredError)
-        if is_access_superseded(pair, now) or is_retired_sibling(pair, now):
-            fail(InvalidTokenError)
+        self._check_current(pair, now)
 
     @staticmethod
     def _final_upload_allowed(session: DeviceSession, request: Request, now: datetime) -> bool:
-        """Revoked session, opt-in view, deadline not passed, not used yet, user still active."""
+        """Revoked session, opt-in view and method, deadline not passed, not used, user active."""
+        methods = _view_attribute(request, "final_upload_methods", ())
         return (
-            _view_flag(request, "allows_revoked_final_upload")
+            bool(_view_attribute(request, "allows_revoked_final_upload", False))
+            and request.method in methods  # type: ignore[operator]
             and session.user.is_active
             and is_final_upload_available(session, now)
         )
-
-
-def bearer_flags() -> dict[str, Any]:
-    """Names of the view attributes this authenticator reads (kept for the structure tests)."""
-    return {"allows_revoked_final_upload": False, "accepts_ended_sessions": False}

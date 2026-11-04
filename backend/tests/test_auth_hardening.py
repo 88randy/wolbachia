@@ -7,7 +7,7 @@ from django.views.debug import SafeExceptionReporterFilter
 from rest_framework.test import APIClient
 
 from accounts.serializers import PasswordResetConfirmSerializer
-from accounts.services import authenticate_user, reset_password
+from accounts.services import _upgrade_hash, authenticate_user, reset_password, verify_credentials
 from accounts.views import LoginView, PasswordResetConfirmView
 from organizations.models import Organization
 from tests.conftest import MemberFactory
@@ -54,13 +54,14 @@ def test_error_reports_mask_the_password_held_by_authenticate_user(
 ) -> None:
     """Django's error reports (DEBUG page, admin mail) hide the locals of `sensitive_variables`."""
 
-    def explode(**credentials: str) -> None:
+    def explode(*arguments: object, **options: object) -> bool:
         raise RuntimeError("unexpected failure")
 
-    monkeypatch.setattr("accounts.services.authenticate", explode)
+    monkeypatch.setattr("accounts.services.check_password", explode)
+    user = UserFactory()
 
     with pytest.raises(RuntimeError) as failure:
-        authenticate_user("ana", SECRET, None)
+        authenticate_user(user.username, SECRET, None)
 
     traceback = failure.value.__traceback__
     while traceback is not None and traceback.tb_frame.f_code.co_name != "authenticate_user":
@@ -75,6 +76,8 @@ def test_error_reports_mask_the_password_held_by_authenticate_user(
     "function",
     [
         authenticate_user,
+        verify_credentials,
+        _upgrade_hash,
         reset_password,
         LoginView.post,
         PasswordResetConfirmView.post,

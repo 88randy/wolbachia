@@ -5,18 +5,18 @@ Rules (decision 36, docs/api-conventions.md):
 * A refresh token is single use. Exchanging it consumes its pair and issues a child pair.
 * A consumed refresh token presented again *inside the grace window* is a lost response: it is
   allowed only if no token issued after it has been used yet (no child access token used, no child
-  refresh consumed). It then issues one more sibling pair; every pair issued in the window stays
-  valid, so out-of-order responses do not strand the client.
-* A consumed refresh token presented outside the window, or after a later token was used, means a
-  copy exists: the whole session is revoked (`refresh_reuse`).
-* Once the window has closed, a sibling pair that was never used is retired if another sibling
-  was used or consumed.
+  refresh consumed) and the parent has fewer than `MAX_SIBLING_PAIRS` children. It then issues one
+  more sibling pair.
+* A consumed refresh token presented outside the window, after a later token was used, or once the
+  sibling cap is exceeded, means a copy exists: the whole session is revoked (`refresh_reuse`).
+* Per parent, only the first sibling ever used (its access token used or its refresh exchanged) is
+  valid. Using or refreshing any other sibling afterwards revokes the session (`refresh_reuse`).
 
-The revocation is committed before the error is raised, so none of this may run inside an outer
-`atomic()` (see `accounts.revocation`).
+Lock order (see accounts/README.md): User, Device, DeviceSession, TokenPair. Refresh locks the user
+first. The revocation is committed before the error is raised, so none of this may run inside an
+outer `atomic()` (see `accounts.revocation`).
 """
 
-import hmac
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -31,12 +31,15 @@ from accounts.exceptions import (
     SessionRevokedError,
     TokenExpiredError,
 )
-from accounts.models import DeviceSession, RevokeReason, TokenPair
+from accounts.models import DeviceSession, RevokeReason, TokenPair, User
 from accounts.revocation import Revocation, revoke_session
 from accounts.tokens import generate_token, hash_token
 from core.exceptions import DomainError
 from core.time import server_now
 from organizations.models import Membership
+
+# Children a consumed pair may have: the first exchange plus accepted duplicates (lost responses).
+MAX_SIBLING_PAIRS = 3
 
 
 @dataclass(frozen=True)
@@ -51,6 +54,11 @@ class IssuedTokens:
 
 def _grace() -> timedelta:
     return timedelta(seconds=settings.AUTH_REFRESH_REUSE_GRACE_SECONDS)
+
+
+def _adopted() -> Q:
+    """A pair that was used: its access token used or its refresh token exchanged."""
+    return Q(access_used_at__isnull=False) | Q(consumed_at__isnull=False)
 
 
 def issue_pair(session: DeviceSession, parent: TokenPair | None = None) -> IssuedTokens:
@@ -72,26 +80,21 @@ def issue_pair(session: DeviceSession, parent: TokenPair | None = None) -> Issue
 
 def has_used_descendants(pair: TokenPair) -> bool:
     """True when a pair issued from this one had its access token used or its refresh consumed."""
-    return pair.children.filter(
-        Q(access_used_at__isnull=False) | Q(consumed_at__isnull=False)
-    ).exists()
+    return pair.children.filter(_adopted()).exists()
 
 
-def is_retired_sibling(pair: TokenPair, now: datetime) -> bool:
-    """A never-used sibling whose window closed after another sibling was used or consumed."""
-    parent = pair.parent
-    if parent is None or parent.consumed_at is None:
+def _other_adopted_sibling(pair: TokenPair) -> bool:
+    if pair.parent_id is None:
         return False
-    if pair.consumed_at is not None or pair.access_used_at is not None:
+    siblings = TokenPair.objects.filter(parent_id=pair.parent_id).exclude(pk=pair.pk)
+    return siblings.filter(_adopted()).exists()
+
+
+def is_retired_sibling(pair: TokenPair) -> bool:
+    """A never-used sibling of a pair that was used: it must not be used any more."""
+    if pair.access_used_at is not None or pair.consumed_at is not None:
         return False
-    if now <= parent.consumed_at + _grace():
-        return False
-    return (
-        TokenPair.objects.filter(parent_id=parent.pk)
-        .exclude(pk=pair.pk)
-        .filter(Q(access_used_at__isnull=False) | Q(consumed_at__isnull=False))
-        .exists()
-    )
+    return _other_adopted_sibling(pair)
 
 
 def is_access_superseded(pair: TokenPair, now: datetime) -> bool:
@@ -99,12 +102,51 @@ def is_access_superseded(pair: TokenPair, now: datetime) -> bool:
     return pair.superseded_at is not None and now > pair.superseded_at + _grace()
 
 
-def mark_access_used(pair: TokenPair) -> None:
-    """Record the first use of the pair's access token (writes TokenPair.access_used_at)."""
-    if pair.access_used_at is None:
+def _audit(session: DeviceSession) -> AuditContext:
+    return AuditContext(
+        organization_id=session.organization_id,
+        user_id=session.user_id,
+        device_id=session.device_id,
+    )
+
+
+def _reuse(session: DeviceSession) -> DomainError:
+    """A token that must not come back did: revoke the session (writes) and log it."""
+    log_auth_event(AuthEvent.REFRESH_REUSE_DETECTED, _audit(session))
+    revoke_session(session, Revocation(RevokeReason.REFRESH_REUSE))
+    return SessionRevokedError()
+
+
+def claim_access_use(pair: TokenPair) -> DomainError | None:
+    """Record the first use of the pair's access token (writes TokenPair.access_used_at).
+
+    Returns the error to raise, or None. A pair with siblings is claimed under the locks of the
+    global order (user, session, parent pair): if another sibling was used first, this is a copy
+    and the session is revoked. Raise the result only after this function returned, so the
+    revocation is committed.
+    """
+    if pair.access_used_at is not None:
+        return None
+    siblings = 0 if pair.parent_id is None else pair.parent.children.count()  # type: ignore[union-attr]
+    if siblings <= 1:
         TokenPair.objects.filter(pk=pair.pk, access_used_at__isnull=True).update(
             access_used_at=server_now()
         )
+        return None
+    failure: DomainError | None = None
+    with transaction.atomic():
+        User.objects.select_for_update(no_key=True).get(pk=pair.session.user_id)
+        session = DeviceSession.objects.select_for_update().get(pk=pair.session_id)
+        TokenPair.objects.select_for_update().get(pk=pair.parent_id)  # type: ignore[misc]
+        if session.revoked_at is not None:
+            failure = SessionRevokedError()
+        elif _other_adopted_sibling(pair):
+            failure = _reuse(session)
+        else:
+            TokenPair.objects.filter(pk=pair.pk, access_used_at__isnull=True).update(
+                access_used_at=server_now()
+            )
+    return failure
 
 
 def _has_active_membership(session: DeviceSession) -> bool:
@@ -114,14 +156,6 @@ def _has_active_membership(session: DeviceSession) -> bool:
         is_active=True,
         organization__is_active=True,
     ).exists()
-
-
-def _audit(session: DeviceSession) -> AuditContext:
-    return AuditContext(
-        organization_id=session.organization_id,
-        user_id=session.user_id,
-        device_id=session.device_id,
-    )
 
 
 def _revoked_failure(session: DeviceSession, reason: RevokeReason) -> DomainError:
@@ -140,15 +174,14 @@ def _session_failure(session: DeviceSession) -> DomainError | None:
     return None
 
 
-def _consumed_failure(pair: TokenPair, now: datetime) -> DomainError | None:
+def _consumed_failure(pair: TokenPair, consumed_at: datetime, now: datetime) -> DomainError | None:
     """A consumed refresh token came back: a grace retry (None) or a reuse (session revoked)."""
-    assert pair.consumed_at is not None  # noqa: S101
-    in_window = now <= pair.consumed_at + _grace()
-    if in_window and not has_used_descendants(pair):
+    in_window = now <= consumed_at + _grace()
+    room = pair.children.count() < MAX_SIBLING_PAIRS
+    if in_window and room and not has_used_descendants(pair):
         log_auth_event(AuthEvent.REFRESH_GRACE_RETRY, _audit(pair.session))
         return None
-    log_auth_event(AuthEvent.REFRESH_REUSE_DETECTED, _audit(pair.session))
-    return _revoked_failure(pair.session, RevokeReason.REFRESH_REUSE)
+    return _reuse(pair.session)
 
 
 def _refresh_failure(pair: TokenPair, now: datetime) -> DomainError | None:
@@ -157,26 +190,37 @@ def _refresh_failure(pair: TokenPair, now: datetime) -> DomainError | None:
     if failure is not None:
         return failure
     if pair.consumed_at is not None:
-        return _consumed_failure(pair, now)
+        return _consumed_failure(pair, pair.consumed_at, now)
     if pair.refresh_expires_at <= now:
         return TokenExpiredError()
-    if is_retired_sibling(pair, now):
-        return InvalidTokenError()
+    if _other_adopted_sibling(pair):
+        return _reuse(pair.session)  # a sibling was used first: this one is a copy
     return None
 
 
 def _lock_pair(digest: str) -> TokenPair | None:
-    """The pair with this refresh digest and its session, both rows locked (session first)."""
-    found = TokenPair.objects.filter(refresh_hash=digest).values_list("pk", "session_id").first()
+    """The pair with this refresh digest, locked with its user, session and parent.
+
+    Global lock order: user, session, pair (the parent pair is locked right after the pair).
+    """
+    found = (
+        TokenPair.objects.filter(refresh_hash=digest)
+        .values_list("pk", "session_id", "session__user_id", "parent_id")
+        .first()
+    )
     if found is None:
         return None
-    pair_pk, session_pk = found
+    pair_pk, session_pk, user_pk, parent_pk = found
+    User.objects.select_for_update(no_key=True).get(pk=user_pk)
     DeviceSession.objects.select_for_update().get(pk=session_pk)
-    return (
+    pair = (
         TokenPair.objects.select_for_update(of=("self",))
         .select_related("session__user", "session__device", "parent")
         .get(pk=pair_pk)
     )
+    if parent_pk is not None:
+        TokenPair.objects.select_for_update().get(pk=parent_pk)
+    return pair
 
 
 def rotate_refresh_token(refresh_token: str, device_id: uuid.UUID) -> IssuedTokens:
@@ -190,11 +234,7 @@ def rotate_refresh_token(refresh_token: str, device_id: uuid.UUID) -> IssuedToke
     failure: DomainError
     with transaction.atomic():
         pair = _lock_pair(digest)
-        if (
-            pair is None
-            or not hmac.compare_digest(pair.refresh_hash, digest)
-            or pair.session.device_id != device_id
-        ):
+        if pair is None or pair.session.device_id != device_id:
             raise InvalidTokenError
         refusal = _refresh_failure(pair, now)
         if refusal is None:
