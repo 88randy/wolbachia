@@ -179,8 +179,27 @@ describe("sign out", () => {
     expect(logout?.path).toBe("/api/v1/auth/logout/");
     expect(logout?.headers.get("X-CSRFToken")).toBe("test-csrf");
     expect(app.router.state.location.pathname).toBe("/login");
+  });
+
+  test("sign-out forgets the organization everywhere", async () => {
+    setOrganizationSlug("norte");
+    await openShell();
+    await userEvent.click(menuButton());
+
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+
+    await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
     expect(getOrganizationSlug()).toBeUndefined();
     expect(window.localStorage.getItem("wolbachia.organization")).toBeNull();
+  });
+
+  test("sign-out empties the query cache", async () => {
+    const { app } = await openShell();
+    await userEvent.click(menuButton());
+
+    await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
+
+    await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
     expect(app.queryClient.getQueryCache().getAll()).toEqual([]);
   });
 

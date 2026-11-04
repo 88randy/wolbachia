@@ -1,6 +1,7 @@
 import { ApiError } from "@wolbachia/api-client";
 import { redirect } from "@tanstack/react-router";
 import type { AnyRedirect } from "@tanstack/react-router";
+import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { canOpenArea } from "./area-access";
 import type { Area, AreaId } from "./areas";
 import type { Me } from "../session/me";
@@ -57,7 +58,7 @@ export async function requireSession(args: GuardArgs): Promise<Me> {
   } catch (error) {
     if (!(error instanceof ApiError)) throw error;
     if (error.status === 401) return signIn(args);
-    if (error.code === "no_active_membership") return signIn(args, "no-membership");
+    if (error.code === NO_ACTIVE_MEMBERSHIP) return signIn(args, "no-membership");
     throw error;
   }
 }

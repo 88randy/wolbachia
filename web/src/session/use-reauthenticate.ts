@@ -1,22 +1,38 @@
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
+import type { AnyRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { LoginFailure } from "../auth/login-failure";
 import { requestLogin } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
+import { finishAuthOperation, isCurrentOperation, startAuthOperation } from "./auth-operation";
+import { recordIdentity } from "./identity";
+import type { Me } from "./me";
 import { ME_QUERY_KEY } from "./me-query";
 import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
 import { endSessionExpiry } from "./session-events";
 import { useMe } from "./use-me";
 
+/** The session is back: store `/me/`, drop another user's or organization's cache, refetch. */
+async function acceptLogin(me: Me, queryClient: QueryClient, router: AnyRouter): Promise<void> {
+  recordIdentity(queryClient, me);
+  queryClient.setQueryData(ME_QUERY_KEY, me);
+  endSessionExpiry();
+  void queryClient.invalidateQueries();
+  if (me.organization === null) await router.navigate({ to: "/select-organization" });
+}
+
 /**
  * Signs the same user in again without leaving the page: the screens stay mounted, so nothing
  * typed is lost. Afterwards every active query is refetched; the request that failed with the
- * 401 is NOT repeated, the user sends it again.
+ * 401 is NOT repeated, the user sends it again. If the session lands in another organization
+ * (the stored slug was refused) the old organization's cache is dropped and the guards run again.
+ * It never overlaps a sign-out: an answer for an older operation is dropped.
  */
 export function useReauthenticate() {
   const { user } = useMe();
@@ -30,16 +46,17 @@ export function useReauthenticate() {
     defaultValues: { password: "" },
   });
   const submit = form.handleSubmit(async ({ password }) => {
+    const token = startAuthOperation("login");
+    if (token === undefined) return;
     setFailure(undefined);
     const outcome = await requestLogin(client, { username: user.username, password });
-    if (!outcome.ok) {
-      setFailure(outcome.failure);
-      return;
+    try {
+      if (!isCurrentOperation(token)) return;
+      if (outcome.ok) await acceptLogin(outcome.me, queryClient, router);
+      else setFailure(outcome.failure);
+    } finally {
+      finishAuthOperation(token);
     }
-    queryClient.setQueryData(ME_QUERY_KEY, outcome.me);
-    endSessionExpiry();
-    void queryClient.invalidateQueries();
-    if (outcome.me.organization === null) await router.navigate({ to: "/select-organization" });
   });
   return { form, username: user.username, failure, alertRef, submit };
 }

@@ -87,6 +87,19 @@ export function noContent(status = 204): Response {
   return new Response(null, { status });
 }
 
+/** An organization as `/me/` names it. */
+export function makeOrganization(slug: string, name: string): NonNullable<Me["organization"]> {
+  return {
+    id: "0c9e5b2a-8a54-4c7f-9e0d-6a9f5f3a1b22",
+    slug,
+    name,
+    country: "MX",
+    timezone: "America/Mexico_City",
+    languages: ["es-MX", "en"],
+    logo_url: null,
+  };
+}
+
 /** The default signed-in user of the tests: one organization, every permission of Settings. */
 export function makeMe(overrides: Partial<Me> = {}): Me {
   return {

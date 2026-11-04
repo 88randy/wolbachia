@@ -2,6 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useApiClient } from "../api/ApiClientProvider";
 import { safeRedirect } from "../router/safe-redirect";
+import { forgetIdentity, recordIdentity } from "../session/identity";
 import { ME_QUERY_KEY } from "../session/me-query";
 import { endSessionExpiry } from "../session/session-events";
 import type { LoginFailure } from "./login-failure";
@@ -21,6 +22,8 @@ export function useLogin(requestedTarget: string | undefined) {
     const outcome = await requestLogin(client, credentials);
     if (!outcome.ok) return outcome.failure;
     queryClient.clear();
+    forgetIdentity(queryClient);
+    recordIdentity(queryClient, outcome.me);
     queryClient.setQueryData(ME_QUERY_KEY, outcome.me);
     endSessionExpiry();
     const target = safeRedirect(requestedTarget);

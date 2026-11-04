@@ -247,7 +247,6 @@ describe("W1 sign-in: after signing in", () => {
   });
 
   test("a stored slug of someone else is dropped and the login retried without it", async () => {
-    setOrganizationSlug("gone");
     let headers: (string | null)[] = [];
     await openLogin({
       [LOGIN]: (request) => {
@@ -258,6 +257,8 @@ describe("W1 sign-in: after signing in", () => {
       },
     });
 
+    // Set after the page opened (another tab, say): the page itself forgets slugs left behind.
+    setOrganizationSlug("gone");
     await signIn();
 
     await vi.waitFor(() => {
@@ -392,11 +393,14 @@ describe("W1 sign-in: failures", () => {
 
   test("pressing the button twice sends one request", async () => {
     let attempts = 0;
+    let release: (response: Response) => void = () => undefined;
+    const answer = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
     await openLogin({
-      [LOGIN]: async () => {
+      [LOGIN]: () => {
         attempts += 1;
-        await new Promise((resolve) => setTimeout(resolve, 50));
-        return apiError(401, "invalid_credentials");
+        return answer;
       },
     });
     await userEvent.type(await screen.findByLabelText("Usuario"), "ana");
@@ -404,9 +408,23 @@ describe("W1 sign-in: failures", () => {
 
     const button = screen.getByRole("button", { name: "Entrar" });
     await userEvent.dblClick(button);
+    release(apiError(401, "invalid_credentials"));
 
     await screen.findByRole("alert");
     expect(attempts).toBe(1);
+  });
+});
+
+describe("W1 sign-in: a leftover organization", () => {
+  test("with nobody signed in, a slug left by a previous session is forgotten", async () => {
+    setOrganizationSlug("norte");
+
+    await openLogin();
+    await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
+
+    await vi.waitFor(() => {
+      expect(getOrganizationSlug()).toBeUndefined();
+    });
   });
 });
 

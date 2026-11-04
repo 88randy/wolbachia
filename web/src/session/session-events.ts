@@ -1,5 +1,6 @@
 import { ApiError } from "@wolbachia/api-client";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
+import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { ME_QUERY_KEY } from "./me-query";
 
 /**
@@ -14,7 +15,6 @@ import { ME_QUERY_KEY } from "./me-query";
  * Both are ignored while nobody is signed in (`/me/` not loaded): a 401 on the sign-in page is
  * simply "not signed in".
  */
-const NO_ACTIVE_MEMBERSHIP = "no_active_membership";
 const HTTP_UNAUTHORIZED = 401;
 const HTTP_FORBIDDEN = 403;
 

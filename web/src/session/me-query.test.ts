@@ -2,7 +2,7 @@ import { ApiError } from "@wolbachia/api-client";
 import { beforeEach, describe, expect, test } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
-import { fetchMe, isNotAuthenticated } from "./me-query";
+import { fetchMe } from "./me-query";
 import {
   clearOrganizationSlug,
   getOrganizationSlug,
@@ -34,7 +34,7 @@ describe("fetchMe", () => {
     const failure = await fetchMe(clientFor(api)).catch((error: unknown) => error);
 
     expect(failure).toBeInstanceOf(ApiError);
-    expect(isNotAuthenticated(failure)).toBe(true);
+    expect((failure as ApiError).status).toBe(401);
   });
 
   test("a stale stored slug is forgotten and /me/ is retried once without the header", async () => {
@@ -72,12 +72,5 @@ describe("fetchMe", () => {
     await expect(fetchMe(clientFor(api))).rejects.toBeInstanceOf(ApiError);
 
     expect(getOrganizationSlug()).toBe("norte");
-  });
-});
-
-describe("isNotAuthenticated", () => {
-  test("is false for other failures", () => {
-    expect(isNotAuthenticated(new ApiError(403))).toBe(false);
-    expect(isNotAuthenticated(new TypeError("Failed to fetch"))).toBe(false);
   });
 });

@@ -1,8 +1,9 @@
-import { ApiError, isErrorEnvelope, unwrap } from "@wolbachia/api-client";
+import { isErrorEnvelope, unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import { queryOptions } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
+import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { clearOrganizationSlug, getOrganizationSlug } from "./organization-slug";
 
 export const ME_QUERY_KEY = ["me"] as const;
@@ -12,8 +13,6 @@ export const ME_QUERY_KEY = ["me"] as const;
  * permission changed by an administrator reaches the navigation without a new sign-in.
  */
 export const ME_STALE_TIME_MS = 60_000;
-
-const NO_ACTIVE_MEMBERSHIP = "no_active_membership";
 
 /**
  * `GET /me/`. A stored organization slug that no longer matches an active membership is
@@ -30,11 +29,6 @@ export async function fetchMe(client: ApiClient): Promise<Me> {
   if (!isStaleSlug) return unwrap(first);
   clearOrganizationSlug();
   return unwrap(await client.GET("/api/v1/me/"));
-}
-
-/** Whether a failed `/me/` means "nobody is signed in". */
-export function isNotAuthenticated(error: unknown): boolean {
-  return error instanceof ApiError && error.status === 401;
 }
 
 /**

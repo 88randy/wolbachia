@@ -1,20 +1,19 @@
 import { ApiError } from "@wolbachia/api-client";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
+import { recordIdentity } from "../session/identity";
+import type { Me } from "../session/me";
+import { ME_QUERY_KEY } from "../session/me-query";
 import { reportSessionError } from "../session/session-events";
 
 /** Retries of a failed query that is worth retrying (network or 5xx). */
 const MAX_RETRIES = 2;
-const FIRST_CLIENT_ERROR_STATUS = 400;
 const FIRST_SERVER_ERROR_STATUS = 500;
 
-/** A 4xx answer will not change by asking again; a network failure or a 5xx might. */
+/** Only a network failure or a 5xx might change by asking again; anything else is not retried. */
 export function shouldRetry(failureCount: number, error: unknown): boolean {
   if (failureCount >= MAX_RETRIES) return false;
-  const isClientError =
-    error instanceof ApiError &&
-    error.status >= FIRST_CLIENT_ERROR_STATUS &&
-    error.status < FIRST_SERVER_ERROR_STATUS;
-  return !isClientError;
+  if (error instanceof TypeError) return true; // fetch rejects with a TypeError on network failure
+  return error instanceof ApiError && error.status >= FIRST_SERVER_ERROR_STATUS;
 }
 
 interface AppQueryClientOptions {
@@ -33,6 +32,9 @@ export function createAppQueryClient(options: AppQueryClientOptions = {}): Query
     queryCache: new QueryCache({
       onError: (error, query) => {
         reportSessionError(error, client, query.queryKey);
+      },
+      onSuccess: (data, query) => {
+        if (query.queryKey[0] === ME_QUERY_KEY[0]) recordIdentity(client, data as Me);
       },
     }),
     mutationCache: new MutationCache({

@@ -1,5 +1,6 @@
 import { isErrorEnvelope } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
+import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { retryAfterMinutes } from "../api/retry-after";
 
 /** Why a sign-in did not work, reduced to what the screen has to say. */
@@ -40,7 +41,7 @@ export function classifyLoginFailure(answer: LoginAnswer): LoginFailure {
   if (answer.status === HTTP_TOO_MANY_REQUESTS) {
     return { kind: "locked", minutes: retryAfterMinutes(answer.retryAfter) };
   }
-  if (answer.status === HTTP_FORBIDDEN && code === "no_active_membership") {
+  if (answer.status === HTTP_FORBIDDEN && code === NO_ACTIVE_MEMBERSHIP) {
     return { kind: "noMembership" };
   }
   if (answer.status >= FIRST_SERVER_ERROR) return { kind: "server" };

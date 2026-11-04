@@ -121,6 +121,27 @@ describe("organization selection", () => {
     expect(screen.getByRole("radio", { name: "Región Sur" })).toHaveProperty("checked", true);
   });
 
+  test("a 401 while choosing sends the user to sign in, keeping the target", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let calls = 0;
+    const { app } = await openChooser(
+      {
+        [ME]: (request) => {
+          calls += 1;
+          return calls === 1 ? meFor(request) : apiError(401, "not_authenticated");
+        },
+      },
+      "/select-organization?redirect=%2Fsettings",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await vi.waitFor(() => {
+      expect(app.router.state.location.pathname).toBe("/login");
+    });
+    expect(app.router.state.location.search).toEqual({ redirect: "/settings" });
+  });
+
   test("a failure refreshing /me/ is reported and the user stays", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     let calls = 0;

@@ -11,6 +11,10 @@ describe("shouldRetry", () => {
     expect(shouldRetry(2, networkFailure)).toBe(false);
   });
 
+  test("does not retry a thrown error that is not a network failure", () => {
+    expect(shouldRetry(0, new Error("boom"))).toBe(false);
+  });
+
   test("retries a server error", () => {
     expect(shouldRetry(0, new ApiError(503))).toBe(true);
   });

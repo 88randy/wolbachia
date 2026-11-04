@@ -1,5 +1,6 @@
 import { isErrorEnvelope } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
+import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { ensureCsrfCookie, fetchCsrfCookie } from "../api/csrf";
 import type { Me } from "../session/me";
 import { clearOrganizationSlug, getOrganizationSlug } from "../session/organization-slug";
@@ -41,7 +42,7 @@ function isStaleSlugRefusal(result: RawResult): boolean {
     getOrganizationSlug() !== undefined &&
     result.response.status === 403 &&
     isErrorEnvelope(result.error) &&
-    result.error.code === "no_active_membership"
+    result.error.code === NO_ACTIVE_MEMBERSHIP
   );
 }
 

@@ -1,6 +1,7 @@
 import { unwrap } from "@wolbachia/api-client";
 import { render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { fakePassword } from "../test/fake-credentials";
 import { clearOrganizationSlug, setOrganizationSlug } from "../session/organization-slug";
 import { ApiClientProvider, useApiClient } from "./ApiClientProvider";
 import { apiOriginOf, createWebApiClient, readCookie } from "./create-web-api-client";
@@ -112,7 +113,7 @@ describe("organization header", () => {
 
     await client.GET("/api/v1/me/");
     await client.POST("/api/v1/auth/login/", {
-      body: { username: "ana", password: "pw-for-test" },
+      body: { username: "ana", password: fakePassword() },
     });
 
     const [get, post] = requests;

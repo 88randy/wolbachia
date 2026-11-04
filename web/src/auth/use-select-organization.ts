@@ -9,6 +9,8 @@ import { safeRedirect } from "../router/safe-redirect";
 import { switchOrganization } from "../session/organization-switch";
 import { ApiError } from "@wolbachia/api-client";
 
+const HTTP_UNAUTHORIZED = 401;
+
 function failureOf(error: unknown): ServiceFailure {
   return error instanceof ApiError ? serviceFailureOf(error.status) : "network";
 }
@@ -25,6 +27,10 @@ export function useSelectOrganization(requestedTarget: string | undefined) {
   const [isBusy, setIsBusy] = useState(false);
   const [failure, setFailure] = useState<ServiceFailure | undefined>();
   const alertRef = useFocusAlert(failure);
+  async function goToSignIn(): Promise<void> {
+    const target = safeRedirect(requestedTarget);
+    await router.navigate({ to: "/login", search: target === "/" ? {} : { redirect: target } });
+  }
   async function select(slug: string): Promise<void> {
     setIsBusy(true);
     setFailure(undefined);
@@ -34,7 +40,8 @@ export function useSelectOrganization(requestedTarget: string | undefined) {
       else router.history.push(safeRedirect(requestedTarget));
     } catch (error) {
       console.error("Could not switch organization", error);
-      setFailure(failureOf(error));
+      if (error instanceof ApiError && error.status === HTTP_UNAUTHORIZED) await goToSignIn();
+      else setFailure(failureOf(error));
     } finally {
       setIsBusy(false);
     }

@@ -39,6 +39,19 @@ test.describe("session expiry", () => {
     await expect(dialog).toBeVisible();
   });
 
+  test("pressing Escape twice, with nothing typed, leaves the dialog open", async ({ page }) => {
+    const api = await mockApi(page);
+    await expireWhileWorking(page, api);
+    const dialog = page.getByRole("dialog", { name: "Tu sesión terminó" });
+    await expect(dialog).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await page.keyboard.press("Escape");
+
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByLabel("Contraseña", { exact: true })).toBeFocused();
+  });
+
   test("signing in again closes it and returns focus to where the user was", async ({ page }) => {
     const api = await mockApi(page);
     await expireWhileWorking(page, api);

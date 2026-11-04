@@ -36,4 +36,3 @@ export const AREAS = [
 
 export type Area = (typeof AREAS)[number];
 export type AreaId = Area["id"];
-export type AreaAccess = readonly string[] | typeof PENDING;

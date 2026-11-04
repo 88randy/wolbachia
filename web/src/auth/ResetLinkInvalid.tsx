@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { useEffect, useRef } from "react";
 import { useTranslation } from "react-i18next";
-import formStyles from "../forms/form.module.css";
+import { FormAlert } from "../forms/FormAlert";
+import { useFocusAlert } from "../forms/use-focus-alert";
 import buttons from "../styles/button.module.css";
 import { classNames } from "../styles/class-names";
 
@@ -11,16 +11,15 @@ import { classNames } from "../styles/class-names";
  */
 export function ResetLinkInvalid() {
   const { t } = useTranslation();
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    ref.current?.focus();
-  }, []);
+  const alertRef = useFocusAlert(true);
   return (
     <>
-      <div ref={ref} role="alert" tabIndex={-1} className={formStyles.alert}>
-        <p className={formStyles.alertTitle}>{t("auth.reset.invalidLinkTitle")}</p>
-        <p className={formStyles.alertText}>{t("auth.reset.invalidLinkBody")}</p>
-      </div>
+      <FormAlert
+        id="reset-link-alert"
+        ref={alertRef}
+        title={t("auth.reset.invalidLinkTitle")}
+        text={t("auth.reset.invalidLinkBody")}
+      />
       <Link to="/forgot-password" className={classNames(buttons.button, buttons.primary)}>
         {t("auth.reset.requestNew")}
       </Link>
