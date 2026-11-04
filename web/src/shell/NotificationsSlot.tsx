@@ -3,12 +3,12 @@ import { useTranslation } from "react-i18next";
 import utilities from "../styles/utilities.module.css";
 import styles from "./TopBar.module.css";
 
+const NOTIFICATIONS_HINT_ID = "notifications-hint";
+
 /**
  * Place of the notifications panel (W5). Announced as unavailable (aria-disabled) and kept
  * focusable so keyboard users find it; no unread count and no panel until the API exists.
  */
-const NOTIFICATIONS_HINT_ID = "notifications-hint";
-
 export function NotificationsSlot() {
   const { t } = useTranslation();
   return (

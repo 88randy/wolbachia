@@ -1,4 +1,4 @@
-import { screen, within } from "@testing-library/react";
+import { act, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -219,6 +219,37 @@ describe("compact viewport", () => {
     await renderApp();
 
     expect(screen.getByRole("button", { name: "Colapsar menú" })).toBeDefined();
+  });
+});
+
+describe("compact viewport focus", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("focus moves to main when the focused toggle disappears", async () => {
+    const listeners = new Set<() => void>();
+    let matches = false;
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      get matches() {
+        return matches;
+      },
+      media: query,
+      addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+      removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+    }));
+    await renderApp();
+    screen.getByRole("button", { name: "Colapsar menú" }).focus();
+
+    matches = true;
+    act(() => {
+      listeners.forEach((listener) => {
+        listener();
+      });
+    });
+
+    expect(screen.queryByRole("button", { name: "Colapsar menú" })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("main"));
   });
 });
 

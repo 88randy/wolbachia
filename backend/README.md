@@ -10,6 +10,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 - Every business table inherits `core.models.OrgScopedModel` (and `VoidableMixin` when it can be voided). Nothing is deleted: model and queryset `delete()` raise `PhysicalDeleteForbiddenError`.
 - New org-scoped resources subclass `core.views.OrgScopedViewSet` (no destroy) and, when voidable, add `VoidActionMixin`. Every viewset must declare `required_permissions = {"<action>": "<resource>.<action>"}` (list, retrieve, create, update, partial_update, void...): the base class already uses `HasPermissionCode` (OPTIONS is denied too: there is no code for `metadata`), which denies any action missing from the map. Updates lock the row and answer `409 already_voided` on voided records.
 - **Mandatory:** serializers of org-scoped models extend `core.serializers.OrgScopedModelSerializer`, whose relational fields are `OrgScopedPrimaryKeyRelatedField` (never a plain `PrimaryKeyRelatedField`), so an id from another organization fails like a nonexistent one. Expose `created_by` and other non-org-scoped relations as read-only.
+- A list endpoint that must resolve human codes sets `code_lookup_field = "code"` on its viewset: `?code=` then filters by exact match (`core/filters.py`, see `docs/api-conventions.md`). Two list endpoints of different paging style need different serializer classes (OpenAPI component names).
 - Django admin is not mounted on purpose (it can delete).
 
 ## Layout
@@ -47,7 +48,7 @@ uv run pytest --cov                       # coverage gate: 85 % (pyproject.toml)
 uv run mypy .
 uvx ruff@0.17.3 check --config pyproject.toml . && uvx ruff@0.17.3 format --check --config pyproject.toml .
 uv run python manage.py makemigrations --check --dry-run
-uv run python manage.py spectacular --file schema.yml --validate --fail-on-warn
+cd .. && npm run api:generate             # validate the schema, re-export openapi.yaml and regenerate packages/api-client (commit both)
 ```
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
@@ -88,8 +89,8 @@ Profiles start with no permission codes; they are data configured per organizati
 
 ## Lint, format and type-check
 
-Tool config lives in [`pyproject.toml`](pyproject.toml) (ruff, mypy, pytest, coverage). CI is [`.github/workflows/backend.yml`](../.github/workflows/backend.yml): ruff, mypy, migrations check, tests with coverage, OpenAPI validation, with a PostgreSQL service. Setup of pre-commit: see the root [`README.md`](../README.md#quality-tooling).
+Tool config lives in [`pyproject.toml`](pyproject.toml) (ruff, mypy, pytest, coverage). CI is [`.github/workflows/backend.yml`](../.github/workflows/backend.yml): ruff, mypy, migrations check, tests with coverage, with a PostgreSQL service. OpenAPI validation and the generated-client check are in [`api-contract.yml`](../.github/workflows/api-contract.yml). Setup of pre-commit: see the root [`README.md`](../README.md#quality-tooling).
 
 ## Next
 
-OpenAPI export and the generated client: #12. Deploy: #18. Auth flows: #4.
+Deploy: #18. Auth flows: #4.

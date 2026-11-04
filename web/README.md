@@ -94,6 +94,7 @@ The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only f
 | Folder | What |
 |---|---|
 | `app/` | `startApp` (theme, language, configuration check, first render) and `App` |
+| `api/` | the one `@wolbachia/api-client` client (same-origin session, CSRF from the `csrftoken` cookie, base URL from `VITE_API_BASE_URL` minus `/api/v1`) and `useApiClient`; no `fetch` anywhere else |
 | `config/` | `readAppConfig`: validates the environment (the only place that exposes `apiBaseUrl`) |
 | `i18n/` | i18next fed by `@wolbachia/i18n` (typed keys, `{param}`), `useLanguage` |
 | `theme/` | light by default; `data-theme="dark"` on `<html>`; stored per browser |
@@ -113,7 +114,7 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
 - Keyboard: the first Tab stop is "Skip to content"; after each navigation focus moves to `<main>`; every link and button is reachable; the focus ring comes from the tokens. The active sidebar item uses `color.action` (4.5:1) instead of `color.brand` (4.2:1 with white text, fails AA).
-- Not built here: sign-in and permissions (#28), `packages/api-client` and TanStack Query (#12), DataTable and FilterBar (#29), the void pattern (#32), the public portal layout (#25).
+- Not built here: sign-in and permissions (#28), TanStack Query and the screens that call the API, DataTable and FilterBar (#29), the void pattern (#32), the public portal layout (#25).
 
 Screenshots of the shell (light, dark, es-MX, en, collapsed, offline): [`docs/screenshots/`](docs/screenshots/).
 

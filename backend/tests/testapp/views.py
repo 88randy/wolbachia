@@ -25,14 +25,31 @@ WIDGET_PERMISSIONS = {
 class WidgetSerializer(OrgScopedModelSerializer):
     class Meta:
         model = Widget
-        fields = ["id", "name", "related", "created_at", "voided_at", "voided_by", "void_reason"]
+        fields = [
+            "id",
+            "name",
+            "code",
+            "related",
+            "created_at",
+            "voided_at",
+            "voided_by",
+            "void_reason",
+        ]
         read_only_fields = ["id", "created_at", "voided_at", "voided_by", "void_reason"]
+
+
+class StreamWidgetSerializer(WidgetSerializer):
+    """Own component name, so the page and cursor list schemas do not collide."""
+
+    class Meta(WidgetSerializer.Meta):
+        pass
 
 
 class WidgetViewSet(VoidActionMixin, OrgScopedViewSet):
     queryset = Widget.objects.order_by("created_at", "id")
     serializer_class = WidgetSerializer
     required_permissions = WIDGET_PERMISSIONS
+    code_lookup_field = "code"
 
 
 class UndeclaredPermissionsViewSet(OrgScopedViewSet):
@@ -44,9 +61,10 @@ class UndeclaredPermissionsViewSet(OrgScopedViewSet):
 
 class StreamWidgetViewSet(OrgScopedViewSet):
     queryset = Widget.objects.order_by("created_at", "id")
-    serializer_class = WidgetSerializer
+    serializer_class = StreamWidgetSerializer
     pagination_class = StreamCursorPagination
     required_permissions = WIDGET_PERMISSIONS
+    code_lookup_field = "code"
 
 
 class BoomView(APIView):

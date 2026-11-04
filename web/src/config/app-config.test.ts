@@ -42,6 +42,12 @@ describe("readAppConfig", () => {
     });
   });
 
+  test("the https check is case-insensitive", () => {
+    const env = { [API_BASE_URL_VARIABLE]: "HTTP://api.example.com/api/v1", PROD: true };
+
+    expect(readAppConfig(env).ok).toBe(false);
+  });
+
   test("accepts https and same-origin paths in production builds", () => {
     expect(
       readAppConfig({ [API_BASE_URL_VARIABLE]: "https://api.example.com", PROD: true }).ok,

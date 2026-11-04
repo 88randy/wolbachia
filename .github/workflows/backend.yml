@@ -71,5 +71,4 @@ jobs:
           DJANGO_SETTINGS_MODULE: config.settings.test
       - name: Tests and coverage (gate in pyproject.toml)
         run: uv run pytest --cov
-      - name: OpenAPI schema is valid
-        run: uv run python manage.py spectacular --file schema.yml --validate --fail-on-warn
+      # The OpenAPI schema is validated (and the client regenerated) by api-contract.yml.

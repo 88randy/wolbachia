@@ -3,6 +3,8 @@ import type { ReactElement } from "react";
 import { createRoot } from "react-dom/client";
 import type { Root } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
+import { ApiClientProvider } from "../api/ApiClientProvider";
+import { createWebApiClient } from "../api/create-web-api-client";
 import { readAppConfig } from "../config/app-config";
 import { getInitialLocale } from "../i18n/locale";
 import { setupI18n } from "../i18n/setup-i18n";
@@ -13,7 +15,13 @@ import { App } from "./App";
 
 function chooseScreen(env: Record<string, unknown>): ReactElement {
   const result = readAppConfig(env);
-  if (result.ok) return <App router={createAppRouter()} />;
+  if (result.ok) {
+    return (
+      <ApiClientProvider client={createWebApiClient(result.config)}>
+        <App router={createAppRouter()} />
+      </ApiClientProvider>
+    );
+  }
   console.error(`Invalid app configuration: ${result.variable} is ${result.problem}.`);
   return <ConfigErrorScreen />;
 }

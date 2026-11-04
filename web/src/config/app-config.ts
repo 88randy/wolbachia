@@ -21,6 +21,11 @@ export type ConfigResult =
   | { readonly ok: true; readonly config: AppConfig }
   | { readonly ok: false; readonly variable: string; readonly problem: string };
 
+/** Case-insensitive: `HTTP://host` is parsed to the protocol `http:`. Paths are never http. */
+function isPlainHttp(value: string): boolean {
+  return !value.startsWith("/") && new URL(value).protocol === "http:";
+}
+
 function removeTrailingSlashes(url: string): string {
   return url.replace(/\/+$/, "");
 }
@@ -39,7 +44,7 @@ export function readAppConfig(env: Record<string, unknown>): ConfigResult {
     return { ok: false, variable: API_BASE_URL_VARIABLE, problem: "not an http(s) URL or a path" };
   }
   // Session cookies and CSRF tokens must never travel over plain HTTP in a production build.
-  if (env["PROD"] === true && parsed.data.startsWith("http:")) {
+  if (env["PROD"] === true && isPlainHttp(parsed.data)) {
     return { ok: false, variable: API_BASE_URL_VARIABLE, problem: "must use https in production" };
   }
   return { ok: true, config: { apiBaseUrl: removeTrailingSlashes(parsed.data) } };

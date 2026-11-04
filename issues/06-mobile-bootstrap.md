@@ -28,6 +28,7 @@ App killed mid-upload, token expired while offline, storage almost full, 130 % f
 - [ ] Tokens match the design system page (colors, type scale, spacing, radii).
 - [ ] TalkBack labels on icon buttons.
 - [ ] Unit tests for outbox state machine.
+- [ ] Smoke test: `GET /api/v1/me/` through `@wolbachia/api-client` (see #12).
 
 ## Notes
 Depends on #1 (local store choice), #5 (sync API), #12 (api-client) and #17 (tokens, i18n).

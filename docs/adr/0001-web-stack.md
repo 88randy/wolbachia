@@ -61,7 +61,7 @@ Not considered: Next.js and other SSR frameworks. The app is an authenticated SP
 | RTK Query (`@reduxjs/toolkit`) | 2.14.0 | MIT | 2026-11-03 | Requires adopting Redux; we have no other global client state. |
 
 **Pick: TanStack Query.** Sources: npm registry; <https://tanstack.com/query>.
-**Constraint for #12:** `packages/api-client` should export plain typed functions (no hooks), so mobile can reuse it; web wraps them in `queryOptions`. Which generator (e.g. `openapi-typescript`, `orval`, `@hey-api/openapi-ts`) is #12's decision. Candidates exist on npm (7.13.0, 8.46.0 and 0.99.0 respectively) but none was evaluated here.
+**Constraint for #12:** `packages/api-client` exports no hooks, so mobile can reuse it; web wraps its calls in `queryOptions`. Which generator is #12's decision. **Resolved in #12 (decision 34):** `openapi-typescript` + `openapi-fetch`; the client exposes typed `client.GET(path, init)` calls, not hand-written per-endpoint functions, e.g. `queryOptions({ queryKey, queryFn: () => unwrap(client.GET("/api/v1/me/")) })`.
 **Auth in the client [ASSUMPTION]:** same-origin requests with `credentials: "same-origin"` and the CSRF token header added in one place in the api-client wrapper. Web and API on one origin is **not decided**; if they are on different origins, CORS and cookie settings change (backend #4).
 **Revisit if:** the generator we choose in #12 ships its own data layer that fits better.
 
@@ -175,7 +175,7 @@ Sources: npm registry; recharts type definitions (`accessibilityLayer`, "@defaul
 - #28 uses Query for `/me/` and a `can()` helper; route guards use router `beforeLoad` [ASSUMPTION: API not exercised in the PoC].
 - #29 builds `DataTable` on TanStack Table with the URL as state, as the PoC shows. It adds cursor mode, selection, voided rows and export.
 - #38 uses Recharts + a table per chart; verify pattern fills first.
-- #12 exports plain typed functions and picks the generator.
+- #12 picked the generator (`openapi-typescript` + `openapi-fetch`, decision 34): it exports a typed client (`client.GET(path)`), not hand-written functions, and no hooks.
 - `web/README.md` and `docs/decisions.md` are updated in this PR.
 
 ## Open points
