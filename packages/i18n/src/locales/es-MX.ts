@@ -108,8 +108,11 @@ export const esMX = {
     "Tu sesión ya había terminado cuando se envió este registro, así que un supervisor lo revisará. Inicia sesión de nuevo si necesitas seguir trabajando.",
   "sync.batch.deviceMismatch": "La sesión no corresponde a este teléfono. Inicia sesión de nuevo.",
   "sync.batch.payloadTooLarge":
-    "El envío es demasiado grande. Inténtalo de nuevo; si sigue igual, avisa a soporte técnico.",
-  "sync.batch.invalidCursor": "No pudimos actualizar tu bandeja. Inténtalo de nuevo en un momento.",
+    "El envío era demasiado grande, así que la app lo enviará en partes. No tienes que hacer nada.",
+  "sync.batch.invalidCursor":
+    "No pudimos actualizar tu bandeja, así que la app la pedirá completa otra vez. No tienes que hacer nada.",
+  "sync.batch.syncInProgress":
+    "Ya se está enviando información de tu cuenta desde otro teléfono. La app lo intentará de nuevo en unos segundos.",
 } as const;
 
 /** Every key of the catalog. */

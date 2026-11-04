@@ -107,6 +107,9 @@ export const en: Record<MessageKey, string> = {
     "Your session had already ended when this record was sent, so a supervisor will review it. Sign in again if you need to keep working.",
   "sync.batch.deviceMismatch": "This session doesn't belong to this phone. Sign in again.",
   "sync.batch.payloadTooLarge":
-    "The upload is too large. Try again; if it keeps happening, contact support.",
-  "sync.batch.invalidCursor": "We couldn't refresh your inbox. Try again in a moment.",
+    "The upload was too large, so the app will send it in parts. You don't need to do anything.",
+  "sync.batch.invalidCursor":
+    "We couldn't refresh your inbox, so the app will load it in full again. You don't need to do anything.",
+  "sync.batch.syncInProgress":
+    "Information from your account is already being sent from another phone. The app will try again in a few seconds.",
 };
