@@ -35,6 +35,7 @@ from django.conf import settings
 from django.db import IntegrityError, OperationalError, connection, transaction
 from rest_framework.exceptions import ValidationError
 
+from core.exceptions import FieldValidationError
 from core.validation import flatten_error_codes
 from field_sync.clock import ClockPolicy, build_clock_policy
 from field_sync.codes import (
@@ -226,6 +227,12 @@ class EventProcessor:
         except ValidationError as error:
             codes = flatten_error_codes(error.get_codes())
             fields = {name: [item["code"] for item in items] for name, items in codes.items()}
+            raise EventRejected(INVALID_PAYLOAD, {"fields": fields}) from None
+        except FieldValidationError as error:  # a coded rule with params (void reason length)
+            fields = {
+                name: [item["code"] for item in items]
+                for name, items in (error.fields or {}).items()
+            }
             raise EventRejected(INVALID_PAYLOAD, {"fields": fields}) from None
         shift_signal = (
             run_envelope_checks(organization, self.batch.user, envelope)

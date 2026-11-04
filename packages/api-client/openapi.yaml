@@ -1563,13 +1563,26 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MeOrganizationChoice'
+        limits:
+          $ref: '#/components/schemas/MeLimits'
       required:
+      - limits
       - organization
       - organizations
       - permissions
       - profiles
       - scope
       - user
+    MeLimits:
+      type: object
+      properties:
+        void_reason_min_length:
+          type: integer
+        void_reason_max_length:
+          type: integer
+      required:
+      - void_reason_max_length
+      - void_reason_min_length
     MeOrganization:
       type: object
       properties:
@@ -2518,6 +2531,7 @@ components:
         * `decimal` - Decimal
     VoidRequest:
       type: object
+      description: Body of `POST .../void/`.
       properties:
         reason:
           type: string

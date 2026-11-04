@@ -19,14 +19,16 @@ def test_void_endpoint_records_who_when_and_why(
 ) -> None:
     widget = WidgetFactory(organization=org_a)
 
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "duplicate"}, format="json")
+    response = client_a.post(
+        f"{WIDGETS}{widget.pk}/void/", {"reason": "duplicate entry"}, format="json"
+    )
 
     widget.refresh_from_db()
     assert response.status_code == 200
     assert widget.voided_by == member_a
-    assert widget.void_reason == "duplicate"
+    assert widget.void_reason == "duplicate entry"
     assert widget.voided_at is not None
-    assert response.data["void_reason"] == "duplicate"
+    assert response.data["void_reason"] == "duplicate entry"
 
 
 def test_void_without_reason_is_a_validation_error(
@@ -42,14 +44,18 @@ def test_void_without_reason_is_a_validation_error(
 
 def test_voiding_twice_returns_409_already_voided(client_a: APIClient, org_a: Organization) -> None:
     widget = WidgetFactory(organization=org_a)
-    client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "first"}, format="json")
+    client_a.post(
+        f"{WIDGETS}{widget.pk}/void/", {"reason": "first void, with reason"}, format="json"
+    )
 
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "second"}, format="json")
+    response = client_a.post(
+        f"{WIDGETS}{widget.pk}/void/", {"reason": "second void, with reason"}, format="json"
+    )
 
     widget.refresh_from_db()
     assert response.status_code == 409
     assert response.data["code"] == "already_voided"
-    assert widget.void_reason == "first"
+    assert widget.void_reason == "first void, with reason"
 
 
 def test_list_excludes_voided_unless_include_voided_is_true(
@@ -57,7 +63,7 @@ def test_list_excludes_voided_unless_include_voided_is_true(
 ) -> None:
     kept = WidgetFactory(organization=org_a)
     voided = WidgetFactory(organization=org_a)
-    void_record(voided, member_a, "mistake")
+    void_record(voided, member_a, "a clear mistake")
 
     default = client_a.get(WIDGETS)
     everything = client_a.get(WIDGETS, {"include_voided": "true"})
@@ -70,7 +76,7 @@ def test_a_voided_widget_can_still_be_retrieved_by_id(
     client_a: APIClient, org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a)
-    void_record(widget, member_a, "mistake")
+    void_record(widget, member_a, "a clear mistake")
 
     response = client_a.get(f"{WIDGETS}{widget.pk}/")
 
@@ -80,10 +86,10 @@ def test_a_voided_widget_can_still_be_retrieved_by_id(
 def test_void_record_raises_already_voided_on_second_call(org_a: Organization) -> None:
     user = UserFactory()
     widget = WidgetFactory(organization=org_a)
-    void_record(widget, user, "first")
+    void_record(widget, user, "first void, with reason")
 
     with pytest.raises(AlreadyVoidedError):
-        void_record(widget, user, "second")
+        void_record(widget, user, "second void, with reason")
 
 
 def test_database_rejects_a_voided_row_without_reason(org_a: Organization) -> None:
@@ -106,7 +112,7 @@ def test_voidable_queryset_filters_voided_and_not_voided(
 ) -> None:
     kept = WidgetFactory(organization=org_a)
     voided = WidgetFactory(organization=org_a)
-    void_record(voided, member_a, "mistake")
+    void_record(voided, member_a, "a clear mistake")
 
     assert list(Widget.objects.not_voided()) == [kept]
     assert list(Widget.objects.voided()) == [voided]

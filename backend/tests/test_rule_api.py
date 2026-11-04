@@ -298,11 +298,16 @@ def test_void_a_scheduled_version_returns_it_voided(admin, speed) -> None:
     version = scheduled(speed)
 
     response = admin.post(
-        versions_url("speed_lock_kmh", f"{version.id}/void/"), {"reason": "typo"}, format="json"
+        versions_url("speed_lock_kmh", f"{version.id}/void/"),
+        {"reason": "a typo in the value"},
+        format="json",
     )
 
     assert response.status_code == 200
-    assert (response.data["status"], response.data["void_reason"]) == ("voided", "typo")
+    assert (response.data["status"], response.data["void_reason"]) == (
+        "voided",
+        "a typo in the value",
+    )
     assert response.data["voided_by"] is not None
     assert response.data["voided_at"] is not None
 
@@ -310,7 +315,9 @@ def test_void_a_scheduled_version_returns_it_voided(admin, speed) -> None:
 def test_voided_version_stays_in_the_history(admin, speed) -> None:
     version = scheduled(speed)
     admin.post(
-        versions_url("speed_lock_kmh", f"{version.id}/void/"), {"reason": "typo"}, format="json"
+        versions_url("speed_lock_kmh", f"{version.id}/void/"),
+        {"reason": "a typo in the value"},
+        format="json",
     )
 
     statuses = [row["status"] for row in admin.get(versions_url("speed_lock_kmh")).data["results"]]
@@ -322,7 +329,9 @@ def test_void_a_version_in_force_is_409_version_not_scheduled(admin, speed) -> N
     version = speed.versions.get()
 
     response = admin.post(
-        versions_url("speed_lock_kmh", f"{version.id}/void/"), {"reason": "x"}, format="json"
+        versions_url("speed_lock_kmh", f"{version.id}/void/"),
+        {"reason": "a typo in the value"},
+        format="json",
     )
 
     assert response.status_code == 409
@@ -331,9 +340,9 @@ def test_void_a_version_in_force_is_409_version_not_scheduled(admin, speed) -> N
 
 def test_void_twice_is_409_already_voided(admin, speed) -> None:
     url = versions_url("speed_lock_kmh", f"{scheduled(speed).id}/void/")
-    admin.post(url, {"reason": "once"}, format="json")
+    admin.post(url, {"reason": "first void, with reason"}, format="json")
 
-    response = admin.post(url, {"reason": "twice"}, format="json")
+    response = admin.post(url, {"reason": "second void, with reason"}, format="json")
 
     assert (response.status_code, response.data["code"]) == (409, "already_voided")
 
@@ -352,7 +361,7 @@ def test_a_date_freed_by_voiding_can_be_scheduled_again(admin, speed) -> None:
     created = admin.post(versions_url("speed_lock_kmh"), payload, format="json")
     admin.post(
         versions_url("speed_lock_kmh", f"{created.data['id']}/void/"),
-        {"reason": "typo"},
+        {"reason": "a typo in the value"},
         format="json",
     )
 

@@ -48,7 +48,7 @@ def test_read_code_allows_list_and_retrieve_only(
         ("post", "", {"name": "x"}),
         ("patch", "{pk}/", {"name": "x"}),
         ("put", "{pk}/", {"name": "x"}),
-        ("post", "{pk}/void/", {"reason": "r"}),
+        ("post", "{pk}/void/", {"reason": "a valid reason"}),
     ],
     ids=["create", "patch", "put", "void"],
 )
@@ -106,7 +106,10 @@ def test_void_code_allows_void_only(
     client = client_with(api_client, make_member, org_a, "widget.void")
     detail = f"{WIDGETS}{widget.pk}/"
 
-    assert client.post(f"{detail}void/", {"reason": "r"}, format="json").status_code == 200
+    assert (
+        client.post(f"{detail}void/", {"reason": "a valid reason"}, format="json").status_code
+        == 200
+    )
     assert client.patch(detail, {"name": "x"}, format="json").status_code == 403
 
 

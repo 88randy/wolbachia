@@ -117,12 +117,12 @@ def test_a_rejected_void_does_not_link_to_the_unverified_target(phone: Phone) ->
 def test_voiding_twice_is_refused_the_second_time(phone: Phone) -> None:
     original = event()
     phone.sync([original])
-    phone.sync([void_event(original["id"], "first")])
+    phone.sync([void_event(original["id"], "first void, with reason")])
 
-    result = one_result(phone.sync([void_event(original["id"], "second")]))
+    result = one_result(phone.sync([void_event(original["id"], "second void, with reason")]))
 
     assert (result["status"], result["code"]) == ("rejected", "already_voided")
-    assert FieldEvent.objects.get(pk=original["id"]).void_reason == "first"
+    assert FieldEvent.objects.get(pk=original["id"]).void_reason == "first void, with reason"
 
 
 @pytest.mark.parametrize(
@@ -237,7 +237,9 @@ def test_a_void_in_review_still_validates_its_target(
         phone.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
     )
 
-    response = phone.sync([void_event(original["id"], "again"), void_event(uuid.uuid4())])
+    response = phone.sync(
+        [void_event(original["id"], "again, with a reason"), void_event(uuid.uuid4())]
+    )
 
     assert [r["code"] for r in response.data["results"]] == [
         "already_voided",
