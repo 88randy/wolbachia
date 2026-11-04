@@ -113,7 +113,9 @@ jobs:
         working-directory: ${{ env.APP_DIR }}/android
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug -PreactNativeArchitectures="$ABIS" --no-daemon --stacktrace
+          # WatermelonDB 0.28 reads BuildConfig.DEBUG but AGP 9 no longer generates BuildConfig for
+          # library modules by default; the project property turns it back on for all modules.
+          ./gradlew assembleDebug -PreactNativeArchitectures="$ABIS"             -Pandroid.defaults.buildfeatures.buildconfig=true --no-daemon --stacktrace
       - name: Check the APK
         id: apk
         working-directory: ${{ env.APP_DIR }}/android/app/build/outputs/apk/debug
