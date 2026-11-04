@@ -5,18 +5,58 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
+from django.apps import apps
 from django.conf import settings
 from django.core.exceptions import ImproperlyConfigured
+from django.db import connection
 from django.urls import URLPattern, URLResolver, get_resolver
 
 from accounts.models import User
 from core.fields import OrgScopedPrimaryKeyRelatedField
+from core.models import ImmutableMixin
 from core.permissions import HasPermissionCode
 from core.serializers import OrgScopedModelSerializer
 from core.views import OrgScopedViewSetMixin
 from tests.testapp.views import WidgetSerializer
 
 BACKEND_DIR = settings.BASE_DIR
+
+# pg_trigger.tgtype: ROW | BEFORE | DELETE | UPDATE (PostgreSQL's pg_trigger.h).
+IMMUTABILITY_TRIGGER_TYPE = 1 | 2 | 8 | 16
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "table",
+    sorted(
+        {model._meta.db_table for model in apps.get_models() if issubclass(model, ImmutableMixin)}
+    ),
+)
+def test_every_immutable_table_has_an_enabled_database_guard(table: str) -> None:
+    """New ImmutableMixin tables must ship a migration with a guard, even with no stored rows.
+
+    Existing model tests exercise each guard's allowed transitions; this checks coverage of
+    the model registry without creating records or repeating those behavioral tests.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(
+            """
+            SELECT EXISTS (
+                SELECT 1 FROM pg_trigger
+                WHERE tgrelid = %s::regclass
+                  AND tgname = %s
+                  AND NOT tgisinternal
+                  AND tgenabled IN ('O', 'A')
+                  AND (tgtype & %s) = %s
+                  AND tgattr = ''::int2vector
+                  AND tgqual IS NULL
+            )
+            """,
+            [table, f"{table}_guard", IMMUTABILITY_TRIGGER_TYPE, IMMUTABILITY_TRIGGER_TYPE],
+        )
+        (has_guard,) = cursor.fetchone()
+
+    assert has_guard, f"{table} needs an enabled BEFORE UPDATE OR DELETE row guard migration"
 
 
 def iter_callbacks(patterns: list[Any]) -> Iterator[Any]:
