@@ -153,3 +153,43 @@
     padding: var(--space-3) var(--space-2);
   }
 }
+
+/* Organization choice: radio rows that read as cards; the whole row is the click target. */
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1-5);
+  min-height: var(--web-control-xl);
+  padding: var(--space-1) var(--space-1-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.option:has(:checked) {
+  border-color: var(--color-action);
+  background: var(--color-tint);
+}
+
+.option:has(:focus-visible) {
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+  box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
+}
+
+.option input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
