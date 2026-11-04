@@ -17,7 +17,7 @@ interface VoidVersionDialogProps {
 
 /** The answers that mean the page showed an old state: another admin voided it, or it took effect. */
 function isStale(result: VoidResult): boolean {
-  if (result.ok) return false;
+  if (result.ok || "isStale" in result) return false;
   return result.failure.kind === "alreadyVoided" || result.failure.kind === "blocked";
 }
 

@@ -11,6 +11,7 @@ import {
   makeParameter,
   makeVersion,
   openParameterPage,
+  pageOf,
   requestsTo,
 } from "../test/rules-fixtures";
 
@@ -341,5 +342,38 @@ describe("rule parameter page: regressions found in review", () => {
     expect(await screen.findByText(/No pudimos actualizar/)).toBeDefined();
     expect(screen.getByLabelText<HTMLInputElement>(/Valor nuevo/).value).toBe("40");
     expect(screen.getByRole("button", { name: "Reintentar" })).toBeDefined();
+  });
+
+  test("regression: moving to another parameter starts a clean form and ignores a pending answer of the first", async () => {
+    const user = userEvent.setup();
+    let release: (response: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const speed = makeParameter({ key: "speed_lock_kmh", unit: "km_h", value: 10 });
+    const { app } = await openParameterPage({
+      routes: {
+        [CREATE_ROUTE]: () => pending,
+        "GET /api/v1/rule-parameters/speed_lock_kmh/": () => Response.json(speed),
+        "GET /api/v1/rule-parameters/speed_lock_kmh/versions/": () => pageOf([makeVersion()]),
+      },
+    });
+    await fill(user, "40");
+    await save(user);
+    await screen.findByRole("button", { name: "Guardando…" });
+
+    await app.router.navigate({
+      to: "/settings/rule-parameters/$key",
+      params: { key: "speed_lock_kmh" },
+    });
+    await screen.findByRole("heading", { level: 1, name: "Velocidad que bloquea la captura" });
+    await user.type(screen.getByLabelText(/Valor nuevo/), "7");
+    release(created());
+
+    await waitFor(() => {
+      expect(screen.getByLabelText<HTMLInputElement>(/Valor nuevo/).value).toBe("7");
+    });
+    expect(screen.queryByText("Versión guardada. Ya aparece en el historial.")).toBeNull();
+    expect(screen.getByLabelText<HTMLTextAreaElement>(/Motivo del cambio/).value).toBe("");
   });
 });

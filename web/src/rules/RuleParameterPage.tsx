@@ -117,5 +117,6 @@ function ParameterLoader({ parameterKey }: { parameterKey: string }) {
 export function RuleParameterPage() {
   const { key } = useParams({ strict: false });
   if (key === undefined || !KEY_PATTERN.test(key)) return <NotFoundState />;
-  return <ParameterLoader parameterKey={key} />;
+  // Another key is another record: remount, so a draft and a pending request stay with their own.
+  return <ParameterLoader key={key} parameterKey={key} />;
 }

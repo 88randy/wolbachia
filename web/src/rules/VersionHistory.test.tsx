@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
+import { acceptSession } from "../session/session-revision";
 import { apiError, makeMe } from "../test/fake-api";
 import {
   ADMIN,
@@ -152,7 +153,7 @@ describe("voiding a scheduled version", () => {
   const VOID_ROUTE = `POST ${VOID_PATH}`;
   const REASON = "Se capturó con la fecha equivocada";
 
-  async function startVoid(reply: Response | (() => Response)) {
+  async function startVoid(reply: Response | (() => Response | Promise<Response>)) {
     const user = userEvent.setup();
     const opened = await openParameterPage({
       versions: HISTORY,
@@ -182,6 +183,27 @@ describe("voiding a scheduled version", () => {
     await waitFor(() => {
       expect(requestsTo(api, "GET", VERSIONS_API).length).toBeGreaterThan(1);
     });
+  });
+
+  test("regression: a void answered after a re-authentication is ignored, not shown as an error", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const { user, api } = await startVoid(() => pending);
+    await user.click(screen.getByRole("button", { name: "Anular" }));
+    await screen.findByRole("button", { name: "Anulando…" });
+
+    acceptSession();
+    release(Response.json({ ...SCHEDULED, status: "voided" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("button", { name: "Anulando…" })).toBeNull();
+    });
+    expect(screen.getByRole("dialog")).toBeDefined();
+    expect(screen.queryByRole("alert")).toBeNull();
+    expect(screen.queryByText("Versión anulada. Sigue en el historial, tachada.")).toBeNull();
+    expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(1);
   });
 
   test("a version that took effect meanwhile is answered in the dialog and the history is refreshed", async () => {

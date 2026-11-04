@@ -1,28 +1,23 @@
 import { useCallback, useEffect, useRef } from "react";
 import { currentRevision } from "./session-revision";
-import { useMe } from "./use-me";
 
 /** One request that must not outlive the session that started it. */
 export interface SessionGuard {
-  /** Pass it to the request: it is aborted on unmount and when the identity changes. */
+  /** Pass it to the request: it is aborted when the component unmounts. */
   signal: AbortSignal;
-  /** True once the answer belongs to another session, user or organization (or the page left). */
+  /** True once the session revision changed, or the component that sent the request is gone. */
   isStale: () => boolean;
 }
 
 /**
  * For requests made outside TanStack Query (a form's POST). `begin()` captures the session
- * revision (#28: changes on every accepted login and confirmed sign-out) and the identity (user
- * and organization). A late answer then asks `isStale()` BEFORE it reports an error to the
- * session, updates a form or invalidates queries, so a response of the old session can neither
- * expire the new one nor clear its cache. In-flight requests are aborted on unmount and when
- * the identity changes.
+ * revision (`session-revision.ts`: bumped on an accepted login, a confirmed sign-out and a
+ * different identity in `/me/`, synchronously). A late answer asks `isStale()` BEFORE it reports an
+ * error to the session, updates a form or invalidates queries. The revision is the only staleness
+ * signal; nothing here reads React state. Unmounting aborts the requests (a screen that is gone,
+ * or remounted for another record, has no use for the answer).
  */
 export function useSessionGuard(): () => SessionGuard {
-  const { user, organization } = useMe();
-  const identity = `${user.id}|${organization?.slug ?? ""}`;
-  const latest = useRef(identity);
-  latest.current = identity;
   const inFlight = useRef(new Set<AbortController>());
   useEffect(() => {
     const requests = inFlight.current;
@@ -32,16 +27,14 @@ export function useSessionGuard(): () => SessionGuard {
       });
       requests.clear();
     };
-  }, [identity]);
+  }, []);
   return useCallback(() => {
     const controller = new AbortController();
     inFlight.current.add(controller);
     const revision = currentRevision();
-    const started = latest.current;
     return {
       signal: controller.signal,
-      isStale: () =>
-        controller.signal.aborted || revision !== currentRevision() || started !== latest.current,
+      isStale: () => controller.signal.aborted || revision !== currentRevision(),
     };
   }, []);
 }

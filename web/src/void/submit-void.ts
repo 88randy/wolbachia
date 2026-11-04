@@ -4,13 +4,14 @@ import { reportSessionError } from "../session/session-events";
 import { voidFailureOf } from "./void-failure";
 import type { VoidFailure } from "./void-failure";
 
-export type VoidResult = { ok: true } | { ok: false; failure: VoidFailure };
-
 /**
- * What a caller gets when `isStale()` says the answer belongs to another session (or the dialog
- * is gone): a quiet failure, nothing is reported to the session.
+ * `stale`: the answer belongs to a closed session (or the dialog is gone). It is not an error to
+ * show: callers ignore it, and nothing was reported to the session.
  */
-const STALE: VoidResult = { ok: false, failure: { kind: "service", failure: "network" } };
+export type VoidResult =
+  { ok: true } | { ok: false; failure: VoidFailure } | { ok: false; isStale: true };
+
+const STALE: VoidResult = { ok: false, isStale: true };
 
 interface Answer {
   response: Response;
