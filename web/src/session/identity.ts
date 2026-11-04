@@ -1,6 +1,7 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { removeOrganizationQueries } from "./organization-cache";
+import { changeIdentity } from "./session-revision";
 
 /**
  * Who (user) and where (organization) the cached data belongs to. When a new `/me/` names another
@@ -18,7 +19,7 @@ function identityOf(me: Me): string {
 
 /**
  * Remembers the identity of a fresh `/me/`. SIDE EFFECTS when it differs from the last one: it
- * removes every cached query except `/me/` and notifies the listeners (the shell re-runs the
+ * bumps the session revision (so in-flight requests of the old identity are stale at once), removes every cached query except `/me/` and notifies the listeners (the shell re-runs the
  * route guards).
  */
 export function recordIdentity(queryClient: QueryClient, me: Me): void {
@@ -26,6 +27,7 @@ export function recordIdentity(queryClient: QueryClient, me: Me): void {
   const previous = known.get(queryClient);
   known.set(queryClient, next);
   if (previous === undefined || previous === next) return;
+  changeIdentity();
   removeOrganizationQueries(queryClient);
   listeners.forEach((listener) => {
     listener();

@@ -17,10 +17,14 @@ interface FilterBarProps {
  * Filters of a list (#29): the inputs the screen declared, the "Include voided" toggle when the
  * endpoint supports it, the export button, the chips of the active filters with "Clear filters",
  * and the notice for URL parameters that were ignored. All of it reads and writes the address.
+ * A list with none of those (W62 has no filters) gets no empty "Filters" region.
  */
 export function FilterBar({ controller, exportPath }: FilterBarProps) {
   const { t } = useTranslation();
   const { config, state } = controller;
+  const hasControls =
+    config.filters.length > 0 || config.supportsVoided || exportPath !== undefined;
+  if (!hasControls && controller.ignored.length === 0) return null;
   return (
     <section className={styles.bar} aria-label={t("table.filters.label")}>
       <IgnoredNotice names={controller.ignored} onDismiss={controller.dropIgnored} />
