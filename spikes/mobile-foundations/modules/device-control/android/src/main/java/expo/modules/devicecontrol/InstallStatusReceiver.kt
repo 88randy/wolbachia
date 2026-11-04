@@ -24,7 +24,12 @@ class InstallStatusReceiver : BroadcastReceiver() {
         Log.e(TAG, "STATUS_PENDING_USER_ACTION without EXTRA_INTENT")
       } else {
         confirmation.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-        context.startActivity(confirmation)
+        try {
+          context.startActivity(confirmation)
+        } catch (e: RuntimeException) {
+          // Background activity launch limits or a missing handler: the status event below still reaches JS.
+          Log.e(TAG, "Could not show the install confirmation", e)
+        }
       }
     }
 

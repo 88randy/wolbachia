@@ -32,6 +32,8 @@
       ],
       "@maplibre/maplibre-react-native",
       "expo-location",
+      "./plugins/with-lock-task-mode",
+      ["./plugins/with-package-queries", { "packages": ["app.organicmaps"], "intentSchemes": ["geo"] }],
       [
         "./plugins/with-library-build-config",
         {
