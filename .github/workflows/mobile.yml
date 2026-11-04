@@ -65,7 +65,8 @@ jobs:
       # Versions required by React Native 0.88.1 (packages/react-native/gradle/libs.versions.toml, tag v0.88.1):
       # compileSdk 37, buildTools 37.0.0, ndkVersion 27.1.12297006. Gradle 9.4.1 (Expo SDK 58 template wrapper)
       # and AGP 9.2.1 need JDK 17. See the PR for the sources.
-      ANDROID_PLATFORM: android-37
+      # sdkmanager names compileSdk 37 "android-37.0" (there are 37.1 and 37.2 too).
+      ANDROID_PLATFORM: android-37.0
       ANDROID_BUILD_TOOLS: 37.0.0
       ANDROID_NDK: 27.1.12297006
       # arm64-v8a covers every current phone; a dispatch run can ask for more.
@@ -90,7 +91,6 @@ jobs:
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           # `yes` gets SIGPIPE when sdkmanager stops reading, so the pipe status is ignored here only.
           yes | "$SDKMANAGER" --licenses > /dev/null || true
-          "$SDKMANAGER" --list | grep -E "platforms;android-3[5-9]|build-tools;3[67]|ndk;27" || true
           "$SDKMANAGER" --install "platforms;$ANDROID_PLATFORM" "build-tools;$ANDROID_BUILD_TOOLS" "ndk;$ANDROID_NDK"
       - name: Install JS dependencies
         working-directory: ${{ env.APP_DIR }}

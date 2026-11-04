@@ -69,7 +69,7 @@ Required by React Native 0.88.1 and the Expo SDK 58 Android template (details an
 | JDK | 17 (Temurin) |
 | Gradle | 9.4.1 (wrapper) |
 | Android Gradle Plugin | 9.2.1 |
-| SDK platform (`compileSdk`) | `android-37` |
+| SDK platform (`compileSdk`) | `android-37.0` (compileSdk 37) |
 | Build-Tools | 37.0.0 |
 | NDK | 27.1.12297006 |
 
