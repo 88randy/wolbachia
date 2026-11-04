@@ -1,0 +1,10 @@
+# Extends the default gitleaks rules. Test files use obviously fake credentials (see
+# docs/engineering-rules.md); they are allowlisted by path so real code is still scanned (#52).
+title = "wolbachia gitleaks config"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Fake credentials in backend tests"
+paths = ['''^backend/tests/''']
