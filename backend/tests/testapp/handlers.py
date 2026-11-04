@@ -16,6 +16,9 @@ LOCKED_TEXT = "locked"
 SLOW_STARTED = threading.Event()
 SLOW_RELEASE = threading.Event()
 SLOW_TIMEOUT_SECONDS = 20
+# Two batches meet here after each inserted its first event, so a circular wait is guaranteed.
+RENDEZVOUS = threading.Barrier(2, timeout=SLOW_TIMEOUT_SECONDS)
+RENDEZVOUS_ACTIVE = threading.Event()
 
 
 class NotePayload(serializers.Serializer[Any]):
@@ -55,6 +58,12 @@ def apply_slow(ctx: EventContext, data: dict[str, Any]) -> None:
     write_widget(ctx, "slow")
 
 
+def apply_rendezvous(ctx: EventContext, data: dict[str, Any]) -> None:
+    if RENDEZVOUS_ACTIVE.is_set():
+        RENDEZVOUS.wait()
+    write_widget(ctx, "rendezvous")
+
+
 def apply_related(ctx: EventContext, data: dict[str, Any]) -> None:
     write_widget(ctx, f"related:{data['widget'].pk}")
 
@@ -71,5 +80,6 @@ def register_test_handlers() -> None:
     register(EventHandler("test.needs_review", 1, NotePayload, apply_needs_review))
     register(EventHandler("test.context_probe", 1, NotePayload, apply_context_probe))
     register(EventHandler("test.slow", 1, NotePayload, apply_slow))
+    register(EventHandler("test.rendezvous", 1, NotePayload, apply_rendezvous))
     register(EventHandler("test.related", 1, RelatedPayload, apply_related))
     register(EventHandler("test.with_void_hook", 1, NotePayload, apply_note, refuse_locked_void))

@@ -2,17 +2,16 @@
 ordered locks on shared event ids (never deadlocking)."""
 
 import threading
-import time
 import uuid
 from datetime import timedelta
 from functools import partial
 from typing import Any
 
 import pytest
-from django.db import IntegrityError, OperationalError, connection
+from django.db import IntegrityError, OperationalError, connection, transaction
 from django.utils import timezone
 
-from accounts.models import RevokeReason
+from accounts.models import Device, RevokeReason
 from accounts.revocation import Revocation, revoke_session
 from field_sync import registry
 from field_sync.models import FieldEvent
@@ -20,7 +19,13 @@ from field_sync.registry import HANDLERS, EventContext, EventHandler
 from organizations.models import Organization
 from tests.conftest import MemberFactory
 from tests.sync_support import Phone, event, make_phone, run_in_threads, second_device_of
-from tests.testapp.handlers import SLOW_RELEASE, SLOW_STARTED, NotePayload
+from tests.testapp.handlers import (
+    RENDEZVOUS,
+    RENDEZVOUS_ACTIVE,
+    SLOW_RELEASE,
+    SLOW_STARTED,
+    NotePayload,
+)
 from tests.testapp.models import Widget
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -218,48 +223,88 @@ def test_any_other_database_error_is_not_hidden_as_a_retry(
     assert (response.status_code, response.data["code"]) == (500, "server_error")
 
 
-def sync_until_answered(phone: Phone, events: list[dict[str, Any]]) -> Any:  # noqa: ANN401
-    """What the app does on `sync_in_progress`: wait `Retry-After` and send the same batch."""
-    for _ in range(20):
-        response = phone.sync(events)
-        if response.status_code != 429:
-            return response
-        time.sleep(0.2)
-    return response
-
-
-def test_batches_sharing_event_ids_in_opposite_orders_end_consistent(
+def test_a_forced_deadlock_on_shared_ids_is_a_429_and_the_retry_ends_consistent(
     org_a: Organization, org_b: Organization, make_member: MemberFactory
 ) -> None:
-    """Without per-id locks the two batches can deadlock on the primary key: PostgreSQL aborts
-    one (40P01), the server answers 429, and the retry resolves per event."""
+    """A inserts X then waits at a barrier; B inserts Y then waits. Past the barrier A needs Y
+    (held by B) and B needs X (held by A): a guaranteed circular wait. PostgreSQL aborts one side
+    (40P01), which must be answered 429 sync_in_progress; the retry then resolves per event."""
     mine = make_phone(make_member, org_a)
     theirs = make_phone(make_member, org_b)
+    x, y = str(uuid.uuid4()), str(uuid.uuid4())
     base = timezone.now()
-    for _ in range(4):
-        ids = [str(uuid.uuid4()) for _ in range(8)]
-        forwards = [
-            event(id=i, device_time=(base + timedelta(seconds=n)).isoformat())
-            for n, i in enumerate(ids)
-        ]
-        backwards = [
-            event(id=i, device_time=(base - timedelta(seconds=n)).isoformat())
-            for n, i in enumerate(ids)
-        ]
 
+    def at(seconds: int) -> str:
+        return (base + timedelta(seconds=seconds)).isoformat()
+
+    mine_events = [
+        event(id=x, device_time=at(0)),
+        event(id=y, device_time=at(1), type="test.rendezvous"),
+    ]
+    theirs_events = [
+        event(id=y, device_time=at(0)),
+        event(id=x, device_time=at(1), type="test.rendezvous"),
+    ]
+    RENDEZVOUS.reset()
+    RENDEZVOUS_ACTIVE.set()
+    try:
         outcomes = run_in_threads(
-            partial(sync_until_answered, mine, forwards),
-            partial(sync_until_answered, theirs, backwards),
+            partial(mine.sync, mine_events), partial(theirs.sync, theirs_events)
         )
+    finally:
+        RENDEZVOUS_ACTIVE.clear()
 
-        assert all(not isinstance(o, Exception) for o in outcomes), outcomes
-        assert [o.status_code for o in outcomes] == [200, 200]
-        for event_id in ids:
-            codes = sorted(
-                result["code"]
-                for outcome in outcomes
-                for result in outcome.data["results"]
-                if result["id"] == event_id
-            )
-            assert codes == ["accepted", "event_id_conflict"], event_id
-        assert FieldEvent.objects.filter(pk__in=ids).count() == 8
+    assert all(not isinstance(o, Exception) for o in outcomes), outcomes
+    assert sorted(o.status_code for o in outcomes) == [200, 429]
+    victim_index = next(i for i, o in enumerate(outcomes) if o.status_code == 429)
+    assert outcomes[victim_index].data["code"] == "sync_in_progress"
+    assert int(outcomes[victim_index].headers["Retry-After"]) > 0
+    victim, victim_events = [(mine, mine_events), (theirs, theirs_events)][victim_index]
+    retried = victim.sync(victim_events)
+    survivor = outcomes[1 - victim_index]
+    assert retried.status_code == 200
+    for event_id in (x, y):
+        codes = sorted(
+            result["code"]
+            for answer in (survivor, retried)
+            for result in answer.data["results"]
+            if result["id"] == event_id
+        )
+        assert codes == ["accepted", "event_id_conflict"], event_id
+    assert FieldEvent.objects.filter(pk__in=[x, y]).count() == 2
+
+
+def test_a_final_upload_blocked_on_a_device_row_beyond_the_timeout_is_a_429_and_not_spent(
+    org_a: Organization, make_member: MemberFactory, settings: Any
+) -> None:
+    """The foreign key to the `Device` row is checked inside the batch (not at the mixin's
+    commit, where a lock timeout would be a 500): a login holding the row gets a 429."""
+    settings.SYNC_LOCK_TIMEOUT_MS = 300
+    phone = make_phone(make_member, org_a)
+    revoke_session(
+        phone.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+    )
+    holding, release = threading.Event(), threading.Event()
+
+    def hold_the_device_row() -> None:
+        try:
+            with transaction.atomic():
+                Device.objects.select_for_update().get(pk=phone.device_id)
+                holding.set()
+                release.wait(20)
+        finally:
+            connection.close()
+
+    thread = threading.Thread(target=hold_the_device_row)
+    thread.start()
+    assert holding.wait(10)
+
+    refused = phone.sync([event()])
+    release.set()
+    thread.join(20)
+    retried = phone.sync([event()])
+
+    assert (refused.status_code, refused.data["code"]) == (429, "sync_in_progress")
+    assert int(refused.headers["Retry-After"]) > 0
+    assert (retried.status_code, retried.headers["X-Session-Revoked"]) == (200, "true")
+    assert FieldEvent.objects.count() == 1

@@ -124,6 +124,18 @@ def set_batch_lock_timeout() -> None:
         )
 
 
+def check_deferred_constraints_now() -> None:
+    """Run the deferred foreign key checks here, inside `sync_batch`'s error mapping.
+
+    Django's foreign keys are checked at commit. In a final upload this block is only a savepoint
+    and the real commit is the mixin's, outside the `try`: a lock wait (`55P03`) on a referenced
+    row (say a `Device` held by a concurrent login) would surface there as a 500. Checking now
+    keeps every wait of the batch under the timeout and the 429 mapping.
+    """
+    with connection.cursor() as cursor:
+        cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")
+
+
 def sync_batch(
     batch: BatchContext, envelopes: list[EventEnvelope], cursor: ChangesCursor | None
 ) -> SyncOutcome:
@@ -140,6 +152,7 @@ def sync_batch(
             set_batch_lock_timeout()
             results = ingest_batch(batch, envelopes)
             changes = Changes() if cursor is None else build_changes(batch, cursor)
+            check_deferred_constraints_now()
     except OperationalError as error:
         if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
             raise SyncInProgressError from None
