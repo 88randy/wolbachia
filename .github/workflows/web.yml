@@ -56,6 +56,8 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
@@ -81,9 +83,45 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - name: Dockerfile uses the Node version of .nvmrc
         run: |
           expected="$(tr -d '[:space:]' < .nvmrc)"
           grep -q "^ARG NODE_VERSION=${expected}$" web/Dockerfile             || { echo "web/Dockerfile NODE_VERSION must be ${expected} (.nvmrc)"; exit 1; }
+      - name: Compose file is valid
+        run: docker compose config -q
       - name: Build the runtime image
         run: docker build --file web/Dockerfile --target runtime --tag wolbachia-web:ci .
+      - name: Run the image
+        run: docker run -d --name web-ci --publish 127.0.0.1:8080:8080 wolbachia-web:ci
+      - name: Headers, cache and single-page fallback
+        run: |
+          for _ in $(seq 1 20); do curl -sf -o /dev/null http://127.0.0.1:8080/ && break; sleep 1; done
+          index="$(curl -sI http://127.0.0.1:8080/)"
+          deep="$(curl -sI http://127.0.0.1:8080/quadrants)"
+          asset="$(curl -sI "http://127.0.0.1:8080/assets/$(curl -s http://127.0.0.1:8080/ | grep -o 'index-[A-Za-z0-9_-]*\.js' | head -1)")"
+          check() { echo "$2" | grep -qi "$3" || { echo "missing in $1: $3"; exit 1; }; }
+          check index "$index" "^content-security-policy:.*frame-ancestors 'none'"
+          check index "$index" "^x-content-type-options: nosniff"
+          check index "$index" "^cross-origin-opener-policy: same-origin"
+          check index "$index" "^cache-control: no-cache"
+          check deep "$deep" "^HTTP/1.1 200"
+          check deep "$deep" "^content-security-policy:"
+          check asset "$asset" "^cache-control: public, max-age=31536000, immutable"
+          check asset "$asset" "^x-content-type-options: nosniff"
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+        working-directory: web
+      # Smoke + axe against what nginx really serves (CSP, fonts, fallback).
+      - name: Playwright against the container
+        run: npm run e2e --workspace=web
+        env:
+          E2E_BASE_URL: http://127.0.0.1:8080
+      - name: Stop the container
+        if: always()
+        run: docker rm -f web-ci

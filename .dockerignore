@@ -9,6 +9,7 @@
 **/playwright-report
 **/.env
 **/*.env
+**/.env.*
 !**/.env.example
 backend
 # npm ci checks every workspace of package-lock.json, so keep the manifest of the others.

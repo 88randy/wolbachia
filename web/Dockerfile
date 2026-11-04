@@ -12,10 +12,13 @@ FROM node:${NODE_VERSION}-alpine AS deps
 WORKDIR /repo
 RUN chown node:node /repo
 USER node
-# The whole workspace, not only the manifests: npm ci checks every workspace of package-lock.json,
-# and the set of workspaces keeps growing (mobile, api-client). .dockerignore keeps this small.
-COPY --chown=node:node . .
+# 1) Only the manifests (COPY --parents keeps their folders), so the npm layer is cached until
+#    a dependency changes. npm ci checks every workspace of package-lock.json, hence the globs
+#    (web, packages/*, and mobile once it has a package.json); .dockerignore keeps the rest out.
+COPY --chown=node:node --parents package.json package-lock.json */package.json packages/*/package.json ./
 RUN npm ci --workspace=@wolbachia/web --include-workspace-root
+# 2) Then the sources.
+COPY --chown=node:node . .
 
 FROM deps AS dev
 ENV NODE_ENV=development

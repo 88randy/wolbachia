@@ -1,7 +1,11 @@
 # Local development stack. `docker compose up web` serves the web app on http://localhost:5173.
 #
 # The backend services (api, db, redis, worker) come from backend/compose.yaml (issue #2).
-# `docker compose up` starts everything; `docker compose up web` starts only the web app.
+# Start the stack ONLY from the repo root: `docker compose up` (everything) or
+# `docker compose up web`. backend/compose.yaml has its own project name (wolbachia-backend),
+# so starting it directly (`-f backend/compose.yaml`) creates a second, separate stack.
+name: wolbachia
+
 include:
   - path: backend/compose.yaml
 
@@ -12,7 +16,8 @@ services:
       dockerfile: web/Dockerfile
       target: dev
     ports:
-      - "5173:5173"
+      # Loopback only: the Vite dev server is not meant to be reachable from the network.
+      - "127.0.0.1:${WEB_PORT:-5173}:5173"
     environment:
       # Browser-side: same-origin path, proxied by the Vite dev server to API_PROXY_TARGET.
       VITE_API_BASE_URL: /api/v1
