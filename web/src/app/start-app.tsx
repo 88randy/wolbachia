@@ -6,6 +6,7 @@ import { readAppConfig } from "../config/app-config";
 import { getInitialLocale } from "../i18n/locale";
 import { setupI18n } from "../i18n/setup-i18n";
 import { ConfigErrorScreen } from "../states/ConfigErrorScreen";
+import { applyTheme, getInitialTheme } from "../theme/theme";
 import { App } from "./App";
 
 function chooseScreen(env: Record<string, unknown>): ReactElement {
@@ -16,13 +17,14 @@ function chooseScreen(env: Record<string, unknown>): ReactElement {
 }
 
 /**
- * Boots the app: language first (so even the configuration error is translated), then the
- * configuration check, then the first render.
+ * Boots the app: theme and language first (so even the configuration error is styled and
+ * translated), then the configuration check, then the first render.
  */
 export async function startApp(
   container: HTMLElement,
   env: Record<string, unknown>,
 ): Promise<void> {
+  applyTheme(getInitialTheme());
   const i18n = await setupI18n(getInitialLocale());
   createRoot(container).render(
     <StrictMode>

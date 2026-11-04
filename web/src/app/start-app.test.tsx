@@ -1,5 +1,6 @@
 import { screen, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
+import { STORAGE_KEYS } from "../storage/safe-storage";
 import { startApp } from "./start-app";
 
 let container: HTMLElement;
@@ -25,6 +26,14 @@ describe("startApp", () => {
       expect(screen.getByRole("heading", { name: "La aplicación no está lista" })).toBeDefined();
     });
     expect(consoleError).toHaveBeenCalledWith(expect.stringContaining("VITE_API_BASE_URL"));
+  });
+
+  test("applies the stored dark theme before the first render", async () => {
+    window.localStorage.setItem(STORAGE_KEYS.theme, "dark");
+
+    await startApp(container, { VITE_API_BASE_URL: "/api/v1" });
+
+    expect(document.documentElement.dataset["theme"]).toBe("dark");
   });
 
   test("renders the app when the API URL is valid", async () => {
