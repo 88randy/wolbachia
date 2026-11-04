@@ -1,0 +1,113 @@
+/** English messages of the `rules` area: exactly the keys of `../es-MX/rules.ts`. */
+import type { rules as source } from "../es-MX/rules.ts";
+
+export const rules: Record<keyof typeof source, string> = {
+  // Parameter list.
+  "rules.page.title": "Rule parameters",
+  "rules.page.hint":
+    "Every change creates a version with an effective date. What came before stays in the history.",
+  "rules.table.caption": "Rule parameters of the organization",
+  "rules.column.parameter": "Parameter",
+  "rules.column.key": "Key",
+  "rules.column.unit": "Unit",
+  "rules.column.value": "Current value",
+  "rules.column.since": "In force since",
+  "rules.column.next": "Next change",
+  "rules.cell.none": "None",
+  "rules.status.notConfigured": "Not configured",
+
+  // Names of the parameters the seed creates. A key the web does not know shows its own code.
+  "rules.param.maxDistanceToPoint": "Maximum distance to the point",
+  "rules.param.minDistanceSameBlock": "Minimum distance between ovitraps in a block",
+  "rules.param.speedLock": "Speed that locks capture",
+  "rules.param.speedUnlock": "Seconds to unlock capture",
+  "rules.param.clockSkewReview": "Clock difference that sends a record to review",
+  "rules.param.closedHouseWeeks": "Weeks of closed house before relocating",
+  "rules.param.incidentsToRelocate": "Incidents before relocating",
+  "rules.param.fuelEfficiencyMin": "Minimum fuel efficiency",
+  "rules.param.fuelEfficiencyMax": "Maximum fuel efficiency",
+  "rules.param.sessionIdle": "Inactivity that ends the session",
+  "rules.param.reminderBeforeEnd": "Reminder before the shift ends",
+  "rules.param.maxPaddleReuses": "Maximum egg paddle reuses",
+
+  // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
+  "rules.unit.meters": "meters",
+  "rules.unit.kmPerHour": "km/h",
+  "rules.unit.seconds": "seconds",
+  "rules.unit.minutes": "minutes",
+  "rules.unit.weeks": "weeks",
+  "rules.unit.count": "times",
+  "rules.unit.kmPerLiter": "km/l",
+
+  // Parameter page.
+  "rules.detail.back": "Back to parameters",
+  "rules.detail.key": "Key",
+  "rules.detail.loading": "Loading the parameter",
+  "rules.summary.title": "Value in force",
+  "rules.summary.value": "Current value",
+  "rules.summary.since": "In force since",
+  "rules.summary.next": "Next scheduled change",
+  "rules.summary.range": "Allowed values",
+  "rules.range.between": "From {min} to {max}",
+  "rules.range.atLeast": "From {min}",
+  "rules.range.atMost": "Up to {max}",
+  "rules.range.none": "No limits",
+
+  // New version form.
+  "rules.form.title": "New version",
+  "rules.form.hint": "Nothing is overwritten: the current value stays in the history.",
+  "rules.form.value": "New value",
+  "rules.form.valueHint": "Numbers only; use a dot for decimals.",
+  "rules.form.effectiveFrom": "In force from",
+  "rules.form.effectiveHint":
+    "Today applies right away; a future date applies from 00:00 in the organization's time zone.",
+  "rules.form.reason": "Reason for the change",
+  "rules.form.required": "required",
+  "rules.form.scheduledNote": "A change is already scheduled for {date}.",
+  "rules.form.submit": "Save version",
+  "rules.form.busy": "Saving…",
+  "rules.form.saved": "Version saved. It is already in the history.",
+  "rules.compare.title": "Before and after",
+  "rules.compare.before": "Before",
+  "rules.compare.after": "After",
+  "rules.compare.from": "From {date}",
+
+  // Why a field or the whole form was refused (codes of docs/api-conventions.md, "Rule parameters").
+  "rules.error.title": "We could not save the version",
+  "rules.error.valueRequired": "Enter the new value.",
+  "rules.error.valueInvalid": "Enter numbers only, with a dot for decimals (up to 3 decimals).",
+  "rules.error.notInteger": "This parameter only takes whole numbers.",
+  "rules.error.range": "The value must be between {min} and {max}.",
+  "rules.error.atLeast": "The value must be {min} or more.",
+  "rules.error.atMost": "The value must be {max} or less.",
+  "rules.error.dateRequired": "Choose the date it applies from.",
+  "rules.error.dateInPast": "The date cannot be before today. Choose today or a future date.",
+  "rules.error.dateTooFar": "That date is too far away. Choose one within the next year.",
+  "rules.error.dateTaken":
+    "A version is already scheduled for that date. Void it or choose another date.",
+  "rules.error.reasonRequired": "Tell us why the value changes.",
+  "rules.error.reasonTooLong": "The reason is too long. Please shorten it.",
+
+  // History.
+  "rules.history.title": "Version history",
+  "rules.history.hint": "Read only: each version keeps who created it, when and why.",
+  "rules.history.caption": "Versions of the parameter, newest first",
+  "rules.history.value": "Value",
+  "rules.history.effective": "In force from",
+  "rules.history.status": "Status",
+  "rules.history.reason": "Reason",
+  "rules.history.author": "Author",
+  "rules.history.created": "Recorded",
+  "rules.history.actions": "Actions",
+  "rules.history.void": "Void",
+  "rules.history.voidLabel": "Void the version of {date}",
+  "rules.history.voidBlocked":
+    "This version is already in force: it stays as history and cannot be voided.",
+  "rules.history.voidDone": "Version voided. It stays in the history, struck through.",
+  "rules.history.userRef": "User {id}",
+  "rules.history.system": "System",
+  "rules.status.scheduled": "Scheduled",
+  "rules.status.inForce": "In force",
+  "rules.status.superseded": "Superseded",
+  "rules.status.voided": "Voided",
+};

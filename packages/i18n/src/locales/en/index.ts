@@ -5,6 +5,7 @@ import { common } from "./common.ts";
 import { errors } from "./errors.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
+import { rules } from "./rules.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
 import { table } from "./table.ts";
@@ -19,5 +20,6 @@ export const en: Record<MessageKey, string> = {
   ...sync,
   ...table,
   ...phones,
+  ...rules,
   ...voiding,
 };
