@@ -9,6 +9,11 @@ on:
         description: Folder to check (web, mobile or packages)
         required: true
         type: string
+      build:
+        description: Also build the folder (npm run build -w <folder>); needs a "build" script
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -43,3 +48,9 @@ jobs:
           else
             echo "No workspace in $FOLDER yet: nothing to test."
           fi
+      # VITE_* is read at build time. The same-origin path is the default deployment [ASSUMPTION].
+      - name: Build
+        if: ${{ inputs.build }}
+        env:
+          VITE_API_BASE_URL: /api/v1
+        run: npm run build --workspace="$FOLDER"
