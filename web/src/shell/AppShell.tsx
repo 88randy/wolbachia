@@ -1,6 +1,7 @@
 import { Outlet } from "@tanstack/react-router";
-import { MAIN_ID } from "./ids";
 import styles from "./AppShell.module.css";
+import { MAIN_ID } from "./ids";
+import { OfflineBanner } from "./OfflineBanner";
 import { Sidebar } from "./Sidebar";
 import { SkipLink } from "./SkipLink";
 import { TopBar } from "./TopBar";
@@ -12,6 +13,7 @@ export function AppShell() {
   return (
     <div className={styles.shell}>
       <SkipLink />
+      <OfflineBanner />
       <div className={styles.body}>
         <Sidebar collapsed={collapsed} onToggle={toggle} />
         <div className={styles.column}>
