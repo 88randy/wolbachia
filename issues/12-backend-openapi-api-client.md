@@ -8,7 +8,7 @@ Monorepo with one backend for mobile and web. Web needs are in `docs/web-api-nee
 Every client uses a generated, typed client; API changes break CI in the clients before reaching production.
 
 ## 3. Scope / Out of scope
-**In:** drf-spectacular config, schema export in CI, `packages/api-client` generation (TypeScript types + client), CI check that fails if the committed client is outdated, shared DRF classes for the conventions decided in `docs/api-conventions.md` (paging, error envelope, objects by code).
+**In:** drf-spectacular config, schema export in CI, `packages/api-client` generation (TypeScript types + client), CI check that fails if the committed client is outdated, the `?code=` lookup convention; the shared paging classes and error handler land in #2.
 **Out:** implementing every endpoint in `web-api-needs.md` (each lands in its epic).
 
 ## 4. Data model
@@ -27,7 +27,7 @@ Breaking change detected (removed field/endpoint) → CI requires label `api:bre
 ## 8. Acceptance criteria
 - [ ] Schema generated in CI and published as artifact.
 - [ ] Client consumed by a smoke test in mobile and web.
-- [ ] Paging, error envelope and `?code=` lookup implemented once as shared DRF classes, with tests.
+- [ ] `?code=` lookup implemented once as a shared DRF filter, with tests (paging and error envelope come from #2).
 
 ## Notes
 Runs right after #2, in parallel with #3 and #4, so every API PR can regenerate the client in the same PR.
