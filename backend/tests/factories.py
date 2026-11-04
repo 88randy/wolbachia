@@ -11,6 +11,7 @@ from catalogs.models import Catalog, CatalogItem
 from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent
 from organizations.models import Membership, Organization, Profile
 from reviews.models import ReviewItem, ReviewKind
+from reviews.services import next_courier_sequence
 from rules.models import RuleParameter, RuleParameterVersion, Unit, ValueType
 from tests.testapp.models import Widget
 
@@ -174,5 +175,8 @@ class ReviewItemFactory(DjangoModelFactory):
     courier = factory.SelfAttribute("field_event.created_by")
     device = factory.SelfAttribute("field_event.device")
     event_type = factory.SelfAttribute("field_event.type")
+    courier_sequence = factory.LazyAttribute(
+        lambda item: next_courier_sequence(item.organization, item.courier)
+    )
     kind = ReviewKind.REJECTED
     code = "invalid_payload"

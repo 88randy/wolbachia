@@ -11,6 +11,7 @@ from typing import Any
 from django.conf import settings
 
 from accounts.models import Device, User
+from field_sync.codes import EVENT_PAYLOAD_TOO_LARGE, INVALID_PAYLOAD
 from field_sync.models import ACCEPTED_CODE, EventStatus
 from organizations.models import Organization
 
@@ -130,16 +131,17 @@ class EventEnvelope:
         """The payload as it is stored (decision 74).
 
         Exactly as received, except where it must not or cannot be kept: a payload that is too
-        large, too deep or not storable is replaced by a marker (`_not_stored`: the code the
-        phone got, `size_bytes`: its size when it was measured), so a hostile phone cannot fill
+        large, too deep or not storable is replaced by a marker (`_not_stored`: the reason it was
+        not kept, named with the result codes but not necessarily the one the phone got, since an
+        earlier check can win; `size_bytes`: its size when it was measured), so a hostile phone cannot fill
         the table with rejected junk; NUL characters become U+FFFD. All of these are rejected
         events, so nothing downstream reads them.
         """
         info = self.payload_info
         if info.is_too_deep or info.is_unstorable:
-            return {"_not_stored": "invalid_payload", "size_bytes": None}
+            return {"_not_stored": INVALID_PAYLOAD, "size_bytes": None}
         if info.size_bytes > settings.SYNC_MAX_EVENT_PAYLOAD_BYTES:
-            return {"_not_stored": "event_payload_too_large", "size_bytes": info.size_bytes}
+            return {"_not_stored": EVENT_PAYLOAD_TOO_LARGE, "size_bytes": info.size_bytes}
         if info.has_null_character:
             scrubbed: dict[str, Any] = _scrub_null_characters(self.payload)
             return scrubbed

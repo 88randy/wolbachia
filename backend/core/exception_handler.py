@@ -64,7 +64,7 @@ def _log_unhandled(exc: Exception, context: dict[str, Any]) -> None:
 def _domain_error_headers(exc: DomainError) -> dict[str, str] | None:
     """A 401 carries `WWW-Authenticate` (the error's own scheme, else `Session`); an error may
     add headers of its own (`Retry-After`)."""
-    headers = dict(exc.headers)
+    headers = exc.response_headers()
     if exc.status_code == HTTPStatus.UNAUTHORIZED:
         headers["WWW-Authenticate"] = exc.challenge or SESSION_AUTH_SCHEME
     return headers or None

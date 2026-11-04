@@ -1,7 +1,7 @@
 """`changes` of the sync answer: the courier's review items behind a signed cursor, snapshot versions."""
 
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import Any
 
 import pytest
@@ -14,9 +14,10 @@ from field_sync.cursor import ChangesCursor, decode_cursor, encode_cursor
 from field_sync.exceptions import InvalidCursorError
 from field_sync.models import FieldEvent
 from organizations.models import Organization
+from reviews.models import ReviewItem
 from rules.selectors import build_rules_snapshot
 from tests.conftest import MemberFactory
-from tests.factories import CatalogFactory, CatalogItemFactory
+from tests.factories import CatalogFactory, CatalogItemFactory, ReviewItemFactory
 from tests.sync_support import SYNC, Phone, batch, event, make_phone
 
 pytestmark = pytest.mark.django_db
@@ -116,7 +117,7 @@ def test_a_cursor_older_than_its_maximum_age_is_refused(
 ) -> None:
     cursor = phone.sync([]).data["changes"]["cursor"]
     real_time = signing.time.time
-    monkeypatch.setattr(signing.time, "time", lambda: real_time() + 8 * 24 * 3600)
+    monkeypatch.setattr(signing.time, "time", lambda: real_time() + 31 * 24 * 3600)
 
     refused = phone.client.post(SYNC, batch(phone, [], cursor=cursor), format="json")
 
@@ -128,7 +129,7 @@ def test_a_cursor_within_its_maximum_age_is_accepted(
 ) -> None:
     cursor = phone.sync([]).data["changes"]["cursor"]
     real_time = signing.time.time
-    monkeypatch.setattr(signing.time, "time", lambda: real_time() + 6 * 24 * 3600)
+    monkeypatch.setattr(signing.time, "time", lambda: real_time() + 29 * 24 * 3600)
 
     accepted = phone.client.post(SYNC, batch(phone, [], cursor=cursor), format="json")
 
@@ -184,9 +185,9 @@ def test_the_versions_are_the_hashes_of_the_snapshots_and_move_when_the_content_
 # --- the cursor itself ---------------------------------------------------------------------
 
 
-def test_cursor_roundtrip_keeps_position_and_mode() -> None:
-    organization_id, user_id, item_id = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
-    position = ChangesCursor(NOW, item_id)
+def test_cursor_roundtrip_keeps_the_sequence() -> None:
+    organization_id, user_id = uuid.uuid4(), uuid.uuid4()
+    position = ChangesCursor(42)
 
     token = encode_cursor(organization_id, user_id, position)
 
@@ -202,3 +203,73 @@ def test_cursor_for_another_user_or_organization_does_not_decode() -> None:
         decode_cursor(token, organization_id, uuid.uuid4())
     with pytest.raises(InvalidCursorError):
         decode_cursor(token, uuid.uuid4(), user_id)
+
+
+def test_a_review_created_with_an_earlier_clock_is_still_delivered(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The clock goes backwards between two batches (an NTP step, another app server): a cursor
+    based on `created_at` would skip the second item. The sequence cannot."""
+    start = timezone.now()
+    first = phone.sync(rejected_events(1))
+    first_ids = review_ids(first)
+    monkeypatch.setattr(timezone, "now", lambda: start - timedelta(hours=2))
+
+    second = phone.sync(rejected_events(1), cursor=first.data["changes"]["cursor"])
+
+    assert len(review_ids(second)) == 1
+    assert review_ids(second) != first_ids
+    created = list(ReviewItem.objects.order_by("courier_sequence"))
+    assert created[1].created_at < created[0].created_at  # the regression really happened
+
+
+def test_two_items_with_the_same_created_at_and_a_smaller_id_are_both_delivered(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    frozen = timezone.now()
+    monkeypatch.setattr(timezone, "now", lambda: frozen)
+    first = phone.sync(rejected_events(1))
+    (first_id,) = review_ids(first)
+    smaller = ReviewItemFactory(
+        id=uuid.UUID(int=min(uuid.UUID(first_id).int - 1, 1)),
+        field_event__organization=phone.organization,
+        field_event__created_by=phone.user,
+        field_event__device_id=phone.device_id,
+    )
+
+    second = phone.sync([], cursor=first.data["changes"]["cursor"])
+
+    assert smaller.created_at == ReviewItem.objects.get(pk=first_id).created_at
+    assert smaller.pk.int < uuid.UUID(first_id).int
+    assert review_ids(second) == [str(smaller.pk)]
+
+
+def test_the_cursor_only_moves_forward_by_sequence(phone: Phone) -> None:
+    phone.sync(rejected_events(3))
+
+    page = phone.sync([]).data["changes"]
+    again = phone.sync([], cursor=page["cursor"]).data["changes"]
+
+    assert page["reviews"]
+    assert again["reviews"] == []
+    assert decode_cursor(again["cursor"], phone.organization.pk, phone.user.pk).sequence == 3
+
+
+def test_a_cursor_in_the_old_timestamp_format_is_refused(phone: Phone) -> None:
+    from django.core import signing as django_signing
+
+    old = django_signing.dumps(
+        {
+            "o": str(phone.organization.pk),
+            "u": str(phone.user.pk),
+            "t": None,
+            "i": None,
+            "m": "tail",
+        },
+        salt="field_sync.changes",
+        compress=True,
+    )
+
+    response = phone.sync([], cursor=old)
+
+    assert (response.status_code, response.data["code"]) == (400, "invalid_cursor")

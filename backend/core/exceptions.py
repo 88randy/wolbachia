@@ -19,12 +19,14 @@ class DomainError(Exception):
     # `WWW-Authenticate` scheme of a 401 answer; None means the API's default (`Session`).
     challenge: str | None = None
     fields: dict[str, list[dict[str, Any]]] | None = None
-    # Extra response headers of this error (e.g. `Retry-After`).
-    headers: dict[str, str] = {}  # noqa: RUF012
 
     def __init__(self, detail: str | None = None) -> None:
         self.detail = detail or self.default_detail
         super().__init__(self.detail)
+
+    def response_headers(self) -> dict[str, str]:
+        """Extra response headers of this error (e.g. `Retry-After`); none by default."""
+        return {}
 
 
 class AlreadyVoidedError(DomainError):

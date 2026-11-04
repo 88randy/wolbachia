@@ -8,7 +8,7 @@ from field_sync.cursor import ChangesCursor, encode_cursor
 from field_sync.envelope import BatchContext
 from field_sync.models import FieldEvent
 from reviews.models import ReviewItem
-from reviews.selectors import ReviewPosition, list_courier_reviews
+from reviews.selectors import list_courier_reviews
 from rules.selectors import build_rules_snapshot
 
 
@@ -69,12 +69,9 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor) -> Changes:
     `field_sync.services.sync_batch`): that is what makes the strict cursor gap-free.
     """
     organization, user = batch.organization, batch.user
-    page = list_courier_reviews(
-        organization, user, ReviewPosition(cursor.created_at, cursor.item_id)
-    )
+    page = list_courier_reviews(organization, user, cursor.sequence)
     if page.items:
-        last = page.items[-1]
-        cursor = ChangesCursor(last.created_at, last.pk)
+        cursor = ChangesCursor(page.items[-1].courier_sequence)
     return Changes(
         cursor=encode_cursor(organization.pk, user.pk, cursor),
         reviews=page.items,

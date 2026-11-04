@@ -26,8 +26,7 @@ class SyncInProgressError(DomainError):
     status_code = HTTPStatus.TOO_MANY_REQUESTS
     default_detail = "Another sync of this user is in progress."
 
-    @property
-    def headers(self) -> dict[str, str]:  # type: ignore[override]
+    def response_headers(self) -> dict[str, str]:
         return {"Retry-After": str(settings.SYNC_RETRY_AFTER_SECONDS)}
 
 

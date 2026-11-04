@@ -7,9 +7,9 @@
    Nothing waits, so a burst of retries cannot pile up workers or connections. With every batch of
    a courier serialized, the pull of `changes` inside the same transaction can use a strict
    keyset cursor (decision 71).
-2. A blocking advisory lock per event id, taken in sorted order (short and ordered: no deadlock),
-   so two couriers that share an id run one after the other and the second one finds the first's
-   row (decision 72) instead of running its handler for nothing.
+2. Blocking advisory locks on the (at most 16) buckets the event ids hash into, in ascending order
+   and with a lock timeout, so two couriers that share an id run one after the other and the second
+   one finds the first's row (decision 72) instead of running its handler for nothing.
 3. Events are processed in `(device_time, id)` order; results go back in request order. Per event:
    a stored event with the same id returns its stored result (or `event_id_conflict` when it
    belongs to another organization, device or user); otherwise the payload is validated, the
@@ -31,7 +31,7 @@ from dataclasses import dataclass, field
 from typing import Any, Self
 
 from django.conf import settings
-from django.db import IntegrityError, connection, transaction
+from django.db import IntegrityError, OperationalError, connection, transaction
 from rest_framework.exceptions import ValidationError
 
 from core.validation import flatten_error_codes
@@ -62,6 +62,9 @@ from field_sync.selectors import Changes, StoredEvent, build_changes, find_store
 from reviews.services import create_review_item
 
 logger = logging.getLogger(__name__)
+
+EVENT_LOCK_BUCKETS = 16
+LOCK_NOT_AVAILABLE = "55P03"  # PostgreSQL `lock_not_available` (lock_timeout expired)
 
 
 @dataclass(frozen=True)
@@ -108,11 +111,29 @@ def lock_courier_batches(batch: BatchContext) -> None:
 
 
 def lock_event_ids(envelopes: list[EventEnvelope]) -> None:
-    """Wait for the lock of every event id of the batch, in one global sorted order."""
-    keys = sorted({advisory_key("event", envelope.id) for envelope in envelopes})
+    """Wait for the lock of the buckets of the batch's event ids, in sorted order (at most
+    `EVENT_LOCK_BUCKETS` locks and round trips, however many events).
+
+    Each id hashes into one of 16 buckets: two batches that share an id always share its bucket,
+    so they run one after the other. Locks are taken in ascending bucket order (no deadlock) and
+    never wait longer than `SYNC_LOCK_TIMEOUT_MS`: after that the batch is `429 sync_in_progress`
+    (a held lock means another sync is busy; retry). The timeout is set only for these waits.
+    """
+    buckets = sorted(
+        {advisory_key("event-bucket", e.id.int % EVENT_LOCK_BUCKETS) for e in envelopes}
+    )
     with connection.cursor() as cursor:
-        for key in keys:
-            cursor.execute("SELECT pg_advisory_xact_lock(%s)", [key])
+        cursor.execute(
+            "SELECT set_config('lock_timeout', %s, true)", [f"{settings.SYNC_LOCK_TIMEOUT_MS}ms"]
+        )
+        try:
+            for key in buckets:
+                cursor.execute("SELECT pg_advisory_xact_lock(%s)", [key])
+        except OperationalError as error:
+            if getattr(error.__cause__, "sqlstate", None) == LOCK_NOT_AVAILABLE:
+                raise SyncInProgressError from None
+            raise
+        cursor.execute("SELECT set_config('lock_timeout', '0', true)")
 
 
 def sync_batch(

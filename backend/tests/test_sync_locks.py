@@ -8,14 +8,20 @@ from functools import partial
 from typing import Any
 
 import pytest
-from django.db import connection
+from django.db import IntegrityError, connection
+from django.test.utils import CaptureQueriesContext
 from django.utils import timezone
 
+from accounts.models import RevokeReason
+from accounts.revocation import Revocation, revoke_session
+from field_sync import registry
 from field_sync.models import FieldEvent
+from field_sync.registry import HANDLERS, EventContext, EventHandler
+from field_sync.services import EVENT_LOCK_BUCKETS
 from organizations.models import Organization
 from tests.conftest import MemberFactory
 from tests.sync_support import Phone, event, make_phone, run_in_threads, second_device_of
-from tests.testapp.handlers import SLOW_RELEASE, SLOW_STARTED
+from tests.testapp.handlers import SLOW_RELEASE, SLOW_STARTED, NotePayload
 from tests.testapp.models import Widget
 
 pytestmark = pytest.mark.django_db(transaction=True)
@@ -106,16 +112,105 @@ def test_a_review_created_by_a_long_batch_is_never_skipped_by_the_next_pull(
     assert Widget.objects.filter(name="slow").count() == 1
 
 
-def test_the_try_lock_is_released_when_a_batch_fails(
+def test_the_try_lock_is_released_when_a_batch_fails_inside_sync_batch(
+    org_a: Organization, make_member: MemberFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The failure happens inside the locked transaction (a handler error: 500), so the lock
+    and the transaction both end and the very next batch runs."""
+
+    def breaks(ctx: EventContext, data: dict[str, Any]) -> None:
+        raise IntegrityError("a constraint of the handler's own tables")
+
+    copy = dict(HANDLERS)
+    copy[("test.breaks", 1)] = EventHandler("test.breaks", 1, NotePayload, breaks)
+    monkeypatch.setattr(registry, "HANDLERS", copy)
+    phone = make_phone(make_member, org_a)
+
+    failed = phone.sync([event(type="test.breaks")])
+    again = phone.sync([event()])
+
+    assert failed.status_code == 500
+    assert again.status_code == 200
+
+
+def test_a_final_upload_refused_with_sync_in_progress_is_not_spent(
+    org_a: Organization, make_member: MemberFactory
+) -> None:
+    revoked = make_phone(make_member, org_a)
+    live = second_device_of(revoked)
+    revoke_session(
+        revoked.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+    )
+    answers: dict[str, Any] = {}
+    thread = run_long_batch(live, [event(type="test.slow", payload={"text": "slow"})], answers)
+    assert SLOW_STARTED.wait(10)
+
+    refused = revoked.sync([event()])
+    SLOW_RELEASE.set()
+    thread.join(20)
+    retried = revoked.sync([event()])
+
+    assert (refused.status_code, refused.data["code"]) == (429, "sync_in_progress")
+    assert (retried.status_code, retried.headers["X-Session-Revoked"]) == (200, "true")
+
+
+def test_a_batch_that_waits_too_long_for_a_shared_event_id_bucket_is_told_to_retry(
+    org_a: Organization, org_b: Organization, make_member: MemberFactory, settings: Any
+) -> None:
+    """Another courier holds a batch open on an id of the same bucket: no queueing forever."""
+    settings.SYNC_LOCK_TIMEOUT_MS = 300
+    holder = make_phone(make_member, org_a)
+    waiter = make_phone(make_member, org_b)
+    held_id = str(uuid.UUID(int=16 * 1000))
+    same_bucket = str(uuid.UUID(int=16 * 2000))
+    answers: dict[str, Any] = {}
+    thread = run_long_batch(
+        holder, [event(id=held_id, type="test.slow", payload={"text": "slow"})], answers
+    )
+    assert SLOW_STARTED.wait(10)
+
+    refused = waiter.sync([event(id=same_bucket)])
+    other_bucket = waiter.sync([event(id=str(uuid.UUID(int=16 * 3000 + 1)))])
+    SLOW_RELEASE.set()
+    thread.join(20)
+    retried = waiter.sync([event(id=same_bucket)])
+
+    assert (refused.status_code, refused.data["code"]) == (429, "sync_in_progress")
+    assert int(refused.headers["Retry-After"]) > 0
+    assert other_bucket.status_code == 200
+    assert retried.status_code == 200
+    assert FieldEvent.objects.filter(pk=same_bucket).count() == 1
+
+
+def test_the_lock_timeout_does_not_leak_into_the_rest_of_the_batch(
     org_a: Organization, make_member: MemberFactory
 ) -> None:
     phone = make_phone(make_member, org_a)
+    original = event()
+    phone.sync([original])
 
-    refused = phone.sync([event()], device_id="not-a-uuid")  # 400 inside the request
-    again = phone.sync([event()])
+    phone.sync([void_event_for(original["id"])])
 
-    assert refused.status_code == 400
-    assert again.status_code == 200
+    with connection.cursor() as cursor:
+        cursor.execute("SHOW lock_timeout")
+        assert cursor.fetchone() == ("0",)
+
+
+def test_the_event_id_locks_are_at_most_one_per_bucket(
+    org_a: Organization, make_member: MemberFactory
+) -> None:
+    phone = make_phone(make_member, org_a)
+    events = [event() for _ in range(200)]
+
+    with CaptureQueriesContext(connection) as captured:
+        phone.sync(events)
+
+    locks = [q for q in captured.captured_queries if "pg_advisory_xact_lock" in q["sql"]]
+    assert 1 <= len(locks) <= EVENT_LOCK_BUCKETS
+
+
+def void_event_for(target_id: str) -> dict[str, Any]:
+    return event(type="record.void", payload={"reason": "typo"}, voids_event_id=target_id)
 
 
 def test_batches_sharing_event_ids_in_opposite_orders_never_deadlock(
