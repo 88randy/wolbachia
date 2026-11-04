@@ -107,6 +107,8 @@ export const web = {
   light: lightWebColors,
   dark: darkWebColors,
   control: { sm: 32, md: 36, lg: 40, xl: 44 } satisfies ControlHeights,
+  /** Icon sizes in px: `.i` is 20, `.i.s16` and `.i.s24` in web.css. */
+  icon: { sm: 16, md: 20, lg: 24 },
   layout: {
     sidebarWidth: 232,
     sidebarCollapsedWidth: 64,
