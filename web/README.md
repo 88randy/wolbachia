@@ -94,11 +94,14 @@ The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only f
 | Folder | What |
 |---|---|
 | `app/` | `startApp` (theme, language, configuration check, first render) and `App` |
-| `api/` | the one `@wolbachia/api-client` client (same-origin session, CSRF from the `csrftoken` cookie, base URL from `VITE_API_BASE_URL` minus `/api/v1`) and `useApiClient`; no `fetch` anywhere else |
+| `api/` | the one `@wolbachia/api-client` client (same-origin session, CSRF from the `csrftoken` cookie, `X-Organization` from the chosen slug, base URL from `VITE_API_BASE_URL` minus `/api/v1`), `useApiClient`, the TanStack `QueryClient` (`query-client.ts`), `Retry-After` parsing and the CSRF helpers; no `fetch` anywhere else |
+| `session/` | `GET /me/` as a query (`me-query.ts`, `useMe`), `can()` / `useCan()`, the organization slug, sign-out, switching organization, session events (expiry, lost membership) and the re-authentication dialog |
+| `auth/` | public pages: sign-in (W1), forgot and reset password, organization selection; their schemas, request functions and form hooks |
+| `forms/` | shared form pieces: `TextField`, `PasswordField`, `FormAlert`, `FormNotice`, `SubmitButton`, field-error translation |
 | `config/` | `readAppConfig`: validates the environment (the only place that exposes `apiBaseUrl`) |
 | `i18n/` | i18next fed by `@wolbachia/i18n` (typed keys, `{param}`), `useLanguage` |
 | `theme/` | light by default; `data-theme="dark"` on `<html>`; stored per browser |
-| `router/` | code-based TanStack Router routes: one placeholder per area (`areas.ts`) |
+| `router/` | code-based TanStack Router routes: public routes, the guarded layout and one placeholder per area (`areas.ts`, each with its `requiredPermissions`); `guards.ts`, `safe-redirect.ts` |
 | `shell/` | skip link, sidebar (232 px, 64 px collapsed), top bar, offline banner |
 | `states/` | placeholder, not found, route error, loading skeleton, configuration error |
 | `styles/` | global CSS, shared CSS modules, `no-style-literals.test.ts` |
@@ -108,19 +111,34 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 
 ### What the shell does today
 
-- Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists **all** areas: filtering by permission comes with `GET /api/v1/me/` in #28.
-- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered). The center selector and the user menu are left for #28.
+- Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists only the areas the user may open (see "Session, guards and permissions"); a group with no visible area loses its heading.
+- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered) and the user menu. The center selector is **[PENDING]**: `scope.centers` are plain strings and there is no centers endpoint.
 - Below 768 px (`web.layout.compactBreakpoint`) the sidebar stays collapsed, so the page reflows at 320 CSS px without two-axis scroll (WCAG 1.4.10; e2e checks it). Each page sets its own `document.title` ("<page> · Wolbachia", WCAG 2.4.2).
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
 - Keyboard: the first Tab stop is "Skip to content"; after each navigation focus moves to `<main>`; every link and button is reachable; the focus ring comes from the tokens. The active sidebar item uses `color.action` (4.5:1) instead of `color.brand` (4.2:1 with white text, fails AA).
-- Not built here: sign-in and permissions (#28), TanStack Query and the screens that call the API, DataTable and FilterBar (#29), the void pattern (#32), the public portal layout (#25).
+- Not built here: the screens that call the API (besides sign-in), DataTable and FilterBar (#29), the void pattern (#32), the public portal layout (#25).
 
-Screenshots of the shell (light, dark, es-MX, en, collapsed, offline): [`docs/screenshots/`](docs/screenshots/).
+### Session, guards and permissions
+
+Built in #28 (decisions 62 to 66 in `docs/decisions.md`). Backend contract: `docs/api-conventions.md` (rows `GET /me/`, "Auth endpoints", "Error codes (#4)", "Login protection") and `packages/api-client`.
+
+- **Routes.** Public: `/login?redirect=<internal path>&notice=`, `/forgot-password`, `/reset-password/{uid}/{token}` (the path the backend writes in the reset email, `WEB_PASSWORD_RESET_PATH`). `/select-organization` needs a session but not an organization. Everything else is inside the shell and behind `requireOrganization`.
+- **Session state** is the `["me"]` query (`session/me-query.ts`): fresh for 60 s, refetched on window focus and on guarded navigations after that, so a permission changed by an administrator reaches the navigation. There is no custom auth context.
+- **Guards** (`router/guards.ts`, `beforeLoad`): no session (`401`) goes to `/login?redirect=<path>`; `403 no_active_membership` goes to `/login?notice=no-membership`; no active organization goes to `/select-organization`; an area whose permissions are not met throws `ForbiddenError` and its error component renders the "no permission" state inside the shell. `safeRedirect` accepts only internal paths (not `//host`, backslashes, schemes, control characters or `/login`).
+- **Permissions.** `can(me, permission)` and `useCan()` look only at the permission codes of `GET /me/`, never at profile names. Each area in `router/areas.ts` has `requiredPermissions`: a list of codes (at least one), `[]` for every member (Home), or `"pending"` until its issue defines a code. `router/area-access.test.ts` lists the pending areas; the issue that builds an area replaces its `"pending"` and removes it from that list. **[PENDING backend]** scope (`centers`, `quadrants`): whether an empty list means "whole organization" or "nothing" is not defined, so `can()` takes no scope argument and the server enforces scope on every request.
+- **Organization.** A multi-organization user chooses on `/select-organization` (not in the design, built with the sign-in layout). The slug is kept in memory and `localStorage` (`wolbachia.organization`), travels only as the `X-Organization` header (never in a URL or body), is forgotten when the server refuses it and is cleared on sign-out. Choosing one drops the cache of the previous organization and refetches `/me/`.
+- **Sign-in.** The CSRF cookie is requested when the page opens and again before submit if missing; a `403 permission_denied` refreshes it and retries once. All credential failures read the same; the remaining attempts are not shown (the API does not provide them); a `429` shows the wait in minutes from `Retry-After`.
+- **Sign-out** posts `/auth/logout/` (CSRF), clears the slug and the query cache and goes to `/login`. If the server cannot be reached the user stays signed in and is told.
+- **Session expiry.** Any `401` after sign-in (from any query or mutation) opens a modal re-authentication dialog over the page (native `<dialog>`; username read-only; Escape does not dismiss it), so drafts survive. After signing in again the active queries are refetched; the failed request is not repeated. A mid-session `403 no_active_membership` forgets the organization and re-runs the guards. **[PENDING backend]** the session is a fixed 12 h (`AUTH_WEB_SESSION_AGE_SECONDS`) and no expiry or keep-alive is exposed, so the design's "your session closes in 0:58 / Stay signed in" banner and its "30 min idle" copy are not built.
+- **Not built (no endpoints) [PENDING]:** the 2FA second step and the first-time privacy-notice acceptance of W1; "Request access" and the error reference number of the global states; the organization logo (`logo_url` may live on S3, which the CSP `img-src 'self' data:` blocks).
+- **Tests.** Unit tests use `src/test/fake-api.ts` (a fake `fetch` keyed by method and path; `makeMe()`, `apiError()`) and `renderApp({ path, me, fetch })`. Passwords in tests are `fakePassword()` (`pw-for-<uuid>`, generated at runtime: the secret scan only allows its fake-password exception under `backend/tests/`). End-to-end tests fake the API with `page.route` (`e2e/fixtures/mock-api.ts`, no MSW) and run axe (WCAG 2.2 AA) on every screen and state in light and dark, es-MX and en (`e2e/auth-a11y.spec.ts`).
+
+Screenshots of the shell (light, dark, es-MX, en, collapsed, offline) and of the #28 screens (sign-in in four combinations; sign-in error and lockout, forgot and reset password, organization selection, no permission, user menu and the re-authentication dialog): [`docs/screenshots/`](docs/screenshots/). Regenerate the #28 ones with `E2E_SCREENSHOTS=1 npm run e2e -w @wolbachia/web -- screenshots`.
 
 ### Stack
 
-Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md). **Installed so far:** React 19, Vite 8, TanStack Router, i18next + react-i18next, Zod, Lucide icons, Inter (self-hosted with `@fontsource/inter`, no CDN: privacy, CSP and a working app without internet), Vitest + Testing Library + jest-axe, Playwright + `@axe-core/playwright`. TanStack Query, TanStack Table, React Hook Form, Recharts and MapLibre are added by the issues that first use them. TypeScript is the root version (6.0.3).
+Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md). **Installed so far:** React 19, Vite 8, TanStack Router, TanStack Query, React Hook Form, i18next + react-i18next, Zod, Lucide icons, Inter (self-hosted with `@fontsource/inter`, no CDN: privacy, CSP and a working app without internet), Vitest + Testing Library + jest-axe, Playwright + `@axe-core/playwright`. TanStack Query 5.105.3, React Hook Form 7.91.0 and `@hookform/resolvers` 7.0.2 (all MIT) came with #28; TanStack Table, Recharts and MapLibre are added by the issues that first use them. TypeScript is the root version (6.0.3).
 
 ### Build and deploy
 
