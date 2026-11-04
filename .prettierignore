@@ -11,3 +11,5 @@ backend/
 **/node_modules/
 **/dist/
 package-lock.json
+# Throwaway proofs of concept with their own dependencies and lockfile.
+spikes/
