@@ -21,6 +21,8 @@ jobs:
         with:
           fetch-depth: 0
       - name: Gitleaks
+        # Scan only the history of the checked-out branch: by default gitleaks scans every fetched
+        # ref, so a PR would fail on other branches' commits (#52).
         # The container runs as root on a runner-owned checkout: mark /repo as safe for git
         # through environment-based config (GIT_CONFIG_COUNT/KEY_n/VALUE_n, git >= 2.31).
         run: |
@@ -28,4 +30,4 @@ jobs:
             -e GIT_CONFIG_COUNT=1 \
             -e GIT_CONFIG_KEY_0=safe.directory \
             -e GIT_CONFIG_VALUE_0=/repo \
-            ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --redact --verbose
+            ghcr.io/gitleaks/gitleaks:v8.30.1 git /repo --config /repo/.gitleaks.toml --log-opts="HEAD" --redact --verbose
