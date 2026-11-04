@@ -19,6 +19,11 @@ describe("countCharacters", () => {
     expect(countCharacters(normalizeReason(`abc${invisible.repeat(5)}`))).toBe(3);
   });
 
+  test("line feeds are allowed in a reason but never count", () => {
+    expect(countCharacters(normalizeReason("​" + "\n".repeat(10) + "​"))).toBe(0);
+    expect(countCharacters(normalizeReason("ab" + "\n".repeat(8) + "cd"))).toBe(4);
+  });
+
   test("accented letters and emoji count, one per code point as Python's len does", () => {
     expect(countCharacters(normalizeReason("anulaci\u00f3n"))).toBe(9);
     expect(countCharacters(normalizeReason("\u{1f600}a"))).toBe(2);

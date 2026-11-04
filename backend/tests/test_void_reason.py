@@ -75,6 +75,18 @@ def test_text_that_shows_nothing_never_reaches_the_minimum(invisible: str) -> No
     assert refused(NINE + invisible * 5) == {"reason": [TOO_SHORT]}
 
 
+@pytest.mark.parametrize(
+    "reason",
+    [
+        "​" + "\n" * 10 + "​",  # a multiline reason that shows nothing
+        "ab" + "\n" * 8 + "cd",  # four letters padded with line feeds
+        "\n".join("a" * 5),  # five letters, one per line
+    ],
+)
+def test_line_feeds_are_allowed_but_never_count_toward_the_minimum(reason: str) -> None:
+    assert refused(reason) == {"reason": [TOO_SHORT]}
+
+
 @pytest.mark.parametrize("reason", ["", "   ", NINE, f"  {NINE}  "])
 def test_blank_and_short_reasons_get_the_same_code_and_params(reason: str) -> None:
     assert refused(reason) == {"reason": [TOO_SHORT]}

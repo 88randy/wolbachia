@@ -52,12 +52,14 @@ def _has_forbidden_characters(text: str) -> bool:
 
 
 def visible_length(text: str) -> int:
-    """Characters that show something: invisible text and filler glyphs are not counted."""
+    """Characters that show something: whitespace (line feeds too), invisible text and filler
+    glyphs are not counted."""
     return sum(
         1
         for character in text
         if unicodedata.category(character) not in _INVISIBLE_CATEGORIES
         and ord(character) not in _FILLERS
+        and not character.isspace()  # a line feed is allowed in the text but shows nothing
     )
 
 
