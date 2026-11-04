@@ -1,0 +1,36 @@
+/* Phones list (W67): status badge. Layout comes from the shared page and table styles. */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+}
+
+.active {
+  background: var(--color-status-success-bg);
+  color: var(--color-status-success-fg);
+}
+
+.revoked {
+  background: var(--color-status-critical-bg);
+  color: var(--color-status-critical-fg);
+}
+
+.badgeIcon {
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+}
+
+.hint {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}

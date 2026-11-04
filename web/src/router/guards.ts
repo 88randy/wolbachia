@@ -4,6 +4,7 @@ import type { AnyRedirect } from "@tanstack/react-router";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { canOpenArea } from "./area-access";
 import type { Area, AreaId } from "./areas";
+import { can } from "../session/can";
 import type { Me } from "../session/me";
 import { loadMe } from "../session/me-query";
 import type { RouterContext } from "./router-context";
@@ -82,4 +83,12 @@ export async function requireOrganizationChoice(args: GuardArgs): Promise<void> 
 /** Guard of one area: the permissions it declares, against `/me/`. */
 export function requireAreaAccess(area: Area, me: Me): void {
   if (!canOpenArea(me, area)) throw new ForbiddenError(area.id);
+}
+
+/**
+ * Guard of one screen inside an area: the permission code it needs, against `/me/` (never a
+ * profile name). The area's own guard is broader (any of its codes); a screen asks for its own.
+ */
+export function requirePermission(areaId: AreaId, me: Me, permission: string): void {
+  if (!can(me, permission)) throw new ForbiddenError(areaId);
 }

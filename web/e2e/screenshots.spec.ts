@@ -4,7 +4,7 @@ import { mockApi } from "./fixtures/mock-api";
 import { scenarios } from "./fixtures/scenarios";
 
 /**
- * Regenerates the PNGs of web/docs/screenshots/ for the screens of #28. It is not a test: it only
+ * Regenerates the PNGs of web/docs/screenshots/ for the screens of #28 and the phones list of #29. It is not a test: it only
  * runs on request (`E2E_SCREENSHOTS=1 npm run e2e -w @wolbachia/web -- screenshots`), so the
  * normal e2e run never rewrites files.
  */
@@ -21,6 +21,9 @@ const SHOTS: readonly { scenario: string; file: string }[] = [
   { scenario: "no permission", file: "no-permission" },
   { scenario: "user menu open", file: "user-menu" },
   { scenario: "re-authentication dialog", file: "session-expired-dialog" },
+  { scenario: "phones list", file: "phones-list" },
+  { scenario: "phones list with a filter and an ignored parameter", file: "phones-list-filtered" },
+  { scenario: "phones list that failed", file: "phones-list-error" },
 ];
 
 test.skip(process.env["E2E_SCREENSHOTS"] !== "1", "only on request");

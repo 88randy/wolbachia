@@ -106,6 +106,10 @@ The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only f
 | `states/` | placeholder, not found, route error, loading skeleton, configuration error |
 | `styles/` | global CSS, shared CSS modules, `no-style-literals.test.ts` |
 | `storage/` | `localStorage` wrapper that never throws (preferences are conveniences) |
+| `data-table/` | the shared list table and filter bar (#29): `DataTable`, `FilterBar`, `useTableUrlState`, `table-state.ts` (pure URL rules), `requestExport`. See "Lists" below |
+| `format/` | dates and times in the organization's time zone and the interface language (`formatDateTime`, `useFormatDateTime`) |
+| `devices/` | W67, phones list (`/settings/phones`): the first screen built on `DataTable` |
+| `settings/` | Settings home: placeholder plus a link to each built screen the user may open |
 
 Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/tokens` (a test fails on hex/rgb colors, literal `font-family`, px font sizes or radii and inline `style`); every user-facing string is an i18n key; one component per file, ESLint clean-code limits apply.
 
@@ -117,7 +121,18 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
 - Keyboard: the first Tab stop is "Skip to content"; after each navigation focus moves to `<main>`; every link and button is reachable; the focus ring comes from the tokens. The active sidebar item uses `color.action` (4.5:1) instead of `color.brand` (4.2:1 with white text, fails AA).
-- Not built here: the screens that call the API (besides sign-in), DataTable and FilterBar (#29), the void pattern (#32), the public portal layout (#25).
+- Not built here: the screens that call the API (besides sign-in and the phones list), the void pattern (#32), the public portal layout (#25).
+
+### Lists: `DataTable` and `FilterBar` (#29)
+
+Decisions 85 and 86 in `docs/decisions.md`. Every list screen uses these two components; none writes its own table, filters or paging.
+
+- **The address is the state.** `?status=open&ordering=-created_at&page=2` (or `?cursor=...` for cursor lists, plus `include_voided=true`). `useTableUrlState(config)` reads it, validates it on every read and writes it on every change; each change pushes a history entry (the back button restores the previous view) and any change of filters or order goes back to the first page. A parameter the list does not know, or an invalid value, is **ignored** (never sent to the API) and named in a notice with "Remove from the address". The router writes flat string pairs (`router/flat-search.ts`), so `?code=1e3` stays text.
+- **The server does the work.** Sorting, filtering and paging are requests; the table only draws the rows of the page in view. `ordering` is sent only when the URL has one, otherwise the API applies its default, which `defaultOrdering` mirrors for `aria-sort`.
+- **A screen declares** a constant `TableQueryConfig` (paging mode, page size, filters, sortable column ids, `supportsVoided`), the typed query (`queryOptions` with `client.GET`, `keepPreviousData`), its `DataTableColumn[]` (header key, cell, `align: "end"` for numbers, `link` to make a cell a link: a row link, or the filtered list behind a number) and passes `pageTableData(query, page, size)` or `cursorTableData(query)` as `data`. Optional: `voidOf` (struck-through row with badge, reason and author), `selection` (checkboxes, "n selected" and the screen's actions for the rows of the page; it empties when the rows change), `exportPath` on `FilterBar` (the backend builds the file; pass it only when the user may export). Reference screen: `devices/PhonesPage.tsx`.
+- **Accessibility.** Semantic `<table>` with caption and `scope="col"`; sortable headers are buttons with `aria-sort`; two polite live regions (result count, and the sort state in words); native `<select>`, checkbox and buttons; "Previous" and "Next" are `aria-disabled` so keyboard focus is not lost; chips are buttons named "Remove filter <name>: <value>"; no state by color alone; a wide table scrolls inside its card. The void detail is always visible, not on hover (WCAG 1.4.13).
+- **Not in the table.** No column visibility, resizing, pinning or virtualization (no screen needs them yet). The table library (TanStack Table 9.3.1, decision 21) is only the row, column and selection model.
+- **W67 phones** (`/settings/phones`, permission `device.read` from `/me/`): read only, one filter (`is_revoked`), page-number paging. `GET /devices/` has no `ordering` and no `include_voided`, and its `user` filter needs a user picker that does not exist yet, so the screen has none of those. Revoking a phone, the version cards and the APK upload are other issues. W62 (#36) is the second consumer.
 
 ### Session, guards and permissions
 
@@ -139,7 +154,7 @@ Screenshots of the shell (light, dark, es-MX, en, collapsed, offline) and of the
 
 ### Stack
 
-Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md). **Installed so far:** React 19, Vite 8, TanStack Router, TanStack Query, React Hook Form, i18next + react-i18next, Zod, Lucide icons, Inter (self-hosted with `@fontsource/inter`, no CDN: privacy, CSP and a working app without internet), Vitest + Testing Library + jest-axe, Playwright + `@axe-core/playwright`. TanStack Query 5.105.3, React Hook Form 7.91.0 and `@hookform/resolvers` 7.0.2 (all MIT) came with #28; TanStack Table, Recharts and MapLibre are added by the issues that first use them. TypeScript is the root version (6.0.3).
+Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md). **Installed so far:** React 19, Vite 8, TanStack Router, TanStack Query, React Hook Form, i18next + react-i18next, Zod, Lucide icons, Inter (self-hosted with `@fontsource/inter`, no CDN: privacy, CSP and a working app without internet), Vitest + Testing Library + jest-axe, Playwright + `@axe-core/playwright`. TanStack Query 5.105.3, React Hook Form 7.91.0 and `@hookform/resolvers` 7.0.2 (all MIT) came with #28; TanStack Table 9.3.1 (MIT, `@tanstack/react-table` plus `@tanstack/table-core`; `@tanstack/react-store` was already installed by the router) came with #29; Recharts and MapLibre are added by the issues that first use them. TypeScript is the root version (6.0.3).
 
 ### Build and deploy
 
