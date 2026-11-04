@@ -1,7 +1,8 @@
 name: backend
 
 # Runs only when backend/ or this workflow changes.
-# Tool versions mirror .pre-commit-config.yaml (ruff v0.17.3, mypy v2.4.1); bump both together.
+# Ruff and mypy versions mirror .pre-commit-config.yaml (ruff v0.17.3, mypy 2.4.1 pinned in
+# backend/pyproject.toml); bump them together.
 on:
   pull_request:
     paths:
@@ -22,7 +23,6 @@ permissions:
 
 env:
   RUFF_VERSION: "0.17.3"
-  MYPY_VERSION: "2.4.1"
 
 jobs:
   checks:
@@ -31,20 +31,45 @@ jobs:
     defaults:
       run:
         working-directory: backend
+    services:
+      postgres:
+        # Keep the major version equal to the DigitalOcean managed cluster [PENDING: #18].
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: wolbachia
+          POSTGRES_PASSWORD: wolbachia
+          POSTGRES_DB: wolbachia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wolbachia -d wolbachia"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # Throwaway values for the CI database and keys; not secrets.
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+      DATABASE_URL: postgres://wolbachia:wolbachia@127.0.0.1:5432/wolbachia
+      REDIS_URL: redis://127.0.0.1:6379/0
     steps:
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.3
-      # ruff and ruff format succeed when there is no Python file yet.
+      - name: Install dependencies
+        run: uv sync --frozen
       - name: Ruff lint
         run: uvx ruff@${RUFF_VERSION} check --config pyproject.toml .
       - name: Ruff format
         run: uvx ruff@${RUFF_VERSION} format --check --config pyproject.toml .
-      # mypy is strict only for services.py and selectors.py; with none present there is nothing to check.
-      - name: Mypy (services and selectors)
-        run: |
-          mapfile -t targets < <(find . \( -name services.py -o -name selectors.py \) -not -path "*/.venv/*" -not -path "*/migrations/*")
-          if [ "${#targets[@]}" -eq 0 ]; then
-            echo "No services.py or selectors.py yet: nothing to type-check."
-          else
-            uvx mypy@${MYPY_VERSION} --config-file pyproject.toml "${targets[@]}"
-          fi
+      # Runs in the project environment: the django-stubs plugin needs Django installed.
+      # Strict only for services.py and selectors.py (overrides in pyproject.toml).
+      - name: Mypy
+        run: uv run mypy .
+      # Test settings include the test-only app, so its migration is checked too.
+      - name: Migrations are up to date
+        run: uv run python manage.py makemigrations --check --dry-run
+        env:
+          DJANGO_SETTINGS_MODULE: config.settings.test
+      - name: Tests and coverage (gate in pyproject.toml)
+        run: uv run pytest --cov
+      - name: OpenAPI schema is valid
+        run: uv run python manage.py spectacular --file schema.yml --validate --fail-on-warn

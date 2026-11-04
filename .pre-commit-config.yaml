@@ -27,15 +27,20 @@ repos:
       - id: ruff-format
         args: [--config=backend/pyproject.toml]
 
-  # Strict only for services.py / selectors.py (see backend/pyproject.toml).
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v2.4.1
+  # Runs in the backend project environment (uv sync once in backend/) because the django-stubs
+  # plugin needs Django installed. Strict only for services.py / selectors.py (see
+  # backend/pyproject.toml). It runs on the whole backend project (same as CI) whenever a Python
+  # file under backend/ changes: the plugin needs backend/ as the working directory.
+  - repo: local
     hooks:
       - id: mypy
-        files: ^backend/(.*/)?(services|selectors)\.py$
-        # Same set as the find in .github/workflows/backend.yml (migrations and .venv excluded).
+        name: mypy
+        entry: uv run --directory backend mypy .
+        language: system
+        types: [python]
+        files: ^backend/
         exclude: /(migrations|\.venv)/
-        args: [--config-file=backend/pyproject.toml]
+        pass_filenames: false
 
   # ESLint and Prettier run from node_modules so the hook uses the exact versions pinned in
   # package-lock.json (and the same ones CI runs). Run `npm ci` once before committing.

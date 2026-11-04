@@ -1,14 +1,35 @@
-# Tooling configuration only. The Django project itself (dependencies, settings, apps)
-# lands in issue #2; do not add [project] or dependencies here until then.
-# Rules and rationale: docs/engineering-rules.md.
-#
-# What #2 must add to make mypy fully useful (not possible today: there is no settings module):
-#   - dev dependencies: django-stubs, djangorestframework-stubs (and the mypy plugin below).
-#   - in [tool.mypy]: plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"].
-#   - [tool.django-stubs] django_settings_module = "<project>.settings.test"
-#     (the plugin imports the settings to learn model fields, so it needs a real module).
-#   - in .pre-commit-config.yaml: switch the mypy hook to the project environment (or add the
-#     same dependencies under additional_dependencies) and remove `ignore_missing_imports` below.
+# Backend project: Django + DRF API shared by mobile and web (issue #2).
+# Tool rules and rationale: docs/engineering-rules.md.
+# Versions were verified on PyPI on 2026-11-03; Django follows the current LTS (5.2).
+
+[project]
+name = "wolbachia-backend"
+version = "0.1.0"
+description = "Wolbachia field operations API (Django + DRF)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+  "django>=5.2.19,<5.3",
+  "djangorestframework>=3.18.3,<3.19",
+  "drf-spectacular>=0.30.0,<0.31",
+  "django-environ>=0.14.0,<0.15",
+  "psycopg[binary]>=3.3.7,<3.4",
+  "celery>=5.6.3,<5.7",
+  "redis>=8.1.0,<8.2",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=9.2.0,<9.3",
+  "pytest-django>=4.14.0,<4.15",
+  "pytest-cov>=7.1.0,<7.2",
+  "factory-boy>=3.3.3,<3.4",
+  "mypy==2.4.1",
+  "django-stubs>=6.1.2,<6.2",
+  "djangorestframework-stubs>=3.18.2,<3.19",
+]
+
+[tool.uv]
+package = false
 
 [tool.ruff]
 target-version = "py313"
@@ -42,6 +63,10 @@ ignore = [
   "TRY003",  # long messages in exceptions: domain exceptions carry their message by design
 ]
 
+[tool.ruff.lint.isort]
+# Explicit so import order is the same whether ruff runs from backend/ (CI) or the repo root (pre-commit).
+known-first-party = ["accounts", "config", "core", "organizations", "tests"]
+
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
@@ -54,8 +79,8 @@ mypy-init-return = true
 
 [tool.ruff.lint.per-file-ignores]
 # Tests: assert is the point, fixtures/factories take many args, annotations add noise.
-"**/tests/**" = ["S101", "S105", "S106", "PLR0913", "ANN"]
-"**/test_*.py" = ["S101", "S105", "S106", "PLR0913", "ANN"]
+"**/tests/**" = ["S101", "S105", "S106", "S603", "PLR0913", "ANN"]
+"**/test_*.py" = ["S101", "S105", "S106", "S603", "PLR0913", "ANN"]
 "**/conftest.py" = ["S101", "PLR0913", "ANN"]
 
 [tool.ruff.format]
@@ -63,9 +88,16 @@ quote-style = "double"
 
 [tool.mypy]
 python_version = "3.13"
+plugins = ["mypy_django_plugin.main", "mypy_drf_plugin.main"]
+exclude = ['/migrations/', '/\.venv/', '^tests/']
 # Lenient everywhere; strict only where the business logic lives (override below).
-# TEMPORARY: Django and DRF are not installed in the pre-commit environment yet.
-# Remove together with the plugin setup described at the top of this file (issue #2).
+
+[tool.django-stubs]
+django_settings_module = "config.settings.test"
+
+# Third-party packages without type information.
+[[tool.mypy.overrides]]
+module = ["celery.*", "environ.*", "factory.*"]
 ignore_missing_imports = true
 
 # `strict = true` cannot be set per module, so the strict flags are listed one by one.
@@ -83,3 +115,18 @@ warn_return_any = true
 no_implicit_reexport = true
 strict_equality = true
 extra_checks = true
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "config.settings.test"
+pythonpath = ["."]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+source = ["accounts", "config", "core", "organizations"]
+omit = ["*/migrations/*", "config/wsgi.py", "config/asgi.py"]
+
+[tool.coverage.report]
+fail_under = 85
+show_missing = true

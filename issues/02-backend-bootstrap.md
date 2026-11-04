@@ -40,3 +40,12 @@ Every business table inherits `OrgScopedModel` (+ `VoidableMixin` where it appli
 
 ## Notes
 Conscious deviation from the PYROBYTE default (DB per tenant), decided by the client.
+
+**Decisions taken by the orchestrator on 2026-11-03 (planning of #2):**
+- `Profile` has `label_es` / `label_en` (organization data, like catalog items) instead of `name`; the API returns no other user-facing text.
+- Shared error handler (envelope `{code, detail, fields}`) and both pagination classes (page number for admin lists, cursor for streams) land here in #2; #12 only exports the schema and generates the client.
+- Active organization is resolved in a viewset mixin (`initial()`), not in middleware, so token auth (#4) and Channels (#19) reuse the same service function. A slug that is not one of the user's memberships → `403 no_active_membership`.
+- `/api/v1/me/` is exempt from the multi-membership 400: without `X-Organization` it returns `organization: null` and the `organizations[]` list to choose from.
+- `Membership.scope` is a JSON field (`{centers: [], quadrants: []}`) until Center and Quadrant models exist.
+- Custom `User` model from the first migration. Django admin is not mounted (it can delete).
+- Defaults (configurable, documented): page size 50 (max 200), cursor page 100, throttles anon 60/min and user 600/min, coverage gate 85 %, schema endpoint authenticated outside dev, `docker compose` file at `backend/compose.yaml`.

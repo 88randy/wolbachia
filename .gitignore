@@ -25,3 +25,7 @@ android/app/build/
 
 # Test coverage
 coverage/
+
+# Django runtime artifacts
+backend/media/
+backend/schema.yml
