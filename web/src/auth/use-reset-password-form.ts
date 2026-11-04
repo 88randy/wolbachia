@@ -11,6 +11,7 @@ import type { ResetConfirmOutcome } from "./request-password-reset-confirm";
 import type { ResetLink } from "./reset-link";
 import { resetSchema } from "./reset-schema";
 import type { ResetValues } from "./reset-schema";
+import { useAbortOnUnmount } from "./use-abort-on-unmount";
 
 interface OutcomeEffects {
   form: UseFormReturn<ResetValues>;
@@ -55,9 +56,14 @@ export function useResetPasswordForm(link: ResetLink) {
     showFailure: setFailure,
     signIn: () => router.navigate({ to: "/login", search: { notice: "password-changed" } }),
   };
+  // The form is replaced (or closed) when another link arrives: its request is cancelled and
+  // its answer ignored, so a late reply can neither navigate nor touch the new form.
+  const startRequest = useAbortOnUnmount();
   const submit = form.handleSubmit(async ({ newPassword }) => {
     setFailure(undefined);
-    await applyOutcome(await confirmPasswordReset(client, { ...link, newPassword }), effects);
+    const controller = startRequest();
+    const outcome = await confirmPasswordReset(client, { ...link, newPassword }, controller.signal);
+    if (!controller.signal.aborted) await applyOutcome(outcome, effects);
   });
   return { form, isLinkInvalid, failure, alertRef, submit };
 }

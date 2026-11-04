@@ -206,6 +206,39 @@ describe("reset password: the page of the emailed link", () => {
       expect(api.requests).toEqual([]);
     });
 
+    test("a late answer to the first link neither navigates nor replaces the new form", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      let answerFirst: (reply: Response) => void = () => undefined;
+      const first = new Promise<Response>((resolve) => {
+        answerFirst = resolve;
+      });
+      let calls = 0;
+      const { api, app } = await openReset(noContent(204));
+      api.setRoute(CONFIRM_PATH, () => (++calls === 1 ? first : noContent(204)));
+      await fillAndSend(NEW_PASSWORD);
+      await vi.waitFor(() => {
+        expect(api.requests.length).toBe(1);
+      });
+
+      pasteLink(SECOND_FRAGMENT);
+      await vi.waitFor(() => {
+        expect(api.requests[0]?.signal.aborted).toBe(true);
+      });
+      answerFirst(noContent(204));
+      await first;
+
+      expect(app.router.state.location.pathname).toBe("/reset-password");
+      expect(screen.getByLabelText<HTMLInputElement>("Contraseña nueva").value).toBe("");
+      await fillAndSend(NEW_PASSWORD);
+      await vi.waitFor(() => {
+        expect(api.requests[1]?.body).toEqual({
+          uid: "Mg",
+          token: "second-link",
+          new_password: NEW_PASSWORD,
+        });
+      });
+    });
+
     test("the same link pasted again is cleared from the bar and keeps working", async () => {
       window.history.replaceState(null, "", LINK_PATH);
       const { api } = await openReset();
