@@ -18,7 +18,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | Path | What lives there |
 | --- | --- |
 | `config/` | Settings (`base`, `dev`, `test`, `prod`), URLs, WSGI/ASGI, Celery app |
-| `accounts/` | Custom `User` (UUID pk). Auth flows arrive in #4 |
+| `accounts/` | Custom `User` (UUID pk); authentication (#4): login, refresh, logout, password reset, `Device`, `DeviceSession`, bearer authentication, throttles, lockout, final-upload hook |
 | `organizations/` | `Organization`, `Profile`, `Membership`; services, selectors, `GET /me/`, `bootstrap_organization` |
 | `core/` | Org-scoped base model and viewset, void service, error handler, pagination, permissions, schema hooks, health |
 | `tests/` | pytest suite; `tests/testapp` is a test-only app (installed by `config.settings.test`) |
@@ -57,7 +57,7 @@ Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache
 
 All variables are documented in [`.env.example`](.env.example). Settings are chosen only by a real `DJANGO_SETTINGS_MODULE` environment variable or `--settings`, never by `.env`. Required everywhere: `DATABASE_URL`, `REDIS_URL`; `DJANGO_SECRET_KEY` in dev and prod (tests use a fixed key). Production also requires `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; `manage.py check --deploy` is clean with `config.settings.prod`.
 
-Defaults (all env-configurable): page size 50 (max 200 via `?page_size=`), cursor page 100, throttles 60/min anonymous and 600/min per user (`DRF_NUM_PROXIES`=0: `X-Forwarded-For` is ignored), schema endpoint public only in dev.
+Authentication, token and email settings are described in [Authentication](#authentication-4). Defaults (all env-configurable): page size 50 (max 200 via `?page_size=`), cursor page 100, throttles 60/min anonymous and 600/min per user (`DRF_NUM_PROXIES`=0: `X-Forwarded-For` is ignored), schema endpoint public only in dev.
 
 ## Organizations and the first admin
 
@@ -72,6 +72,35 @@ uv run python manage.py changepassword boss     # a new admin is created without
 ```
 
 Profiles start with no permission codes; they are data configured per organization.
+
+## Authentication (#4)
+
+Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth endpoints", "Tokens", "Devices and revocation", "Error codes", "Login protection"). Decisions 36 to 42 in [`docs/decisions.md`](../docs/decisions.md).
+
+- **Mobile**: `POST /auth/login/` with `device_id` returns opaque `access` and `refresh` tokens; send `Authorization: Bearer <access>`. Tokens exist only in the response: the database keeps SHA-256 digests (`DeviceSession.access_hash`, `refresh_hash`). Never log or store a plaintext token, password or email.
+- **Web**: `POST /auth/login/` without `device_id` sets the Django session cookie. Call `GET /auth/csrf/` first and send the cookie value as `X-CSRFToken` on every unsafe request, login included. Same origin is assumed [ASSUMPTION].
+- **Organization**: a token session is pinned to the organization it was issued for; `OrgScopedViewSetMixin` and `/me/` take it from `request.auth` (`accounts.selectors.requested_organization_slug`).
+- **Throttles** live in `accounts/throttling.py` and key on DRF's `get_ident`: set `DRF_NUM_PROXIES` to the real number of proxies in front of the API (0 ignores `X-Forwarded-For`). The login lockout is in `accounts/login_attempts.py` (cache counters: it needs Redis in dev and prod).
+- **Auth log**: logger `accounts.auth` (`event=login_failed ip=... username_fp=...`). `username_fp` is a keyed HMAC; there is no model until W60.
+- **Password reset**: the request endpoint only enqueues the Celery task `accounts.tasks.send_password_reset_email`; run the `worker` service to get emails. In dev `EMAIL_URL=consolemail://` prints the message (with the link) in the worker log. Texts: `accounts/templates/accounts/email/` (es-MX, en).
+- **Admin permission codes**: new organizations get `device.read`, `device.revoke` and `user.revoke_device_sessions` on their `admin` profile. For existing ones run `python manage.py grant_admin_permissions [--organization slug]` (idempotent; safe on every deploy).
+- **Web sessions** are stored in the database: schedule `python manage.py clearsessions` (daily) when the deployment exists (#18).
+- **Final upload (for #5)**: a view that accepts uploads from a revoked phone sets `allows_revoked_final_upload = True`; when `request.auth` is a revoked `DeviceSession` it must call `accounts.services.consume_final_upload(request.auth)` in the same transaction as its writes and answer with `X-Session-Revoked: true`. If it forgets the call, the session can upload until its deadline. `tests/testapp/views.py::FinalUploadView` is the reference.
+- A refresh response lost outside the 60 s grace window drops the session: the courier must log in again (needs signal and password).
+
+| Variable | Default | Meaning |
+| --- | --- | --- |
+| `AUTH_ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
+| `AUTH_REFRESH_TOKEN_TTL_DAYS` | `30` | Refresh token idle lifetime (slides on every refresh) [PENDING absolute maximum] |
+| `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `60` | An old refresh token still rotates inside this window; after it, the session is revoked |
+| `AUTH_REVOKED_FINAL_UPLOAD_HOURS` | `72` | Final upload window after an admin or device revoke; `0` disables it [PENDING client] |
+| `AUTH_LOGIN_MAX_FAILURES` / `AUTH_LOGIN_LOCKOUT_MINUTES` | `5` / `15` | Lockout of a username + address pair [PENDING client] |
+| `AUTH_WEB_SESSION_AGE_SECONDS` | `43200` | Web session cookie age (12 h) [PENDING] |
+| `PASSWORD_RESET_TIMEOUT` | `3600` | Reset link lifetime in seconds |
+| `THROTTLE_LOGIN_USER_IP_RATE`, `THROTTLE_LOGIN_IP_RATE`, `THROTTLE_REFRESH_RATE`, `THROTTLE_PASSWORD_RESET_RATE`, `THROTTLE_PASSWORD_RESET_CONFIRM_RATE` | `10/min`, `30/min`, `30/min`, `5/hour`, `20/hour` | DRF throttle rates |
+| `EMAIL_URL` | `consolemail://` (required in prod) | django-environ email URL, e.g. `smtp://user:pass@host:587` [PENDING provider] |
+| `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` | local defaults (required in prod) | Sender and web origin used to build the reset link |
+| `WEB_PASSWORD_RESET_PATH` | `/reset-password` | Web route that receives `/{uid}/{token}` [ASSUMPTION: agree with W1] |
 
 ## Dependencies (verified on PyPI, 2026-11-03)
 
@@ -93,4 +122,4 @@ Tool config lives in [`pyproject.toml`](pyproject.toml) (ruff, mypy, pytest, cov
 
 ## Next
 
-Deploy: #18. Auth flows: #4.
+Deploy: #18. Sync API (uses the final-upload hook): #5.

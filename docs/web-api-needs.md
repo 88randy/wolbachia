@@ -22,6 +22,8 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 | POST | /auth/login/ | web: session cookie + CSRF; mobile: tokens (#4); generic error message | public | W1 |
 | POST | /auth/logout/ | 204 | all | — |
 | POST | /auth/password-reset/ | 202 (same answer whether the account exists or not) | public | W1 |
+| POST | /auth/password-reset/confirm/ | 204; body `{uid, token, new_password}`; `400 invalid_reset_token` or password validator codes in `fields.new_password` | public | W1 |
+| GET | /auth/csrf/ | 204 + CSRF cookie; send it back as `X-CSRFToken` on every unsafe request, login included | public | W1 |
 | GET | /me/ | user, organization (name, tz, epi week, languages, logo), profiles, `permissions[]`, scope (centers/quadrants) | all | all |
 | GET | /home/summary/ | attention items per profile, critical band, cards with counts + link filters | internal | W2 |
 | GET | /search/?q= | results grouped by type, with `voided` flag; nothing from other orgs | internal | W3 |

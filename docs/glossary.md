@@ -74,6 +74,15 @@ Rules:
 | anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 
+## Devices and sessions
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| teléfono / dispositivo (del repartidor) | device | `Device`, `/devices/`, `device_id` | The registered phone of the mobile app. Never `release_device` (that is release equipment) and never "terminal" or "handset". |
+| sesión del dispositivo | device session | `DeviceSession`, `revoke-device-sessions` | One login of a user on a device: an access + refresh token pair, revoked and never deleted. |
+| baja del dispositivo | device revocation | `POST /devices/{id}/revoke/`, `is_revoked` | Lost or retired phone: it cannot log in again. |
+| última carga | final upload | `final_upload_deadline`, `X-Session-Revoked` | The one upload a revoked phone may still make. |
+
 ## Resolved conflicts (2026-11-03)
 
 - `Bike`/`BikeCheck`/`bike-check-item` → `Motorcycle`/`MotorcycleCheck`/`motorcycle-check-item` (#3, #8).
