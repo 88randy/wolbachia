@@ -2,6 +2,7 @@ import { createRootRouteWithContext, createRoute, createRouter } from "@tanstack
 import type { RouterHistory } from "@tanstack/react-router";
 import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
 import { LoginPage } from "../auth/LoginPage";
+import { LegacyResetPasswordPage } from "../auth/LegacyResetPasswordPage";
 import { ResetPasswordPage } from "../auth/ResetPasswordPage";
 import { SelectOrganizationPage } from "../auth/SelectOrganizationPage";
 import { AppShell } from "../shell/AppShell";
@@ -35,11 +36,18 @@ const forgotPasswordRoute = createRoute({
 });
 
 // Must match the backend's WEB_PASSWORD_RESET_PATH ("/reset-password" by default): the reset
-// email links to `<WEB_BASE_URL>/reset-password/{uid}/{token}`.
+// email links to `<WEB_BASE_URL>/reset-password#uid=<uid>&token=<token>` (#58).
 const resetPasswordRoute = createRoute({
   getParentRoute: () => rootRoute,
-  path: "/reset-password/$uid/$token",
+  path: "/reset-password",
   component: ResetPasswordPage,
+});
+
+// Links emailed before #58 keep the values in the path. Removal rule: web/README.md, decision 83.
+const legacyResetPasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/reset-password/$uid/$token",
+  component: LegacyResetPasswordPage,
 });
 
 // Needs a session but not an organization yet (that is what it is for).
@@ -83,6 +91,7 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
   resetPasswordRoute,
+  legacyResetPasswordRoute,
   selectOrganizationRoute,
   authenticatedRoute.addChildren([...areaRoutes, notFoundRoute]),
 ]);

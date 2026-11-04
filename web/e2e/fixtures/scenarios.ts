@@ -89,7 +89,7 @@ export const scenarios: Scenario[] = [
     name: "reset password",
     api: { me: null },
     reach: async (page) => {
-      await page.goto("/reset-password/MQ/set-password-link");
+      await page.goto("/reset-password#uid=MQ&token=set-password-link");
       await expect(page.locator("#reset-new-password")).toBeVisible();
     },
   },
@@ -97,7 +97,7 @@ export const scenarios: Scenario[] = [
     name: "reset password with a weak password",
     api: { me: null, resetConfirm: "too-short" },
     reach: async (page) => {
-      await page.goto("/reset-password/MQ/set-password-link");
+      await page.goto("/reset-password#uid=MQ&token=set-password-link");
       await page.locator("#reset-new-password").fill(E2E_PASSWORD);
       await page.locator("#reset-confirm-password").fill(E2E_PASSWORD);
       await page.locator("form button[type=submit]").click();
@@ -108,7 +108,7 @@ export const scenarios: Scenario[] = [
     name: "reset password with an invalid link",
     api: { me: null, resetConfirm: "invalid-link" },
     reach: async (page) => {
-      await page.goto("/reset-password/MQ/old-link");
+      await page.goto("/reset-password#uid=MQ&token=old-link");
       await page.locator("#reset-new-password").fill(E2E_PASSWORD);
       await page.locator("#reset-confirm-password").fill(E2E_PASSWORD);
       await page.locator("form button[type=submit]").click();

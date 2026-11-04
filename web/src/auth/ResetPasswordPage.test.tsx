@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -7,16 +7,21 @@ import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
 
 const CONFIRM_PATH = "POST /api/v1/auth/password-reset/confirm/";
-const LINK_PATH = "/reset-password/MQ/set-password-link";
+const LINK_PATH = "/reset-password#uid=MQ&token=set-password-link";
+const LEGACY_LINK_PATH = "/reset-password/MQ/set-password-link";
 const NEW_PASSWORD = fakePassword();
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function openReset(reply: Response = noContent(204), language: "es-MX" | "en" = "es-MX") {
+async function openReset(
+  reply: Response = noContent(204),
+  language: "es-MX" | "en" = "es-MX",
+  path: string = LINK_PATH,
+) {
   const api = createFakeApi({ [CONFIRM_PATH]: reply });
-  const app = await renderApp({ path: LINK_PATH, fetch: api.fetch, language });
+  const app = await renderApp({ path, fetch: api.fetch, language });
   await screen.findByRole("heading", { level: 1 });
   return { api, app };
 }
@@ -32,7 +37,7 @@ function weakPassword(code: string): Response {
 }
 
 describe("reset password: the page of the emailed link", () => {
-  test("opens at /reset-password/{uid}/{token}, with no session, and uses new-password fields", async () => {
+  test("opens at /reset-password#uid=...&token=..., with no session, and uses new-password fields", async () => {
     const { api } = await openReset();
 
     expect(
@@ -47,11 +52,20 @@ describe("reset password: the page of the emailed link", () => {
     expect(api.requests).toEqual([]);
   });
 
-  test("takes the token out of the address bar and still completes the reset", async () => {
+  test("takes the token out of the address bar before any request", async () => {
     window.history.replaceState(null, "", LINK_PATH);
     const { api } = await openReset();
 
     expect(window.location.pathname).toBe("/reset-password");
+    expect(window.location.hash).toBe("");
+    expect(window.location.href).not.toContain("set-password-link");
+    expect(api.requests).toEqual([]);
+  });
+
+  test("still completes the reset with the values it took out of the bar", async () => {
+    window.history.replaceState(null, "", LINK_PATH);
+    const { api } = await openReset();
+
     await fillAndSend(NEW_PASSWORD);
 
     await vi.waitFor(() => {
@@ -88,6 +102,174 @@ describe("reset password: the page of the emailed link", () => {
     const confirmation = screen.getByLabelText("Confirma la contraseña");
     expect(await screen.findByText("Las contraseñas no coinciden.")).toBeDefined();
     expect(document.activeElement).toBe(confirmation);
+    expect(api.requests).toEqual([]);
+  });
+
+  test("a link from before the fragment format (values in the path) is cleared from the bar", async () => {
+    window.history.replaceState(null, "", LEGACY_LINK_PATH);
+    await openReset(noContent(204), "es-MX", LEGACY_LINK_PATH);
+
+    expect(window.location.pathname).toBe("/reset-password");
+  });
+
+  test("a link from before the fragment format still completes the reset", async () => {
+    const { api } = await openReset(noContent(204), "es-MX", LEGACY_LINK_PATH);
+
+    await fillAndSend(NEW_PASSWORD);
+
+    await vi.waitFor(() => {
+      expect(api.requests[0]?.body).toEqual({
+        uid: "MQ",
+        token: "set-password-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+  });
+
+  test("a legacy path link with unusable values shows the invalid-link state", async () => {
+    const { api } = await openReset(noContent(204), "es-MX", "/reset-password/MQ/a.b");
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Este enlace ya no sirve");
+    expect(api.requests).toEqual([]);
+  });
+
+  describe("a second link pasted into the same tab", () => {
+    const SECOND_FRAGMENT = "uid=Mg&token=second-link";
+
+    function pasteLink(fragment: string) {
+      act(() => {
+        window.location.hash = fragment;
+      });
+    }
+
+    async function sendAndReadBody(api: Awaited<ReturnType<typeof openReset>>["api"]) {
+      await fillAndSend(NEW_PASSWORD);
+      await vi.waitFor(() => {
+        expect(api.requests.length).toBeGreaterThan(0);
+      });
+      return api.requests[0]?.body;
+    }
+
+    test("replaces the credentials of the first link and is cleared from the bar", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      const { api } = await openReset();
+
+      pasteLink(SECOND_FRAGMENT);
+
+      await vi.waitFor(() => {
+        expect(window.location.href).not.toContain("second-link");
+      });
+      expect(window.location.pathname).toBe("/reset-password");
+      expect(await sendAndReadBody(api)).toEqual({
+        uid: "Mg",
+        token: "second-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+
+    test("starts the form over", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      await openReset();
+      await userEvent.type(screen.getByLabelText("Contraseña nueva"), NEW_PASSWORD);
+
+      pasteLink(SECOND_FRAGMENT);
+
+      await vi.waitFor(() => {
+        expect(screen.getByLabelText<HTMLInputElement>("Contraseña nueva").value).toBe("");
+      });
+    });
+
+    test("an initially invalid link followed by a valid one shows the form", async () => {
+      window.history.replaceState(null, "", "/reset-password");
+      const { api } = await openReset(noContent(204), "es-MX", "/reset-password");
+      expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
+
+      pasteLink(SECOND_FRAGMENT);
+
+      expect(await screen.findByLabelText("Contraseña nueva")).toBeDefined();
+      expect(await sendAndReadBody(api)).toEqual({
+        uid: "Mg",
+        token: "second-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+
+    test("a non-empty invalid link after a valid one shows the invalid-link state", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      const { api } = await openReset();
+
+      pasteLink("uid=Mg");
+
+      expect((await screen.findByRole("alert")).textContent).toContain("Este enlace ya no sirve");
+      expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
+      expect(window.location.hash).toBe("");
+      expect(api.requests).toEqual([]);
+    });
+
+    test("a late answer to the first link neither navigates nor replaces the new form", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      let answerFirst: (reply: Response) => void = () => undefined;
+      const first = new Promise<Response>((resolve) => {
+        answerFirst = resolve;
+      });
+      let calls = 0;
+      const { api, app } = await openReset(noContent(204));
+      api.setRoute(CONFIRM_PATH, () => (++calls === 1 ? first : noContent(204)));
+      await fillAndSend(NEW_PASSWORD);
+      await vi.waitFor(() => {
+        expect(api.requests.length).toBe(1);
+      });
+
+      pasteLink(SECOND_FRAGMENT);
+      await vi.waitFor(() => {
+        expect(api.requests[0]?.signal.aborted).toBe(true);
+      });
+      answerFirst(noContent(204));
+      await first;
+
+      expect(app.router.state.location.pathname).toBe("/reset-password");
+      expect(screen.getByLabelText<HTMLInputElement>("Contraseña nueva").value).toBe("");
+      await fillAndSend(NEW_PASSWORD);
+      await vi.waitFor(() => {
+        expect(api.requests[1]?.body).toEqual({
+          uid: "Mg",
+          token: "second-link",
+          new_password: NEW_PASSWORD,
+        });
+      });
+    });
+
+    test("the same link pasted again is cleared from the bar and keeps working", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      const { api } = await openReset();
+
+      pasteLink("uid=MQ&token=set-password-link");
+
+      await vi.waitFor(() => {
+        expect(window.location.href).not.toContain("set-password-link");
+      });
+      expect(await sendAndReadBody(api)).toEqual({
+        uid: "MQ",
+        token: "set-password-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+  });
+
+  test.each([
+    ["has no fragment", "/reset-password"],
+    ["has no token", "/reset-password#uid=MQ"],
+    ["has a malformed token", "/reset-password#uid=MQ&token=../x"],
+    ["repeats a value", "/reset-password#uid=MQ&token=a&token=b"],
+  ])("a link that %s shows the invalid-link state and sends nothing", async (_name, path) => {
+    window.history.replaceState(null, "", path);
+    const { api } = await openReset(noContent(204), "es-MX", path);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Este enlace ya no sirve");
+    expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
+    expect(screen.getByRole("link", { name: "Pedir un enlace nuevo" })).toBeDefined();
+    expect(window.location.href).not.toContain("token=");
     expect(api.requests).toEqual([]);
   });
 

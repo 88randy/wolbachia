@@ -5,11 +5,15 @@ import smtplib
 import threading
 import uuid
 from unittest import mock
+from urllib.parse import parse_qs, urlsplit
 
 import pytest
+from django.contrib.auth.tokens import default_token_generator
 from django.core import mail
 from django.db import connection
 from django.test import override_settings
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
 from kombu.exceptions import OperationalError
 from rest_framework.test import APIClient
 from rest_framework.throttling import SimpleRateThrottle
@@ -36,6 +40,12 @@ NEW_PASSWORD = "pw-for-new-credentials-42"  # noqa: S105
 DELAY = "accounts.views.send_password_reset_email.apply_async"
 
 
+def parse_reset_url(url: str) -> tuple[str, str]:
+    """`uid` and `token` read from the fragment of a reset link."""
+    fields = parse_qs(urlsplit(url).fragment)
+    return fields["uid"][0], fields["token"][0]
+
+
 def account(email: str = "ana@example.test", **kwargs: object) -> User:
     user = UserFactory(email=email, **kwargs)
     user.set_password(OLD_PASSWORD)
@@ -45,8 +55,7 @@ def account(email: str = "ana@example.test", **kwargs: object) -> User:
 
 def link_parts(user: User) -> tuple[str, str]:
     """`uid` and `token` of a fresh reset link for the user."""
-    _, uid, token = build_reset_url(user).rsplit("/", 2)
-    return uid, token
+    return parse_reset_url(build_reset_url(user))
 
 
 def confirm(client: APIClient, user: User, password: str = NEW_PASSWORD, **override: str):
@@ -150,8 +159,8 @@ def test_the_worker_emails_a_working_link_to_an_active_user() -> None:
     assert message.to == ["ana@example.test"]
     assert user.username in message.body
     url = next(line for line in message.body.splitlines() if line.startswith("http"))
-    _, uid, token = url.rsplit("/", 2)
-    assert url.startswith("http://localhost:5173/reset-password/")
+    uid, token = parse_reset_url(url)
+    assert url.startswith("http://localhost:5173/reset-password#")
     assert confirm(APIClient(), user, uid=uid, token=token).status_code == 204
 
 
@@ -210,7 +219,32 @@ def test_a_user_without_membership_gets_the_default_language() -> None:
 def test_the_link_is_built_from_the_web_settings() -> None:
     user = account()
 
-    assert build_reset_url(user).startswith("https://app.example.test/reset/")
+    assert build_reset_url(user).startswith("https://app.example.test/reset#")
+
+
+def expected_uid_and_token(user: User) -> tuple[str, str]:
+    return urlsafe_base64_encode(force_bytes(user.pk)), default_token_generator.make_token(user)
+
+
+def test_the_link_carries_uid_and_token_only_in_the_fragment() -> None:
+    user = account()
+
+    parts = urlsplit(build_reset_url(user))
+
+    assert (parts.path, parts.query) == ("/reset-password", "")
+    uid, token = expected_uid_and_token(user)
+    assert parts.fragment == f"uid={uid}&token={token}"
+
+
+def test_the_emailed_link_has_an_empty_query_and_the_fragment_of_that_user() -> None:
+    user = account("ana@example.test")
+
+    send_password_reset_emails(user.email)
+
+    url = next(line for line in mail.outbox[0].body.splitlines() if line.startswith("http"))
+    parts = urlsplit(url)
+    assert parts.query == ""
+    assert parse_reset_url(url) == expected_uid_and_token(user)
 
 
 def test_users_created_without_a_password_can_set_their_first_one() -> None:

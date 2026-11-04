@@ -8,6 +8,7 @@ the endpoint's work and timing are the same whether or not the address belongs t
 
 import logging
 import smtplib
+from urllib.parse import urlencode
 
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
@@ -59,10 +60,19 @@ def email_locale(user: User) -> str:
 
 
 def build_reset_url(user: User) -> str:
-    uid = urlsafe_base64_encode(force_bytes(user.pk))
-    token = default_token_generator.make_token(user)
+    """`<WEB_BASE_URL><path>#uid=<uid>&token=<token>`: the secret travels in the fragment.
+
+    A browser never sends the fragment to a server, so the token stays out of every access log,
+    proxy and `Referer` header between the email and the web page (issue #58).
+    """
+    fragment = urlencode(
+        {
+            "uid": urlsafe_base64_encode(force_bytes(user.pk)),
+            "token": default_token_generator.make_token(user),
+        }
+    )
     path = "/" + settings.WEB_PASSWORD_RESET_PATH.strip("/")
-    return f"{settings.WEB_BASE_URL}{path}/{uid}/{token}"
+    return f"{settings.WEB_BASE_URL}{path}#{fragment}"
 
 
 def _send_to(user: User) -> None:

@@ -53,13 +53,16 @@ function failureOf(status: number, error: unknown): ResetConfirmOutcome {
 export async function confirmPasswordReset(
   client: ApiClient,
   { uid, token, newPassword }: ResetConfirmation,
+  signal?: AbortSignal,
 ): Promise<ResetConfirmOutcome> {
   try {
     const { response, error } = await client.POST("/api/v1/auth/password-reset/confirm/", {
       body: { uid, token, new_password: newPassword },
+      ...(signal ? { signal } : {}),
     });
     return response.ok ? { ok: true } : failureOf(response.status, error);
   } catch (caught) {
+    if (signal?.aborted) return { ok: false, reason: "service", failure: "network" }; // abandoned
     console.error("The password reset confirmation failed", caught);
     return { ok: false, reason: "service", failure: "network" };
   }
