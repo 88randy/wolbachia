@@ -8,8 +8,10 @@ from django.utils import timezone
 from drf_spectacular.generators import SchemaGenerator
 from rest_framework.test import APIClient
 
-from accounts.models import Device, DeviceSession, RevokeReason
-from accounts.services import DeviceInfo, Revocation, revoke_session, start_device_session
+from accounts.models import Device, DeviceSession, RevokeReason, TokenPair
+from accounts.revocation import Revocation, revoke_session
+from accounts.services import DeviceInfo, start_device_session
+from accounts.token_pairs import rotate_refresh_token
 from organizations.models import Organization
 from tests.conftest import WIDGET_CODES, MemberFactory
 from tests.factories import MembershipFactory, OrganizationFactory, WidgetFactory
@@ -82,7 +84,7 @@ def test_the_token_is_not_accepted_as_a_digest(
     user, _ = make_member(org_a)
     issued = issue(user, org_a)
 
-    response = authorize(api_client, issued.session.access_hash).get(ME)
+    response = authorize(api_client, issued.pair.access_hash).get(ME)
 
     assert response.status_code == 401
 
@@ -92,7 +94,7 @@ def test_expired_access_token_is_401_token_expired(
 ) -> None:
     user, _ = make_member(org_a)
     issued = issue(user, org_a)
-    DeviceSession.objects.filter(pk=issued.session.pk).update(
+    TokenPair.objects.filter(pk=issued.pair.pk).update(
         access_expires_at=timezone.now() - timedelta(seconds=1)
     )
 
@@ -207,7 +209,7 @@ def test_a_token_never_reads_another_organizations_objects(
     assert response.status_code == 404
 
 
-def test_activity_is_recorded_at_most_once_a_minute(
+def test_a_request_after_a_quiet_minute_records_the_activity(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory
 ) -> None:
     user, _ = make_member(org_a)
@@ -215,16 +217,66 @@ def test_activity_is_recorded_at_most_once_a_minute(
     stale = timezone.now() - timedelta(minutes=5)
     DeviceSession.objects.filter(pk=issued.session.pk).update(last_used_at=stale)
     Device.objects.filter(pk=issued.session.device_id).update(last_seen_at=stale)
-    authorize(api_client, issued.access)
 
-    api_client.get(ME)
+    authorize(api_client, issued.access).get(ME)
 
     session = DeviceSession.objects.get(pk=issued.session.pk)
     assert session.last_used_at > stale
     assert Device.objects.get(pk=session.device_id).last_seen_at > stale
-    recorded = session.last_used_at
+
+
+def test_activity_is_not_rewritten_within_a_minute(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    user, _ = make_member(org_a)
+    issued = issue(user, org_a)
+    authorize(api_client, issued.access).get(ME)
+    recorded = DeviceSession.objects.get(pk=issued.session.pk).last_used_at
+
     api_client.get(ME)
+
     assert DeviceSession.objects.get(pk=issued.session.pk).last_used_at == recorded
+
+
+def test_the_first_use_of_an_access_token_is_recorded_once(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    user, _ = make_member(org_a)
+    issued = issue(user, org_a)
+    assert TokenPair.objects.get(pk=issued.pair.pk).access_used_at is None
+
+    authorize(api_client, issued.access).get(ME)
+    first_use = TokenPair.objects.get(pk=issued.pair.pk).access_used_at
+    api_client.get(ME)
+
+    assert first_use is not None
+    assert TokenPair.objects.get(pk=issued.pair.pk).access_used_at == first_use
+
+
+def test_the_replaced_access_token_works_inside_the_grace_window_and_not_after(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    user, _ = make_member(org_a)
+    issued = issue(user, org_a)
+    rotate_refresh_token(issued.refresh, issued.session.device_id)
+
+    inside = authorize(api_client, issued.access).get(ME)
+    moment = timezone.now() - timedelta(seconds=120)
+    TokenPair.objects.filter(pk=issued.pair.pk).update(consumed_at=moment, superseded_at=moment)
+    after = api_client.get(ME)
+
+    assert inside.status_code == 200
+    assert (after.status_code, after.data["code"]) == (401, "invalid_token")
+
+
+def test_bearer_401_answers_carry_the_bearer_challenge(api_client: APIClient) -> None:
+    response = authorize(api_client, "never-issued").get(ME)
+
+    assert response.headers["WWW-Authenticate"] == "Bearer"
+
+
+def test_a_missing_token_keeps_the_session_challenge(api_client: APIClient) -> None:
+    assert api_client.get(ME).headers["WWW-Authenticate"] == "Session"
 
 
 def test_the_schema_documents_bearer_authentication() -> None:
@@ -236,3 +288,11 @@ def test_the_schema_documents_bearer_authentication() -> None:
         "description": "Opaque access token.",
     }
     assert {"bearerAuth": []} in schema["paths"]["/api/v1/me/"]["get"]["security"]
+
+
+def test_the_schema_has_one_bearer_scheme_including_logout() -> None:
+    schema = SchemaGenerator().get_schema(request=None, public=True)
+
+    schemes = schema["components"]["securitySchemes"]
+    assert [name for name in schemes if "earer" in name] == ["bearerAuth"]
+    assert {"bearerAuth": []} in schema["paths"]["/api/v1/auth/logout/"]["post"]["security"]

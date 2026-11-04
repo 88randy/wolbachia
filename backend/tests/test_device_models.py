@@ -11,7 +11,7 @@ from accounts.tokens import generate_token, hash_token
 from core.exceptions import PhysicalDeleteForbiddenError
 from core.models import OrgScopedModel
 from organizations.models import Organization
-from tests.factories import DeviceFactory, DeviceSessionFactory
+from tests.factories import DeviceFactory, DeviceSessionFactory, TokenPairFactory
 
 pytestmark = pytest.mark.django_db
 
@@ -47,10 +47,26 @@ def test_device_and_session_cannot_be_deleted(org_a: Organization) -> None:
 
 @pytest.mark.parametrize("field", ["access_hash", "refresh_hash"])
 def test_token_digests_are_unique(org_a: Organization, field: str) -> None:
-    first = DeviceSessionFactory(organization=org_a)
+    first = TokenPairFactory(session__organization=org_a)
 
     with pytest.raises(IntegrityError), transaction.atomic():
-        DeviceSessionFactory(organization=org_a, **{field: getattr(first, field)})
+        TokenPairFactory(session=first.session, **{field: getattr(first, field)})
+
+
+def test_token_pairs_are_org_scoped_and_never_deleted(org_a: Organization) -> None:
+    pair = TokenPairFactory(session__organization=org_a)
+
+    assert isinstance(pair, OrgScopedModel)
+    assert pair.organization == org_a
+    with pytest.raises(PhysicalDeleteForbiddenError):
+        pair.delete()
+
+
+def test_a_pair_is_consumed_and_superseded_together(org_a: Organization) -> None:
+    with pytest.raises(IntegrityError), transaction.atomic():
+        TokenPairFactory(session__organization=org_a, consumed_at=timezone.now())
+    with pytest.raises(IntegrityError), transaction.atomic():
+        TokenPairFactory(session__organization=org_a, superseded_at=timezone.now())
 
 
 def test_a_digest_is_a_64_character_hex_sha256_and_differs_from_the_token() -> None:

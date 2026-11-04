@@ -18,7 +18,6 @@ from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 
 from accounts.audit import fingerprint
-from accounts.constants import PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR
 from accounts.models import User
 from organizations.models import DEFAULT_LANGUAGE, Membership
 
@@ -31,7 +30,11 @@ TEMPLATE_PREFIX = "accounts/email/password_reset"
 
 
 def _allowed_for_address(email: str) -> bool:
-    """At most N emails per address and hour, whatever the requesting IPs (mail-bombing guard)."""
+    """At most N emails per address and hour, whatever the requesting IPs (mail-bombing guard).
+
+    Trade-off: anyone who knows an address can use up its quota and delay the real owner's reset
+    until the hour passes. The alternative, no cap, lets an attacker flood a victim's inbox.
+    """
     key = f"auth_reset_mail:{fingerprint(email)}"
     cache.add(key, 0, timeout=SECONDS_PER_HOUR)
     try:
@@ -39,7 +42,7 @@ def _allowed_for_address(email: str) -> bool:
     except ValueError:  # expired between `add` and `incr`
         cache.set(key, 1, timeout=SECONDS_PER_HOUR)
         sent = 1
-    return sent <= PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR
+    return sent <= settings.AUTH_PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR
 
 
 def email_locale(user: User) -> str:

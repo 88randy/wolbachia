@@ -86,6 +86,10 @@ AUTH_LOGIN_LOCKOUT_MINUTES = env.int("AUTH_LOGIN_LOCKOUT_MINUTES", default=15)
 AUTH_WEB_SESSION_AGE_SECONDS = env.int("AUTH_WEB_SESSION_AGE_SECONDS", default=43_200)  # 12 h
 SESSION_COOKIE_AGE = AUTH_WEB_SESSION_AGE_SECONDS
 PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=3_600)
+# Reset emails sent to one address per hour, whatever the requesting IPs (mail-bombing guard).
+AUTH_PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR = env.int(
+    "AUTH_PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR", default=3
+)
 
 # Password reset email. `EMAIL_URL` is a django-environ URL (`consolemail://` prints to the
 # console, `smtp://user:pass@host:587`...); production requires it explicitly (see prod.py).

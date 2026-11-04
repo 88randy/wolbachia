@@ -94,6 +94,12 @@ class DeviceFilterSerializer(serializers.Serializer[Any]):
     user = serializers.UUIDField(required=False)
 
 
+class RevokeRequestSerializer(serializers.Serializer[Any]):
+    """Body of the two revoke actions. Everything is optional: an empty body is accepted."""
+
+    allow_final_upload = serializers.BooleanField(required=False, default=False)
+
+
 class RevokedSessionsSerializer(serializers.Serializer[Any]):
     revoked_sessions = serializers.IntegerField()
 

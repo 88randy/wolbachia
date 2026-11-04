@@ -3,8 +3,8 @@ from dataclasses import dataclass
 
 from django.db import transaction
 
-from accounts.constants import ADMIN_AUTH_PERMISSION_CODES
 from accounts.models import User
+from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from accounts.services import create_user_without_password
 from organizations.exceptions import AdminUserConflictError, ProfileOrganizationMismatchError
 from organizations.models import DEFAULT_LANGUAGE, Membership, Organization, Profile

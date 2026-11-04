@@ -9,8 +9,9 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework.throttling import SimpleRateThrottle
 
-from accounts.models import DeviceSession, RevokeReason, User
-from accounts.services import DeviceInfo, IssuedTokens, start_device_session
+from accounts.models import DeviceSession, RevokeReason, TokenPair, User
+from accounts.services import DeviceInfo, start_device_session
+from accounts.token_pairs import IssuedTokens
 from organizations.models import Organization
 from tests.conftest import MemberFactory
 from tests.factories import UserFactory
@@ -60,11 +61,14 @@ def test_refresh_rotates_the_pair_and_the_new_access_token_works(
     assert bearer(api_client, response.data["access"]).get(ME).status_code == 200
 
 
-def test_the_replaced_access_token_stops_working(
+def test_the_replaced_access_token_stops_working_after_the_grace_window(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory
 ) -> None:
     issued = session_for(make_member, org_a)
     refresh(api_client, issued)
+    assert bearer(APIClient(), issued.access).get(ME).status_code == 200  # inside the window
+    moment = timezone.now() - timedelta(seconds=120)
+    TokenPair.objects.filter(pk=issued.pair.pk).update(consumed_at=moment, superseded_at=moment)
 
     response = bearer(APIClient(), issued.access).get(ME)
 
@@ -76,9 +80,8 @@ def test_reusing_an_old_refresh_token_outside_the_grace_window_revokes_the_sessi
 ) -> None:
     issued = session_for(make_member, org_a)
     newest = refresh(api_client, issued).data
-    DeviceSession.objects.filter(pk=issued.session.pk).update(
-        rotated_at=timezone.now() - timedelta(seconds=120)
-    )
+    moment = timezone.now() - timedelta(seconds=120)
+    TokenPair.objects.filter(pk=issued.pair.pk).update(consumed_at=moment, superseded_at=moment)
 
     reuse = refresh(api_client, issued)
     legit = refresh(api_client, issued, token=newest["refresh"])
@@ -108,7 +111,7 @@ def test_expired_refresh_token_is_401_token_expired(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory
 ) -> None:
     issued = session_for(make_member, org_a)
-    DeviceSession.objects.filter(pk=issued.session.pk).update(
+    TokenPair.objects.filter(pk=issued.pair.pk).update(
         refresh_expires_at=timezone.now() - timedelta(seconds=1)
     )
 
@@ -179,12 +182,13 @@ def test_refresh_logs_events_without_tokens(
     caplog.set_level(logging.DEBUG)
 
     ok = refresh(api_client, issued)
-    DeviceSession.objects.filter(pk=issued.session.pk).update(
-        rotated_at=timezone.now() - timedelta(seconds=120)
-    )
-    refresh(api_client, issued)
+    refresh(api_client, issued)  # a duplicate inside the window: a grace retry
+    moment = timezone.now() - timedelta(seconds=120)
+    TokenPair.objects.filter(pk=issued.pair.pk).update(consumed_at=moment, superseded_at=moment)
+    refresh(api_client, issued)  # outside the window: reuse
 
     assert "event=refresh " in caplog.text
+    assert "event=refresh_grace_retry" in caplog.text
     assert "event=refresh_reuse_detected" in caplog.text
     for token in (issued.access, issued.refresh, ok.data["access"], ok.data["refresh"]):
         assert token not in caplog.text
@@ -224,7 +228,7 @@ def test_mobile_logout_works_with_an_expired_access_token(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory
 ) -> None:
     issued = session_for(make_member, org_a)
-    DeviceSession.objects.filter(pk=issued.session.pk).update(
+    TokenPair.objects.filter(pk=issued.pair.pk).update(
         access_expires_at=timezone.now() - timedelta(hours=1)
     )
 
@@ -309,3 +313,18 @@ def test_web_logout_twice_is_idempotent(org_a: Organization, make_member: Member
 
 def test_logout_without_any_credentials_is_204(api_client: APIClient) -> None:
     assert api_client.post(LOGOUT).status_code == 204
+
+
+def test_refresh_is_refused_and_the_session_revoked_when_the_membership_ended(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    user, membership = make_member(org_a, ["ovitrap.read"])
+    issued = start_device_session(user, org_a, DeviceInfo(device_id=uuid.uuid4()))
+    membership.is_active = False
+    membership.save(update_fields=["is_active"])
+
+    response = refresh(api_client, issued)
+
+    assert (response.status_code, response.data["code"]) == (401, "session_revoked")
+    issued.session.refresh_from_db()
+    assert issued.session.revoke_reason == RevokeReason.MEMBERSHIP_INACTIVE

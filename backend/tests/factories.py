@@ -5,7 +5,7 @@ import factory
 from django.utils import timezone
 from factory.django import DjangoModelFactory
 
-from accounts.models import Device, DeviceSession, User
+from accounts.models import Device, DeviceSession, TokenPair, User
 from accounts.tokens import hash_token
 from organizations.models import Membership, Organization, Profile
 from tests.testapp.models import Widget
@@ -66,7 +66,7 @@ class DeviceFactory(DjangoModelFactory):
 
 
 class DeviceSessionFactory(DjangoModelFactory):
-    """A session with random digests. Use `accounts.services.start_device_session` for real tokens."""
+    """A session without tokens. Use `accounts.services.start_device_session` for real tokens."""
 
     class Meta:
         model = DeviceSession
@@ -74,6 +74,16 @@ class DeviceSessionFactory(DjangoModelFactory):
     organization = factory.SubFactory(OrganizationFactory)
     user = factory.SubFactory(UserFactory)
     device = factory.SubFactory(DeviceFactory, organization=factory.SelfAttribute("..organization"))
+
+
+class TokenPairFactory(DjangoModelFactory):
+    """A token pair with random digests."""
+
+    class Meta:
+        model = TokenPair
+
+    session = factory.SubFactory(DeviceSessionFactory)
+    organization = factory.SelfAttribute("session.organization")
     access_hash = factory.LazyFunction(lambda: hash_token(uuid.uuid4().hex))
     refresh_hash = factory.LazyFunction(lambda: hash_token(uuid.uuid4().hex))
     access_expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(minutes=15))

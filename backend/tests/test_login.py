@@ -10,7 +10,7 @@ from django.utils import timezone
 from rest_framework.test import APIClient
 from rest_framework.throttling import SimpleRateThrottle
 
-from accounts.models import Device, DeviceSession, User
+from accounts.models import Device, DeviceSession, TokenPair, User
 from accounts.tokens import hash_token
 from organizations.models import Organization
 from tests.conftest import MemberFactory
@@ -63,9 +63,9 @@ def test_mobile_login_returns_tokens_me_and_server_time_and_registers_the_device
     assert response.data["server_time"].endswith("Z")
     device = Device.objects.get(pk=body["device_id"])
     assert (device.organization, device.label, device.app_version) == (org_a, "Moto 7", "1.0.0")
-    session = DeviceSession.objects.get(device=device)
-    assert session.access_hash == hash_token(response.data["access"])
-    assert session.refresh_hash == hash_token(response.data["refresh"])
+    pair = TokenPair.objects.get(session__device=device)
+    assert pair.access_hash == hash_token(response.data["access"])
+    assert pair.refresh_hash == hash_token(response.data["refresh"])
 
 
 def test_mobile_login_does_not_create_a_django_session(
@@ -502,3 +502,58 @@ def test_user_model_is_not_leaked_in_the_failure_response(api_client: APIClient)
     response = fail(api_client, "ghost")
 
     assert "ghost" not in str(response.data)
+
+
+# --- refusal and supersession logs -------------------------------------------------------------
+
+
+def test_a_second_login_on_the_same_device_logs_the_supersession(
+    api_client: APIClient,
+    org_a: Organization,
+    make_member: MemberFactory,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    user = member(make_member, org_a)
+    body = mobile_body(user)
+    api_client.post(LOGIN, body, format="json")
+    caplog.set_level(logging.DEBUG)
+
+    api_client.post(LOGIN, body, format="json")
+
+    assert "event=sessions_revoked" in caplog.text
+    assert "reason=superseded" in caplog.text
+    assert DeviceSession.objects.filter(revoke_reason="superseded").count() == 1
+
+
+@pytest.mark.parametrize(
+    "refusal", ["device_revoked", "device_organization_mismatch", "no_membership"]
+)
+def test_a_refused_login_after_a_valid_password_is_logged_with_its_reason(
+    api_client: APIClient,
+    org_a: Organization,
+    org_b: Organization,
+    make_member: MemberFactory,
+    caplog: pytest.LogCaptureFixture,
+    refusal: str,
+) -> None:
+    if refusal == "no_membership":
+        user = user_with_password()
+        body = mobile_body(user)
+        expected = "no_active_membership"
+    else:
+        user = member(make_member, org_a)
+        device = (
+            DeviceFactory(organization=org_a, is_revoked=True, revoked_at=timezone.now())
+            if refusal == "device_revoked"
+            else DeviceFactory(organization=org_b)
+        )
+        body = mobile_body(user, device_id=str(device.pk))
+        expected = refusal
+    caplog.set_level(logging.DEBUG)
+
+    response = api_client.post(LOGIN, body, format="json")
+
+    assert response.status_code == 403
+    assert "event=login_refused" in caplog.text
+    assert f"reason={expected}" in caplog.text
+    assert PASSWORD not in caplog.text

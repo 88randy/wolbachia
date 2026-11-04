@@ -1,20 +1,18 @@
-"""Authentication use cases: device sessions, token rotation, revocation, password reset.
+"""Authentication use cases: login, device sessions, password reset.
 
 Everything that writes says so in its docstring. Rows are locked with `select_for_update` wherever
-two requests could race (rotation, revocation, device registration, final upload).
+two requests could race. Lock order is always User, then Device, then DeviceSession, then
+TokenPair. Revocation and rotation must not run inside an outer `atomic()` (accounts.revocation).
 """
 
 import hmac
 import uuid
-from dataclasses import dataclass, field
-from datetime import datetime, timedelta
+from dataclasses import dataclass
 from typing import cast
 
-from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.tokens import default_token_generator
 from django.db import IntegrityError, transaction
-from django.db.models import Q, QuerySet
 from django.views.decorators.debug import sensitive_variables
 from rest_framework.exceptions import Throttled
 
@@ -25,19 +23,18 @@ from accounts.exceptions import (
     DeviceRevokedError,
     InvalidCredentialsError,
     InvalidResetTokenError,
-    InvalidTokenError,
-    SessionRevokedError,
-    TokenExpiredError,
 )
 from accounts.login_attempts import clear_failures, ensure_not_locked_out, register_failure
 from accounts.models import Device, DeviceSession, RevokeReason, User
-from accounts.tokens import generate_token, hash_token
-from core.exceptions import DomainError
+from accounts.revocation import (
+    Revocation,
+    cancel_final_uploads,
+    revoke_active,
+    revoke_user_sessions,
+)
+from accounts.token_pairs import IssuedTokens, issue_pair
 from core.time import server_now
 from organizations.models import Organization
-
-# Revoking for these reasons leaves the phone a single last upload (see `consume_final_upload`).
-FINAL_UPLOAD_REASONS = frozenset({RevokeReason.ADMIN_REVOKE, RevokeReason.DEVICE_REVOKED})
 
 
 def create_user_without_password(username: str, email: str) -> User:
@@ -79,29 +76,6 @@ class DeviceInfo:
     app_version: str = ""
 
 
-@dataclass(frozen=True)
-class IssuedTokens:
-    """A fresh token pair. The plaintext tokens are shown to the client once and never stored."""
-
-    access: str = field(repr=False)
-    refresh: str = field(repr=False)
-    session: DeviceSession
-
-
-@dataclass(frozen=True)
-class Revocation:
-    reason: RevokeReason
-    revoked_by: User | None = None
-
-
-def _access_ttl() -> timedelta:
-    return timedelta(seconds=settings.AUTH_ACCESS_TOKEN_TTL_SECONDS)
-
-
-def _refresh_ttl() -> timedelta:
-    return timedelta(days=settings.AUTH_REFRESH_TOKEN_TTL_DAYS)
-
-
 # --- Device registration and session start ---------------------------------------------------
 
 
@@ -141,225 +115,50 @@ def _register_device(user: User, organization: Organization, info: DeviceInfo) -
     return device
 
 
+def _lock_authenticated_user(user: User) -> User:
+    """Lock the user row and check it is still the account that was authenticated.
+
+    A password reset or a deactivation that committed after the credentials were checked
+    (a concurrent request) must not be followed by a session: the account must be active and
+    its password hash the very one that was verified.
+    """
+    locked = User.objects.select_for_update().get(pk=user.pk)
+    if not locked.is_active or not hmac.compare_digest(locked.password, user.password):
+        raise InvalidCredentialsError
+    return locked
+
+
 def start_device_session(user: User, organization: Organization, info: DeviceInfo) -> IssuedTokens:
     """Register the device and open a session for the user in the organization.
 
-    Writes Device and DeviceSession. The user's earlier active sessions on the same device are
-    superseded (revoked as `logout`), so one phone holds at most one live session per user.
+    Writes Device, DeviceSession and TokenPair. The user row is locked first and must still be
+    active with the authenticated password hash (`InvalidCredentialsError` otherwise), the same
+    lock `reset_password` takes. The user's earlier active sessions on the same device are
+    superseded (revoked as `superseded`, no final upload), so one phone holds at most one live
+    session per user.
     """
-    now = server_now()
-    access, refresh = generate_token(), generate_token()
     with transaction.atomic():
+        _lock_authenticated_user(user)
         device = _register_device(user, organization, info)
-        _revoke_active(
+        superseded = revoke_active(
             DeviceSession.objects.filter(user=user, device=device),
-            Revocation(RevokeReason.LOGOUT, revoked_by=user),
+            Revocation(RevokeReason.SUPERSEDED, revoked_by=user),
         )
         session = DeviceSession.objects.create(
             organization=organization,
             created_by=user,
             user=user,
             device=device,
-            access_hash=hash_token(access),
-            access_expires_at=now + _access_ttl(),
-            refresh_hash=hash_token(refresh),
-            refresh_expires_at=now + _refresh_ttl(),
-            last_used_at=now,
+            last_used_at=server_now(),
         )
-    return IssuedTokens(access=access, refresh=refresh, session=session)
-
-
-# --- Revocation --------------------------------------------------------------------------------
-
-
-def _final_upload_deadline(reason: RevokeReason, now: datetime) -> datetime | None:
-    hours = settings.AUTH_REVOKED_FINAL_UPLOAD_HOURS
-    if reason in FINAL_UPLOAD_REASONS and hours > 0:
-        return now + timedelta(hours=hours)
-    return None
-
-
-def _revoke_active(sessions: QuerySet[DeviceSession], revocation: Revocation) -> int:
-    """Revoke the active sessions of a queryset (writes DeviceSession). Locks them first."""
-    now = server_now()
-    with transaction.atomic():
-        ids = list(
-            sessions.filter(revoked_at__isnull=True)
-            .select_for_update()
-            .values_list("pk", flat=True)
-        )
-        DeviceSession.objects.filter(pk__in=ids).update(
-            revoked_at=now,
-            revoked_by=revocation.revoked_by,
-            revoke_reason=revocation.reason,
-            final_upload_deadline=_final_upload_deadline(revocation.reason, now),
-        )
-    return len(ids)
-
-
-def revoke_user_sessions(
-    user: User, revocation: Revocation, organization: Organization | None = None
-) -> int:
-    """Revoke every active session of a user, optionally only in one organization (writes)."""
-    sessions = DeviceSession.objects.filter(user=user)
-    if organization is not None:
-        sessions = sessions.filter(organization=organization)
-    return _revoke_active(sessions, revocation)
-
-
-def revoke_session(session: DeviceSession, revocation: Revocation) -> int:
-    """Revoke one session if it is still active (writes). Calling it again changes nothing."""
-    return _revoke_active(DeviceSession.objects.filter(pk=session.pk), revocation)
-
-
-def revoke_device(device: Device, admin: User) -> Device:
-    """Mark a device as revoked and revoke all its sessions (writes Device, DeviceSession).
-
-    Lost phone: the device can no longer log in. Idempotent: an already revoked device is
-    returned unchanged.
-    """
-    with transaction.atomic():
-        locked = Device.objects.select_for_update().get(pk=device.pk)
-        if locked.is_revoked:
-            return locked
-        locked.is_revoked = True
-        locked.revoked_at = server_now()
-        locked.revoked_by = admin
-        locked.save(update_fields=["is_revoked", "revoked_at", "revoked_by"])
-        count = _revoke_active(
-            DeviceSession.objects.filter(device=locked),
-            Revocation(RevokeReason.DEVICE_REVOKED, revoked_by=admin),
-        )
-    log_auth_event(
-        AuthEvent.DEVICE_REVOKED,
-        AuditContext(organization_id=locked.organization_id, user_id=admin.pk, device_id=locked.pk),
-        {"sessions": count},
-    )
-    return locked
-
-
-# --- Refresh rotation --------------------------------------------------------------------------
-
-
-def _lock_session_by_refresh_hash(digest: str) -> DeviceSession | None:
-    """The session whose current or previous refresh token has this digest, row locked."""
-    return (
-        DeviceSession.objects.select_for_update(of=("self",))
-        .select_related("user", "device")
-        .filter(Q(refresh_hash=digest) | Q(previous_refresh_hash=digest))
-        .first()
-    )
-
-
-def _is_previous_refresh(session: DeviceSession, digest: str) -> bool:
-    return not hmac.compare_digest(session.refresh_hash, digest)
-
-
-def _within_grace(session: DeviceSession, now: datetime) -> bool:
-    grace = timedelta(seconds=settings.AUTH_REFRESH_REUSE_GRACE_SECONDS)
-    return session.rotated_at is not None and now - session.rotated_at <= grace
-
-
-def _refresh_failure(session: DeviceSession, digest: str, now: datetime) -> DomainError | None:
-    """Why a refresh must be refused, or None. May revoke the session (writes DeviceSession)."""
-    if session.revoked_at is not None or session.device.is_revoked:
-        return SessionRevokedError()
-    if not session.user.is_active:
-        revoke_session(session, Revocation(RevokeReason.USER_DEACTIVATED))
-        return SessionRevokedError()
-    if session.refresh_expires_at <= now:
-        return TokenExpiredError()
-    if _is_previous_refresh(session, digest) and not _within_grace(session, now):
-        revoke_session(session, Revocation(RevokeReason.REFRESH_REUSE))
+        issued = issue_pair(session)
+    if superseded:
         log_auth_event(
-            AuthEvent.REFRESH_REUSE_DETECTED,
-            AuditContext(
-                organization_id=session.organization_id,
-                user_id=session.user_id,
-                device_id=session.device_id,
-            ),
+            AuthEvent.SESSIONS_REVOKED,
+            AuditContext(organization_id=organization.pk, user_id=user.pk, device_id=device.pk),
+            {"count": superseded, "reason": RevokeReason.SUPERSEDED.value},
         )
-        return SessionRevokedError()
-    return None
-
-
-def _rotate(session: DeviceSession, digest: str, now: datetime) -> IssuedTokens:
-    """Issue a new pair and keep the replaced refresh token as `previous` (writes the session)."""
-    access, refresh = generate_token(), generate_token()
-    if not _is_previous_refresh(session, digest):
-        session.previous_refresh_hash = session.refresh_hash
-        session.rotated_at = now
-    # A retry inside the grace window (the first response was lost) keeps the original
-    # `previous_refresh_hash` and `rotated_at`, so the window never stretches.
-    session.access_hash = hash_token(access)
-    session.access_expires_at = now + _access_ttl()
-    session.refresh_hash = hash_token(refresh)
-    session.refresh_expires_at = now + _refresh_ttl()
-    session.last_used_at = now
-    session.save(
-        update_fields=[
-            "access_hash",
-            "access_expires_at",
-            "refresh_hash",
-            "previous_refresh_hash",
-            "refresh_expires_at",
-            "rotated_at",
-            "last_used_at",
-        ]
-    )
-    return IssuedTokens(access=access, refresh=refresh, session=session)
-
-
-def rotate_refresh_token(refresh_token: str, device_id: uuid.UUID) -> IssuedTokens:
-    """Exchange a refresh token for a new access + refresh pair (writes DeviceSession).
-
-    The old refresh token is kept as `previous`. Presenting it again inside the grace window
-    (a response lost on a weak signal) rotates again; after the window it means the token was
-    copied: the session is revoked as `refresh_reuse`. The revocation is committed before the
-    error is raised.
-    """
-    digest = hash_token(refresh_token)
-    now = server_now()
-    failure: DomainError
-    with transaction.atomic():
-        session = _lock_session_by_refresh_hash(digest)
-        if session is None or session.device_id != device_id:
-            raise InvalidTokenError
-        refusal = _refresh_failure(session, digest, now)
-        if refusal is None:
-            return _rotate(session, digest, now)
-        failure = refusal
-    raise failure
-
-
-# --- Final upload of a revoked device ------------------------------------------------------------
-
-
-def is_final_upload_available(session: DeviceSession, now: datetime) -> bool:
-    """A revoked session may still make one upload before its deadline (opt-in views only)."""
-    return (
-        session.revoked_at is not None
-        and session.revoke_reason in FINAL_UPLOAD_REASONS
-        and session.final_upload_deadline is not None
-        and now <= session.final_upload_deadline
-        and session.final_upload_used_at is None
-    )
-
-
-def consume_final_upload(session: DeviceSession) -> None:
-    """Spend the single final upload of a revoked session (writes DeviceSession).
-
-    Atomic: of two concurrent calls only one succeeds. The other gets `SessionRevokedError`.
-    The view that accepts the upload calls this in the same transaction as its own writes and
-    answers with `X-Session-Revoked: true`.
-    """
-    now = server_now()
-    with transaction.atomic():
-        locked = DeviceSession.objects.select_for_update().get(pk=session.pk)
-        if not is_final_upload_available(locked, now):
-            raise SessionRevokedError
-        locked.final_upload_used_at = now
-        locked.save(update_fields=["final_upload_used_at"])
+    return issued
 
 
 def touch_session(session: DeviceSession) -> None:
@@ -379,9 +178,11 @@ def touch_session(session: DeviceSession) -> None:
 def reset_password(user: User, token: str, new_password: str) -> None:
     """Set a new password from a reset token (writes User) and end the user's device sessions.
 
-    The user row is locked and the token checked again inside the lock, so a token cannot be
-    spent twice by two concurrent requests. Web sessions end by themselves: Django ties them to
-    the password hash.
+    Takes the same user lock as `start_device_session`, and checks the token again inside it, so
+    a token cannot be spent twice and a login that authenticated with the old password cannot
+    open a session afterwards. Revokes every device session (`password_changed`) and withdraws
+    every pending final upload, revoked sessions included. Web sessions end by themselves:
+    Django ties them to the password hash.
     """
     with transaction.atomic():
         locked = User.objects.select_for_update().get(pk=user.pk)
@@ -390,3 +191,4 @@ def reset_password(user: User, token: str, new_password: str) -> None:
         locked.set_password(new_password)
         locked.save(update_fields=["password"])
         revoke_user_sessions(locked, Revocation(RevokeReason.PASSWORD_CHANGED))
+        cancel_final_uploads(locked)

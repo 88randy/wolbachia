@@ -21,6 +21,7 @@ PROD_ENV = {
     "EMAIL_URL": "smtp://mailer:pw@smtp.example.test:587",
     "DEFAULT_FROM_EMAIL": "Wolbachia <no-reply@example.test>",
     "WEB_BASE_URL": "https://app.example.test",
+    "DRF_NUM_PROXIES": "1",
 }
 
 
@@ -157,3 +158,38 @@ def test_dev_defaults_print_emails_to_the_console() -> None:
     assert result.stdout.strip() == (
         "django.core.mail.backends.console.EmailBackend http://localhost:5173"
     )
+
+
+def test_prod_requires_the_number_of_proxies() -> None:
+    env = {key: value for key, value in PROD_ENV.items() if key != "DRF_NUM_PROXIES"}
+
+    result = run_manage("check", env=env)
+
+    assert result.returncode != 0
+    assert "DRF_NUM_PROXIES" in result.stderr
+
+
+def test_prod_uses_the_configured_number_of_proxies() -> None:
+    result = run_manage(
+        "shell",
+        "--no-imports",
+        "-c",
+        "from django.conf import settings as s; print(s.REST_FRAMEWORK['NUM_PROXIES'])",
+        env={**PROD_ENV, "DRF_NUM_PROXIES": "2"},
+    )
+
+    assert result.stdout.strip() == "2"
+
+
+def test_prod_refuses_a_web_base_url_that_is_not_https() -> None:
+    result = run_manage("check", env={**PROD_ENV, "WEB_BASE_URL": "http://app.example.test"})
+
+    assert result.returncode != 0
+    assert "WEB_BASE_URL" in result.stderr
+
+
+def test_atomic_requests_stay_off() -> None:
+    """Revocations commit before the error is raised; an outer transaction would undo them."""
+    from django.conf import settings
+
+    assert not settings.DATABASES["default"].get("ATOMIC_REQUESTS", False)

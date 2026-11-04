@@ -4,28 +4,10 @@ from django.contrib.auth.tokens import default_token_generator
 from django.db.models import Exists, OuterRef, QuerySet
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
-from rest_framework.request import Request
 
 from accounts.exceptions import InvalidResetTokenError
 from accounts.models import Device, DeviceSession, User
-from core.constants import ORGANIZATION_HEADER
-from organizations.exceptions import NoActiveMembershipError
 from organizations.models import Organization
-
-
-def requested_organization_slug(request: Request) -> str | None:
-    """The organization slug a request asks for: its token's, else the `X-Organization` header.
-
-    A device session pins its organization. A header naming a different one is refused as if the
-    user were not a member there (`no_active_membership`), never silently overridden.
-    """
-    header = request.headers.get(ORGANIZATION_HEADER)
-    if not isinstance(request.auth, DeviceSession):
-        return header
-    pinned = request.auth.organization.slug
-    if header and header != pinned:
-        raise NoActiveMembershipError
-    return pinned
 
 
 def list_devices(

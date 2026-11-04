@@ -63,28 +63,21 @@ class RevokeReason(models.TextChoices):
     REFRESH_REUSE = "refresh_reuse"
     PASSWORD_CHANGED = "password_changed"  # noqa: S105
     USER_DEACTIVATED = "user_deactivated"
+    SUPERSEDED = "superseded"  # a new login of the same user on the same device
+    MEMBERSHIP_INACTIVE = "membership_inactive"  # the pinned organization membership ended
 
 
 class DeviceSession(OrgScopedModel):
-    """One login of a user on a device: an opaque access + refresh token pair.
+    """One login of a user on a device. Its token pairs are `TokenPair` rows (hashes only).
 
-    Tokens are never stored: only their SHA-256 digests (the tokens are 256-bit random values, so
-    a fast hash is enough and lookups can use a unique index). A session is revoked, never
-    deleted. `organization` pins the session: the token only works in that organization.
+    A session is revoked, never deleted. `organization` pins the session: the tokens only work
+    in that organization.
     """
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="device_sessions"
     )
     device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="sessions")
-    access_hash = models.CharField(max_length=TOKEN_HASH_LENGTH, unique=True)
-    access_expires_at = models.DateTimeField()
-    refresh_hash = models.CharField(max_length=TOKEN_HASH_LENGTH, unique=True)
-    previous_refresh_hash = models.CharField(
-        max_length=TOKEN_HASH_LENGTH, blank=True, default="", db_index=True
-    )
-    refresh_expires_at = models.DateTimeField()
-    rotated_at = models.DateTimeField(null=True, blank=True)
     last_used_at = models.DateTimeField(null=True, blank=True)
     revoked_at = models.DateTimeField(null=True, blank=True)
     revoked_by = models.ForeignKey(
@@ -105,6 +98,43 @@ class DeviceSession(OrgScopedModel):
             )
         ]
         indexes = [models.Index(fields=["user", "organization"], name="devicesession_user_org_idx")]
+
+    def __str__(self) -> str:
+        return str(self.pk)
+
+
+class TokenPair(OrgScopedModel):
+    """An access + refresh pair issued to a session. Only SHA-256 digests are stored.
+
+    The tokens are 256-bit random values, so a fast hash is enough and lookups use the unique
+    indexes. `created_at` is the issue time. A refresh exchanges a pair for a child pair
+    (`parent`): the parent is `consumed_at` (refresh used) and `superseded_at` (its access token
+    keeps working only for the grace window). A duplicate refresh inside the window adds a
+    sibling child instead; `access_used_at` is the first time an access token was used, which
+    closes the window for further duplicates. Rows are never deleted.
+    """
+
+    session = models.ForeignKey(DeviceSession, on_delete=models.PROTECT, related_name="token_pairs")
+    parent = models.ForeignKey(
+        "self", on_delete=models.PROTECT, null=True, blank=True, related_name="children"
+    )
+    access_hash = models.CharField(max_length=TOKEN_HASH_LENGTH, unique=True)
+    access_expires_at = models.DateTimeField()
+    refresh_hash = models.CharField(max_length=TOKEN_HASH_LENGTH, unique=True)
+    refresh_expires_at = models.DateTimeField()
+    access_used_at = models.DateTimeField(null=True, blank=True)
+    consumed_at = models.DateTimeField(null=True, blank=True)
+    superseded_at = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(consumed_at__isnull=True, superseded_at__isnull=True)
+                | models.Q(consumed_at__isnull=False, superseded_at__isnull=False),
+                name="tokenpair_consumed_and_superseded_together",
+            )
+        ]
+        indexes = [models.Index(fields=["session", "created_at"], name="tokenpair_session_idx")]
 
     def __str__(self) -> str:
         return str(self.pk)

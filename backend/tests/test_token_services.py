@@ -1,4 +1,4 @@
-"""Token issuing, rotation with reuse detection, revocation and the final upload (services)."""
+"""Token issuing, refresh families with reuse detection, revocation and the final upload."""
 
 import threading
 import uuid
@@ -12,52 +12,69 @@ from django.utils import timezone
 from accounts.exceptions import (
     DeviceOrganizationMismatchError,
     DeviceRevokedError,
+    InvalidCredentialsError,
     InvalidTokenError,
     SessionRevokedError,
     TokenExpiredError,
 )
-from accounts.models import Device, DeviceSession, RevokeReason
-from accounts.services import (
-    DeviceInfo,
-    IssuedTokens,
+from accounts.models import Device, DeviceSession, RevokeReason, TokenPair, User
+from accounts.revocation import (
     Revocation,
     consume_final_upload,
     revoke_device,
     revoke_session,
     revoke_user_sessions,
+)
+from accounts.services import DeviceInfo, start_device_session
+from accounts.token_pairs import (
+    IssuedTokens,
+    is_access_superseded,
+    is_retired_sibling,
+    mark_access_used,
     rotate_refresh_token,
-    start_device_session,
 )
 from accounts.tokens import hash_token
-from organizations.models import Organization
-from tests.factories import DeviceFactory, UserFactory
+from organizations.models import Membership, Organization
+from tests.factories import DeviceFactory, MembershipFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
 
 
-def login(user, organization, device_id: uuid.UUID | None = None) -> IssuedTokens:
+def login(
+    user: User, organization: Organization, device_id: uuid.UUID | None = None
+) -> IssuedTokens:
+    if not Membership.objects.filter(user=user, organization=organization).exists():
+        MembershipFactory(user=user, organization=organization)
     return start_device_session(user, organization, DeviceInfo(device_id=device_id or uuid.uuid4()))
 
 
-def age_rotation(session: DeviceSession, seconds: int) -> None:
-    DeviceSession.objects.filter(pk=session.pk).update(
-        rotated_at=timezone.now() - timedelta(seconds=seconds)
-    )
+def refresh(issued: IssuedTokens, token: str | None = None) -> IssuedTokens:
+    return rotate_refresh_token(token or issued.refresh, issued.session.device_id)
 
 
-# --- start_device_session --------------------------------------------------------------------
+def age_consumption(pair: TokenPair, seconds: int) -> None:
+    moment = timezone.now() - timedelta(seconds=seconds)
+    TokenPair.objects.filter(pk=pair.pk).update(consumed_at=moment, superseded_at=moment)
+
+
+def fresh(pair: TokenPair) -> TokenPair:
+    return TokenPair.objects.select_related("parent").get(pk=pair.pk)
+
+
+# --- start_device_session ----------------------------------------------------------------------
 
 
 def test_start_session_stores_only_digests_of_the_tokens(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
 
-    row = DeviceSession.objects.values().get(pk=issued.session.pk)
+    row = TokenPair.objects.values().get(pk=issued.pair.pk)
 
     stored = {str(value) for value in row.values()}
     assert issued.access not in stored
     assert issued.refresh not in stored
     assert row["access_hash"] == hash_token(issued.access)
     assert row["refresh_hash"] == hash_token(issued.refresh)
+    assert not hasattr(DeviceSession, "access_hash")  # nothing token-shaped on the session
 
 
 def test_start_session_registers_the_device_in_the_organization(org_a: Organization) -> None:
@@ -112,7 +129,8 @@ def test_new_login_supersedes_earlier_sessions_of_the_same_user_on_the_device(
     second = login(user, org_a, device_id)
 
     first.session.refresh_from_db()
-    assert first.session.revoke_reason == RevokeReason.LOGOUT
+    assert first.session.revoke_reason == RevokeReason.SUPERSEDED
+    assert first.session.final_upload_deadline is None
     assert second.session.revoked_at is None
 
 
@@ -126,81 +144,160 @@ def test_login_does_not_touch_sessions_of_other_users_on_the_device(org_a: Organ
     assert first.session.revoked_at is None
 
 
-# --- rotation ---------------------------------------------------------------------------------
-
-
-def test_rotation_issues_a_new_pair_and_keeps_the_old_refresh_as_previous(
+def test_a_session_is_refused_when_the_user_was_deactivated_after_authentication(
     org_a: Organization,
 ) -> None:
+    user = UserFactory()
+    User.objects.filter(pk=user.pk).update(is_active=False)  # `user` still says active
+
+    with pytest.raises(InvalidCredentialsError):
+        login(user, org_a)
+    assert not DeviceSession.objects.exists()
+
+
+def test_a_session_is_refused_when_the_password_changed_after_authentication(
+    org_a: Organization,
+) -> None:
+    user = UserFactory()
+    user.set_password("the password that was verified")
+    user.save(update_fields=["password"])
+    changed = User.objects.get(pk=user.pk)
+    changed.set_password("the password set by a concurrent reset")
+    changed.save(update_fields=["password"])
+
+    with pytest.raises(InvalidCredentialsError):
+        login(user, org_a)  # `user` carries the old hash, as a login that authenticated first
+    assert not DeviceSession.objects.exists()
+
+
+# --- refresh families ----------------------------------------------------------------------------
+
+
+def test_rotation_issues_a_child_pair_and_consumes_the_parent(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
 
-    rotated = rotate_refresh_token(issued.refresh, issued.session.device_id)
+    rotated = refresh(issued)
 
-    session = DeviceSession.objects.get(pk=issued.session.pk)
+    parent, child = fresh(issued.pair), fresh(rotated.pair)
     assert rotated.access != issued.access
     assert rotated.refresh != issued.refresh
-    assert session.access_hash == hash_token(rotated.access)
-    assert session.refresh_hash == hash_token(rotated.refresh)
-    assert session.previous_refresh_hash == hash_token(issued.refresh)
-    assert session.rotated_at is not None
+    assert child.parent_id == parent.pk
+    assert parent.consumed_at is not None
+    assert parent.superseded_at == parent.consumed_at
+    assert child.consumed_at is None
+    assert child.access_hash == hash_token(rotated.access)
 
 
-def test_the_old_access_token_stops_working_after_rotation(org_a: Organization) -> None:
-    issued = login(UserFactory(), org_a)
-
-    rotate_refresh_token(issued.refresh, issued.session.device_id)
-
-    assert not DeviceSession.objects.filter(access_hash=hash_token(issued.access)).exists()
-
-
-def test_reusing_the_previous_refresh_outside_the_grace_window_revokes_the_session(
+def test_the_replaced_access_token_stays_valid_only_for_the_grace_window(
     org_a: Organization,
 ) -> None:
     issued = login(UserFactory(), org_a)
-    rotate_refresh_token(issued.refresh, issued.session.device_id)
-    age_rotation(issued.session, 120)
+    refresh(issued)
+    now = timezone.now()
+
+    assert not is_access_superseded(fresh(issued.pair), now)
+    assert is_access_superseded(fresh(issued.pair), now + timedelta(seconds=61))
+
+
+def test_reusing_r0_after_r1_was_exchanged_revokes_the_session(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)  # R0
+    r1 = refresh(issued)
+    refresh(r1)  # R2: R1 is consumed
 
     with pytest.raises(SessionRevokedError):
-        rotate_refresh_token(issued.refresh, issued.session.device_id)
+        refresh(issued)  # R0 again, even inside the window: a later token was exchanged
 
     session = DeviceSession.objects.get(pk=issued.session.pk)
     assert session.revoke_reason == RevokeReason.REFRESH_REUSE  # committed, not rolled back
     assert session.final_upload_deadline is None
 
 
-def test_reusing_the_previous_refresh_inside_the_grace_window_rotates_again(
+def test_reusing_a_consumed_refresh_outside_the_grace_window_revokes_the_session(
     org_a: Organization,
 ) -> None:
     issued = login(UserFactory(), org_a)
-    first = rotate_refresh_token(issued.refresh, issued.session.device_id)
+    refresh(issued)
+    age_consumption(issued.pair, 120)
 
-    retry = rotate_refresh_token(issued.refresh, issued.session.device_id)
+    with pytest.raises(SessionRevokedError):
+        refresh(issued)
 
-    session = DeviceSession.objects.get(pk=issued.session.pk)
-    assert session.revoked_at is None
-    assert session.refresh_hash == hash_token(retry.refresh)
-    assert session.previous_refresh_hash == hash_token(issued.refresh)
-    assert retry.refresh != first.refresh
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
 
 
-def test_the_grace_window_does_not_stretch_with_retries(org_a: Organization) -> None:
+def test_a_duplicate_refresh_inside_the_window_issues_a_sibling_and_both_stay_usable(
+    org_a: Organization,
+) -> None:
     issued = login(UserFactory(), org_a)
-    rotate_refresh_token(issued.refresh, issued.session.device_id)
-    rotated_at = DeviceSession.objects.get(pk=issued.session.pk).rotated_at
+    first = refresh(issued)  # response lost, or arriving late
+    second = refresh(issued)  # the client retries with R0
 
-    rotate_refresh_token(issued.refresh, issued.session.device_id)
+    assert second.pair.parent_id == first.pair.parent_id == issued.pair.pk
+    assert second.refresh != first.refresh
+    # Out-of-order responses: the client may hold either pair and it keeps working.
+    assert refresh(first).pair.parent_id == first.pair.pk
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+    assert fresh(issued.pair).consumed_at is not None
 
-    assert DeviceSession.objects.get(pk=issued.session.pk).rotated_at == rotated_at
+
+def test_the_other_sibling_can_still_be_exchanged_after_the_first_was(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+    first, second = refresh(issued), refresh(issued)
+
+    refresh(first)
+    later = refresh(second)  # inside the window: the client received the second response last
+
+    assert later.pair.parent_id == second.pair.pk
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+
+
+def test_an_attacker_replaying_r0_after_the_client_used_the_new_access_token_is_caught(
+    org_a: Organization,
+) -> None:
+    issued = login(UserFactory(), org_a)
+    legit = refresh(issued)
+    mark_access_used(legit.pair)  # the phone used A1
+
+    with pytest.raises(SessionRevokedError):
+        refresh(issued)  # the attacker presents the stolen R0, still inside the window
+
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoke_reason == "refresh_reuse"
+
+
+def test_a_sibling_never_used_is_retired_once_the_window_closes_and_another_one_was(
+    org_a: Organization,
+) -> None:
+    issued = login(UserFactory(), org_a)
+    winner, loser = refresh(issued), refresh(issued)
+    mark_access_used(winner.pair)
+    age_consumption(issued.pair, 120)
+
+    now = timezone.now()
+    assert is_retired_sibling(fresh(loser.pair), now)
+    assert not is_retired_sibling(fresh(winner.pair), now)
+    with pytest.raises(InvalidTokenError):
+        refresh(loser)
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+
+
+def test_siblings_all_stay_valid_after_the_window_when_none_was_used(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+    first, second = refresh(issued), refresh(issued)
+    age_consumption(issued.pair, 120)
+
+    assert not is_retired_sibling(fresh(first.pair), timezone.now())
+    assert not is_retired_sibling(fresh(second.pair), timezone.now())
+    assert refresh(second).pair.parent_id == second.pair.pk
 
 
 @override_settings(AUTH_REFRESH_REUSE_GRACE_SECONDS=0)
 def test_grace_can_be_disabled(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
-    rotate_refresh_token(issued.refresh, issued.session.device_id)
-    age_rotation(issued.session, 1)
+    refresh(issued)
+    age_consumption(issued.pair, 1)
 
     with pytest.raises(SessionRevokedError):
-        rotate_refresh_token(issued.refresh, issued.session.device_id)
+        refresh(issued)
 
 
 def test_unknown_refresh_token_is_invalid(org_a: Organization) -> None:
@@ -216,29 +313,28 @@ def test_refresh_with_another_device_id_is_invalid_and_leaves_the_session_alone(
     with pytest.raises(InvalidTokenError):
         rotate_refresh_token(issued.refresh, uuid.uuid4())
 
-    issued.session.refresh_from_db()
-    assert issued.session.revoked_at is None
-    assert issued.session.refresh_hash == hash_token(issued.refresh)
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None
+    assert fresh(issued.pair).consumed_at is None
 
 
 def test_expired_refresh_token_is_refused(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
-    DeviceSession.objects.filter(pk=issued.session.pk).update(
+    TokenPair.objects.filter(pk=issued.pair.pk).update(
         refresh_expires_at=timezone.now() - timedelta(seconds=1)
     )
 
     with pytest.raises(TokenExpiredError):
-        rotate_refresh_token(issued.refresh, issued.session.device_id)
+        refresh(issued)
 
 
 def test_rotation_slides_the_refresh_expiry(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
     soon = timezone.now() + timedelta(days=1)
-    DeviceSession.objects.filter(pk=issued.session.pk).update(refresh_expires_at=soon)
+    TokenPair.objects.filter(pk=issued.pair.pk).update(refresh_expires_at=soon)
 
-    rotate_refresh_token(issued.refresh, issued.session.device_id)
+    rotated = refresh(issued)
 
-    assert DeviceSession.objects.get(pk=issued.session.pk).refresh_expires_at > soon
+    assert fresh(rotated.pair).refresh_expires_at > soon
 
 
 def test_revoked_session_cannot_refresh(org_a: Organization) -> None:
@@ -246,20 +342,38 @@ def test_revoked_session_cannot_refresh(org_a: Organization) -> None:
     revoke_session(issued.session, Revocation(RevokeReason.LOGOUT))
 
     with pytest.raises(SessionRevokedError):
-        rotate_refresh_token(issued.refresh, issued.session.device_id)
+        refresh(issued)
 
 
 def test_refresh_of_an_inactive_user_revokes_the_session(org_a: Organization) -> None:
     user = UserFactory()
     issued = login(user, org_a)
-    user.is_active = False
-    user.save(update_fields=["is_active"])
+    User.objects.filter(pk=user.pk).update(is_active=False)
 
     with pytest.raises(SessionRevokedError):
-        rotate_refresh_token(issued.refresh, issued.session.device_id)
+        refresh(issued)
 
     issued.session.refresh_from_db()
     assert issued.session.revoke_reason == RevokeReason.USER_DEACTIVATED
+
+
+@pytest.mark.parametrize("field", ["membership", "organization"])
+def test_refresh_revokes_the_session_when_the_pinned_membership_is_no_longer_active(
+    org_a: Organization, field: str
+) -> None:
+    user = UserFactory()
+    issued = login(user, org_a)
+    if field == "membership":
+        Membership.objects.filter(user=user, organization=org_a).update(is_active=False)
+    else:
+        Organization.objects.filter(pk=org_a.pk).update(is_active=False)
+
+    with pytest.raises(SessionRevokedError):
+        refresh(issued)
+
+    issued.session.refresh_from_db()
+    assert issued.session.revoke_reason == RevokeReason.MEMBERSHIP_INACTIVE
+    assert issued.session.final_upload_deadline is None
 
 
 def test_session_of_a_revoked_device_cannot_refresh(org_a: Organization) -> None:
@@ -269,7 +383,7 @@ def test_session_of_a_revoked_device_cannot_refresh(org_a: Organization) -> None
     )
 
     with pytest.raises(SessionRevokedError):
-        rotate_refresh_token(issued.refresh, issued.session.device_id)
+        refresh(issued)
 
 
 # --- revocation ---------------------------------------------------------------------------------
@@ -332,45 +446,62 @@ def test_revoke_device_is_idempotent(org_a: Organization) -> None:
     assert second.revoked_by == admin
 
 
-# --- final upload -------------------------------------------------------------------------------
+# --- final upload policy -------------------------------------------------------------------------
 
 
 @pytest.mark.parametrize(
-    ("reason", "has_deadline"),
+    ("reason", "allow", "has_deadline"),
     [
-        (RevokeReason.ADMIN_REVOKE, True),
-        (RevokeReason.DEVICE_REVOKED, True),
-        (RevokeReason.REFRESH_REUSE, False),
-        (RevokeReason.PASSWORD_CHANGED, False),
-        (RevokeReason.USER_DEACTIVATED, False),
-        (RevokeReason.LOGOUT, False),
+        (RevokeReason.ADMIN_REVOKE, True, True),
+        (RevokeReason.DEVICE_REVOKED, True, True),
+        (RevokeReason.ADMIN_REVOKE, False, False),
+        (RevokeReason.DEVICE_REVOKED, False, False),
+        (RevokeReason.REFRESH_REUSE, True, False),
+        (RevokeReason.PASSWORD_CHANGED, True, False),
+        (RevokeReason.USER_DEACTIVATED, True, False),
+        (RevokeReason.SUPERSEDED, True, False),
+        (RevokeReason.MEMBERSHIP_INACTIVE, True, False),
+        (RevokeReason.LOGOUT, True, False),
     ],
 )
-def test_only_admin_and_device_revocations_leave_a_final_upload(
-    org_a: Organization, reason: RevokeReason, has_deadline: bool
+def test_a_final_upload_needs_an_explicit_flag_and_an_admin_or_device_revocation(
+    org_a: Organization, reason: RevokeReason, allow: bool, has_deadline: bool
 ) -> None:
     issued = login(UserFactory(), org_a)
 
-    revoke_session(issued.session, Revocation(reason))
+    revoke_session(issued.session, Revocation(reason, allow_final_upload=allow))
 
     issued.session.refresh_from_db()
     assert (issued.session.final_upload_deadline is not None) is has_deadline
 
 
-@override_settings(AUTH_REVOKED_FINAL_UPLOAD_HOURS=0)
-def test_final_upload_can_be_disabled(org_a: Organization) -> None:
+def test_revoking_a_device_without_the_flag_leaves_no_final_upload(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
 
-    revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE))
+    revoke_device(Device.objects.get(pk=issued.session.device_id), UserFactory())
 
     issued.session.refresh_from_db()
     assert issued.session.final_upload_deadline is None
 
 
+@override_settings(AUTH_REVOKED_FINAL_UPLOAD_HOURS=0)
+def test_final_upload_can_be_disabled_even_with_the_flag(org_a: Organization) -> None:
+    issued = login(UserFactory(), org_a)
+
+    revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True))
+
+    issued.session.refresh_from_db()
+    assert issued.session.final_upload_deadline is None
+
+
+def allowed_revocation() -> Revocation:
+    return Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+
+
 def test_final_upload_deadline_follows_the_setting(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
 
-    revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE))
+    revoke_session(issued.session, allowed_revocation())
 
     issued.session.refresh_from_db()
     delta = issued.session.final_upload_deadline - issued.session.revoked_at
@@ -379,7 +510,7 @@ def test_final_upload_deadline_follows_the_setting(org_a: Organization) -> None:
 
 def test_final_upload_is_single_use(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
-    revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE))
+    revoke_session(issued.session, allowed_revocation())
 
     consume_final_upload(issued.session)
 
@@ -389,7 +520,7 @@ def test_final_upload_is_single_use(org_a: Organization) -> None:
 
 def test_final_upload_is_refused_after_the_deadline(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
-    revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE))
+    revoke_session(issued.session, allowed_revocation())
     DeviceSession.objects.filter(pk=issued.session.pk).update(
         final_upload_deadline=timezone.now() - timedelta(seconds=1)
     )
@@ -408,7 +539,7 @@ def test_final_upload_is_refused_for_a_session_that_is_not_revoked(org_a: Organi
 @pytest.mark.django_db(transaction=True)
 def test_two_concurrent_final_uploads_only_one_wins(org_a: Organization) -> None:
     issued = login(UserFactory(), org_a)
-    revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE))
+    revoke_session(issued.session, allowed_revocation())
     outcomes: list[str] = []
     barrier = threading.Barrier(2)
 
@@ -429,3 +560,33 @@ def test_two_concurrent_final_uploads_only_one_wins(org_a: Organization) -> None
         thread.join(timeout=30)
 
     assert sorted(outcomes) == ["ok", "refused"]
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_concurrent_refreshes_of_the_same_token_both_end_consistent(
+    org_a: Organization,
+) -> None:
+    issued = login(UserFactory(), org_a)
+    results: list[str] = []
+    barrier = threading.Barrier(2)
+
+    def attempt() -> None:
+        try:
+            barrier.wait(timeout=10)
+            refresh(issued)
+            results.append("ok")
+        except SessionRevokedError:
+            results.append("revoked")
+        finally:
+            connection.close()
+
+    threads = [threading.Thread(target=attempt) for _ in range(2)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+
+    # Serialized by the session lock: the second one is a duplicate inside the grace window.
+    assert results == ["ok", "ok"]
+    assert TokenPair.objects.filter(parent_id=issued.pair.pk).count() == 2
+    assert DeviceSession.objects.get(pk=issued.session.pk).revoked_at is None

@@ -8,8 +8,8 @@ from django.core.management.base import CommandError
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from accounts.constants import ADMIN_AUTH_PERMISSION_CODES
 from accounts.models import Device, RevokeReason, User
+from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from accounts.services import DeviceInfo, start_device_session
 from organizations.models import Organization, Profile
 from organizations.services import (
@@ -185,7 +185,7 @@ def test_revoking_a_device_blocks_its_sessions_and_new_logins(
     phone.session.refresh_from_db()
     other_phone.session.refresh_from_db()
     assert phone.session.revoke_reason == RevokeReason.DEVICE_REVOKED
-    assert phone.session.final_upload_deadline is not None
+    assert phone.session.final_upload_deadline is None  # no flag, no final upload
     assert other_phone.session.revoked_at is None
     on_phone = APIClient()
     on_phone.credentials(HTTP_AUTHORIZATION=f"Bearer {phone.access}")
@@ -258,7 +258,7 @@ def test_admin_revokes_all_device_sessions_of_a_user_in_the_organization(
     for issued in (first, second):
         issued.session.refresh_from_db()
         assert issued.session.revoke_reason == RevokeReason.ADMIN_REVOKE
-        assert issued.session.final_upload_deadline is not None
+        assert issued.session.final_upload_deadline is None
     elsewhere.session.refresh_from_db()
     assert elsewhere.session.revoked_at is None
 
@@ -430,3 +430,48 @@ def test_the_management_command_updates_existing_organizations(
 def test_the_management_command_rejects_an_unknown_organization() -> None:
     with pytest.raises(CommandError):
         call_command("grant_admin_permissions", organization="nope")
+
+
+# --- final upload flag --------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_revoking_user_sessions_leaves_a_final_upload_only_when_asked(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory, flag: bool
+) -> None:
+    courier, _ = make_member(org_a, [])
+    issued = phone_session(courier, org_a)
+    admin = admin_client(api_client, org_a, make_member)
+
+    response = admin.post(revoke_url(courier), {"allow_final_upload": flag}, format="json")
+
+    assert response.status_code == 200
+    issued.session.refresh_from_db()
+    assert (issued.session.final_upload_deadline is not None) is flag
+
+
+@pytest.mark.parametrize("flag", [True, False])
+def test_revoking_a_device_leaves_a_final_upload_only_when_asked(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory, flag: bool
+) -> None:
+    issued = phone_session(UserFactory(), org_a)
+    admin = admin_client(api_client, org_a, make_member)
+
+    response = admin.post(
+        f"{DEVICES}{issued.session.device_id}/revoke/", {"allow_final_upload": flag}, format="json"
+    )
+
+    assert response.status_code == 200
+    issued.session.refresh_from_db()
+    assert (issued.session.final_upload_deadline is not None) is flag
+
+
+def test_the_flag_must_be_a_boolean(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    courier, _ = make_member(org_a, [])
+    admin = admin_client(api_client, org_a, make_member)
+
+    response = admin.post(revoke_url(courier), {"allow_final_upload": "maybe"}, format="json")
+
+    assert (response.status_code, response.data["code"]) == (400, "validation_error")

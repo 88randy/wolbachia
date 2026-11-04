@@ -5,8 +5,10 @@ import os
 # Production never reads backend/.env unless explicitly asked: real environment only.
 os.environ.setdefault("DJANGO_READ_DOT_ENV_FILE", "false")
 
+from django.core.exceptions import ImproperlyConfigured  # noqa: E402
+
 from .base import *  # noqa: E402, F403
-from .base import env  # noqa: E402
+from .base import REST_FRAMEWORK, env  # noqa: E402
 
 DEBUG = False
 SECRET_KEY = env("DJANGO_SECRET_KEY")
@@ -18,6 +20,14 @@ CSRF_TRUSTED_ORIGINS = env.list("DJANGO_CSRF_TRUSTED_ORIGINS")
 globals().update(env.email_url("EMAIL_URL"))
 DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 WEB_BASE_URL = env("WEB_BASE_URL").rstrip("/")
+if not WEB_BASE_URL.startswith("https://"):
+    raise ImproperlyConfigured("WEB_BASE_URL must be an https:// URL in production.")
+
+# Number of trusted reverse proxies in front of the API: required, no default. Throttles and the
+# login lockout key on the client address, so a wrong value either lets a client forge it with
+# `X-Forwarded-For` (too high) or throttles everyone as one address (0 behind a proxy). The TLS
+# proxy must overwrite `X-Forwarded-For` and the app servers must never be reachable directly.
+REST_FRAMEWORK = {**REST_FRAMEWORK, "NUM_PROXIES": env.int("DRF_NUM_PROXIES")}
 
 SESSION_COOKIE_SECURE = True
 CSRF_COOKIE_SECURE = True

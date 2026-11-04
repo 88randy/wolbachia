@@ -2,19 +2,22 @@
 
 import logging
 import smtplib
+import threading
 import uuid
 from unittest import mock
 
 import pytest
 from django.core import mail
+from django.db import connection
 from django.test import override_settings
 from kombu.exceptions import OperationalError
 from rest_framework.test import APIClient
 from rest_framework.throttling import SimpleRateThrottle
 
-from accounts.exceptions import InvalidResetTokenError
+from accounts.exceptions import InvalidCredentialsError, InvalidResetTokenError
 from accounts.models import DeviceSession, RevokeReason, User
 from accounts.reset_emails import build_reset_url, send_password_reset_emails
+from accounts.revocation import Revocation, revoke_session
 from accounts.services import DeviceInfo, reset_password, start_device_session
 from accounts.tasks import send_password_reset_email
 from organizations.models import Organization
@@ -30,7 +33,7 @@ CSRF = "/api/v1/auth/csrf/"
 ME = "/api/v1/me/"
 OLD_PASSWORD = "an old and long passphrase"  # noqa: S105
 NEW_PASSWORD = "a brand new passphrase 42"  # noqa: S105
-DELAY = "accounts.views.send_password_reset_email.delay"
+DELAY = "accounts.views.send_password_reset_email.apply_async"
 
 
 def account(email: str = "ana@example.test", **kwargs: object) -> User:
@@ -81,10 +84,12 @@ def test_request_enqueues_the_address_and_does_no_database_work(
         api_client.post(REQUEST, {"email": "real@example.test"}, format="json")
         api_client.post(REQUEST, {"email": "ghost@example.test"}, format="json")
 
-    assert [call.args for call in delay.call_args_list] == [
-        ("real@example.test",),
-        ("ghost@example.test",),
+    assert [call.kwargs["args"] for call in delay.call_args_list] == [
+        ["real@example.test"],
+        ["ghost@example.test"],
     ]
+    # Celery shows `argsrepr` in worker logs and monitoring instead of the address.
+    assert {call.kwargs["argsrepr"] for call in delay.call_args_list} == {"('<redacted>',)"}
 
 
 def test_request_stays_202_when_the_broker_is_down(api_client: APIClient) -> None:
@@ -410,13 +415,79 @@ def test_confirm_requires_every_field(api_client: APIClient, missing: str) -> No
     assert (response.status_code, response.data["code"]) == (400, "validation_error")
 
 
-def test_the_token_cannot_be_spent_twice_even_if_both_requests_validated_first() -> None:
+def test_a_spent_token_is_refused_by_the_recheck_inside_the_lock() -> None:
     user = account()
     _, token = link_parts(user)
     reset_password(user, token, NEW_PASSWORD)
 
     with pytest.raises(InvalidResetTokenError):
         reset_password(user, token, "yet another passphrase 9")
+
+
+@pytest.mark.django_db(transaction=True)
+def test_two_concurrent_resets_with_the_same_token_only_one_wins() -> None:
+    user = account()
+    _, token = link_parts(user)
+    outcomes: list[str] = []
+    barrier = threading.Barrier(2)
+
+    def attempt(password: str) -> None:
+        try:
+            barrier.wait(timeout=10)
+            reset_password(user, token, password)
+            outcomes.append("ok")
+        except InvalidResetTokenError:
+            outcomes.append("refused")
+        finally:
+            connection.close()
+
+    threads = [
+        threading.Thread(target=attempt, args=(NEW_PASSWORD,)),
+        threading.Thread(target=attempt, args=("a second good passphrase 7",)),
+    ]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=30)
+
+    assert sorted(outcomes) == ["ok", "refused"]
+
+
+def test_confirm_withdraws_pending_final_uploads_of_already_revoked_sessions(
+    api_client: APIClient, org_a: Organization
+) -> None:
+    user = account()
+    issued = start_device_session(user, org_a, DeviceInfo(device_id=uuid.uuid4()))
+    revoke_session(issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True))
+    issued.session.refresh_from_db()
+    assert issued.session.final_upload_deadline is not None
+
+    confirm(api_client, user)
+
+    issued.session.refresh_from_db()
+    assert issued.session.final_upload_deadline is None
+    assert issued.session.revoke_reason == RevokeReason.ADMIN_REVOKE  # the reason is kept
+
+
+def test_a_login_that_authenticated_before_the_reset_gets_no_session(
+    api_client: APIClient, org_a: Organization
+) -> None:
+    user = account()
+    authenticated = User.objects.get(pk=user.pk)  # what the login verified: the old hash
+    confirm(api_client, user)
+
+    with pytest.raises(InvalidCredentialsError):
+        start_device_session(authenticated, org_a, DeviceInfo(device_id=uuid.uuid4()))
+    assert not DeviceSession.objects.exists()
+
+
+@override_settings(AUTH_PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR=1)
+def test_the_per_address_email_limit_is_configurable() -> None:
+    account("ana@example.test")
+
+    sent = [send_password_reset_emails("ana@example.test") for _ in range(3)]
+
+    assert sent == [1, 0, 0]
 
 
 def test_confirm_is_rate_limited(api_client: APIClient, monkeypatch: pytest.MonkeyPatch) -> None:

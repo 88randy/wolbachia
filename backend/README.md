@@ -71,7 +71,7 @@ uv run python manage.py changepassword boss     # a new admin is created without
 # An existing username with a different email is refused unless you pass --reuse-existing-user
 ```
 
-Profiles start with no permission codes; they are data configured per organization.
+Profiles are data configured per organization. They start with no permission codes, except `admin`, which gets the codes of the device and session administration (see Authentication).
 
 ## Authentication (#4)
 
@@ -83,17 +83,22 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 - **Throttles** live in `accounts/throttling.py` and key on DRF's `get_ident`: set `DRF_NUM_PROXIES` to the real number of proxies in front of the API (0 ignores `X-Forwarded-For`). The login lockout is in `accounts/login_attempts.py` (cache counters: it needs Redis in dev and prod).
 - **Auth log**: logger `accounts.auth` (`event=login_failed ip=... username_fp=...`). `username_fp` is a keyed HMAC; there is no model until W60.
 - **Password reset**: the request endpoint only enqueues the Celery task `accounts.tasks.send_password_reset_email`; run the `worker` service to get emails. In dev `EMAIL_URL=consolemail://` prints the message (with the link) in the worker log. Texts: `accounts/templates/accounts/email/` (es-MX, en).
-- **Admin permission codes**: new organizations get `device.read`, `device.revoke` and `user.revoke_device_sessions` on their `admin` profile. For existing ones run `python manage.py grant_admin_permissions [--organization slug]` (idempotent; safe on every deploy).
+- **Admin permission codes**: new organizations get `device.read`, `device.revoke` and `user.revoke_device_sessions` on their `admin` profile. For organizations created earlier run `python manage.py grant_admin_permissions [--organization slug]` once: it adds the codes that are missing, so it would also give back a code an administrator removed on purpose. Do not run it on every deploy; seed tracking with revocable defaults arrives with #3, and these codes (`accounts/permissions.py`) get registered there.
 - **Web sessions** are stored in the database: schedule `python manage.py clearsessions` (daily) when the deployment exists (#18).
-- **Final upload (for #5)**: a view that accepts uploads from a revoked phone sets `allows_revoked_final_upload = True`; when `request.auth` is a revoked `DeviceSession` it must call `accounts.services.consume_final_upload(request.auth)` in the same transaction as its writes and answer with `X-Session-Revoked: true`. If it forgets the call, the session can upload until its deadline. `tests/testapp/views.py::FinalUploadView` is the reference.
+- **Final upload (for #5)**: only when an administrator revokes with `allow_final_upload: true`. A view that accepts it is declared `class SyncView(FinalUploadMixin, APIView)` (`accounts/final_upload.py`): the mixin opts the view in, runs the request in one transaction, spends the single final upload first (a failed request gives it back), adds `X-Session-Revoked: true` and sets `self.is_final_upload`, which the view must use to mark the events it records as `in_review`. Nothing else to remember. `tests/testapp/views.py::FinalUploadView` is the reference.
+- **Transactions**: revocation and rotation commit before they raise, so they must not run inside an outer `atomic()`; `ATOMIC_REQUESTS` stays off (a test checks it).
+- **Token rows**: every refresh adds a `TokenPair` (hashes only); rows are never deleted, so the table grows with use [PENDING retention policy].
+- **Production proxy**: `DRF_NUM_PROXIES` is required (the app fails at startup without it). The TLS proxy in front must overwrite `X-Forwarded-For` (never append to what the client sent) and the app servers must not be reachable except through it (#18). `WEB_BASE_URL` must be https.
 - A refresh response lost outside the 60 s grace window drops the session: the courier must log in again (needs signal and password).
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `AUTH_ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
 | `AUTH_REFRESH_TOKEN_TTL_DAYS` | `30` | Refresh token idle lifetime (slides on every refresh) [PENDING absolute maximum] |
-| `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `60` | An old refresh token still rotates inside this window; after it, the session is revoked |
-| `AUTH_REVOKED_FINAL_UPLOAD_HOURS` | `72` | Final upload window after an admin or device revoke; `0` disables it [PENDING client] |
+| `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `60` | A consumed refresh token presented again inside this window (and before any later token was used) is accepted once more; otherwise the session is revoked |
+| `AUTH_REVOKED_FINAL_UPLOAD_HOURS` | `72` | Final upload window after an admin revoke that allows it; `0` disables it [PENDING client] |
+| `AUTH_PASSWORD_RESET_EMAILS_PER_ADDRESS_PER_HOUR` | `3` | Reset emails sent to one address per hour (anyone who knows the address can use the quota: trade-off in decision 46) |
+| `DRF_NUM_PROXIES` | `0` (**required in prod**) | Trusted reverse proxies in front of the API |
 | `AUTH_LOGIN_MAX_FAILURES` / `AUTH_LOGIN_LOCKOUT_MINUTES` | `5` / `15` | Lockout of a username + address pair [PENDING client] |
 | `AUTH_WEB_SESSION_AGE_SECONDS` | `43200` | Web session cookie age (12 h) [PENDING] |
 | `PASSWORD_RESET_TIMEOUT` | `3600` | Reset link lifetime in seconds |

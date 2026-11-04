@@ -11,21 +11,27 @@ class InvalidCredentialsError(DomainError):
     default_detail = "The credentials are not valid."
 
 
+BEARER_CHALLENGE = "Bearer"
+
+
 class InvalidTokenError(DomainError):
     code = "invalid_token"
     status_code = HTTPStatus.UNAUTHORIZED
+    challenge = BEARER_CHALLENGE
     default_detail = "The token is not valid."
 
 
 class TokenExpiredError(DomainError):
     code = "token_expired"
     status_code = HTTPStatus.UNAUTHORIZED
+    challenge = BEARER_CHALLENGE
     default_detail = "The token has expired."
 
 
 class SessionRevokedError(DomainError):
     code = "session_revoked"
     status_code = HTTPStatus.UNAUTHORIZED
+    challenge = BEARER_CHALLENGE
     default_detail = "The session was revoked."
 
 

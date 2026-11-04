@@ -21,9 +21,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.audit import AuditContext, AuthEvent, fingerprint, log_auth_event
-from accounts.authentication import EndedSessionBearerAuthentication
-from accounts.constants import DEVICE_READ, DEVICE_REVOKE, USER_REVOKE_DEVICE_SESSIONS
+from accounts.authentication import DeviceBearerAuthentication
+from accounts.exceptions import (
+    DeviceOrganizationMismatchError,
+    DeviceRevokedError,
+    InvalidCredentialsError,
+)
 from accounts.models import Device, DeviceSession, RevokeReason, User
+from accounts.permissions import DEVICE_READ, DEVICE_REVOKE, USER_REVOKE_DEVICE_SESSIONS
+from accounts.request_context import organization_header
+from accounts.revocation import Revocation, revoke_device, revoke_session, revoke_user_sessions
 from accounts.selectors import list_devices, users_of_organization
 from accounts.serializers import (
     DeviceFilterSerializer,
@@ -35,19 +42,10 @@ from accounts.serializers import (
     RefreshResponseSerializer,
     RefreshSerializer,
     RevokedSessionsSerializer,
+    RevokeRequestSerializer,
     WebLoginResponseSerializer,
 )
-from accounts.services import (
-    DeviceInfo,
-    Revocation,
-    authenticate_user,
-    reset_password,
-    revoke_device,
-    revoke_session,
-    revoke_user_sessions,
-    rotate_refresh_token,
-    start_device_session,
-)
+from accounts.services import DeviceInfo, authenticate_user, reset_password, start_device_session
 from accounts.tasks import send_password_reset_email
 from accounts.throttling import (
     LoginIpThrottle,
@@ -57,18 +55,31 @@ from accounts.throttling import (
     RefreshThrottle,
     client_ip,
 )
+from accounts.token_pairs import rotate_refresh_token
 from core.authentication import ApiSessionAuthentication
-from core.constants import ORGANIZATION_HEADER
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
+from organizations.exceptions import NoActiveMembershipError, OrganizationHeaderRequiredError
 from organizations.selectors import get_me_context, resolve_active_membership
 
 logger = logging.getLogger("accounts.auth")
+
+REDACTED_ARGS_REPR = "('<redacted>',)"
 
 LoginResponse = PolymorphicProxySerializer(
     component_name="LoginResponse",
     serializers=[MobileLoginResponseSerializer, WebLoginResponseSerializer],
     resource_type_field_name=None,
+)
+
+
+# Refusals after the password was verified (the user knows the password; the log says why not).
+LOGIN_REFUSALS = (
+    DeviceRevokedError,
+    DeviceOrganizationMismatchError,
+    NoActiveMembershipError,
+    OrganizationHeaderRequiredError,
+    InvalidCredentialsError,  # the account changed between the check and the session
 )
 
 
@@ -123,7 +134,7 @@ class LoginView(APIView):
         user = authenticate_user(data["username"], data["password"], client_ip(request))
         login_state = AuthenticatedLogin(
             user=user,
-            organization_slug=request.headers.get(ORGANIZATION_HEADER),
+            organization_slug=organization_header(request),
             audit=AuditContext(
                 user_id=user.pk,
                 device_id=data.get("device_id"),
@@ -131,9 +142,14 @@ class LoginView(APIView):
                 username_fingerprint=fingerprint(data["username"]),
             ),
         )
-        if is_mobile:
-            return self._mobile_login(login_state, data)
-        return self._web_login(request, login_state)
+        try:
+            if is_mobile:
+                return self._mobile_login(login_state, data)
+            return self._web_login(request, login_state)
+        except LOGIN_REFUSALS as refusal:
+            # The password was right but the login is refused: say why in the log, then answer.
+            log_auth_event(AuthEvent.LOGIN_REFUSED, login_state.audit, {"reason": refusal.code})
+            raise
 
     def _mobile_login(self, state: AuthenticatedLogin, data: dict[str, Any]) -> Response:
         membership = resolve_active_membership(state.user, state.organization_slug)
@@ -220,7 +236,9 @@ class PasswordResetView(APIView):
             AuditContext(ip=client_ip(request), username_fingerprint=fingerprint(email)),
         )
         try:
-            send_password_reset_email.delay(email)
+            # `argsrepr` keeps the address out of worker logs and monitoring (Celery shows it
+            # instead of repr(args)); the message body still carries it for the worker.
+            send_password_reset_email.apply_async(args=[email], argsrepr=REDACTED_ARGS_REPR)
         except OperationalError:
             # Broker down: the answer must not tell, so it is still 202; operators see the log.
             logger.exception("event=password_reset_enqueue_failed")
@@ -263,8 +281,9 @@ class LogoutView(APIView):
     A web session is CSRF-protected like any authenticated request.
     """
 
-    authentication_classes = [ApiSessionAuthentication, EndedSessionBearerAuthentication]
+    authentication_classes = [ApiSessionAuthentication, DeviceBearerAuthentication]
     permission_classes = [AllowAny]
+    accepts_ended_sessions = True  # read by DeviceBearerAuthentication
 
     @extend_schema(request=None, responses={204: None})
     def post(self, request: Request) -> Response:
@@ -315,11 +334,20 @@ class DeviceViewSet(
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().list(request, *args, **kwargs)
 
-    @extend_schema(request=None, responses=DeviceSerializer)
+    @extend_schema(request=RevokeRequestSerializer, responses=DeviceSerializer)
     @action(detail=True, methods=["post"])
     def revoke(self, request: Request, pk: str | None = None) -> Response:
-        """Lost phone: the device can no longer log in and every session on it is revoked."""
-        device = revoke_device(self.get_object(), request.user)  # type: ignore[arg-type]
+        """Lost phone: the device can no longer log in and every session on it is revoked.
+
+        `allow_final_upload: true` leaves the phone one last upload (default: none).
+        """
+        payload = RevokeRequestSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        device = revoke_device(
+            self.get_object(),
+            request.user,  # type: ignore[arg-type]
+            payload.validated_data["allow_final_upload"],
+        )
         return Response(self.get_serializer(device).data)
 
 
@@ -336,20 +364,26 @@ class UserViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
         # so a user of another organization is a 404.
         return users_of_organization(self.request.organization)  # type: ignore[attr-defined]
 
-    @extend_schema(request=None, responses=RevokedSessionsSerializer)
+    @extend_schema(request=RevokeRequestSerializer, responses=RevokedSessionsSerializer)
     @action(detail=True, methods=["post"], url_path="revoke-device-sessions")
     def revoke_device_sessions(self, request: Request, pk: str | None = None) -> Response:
-        """Revoke every phone session the user has in the active organization (W49)."""
+        """Revoke every phone session the user has in the active organization (W49).
+
+        `allow_final_upload: true` leaves each phone one last upload (default: none).
+        """
+        payload = RevokeRequestSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
         target = self.get_object()
         organization = request.organization  # type: ignore[attr-defined]
-        count = revoke_user_sessions(
-            target,
-            Revocation(RevokeReason.ADMIN_REVOKE, revoked_by=request.user),  # type: ignore[arg-type]
-            organization=organization,
+        revocation = Revocation(
+            RevokeReason.ADMIN_REVOKE,
+            revoked_by=request.user,  # type: ignore[arg-type]
+            allow_final_upload=payload.validated_data["allow_final_upload"],
         )
+        count = revoke_user_sessions(target, revocation, organization=organization)
         log_auth_event(
             AuthEvent.SESSIONS_REVOKED,
             AuditContext(organization_id=organization.pk, user_id=target.pk, ip=client_ip(request)),
-            {"count": count, "by": request.user.pk},
+            {"count": count, "by": request.user.pk, "final_upload": revocation.allow_final_upload},
         )
         return Response(RevokedSessionsSerializer({"revoked_sessions": count}).data)

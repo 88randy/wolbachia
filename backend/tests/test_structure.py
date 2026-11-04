@@ -1,5 +1,6 @@
 """Structural guards: rules that must hold for every current and future viewset or field."""
 
+import re
 from collections.abc import Iterator
 from typing import Any
 
@@ -80,3 +81,28 @@ def test_env_example_does_not_offer_the_settings_module_selector() -> None:
     commented = [line for line in lines if line.lstrip("# ").startswith("DJANGO_SETTINGS_MODULE=")]
     assert active == []
     assert commented == []
+
+
+# The constant, a raw META key, or a literal header lookup: any way to read the header.
+ORGANIZATION_HEADER_ACCESS = re.compile(
+    r"ORGANIZATION_HEADER|HTTP_X_ORGANIZATION|(?:headers|META)[\[.](?:get\()?[\"']X-Organization",
+)
+ORGANIZATION_HEADER_READERS = {
+    "accounts/request_context.py",  # the only place that parses the header
+    "core/constants.py",  # defines the name
+    "core/schema.py",  # documents it in OpenAPI
+}
+
+
+def test_the_organization_header_is_read_in_one_place_only() -> None:
+    """A second reader could skip the token's pinned organization (`requested_organization_slug`)."""
+    offenders = []
+    for path in BACKEND_DIR.rglob("*.py"):
+        relative = path.relative_to(BACKEND_DIR).as_posix()
+        if relative.startswith(("tests/", ".venv/")) or "/migrations/" in relative:
+            continue
+        text = path.read_text(encoding="utf-8")
+        if ORGANIZATION_HEADER_ACCESS.search(text) and relative not in ORGANIZATION_HEADER_READERS:
+            offenders.append(relative)
+
+    assert offenders == []

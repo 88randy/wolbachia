@@ -5,24 +5,10 @@ from drf_spectacular.openapi import AutoSchema
 
 
 class DeviceBearerAuthenticationScheme(OpenApiAuthenticationExtension):
-    """Documents `DeviceBearerAuthentication` as an HTTP bearer scheme (`bearerAuth`)."""
+    """Documents `DeviceBearerAuthentication` as the HTTP bearer scheme `bearerAuth`."""
 
     target_class = "accounts.authentication.DeviceBearerAuthentication"
     name = "bearerAuth"
 
     def get_security_definition(self, auto_schema: AutoSchema) -> dict[str, Any]:
         return {"type": "http", "scheme": "bearer", "description": "Opaque access token."}
-
-
-class EndedSessionBearerAuthenticationScheme(DeviceBearerAuthenticationScheme):
-    """The logout variant also accepts expired or revoked tokens, so it is its own scheme."""
-
-    target_class = "accounts.authentication.EndedSessionBearerAuthentication"
-    name = "bearerAuthLogout"
-
-    def get_security_definition(self, auto_schema: AutoSchema) -> dict[str, Any]:
-        return {
-            "type": "http",
-            "scheme": "bearer",
-            "description": "Opaque access token; logout also accepts an expired or revoked one.",
-        }

@@ -14,7 +14,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.selectors import requested_organization_slug
+from accounts.request_context import requested_organization_slug
 from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
 from core.permissions import HasPermissionCode
 from core.services import lock_record_for_update, void_record

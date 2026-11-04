@@ -3,7 +3,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from accounts.selectors import requested_organization_slug
+from accounts.request_context import requested_organization_slug
 from organizations.selectors import get_me_context
 from organizations.serializers import MeSerializer
 

@@ -9,7 +9,9 @@ from organizations.services import add_permission_codes_to_admin_profiles
 class Command(BaseCommand):
     help = (
         "Add the device and session administration permission codes to the `admin` profile of "
-        "every organization (or one with --organization). Idempotent: safe to run on every deploy."
+        "every organization (or one with --organization). It adds every missing code, so it also gives "
+        "back a code an administrator removed: run it once to backfill organizations created before "
+        "these codes existed, not on every deploy."
     )
 
     def add_arguments(self, parser: CommandParser) -> None:
