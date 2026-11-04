@@ -3,11 +3,13 @@
 from typing import Any
 
 import pytest
+from django.core.exceptions import ImproperlyConfigured
 from rest_framework.test import APIClient
 
-pytestmark = pytest.mark.django_db
+from core.filters import CODE_MAX_LENGTH
+from core.schema import HTTP_METHODS, add_error_envelope
 
-HTTP_METHODS = ("get", "put", "post", "patch", "delete", "head", "options", "trace")
+pytestmark = pytest.mark.django_db
 
 
 @pytest.fixture
@@ -45,7 +47,13 @@ def test_error_envelope_component_matches_the_documented_shape(schema: dict[str,
 def test_every_operation_documents_the_default_error_response(schema: dict[str, Any]) -> None:
     all_operations = operations(schema)
 
-    assert len(all_operations) > 10
+    # Compared with the URL conf, so a view that drops out of the schema fails here.
+    assert {path for path, _, _ in all_operations} >= {
+        "/api/v1/health/",
+        "/api/v1/me/",
+        "/api/v1/widgets/",
+        "/api/v1/widgets/{id}/void/",
+    }
     for path, method, operation in all_operations:
         default = operation["responses"]["default"]
         ref = default["content"]["application/json"]["schema"]["$ref"]
@@ -80,7 +88,7 @@ def test_code_parameter_is_documented_on_opted_in_lists_only(schema: dict[str, A
 
     code = query_parameters(paths["/api/v1/widgets/"]["get"])["code"]
     assert code["required"] is False
-    assert code["schema"]["maxLength"] == 50
+    assert code["schema"]["maxLength"] == CODE_MAX_LENGTH
     assert "code" in query_parameters(paths["/api/v1/stream-widgets/"]["get"])
     assert "code" not in query_parameters(paths["/api/v1/undeclared-widgets/"]["get"])
     assert "code" not in query_parameters(paths["/api/v1/widgets/{id}/"]["get"])
@@ -96,3 +104,32 @@ def test_organization_header_is_documented_on_scoped_operations(schema: dict[str
 
 def test_session_cookie_is_the_declared_security_scheme(schema: dict[str, Any]) -> None:
     assert schema["components"]["securitySchemes"]["cookieAuth"]["in"] == "cookie"
+
+
+def test_an_operation_keeps_its_own_default_response() -> None:
+    own = {"description": "custom"}
+    result = {"paths": {"/x/": {"get": {"responses": {"default": own}}, "post": {}}}}
+
+    add_error_envelope(result)
+
+    assert result["paths"]["/x/"]["get"]["responses"]["default"] is own
+    assert result["paths"]["/x/"]["post"]["responses"]["default"]["content"]
+
+
+def test_default_responses_are_independent_copies() -> None:
+    result = {"paths": {"/x/": {"get": {}, "post": {}}}}
+
+    add_error_envelope(result)
+
+    operations_ = result["paths"]["/x/"]
+    assert (
+        operations_["get"]["responses"]["default"]
+        is not operations_["post"]["responses"]["default"]
+    )
+
+
+def test_the_hook_refuses_to_overwrite_existing_error_components() -> None:
+    result = {"paths": {}, "components": {"schemas": {"FieldError": {}}}}
+
+    with pytest.raises(ImproperlyConfigured, match="FieldError"):
+        add_error_envelope(result)

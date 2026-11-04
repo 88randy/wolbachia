@@ -1,6 +1,8 @@
+import copy
 from typing import Any
 
 from django.conf import settings
+from django.core.exceptions import ImproperlyConfigured
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from drf_spectacular.openapi import AutoSchema
 from drf_spectacular.utils import OpenApiParameter
@@ -105,10 +107,15 @@ def add_error_envelope(result: dict[str, Any], **kwargs: object) -> dict[str, An
     drf-spectacular passes `generator`, `request` and `public` by keyword; they are unused.
     """
     schemas = result.setdefault("components", {}).setdefault("schemas", {})
-    schemas.update(ERROR_COMPONENTS)
+    clashes = sorted(set(schemas) & set(ERROR_COMPONENTS))
+    if clashes:
+        raise ImproperlyConfigured(f"OpenAPI components already defined: {', '.join(clashes)}.")
+    schemas.update(copy.deepcopy(ERROR_COMPONENTS))
     for path_item in result.get("paths", {}).values():
         for method in HTTP_METHODS:
             operation = path_item.get(method)
             if operation is not None:
-                operation.setdefault("responses", {}).setdefault("default", DEFAULT_ERROR_RESPONSE)
+                operation.setdefault("responses", {}).setdefault(
+                    "default", copy.deepcopy(DEFAULT_ERROR_RESPONSE)
+                )
     return result

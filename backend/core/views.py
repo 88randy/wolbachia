@@ -15,7 +15,6 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.constants import ORGANIZATION_HEADER
-from core.filters import CodeLookupFilter
 from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
 from core.permissions import HasPermissionCode
 from core.services import lock_record_for_update, void_record
@@ -61,8 +60,6 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
     uses_organization_header = True
     # Fails closed: a viewset must declare `required_permissions` per action to be reachable.
     permission_classes = [IsAuthenticated, HasPermissionCode]
-    # `?code=` on list endpoints; a view opts in with `code_lookup_field = "code"`.
-    filter_backends = [CodeLookupFilter]
 
     def initial(self, request: Request, *args: object, **kwargs: object) -> None:
         # A method with no route (e.g. DELETE) has no action to authorize: answer 405, not 403.

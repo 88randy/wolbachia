@@ -89,6 +89,8 @@ REST_FRAMEWORK = {
     # client cannot dodge the anonymous throttle by rotating that header.
     "NUM_PROXIES": env.int("DRF_NUM_PROXIES", default=0),
     "EXCEPTION_HANDLER": "core.exception_handler.api_exception_handler",
+    # `?code=` on list endpoints; a viewset opts in with `code_lookup_field = "code"`.
+    "DEFAULT_FILTER_BACKENDS": ["core.filters.CodeLookupFilter"],
     "DEFAULT_PAGINATION_CLASS": "core.pagination.StandardPagination",
     "PAGE_SIZE": API_PAGE_SIZE,
     "DEFAULT_SCHEMA_CLASS": "core.schema.ApiAutoSchema",

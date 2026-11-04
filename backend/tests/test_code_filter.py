@@ -1,13 +1,17 @@
 """`?code=` lookup on list endpoints (docs/api-conventions.md, "Objects by code")."""
 
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
-from rest_framework.test import APIClient
+from rest_framework.request import Request
+from rest_framework.settings import api_settings
+from rest_framework.test import APIClient, APIRequestFactory
 
-from core.filters import CODE_MAX_LENGTH
+from core.filters import CODE_MAX_LENGTH, CodeLookupFilter
 from organizations.models import Organization
 from tests.factories import WidgetFactory
+from tests.testapp.models import Widget
 
 pytestmark = pytest.mark.django_db
 
@@ -101,8 +105,38 @@ def test_code_works_with_cursor_pagination(client_a: APIClient, org_a: Organizat
     assert result_codes(response) == ["OV-011"]
 
 
-def test_views_without_code_lookup_field_ignore_the_parameter(client_a: APIClient) -> None:
-    # No permissions declared: the request is denied before any filtering would happen.
-    response = client_a.get("/api/v1/undeclared-widgets/", {"code": "OV-999"})
+def test_nul_character_is_a_validation_error_not_a_server_error(client_a: APIClient) -> None:
+    response = client_a.get(f"{WIDGETS}?code=OV%00010")
 
-    assert response.status_code == 403
+    assert response.status_code == 400
+    assert response.data["fields"] == {
+        "code": [{"code": "null_characters_not_allowed", "params": {}}]
+    }
+
+
+def test_surrounding_whitespace_is_trimmed(client_a: APIClient, org_a: Organization) -> None:
+    WidgetFactory(organization=org_a, code="OV-010")
+
+    response = client_a.get(WIDGETS, {"code": "  OV-010 "})
+
+    assert result_codes(response) == ["OV-010"]
+
+
+@pytest.mark.parametrize(
+    "view", [SimpleNamespace(action="list"), SimpleNamespace(action="list", code_lookup_field=None)]
+)
+def test_filter_leaves_views_without_code_lookup_field_untouched(view: SimpleNamespace) -> None:
+    queryset = Widget.objects.all()
+    request = Request(APIRequestFactory().get("/", {"code": ""}))
+
+    result = CodeLookupFilter().filter_queryset(request, queryset, view)  # type: ignore[arg-type]
+
+    assert result is queryset
+
+
+def test_schema_parameter_is_omitted_without_code_lookup_field() -> None:
+    assert CodeLookupFilter().get_schema_operation_parameters(SimpleNamespace()) == []  # type: ignore[arg-type]
+
+
+def test_filter_is_registered_for_every_viewset_by_default() -> None:
+    assert [CodeLookupFilter] == api_settings.DEFAULT_FILTER_BACKENDS

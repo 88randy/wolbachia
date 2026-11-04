@@ -48,8 +48,7 @@ uv run pytest --cov                       # coverage gate: 85 % (pyproject.toml)
 uv run mypy .
 uvx ruff@0.17.3 check --config pyproject.toml . && uvx ruff@0.17.3 format --check --config pyproject.toml .
 uv run python manage.py makemigrations --check --dry-run
-uv run python manage.py spectacular --file schema.yml --validate --fail-on-warn
-cd .. && npm run api:generate             # re-export openapi.yaml and regenerate packages/api-client (commit both)
+cd .. && npm run api:generate             # validate the schema, re-export openapi.yaml and regenerate packages/api-client (commit both)
 ```
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
