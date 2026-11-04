@@ -48,6 +48,9 @@ export class OpSqliteStore implements EventStore {
     await db.execute(
       'CREATE TABLE IF NOT EXISTS event (id TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, payload TEXT NOT NULL, device_time INTEGER NOT NULL, status TEXT NOT NULL)'
     );
+    // The first spike build created event_status_time (status, device_time). Phones that ran it still have it,
+    // which would favor op-sqlite, so it is dropped.
+    await db.execute('DROP INDEX IF EXISTS event_status_time');
     // Same index as WatermelonDB's schema (isIndexed on status only), so neither store has an edge.
     await db.execute('CREATE INDEX IF NOT EXISTS event_status ON event (status)');
     for (const pragma of PRAGMAS) await db.execute(pragma);
@@ -56,6 +59,8 @@ export class OpSqliteStore implements EventStore {
     this.settings =
       `journal_mode=${firstValue(journal.rows)}, synchronous=${firstValue(synchronous.rows)} ` +
       '(0=OFF 1=NORMAL 2=FULL 3=EXTRA)';
+    const indexes = await db.execute('PRAGMA index_list(event)');
+    this.settings += `, indexes=[${indexes.rows.map((row) => String(row.name)).join(', ')}]`;
     this.db = db;
   }
 

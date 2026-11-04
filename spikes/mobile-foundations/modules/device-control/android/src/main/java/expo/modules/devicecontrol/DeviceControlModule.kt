@@ -18,6 +18,7 @@ import expo.modules.kotlin.functions.Coroutine
 import expo.modules.kotlin.modules.Module
 import expo.modules.kotlin.modules.ModuleDefinition
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
@@ -81,16 +82,16 @@ class DeviceControlModule : Module() {
     // single-threaded "expo.modules.AsyncFunctionQueue" (expo-modules-core AppContext.kt), so a long download
     // there would stall every other async call of every module until it ended.
     AsyncFunction("downloadApk") Coroutine { url: String, expectedSha256: String, allowHttp: Boolean ->
-      withContext(Dispatchers.IO) { downloadApk(url, expectedSha256, allowHttp) }
+      exclusive { downloadApk(url, expectedSha256, allowHttp) }
     }
 
     AsyncFunction("installApk") Coroutine { path: String ->
-      withContext(Dispatchers.IO) { installApk(path) }
+      exclusive { installApk(path) }
     }
 
     // Explicit empty parameter list: a bare lambda is ambiguous between the zero- and one-parameter overloads.
     AsyncFunction("discardDownloadedApk") Coroutine { ->
-      withContext(Dispatchers.IO) { discardDownloadedApk() }
+      exclusive { discardDownloadedApk() }
     }
   }
 
@@ -220,9 +221,24 @@ class DeviceControlModule : Module() {
     }
   }
 
+  /**
+   * Runs [block] on Dispatchers.IO while holding [updateMutex]. The Expo module queue used to serialize these
+   * calls; on Dispatchers.IO two of them could write the same .part and .meta files (the React `busy` flag
+   * resets when the screen remounts), so the exclusion is explicit and fails fast instead of waiting.
+   */
+  private suspend fun <T> exclusive(block: () -> T): T {
+    if (!updateMutex.tryLock()) throw DeviceControlException("A download or install is already running")
+    try {
+      return withContext(Dispatchers.IO) { block() }
+    } finally {
+      updateMutex.unlock()
+    }
+  }
+
+  /** Any lock task state except NONE: LOCKED (device owner) and PINNED (screen pinning) both restrict launches. */
   private fun isLockTaskActive(): Boolean {
     val activityManager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager
-    return activityManager.lockTaskModeState == ActivityManager.LOCK_TASK_MODE_LOCKED
+    return activityManager.lockTaskModeState != ActivityManager.LOCK_TASK_MODE_NONE
   }
 
   // ---------------------------------------------------------------------------------------
@@ -427,6 +443,9 @@ class DeviceControlModule : Module() {
   }
 
   companion object {
+    /** One download/install/discard at a time across the whole module. */
+    private val updateMutex = Mutex()
+
     /** HttpURLConnection has no constant for 416 (RFC 9110 "Range Not Satisfiable"). */
     private const val HTTP_RANGE_NOT_SATISFIABLE = 416
 
