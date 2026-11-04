@@ -6,6 +6,7 @@ design/
 .claude/worktrees/
 # Generated code.
 packages/api-client/src/generated/
+packages/api-client/openapi.yaml
 # Python is formatted by ruff.
 backend/
 **/node_modules/
