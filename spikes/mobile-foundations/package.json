@@ -1,0 +1,33 @@
+{
+  "name": "wolbachia-mobile-foundations-spike",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "dependencies": {
+    "@maplibre/maplibre-react-native": "^11.5.1",
+    "@nozbe/watermelondb": "^0.28.0",
+    "@op-engineering/op-sqlite": "^19.0.4",
+    "expo": "~58.0.23",
+    "expo-build-properties": "~58.0.12",
+    "expo-crypto": "~58.0.7",
+    "expo-file-system": "~58.0.13",
+    "expo-location": "~58.0.20",
+    "expo-status-bar": "~58.0.4",
+    "react": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-nitro-image": "^0.15.2",
+    "react-native-nitro-modules": "^0.37.2",
+    "react-native-vision-camera": "^5.2.4",
+    "react-native-vision-camera-barcode-scanner": "^5.2.4"
+  },
+  "devDependencies": {
+    "@types/react": "~19.3.0",
+    "typescript": "~6.0.3"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "prebuild": "expo prebuild --platform android",
+    "build:release": "cd android && gradlew.bat assembleRelease"
+  },
+  "private": true,
+  "description": "Throwaway PoC for issue #1 (mobile foundations spike). Not production code."
+}
