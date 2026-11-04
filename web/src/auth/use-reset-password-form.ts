@@ -8,13 +8,9 @@ import type { ServiceFailure } from "../api/service-failure";
 import { useFocusAlert } from "../forms/use-focus-alert";
 import { confirmPasswordReset } from "./request-password-reset-confirm";
 import type { ResetConfirmOutcome } from "./request-password-reset-confirm";
+import type { ResetLink } from "./reset-link";
 import { resetSchema } from "./reset-schema";
 import type { ResetValues } from "./reset-schema";
-
-interface ResetLink {
-  uid: string;
-  token: string;
-}
 
 interface OutcomeEffects {
   form: UseFormReturn<ResetValues>;

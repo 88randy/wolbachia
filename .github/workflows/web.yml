@@ -122,6 +122,13 @@ jobs:
         run: npm run e2e --workspace=web
         env:
           E2E_BASE_URL: http://127.0.0.1:8080
+      # The e2e opens reset links with these test tokens (fragment and legacy path): none may
+      # appear in what nginx logged. Guard against an empty log so the check cannot pass vacuously.
+      - name: No reset token in the nginx access log
+        run: |
+          docker logs web-ci > nginx.log 2>&1
+          grep -q "GET /reset-password" nginx.log || { echo "the e2e did not reach /reset-password"; exit 1; }
+          if grep -E "set-password-link|old-link" nginx.log; then echo "a reset token reached the nginx log"; exit 1; fi
       - name: Stop the container
         if: always()
         run: docker rm -f web-ci

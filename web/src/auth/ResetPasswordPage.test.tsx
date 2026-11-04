@@ -7,16 +7,21 @@ import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
 
 const CONFIRM_PATH = "POST /api/v1/auth/password-reset/confirm/";
-const LINK_PATH = "/reset-password/MQ/set-password-link";
+const LINK_PATH = "/reset-password#uid=MQ&token=set-password-link";
+const LEGACY_LINK_PATH = "/reset-password/MQ/set-password-link";
 const NEW_PASSWORD = fakePassword();
 
 afterEach(() => {
   vi.restoreAllMocks();
 });
 
-async function openReset(reply: Response = noContent(204), language: "es-MX" | "en" = "es-MX") {
+async function openReset(
+  reply: Response = noContent(204),
+  language: "es-MX" | "en" = "es-MX",
+  path: string = LINK_PATH,
+) {
   const api = createFakeApi({ [CONFIRM_PATH]: reply });
-  const app = await renderApp({ path: LINK_PATH, fetch: api.fetch, language });
+  const app = await renderApp({ path, fetch: api.fetch, language });
   await screen.findByRole("heading", { level: 1 });
   return { api, app };
 }
@@ -32,7 +37,7 @@ function weakPassword(code: string): Response {
 }
 
 describe("reset password: the page of the emailed link", () => {
-  test("opens at /reset-password/{uid}/{token}, with no session, and uses new-password fields", async () => {
+  test("opens at /reset-password#uid=...&token=..., with no session, and uses new-password fields", async () => {
     const { api } = await openReset();
 
     expect(
@@ -52,6 +57,9 @@ describe("reset password: the page of the emailed link", () => {
     const { api } = await openReset();
 
     expect(window.location.pathname).toBe("/reset-password");
+    expect(window.location.hash).toBe("");
+    expect(window.location.href).not.toContain("set-password-link");
+    expect(api.requests).toEqual([]);
     await fillAndSend(NEW_PASSWORD);
 
     await vi.waitFor(() => {
@@ -88,6 +96,39 @@ describe("reset password: the page of the emailed link", () => {
     const confirmation = screen.getByLabelText("Confirma la contraseña");
     expect(await screen.findByText("Las contraseñas no coinciden.")).toBeDefined();
     expect(document.activeElement).toBe(confirmation);
+    expect(api.requests).toEqual([]);
+  });
+
+  test("a link from before the fragment format (values in the path) still works", async () => {
+    window.history.replaceState(null, "", LEGACY_LINK_PATH);
+    const { api } = await openReset(noContent(204), "es-MX", LEGACY_LINK_PATH);
+
+    expect(window.location.pathname).toBe("/reset-password");
+    await fillAndSend(NEW_PASSWORD);
+
+    await vi.waitFor(() => {
+      expect(api.requests[0]?.body).toEqual({
+        uid: "MQ",
+        token: "set-password-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+  });
+
+  test.each([
+    ["has no fragment", "/reset-password"],
+    ["has no token", "/reset-password#uid=MQ"],
+    ["has a malformed token", "/reset-password#uid=MQ&token=../x"],
+    ["repeats a value", "/reset-password#uid=MQ&token=a&token=b"],
+  ])("a link that %s shows the invalid-link state and sends nothing", async (_name, path) => {
+    window.history.replaceState(null, "", path);
+    const { api } = await openReset(noContent(204), "es-MX", path);
+
+    const alert = await screen.findByRole("alert");
+    expect(alert.textContent).toContain("Este enlace ya no sirve");
+    expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
+    expect(screen.getByRole("link", { name: "Pedir un enlace nuevo" })).toBeDefined();
+    expect(window.location.href).not.toContain("token=");
     expect(api.requests).toEqual([]);
   });
 

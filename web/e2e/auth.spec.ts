@@ -175,9 +175,12 @@ test.describe("password reset", () => {
     page,
   }) => {
     const api = await mockApi(page, { me: null });
+    const requestedUrls: string[] = [];
+    page.on("request", (request) => requestedUrls.push(request.url()));
 
-    await page.goto("/reset-password/MQ/set-password-link");
-    await expect(page).toHaveURL(/\/reset-password$/); // the token is not left in the address bar
+    await page.goto("/reset-password#uid=MQ&token=set-password-link");
+    await expect(page).toHaveURL(/\/reset-password$/); // neither token nor fragment is left in the bar
+    expect(page.url()).not.toContain("set-password-link");
     await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
@@ -190,12 +193,41 @@ test.describe("password reset", () => {
       token: "set-password-link",
       new_password: E2E_PASSWORD,
     });
+    expect(requestedUrls.filter((url) => url.includes("set-password-link"))).toEqual([]);
+  });
+
+  test("a link from before the fragment format still works and clears its path", async ({
+    page,
+  }) => {
+    const api = await mockApi(page, { me: null });
+
+    await page.goto("/reset-password/MQ/set-password-link");
+    await expect(page).toHaveURL(/\/reset-password$/);
+    await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
+    await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
+    await page.getByRole("button", { name: "Guardar contraseña" }).click();
+
+    await expect(page).toHaveURL(/\/login\?notice=password-changed$/);
+    const confirm = api.requests.find((request) => request.path.endsWith("/confirm/"));
+    expect(confirm?.body).toMatchObject({ uid: "MQ", token: "set-password-link" });
+  });
+
+  test("a link without a usable fragment shows the invalid-link state and sends nothing", async ({
+    page,
+  }) => {
+    const api = await mockApi(page, { me: null });
+
+    await page.goto("/reset-password#uid=MQ");
+
+    await expect(page.getByRole("alert")).toContainText("Este enlace ya no sirve");
+    await expect(page).toHaveURL(/\/reset-password$/);
+    expect(api.requests).toEqual([]);
   });
 
   test("an invalid link explains itself and offers a new one", async ({ page }) => {
     await mockApi(page, { me: null, resetConfirm: "invalid-link" });
 
-    await page.goto("/reset-password/MQ/old-link");
+    await page.goto("/reset-password#uid=MQ&token=old-link");
     await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
@@ -210,7 +242,7 @@ test.describe("password reset", () => {
   test("a weak password is explained on its field", async ({ page }) => {
     await mockApi(page, { me: null, resetConfirm: "too-common" });
 
-    await page.goto("/reset-password/MQ/set-password-link");
+    await page.goto("/reset-password#uid=MQ&token=set-password-link");
     await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
