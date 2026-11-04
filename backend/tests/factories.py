@@ -1,7 +1,12 @@
+import uuid
+from datetime import timedelta
+
 import factory
+from django.utils import timezone
 from factory.django import DjangoModelFactory
 
-from accounts.models import User
+from accounts.models import Device, DeviceSession, User
+from accounts.tokens import hash_token
 from organizations.models import Membership, Organization, Profile
 from tests.testapp.models import Widget
 
@@ -49,3 +54,27 @@ class WidgetFactory(DjangoModelFactory):
 
     organization = factory.SubFactory(OrganizationFactory)
     name = factory.Sequence(lambda n: f"Widget {n}")
+
+
+class DeviceFactory(DjangoModelFactory):
+    class Meta:
+        model = Device
+
+    id = factory.LazyFunction(uuid.uuid4)
+    organization = factory.SubFactory(OrganizationFactory)
+    label = factory.Sequence(lambda n: f"Phone {n}")
+
+
+class DeviceSessionFactory(DjangoModelFactory):
+    """A session with random digests. Use `accounts.services.start_device_session` for real tokens."""
+
+    class Meta:
+        model = DeviceSession
+
+    organization = factory.SubFactory(OrganizationFactory)
+    user = factory.SubFactory(UserFactory)
+    device = factory.SubFactory(DeviceFactory, organization=factory.SelfAttribute("..organization"))
+    access_hash = factory.LazyFunction(lambda: hash_token(uuid.uuid4().hex))
+    refresh_hash = factory.LazyFunction(lambda: hash_token(uuid.uuid4().hex))
+    access_expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(minutes=15))
+    refresh_expires_at = factory.LazyFunction(lambda: timezone.now() + timedelta(days=30))
