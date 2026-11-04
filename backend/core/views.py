@@ -52,6 +52,9 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
     `resolve_active_membership`. The organization comes from the user's membership, never from
     the body: `organization_id` in a payload is ignored.
+
+    ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+    `APIView`s do not have.
     """
 
     uses_organization_header = True
@@ -90,7 +93,7 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
 
     def perform_update(self, serializer: serializers.BaseSerializer[Any]) -> None:
         with transaction.atomic():
-            lock_record_for_update(serializer.instance)  # type: ignore[arg-type]
+            serializer.instance = lock_record_for_update(serializer.instance)  # type: ignore[arg-type,type-var]
             serializer.save(organization=self.request.organization)  # type: ignore[attr-defined]
 
 

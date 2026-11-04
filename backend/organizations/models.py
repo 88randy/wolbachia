@@ -81,6 +81,13 @@ class Membership(OrgScopedModel):
     scope = models.JSONField(default=default_scope)
     is_active = models.BooleanField(default=True)
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["user", "organization"], name="membership_unique_user_per_organization"
+            )
+        ]
+
     def clean(self) -> None:
         """`scope` is a JSON object whose known keys hold lists (ids of centers and quadrants)."""
         known_keys = default_scope().keys()
@@ -91,10 +98,3 @@ class Membership(OrgScopedModel):
             raise ValidationError(
                 {"scope": "Use an object with list values for centers and quadrants."}
             )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=["user", "organization"], name="membership_unique_user_per_organization"
-            )
-        ]

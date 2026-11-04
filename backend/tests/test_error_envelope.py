@@ -3,9 +3,12 @@
 import logging
 
 import pytest
+from django.db import connection
 from rest_framework.test import APIClient
 
 from core.exception_handler import _flatten_codes
+from organizations.models import Organization
+from tests.testapp.models import Widget
 
 pytestmark = pytest.mark.django_db
 
@@ -101,12 +104,13 @@ def test_flatten_codes_wraps_a_top_level_list_as_non_field_errors() -> None:
     assert _flatten_codes(["invalid"]) == {"non_field_errors": [{"code": "invalid", "params": {}}]}
 
 
-def test_domain_errors_roll_back_the_request_transaction(
-    client_a: APIClient, monkeypatch: pytest.MonkeyPatch
+def test_domain_error_rolls_back_writes_made_during_an_atomic_request(
+    api_client: APIClient, org_a: Organization, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    calls: list[bool] = []
-    monkeypatch.setattr("core.exception_handler.set_rollback", lambda: calls.append(True))
+    monkeypatch.setitem(connection.settings_dict, "ATOMIC_REQUESTS", True)
 
-    client_a.get("/api/v1/widgets/", headers={"X-Organization": "nope"})
+    response = api_client.post("/api/v1/write-then-fail/")
 
-    assert calls == [True]
+    assert response.status_code == 409
+    assert response.data["code"] == "already_voided"
+    assert not Widget.objects.filter(name="leaked").exists()

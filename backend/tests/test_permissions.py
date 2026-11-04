@@ -4,7 +4,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from organizations.models import Organization
-from tests.conftest import MemberFactory
+from tests.conftest import WIDGET_CODES, MemberFactory
 from tests.factories import ProfileFactory, WidgetFactory
 
 pytestmark = pytest.mark.django_db
@@ -12,7 +12,9 @@ pytestmark = pytest.mark.django_db
 WIDGETS = "/api/v1/widgets/"
 
 
-def client_with(api_client: APIClient, make_member: MemberFactory, org: Organization, *codes: str):
+def client_with(
+    api_client: APIClient, make_member: MemberFactory, org: Organization, *codes: str
+) -> APIClient:
     user, _ = make_member(org, codes)
     api_client.force_authenticate(user)
     return api_client
@@ -40,17 +42,40 @@ def test_read_code_allows_list_and_retrieve_only(
     assert client.get(url).status_code == 200
 
 
+@pytest.mark.parametrize(
+    ("method", "suffix", "payload"),
+    [
+        ("post", "", {"name": "x"}),
+        ("patch", "{pk}/", {"name": "x"}),
+        ("put", "{pk}/", {"name": "x"}),
+        ("post", "{pk}/void/", {"reason": "r"}),
+    ],
+    ids=["create", "patch", "put", "void"],
+)
 def test_read_code_does_not_allow_writes_or_void(
-    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+    api_client: APIClient,
+    org_a: Organization,
+    make_member: MemberFactory,
+    method: str,
+    suffix: str,
+    payload: dict[str, str],
 ) -> None:
     widget = WidgetFactory(organization=org_a)
     client = client_with(api_client, make_member, org_a, "widget.read")
-    detail = f"{WIDGETS}{widget.pk}/"
 
-    assert client.post(WIDGETS, {"name": "x"}, format="json").status_code == 403
-    assert client.patch(detail, {"name": "x"}, format="json").status_code == 403
-    assert client.put(detail, {"name": "x"}, format="json").status_code == 403
-    assert client.post(f"{detail}void/", {"reason": "r"}, format="json").status_code == 403
+    response = getattr(client, method)(
+        WIDGETS + suffix.format(pk=widget.pk), payload, format="json"
+    )
+
+    assert response.status_code == 403
+
+
+def test_options_is_denied_because_metadata_has_no_permission_code(
+    api_client: APIClient, org_a: Organization, make_member: MemberFactory
+) -> None:
+    client = client_with(api_client, make_member, org_a, *WIDGET_CODES)
+
+    assert client.options(WIDGETS).status_code == 403
 
 
 def test_create_code_allows_only_create(

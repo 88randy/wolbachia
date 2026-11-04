@@ -29,14 +29,14 @@ def void_record[VoidableT: VoidableMixin](
     return locked
 
 
-def lock_record_for_update(instance: models.Model) -> None:
-    """Lock the row until the surrounding transaction ends and reload the instance.
+def lock_record_for_update[ModelT: models.Model](instance: ModelT) -> ModelT:
+    """Lock the row until the surrounding transaction ends and return the fresh instance.
 
     Call it inside `transaction.atomic()` before saving a PATCH/PUT: it makes the update see a
     void committed after the request read the record, and refuses to update voided records
-    (`AlreadyVoidedError`, 409). Reloading means the save never writes stale void fields.
+    (`AlreadyVoidedError`, 409). Saving the returned instance never writes stale void fields.
     """
-    locked = type(instance)._default_manager.select_for_update().get(pk=instance.pk)
+    locked = cast(ModelT, type(instance)._default_manager.select_for_update().get(pk=instance.pk))
     if isinstance(locked, VoidableMixin) and locked.voided_at is not None:
         raise AlreadyVoidedError
-    instance.refresh_from_db()
+    return locked

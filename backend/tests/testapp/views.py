@@ -1,14 +1,15 @@
 from typing import Any
 
-from rest_framework import serializers
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework.views import APIView
 
-from core.fields import OrgScopedPrimaryKeyRelatedField
+from core.exceptions import AlreadyVoidedError
 from core.pagination import StreamCursorPagination
+from core.serializers import OrgScopedModelSerializer
 from core.views import OrgScopedViewSet, VoidActionMixin
+from organizations.models import Organization
 from tests.testapp.models import Widget
 
 WIDGET_PERMISSIONS = {
@@ -21,11 +22,7 @@ WIDGET_PERMISSIONS = {
 }
 
 
-class WidgetSerializer(serializers.ModelSerializer[Widget]):
-    related = OrgScopedPrimaryKeyRelatedField(
-        queryset=Widget.objects.all(), required=False, allow_null=True
-    )
-
+class WidgetSerializer(OrgScopedModelSerializer):
     class Meta:
         model = Widget
         fields = ["id", "name", "related", "created_at", "voided_at", "voided_by", "void_reason"]
@@ -70,3 +67,15 @@ class ThrottledView(APIView):
 
     def get(self, request: Request) -> Response:
         return Response({"status": "ok"})
+
+
+class WriteThenFailView(APIView):
+    """Writes a row, then fails with a domain error: the write must not survive."""
+
+    authentication_classes: list[Any] = []
+    permission_classes: list[Any] = []
+    throttle_classes: list[Any] = []
+
+    def post(self, request: Request) -> Response:
+        Widget.objects.create(organization=Organization.objects.first(), name="leaked")
+        raise AlreadyVoidedError

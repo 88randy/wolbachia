@@ -10,6 +10,7 @@ from tests.testapp.views import (
     ThrottledView,
     UndeclaredPermissionsViewSet,
     WidgetViewSet,
+    WriteThenFailView,
 )
 
 router = SimpleRouter()
@@ -22,4 +23,5 @@ urlpatterns = [
     path("api/v1/", include(router.urls)),
     path("api/v1/boom/", BoomView.as_view()),
     path("api/v1/throttled/", ThrottledView.as_view()),
+    path("api/v1/write-then-fail/", WriteThenFailView.as_view()),
 ]
