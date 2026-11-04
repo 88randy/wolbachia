@@ -8,6 +8,9 @@ expect.extend(toHaveNoViolations);
 // Vitest has no globals by default, so Testing Library's automatic cleanup does not run.
 afterEach(cleanup);
 
+// jsdom does not implement scrolling; the router calls it on navigation and logs noise otherwise.
+window.scrollTo = () => undefined;
+
 declare module "vitest" {
   interface Assertion {
     toHaveNoViolations(): void;

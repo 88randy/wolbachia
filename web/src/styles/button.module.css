@@ -1,0 +1,26 @@
+/* Buttons and button-looking links (.b in web.css). Primary = filled, secondary = outlined. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: var(--web-control-md);
+  padding: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-sm);
+  font: inherit;
+  font-size: var(--web-type-label-font-size);
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.primary {
+  background: var(--color-action);
+  color: var(--color-on-action);
+}
+
+.secondary {
+  background: var(--color-surface);
+  color: var(--color-action-strong);
+  box-shadow: inset 0 0 0 2px var(--color-action);
+}

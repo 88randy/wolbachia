@@ -5,13 +5,14 @@ import { I18nextProvider } from "react-i18next";
 import { readAppConfig } from "../config/app-config";
 import { getInitialLocale } from "../i18n/locale";
 import { setupI18n } from "../i18n/setup-i18n";
+import { createAppRouter } from "../router/router";
 import { ConfigErrorScreen } from "../states/ConfigErrorScreen";
 import { applyTheme, getInitialTheme } from "../theme/theme";
 import { App } from "./App";
 
 function chooseScreen(env: Record<string, unknown>): ReactElement {
   const result = readAppConfig(env);
-  if (result.ok) return <App />;
+  if (result.ok) return <App router={createAppRouter()} />;
   console.error(`Invalid app configuration: ${result.variable} is ${result.problem}.`);
   return <ConfigErrorScreen />;
 }

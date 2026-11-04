@@ -42,7 +42,7 @@ describe("startApp", () => {
     await startApp(container, { VITE_API_BASE_URL: "/api/v1" });
 
     await waitFor(() => {
-      expect(screen.getByTestId("app-root")).toBeDefined();
+      expect(screen.getByRole("heading", { name: "Inicio" })).toBeDefined();
     });
     expect(consoleError).not.toHaveBeenCalled();
   });
