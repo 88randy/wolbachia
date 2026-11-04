@@ -80,5 +80,6 @@ def register_void_handler() -> None:
             VoidPayloadSerializer,
             apply_void,
             codes=(VOID_TARGET_NOT_FOUND, VOID_TARGET_NOT_OWNED, ALREADY_VOIDED),
+            checks_shift=False,
         )
     )

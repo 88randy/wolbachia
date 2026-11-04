@@ -78,6 +78,8 @@ Rules:
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
 | motocicleta | motorcycle | `/motorcycles/`, `motorcycle` | Never "bike". |
+| revisión de la moto | motorcycle check | `MotorcycleCheck`, `checks`, `result` (`ok`, `minor`, `severe`) | One line of the checklist done when the shift opens; the items are the catalog `motorcycle-check-item`. A `severe` result blocks the motorcycle. |
+| odómetro | odometer | `odometer_km`, `odometer_open_km`, `odometer_close_km` | Kilometers shown by the motorcycle. Never "mileage". |
 
 ## Records and corrections
 

@@ -58,7 +58,13 @@ from field_sync.exceptions import (
     SyncInProgressError,
 )
 from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent
-from field_sync.registry import EventContext, EventHandler, OrgScopedRequest, find_handler
+from field_sync.registry import (
+    EventContext,
+    EventHandler,
+    OrgScopedRequest,
+    find_handler,
+    run_envelope_checks,
+)
 from field_sync.selectors import Changes, StoredEvent, build_changes, find_stored_event
 from reviews.services import create_review_item
 
@@ -82,6 +88,16 @@ class Verdict:
 
     def result_for(self, event: EventEnvelope) -> EventResult:
         return EventResult(event.id, self.status, self.code, self.params)
+
+
+@dataclass(frozen=True)
+class PreparedEvent:
+    """A validated event ready to apply: its handler, its payload and the review signal of the
+    shift it names (an event captured after the shift closed), if any."""
+
+    handler: EventHandler
+    data: dict[str, Any]
+    shift_signal: EventNeedsReview | None = None
 
 
 @dataclass(frozen=True)
@@ -125,15 +141,20 @@ def set_batch_lock_timeout() -> None:
 
 
 def check_deferred_constraints_now() -> None:
-    """Run the deferred foreign key checks here, inside `sync_batch`'s error mapping.
+    """Run the deferred foreign key checks here, inside `sync_batch`'s error mapping
+    (`connection.check_constraints()`: Django's own `SET CONSTRAINTS ALL IMMEDIATE` then
+    `ALL DEFERRED` on PostgreSQL).
 
     Django's foreign keys are checked at commit. In a final upload this block is only a savepoint
     and the real commit is the mixin's, outside the `try`: a lock wait (`55P03`) on a referenced
     row (say a `Device` held by a concurrent login) would surface there as a 500. Checking now
     keeps every wait of the batch under the timeout and the 429 mapping.
+
+    Constraints go back to deferred right after the check: `SET CONSTRAINTS` lasts until the
+    transaction ends, and domain rows that point at a `FieldEvent` before the pipeline inserts it
+    (`Shift.opened_event`) rely on the deferral for the next event or batch of the same transaction.
     """
-    with connection.cursor() as cursor:
-        cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")
+    connection.check_constraints()
 
 
 def sync_batch(
@@ -185,14 +206,14 @@ class EventProcessor:
         if stored is not None:
             return self._replay(envelope, stored)
         try:
-            handler, data = self._validate(envelope)
-            return self._accept(envelope, handler, data)
+            prepared = self._validate(envelope)
+            return self._accept(envelope, prepared)
         except EventRejected as rejection:
             return self._reject(envelope, rejection)
 
     # --- validation (no writes) -------------------------------------------------------------
 
-    def _validate(self, envelope: EventEnvelope) -> tuple[EventHandler, dict[str, Any]]:
+    def _validate(self, envelope: EventEnvelope) -> PreparedEvent:
         handler = find_handler(envelope.type, envelope.schema_version)
         self._check_envelope(envelope)
         organization = self.batch.organization
@@ -206,7 +227,12 @@ class EventProcessor:
             codes = flatten_error_codes(error.get_codes())
             fields = {name: [item["code"] for item in items] for name, items in codes.items()}
             raise EventRejected(INVALID_PAYLOAD, {"fields": fields}) from None
-        return handler, dict(serializer.validated_data)
+        shift_signal = (
+            run_envelope_checks(organization, self.batch.user, envelope)
+            if handler.checks_shift
+            else None
+        )
+        return PreparedEvent(handler, dict(serializer.validated_data), shift_signal)
 
     @staticmethod
     def _check_envelope(envelope: EventEnvelope) -> None:
@@ -228,23 +254,19 @@ class EventProcessor:
 
     # --- accepted and in-review events ------------------------------------------------------
 
-    def _accept(
-        self, envelope: EventEnvelope, handler: EventHandler, data: dict[str, Any]
-    ) -> EventResult:
+    def _accept(self, envelope: EventEnvelope, prepared: PreparedEvent) -> EventResult:
         try:
             with transaction.atomic():
-                outcome = self._apply(envelope, handler, data)
+                outcome = self._apply(envelope, prepared)
                 self._store(envelope, outcome)
         except IntegrityError as error:
             return self._replay_after_conflict(envelope, error)
         return outcome.result_for(envelope)
 
-    def _apply(
-        self, envelope: EventEnvelope, handler: EventHandler, data: dict[str, Any]
-    ) -> Verdict:
+    def _apply(self, envelope: EventEnvelope, prepared: PreparedEvent) -> Verdict:
         final_upload = self._final_upload_signal()
         clock = self.clock.review_signal(envelope.device_time)
-        batch_signal = final_upload or clock
+        batch_signal = final_upload or prepared.shift_signal or clock
         context = EventContext(
             organization=self.batch.organization,
             user=self.batch.user,
@@ -255,10 +277,10 @@ class EventProcessor:
         )
         handler_signal: EventNeedsReview | None = None
         try:
-            handler.apply(context, data)
+            prepared.handler.apply(context, prepared.data)
         except EventNeedsReview as needs_review:
             handler_signal = needs_review
-        signal = final_upload or handler_signal or clock
+        signal = final_upload or handler_signal or prepared.shift_signal or clock
         if signal is None:
             return Verdict(EventStatus.ACCEPTED)
         return Verdict.from_signal(EventStatus.IN_REVIEW, signal)

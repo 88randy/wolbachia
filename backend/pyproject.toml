@@ -65,7 +65,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 # Explicit so import order is the same whether ruff runs from backend/ (CI) or the repo root (pre-commit).
-known-first-party = ["accounts", "catalogs", "config", "core", "field_sync", "organizations", "reviews", "rules", "tests"]
+known-first-party = ["accounts", "catalogs", "config", "core", "field_sync", "organizations", "reviews", "rules", "shifts", "tests"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

@@ -31,6 +31,26 @@ export const sync: Record<keyof typeof source, string> = {
     "Your phone's clock looks wrong, so a supervisor will review this record. Check the date and time on your phone.",
   "sync.result.finalUploadAfterRevoke":
     "Your session had already ended when this record was sent, so a supervisor will review it. Sign in again if you need to keep working.",
+  "sync.result.shiftAlreadyOpen":
+    "You already have an open shift, so a new one was not started. Continue with the open shift or close it first.",
+  "sync.result.motorcycleInUse":
+    "This motorcycle is already in an open shift. Choose another one or tell your supervisor.",
+  "sync.result.capturedAfterShiftClose":
+    "This record was captured after the shift was closed. It was saved and a supervisor will review it. You don't need to do anything.",
+  "sync.result.motorcycleUnknown":
+    "The server doesn't know this motorcycle. Check the code and try again; if it keeps happening, tell your supervisor.",
+  "sync.result.motorcycleBlocked":
+    "This motorcycle can't be used right now. Choose another one or tell your supervisor.",
+  "sync.result.odometerOutOfRange":
+    "The odometer reading is not possible. Check the number on the dashboard and enter it again.",
+  "sync.result.shiftNotOpen":
+    "This shift is not open on the server. Tell your supervisor if you still need to work.",
+  "sync.result.shiftEventNotVoidable":
+    "A shift can't be voided from the phone. Ask your supervisor to correct it.",
+  "sync.result.odometerDecreased":
+    "The odometer reading is lower than the previous one, so a supervisor will review it. You don't need to do anything meanwhile.",
+  "sync.result.severeCheck":
+    "A serious fault was reported, so the motorcycle is blocked and a supervisor will review it.",
   "sync.batch.deviceMismatch": "This session doesn't belong to this phone. Sign in again.",
   "sync.batch.payloadTooLarge":
     "The upload was too large, so the app will send it in parts. You don't need to do anything.",

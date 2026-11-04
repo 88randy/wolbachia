@@ -87,8 +87,9 @@ def camel(code: str) -> str:
 def translated_and_documented(code: str, prefix: str) -> None:
     locales = REPO_ROOT / "packages" / "i18n" / "src" / "locales"
     key = f'"sync.{prefix}.{camel(code)}"'
-    for name in ("es-MX.ts", "en.ts"):
-        assert key in (locales / name).read_text(encoding="utf-8"), f"{key} missing in {name}"
+    for language in ("es-MX", "en"):
+        catalog = locales / language / "sync.ts"
+        assert key in catalog.read_text(encoding="utf-8"), f"{key} missing in {catalog}"
     documentation = (REPO_ROOT / "docs" / "sync.md").read_text(encoding="utf-8")
     assert f"`{code}`" in documentation, f"{code} missing in docs/sync.md"
 

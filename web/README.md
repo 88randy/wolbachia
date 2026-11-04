@@ -125,7 +125,7 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 
 ### Lists: `DataTable` and `FilterBar` (#29)
 
-Decisions 84 and 85 in `docs/decisions.md`. Every list screen uses these two components; none writes its own table, filters or paging.
+Decisions 85 and 86 in `docs/decisions.md`. Every list screen uses these two components; none writes its own table, filters or paging.
 
 - **The address is the state.** `?status=open&ordering=-created_at&page=2` (or `?cursor=...` for cursor lists, plus `include_voided=true`). `useTableUrlState(config)` reads it, validates it on every read and writes it on every change; each change pushes a history entry (the back button restores the previous view) and any change of filters or order goes back to the first page. A parameter the list does not know, or an invalid value, is **ignored** (never sent to the API) and named in a notice with "Remove from the address". The router writes flat string pairs (`router/flat-search.ts`), so `?code=1e3` stays text.
 - **The server does the work.** Sorting, filtering and paging are requests; the table only draws the rows of the page in view. `ordering` is sent only when the URL has one, otherwise the API applies its default, which `defaultOrdering` mirrors for `aria-sort`.

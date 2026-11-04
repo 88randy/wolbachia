@@ -1078,6 +1078,113 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/shifts/:
+    get:
+      operationId: shifts_list
+      description: |-
+        Shifts of the organization (W28 and W29 read them). Read-only: shifts are written by the
+        `shift.open` and `shift.close` sync events; a supervisor's correction is #34.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: courier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: status
+        schema:
+          enum:
+          - open
+          - closed
+          type: string
+          minLength: 1
+        description: |-
+          * `open` - Open
+          * `closed` - Closed
+      tags:
+      - shifts
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShiftList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/shifts/{id}/:
+    get:
+      operationId: shifts_retrieve
+      description: |-
+        Shifts of the organization (W28 and W29 read them). Read-only: shifts are written by the
+        `shift.open` and `shift.close` sync events; a supervisor's correction is #34.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this shift.
+        required: true
+      tags:
+      - shifts
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shift'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/users/{id}/revoke-device-sessions/:
     post:
       operationId: users_revoke_device_sessions_create
@@ -1275,6 +1382,16 @@ components:
       - has_more
       - reviews
       - rules_version
+    CheckResultEnum:
+      enum:
+      - ok
+      - minor
+      - severe
+      type: string
+      description: |-
+        * `ok` - Ok
+        * `minor` - Minor
+        * `severe` - Severe
     Device:
       type: object
       description: Read-only view of a device for administrators (W67).
@@ -1561,6 +1678,34 @@ components:
       - me
       - refresh
       - server_time
+    MotorcycleCheck:
+      type: object
+      description: One checklist line; `item_code` is the code of the catalog item.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        item:
+          type: string
+          format: uuid
+          readOnly: true
+        item_code:
+          type: string
+          readOnly: true
+        result:
+          allOf:
+          - $ref: '#/components/schemas/CheckResultEnum'
+          readOnly: true
+        note:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - item
+      - item_code
+      - note
+      - result
     PaginatedCatalogItemList:
       type: object
       required:
@@ -1695,6 +1840,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RuleParameterVersion'
+    PaginatedShiftList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Shift'
     PasswordResetConfirmRequest:
       type: object
       description: Resolves the link first, so a bad link never reveals the password
@@ -2037,6 +2205,101 @@ components:
       - next_change_at
       - parameters
       - version
+    Shift:
+      type: object
+      description: |-
+        A shift as the supervisor sees it. Times marked `_device` are the phone's clock; the events
+        (`opened_event`, `closed_event`) carry the server receipt time. No user-facing text.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        courier:
+          type: string
+          format: uuid
+          readOnly: true
+        device:
+          type: string
+          format: uuid
+          readOnly: true
+        motorcycle:
+          type: string
+          format: uuid
+          readOnly: true
+        motorcycle_code:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ShiftStatusEnum'
+          readOnly: true
+          default: open
+        opened_at_device:
+          type: string
+          format: date-time
+          readOnly: true
+        opened_event:
+          type: string
+          format: uuid
+          readOnly: true
+        odometer_open_km:
+          type: integer
+          readOnly: true
+        open_note:
+          type: string
+          readOnly: true
+        closed_at_device:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        closed_event:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        odometer_close_km:
+          type: integer
+          readOnly: true
+          nullable: true
+        close_note:
+          type: string
+          readOnly: true
+        checks:
+          type: array
+          items:
+            $ref: '#/components/schemas/MotorcycleCheck'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - checks
+      - close_note
+      - closed_at_device
+      - closed_event
+      - courier
+      - created_at
+      - device
+      - id
+      - motorcycle
+      - motorcycle_code
+      - odometer_close_km
+      - odometer_open_km
+      - open_note
+      - opened_at_device
+      - opened_event
+      - status
+    ShiftStatusEnum:
+      enum:
+      - open
+      - closed
+      type: string
+      description: |-
+        * `open` - Open
+        * `closed` - Closed
     SnapshotCatalog:
       type: object
       properties:

@@ -29,6 +29,7 @@ from reviews.permissions import REVIEW_ITEM_READ
 from rules import permissions as rule_codes
 from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS
+from shifts.permissions import SHIFT_READ
 from tests.factories import OrganizationFactory
 
 pytestmark = pytest.mark.django_db
@@ -211,7 +212,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
 
     reader = {catalog_codes.CATALOG_READ, rule_codes.RULE_PARAMETER_READ}
     assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC}
-    assert by_slug["supervisor"] == {*reader, REVIEW_ITEM_READ}
+    assert by_slug["supervisor"] == {*reader, REVIEW_ITEM_READ, SHIFT_READ}
     assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
     assert by_slug["admin"] == {
         catalog_codes.CATALOG_READ,
@@ -225,6 +226,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         rule_codes.RULE_PARAMETER_VERSION_VOID,
         *ADMIN_AUTH_PERMISSION_CODES,
         REVIEW_ITEM_READ,
+        SHIFT_READ,
     }
 
 
@@ -393,7 +395,13 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
 
 @pytest.mark.parametrize(
     ("slug", "code"),
-    [("courier", FIELD_EVENT_SYNC), ("supervisor", REVIEW_ITEM_READ), ("admin", REVIEW_ITEM_READ)],
+    [
+        ("courier", FIELD_EVENT_SYNC),
+        ("supervisor", REVIEW_ITEM_READ),
+        ("admin", REVIEW_ITEM_READ),
+        ("supervisor", SHIFT_READ),
+        ("admin", SHIFT_READ),
+    ],
 )
 def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_existed(
     slug: str, code: str
@@ -412,7 +420,8 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
 
 
 @pytest.mark.parametrize(
-    ("slug", "code"), [("courier", FIELD_EVENT_SYNC), ("supervisor", REVIEW_ITEM_READ)]
+    ("slug", "code"),
+    [("courier", FIELD_EVENT_SYNC), ("supervisor", REVIEW_ITEM_READ), ("supervisor", SHIFT_READ)],
 )
 def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str) -> None:
     organization, profile = seeded_profile(slug)
@@ -432,6 +441,15 @@ def test_only_the_courier_syncs_and_only_supervisor_and_admin_read_review_items(
 
     assert [s for s, codes in by_slug.items() if FIELD_EVENT_SYNC in codes] == ["courier"]
     assert sorted(s for s, codes in by_slug.items() if REVIEW_ITEM_READ in codes) == [
+        "admin",
+        "supervisor",
+    ]
+
+
+def test_only_supervisor_and_admin_read_shifts_by_default() -> None:
+    by_slug = DEFAULT_PROFILE_PERMISSIONS
+
+    assert sorted(s for s, codes in by_slug.items() if SHIFT_READ in codes) == [
         "admin",
         "supervisor",
     ]

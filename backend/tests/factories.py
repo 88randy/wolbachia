@@ -13,6 +13,7 @@ from organizations.models import Membership, Organization, Profile
 from reviews.models import ReviewItem, ReviewKind
 from reviews.services import next_courier_sequence
 from rules.models import RuleParameter, RuleParameterVersion, Unit, ValueType
+from shifts.models import Motorcycle, Shift
 from tests.testapp.models import Widget
 
 
@@ -180,3 +181,55 @@ class ReviewItemFactory(DjangoModelFactory):
     )
     kind = ReviewKind.REJECTED
     code = "invalid_payload"
+
+
+class MotorcycleFactory(DjangoModelFactory):
+    class Meta:
+        model = Motorcycle
+
+    organization = factory.SubFactory(OrganizationFactory)
+    code = factory.Sequence(lambda n: f"FM-{n:02d}")
+    plate = factory.Sequence(lambda n: f"ABC-{n:03d}-D")
+
+
+class ShiftFactory(DjangoModelFactory):
+    """An open shift of a fresh courier; its `opened_event` is a stored accepted `shift.open`.
+    `is_closed=True` makes it a closed one (with its `shift.close` event and a close odometer)."""
+
+    class Meta:
+        model = Shift
+
+    class Params:
+        is_closed = False
+
+    id = factory.LazyFunction(uuid.uuid4)
+    organization = factory.SubFactory(OrganizationFactory)
+    courier = factory.SubFactory(UserFactory)
+    created_by = factory.SelfAttribute("courier")
+    device = factory.SubFactory(DeviceFactory, organization=factory.SelfAttribute("..organization"))
+    motorcycle = factory.SubFactory(
+        MotorcycleFactory, organization=factory.SelfAttribute("..organization")
+    )
+    opened_at_device = factory.LazyFunction(timezone.now)
+    opened_event = factory.SubFactory(
+        FieldEventFactory,
+        type="shift.open",
+        organization=factory.SelfAttribute("..organization"),
+        created_by=factory.SelfAttribute("..courier"),
+        device=factory.SelfAttribute("..device"),
+    )
+    odometer_open_km = 12_000
+    status = factory.Maybe("is_closed", "closed", "open")
+    closed_at_device = factory.Maybe("is_closed", factory.LazyFunction(timezone.now), None)
+    odometer_close_km = factory.Maybe("is_closed", 12_050, None)
+    closed_event = factory.Maybe(
+        "is_closed",
+        factory.SubFactory(
+            FieldEventFactory,
+            type="shift.close",
+            organization=factory.SelfAttribute("..organization"),
+            created_by=factory.SelfAttribute("..courier"),
+            device=factory.SelfAttribute("..device"),
+        ),
+        None,
+    )
