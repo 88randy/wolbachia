@@ -63,3 +63,4 @@ jobs:
           name: openapi-schema
           path: packages/api-client/openapi.yaml
           if-no-files-found: error
+          retention-days: 14

@@ -9,29 +9,36 @@
 // a PR leaves them out of date (.github/workflows/api-contract.yml).
 import { spawnSync } from "node:child_process";
 import { readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const SCHEMA_FILE = "packages/api-client/openapi.yaml";
-const TYPES_FILE = "packages/api-client/src/generated/schema.ts";
+// Paths come from this file's location, so the script works from any working directory.
+const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
+const SCHEMA_FILE = join(ROOT, "packages/api-client/openapi.yaml");
+const TYPES_FILE = join(ROOT, "packages/api-client/src/generated/schema.ts");
 
-// Throwaway values: they never leave this process and are not secrets.
+// Throwaway values, not secrets. They override the caller's environment for the variables that
+// matter, and `backend/.env` is not read, so the export does not depend on local settings. Other
+// inherited variables (proxies, PATH...) pass through and do not change the schema.
 const SCHEMA_EXPORT_ENV = {
   DJANGO_SETTINGS_MODULE: "config.settings.dev",
   DJANGO_SECRET_KEY: "schema-export-only-not-a-secret",
   DATABASE_URL: "postgres://wolbachia:wolbachia@127.0.0.1:5432/wolbachia",
   REDIS_URL: "redis://127.0.0.1:6379/0",
-  // Never read backend/.env: the schema must not depend on a developer's local settings.
   DJANGO_READ_DOT_ENV_FILE: "false",
 };
 
 function run(command, args, env = {}) {
   console.log(`> ${command} ${args.join(" ")}`);
   const result = spawnSync(command, args, {
+    cwd: ROOT,
     stdio: "inherit",
     shell: true,
     env: { ...process.env, ...env },
   });
   if (result.status !== 0) {
-    console.error(`api:generate failed: "${command} ${args.join(" ")}" exited ${result.status}.`);
+    const reason = result.signal ? `was killed by ${result.signal}` : `exited ${result.status}`;
+    console.error(`api:generate failed: "${command} ${args.join(" ")}" ${reason}.`);
     process.exit(result.status ?? 1);
   }
 }
@@ -51,19 +58,15 @@ const exportSchema = [
   "--validate",
   "--fail-on-warn",
   "--file",
-  `../${SCHEMA_FILE}`,
+  SCHEMA_FILE,
 ];
 run("uv", exportSchema, SCHEMA_EXPORT_ENV);
 normalizeLineEndings(SCHEMA_FILE);
+
 // openapi-typescript lives in the api-client workspace with its own TypeScript (its peer range
 // is ^5, the repo uses 6), so it is run through `npm exec` in that workspace; paths are relative
 // to packages/api-client there.
 const generateTypes = ["exec", "--workspace=packages/api-client", "--no-install", "--"];
-run("npm", [
-  ...generateTypes,
-  "openapi-typescript",
-  "openapi.yaml",
-  "--output",
-  "src/generated/schema.ts",
-]);
+const generate = ["openapi-typescript", "openapi.yaml", "--output", "src/generated/schema.ts"];
+run("npm", [...generateTypes, ...generate]);
 normalizeLineEndings(TYPES_FILE);
