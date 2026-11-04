@@ -8,7 +8,9 @@ from factory.django import DjangoModelFactory
 from accounts.models import Device, DeviceSession, TokenPair, User
 from accounts.tokens import hash_token
 from catalogs.models import Catalog, CatalogItem
+from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent
 from organizations.models import Membership, Organization, Profile
+from reviews.models import ReviewItem, ReviewKind
 from rules.models import RuleParameter, RuleParameterVersion, Unit, ValueType
 from tests.testapp.models import Widget
 
@@ -136,3 +138,41 @@ class RuleParameterVersionFactory(DjangoModelFactory):
     effective_from = factory.LazyFunction(lambda: timezone.now() - timedelta(days=30))
     effective_date = factory.LazyAttribute(lambda version: version.effective_from.date())
     reason = "test"
+
+
+class FieldEventFactory(DjangoModelFactory):
+    """An accepted event of a fresh device and user, in the same organization."""
+
+    class Meta:
+        model = FieldEvent
+
+    id = factory.LazyFunction(uuid.uuid4)
+    organization = factory.SubFactory(OrganizationFactory)
+    created_by = factory.SubFactory(UserFactory)
+    device = factory.SubFactory(DeviceFactory, organization=factory.SelfAttribute("..organization"))
+    type = "test.note"
+    schema_version = 1
+    payload: dict[str, object] = {"text": "hello"}
+    payload_sha256 = factory.LazyFunction(lambda: "0" * 64)
+    device_time = factory.LazyFunction(timezone.now)
+    server_received_at = factory.LazyFunction(timezone.now)
+    status = EventStatus.ACCEPTED
+    status_code = ACCEPTED_CODE
+
+
+class ReviewItemFactory(DjangoModelFactory):
+    """A review item of a rejected event, in the event's organization."""
+
+    class Meta:
+        model = ReviewItem
+
+    field_event = factory.SubFactory(
+        FieldEventFactory, status=EventStatus.REJECTED, status_code="invalid_payload"
+    )
+    organization = factory.SelfAttribute("field_event.organization")
+    created_by = factory.SelfAttribute("field_event.created_by")
+    courier = factory.SelfAttribute("field_event.created_by")
+    device = factory.SelfAttribute("field_event.device")
+    event_type = factory.SelfAttribute("field_event.type")
+    kind = ReviewKind.REJECTED
+    code = "invalid_payload"

@@ -24,6 +24,8 @@ INSTALLED_APPS = [
     "organizations",
     "catalogs",
     "rules",
+    "field_sync",
+    "reviews",
 ]
 
 MIDDLEWARE = [
@@ -116,6 +118,13 @@ THROTTLE_PASSWORD_RESET_CONFIRM_RATE = env(
     "THROTTLE_PASSWORD_RESET_CONFIRM_RATE", default="20/hour"
 )
 
+# Field sync (#5): technical limits, not business rules, so they are env settings and not rule
+# parameters. [ASSUMPTION] values, to be tuned with real batches from the field test (#13).
+THROTTLE_FIELD_SYNC_RATE = env("THROTTLE_FIELD_SYNC_RATE", default="60/min")  # per device
+SYNC_MAX_BODY_BYTES = env.int("SYNC_MAX_BODY_BYTES", default=1_048_576)  # 1 MB
+SYNC_MAX_EVENTS = env.int("SYNC_MAX_EVENTS", default=200)
+SYNC_MAX_EVENT_PAYLOAD_BYTES = env.int("SYNC_MAX_EVENT_PAYLOAD_BYTES", default=16_384)  # 16 KB
+
 REST_FRAMEWORK = {
     # Session first: it sends the `WWW-Authenticate: Session` challenge that keeps 401s as 401.
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -137,6 +146,7 @@ REST_FRAMEWORK = {
         "refresh": THROTTLE_REFRESH_RATE,
         "password_reset": THROTTLE_PASSWORD_RESET_RATE,
         "password_reset_confirm": THROTTLE_PASSWORD_RESET_CONFIRM_RATE,
+        "field_sync": THROTTLE_FIELD_SYNC_RATE,
     },
     # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a
     # client cannot dodge the anonymous throttle by rotating that header.
