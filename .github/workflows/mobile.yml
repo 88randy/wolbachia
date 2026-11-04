@@ -90,6 +90,7 @@ jobs:
           SDKMANAGER="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
           # `yes` gets SIGPIPE when sdkmanager stops reading, so the pipe status is ignored here only.
           yes | "$SDKMANAGER" --licenses > /dev/null || true
+          "$SDKMANAGER" --list | grep -E "platforms;android-3[5-9]|build-tools;3[67]|ndk;27" || true
           "$SDKMANAGER" --install "platforms;$ANDROID_PLATFORM" "build-tools;$ANDROID_BUILD_TOOLS" "ndk;$ANDROID_NDK"
       - name: Install JS dependencies
         working-directory: ${{ env.APP_DIR }}
