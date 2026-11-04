@@ -3,10 +3,13 @@ import { z } from "zod";
 /** Build-time variable that holds the base URL of the backend API. */
 export const API_BASE_URL_VARIABLE = "VITE_API_BASE_URL";
 
-/** An absolute http(s) URL, or a same-origin path such as `/api/v1` (not `//host`). */
+/**
+ * An absolute http(s) URL, or a same-origin path such as `/api/v1`. The path form refuses
+ * `//host` and any backslash (browsers read `/\host` as `//host`).
+ */
 const apiBaseUrlSchema = z.union([
   z.url({ protocol: /^https?$/ }),
-  z.string().regex(/^\/(?!\/)\S*$/),
+  z.string().regex(/^\/(?![/\\])[^\s\\]*$/),
 ]);
 
 export interface AppConfig {
@@ -34,6 +37,10 @@ export function readAppConfig(env: Record<string, unknown>): ConfigResult {
   const parsed = apiBaseUrlSchema.safeParse(raw.trim());
   if (!parsed.success) {
     return { ok: false, variable: API_BASE_URL_VARIABLE, problem: "not an http(s) URL or a path" };
+  }
+  // Session cookies and CSRF tokens must never travel over plain HTTP in a production build.
+  if (env["PROD"] === true && parsed.data.startsWith("http:")) {
+    return { ok: false, variable: API_BASE_URL_VARIABLE, problem: "must use https in production" };
   }
   return { ok: true, config: { apiBaseUrl: removeTrailingSlashes(parsed.data) } };
 }

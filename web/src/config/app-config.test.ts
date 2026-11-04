@@ -26,8 +26,33 @@ describe("readAppConfig", () => {
     "ftp://files.example.com",
     "javascript:alert(1)",
     "api/v1",
+    "/\\evil.example.com",
+    "/api\\v1",
   ])("rejects an invalid value %j", (value) => {
     expect(readAppConfig(envWith(value)).ok).toBe(false);
+  });
+
+  test("requires https for absolute URLs in production builds", () => {
+    const env = { [API_BASE_URL_VARIABLE]: "http://api.example.com/api/v1", PROD: true };
+
+    expect(readAppConfig(env)).toEqual({
+      ok: false,
+      variable: "VITE_API_BASE_URL",
+      problem: "must use https in production",
+    });
+  });
+
+  test("accepts https and same-origin paths in production builds", () => {
+    expect(
+      readAppConfig({ [API_BASE_URL_VARIABLE]: "https://api.example.com", PROD: true }).ok,
+    ).toBe(true);
+    expect(readAppConfig({ [API_BASE_URL_VARIABLE]: "/api/v1", PROD: true }).ok).toBe(true);
+  });
+
+  test("allows http in development (localhost backend)", () => {
+    const env = { [API_BASE_URL_VARIABLE]: "http://localhost:8000/api/v1", PROD: false };
+
+    expect(readAppConfig(env).ok).toBe(true);
   });
 
   test("rejects a value that is not a string", () => {
