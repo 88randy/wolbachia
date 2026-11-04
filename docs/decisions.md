@@ -27,3 +27,7 @@
 | 23 | Web maps: MapLibre GL JS via `react-map-gl/maplibre`, lazy-loaded; OSM attribution | Accepted (spike #27); production tile source pending | PYROBYTE |
 | 24 | Web i18n runtime: i18next + react-i18next with `{param}` interpolation; `packages/i18n` stays runtime-agnostic (catalogs + key types) | Accepted (spike #27); mobile runtime decided in #6 | PYROBYTE |
 | 25 | Web tests: Vitest + Testing Library + jest-axe; Playwright for e2e. Details in `docs/adr/0001-web-stack.md` | Accepted (spike #27) | PYROBYTE |
+| 26 | npm workspaces at the root (`mobile`, `web`, `packages/*`); folders without `package.json` are ignored | Accepted (Phase 0) | PYROBYTE |
+| 27 | TypeScript pinned to 6.0.3 at the root: typescript-eslint 8.72.1 declares peer `typescript` `>=4.8.4 <6.1.0`. Packages and apps use the root version | Accepted (Phase 0) | PYROBYTE |
+| 28 | ESLint 9.39.5 with React, a11y, React Native and i18next plugins; Prettier; ruff + mypy (strict on `services.py` / `selectors.py`); pre-commit; Conventional Commits. Plugin peers checked on npm: `eslint-plugin-react` 7.37.5 `^9.7`, `eslint-plugin-jsx-a11y` 6.10.2 and `eslint-plugin-react-native` 5.0.0 `^9`, `eslint-plugin-react-hooks` 7.1.1 `^9 \|\| ^10`, `eslint-plugin-i18next` 6.1.5 declares no peer | Accepted (Phase 0) | PYROBYTE |
+| 29 | Shared packages (`packages/tokens`, `packages/i18n`) are consumed as TypeScript source (`main` / `exports` point to `src/index.ts`, no build step); `packages/tokens` generates `dist/tokens.css` on demand (`build:css`) | Accepted (Phase 0) | PYROBYTE |

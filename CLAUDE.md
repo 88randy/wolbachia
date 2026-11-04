@@ -105,3 +105,9 @@ docs/           Decisiones (ADR), contratos y notas
 ### Lecciones aprendidas
 - (web) The first design round assumed couriers send a field egg count. Wrong: mobile only records whether the egg paddle is present and, if so, whether it has eggs (Yes/No). Any comparison between a "field count" and the lab count must not exist.
 - (repo) Los issues locales y los de GitHub se desfasaron porque un issue no se creó y el resto se corrió un número. Por eso GitHub es la fuente de verdad y el espejo usa su número.
+- (proceso) Los agentes de `.claude/agents/` se cargan solo al iniciar la sesión de Claude Code: tras crearlos o cambiarlos, abrir una sesión nueva; mientras tanto se usan con `general-purpose` + "lee `.claude/agents/<nombre>.md`" y el mismo modelo.
+- (git) `pre-commit install` escribe en `.git/hooks`, compartido por todos los worktrees: los agentes no instalan hooks; corren `pre-commit run --all-files` antes de cada commit.
+- (herramientas) Versiones: la última no siempre es compatible. typescript-eslint 8.x exige TypeScript < 6.1 y los plugins de React piden ESLint 9; se fija la versión compatible y se anota el motivo en el PR.
+- (Windows) Scripts que escriben archivos: `write_text(..., newline="\n")`; `.gitattributes` normaliza a LF.
+- (seguridad) gitleaks marca como secreto texto tipo `clave=valor` en docs (p. ej. claves semilla de parámetros); se revisa y se agrega la huella a `.gitleaksignore` con el motivo.
+- (mapas) La política de tiles de OpenStreetMap prohíbe uso offline y descarga masiva desde `tile.openstreetmap.org`: la fuente de tiles para el móvil es decisión del cliente (servidor propio con extracto OSM o proveedor que lo permita).
