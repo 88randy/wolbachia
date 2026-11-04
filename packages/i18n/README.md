@@ -48,6 +48,8 @@ Only shared, cross-screen text. Screen copy lands with each screen.
 
 - `common.actions.*`: save, cancel, retry, close, void. `common.fields.*`: void reason label, "Other (specify)" label.
 - `errors.api.*`: generic, network, validation, notFound, permissionDenied, blocked (`{role}`), sessionRevoked, rateLimited, serverError.
+- `shell.*` (web): brand, skip link, sidebar, top bar, language switch and one `shell.nav.<area>` entry per area of `web/README.md`; `shell.group.*` are the sidebar group headings.
+- `states.*` (web): placeholder, loading, not found, error, configuration error and offline banner. `common.actions.goHome` serves the not-found and error screens.
 - `sync.inbox.*`: title and hint for each sync result status (accepted, rejected, inReview) in the phone inbox.
 
 Mapping from API `code` to `errors.api.*` key: the machine codes are not yet fixed in `docs/api-conventions.md`. Assumption: they will be the snake_case form of the key element (`not_found` -> `errors.api.notFound`, `permission_denied` -> `errors.api.permissionDenied`). Unknown codes fall back to `errors.api.generic`. Confirm when the API issues define the codes.
