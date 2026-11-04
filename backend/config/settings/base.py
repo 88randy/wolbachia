@@ -166,6 +166,12 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
     "COMPONENT_SPLIT_REQUEST": True,
+    # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
+    "ENUM_NAME_OVERRIDES": {
+        "EventStatusEnum": "field_sync.models.EventStatus",
+        "ReviewKindEnum": "reviews.models.ReviewKind",
+        "StatusEnum": "rules.selectors.VERSION_STATUSES",
+    },
     # The enum hook is spectacular's default; ours adds ErrorEnvelope and the `default` error
     # response to every operation (packages/api-client types errors from it).
     "POSTPROCESSING_HOOKS": [

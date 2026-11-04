@@ -6,7 +6,7 @@ import pytest
 from django.db import connection
 from rest_framework.test import APIClient
 
-from core.exception_handler import _flatten_codes
+from core.exception_handler import flatten_error_codes
 from organizations.models import Organization
 from tests.testapp.models import Widget
 
@@ -89,10 +89,17 @@ def test_malformed_json_body_returns_parse_error(client_a: APIClient) -> None:
     assert "fields" not in response.data
 
 
-def test_flatten_codes_handles_nested_and_non_field_errors() -> None:
+def test_django_request_body_limit_is_a_413_envelope(api_client: APIClient) -> None:
+    response = api_client.post("/api/v1/too-big/")
+
+    assert response.status_code == 413
+    assert response.data["code"] == "payload_too_large"
+
+
+def test_flatten_error_codes_handles_nested_and_non_field_errors() -> None:
     codes = {"items": [{}, {"qty": ["min_value"]}], "non_field_errors": ["invalid"]}
 
-    flat = _flatten_codes(codes)
+    flat = flatten_error_codes(codes)
 
     assert flat == {
         "items.1.qty": [{"code": "min_value", "params": {}}],
@@ -100,8 +107,10 @@ def test_flatten_codes_handles_nested_and_non_field_errors() -> None:
     }
 
 
-def test_flatten_codes_wraps_a_top_level_list_as_non_field_errors() -> None:
-    assert _flatten_codes(["invalid"]) == {"non_field_errors": [{"code": "invalid", "params": {}}]}
+def test_flatten_error_codes_wraps_a_top_level_list_as_non_field_errors() -> None:
+    assert flatten_error_codes(["invalid"]) == {
+        "non_field_errors": [{"code": "invalid", "params": {}}]
+    }
 
 
 def test_domain_error_rolls_back_writes_made_during_an_atomic_request(

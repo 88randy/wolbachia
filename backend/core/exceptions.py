@@ -31,6 +31,14 @@ class AlreadyVoidedError(DomainError):
     default_detail = "The record is already voided."
 
 
+class PayloadTooLargeError(DomainError):
+    """`413`: the request body (or a batch inside it) is over a technical limit."""
+
+    code = "payload_too_large"
+    status_code = HTTPStatus.REQUEST_ENTITY_TOO_LARGE
+    default_detail = "The request is too large."
+
+
 class FieldValidationError(DomainError):
     """A `400 validation_error` raised from a service, with one coded field error.
 

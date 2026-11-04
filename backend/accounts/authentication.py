@@ -8,6 +8,7 @@ from rest_framework.exceptions import AuthenticationFailed
 from rest_framework.request import Request
 
 from accounts.exceptions import (
+    BEARER_CHALLENGE,
     InvalidTokenError,
     SessionRevokedError,
     TokenExpiredError,
@@ -59,6 +60,11 @@ class DeviceBearerAuthentication(BaseAuthentication):
       app can always end its session). The pair must still be the current leaf: not superseded
       beyond the grace window and not a retired sibling.
     """
+
+    def authenticate_header(self, request: Request) -> str:
+        """Makes a request with no credentials a `401` (not DRF's `403`) when this is the first
+        authenticator of a view, as on `/field/sync/`."""
+        return BEARER_CHALLENGE
 
     def authenticate(self, request: Request) -> tuple[User, DeviceSession] | None:
         token = self._bearer_token(request)

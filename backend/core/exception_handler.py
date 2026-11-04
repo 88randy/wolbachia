@@ -9,13 +9,19 @@ from http import HTTPStatus
 from typing import Any
 
 from django.core.exceptions import PermissionDenied as DjangoPermissionDenied
+from django.core.exceptions import RequestDataTooBig
 from django.http import Http404
 from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import exception_handler, set_rollback
 
 from core.authentication import SESSION_AUTH_SCHEME
-from core.exceptions import VALIDATION_ERROR_CODE, VALIDATION_ERROR_DETAIL, DomainError
+from core.exceptions import (
+    VALIDATION_ERROR_CODE,
+    VALIDATION_ERROR_DETAIL,
+    DomainError,
+    PayloadTooLargeError,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -24,19 +30,19 @@ SERVER_ERROR_DETAIL = "Internal server error."
 NON_FIELD_KEY = "non_field_errors"
 
 
-def _flatten_codes(codes: object, prefix: str = "") -> dict[str, list[dict[str, Any]]]:
+def flatten_error_codes(codes: object, prefix: str = "") -> dict[str, list[dict[str, Any]]]:
     """Turn `ValidationError.get_codes()` into `{field: [{code, params}]}` (nested keys dotted)."""
     if isinstance(codes, dict):
         flat: dict[str, list[dict[str, Any]]] = {}
         for key, value in codes.items():
-            flat.update(_flatten_codes(value, f"{prefix}.{key}" if prefix else str(key)))
+            flat.update(flatten_error_codes(value, f"{prefix}.{key}" if prefix else str(key)))
         return flat
     if isinstance(codes, list):
         if all(isinstance(item, str) for item in codes):
             return {prefix or NON_FIELD_KEY: [{"code": code, "params": {}} for code in codes]}
         flat = {}
         for index, item in enumerate(codes):
-            flat.update(_flatten_codes(item, f"{prefix}.{index}" if prefix else str(index)))
+            flat.update(flatten_error_codes(item, f"{prefix}.{index}" if prefix else str(index)))
         return flat
     return {prefix or NON_FIELD_KEY: [{"code": str(codes), "params": {}}]}
 
@@ -54,7 +60,7 @@ def _api_exception_body(exc: exceptions.APIException) -> dict[str, Any]:
         return {
             "code": VALIDATION_ERROR_CODE,
             "detail": VALIDATION_ERROR_DETAIL,
-            "fields": _flatten_codes(exc.get_codes()),
+            "fields": flatten_error_codes(exc.get_codes()),
         }
     return {"code": str(exc.get_codes()), "detail": str(exc.detail)}
 
@@ -80,6 +86,8 @@ def _challenge_headers(exc: DomainError) -> dict[str, str] | None:
 
 
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
+    if isinstance(exc, RequestDataTooBig):  # Django's own body limit: same answer as ours
+        exc = PayloadTooLargeError()
     if isinstance(exc, DomainError):
         set_rollback()
         body: dict[str, Any] = {"code": exc.code, "detail": exc.detail}
