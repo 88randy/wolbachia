@@ -1,7 +1,7 @@
-import assert from 'node:assert/strict';
-import { describe, test } from 'node:test';
-import { defaultLocale, messages } from '../src/index.ts';
-import type { Locale } from '../src/index.ts';
+import assert from "node:assert/strict";
+import { describe, test } from "node:test";
+import { defaultLocale, messages } from "../src/index.ts";
+import type { Locale } from "../src/index.ts";
 
 const KEY_CONVENTION = /^[a-z][a-zA-Z0-9]*\.[a-z][a-zA-Z0-9]*\.[a-z][a-zA-Z0-9]*$/;
 const PLACEHOLDER = /\{([A-Za-z][A-Za-z0-9]*)\}/g;
@@ -14,45 +14,47 @@ function sortedKeys(locale: Locale): string[] {
 }
 
 function placeholdersOf(text: string): string[] {
-  return [...text.matchAll(PLACEHOLDER)].map((match) => match[1] ?? '').sort();
+  return [...text.matchAll(PLACEHOLDER)].map((match) => match[1] ?? "").sort();
 }
 
-describe('catalogs', () => {
-  test('es-MX is the default locale', () => {
-    assert.equal(defaultLocale, 'es-MX');
+void describe("catalogs", () => {
+  void test("es-MX is the default locale", () => {
+    assert.equal(defaultLocale, "es-MX");
   });
 
-  test('es-MX and en have the same keys', () => {
-    const spanishKeys = sortedKeys('es-MX');
+  void test("es-MX and en have the same keys", () => {
+    const spanishKeys = sortedKeys("es-MX");
 
-    const englishKeys = sortedKeys('en');
+    const englishKeys = sortedKeys("en");
 
     assert.deepEqual(englishKeys, spanishKeys);
   });
 
-  test('es-MX and en use the same placeholders in every message', () => {
+  void test("es-MX and en use the same placeholders in every message", () => {
     const englishByKey = new Map(Object.entries(messages.en));
-    const mismatches = Object.entries(messages['es-MX']).flatMap(([key, spanish]) => {
-      const english = englishByKey.get(key) ?? '';
+    const mismatches = Object.entries(messages["es-MX"]).flatMap(([key, spanish]) => {
+      const english = englishByKey.get(key) ?? "";
       const expected = placeholdersOf(spanish);
       const actual = placeholdersOf(english);
-      return expected.join() === actual.join() ? [] : [`${key}: es-MX {${expected}} vs en {${actual}}`];
+      return expected.join() === actual.join()
+        ? []
+        : [`${key}: es-MX {${expected.join(",")}} vs en {${actual.join(",")}}`];
     });
 
     assert.deepEqual(mismatches, []);
   });
 
-  test('every key follows area.screen.element', () => {
-    const invalid = sortedKeys('es-MX').filter((key) => !KEY_CONVENTION.test(key));
+  void test("every key follows area.screen.element", () => {
+    const invalid = sortedKeys("es-MX").filter((key) => !KEY_CONVENTION.test(key));
 
     assert.deepEqual(invalid, []);
   });
 
   for (const locale of locales) {
-    test(`${locale}: messages are not empty and have no unbalanced braces`, () => {
+    void test(`${locale}: messages are not empty and have no unbalanced braces`, () => {
       const invalid = Object.entries(messages[locale]).filter(([, text]) => {
-        const withoutPlaceholders = text.replace(PLACEHOLDER, '');
-        return text.trim() === '' || STRAY_BRACE.test(withoutPlaceholders);
+        const withoutPlaceholders = text.replace(PLACEHOLDER, "");
+        return text.trim() === "" || STRAY_BRACE.test(withoutPlaceholders);
       });
 
       assert.deepEqual(invalid, []);
