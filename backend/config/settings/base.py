@@ -101,6 +101,12 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "SERVE_PERMISSIONS": ["rest_framework.permissions.IsAuthenticated"],
     "COMPONENT_SPLIT_REQUEST": True,
+    # The enum hook is spectacular's default; ours adds ErrorEnvelope and the `default` error
+    # response to every operation (packages/api-client types errors from it).
+    "POSTPROCESSING_HOOKS": [
+        "drf_spectacular.hooks.postprocess_schema_enums",
+        "core.schema.add_error_envelope",
+    ],
 }
 
 CELERY_BROKER_URL = REDIS_URL
