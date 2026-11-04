@@ -4,11 +4,13 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { classNames } from "../styles/class-names";
 import buttons from "../styles/button.module.css";
+import { useDocumentTitle } from "../shell/use-document-title";
 import styles from "../styles/page.module.css";
 
 /** A screen failed to render: blameless message, retry and a way home. The error is logged. */
 export function RouteErrorState({ error, reset }: ErrorComponentProps) {
   const { t } = useTranslation();
+  useDocumentTitle(t("states.error.title"));
   useEffect(() => {
     console.error("A route failed to render", error);
   }, [error]);

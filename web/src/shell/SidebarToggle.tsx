@@ -18,13 +18,13 @@ export function SidebarToggle({ collapsed, onToggle }: SidebarToggleProps) {
     <button
       type="button"
       className={styles.toggle}
-      aria-expanded={!collapsed}
+      aria-pressed={collapsed}
       aria-controls={SIDEBAR_ID}
       onClick={onToggle}
     >
       <Icon aria-hidden="true" className={styles.icon} />
       <span className={classNames(collapsed && utilities.srOnly)}>
-        {t(collapsed ? "shell.sidebar.expand" : "shell.sidebar.collapse")}
+        {t("shell.sidebar.collapse")}
       </span>
     </button>
   );

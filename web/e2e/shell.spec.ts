@@ -88,6 +88,37 @@ test.describe("startup", () => {
   });
 });
 
+test.describe("reflow (WCAG 1.4.10)", () => {
+  test("at 320 CSS px the sidebar is collapsed and nothing scrolls in two directions", async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await openShell(page);
+
+    expect(await sidebarWidth(page)).toBe(COLLAPSED_WIDTH);
+    await expect(page.getByRole("button", { name: "Colapsar menú" })).toHaveCount(0);
+    const overflow = await page.evaluate(() => ({
+      page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      main:
+        (document.querySelector("main")?.scrollWidth ?? 0) -
+        (document.querySelector("main")?.clientWidth ?? 0),
+      topBar:
+        (document.querySelector("header")?.scrollWidth ?? 0) -
+        (document.querySelector("header")?.clientWidth ?? 0),
+    }));
+    expect(overflow).toEqual({ page: 0, main: 0, topBar: 0 });
+  });
+
+  test("the 320 px shell has no axe violations", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 800 });
+    await openShell(page);
+
+    const results = await new AxeBuilder({ page }).withTags(WCAG_TAGS).analyze();
+
+    expect(results.violations).toEqual([]);
+  });
+});
+
 test.describe("keyboard", () => {
   test("skip link appears on the first Tab and moves focus to main", async ({ page }) => {
     await openShell(page);
@@ -126,10 +157,10 @@ test.describe("keyboard", () => {
     expect(outline).toEqual({ width: "2px", style: "solid" });
   });
 
-  test("/ focuses the search", async ({ page }) => {
+  test("Ctrl+K focuses the search", async ({ page }) => {
     await openShell(page);
 
-    await page.keyboard.press("/");
+    await page.keyboard.press("Control+K");
 
     await expect(page.getByRole("searchbox", { name: "Buscar" })).toBeFocused();
   });

@@ -128,3 +128,34 @@ describe("pending state", () => {
     expect(status.getAttribute("aria-busy")).toBe("true");
   });
 });
+
+describe("document title (WCAG 2.4.2)", () => {
+  test("each area sets its own title", async () => {
+    await renderApp({ path: "/incidents" });
+
+    expect(document.title).toBe("Incidentes · Wolbachia");
+  });
+
+  test("navigating changes the title", async () => {
+    await renderApp();
+    expect(document.title).toBe("Inicio · Wolbachia");
+
+    await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));
+
+    await screen.findByRole("heading", { level: 1, name: "Laboratorio" });
+    expect(document.title).toBe("Laboratorio · Wolbachia");
+  });
+
+  test("not found has a translated title", async () => {
+    await renderApp({ path: "/nope", language: "en" });
+
+    expect(document.title).toBe("We couldn't find this page · Wolbachia");
+  });
+
+  test("a route error sets the error title", async () => {
+    await renderThrowingRoute();
+
+    await screen.findByRole("heading", { name: "Algo salió mal en esta pantalla" });
+    expect(document.title).toBe("Algo salió mal en esta pantalla · Wolbachia");
+  });
+});

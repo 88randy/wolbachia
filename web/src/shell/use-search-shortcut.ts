@@ -1,19 +1,17 @@
 import { useEffect } from "react";
 import type { RefObject } from "react";
 
-const TYPING_TAGS = ["INPUT", "TEXTAREA", "SELECT"];
-
-function isTypingTarget(target: EventTarget | null): boolean {
-  if (!(target instanceof HTMLElement)) return false;
-  return target.isContentEditable || TYPING_TAGS.includes(target.tagName);
-}
-
-/** Pressing `/` outside a text field moves focus to the element, as the design's hint shows. */
-export function useSlashShortcut(target: RefObject<HTMLElement | null>): void {
+/**
+ * Ctrl+K (Windows, Linux) or Cmd+K (Mac) focuses the element. A shortcut with a modifier key
+ * cannot be triggered by accident while typing, so it satisfies WCAG 2.1.4 (a single
+ * character key such as `/` would not).
+ */
+export function useSearchShortcut(target: RefObject<HTMLElement | null>): void {
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
-      const hasModifier = event.ctrlKey || event.metaKey || event.altKey;
-      if (event.key !== "/" || hasModifier || isTypingTarget(event.target)) return;
+      const hasCommandKey = event.ctrlKey || event.metaKey;
+      if (event.key.toLowerCase() !== "k" || !hasCommandKey || event.altKey || event.shiftKey)
+        return;
       event.preventDefault();
       target.current?.focus();
     }
@@ -22,4 +20,9 @@ export function useSlashShortcut(target: RefObject<HTMLElement | null>): void {
       document.removeEventListener("keydown", onKeyDown);
     };
   }, [target]);
+}
+
+/** Text of the shortcut hint shown inside the search field. */
+export function searchShortcutHint(platform: string): string {
+  return /mac|iphone|ipad/i.test(platform) ? "⌘K" : "Ctrl K";
 }

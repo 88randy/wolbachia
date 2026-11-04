@@ -37,7 +37,6 @@ export const esMX = {
   "shell.a11y.skipToContent": "Saltar al contenido",
   "shell.nav.label": "Navegación principal",
   "shell.sidebar.collapse": "Colapsar menú",
-  "shell.sidebar.expand": "Expandir menú",
   "shell.topBar.searchLabel": "Buscar",
   "shell.topBar.searchPlaceholder": "Busca o escanea",
   "shell.topBar.notifications": "Notificaciones",

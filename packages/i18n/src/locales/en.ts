@@ -36,7 +36,6 @@ export const en: Record<MessageKey, string> = {
   "shell.a11y.skipToContent": "Skip to content",
   "shell.nav.label": "Main navigation",
   "shell.sidebar.collapse": "Collapse menu",
-  "shell.sidebar.expand": "Expand menu",
   "shell.topBar.searchLabel": "Search",
   "shell.topBar.searchPlaceholder": "Search or scan",
   "shell.topBar.notifications": "Notifications",

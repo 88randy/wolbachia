@@ -10,10 +10,12 @@ import { SidebarToggle } from "./SidebarToggle";
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
+  /** False on small screens, where the sidebar is always collapsed. */
+  canToggle: boolean;
 }
 
 /** Left navigation: the areas of the back-office, grouped, with a collapse button. */
-export function Sidebar({ collapsed, onToggle }: SidebarProps) {
+export function Sidebar({ collapsed, onToggle, canToggle }: SidebarProps) {
   const { t } = useTranslation();
   return (
     <div id={SIDEBAR_ID} className={classNames(styles.sidebar, collapsed && styles.collapsed)}>
@@ -23,7 +25,7 @@ export function Sidebar({ collapsed, onToggle }: SidebarProps) {
           <SidebarGroup key={group.id} group={group} collapsed={collapsed} />
         ))}
       </nav>
-      <SidebarToggle collapsed={collapsed} onToggle={onToggle} />
+      {canToggle ? <SidebarToggle collapsed={collapsed} onToggle={onToggle} /> : null}
     </div>
   );
 }

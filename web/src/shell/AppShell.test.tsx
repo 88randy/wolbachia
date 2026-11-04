@@ -1,7 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
-import { beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { AREAS } from "../router/areas";
 import { STORAGE_KEYS } from "../storage/safe-storage";
 import { renderApp } from "../test/render-app";
@@ -107,15 +107,37 @@ describe("keyboard", () => {
     ]);
   });
 
-  test("/ focuses the search unless the user is already typing", async () => {
+  test("Ctrl+K focuses the search", async () => {
     await renderApp();
+
+    await userEvent.keyboard("{Control>}k{/Control}");
+
+    expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Buscar" }));
+  });
+
+  test("Cmd+K focuses the search", async () => {
+    await renderApp();
+
+    await userEvent.keyboard("{Meta>}k{/Meta}");
+
+    expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Buscar" }));
+  });
+
+  test("single-character keys are not shortcuts (WCAG 2.1.4)", async () => {
+    await renderApp();
+
+    await userEvent.keyboard("/k");
+
+    expect(document.activeElement).toBe(document.body);
+  });
+
+  test("the field shows the shortcut and exposes it with aria-keyshortcuts", async () => {
+    await renderApp();
+
     const search = screen.getByRole("searchbox", { name: "Buscar" });
 
-    await userEvent.keyboard("/");
-    expect(document.activeElement).toBe(search);
-
-    await userEvent.keyboard("/");
-    expect((search as HTMLInputElement).value).toBe("/");
+    expect(search.getAttribute("aria-keyshortcuts")).toBe("Control+K Meta+K");
+    expect(screen.getByRole("search").textContent).toContain("Ctrl K");
   });
 });
 
@@ -142,7 +164,7 @@ describe("collapse button", () => {
 
     const toggle = screen.getByRole("button", { name: "Colapsar menú" });
 
-    expect(toggle.getAttribute("aria-expanded")).toBe("true");
+    expect(toggle.getAttribute("aria-pressed")).toBe("false");
     expect(toggle.getAttribute("aria-controls")).toBe("sidebar");
   });
 
@@ -151,8 +173,8 @@ describe("collapse button", () => {
 
     await userEvent.click(screen.getByRole("button", { name: "Colapsar menú" }));
 
-    const toggle = screen.getByRole("button", { name: "Expandir menú" });
-    expect(toggle.getAttribute("aria-expanded")).toBe("false");
+    const toggle = screen.getByRole("button", { name: "Colapsar menú" });
+    expect(toggle.getAttribute("aria-pressed")).toBe("true");
     expect(screen.getByRole("link", { name: "Incidentes" })).toBeDefined();
     expect(window.localStorage.getItem(STORAGE_KEYS.sidebarCollapsed)).toBe("true");
   });
@@ -162,7 +184,41 @@ describe("collapse button", () => {
 
     await renderApp();
 
-    expect(screen.getByRole("button", { name: "Expandir menú" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Colapsar menú" }).getAttribute("aria-pressed")).toBe(
+      "true",
+    );
+  });
+});
+
+describe("compact viewport", () => {
+  function setCompact(matches: boolean) {
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches,
+      media: query,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+    }));
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  test("below the breakpoint the toggle is hidden and every link stays named", async () => {
+    setCompact(true);
+
+    await renderApp();
+
+    expect(screen.queryByRole("button", { name: "Colapsar menú" })).toBeNull();
+    expect(screen.getByRole("link", { name: "Incidentes" })).toBeDefined();
+  });
+
+  test("above the breakpoint the toggle is there", async () => {
+    setCompact(false);
+
+    await renderApp();
+
+    expect(screen.getByRole("button", { name: "Colapsar menú" })).toBeDefined();
   });
 });
 
