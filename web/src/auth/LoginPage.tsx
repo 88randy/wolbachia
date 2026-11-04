@@ -1,14 +1,17 @@
+import { useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
-import { useDocumentTitle } from "../shell/use-document-title";
-import styles from "../styles/page.module.css";
+import { AuthLayout } from "./AuthLayout";
+import { LoginForm } from "./LoginForm";
+import { useCsrfBootstrap } from "./use-csrf-bootstrap";
 
-/** W1 sign-in. The form lands in the next commit; the route and its search are already real. */
+/** W1 sign-in (public). Prepares the CSRF cookie as soon as it opens. */
 export function LoginPage() {
   const { t } = useTranslation();
-  useDocumentTitle(t("auth.login.title"));
+  const { redirect, notice } = useSearch({ from: "/login" });
+  useCsrfBootstrap();
   return (
-    <main className={styles.page}>
-      <h1 className={styles.title}>{t("auth.login.title")}</h1>
-    </main>
+    <AuthLayout title={t("auth.login.title")}>
+      <LoginForm redirectTo={redirect} notice={notice} />
+    </AuthLayout>
   );
 }
