@@ -6,7 +6,13 @@ const { withProjectBuildGradle } = require("expo/config-plugins");
 
 const MARKER = "// with-library-build-config";
 
+const PROJECT_NAME_PATTERN = /^[\w-]+$/;
+
 function buildSnippet(projectNames) {
+  const invalid = projectNames.filter((name) => !PROJECT_NAME_PATTERN.test(name));
+  if (invalid.length > 0) {
+    throw new Error(`with-library-build-config: invalid Gradle project name(s): ${invalid.join(", ")}`);
+  }
   const names = projectNames.map((name) => `'${name}'`).join(", ");
   return `
 ${MARKER}

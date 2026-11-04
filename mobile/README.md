@@ -50,7 +50,7 @@ With a USB cable (developer options and USB debugging on, see `adb devices`):
 adb install -r app-debug.apk
 ```
 
-If you get `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, the phone has an APK signed with another key: `adb uninstall <package id>` (the spike id is `mx.pyrobyte.spikes.foundations`) and install again.
+APKs from different runs are all signed with the same debug keystore of the Expo template, so a new APK updates the installed one in place. `INSTALL_FAILED_UPDATE_INCOMPATIBLE` only appears when the installed APK was signed another way (for example a build made on another machine): `adb uninstall <package id>` (the spike id is `mx.pyrobyte.spikes.foundations`) and install again.
 
 Without a cable: copy the `.apk` to the phone (Drive, USB storage, email) and open it from the Files app. Android asks to allow installs from that app (Settings, Apps, Special access, Install unknown apps); allow it for that app only, install, and turn it off again.
 
