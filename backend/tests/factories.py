@@ -2,6 +2,7 @@ import factory
 from factory.django import DjangoModelFactory
 
 from accounts.models import User
+from catalogs.models import Catalog, CatalogItem
 from organizations.models import Membership, Organization, Profile
 from tests.testapp.models import Widget
 
@@ -49,3 +50,25 @@ class WidgetFactory(DjangoModelFactory):
 
     organization = factory.SubFactory(OrganizationFactory)
     name = factory.Sequence(lambda n: f"Widget {n}")
+
+
+class CatalogFactory(DjangoModelFactory):
+    class Meta:
+        model = Catalog
+
+    organization = factory.SubFactory(OrganizationFactory)
+    slug = factory.Sequence(lambda n: f"catalog-{n}")
+    label_es = factory.LazyAttribute(lambda catalog: f"Catálogo {catalog.slug}")
+    label_en = factory.LazyAttribute(lambda catalog: f"Catalog {catalog.slug}")
+
+
+class CatalogItemFactory(DjangoModelFactory):
+    class Meta:
+        model = CatalogItem
+
+    catalog = factory.SubFactory(CatalogFactory)
+    organization = factory.SelfAttribute("catalog.organization")
+    code = factory.Sequence(lambda n: f"item-{n}")
+    label_es = factory.LazyAttribute(lambda item: f"Opción {item.code}")
+    label_en = factory.LazyAttribute(lambda item: f"Option {item.code}")
+    sort = factory.Sequence(lambda n: n + 1)
