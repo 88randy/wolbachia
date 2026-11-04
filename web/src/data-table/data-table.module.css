@@ -1,0 +1,218 @@
+/* DataTable (.tw and table.t in design/web/source/web.css). Tokens only. */
+.wrap {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  border: 1px solid var(--color-border-default);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+/* A wide table scrolls inside its card, never the whole page (reflow, WCAG 1.4.10). */
+.scroll {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--web-type-label-font-size);
+}
+
+.head {
+  padding: 0 var(--space-1-5);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-background);
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.headLabel {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--web-control-sm);
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  min-height: var(--web-control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.sorted {
+  color: var(--color-text-primary);
+}
+
+.sortIcon {
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+}
+
+.cell {
+  padding: var(--space-1-5);
+  border-bottom: 1px solid var(--color-border-soft);
+  color: var(--color-text-primary);
+  vertical-align: middle;
+}
+
+.end {
+  text-align: end;
+  font-variant-numeric: var(--font-variant-numeric);
+}
+
+.selectCell {
+  width: var(--web-icon-lg);
+  padding-block: 0;
+  padding-inline: var(--space-1-5) 0;
+}
+
+.check {
+  width: var(--web-icon-lg);
+  height: var(--web-icon-lg);
+  margin: 0;
+  accent-color: var(--color-action);
+  cursor: pointer;
+}
+
+.selected .cell {
+  background: var(--color-tint);
+}
+
+.link {
+  color: var(--color-action-strong);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+/* Voided: struck through AND badged, so the meaning never rests on a line alone. */
+.voided .cell {
+  color: var(--color-text-tertiary);
+}
+
+.struck {
+  text-decoration: line-through;
+}
+
+.voidDetail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-0-5) var(--space-1);
+  margin-top: var(--space-0-5);
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-label-small-font-size);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-0-5);
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-full);
+  background: var(--color-status-neutral-bg);
+  color: var(--color-status-neutral-fg);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 700;
+}
+
+.badgeIcon {
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+}
+
+/* Result count and paging footer (.pgn). */
+.footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-1-5);
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-label-small-font-size);
+}
+
+.count {
+  margin: 0;
+}
+
+.pager {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.position {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+/* States: loading, empty, error. */
+.state {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--space-1);
+  padding: var(--space-3) var(--space-2);
+}
+
+.stateTitle {
+  margin: 0;
+  font-weight: 700;
+  font-size: var(--web-type-body-font-size);
+}
+
+.stateActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.stateBody {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.error {
+  background: var(--color-status-critical-bg);
+  color: var(--color-status-critical-fg);
+}
+
+.error .stateBody {
+  color: inherit;
+}
+
+.skeletonRow {
+  height: var(--space-1-5);
+  margin: var(--space-1-5) var(--space-2);
+  border-radius: var(--radius-xs);
+  background: var(--color-border-soft);
+}
+
+.selectionBar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-1) var(--space-1-5);
+  border-bottom: 1px solid var(--color-border-default);
+  background: var(--color-tint);
+}
+
+.selectionCount {
+  margin: 0;
+  font-weight: 700;
+}

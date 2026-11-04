@@ -6,8 +6,10 @@ import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
 import { shell } from "./shell.ts";
+import { phones } from "./phones.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
+import { table } from "./table.ts";
 
 export const esMX = {
   ...common,
@@ -16,6 +18,8 @@ export const esMX = {
   ...states,
   ...auth,
   ...sync,
+  ...table,
+  ...phones,
 } as const;
 
 /** Every key of the catalog. */

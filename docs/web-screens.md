@@ -100,7 +100,7 @@ These apply to every screen. Designed once on the global-states board; they are 
 | W64 | Incident types | ADM | icon, default severity, owner, response time, escalation, what it blocks, required evidence; "Other" cannot be deactivated | — |
 | W65 | Roles and permissions matrix | ADM | profiles × actions with scope per cell; external profiles fixed read-only | — |
 | W66 | API keys | ADM | one key per institution with geo scope, endpoints, limit, validity; shown once | — |
-| W67 | Mobile app versions and phones | ADM | published and minimum version; signed APK upload with notes; phones with version | — |
+| W67 | Mobile app versions and phones | ADM | published and minimum version; signed APK upload with notes; phones with version | phones list built in #29 (`/settings/phones`); the rest — |
 | W68 | Organization | ADM | name, country, time zone, epi week, languages, logo, label phone | — |
 | W69 | Portal home | GOB | 3-section top nav; plain-language sentence; data cut-off date per figure; access-log notice | R10 |
 | W70 | Portal map and trends | GOB | aggregated layers only; simplified charts with tables | R10 |

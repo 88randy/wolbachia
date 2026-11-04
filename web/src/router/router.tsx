@@ -5,14 +5,24 @@ import { LoginPage } from "../auth/LoginPage";
 import { LegacyResetPasswordPage } from "../auth/LegacyResetPasswordPage";
 import { ResetPasswordPage } from "../auth/ResetPasswordPage";
 import { SelectOrganizationPage } from "../auth/SelectOrganizationPage";
+import { tableSearchSchema } from "../data-table/table-search-schema";
+import { PhonesPage } from "../devices/PhonesPage";
 import { AppShell } from "../shell/AppShell";
+import { SettingsPage } from "../settings/SettingsPage";
+import { PHONES_PERMISSION } from "../settings/settings-screens";
 import { AreaErrorState } from "../states/AreaErrorState";
 import { AreaPlaceholder } from "../states/AreaPlaceholder";
 import { NotFoundState } from "../states/NotFoundState";
 import { PendingState } from "../states/PendingState";
 import { RouteErrorState } from "../states/RouteErrorState";
 import { AREAS } from "./areas";
-import { requireAreaAccess, requireOrganization, requireOrganizationChoice } from "./guards";
+import { parseFlatSearch, stringifyFlatSearch } from "./flat-search";
+import {
+  requireAreaAccess,
+  requireOrganization,
+  requireOrganizationChoice,
+  requirePermission,
+} from "./guards";
 import type { RouterContext } from "./router-context";
 import { loginSearchSchema, redirectSearchSchema } from "./search-schemas";
 
@@ -74,10 +84,23 @@ const areaRoutes = AREAS.map((area) =>
     beforeLoad: ({ context }) => {
       requireAreaAccess(area, context.me);
     },
-    component: () => <AreaPlaceholder areaId={area.id} />,
+    component: area.id === "settings" ? SettingsPage : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
+
+// W67, phones. Path `/<area>/<resource>` (CLAUDE.md, Web > Routes). The area guard above is any of
+// the Settings codes; this screen needs its own, `device.read`.
+const phonesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/phones",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, PHONES_PERMISSION);
+  },
+  component: PhonesPage,
+  errorComponent: AreaErrorState,
+});
 
 // An unknown address behind the session is "not found" inside the shell; without a session the
 // guard of the layout sends the visitor to sign in first.
@@ -93,7 +116,7 @@ const routeTree = rootRoute.addChildren([
   resetPasswordRoute,
   legacyResetPasswordRoute,
   selectOrganizationRoute,
-  authenticatedRoute.addChildren([...areaRoutes, notFoundRoute]),
+  authenticatedRoute.addChildren([...areaRoutes, phonesRoute, notFoundRoute]),
 ]);
 
 interface AppRouterOptions extends RouterContext {
@@ -105,6 +128,8 @@ export function createAppRouter({ client, queryClient, history }: AppRouterOptio
   return createRouter({
     routeTree,
     context: { client, queryClient },
+    parseSearch: parseFlatSearch,
+    stringifySearch: stringifyFlatSearch,
     ...(history ? { history } : {}),
     defaultNotFoundComponent: NotFoundState,
     defaultErrorComponent: RouteErrorState,

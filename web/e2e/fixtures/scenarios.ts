@@ -1,6 +1,7 @@
 import { expect } from "@playwright/test";
 import type { Page } from "@playwright/test";
 import { makeMe } from "../../src/test/fake-api";
+import { makePhone } from "./devices-mock";
 import { E2E_PASSWORD } from "./mock-api";
 import type { MockApi, MockApiOptions } from "./mock-api";
 
@@ -15,6 +16,12 @@ export interface Scenario {
   /** Brings the page to the state under test. Selectors use ids so they work in both languages. */
   reach: (page: Page, api: MockApi) => Promise<void>;
 }
+
+const PHONES_ME = makeMe({ permissions: ["device.read"] });
+const PHONES = [
+  makePhone({ label: "Teléfono 01" }),
+  makePhone({ label: "Teléfono 02", is_revoked: true, last_seen_at: null }),
+];
 
 const SESSION_MS = 61_000; // just over how long /me/ counts as fresh (60 s)
 
@@ -133,6 +140,48 @@ export const scenarios: Scenario[] = [
       await page.goto("/settings");
       await expect(page.getByRole("main").getByRole("heading", { level: 1 })).toBeVisible();
       await expect(page.getByRole("main").locator("dl")).toBeVisible();
+    },
+  },
+  {
+    name: "phones list",
+    api: { me: PHONES_ME, devices: PHONES },
+    reach: async (page) => {
+      await page.goto("/settings/phones");
+      await expect(page.getByRole("row", { name: /Teléfono 01/ })).toBeVisible();
+    },
+  },
+  {
+    name: "phones list with a filter and an ignored parameter",
+    api: { me: PHONES_ME, devices: PHONES },
+    reach: async (page) => {
+      await page.goto("/settings/phones?is_revoked=true&colour=red");
+      await expect(page.getByRole("row", { name: /Teléfono 02/ })).toBeVisible();
+      await expect(page.locator("[role=status]").filter({ hasText: "colour" })).toBeVisible();
+      await expect(
+        page.getByRole("list", { name: /Filtros activos|Active filters/ }),
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "phones list with nothing for the filter",
+    api: { me: PHONES_ME, devices: [] },
+    reach: async (page) => {
+      await page.goto("/settings/phones?is_revoked=true");
+      await expect(
+        page
+          .locator("main button")
+          .filter({ hasText: /Limpiar|Clear/ })
+          .first(),
+      ).toBeVisible();
+    },
+  },
+  {
+    name: "phones list that failed",
+    api: { me: PHONES_ME, devices: PHONES },
+    reach: async (page, api) => {
+      api.devices.setFailing(true);
+      await page.goto("/settings/phones");
+      await expect(page.getByRole("alert")).toBeVisible();
     },
   },
   {

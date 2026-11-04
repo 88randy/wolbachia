@@ -1,6 +1,8 @@
 import type { Page, Route } from "@playwright/test";
 import type { Me } from "../../src/session/me";
 import { makeMe } from "../../src/test/fake-api";
+import { FakeDevices } from "./devices-mock";
+import type { PhoneFixture } from "./devices-mock";
 
 /** Fake password for the e2e runs: obviously fake (`pw-for-...`) and generated at runtime. */
 export const E2E_PASSWORD = `pw-for-${crypto.randomUUID()}`;
@@ -19,6 +21,8 @@ export interface MockApiOptions {
   signInAs?: Me;
   retryAfterSeconds?: number;
   resetConfirm?: ResetBehavior;
+  /** Phones `GET /devices/` lists (W67). Default: none. */
+  devices?: readonly PhoneFixture[];
 }
 
 export interface RecordedRequest {
@@ -31,6 +35,8 @@ export interface RecordedRequest {
 /** What a test can read and change while the page is open. */
 export interface MockApi {
   requests: RecordedRequest[];
+  /** Hold or fail the answers of `GET /devices/` (loading and error states). */
+  devices: Pick<FakeDevices, "hold" | "setFailing">;
   /** The server forgets the session (it expired): the next `/me/` is 401. */
   expireSession: () => void;
   setLogin: (behavior: LoginBehavior) => void;
@@ -68,6 +74,7 @@ function meFor(user: Me, slug: string | undefined): Me {
 /** The server side of one test: who is signed in, what login answers, and the request log. */
 class FakeServer implements MockApi {
   readonly requests: RecordedRequest[] = [];
+  readonly devices: FakeDevices;
   private signedIn: Me | null;
   private login: LoginBehavior;
 
@@ -75,6 +82,7 @@ class FakeServer implements MockApi {
     private readonly page: Page,
     private readonly options: MockApiOptions,
   ) {
+    this.devices = new FakeDevices(options.devices ?? []);
     this.signedIn = options.me === undefined ? makeMe() : options.me;
     this.login = options.login ?? "ok";
   }
@@ -139,6 +147,8 @@ class FakeServer implements MockApi {
         return route.fulfill({ status: 204 });
       case "GET /api/v1/me/":
         return this.answerMe(route, request);
+      case "GET /api/v1/devices/":
+        return this.devices.answer(route);
       case "POST /api/v1/auth/login/":
         return this.answerLogin(route, request);
       case "POST /api/v1/auth/logout/":

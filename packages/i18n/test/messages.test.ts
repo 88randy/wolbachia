@@ -9,6 +9,28 @@ const STRAY_BRACE = /[{}]/;
 
 const locales = Object.keys(messages) as Locale[];
 
+/**
+ * Messages that take a placeholder, sorted by key. A new one is added here on purpose: the
+ * wording around a number or a noun must not need plural or gender agreement (see the README).
+ * `table.*` fill in the range, the count, a translated column header or filter name, and a row
+ * name the screen provides; each sentence reads the same for 1 and for many.
+ */
+const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = [
+  ["auth.lockout.message", ["minutes"]],
+  ["errors.api.blocked", ["role"]],
+  ["table.filters.ignoredBody", ["names"]],
+  ["table.filters.remove", ["filter", "value"]],
+  ["table.pager.position", ["page", "pages"]],
+  ["table.selection.count", ["count"]],
+  ["table.selection.row", ["row"]],
+  ["table.sort.ascending", ["column"]],
+  ["table.sort.descending", ["column"]],
+  ["table.status.range", ["from", "to", "total"]],
+  ["table.status.rangeCursor", ["count"]],
+  ["table.voided.author", ["author"]],
+  ["table.voided.reason", ["reason"]],
+];
+
 function sortedKeys(locale: Locale): string[] {
   return Object.keys(messages[locale]).sort();
 }
@@ -43,15 +65,13 @@ void describe("catalogs", () => {
 
     assert.deepEqual(mismatches, []);
   });
-  void test("only errors.api.blocked ({role}) and auth.lockout.message ({minutes}) take a placeholder", () => {
+  void test("only the listed keys take a placeholder, each with exactly the listed ones", () => {
     const withPlaceholders = Object.entries(messages["es-MX"])
       .filter(([, text]) => placeholdersOf(text).length > 0)
-      .map(([key, text]) => [key, placeholdersOf(text)]);
+      .map(([key, text]) => [key, placeholdersOf(text)] as const)
+      .sort(([first], [second]) => first.localeCompare(second));
 
-    assert.deepEqual(withPlaceholders, [
-      ["errors.api.blocked", ["role"]],
-      ["auth.lockout.message", ["minutes"]],
-    ]);
+    assert.deepEqual(withPlaceholders, ALLOWED_PLACEHOLDERS);
   });
 
   void test("every key follows area.screen.element", () => {
