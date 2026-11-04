@@ -69,7 +69,7 @@ export const font = {
   /** Family name to bundle in the mobile app and to load on the web. */
   family: "Inter",
   /** CSS font stack for the web. */
-  cssStack: "Inter, system-ui, sans-serif",
+  cssStack: "Inter, Roboto, system-ui, sans-serif",
   /** Digits keep a fixed width so counts and times align. CSS `font-variant-numeric`. */
   tabularFigures: "tabular-nums",
 } as const;

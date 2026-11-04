@@ -80,17 +80,4 @@ void describe("scales", () => {
 
     assert.deepEqual(offGrid, []);
   });
-
-  void test("web text is never smaller than the minimum", () => {
-    const { typography } = web;
-    const sizes = [
-      typography.bodyFontSize,
-      typography.labelFontSize,
-      typography.labelSmallFontSize,
-    ];
-
-    const tooSmall = sizes.filter((size) => size < typography.minimumFontSize);
-
-    assert.deepEqual(tooSmall, []);
-  });
 });

@@ -81,8 +81,13 @@ export const web = {
   light: lightWebColors,
   dark: darkWebColors,
   control: { sm: 32, md: 36, lg: 40, xl: 44 } satisfies ControlHeights,
-  /** Focus ring: solid line in `color.action`, offset from the element. */
-  focus: { ringWidth: 2, ringOffset: 2 },
+  /**
+   * Focus ring: solid line in `color.action` offset from the element, plus a soft halo
+   * (`.fo` in web.css). The halo color is fixed in the design and does not change in dark.
+   */
+  focus: {
+    ring: { width: 2, offset: 2, halo: { spread: 5, color: "rgba(26, 93, 255, 0.22)" } },
+  },
   typography: {
     /** Body text size and line height. */
     bodyFontSize: 14,
