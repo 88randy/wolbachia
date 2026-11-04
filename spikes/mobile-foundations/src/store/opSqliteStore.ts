@@ -1,0 +1,92 @@
+import { open } from '@op-engineering/op-sqlite';
+import type { DB, Scalar } from '@op-engineering/op-sqlite';
+
+import type { EventStatus, EventStore, FakeEvent } from './types';
+
+const DB_NAME = 'spike_opsqlite.db';
+
+const INSERT_SQL = 'INSERT OR REPLACE INTO event (id, type, payload, device_time, status) VALUES (?, ?, ?, ?, ?)';
+
+function toParams(event: FakeEvent): Scalar[] {
+  return [event.id, event.type, event.payload, event.device_time, event.status];
+}
+
+function readString(value: Scalar | undefined): string {
+  if (typeof value !== 'string') throw new Error(`Expected string column, got ${typeof value}`);
+  return value;
+}
+
+function readNumber(value: Scalar | undefined): number {
+  if (typeof value !== 'number') throw new Error(`Expected number column, got ${typeof value}`);
+  return value;
+}
+
+function readStatus(value: Scalar | undefined): EventStatus {
+  const text = readString(value);
+  if (text !== 'pending' && text !== 'sent') throw new Error(`Unknown status in database: ${text}`);
+  return text;
+}
+
+export class OpSqliteStore implements EventStore {
+  readonly name = 'op-sqlite';
+  private db: DB | null = null;
+
+  async open(): Promise<void> {
+    const db = open({ name: DB_NAME });
+    await db.execute(
+      'CREATE TABLE IF NOT EXISTS event (id TEXT PRIMARY KEY NOT NULL, type TEXT NOT NULL, payload TEXT NOT NULL, device_time INTEGER NOT NULL, status TEXT NOT NULL)'
+    );
+    await db.execute('CREATE INDEX IF NOT EXISTS event_status_time ON event (status, device_time)');
+    this.db = db;
+  }
+
+  describe(): string {
+    return 'op-sqlite, async execute, SQLite file in app storage';
+  }
+
+  private get handle(): DB {
+    if (this.db === null) throw new Error('op-sqlite store is not open');
+    return this.db;
+  }
+
+  async count(): Promise<number> {
+    const result = await this.handle.execute('SELECT COUNT(*) AS total FROM event');
+    return readNumber(result.rows[0]?.total);
+  }
+
+  async countPending(): Promise<number> {
+    const result = await this.handle.execute("SELECT COUNT(*) AS total FROM event WHERE status = 'pending'");
+    return readNumber(result.rows[0]?.total);
+  }
+
+  async insertMany(events: FakeEvent[]): Promise<void> {
+    // One statement with many parameter sets, executed in a single native transaction.
+    await this.handle.executeBatch([[INSERT_SQL, events.map(toParams)]]);
+  }
+
+  async insertOne(event: FakeEvent): Promise<void> {
+    await this.handle.execute(INSERT_SQL, toParams(event));
+  }
+
+  async readPending(limit: number): Promise<FakeEvent[]> {
+    const result = await this.handle.execute(
+      "SELECT id, type, payload, device_time, status FROM event WHERE status = 'pending' ORDER BY device_time ASC LIMIT ?",
+      [limit]
+    );
+    return result.rows.map((row) => ({
+      id: readString(row.id),
+      type: readString(row.type),
+      payload: readString(row.payload),
+      device_time: readNumber(row.device_time),
+      status: readStatus(row.status),
+    }));
+  }
+
+  async markSent(ids: string[]): Promise<void> {
+    await this.handle.executeBatch([["UPDATE event SET status = 'sent' WHERE id = ?", ids.map((id) => [id])]]);
+  }
+
+  async clear(): Promise<void> {
+    await this.handle.execute('DELETE FROM event');
+  }
+}
