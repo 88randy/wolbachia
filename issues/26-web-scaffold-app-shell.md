@@ -39,6 +39,7 @@ None.
 - [ ] CI green on PR.
 - [ ] No color, radius or font literal in web code; only tokens.
 - [ ] Shell passes axe with no violations; full keyboard navigation of the sidebar.
+- [ ] Smoke test: `GET /api/v1/me/` through `@wolbachia/api-client` (see #12).
 
 ## Notes
 - [PENDING] Final commands in `web/README.md` once #27 closes.

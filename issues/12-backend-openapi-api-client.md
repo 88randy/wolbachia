@@ -22,11 +22,11 @@ N/A.
 A PR that changes the API regenerates the client in the same PR (CI enforces it).
 
 ## 7. Edge cases & errors
-Breaking change detected (removed field/endpoint) → CI requires label `api:breaking`.
+Breaking change (removed field/endpoint): the PR template asks the author to flag it; automated detection (oasdiff + `api:breaking` label) is deferred until clients are in production (decision recorded).
 
 ## 8. Acceptance criteria
 - [ ] Schema generated in CI and published as artifact.
-- [ ] Client consumed by a smoke test in mobile and web.
+- [ ] Client covered by consumer tests inside `packages/api-client` (session + CSRF, bearer, `X-Organization`, typed errors); mobile (#6) and web (#26) add their own `getMe` smoke test.
 - [ ] `?code=` lookup implemented once as a shared DRF filter, with tests (paging and error envelope come from #2).
 
 ## Notes
