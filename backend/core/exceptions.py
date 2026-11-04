@@ -1,6 +1,7 @@
 """Named domain exceptions and how they map to API responses (docs/api-conventions.md)."""
 
 from http import HTTPStatus
+from typing import Any
 
 
 class DomainError(Exception):
@@ -19,6 +20,23 @@ class AlreadyVoidedError(DomainError):
     code = "already_voided"
     status_code = HTTPStatus.CONFLICT
     default_detail = "The record is already voided."
+
+
+class FieldValidationError(DomainError):
+    """A `400 validation_error` raised from a service, with one coded field error.
+
+    Same body as a serializer failure (`fields` is `{field: [{code, params}]}`), but `params`
+    can carry values the client needs for its message, e.g. `{"min": 0, "max": 100}`.
+    """
+
+    code = "validation_error"
+    default_detail = "Validation failed."
+
+    def __init__(self, field: str, field_code: str, params: dict[str, Any] | None = None) -> None:
+        super().__init__()
+        self.fields: dict[str, list[dict[str, Any]]] = {
+            field: [{"code": field_code, "params": params or {}}]
+        }
 
 
 class PhysicalDeleteForbiddenError(Exception):

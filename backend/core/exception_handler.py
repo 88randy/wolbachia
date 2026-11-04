@@ -14,7 +14,7 @@ from rest_framework import exceptions
 from rest_framework.response import Response
 from rest_framework.views import exception_handler, set_rollback
 
-from core.exceptions import DomainError
+from core.exceptions import DomainError, FieldValidationError
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,10 @@ def _log_unhandled(exc: Exception, context: dict[str, Any]) -> None:
 def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     if isinstance(exc, DomainError):
         set_rollback()
-        return Response({"code": exc.code, "detail": exc.detail}, status=exc.status_code)
+        body: dict[str, Any] = {"code": exc.code, "detail": exc.detail}
+        if isinstance(exc, FieldValidationError):
+            body["fields"] = exc.fields
+        return Response(body, status=exc.status_code)
 
     exc = _normalize(exc)
     response = exception_handler(exc, context)

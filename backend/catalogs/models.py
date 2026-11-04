@@ -51,7 +51,9 @@ class CatalogItem(OrgScopedModel):
         # "Other (specify)" is always last, whatever its `sort`.
         ordering = ["is_other", "sort", "code"]
         constraints = [
-            models.UniqueConstraint(fields=["catalog", "code"], name="item_unique_code_per_catalog"),
+            models.UniqueConstraint(
+                fields=["catalog", "code"], name="item_unique_code_per_catalog"
+            ),
             models.UniqueConstraint(
                 fields=["catalog"],
                 condition=Q(is_other=True),
