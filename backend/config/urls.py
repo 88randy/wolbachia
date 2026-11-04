@@ -14,6 +14,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("me/", MeView.as_view(), name="me"),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
     path("", include("catalogs.urls")),
+    path("", include("rules.urls")),
 ]
 
 urlpatterns = [path("api/v1/", include(api_v1_patterns))]

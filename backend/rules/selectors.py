@@ -1,6 +1,6 @@
 from datetime import datetime
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 
 from django.db.models import Case, CharField, Min, OuterRef, QuerySet, Subquery, Value, When
 
@@ -30,7 +30,13 @@ def list_versions(parameter: RuleParameter, at: datetime) -> QuerySet[RuleParame
     if in_force is not None:
         cases.append(When(pk=in_force.pk, then=Value(STATUS_IN_FORCE)))
     status = Case(*cases, default=Value(STATUS_SUPERSEDED), output_field=CharField())
-    return parameter.versions.annotate(status=status).order_by("-effective_from")
+    history = (
+        RuleParameterVersion.objects.filter(parameter=parameter)
+        .select_related("parameter")
+        .annotate(status=status)
+        .order_by("-effective_from")
+    )
+    return cast("QuerySet[RuleParameterVersion]", history)
 
 
 def list_parameters_with_current(

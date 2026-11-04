@@ -1,0 +1,95 @@
+from typing import Any
+
+from django.db.models import QuerySet
+from django.shortcuts import get_object_or_404
+from django.utils import timezone
+from drf_spectacular.utils import extend_schema
+from rest_framework import mixins, serializers, status, viewsets
+from rest_framework.request import Request
+from rest_framework.response import Response
+
+from core.permission_codes import RULE_PARAMETER_READ, RULE_PARAMETER_VERSION_CREATE
+from core.views import OrgScopedViewSetMixin
+from rules.models import RuleParameter, RuleParameterVersion
+from rules.selectors import list_parameters_with_current, list_versions
+from rules.serializers import (
+    RuleParameterSerializer,
+    RuleParameterVersionCreateSerializer,
+    RuleParameterVersionSerializer,
+)
+from rules.services import RuleVersionSpec, create_rule_version
+
+KEY_REGEX = "[a-z][a-z0-9_]*"
+
+
+class RuleParameterViewSet(
+    OrgScopedViewSetMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    viewsets.GenericViewSet,
+):
+    """Parameters of the organization with their current value. They are created by the seed."""
+
+    queryset = RuleParameter.objects.all()
+    serializer_class = RuleParameterSerializer
+    lookup_field = "key"
+    lookup_value_regex = KEY_REGEX
+    required_permissions = {"list": RULE_PARAMETER_READ, "retrieve": RULE_PARAMETER_READ}
+
+    def get_queryset(self) -> QuerySet[Any]:
+        if getattr(self, "swagger_fake_view", False):
+            return RuleParameter.objects.none()
+        return list_parameters_with_current(self.request.organization, timezone.now())  # type: ignore[attr-defined]
+
+
+class RuleParameterVersionViewSet(
+    OrgScopedViewSetMixin,
+    mixins.ListModelMixin,
+    mixins.RetrieveModelMixin,
+    mixins.CreateModelMixin,
+    viewsets.GenericViewSet,
+):
+    """History of `/rule-parameters/{parameter_key}/versions/`: add a version, never edit one.
+
+    The detail route exists only so PUT, PATCH and DELETE answer 405 instead of 404.
+    """
+
+    queryset = RuleParameterVersion.objects.all()
+    serializer_class = RuleParameterVersionSerializer
+    http_method_names = ["get", "post", "head", "options"]
+    required_permissions = {
+        "list": RULE_PARAMETER_READ,
+        "retrieve": RULE_PARAMETER_READ,
+        "create": RULE_PARAMETER_VERSION_CREATE,
+    }
+
+    def get_parameter(self) -> RuleParameter:
+        """The parameter of the URL; another organization's key is a 404 like an unknown one."""
+        if not hasattr(self, "_parameter"):
+            scoped = RuleParameter.objects.for_org(self.request.organization)  # type: ignore[attr-defined]
+            self._parameter = get_object_or_404(scoped, key=self.kwargs["parameter_key"])
+        return self._parameter  # type: ignore[no-any-return]
+
+    def get_queryset(self) -> QuerySet[Any]:
+        if getattr(self, "swagger_fake_view", False):
+            return RuleParameterVersion.objects.none()
+        return list_versions(self.get_parameter(), timezone.now())
+
+    def get_serializer_class(self) -> type[serializers.BaseSerializer[Any]]:
+        if self.action == "create":
+            return RuleParameterVersionCreateSerializer
+        return RuleParameterVersionSerializer
+
+    @extend_schema(
+        request=RuleParameterVersionCreateSerializer,
+        responses={201: RuleParameterVersionSerializer},
+    )
+    def create(self, request: Request, *args: object, **kwargs: object) -> Response:
+        payload = self.get_serializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        data = payload.validated_data
+        spec = RuleVersionSpec(data["value"], data["effective_from"], data["reason"])
+        version = create_rule_version(self.get_parameter(), spec, request.user)  # type: ignore[arg-type]
+        stored = self.get_queryset().get(pk=version.pk)
+        body = RuleParameterVersionSerializer(stored, context=self.get_serializer_context()).data
+        return Response(body, status=status.HTTP_201_CREATED)
