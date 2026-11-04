@@ -4,15 +4,22 @@ export interface ResetLink {
   token: string;
 }
 
+/** Where the address bar is left once a link has been read: no token, no fragment. */
+export const RESET_ADDRESS = "/reset-password";
+
 // Conservative shape: `uid` is URL-safe base64 of the user id and `token` is Django's
 // `<base36 timestamp>-<hash>`; both fit in letters, digits, `-` and `_`. Anything else is not
 // one of our links, so it is never sent to the server.
 const SAFE_VALUE = /^[A-Za-z0-9_-]{1,128}$/;
 
-function singleValue(params: URLSearchParams, name: string): string | undefined {
+/** The link for these values, or `undefined` when either is not shaped like ours. */
+export function toResetLink(uid: string, token: string): ResetLink | undefined {
+  return SAFE_VALUE.test(uid) && SAFE_VALUE.test(token) ? { uid, token } : undefined;
+}
+
+function singleValue(params: URLSearchParams, name: string): string {
   const values = params.getAll(name);
-  const [value] = values;
-  return values.length === 1 && value !== undefined && SAFE_VALUE.test(value) ? value : undefined;
+  return values.length === 1 ? (values[0] ?? "") : "";
 }
 
 /**
@@ -22,7 +29,5 @@ function singleValue(params: URLSearchParams, name: string): string | undefined 
  */
 export function parseResetFragment(hash: string): ResetLink | undefined {
   const params = new URLSearchParams(hash.startsWith("#") ? hash.slice(1) : hash);
-  const uid = singleValue(params, "uid");
-  const token = singleValue(params, "token");
-  return uid !== undefined && token !== undefined ? { uid, token } : undefined;
+  return toResetLink(singleValue(params, "uid"), singleValue(params, "token"));
 }

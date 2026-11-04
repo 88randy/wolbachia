@@ -1,4 +1,4 @@
-import { screen } from "@testing-library/react";
+import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { afterEach, describe, expect, test, vi } from "vitest";
@@ -52,7 +52,7 @@ describe("reset password: the page of the emailed link", () => {
     expect(api.requests).toEqual([]);
   });
 
-  test("takes the token out of the address bar and still completes the reset", async () => {
+  test("takes the token out of the address bar before any request", async () => {
     window.history.replaceState(null, "", LINK_PATH);
     const { api } = await openReset();
 
@@ -60,6 +60,12 @@ describe("reset password: the page of the emailed link", () => {
     expect(window.location.hash).toBe("");
     expect(window.location.href).not.toContain("set-password-link");
     expect(api.requests).toEqual([]);
+  });
+
+  test("still completes the reset with the values it took out of the bar", async () => {
+    window.history.replaceState(null, "", LINK_PATH);
+    const { api } = await openReset();
+
     await fillAndSend(NEW_PASSWORD);
 
     await vi.waitFor(() => {
@@ -99,15 +105,117 @@ describe("reset password: the page of the emailed link", () => {
     expect(api.requests).toEqual([]);
   });
 
-  test("a link from before the fragment format (values in the path) still works", async () => {
+  test("a link from before the fragment format (values in the path) is cleared from the bar", async () => {
     window.history.replaceState(null, "", LEGACY_LINK_PATH);
-    const { api } = await openReset(noContent(204), "es-MX", LEGACY_LINK_PATH);
+    await openReset(noContent(204), "es-MX", LEGACY_LINK_PATH);
 
     expect(window.location.pathname).toBe("/reset-password");
+  });
+
+  test("a link from before the fragment format still completes the reset", async () => {
+    const { api } = await openReset(noContent(204), "es-MX", LEGACY_LINK_PATH);
+
     await fillAndSend(NEW_PASSWORD);
 
     await vi.waitFor(() => {
       expect(api.requests[0]?.body).toEqual({
+        uid: "MQ",
+        token: "set-password-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+  });
+
+  test("a legacy path link with unusable values shows the invalid-link state", async () => {
+    const { api } = await openReset(noContent(204), "es-MX", "/reset-password/MQ/a.b");
+
+    expect((await screen.findByRole("alert")).textContent).toContain("Este enlace ya no sirve");
+    expect(api.requests).toEqual([]);
+  });
+
+  describe("a second link pasted into the same tab", () => {
+    const SECOND_FRAGMENT = "uid=Mg&token=second-link";
+
+    function pasteLink(fragment: string) {
+      act(() => {
+        window.location.hash = fragment;
+      });
+    }
+
+    async function sendAndReadBody(api: Awaited<ReturnType<typeof openReset>>["api"]) {
+      await fillAndSend(NEW_PASSWORD);
+      await vi.waitFor(() => {
+        expect(api.requests.length).toBeGreaterThan(0);
+      });
+      return api.requests[0]?.body;
+    }
+
+    test("replaces the credentials of the first link and is cleared from the bar", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      const { api } = await openReset();
+
+      pasteLink(SECOND_FRAGMENT);
+
+      await vi.waitFor(() => {
+        expect(window.location.href).not.toContain("second-link");
+      });
+      expect(window.location.pathname).toBe("/reset-password");
+      expect(await sendAndReadBody(api)).toEqual({
+        uid: "Mg",
+        token: "second-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+
+    test("starts the form over", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      await openReset();
+      await userEvent.type(screen.getByLabelText("Contraseña nueva"), NEW_PASSWORD);
+
+      pasteLink(SECOND_FRAGMENT);
+
+      await vi.waitFor(() => {
+        expect(screen.getByLabelText<HTMLInputElement>("Contraseña nueva").value).toBe("");
+      });
+    });
+
+    test("an initially invalid link followed by a valid one shows the form", async () => {
+      window.history.replaceState(null, "", "/reset-password");
+      const { api } = await openReset(noContent(204), "es-MX", "/reset-password");
+      expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
+
+      pasteLink(SECOND_FRAGMENT);
+
+      expect(await screen.findByLabelText("Contraseña nueva")).toBeDefined();
+      expect(await sendAndReadBody(api)).toEqual({
+        uid: "Mg",
+        token: "second-link",
+        new_password: NEW_PASSWORD,
+      });
+    });
+
+    test("a non-empty invalid link after a valid one shows the invalid-link state", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      const { api } = await openReset();
+
+      pasteLink("uid=Mg");
+
+      expect((await screen.findByRole("alert")).textContent).toContain("Este enlace ya no sirve");
+      expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
+      expect(window.location.hash).toBe("");
+      expect(api.requests).toEqual([]);
+    });
+
+    test("the same link pasted again is cleared from the bar and keeps working", async () => {
+      window.history.replaceState(null, "", LINK_PATH);
+      const { api } = await openReset();
+
+      pasteLink("uid=MQ&token=set-password-link");
+
+      await vi.waitFor(() => {
+        expect(window.location.href).not.toContain("set-password-link");
+      });
+      expect(await sendAndReadBody(api)).toEqual({
         uid: "MQ",
         token: "set-password-link",
         new_password: NEW_PASSWORD,

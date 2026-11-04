@@ -196,6 +196,32 @@ test.describe("password reset", () => {
     expect(requestedUrls.filter((url) => url.includes("set-password-link"))).toEqual([]);
   });
 
+  test("a second link opened in the same tab replaces the first and is cleared from the bar", async ({
+    page,
+  }) => {
+    const api = await mockApi(page, { me: null });
+
+    await page.goto("/reset-password#uid=MQ&token=first-link");
+    await expect(page).toHaveURL(/\/reset-password$/);
+    // Same document, only the fragment changes: what pasting a second emailed link does.
+    await page.evaluate(() => {
+      window.location.hash = "uid=Mg&token=second-link";
+    });
+    await expect(page).toHaveURL(/\/reset-password$/);
+    expect(page.url()).not.toContain("second-link");
+    await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
+    await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
+    await page.getByRole("button", { name: "Guardar contraseña" }).click();
+
+    await expect(page).toHaveURL(/\/login\?notice=password-changed$/);
+    const confirm = api.requests.find((request) => request.path.endsWith("/confirm/"));
+    expect(confirm?.body).toEqual({
+      uid: "Mg",
+      token: "second-link",
+      new_password: E2E_PASSWORD,
+    });
+  });
+
   test("a link from before the fragment format still works and clears its path", async ({
     page,
   }) => {

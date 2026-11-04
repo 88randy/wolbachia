@@ -128,7 +128,7 @@ jobs:
         run: |
           docker logs web-ci > nginx.log 2>&1
           grep -q "GET /reset-password" nginx.log || { echo "the e2e did not reach /reset-password"; exit 1; }
-          if grep -E "set-password-link|old-link" nginx.log; then echo "a reset token reached the nginx log"; exit 1; fi
+          if grep -E "set-password-link|old-link|first-link|second-link" nginx.log; then echo "a reset token reached the nginx log"; exit 1; fi
       - name: Stop the container
         if: always()
         run: docker rm -f web-ci

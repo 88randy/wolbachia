@@ -1,5 +1,25 @@
 import { describe, expect, test } from "vitest";
-import { parseResetFragment } from "./reset-link";
+import { parseResetFragment, toResetLink } from "./reset-link";
+
+describe("toResetLink", () => {
+  test("accepts values shaped like ours", () => {
+    expect(toResetLink("MQ", "abc123-fake_token")).toEqual({
+      uid: "MQ",
+      token: "abc123-fake_token",
+    });
+  });
+
+  test.each([
+    ["", "abc"],
+    ["MQ", ""],
+    ["M Q", "abc"],
+    ["MQ", "a.b"],
+    ["MQ", "a/b"],
+    ["MQ", "a".repeat(129)],
+  ])("rejects uid %j with token %j", (uid, token) => {
+    expect(toResetLink(uid, token)).toBeUndefined();
+  });
+});
 
 describe("parseResetFragment", () => {
   test.each([
