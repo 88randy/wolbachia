@@ -75,10 +75,10 @@ async function attemptLogin(
   credentials: Credentials,
   signal?: AbortSignal,
 ): Promise<RawResult> {
-  await ensureCsrfCookie(client);
+  await ensureCsrfCookie(client, signal);
   let result = await postLogin(client, credentials, signal);
   if (isCsrfRejection(result)) {
-    await fetchCsrfCookie(client);
+    await fetchCsrfCookie(client, signal);
     result = await postLogin(client, credentials, signal);
   }
   if (isStaleSlugRefusal(result)) {

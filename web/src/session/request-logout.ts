@@ -23,10 +23,10 @@ export async function requestLogout(
   signal?: AbortSignal,
 ): Promise<LogoutOutcome> {
   try {
-    await ensureCsrfCookie(client);
+    await ensureCsrfCookie(client, signal);
     let response = await postLogout(client, signal);
     if (response.status === HTTP_FORBIDDEN) {
-      await fetchCsrfCookie(client);
+      await fetchCsrfCookie(client, signal);
       response = await postLogout(client, signal);
     }
     return response.ok ? { ok: true } : { ok: false, failure: serviceFailureOf(response.status) };
