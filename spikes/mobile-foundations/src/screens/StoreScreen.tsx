@@ -1,15 +1,13 @@
 import { Paths } from 'expo-file-system';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Text } from 'react-native';
 
 import { STORE_EVENT_COUNT, STORE_PENDING_BATCH, STORE_SINGLE_WRITE_COUNT } from '../config';
 import { createFakeEvents } from '../store/fakeEvents';
-import { OpSqliteStore } from '../store/opSqliteStore';
+import { openStore } from '../store/instances';
+import type { StoreKey } from '../store/instances';
 import type { EventStore } from '../store/types';
-import { WatermelonStore } from '../store/watermelonStore';
 import { Button, KeyValue, LogView, Note, Screen, Section, errorMessage, formatBytes, formatMs, useLog } from '../ui';
-
-type StoreKey = 'op-sqlite' | 'WatermelonDB';
 
 async function timed<T>(work: () => Promise<T>): Promise<{ value: T; ms: number }> {
   const start = performance.now();
@@ -25,11 +23,6 @@ function percentile(sorted: number[], fraction: number): number {
 export function StoreScreen() {
   const logger = useLog();
   const { log } = logger;
-  const stores = useRef<Record<StoreKey, EventStore>>({
-    'op-sqlite': new OpSqliteStore(),
-    WatermelonDB: new WatermelonStore(),
-  });
-  const opened = useRef<Set<StoreKey>>(new Set());
   const [selected, setSelected] = useState<StoreKey>('op-sqlite');
   const [busy, setBusy] = useState(false);
   const [found, setFound] = useState<string>('(not opened yet)');
@@ -37,12 +30,8 @@ export function StoreScreen() {
 
   const ensureOpen = useCallback(
     async (key: StoreKey): Promise<EventStore> => {
-      const store = stores.current[key];
-      if (!opened.current.has(key)) {
-        const { ms } = await timed(() => store.open());
-        opened.current.add(key);
-        log(`${key}: opened in ${formatMs(ms)} (${store.describe()})`);
-      }
+      const { store, firstOpenMs } = await openStore(key);
+      if (firstOpenMs !== null) log(`${key}: opened in ${formatMs(firstOpenMs)} (${store.describe()})`);
       return store;
     },
     [log]

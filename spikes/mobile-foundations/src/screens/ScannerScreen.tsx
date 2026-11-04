@@ -1,5 +1,5 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { Linking, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState, Linking, StyleSheet, Text, View } from 'react-native';
 import { Camera, useCameraDevice, useCameraPermission } from 'react-native-vision-camera';
 import { useBarcodeScannerOutput } from 'react-native-vision-camera-barcode-scanner';
 import type { Barcode, TargetBarcodeFormat } from 'react-native-vision-camera-barcode-scanner';
@@ -18,7 +18,20 @@ export function ScannerScreen() {
   const [torchOn, setTorchOn] = useState(false);
   const [lastValue, setLastValue] = useState<string>('(nothing scanned)');
   const [lastTiming, setLastTiming] = useState<string>('-');
+  const [denied, setDenied] = useState(false);
   const armedAt = useRef<number | null>(null);
+
+  // useCameraPermission re-reads the status itself when the app returns to the foreground
+  // (react-native-vision-camera src/hooks/usePermission.ts). Here we only drop our own "denied" flag so the
+  // UI follows the fresh status after the user changed it in system settings.
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state !== 'active') return;
+      setDenied(false);
+      log('app resumed: camera permission re-read by the library');
+    });
+    return () => subscription.remove();
+  }, [log]);
 
   const onBarcodeScanned = useCallback(
     (barcodes: Barcode[]) => {
@@ -47,7 +60,9 @@ export function ScannerScreen() {
   const requestPermission = async () => {
     try {
       const granted = await permission.requestPermission();
-      log(`camera permission request result: ${granted ? 'granted' : 'denied'} (status ${permission.status})`);
+      // Only the result of this request is logged: permission.status is stale until the next render.
+      setDenied(!granted);
+      log(`camera permission request result: ${granted ? 'granted' : 'denied'}`);
     } catch (error) {
       log(`ERROR requesting permission: ${errorMessage(error)}`);
     }
@@ -69,14 +84,17 @@ export function ScannerScreen() {
         </Note>
         <KeyValue label="Camera permission" value={permission.status} />
         {!permission.hasPermission ? (
-          permission.canRequestPermission ? (
-            <Button label="Request camera permission" onPress={requestPermission} />
-          ) : (
-            <>
-              <Text style={styles.warn}>Permission denied. The app must show a clear message and a way to fix it.</Text>
-              <Button label="Open app settings" onPress={() => void Linking.openSettings()} />
-            </>
-          )
+          <>
+            {permission.canRequestPermission ? (
+              <Button label="Request camera permission" onPress={requestPermission} />
+            ) : null}
+            {denied || !permission.canRequestPermission ? (
+              <>
+                <Text style={styles.warn}>Permission denied. The app must show a clear message and a way to fix it.</Text>
+                <Button label="Open app settings" onPress={() => void Linking.openSettings()} />
+              </>
+            ) : null}
+          </>
         ) : null}
         {permission.hasPermission && device === undefined ? <Text style={styles.warn}>No back camera found.</Text> : null}
         {permission.hasPermission && device !== undefined ? (

@@ -1,7 +1,7 @@
 import { Camera, Map, OfflineManager } from '@maplibre/maplibre-react-native';
 import type { OfflinePack, OfflinePackStatus, StyleSpecification } from '@maplibre/maplibre-react-native';
 import { File, Paths } from 'expo-file-system';
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 
 import {
@@ -39,6 +39,9 @@ function resolveStyleUrl(tileTemplate: string): string {
   return file.uri;
 }
 
+/** The map must show something within this time or the screen logs a render timeout. */
+const RENDER_TIMEOUT_MS = 20_000;
+
 export function MapScreen() {
   const logger = useLog();
   const { log } = logger;
@@ -49,6 +52,26 @@ export function MapScreen() {
   const [lastRender, setLastRender] = useState('-');
   const loadStartedAt = useRef<number | null>(null);
   const packStartedAt = useRef<number | null>(null);
+  const renderTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const firstFrameLogged = useRef(false);
+  const packIds = useRef<Set<string>>(new Set());
+  const [downloading, setDownloading] = useState(false);
+
+  const clearRenderTimer = useCallback(() => {
+    if (renderTimer.current !== null) clearTimeout(renderTimer.current);
+    renderTimer.current = null;
+  }, []);
+
+  // On unmount: stop the render timer and unsubscribe every pack listener this screen registered
+  // (OfflineManager.removeListener, see its TSDoc: "Should be called ... when no longer needed").
+  useEffect(() => {
+    const ids = packIds.current;
+    return () => {
+      clearRenderTimer();
+      for (const id of ids) OfflineManager.removeListener(id);
+      ids.clear();
+    };
+  }, [clearRenderTimer]);
 
   const applyStyle = () => {
     try {
@@ -62,6 +85,8 @@ export function MapScreen() {
   };
 
   const downloadPack = async () => {
+    if (downloading) return;
+    setDownloading(true);
     try {
       // Fail early rather than silently fetching thousands of tiles.
       OfflineManager.setTileCountLimit(MAP_TILE_COUNT_LIMIT);
@@ -86,14 +111,18 @@ export function MapScreen() {
             );
             packStartedAt.current = null;
           }
+          if (next.state !== 'active') setDownloading(false);
         },
         (_pack, error) => {
           log(`ERROR pack ${error.id}: ${error.message}`);
+          setDownloading(false);
         }
       );
+      packIds.current.add(pack.id);
       log(`pack created: ${pack.id}`);
     } catch (error) {
       log(`ERROR creating pack: ${errorMessage(error)}`);
+      setDownloading(false);
     }
   };
 
@@ -126,19 +155,40 @@ export function MapScreen() {
 
   const onWillStartLoadingMap = useCallback(() => {
     loadStartedAt.current = performance.now();
-  }, []);
+    firstFrameLogged.current = false;
+    log('map: will start loading');
+    clearRenderTimer();
+    renderTimer.current = setTimeout(() => {
+      log(`ERROR map did not finish rendering within ${RENDER_TIMEOUT_MS / 1000} s (render timeout)`);
+    }, RENDER_TIMEOUT_MS);
+  }, [clearRenderTimer, log]);
+
+  const elapsedSinceLoadStart = (): string =>
+    loadStartedAt.current === null ? 'n/a' : formatMs(performance.now() - loadStartedAt.current);
+
+  const onDidFinishLoadingMap = useCallback(() => {
+    log(`map: did finish loading (style ready) after ${elapsedSinceLoadStart()}`);
+  }, [log]);
+
+  const onDidFinishRenderingFrame = useCallback(() => {
+    if (firstFrameLogged.current) return;
+    firstFrameLogged.current = true;
+    log(`map: first frame rendered after ${elapsedSinceLoadStart()}`);
+  }, [log]);
 
   const onDidFinishRenderingMapFully = useCallback(() => {
     if (loadStartedAt.current === null) return;
     const elapsed = formatMs(performance.now() - loadStartedAt.current);
     loadStartedAt.current = null;
+    clearRenderTimer();
     setLastRender(elapsed);
     log(`map fully rendered in ${elapsed}`);
-  }, [log]);
+  }, [clearRenderTimer, log]);
 
   const onDidFailLoadingMap = useCallback(() => {
+    clearRenderTimer();
     log('ERROR map failed to load (no network and no pack for this view?)');
-  }, [log]);
+  }, [clearRenderTimer, log]);
 
   return (
     <Screen>
@@ -165,10 +215,12 @@ export function MapScreen() {
             style={StyleSheet.absoluteFill}
             mapStyle={styleUrl}
             onWillStartLoadingMap={onWillStartLoadingMap}
+            onDidFinishLoadingMap={onDidFinishLoadingMap}
+            onDidFinishRenderingFrame={onDidFinishRenderingFrame}
             onDidFinishRenderingMapFully={onDidFinishRenderingMapFully}
             onDidFailLoadingMap={onDidFailLoadingMap}
           >
-            <Camera initialViewState={{ bounds: MAP_PACK_BOUNDS }} />
+            <Camera initialViewState={{ bounds: MAP_PACK_BOUNDS }} maxBounds={MAP_PACK_BOUNDS} />
           </Map>
           <Text style={styles.attribution}>{MAP_ATTRIBUTION}</Text>
         </View>
@@ -182,7 +234,7 @@ export function MapScreen() {
         />
         <KeyValue label="Zoom" value={`${MAP_PACK_MIN_ZOOM} to ${MAP_PACK_MAX_ZOOM}`} />
         <KeyValue label="Tile cap" value={String(MAP_TILE_COUNT_LIMIT)} />
-        <Button label="Download offline pack" onPress={() => void downloadPack()} />
+        <Button label="Download offline pack" onPress={() => void downloadPack()} disabled={downloading} />
         <Button label="Show stored packs" onPress={() => void listPacks()} />
         <Button label="Delete all packs" onPress={() => void deleteAllPacks()} danger />
         <KeyValue label="State" value={status === null ? '-' : status.state} />
