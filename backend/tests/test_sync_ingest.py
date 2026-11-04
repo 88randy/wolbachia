@@ -12,6 +12,7 @@ from field_sync.models import FieldEvent
 from organizations.models import Organization
 from reviews.models import ReviewItem
 from tests.conftest import MemberFactory
+from tests.factories import ShiftFactory
 from tests.sync_support import Phone, event, make_phone
 from tests.testapp.models import Widget
 
@@ -29,8 +30,9 @@ def results_of(response: Any) -> list[dict[str, Any]]:  # noqa: ANN401
 
 
 def test_an_accepted_event_is_stored_with_everything_the_phone_sent(phone: Phone) -> None:
+    shift = ShiftFactory(organization=phone.organization, courier=phone.user)
     sent = event(
-        shift_id=str(uuid.uuid4()),
+        shift_id=str(shift.id),
         gps={"lat": 19.43, "lng": -99.13, "accuracy_m": 8.5},
         manual_capture=True,
     )

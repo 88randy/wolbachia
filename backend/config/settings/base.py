@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     "rules",
     "field_sync",
     "reviews",
+    "shifts",
 ]
 
 MIDDLEWARE = [
@@ -173,6 +174,8 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "EventStatusEnum": "field_sync.models.EventStatus",
         "ReviewKindEnum": "reviews.models.ReviewKind",
+        "ShiftStatusEnum": "shifts.models.ShiftStatus",
+        "CheckResultEnum": "shifts.models.CheckResult",
         "StatusEnum": "rules.selectors.VERSION_STATUSES",
     },
     # The enum hook is spectacular's default; ours adds ErrorEnvelope and the `default` error

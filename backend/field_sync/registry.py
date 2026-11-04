@@ -72,7 +72,10 @@ class EventHandler:
     the registry contract test requires each one in `docs/sync.md` and in both i18n locales.
     `payload_serializer` validates `payload` (it receives `context["request"]` with the
     organization). `on_void` runs when a `record.void` voids an event of this type, inside the
-    same savepoint; it may raise `EventRejected` to refuse the void.
+    same savepoint; it may raise `EventRejected` to refuse the void. `checks_shift` (default
+    True): when the event names a `shift_id`, the pipeline checks it with `shifts.guard` (the shift
+    must exist, be the sender's and not be closed before the event); only the shift events and
+    `record.void` opt out.
     """
 
     event_type: str
@@ -81,6 +84,7 @@ class EventHandler:
     apply: ApplyEvent
     on_void: VoidHook | None = None
     codes: tuple[str, ...] = ()
+    checks_shift: bool = True
 
 
 HANDLERS: dict[tuple[str, int], EventHandler] = {}

@@ -13,6 +13,7 @@ The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md
 | `exceptions.py` | `EventRejected`, `EventNeedsReview` (per event) and the batch errors |
 | `cursor.py`, `selectors.py` | The signed strict `changes.cursor`; `build_changes`; the stored-event lookup |
 | `handlers/void.py` | `record.void` |
+| (`shifts/`) | `shift.open` and `shift.close` are registered by the `shifts` app (#68); the pipeline also calls `shifts.guard.check_event_shift` for every event that names a `shift_id` and whose handler keeps `checks_shift=True` (the default) |
 | `serializers.py`, `views.py`, `throttling.py`, `urls.py` | The endpoint: `FieldSyncViewSet` (with `FinalUploadMixin`), per-device throttle |
 
 Dependency: `field_sync` creates `reviews.ReviewItem` rows (`reviews.services`) and reads them for `changes`; `reviews` only points at `FieldEvent` by a string foreign key and never imports `field_sync` code except constants and the event model type. Keep it one-way.

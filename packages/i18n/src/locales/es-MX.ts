@@ -178,6 +178,22 @@ export const esMX = {
     "La hora de tu teléfono parece estar mal, así que un supervisor revisará este registro. Revisa la fecha y la hora del teléfono.",
   "sync.result.finalUploadAfterRevoke":
     "Tu sesión ya había terminado cuando se envió este registro, así que un supervisor lo revisará. Inicia sesión de nuevo si necesitas seguir trabajando.",
+  "sync.result.shiftAlreadyOpen":
+    "Ya tienes una jornada abierta, así que no se inició otra. Continúa con la jornada abierta o ciérrala primero.",
+  "sync.result.motorcycleUnknown":
+    "El servidor no conoce esta moto. Revisa el código e inténtalo de nuevo; si sigue igual, avisa a tu supervisor.",
+  "sync.result.motorcycleBlocked":
+    "Esta moto no se puede usar por ahora. Elige otra o avisa a tu supervisor.",
+  "sync.result.odometerOutOfRange":
+    "El kilometraje no es posible. Revisa el número del tablero y captúralo de nuevo.",
+  "sync.result.shiftNotOpen":
+    "Esta jornada no está abierta en el servidor. Avisa a tu supervisor si aún necesitas trabajar.",
+  "sync.result.shiftEventNotVoidable":
+    "Una jornada no se puede anular desde el teléfono. Pide a tu supervisor que la corrija.",
+  "sync.result.odometerDecreased":
+    "El kilometraje es menor que el anterior, así que un supervisor lo revisará. No tienes que hacer nada mientras tanto.",
+  "sync.result.severeCheck":
+    "Reportaste una falla grave, así que la moto queda bloqueada y un supervisor lo revisará.",
   "sync.batch.deviceMismatch": "La sesión no corresponde a este teléfono. Inicia sesión de nuevo.",
   "sync.batch.payloadTooLarge":
     "El envío era demasiado grande, así que la app lo enviará en partes. No tienes que hacer nada.",
