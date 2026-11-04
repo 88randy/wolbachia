@@ -1,0 +1,65 @@
+name: api-contract
+
+# The OpenAPI schema is the contract between the backend and both clients (issue #12).
+# This job re-exports it and regenerates packages/api-client; the PR fails when the committed
+# openapi.yaml or src/generated/schema.ts differ from the result, so an API change cannot merge
+# without its regenerated client. It also validates the schema (spectacular --validate
+# --fail-on-warn with the dev settings), which backend.yml used to do on its own.
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - "packages/api-client/**"
+      - "scripts/generate-api-client.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/api-contract.yml"
+  push:
+    branches: [master]
+    paths:
+      - "backend/**"
+      - "packages/api-client/**"
+      - "scripts/generate-api-client.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/api-contract.yml"
+
+concurrency:
+  group: api-contract-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+jobs:
+  generated-client-is-current:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install backend dependencies
+        run: uv sync --frozen
+        working-directory: backend
+      - run: npm ci
+      # No database or Redis needed: the script gives the settings throwaway URLs.
+      - name: Export the schema and generate the client
+        run: npm run api:generate
+      # `git diff` ignores new files, so check the status of the whole folder instead.
+      - name: Generated files are up to date
+        run: |
+          if [ -n "$(git status --porcelain -- packages/api-client)" ]; then
+            git status --short -- packages/api-client
+            git --no-pager diff --stat -- packages/api-client
+            echo "::error::packages/api-client is out of date. Run 'npm run api:generate' and commit the result."
+            exit 1
+          fi
+      - uses: actions/upload-artifact@v7
+        with:
+          name: openapi-schema
+          path: packages/api-client/openapi.yaml
+          if-no-files-found: error
