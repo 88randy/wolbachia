@@ -48,28 +48,15 @@ describe("areas still waiting for a permission code", () => {
   });
 });
 
-test("organization/role settings navigation requires a nonempty explicit center grant", () => {
-  const permissions = ["organization.read", "role.read"];
-  expect(canOpenArea(makeMe({ permissions }), area("settings"))).toBe(false);
-  expect(
-    canOpenArea(
-      makeMe({
-        permissions,
-        scope: { centers: { mode: "selected", ids: [] }, quadrants: { mode: "all", ids: [] } },
-      }),
-      area("settings"),
-    ),
-  ).toBe(false);
-  expect(
-    canOpenArea(
-      makeMe({
-        permissions,
-        scope: {
-          centers: { mode: "selected", ids: ["center"] },
-          quadrants: { mode: "none", ids: [] },
-        },
-      }),
-      area("settings"),
-    ),
-  ).toBe(true);
-});
+test.each(["organization.read", "role.read"])(
+  "settings navigation needs %s without requiring a center grant",
+  (permission) => {
+    for (const mode of ["none", "selected"] as const) {
+      const me = makeMe({
+        permissions: [permission],
+        scope: { centers: { mode, ids: [] }, quadrants: { mode: "none", ids: [] } },
+      });
+      expect(canOpenArea(me, area("settings"))).toBe(true);
+    }
+  },
+);

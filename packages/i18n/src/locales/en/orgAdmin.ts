@@ -29,7 +29,7 @@ export const orgAdmin = {
   "orgAdmin.scope.all": "All",
   "orgAdmin.scope.pending": "Looking up code. Wait for the search to finish before saving.",
   "orgAdmin.scope.hint":
-    "An empty selection denies access. Role and membership scope intersect; changing the center filter never grants permission.",
+    "An empty selection denies access within that dimension. Role and membership scope intersect; changing the center filter never grants permission.",
   "orgAdmin.scope.code": "Code",
   "orgAdmin.scope.add": "Add code",
   "orgAdmin.scope.remove": "Remove reference",

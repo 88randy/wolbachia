@@ -1,4 +1,4 @@
-﻿import { ORGANIZATION_READ, ROLE_READ } from "./permissions";
+import { ORGANIZATION_READ, ROLE_READ } from "./permissions";
 import type { QueryFunction } from "@tanstack/react-query";
 import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient, Schemas } from "@wolbachia/api-client";
@@ -6,7 +6,7 @@ import type { TableState } from "../../data-table/table-types";
 import { orgScopedQueryOptions } from "../../session/org-scoped-query";
 import type { SessionIdentity } from "../../session/org-scoped-query";
 import { ADMIN_PAGE_SIZE } from "./admin-table";
-/** A revoked scope cannot start a request while route guards are being reconsidered. */
+/** Org-wide configuration requires its action code and a settled session, not a center grant. */
 function adminScopedOptions<T>(
   identity: SessionIdentity,
   request: { key: readonly unknown[]; queryFn: QueryFunction<T>; permission: string },
@@ -14,10 +14,7 @@ function adminScopedOptions<T>(
   const options = orgScopedQueryOptions(identity, request);
   return {
     ...options,
-    enabled:
-      options.enabled &&
-      identity.hasScope !== false &&
-      identity.permissions?.includes(request.permission) === true,
+    enabled: options.enabled && identity.permissions?.includes(request.permission) === true,
   };
 }
 export type Profile = Schemas["Profile"];

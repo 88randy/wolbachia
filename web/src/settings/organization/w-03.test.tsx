@@ -1,3 +1,4 @@
+import { messages } from "@wolbachia/i18n";
 import type { Profile } from "./use-w-03";
 import { isSessionKnown } from "../../session/session-revision";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
@@ -148,16 +149,6 @@ describe("W-03", () => {
     ).toBe(false);
     expect(await axe(app.container)).toHaveNoViolations();
   });
-  test("empty center scope denies a settings deep link before requesting sensitive content", async () => {
-    const { api } = await open("/settings/roles", {
-      ...ME,
-      scope: { ...SCOPE, centers: { mode: "selected", ids: [] } },
-    });
-    expect(
-      await screen.findByRole("heading", { name: "No tienes acceso a esta sección" }),
-    ).toBeDefined();
-    expect(api.requests.some((request) => request.path.includes("roles"))).toBe(false);
-  });
 });
 
 test("a refused write is never replayed after reauthentication, and the retained draft can be saved manually", async () => {
@@ -302,26 +293,28 @@ test("membership scope resolves unknown and foreign center codes identically and
   });
 });
 
-test("a same-organization scope revocation clears old query results and denies the open deep link", async () => {
+test("a center-scope change clears old configuration results and reloads the permitted global route", async () => {
   const { api, app } = await open();
   await screen.findByRole("button", { name: "Equipo: role.update" });
+  const [previous] = app.queryClient.getQueriesData({
+    predicate: (query) => query.queryKey[4] === "roles",
+  });
+  const oldKey = previous?.[0];
+  if (!oldKey) throw new Error("Missing roles query");
+  api.setRoute("GET /api/v1/roles/", () =>
+    Response.json(page([{ ...ROLE, label_es: "Equipo vigente" }])),
+  );
   api.setRoute("GET /api/v1/me/", () =>
     Response.json({ ...ME, scope: { ...SCOPE, centers: { mode: "none", ids: [] } } }),
   );
   await act(async () => {
     await app.queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
   });
-  await screen.findByRole("heading", { name: "No tienes acceso a esta sección" });
+  await screen.findByRole("button", { name: "Equipo vigente: role.update" });
   expect(screen.queryByRole("button", { name: "Equipo: role.update" })).toBeNull();
-  expect(
-    app.queryClient
-      .getQueriesData({
-        predicate: (query) => query.queryKey[0] === "org" && query.queryKey[3] === "administration",
-      })
-      .every(([, result]) => result === undefined),
-  ).toBe(true);
+  expect(app.queryClient.getQueryData(oldKey)).toBeUndefined();
+  expect(screen.queryByRole("heading", { name: "No tienes acceso a esta sección" })).toBeNull();
 });
-
 test("draft fields remain locked until the saved change finishes session verification", async () => {
   const { api, user } = await open();
   let release: (reply: Response) => void = () => {
@@ -414,7 +407,7 @@ function deferredResponse() {
 }
 const CENTER_A = { id: "00000000-0000-4000-8000-000000000011", code: "C-A", name: "A" };
 const CENTER_B = { id: "00000000-0000-4000-8000-000000000012", code: "C-B", name: "B" };
-async function openScopeSearch() {
+async function openScopeSearch(center = CENTER_B) {
   const role = {
     ...ROLE,
     scope: { ...SCOPE, centers: { mode: "selected" as const, ids: [CENTER_A.id] } },
@@ -432,16 +425,18 @@ async function openScopeSearch() {
   const centers = within(screen.getByRole("group", { name: "Centros" }));
   await centers.findByRole("button", { name: /Quitar referencia: C-A/ });
   await context.user.click(centers.getByRole("textbox"));
-  await context.user.paste("C-B");
+  await context.user.paste(center.code);
   await context.user.click(centers.getByRole("button", { name: "Agregar código" }));
   await waitFor(() => {
-    expect(context.api.requests.some((request) => request.path.includes("code=C-B"))).toBe(true);
+    expect(
+      context.api.requests.some((request) => request.path.includes(`code=${center.code}`)),
+    ).toBe(true);
   });
   return { ...context, lookup, centers, dialog: within(screen.getByRole("dialog")) };
 }
 
-test("a pending scope search blocks save and merges into the current draft without restoring removed references", async () => {
-  const { api, user, lookup, centers, dialog } = await openScopeSearch();
+test("search and remove the same center", async () => {
+  const { api, user, lookup, centers, dialog } = await openScopeSearch(CENTER_A);
   expect(dialog.getByRole("button", { name: "Guardar" }).getAttribute("aria-disabled")).toBe(
     "true",
   );
@@ -453,10 +448,14 @@ test("a pending scope search blocks save and merges into the current draft witho
     "none",
   );
   await act(async () => {
-    lookup.resolve(Response.json(page([CENTER_B])));
+    lookup.resolve(Response.json(page([CENTER_A])));
     await lookup.promise;
   });
-  await centers.findByRole("button", { name: /Quitar referencia: C-B/ });
+  await waitFor(() => {
+    expect(dialog.getByRole("button", { name: "Guardar" }).getAttribute("aria-disabled")).toBe(
+      "false",
+    );
+  });
   expect(centers.queryByRole("button", { name: /Quitar referencia: C-A/ })).toBeNull();
   await user.click(dialog.getByRole("button", { name: "Guardar" }));
   await screen.findByText(/Debe permanecer al menos una persona administradora/);
@@ -464,7 +463,7 @@ test("a pending scope search blocks save and merges into the current draft witho
     permissions: ROLE.permissions,
     expected_revision: 3,
     scope: {
-      centers: { mode: "selected", ids: [CENTER_B.id] },
+      centers: { mode: "selected", ids: [] },
       quadrants: { mode: "none", ids: [] },
     },
   });
@@ -558,3 +557,66 @@ test("a successful settings patch publishes its revision before navigation and t
   });
   expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
 });
+
+test.each(["none", "selected"] as const)(
+  "org-wide routes, links and queries need action codes even with center mode %s and no ids",
+  async (mode) => {
+    const me = {
+      ...ME,
+      permissions: ["organization.read", "role.read", "center.read"],
+      scope: { centers: { mode, ids: [] }, quadrants: { mode: "none" as const, ids: [] } },
+    };
+    const { app, user, api } = await open("/settings/organization", me);
+    await screen.findByRole("textbox", { name: "Zona horaria" });
+    expect(screen.queryByRole("combobox", { name: "Filtro de centro" })).toBeNull();
+    expect(api.requests.some((request) => request.path.startsWith("/api/v1/centers/"))).toBe(false);
+    expect(screen.queryByRole("button", { name: "Guardar" })).toBeNull();
+    await act(async () => {
+      await app.router.navigate({ to: "/settings" });
+    });
+    expect(screen.getAllByRole("link", { name: "Configuración" }).length).toBeGreaterThan(0);
+    const settings = within(screen.getByRole("main"));
+    expect(
+      settings.getByRole("link", { name: messages["es-MX"]["orgAdmin.organization.title"] }),
+    ).toBeDefined();
+    await user.click(
+      settings.getByRole("link", { name: messages["es-MX"]["orgAdmin.roles.title"] }),
+    );
+    await screen.findByText("Equipo", { exact: true });
+    expect(screen.queryByRole("heading", { name: "No tienes acceso a esta sección" })).toBeNull();
+  },
+);
+
+test.each([
+  {
+    path: "/settings/organization",
+    permission: "organization.read",
+    endpoint: "/api/v1/organization/",
+    title: "orgAdmin.organization.title",
+  },
+  {
+    path: "/settings/roles",
+    permission: "role.read",
+    endpoint: "/api/v1/roles/",
+    title: "orgAdmin.roles.title",
+  },
+] as const)(
+  "$path denies a missing $permission before fetching and hides its settings link",
+  async (scenario) => {
+    const { api, app } = await open(scenario.path, {
+      ...ME,
+      permissions: ME.permissions.filter((permission) => permission !== scenario.permission),
+      scope: { ...SCOPE, centers: { mode: "none", ids: [] } },
+    });
+    await screen.findByRole("heading", { name: "No tienes acceso a esta sección" });
+    expect(api.requests.some((request) => request.path.startsWith(scenario.endpoint))).toBe(false);
+    await act(async () => {
+      await app.router.navigate({ to: "/settings" });
+    });
+    expect(
+      within(screen.getByRole("main")).queryByRole("link", {
+        name: messages["es-MX"][scenario.title],
+      }),
+    ).toBeNull();
+  },
+);

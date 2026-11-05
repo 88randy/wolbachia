@@ -1,8 +1,6 @@
-﻿import { ORGANIZATION_READ, ROLE_READ } from "../settings/organization/permissions";
+import { ORGANIZATION_READ, ROLE_READ } from "../settings/organization/permissions";
 import { W65Page } from "../settings/organization/W65Page";
 import { W68Page } from "../settings/organization/W68Page";
-import { hasCenterScope } from "../centers/center-selection";
-import { ForbiddenError } from "./guards";
 import { W20Page } from "../fleet/W20Page";
 import { W21Page } from "../fleet/W21Page";
 import { FleetHome } from "../fleet/FleetHome";
@@ -179,7 +177,6 @@ const organizationRoute = createRoute({
   path: "/settings/organization",
   beforeLoad: ({ context }) => {
     requirePermission("settings", context.me, ORGANIZATION_READ);
-    if (!hasCenterScope(context.me.scope)) throw new ForbiddenError("settings");
   },
   component: W68Page,
   errorComponent: AreaErrorState,
@@ -190,7 +187,6 @@ const rolesRoute = createRoute({
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     requirePermission("settings", context.me, ROLE_READ);
-    if (!hasCenterScope(context.me.scope)) throw new ForbiddenError("settings");
   },
   component: W65Page,
   errorComponent: AreaErrorState,

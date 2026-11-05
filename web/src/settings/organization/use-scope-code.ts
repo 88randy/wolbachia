@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useScopeCodeRequest } from "./use-scope-code-request";
 import { useScopeLookupTask } from "./use-scope-lookup-task";
-import type { BeginScopeLookup } from "./scope-types";
+import type { BeginScopeLookup, ScopeLookupIntent } from "./scope-types";
 /** Unknown and foreign codes share one result. Stale searches cannot publish to the draft. */
 export function useScopeCode(
   dimension: "centers" | "quadrants",
-  onAdd: (id: string) => void,
+  editor: ScopeLookupIntent,
   beginLookup: BeginScopeLookup,
 ) {
   const request = useScopeCodeRequest(dimension);
@@ -13,20 +13,18 @@ export function useScopeCode(
   const [code, setCode] = useState("");
   const [isMissing, setMissing] = useState(false);
   async function add() {
+    const expectedIntent = editor.intentRevision;
     await run(async () => {
       setMissing(false);
-      const item = await request.resolve(code);
+      const reply = await request.resolve(code);
+      if (!reply || reply.guard.isStale()) return;
+      const { item } = reply;
       if (item === null) setMissing(true);
       if (!item) return;
-      onAdd(item.id);
+      editor.applyLookup(expectedIntent, item.id);
       setCode("");
     });
   }
-  return {
-    code,
-    setCode,
-    add,
-    isMissing: isMissing || request.error !== null,
-    isBusy: request.isBusy,
-  };
+  const unavailable = isMissing || request.error !== null;
+  return { code, setCode, add, isMissing: unavailable, isBusy: request.isBusy };
 }

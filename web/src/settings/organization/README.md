@@ -1,10 +1,11 @@
-﻿# Organization settings, roles and scope (W-03, #147)
+# Organization settings, roles and scope (W-03, #147)
 
 W65 `/settings/roles` and W68 `/settings/organization` consume the generated B-01 contract. Read `web/README.md` for shared shell, query, session, table and accessibility rules.
 
+- Organization-global routes, navigation and queries require their action codes alone, even when center scope is none/empty. Dimensional grants continue to restrict the center picker, scope mode controls and scoped reference lookups.
 - `use-w-03.ts`: organization-scoped generated projections and server paging/search/order. The roles/memberships view is also URL-owned (`?view=memberships`). No invented center parameter on organization-global resources.
 - `use-admin-write.ts`, `run-admin-write.ts`: one guarded attempt, immediate duplicate-submit lock, no automatic replay after reauthentication.
-- `use-scope-editor.ts`: role permissions and membership scope, explicit revision comparison/review. Profile scope applies to the entire bundle. Scope searches merge into current state, are cancelled on mode/context changes, and hold a token that blocks Save until settlement or cancellation. Checked permissions can be revoked even when the actor cannot grant them.
+- `use-scope-editor.ts`: role permissions and membership scope, explicit revision comparison/review. Profile scope applies to the entire bundle. All dimension writes go through `scope-draft.ts`, which atomically increments an independent intent revision for every change (including resets/no-ops and accepted lookups). A lookup captures that revision at start; the reducer accepts it only when the revision still matches and the mode is selected. No raw scope setter is exposed. Lookup handlers receive only the intent revision and a commit method. Context/intent keys unmount and abort obsolete lookups, releasing their pending tokens; Save checks the remaining registry synchronously. Checked permissions can be revoked even when the actor cannot grant them.
 - `branding.ts`, `organization-requests.ts`: PNG/JPEG/WebP input; all three formats normalize to bounded RGB/RGBA PNG because the current backend validator accepts only PNG. Multipart uses the client's documented [bodySerializer](https://openapi-ts.dev/openapi-fetch/api#bodyserializer). No new dependencies.
 - `use-logo.ts`: retrieves only the same-origin authenticated raster endpoint through the API client so the organization header is retained; displays trusted PNG data under the existing `img-src self data:` policy, with initials on failure.
 - `organization-cache.ts` publishes guarded write responses across the same actor/organization/authorization center variants, cancelling older reads and never replacing a newer cached revision. Clean forms adopt newer snapshots; dirty forms retain their draft and expected revision. Logo-only success has its own announcement and preserves pending field changes.
@@ -25,10 +26,10 @@ The shell center preference invalidates context and URL filter chips. B-01 organ
 | Keyboard matrix payload, last administrator retained, fixed consultation bundle | `w-03.test.tsx` keyboard/refusal case; server role is never optimistically overwritten |
 | Concurrent edits require refresh/review | `w-03.test.tsx` revision conflict case |
 | Center changes clear results/chips without expanding scope; late response ignored | `../../centers/center-selection.test.tsx` barrier journey and paged remembered-selection case |
-| Pending scope lookup / removed ids / mode changes; delegated revocation | `w-03.test.tsx` deferred lookup and keyboard revoke regressions |
+| Pending scope lookup / removed ids / mode changes; delegated revocation | `scope-draft.test.ts` intent invariants; `w-03.test.tsx` deferred search-and-remove-same-center and keyboard revoke regressions |
 | Organization cache revision after navigation; clean/dirty draft synchronization; stale write isolation | `w-03.test.tsx`, `organization-cache.test.ts`, `use-organization-draft.test.ts` |
 | Branding, timezone/epi-week roundtrip, invalid upload | `w-03.test.tsx`, `branding.test.ts`, `logo-upload.test.tsx` |
-| Empty/out-of-scope deep link; permission/scope revocation clears content | `w-03.test.tsx` denial and live revocation cases |
+| Org-only permission access with none/empty centers; missing action denial; scope changes clear old results | `../../router/area-access.test.ts`, `w-03.test.tsx` routes/links/queries and live scope-change cases |
 | Unknown/foreign codes indistinguishable; membership exact scope payload | `w-03.test.tsx` membership case |
 | No replay after reauthentication; draft remains usable | `w-03.test.tsx` 401 journey |
 | Axe, focus/return, live results, light/dark, es-MX/en, expanded text, 320px | Component axe plus `web/e2e/w-03.spec.ts` (CI; deliberately not run locally) |

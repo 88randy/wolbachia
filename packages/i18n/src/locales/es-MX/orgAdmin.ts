@@ -29,7 +29,7 @@ export const orgAdmin = {
   "orgAdmin.scope.all": "Todos",
   "orgAdmin.scope.pending": "Buscando código. Espera a que termine la búsqueda para guardar.",
   "orgAdmin.scope.hint":
-    "Una selección vacía niega el acceso. El alcance del perfil se intersecta con el de la membresía; cambiar el filtro de centro no otorga permisos.",
+    "Una selección vacía niega el acceso en esa dimensión. El alcance del perfil se intersecta con el de la membresía; cambiar el filtro de centro no otorga permisos.",
   "orgAdmin.scope.code": "Código",
   "orgAdmin.scope.add": "Agregar código",
   "orgAdmin.scope.remove": "Quitar referencia",

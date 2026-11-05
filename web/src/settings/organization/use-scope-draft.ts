@@ -1,7 +1,8 @@
-﻿import { useState } from "react";
+import { useScopeDimensions } from "./use-scope-dimensions";
+import { useState } from "react";
 import type { EditTarget } from "./use-scope-editor";
 export function useScopeDraft(target: EditTarget) {
-  const [scope, setScope] = useState(target.record.scope);
+  const dimensions = useScopeDimensions(target.record.scope);
   const [permissions, setPermissions] = useState(
     target.kind === "role" ? target.record.permissions : [],
   );
@@ -12,5 +13,5 @@ export function useScopeDraft(target: EditTarget) {
         : [...previous, permission].sort(),
     );
   }
-  return { scope, setScope, permissions, toggle };
+  return { ...dimensions, permissions, toggle };
 }
