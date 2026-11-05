@@ -184,6 +184,18 @@ export class CredentialStore {
     // This barrier always settles successfully; individual commands still reject to their caller.
     await this.#tail;
     if (this.#pendingEnd !== null) await this.runExclusive(() => this.#persistEnd());
+    // An ended session's pair (for example a rotated successor) whose write was refused stays in
+    // memory only: persist it before any final upload relies on it.
+    if (this.#hasUnsavedEndedPair()) {
+      await this.runExclusive(async () => {
+        if (this.#hasUnsavedEndedPair()) await this.#write(this.#credentials, true);
+      });
+    }
+  }
+
+  #hasUnsavedEndedPair(): boolean {
+    const current = this.#credentials;
+    return current !== this.#persisted && current.status === "ended" && current.pair !== null;
   }
 
   async #persistEnd(): Promise<void> {

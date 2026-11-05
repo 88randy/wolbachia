@@ -255,3 +255,33 @@ void it("keeps the server-rotated pair when a concurrent call ends the session b
   await restarted.load();
   assert.deepEqual(restarted.getSnapshot().pair, rotated);
 });
+
+void it("persists a rotated pair of an ended session on the next settle after one refused write", async () => {
+  const { secrets } = await makeCredentials();
+  let refuseNextWrite = false;
+  const store = new CredentialStore({
+    ...secrets,
+    set: async (key, value) => {
+      if (refuseNextWrite) {
+        refuseNextWrite = false;
+        throw new Error("Keystore write refused once.");
+      }
+      await secrets.set(key, value);
+    },
+  });
+  await store.load();
+  const previous = store.getSnapshot().pair;
+  assert.notEqual(previous, null);
+  await store.markEnded(store.getSnapshot().sessionId);
+  await store.whenSettled();
+  const rotated = { access: randomUUID(), refresh: randomUUID() };
+
+  refuseNextWrite = true;
+  await assert.rejects(store.replaceRotatedPair(previous as TokenPair, rotated));
+  assert.equal(await store.hasPendingFinalUpload(), true);
+
+  const restarted = new CredentialStore(secrets);
+  await restarted.load();
+  assert.deepEqual(restarted.getSnapshot().pair, rotated);
+  assert.equal(restarted.getSnapshot().status, "ended");
+});
