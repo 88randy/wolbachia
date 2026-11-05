@@ -27,7 +27,6 @@ TASK_FIELDS = (
     "category",
     "source",
     "protocol",
-    "is_completed",
     "target",
 )
 ROW_FIELDS = ("id", "quadrant_id", "courier", "revision")
@@ -53,7 +52,6 @@ class AssignmentProducerSerializer(serializers.Serializer[Any]):
     protocol = serializers.CharField(
         max_length=80, allow_blank=True, allow_null=True, required=False
     )
-    is_completed = serializers.BooleanField(required=False)
     target = serializers.IntegerField(min_value=1, required=False)
 
     def to_internal_value(self, data: Any) -> dict[str, Any]:  # noqa: ANN401 -- DRF boundary
@@ -77,7 +75,7 @@ class AssignmentProducerSerializer(serializers.Serializer[Any]):
 
 
 def build(ctx: ProducerContext) -> list[dict[str, Any]]:
-    """Build only this active courier's current-week tasks and quadrant allocations."""
+    """Build this courier's allocations and all owned tasks from the current epi week onward."""
     member = (
         Membership.objects.select_related("organization", "user")
         .filter(

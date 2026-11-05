@@ -375,6 +375,7 @@ def test_completed_tasks_abort_entire_reassignment_and_unassigned_tasks_are_expl
     tasks = filtered_tasks(field.membership, {"week": due})
     rows = task_rows(tasks, task_loads(tasks))
     assert all(row["blockers"] == [{"code": "unassigned"}] for row in rows)
+    assert next(row for row in rows if row["id"] == str(task.pk))["is_completed"] is True
     with pytest.raises(SchedulingConflictError) as completed:
         reassign_pending(
             field.membership, PendingReassignment((extra.pk, task.pk), field.membership.user_id, 0)
@@ -693,14 +694,9 @@ def test_bootstrap_assignments_contains_only_own_in_scope_planning_rows(monkeypa
         "category",
         "source",
         "protocol",
-        "is_completed",
         "target",
     }
-    assert (task_row["point"], task_row["target"], task_row["is_completed"]) == (
-        str(planner.point.pk),
-        1,
-        False,
-    )
+    assert (task_row["point"], task_row["target"]) == (str(planner.point.pk), 1)
 
 
 @pytest.mark.django_db
@@ -845,7 +841,9 @@ def test_import_delivers_changed_risk_to_current_task_owner_once(monkeypatch):
     assert set(CourierChange.objects.values_list("pk", flat=True)) == after
 
 
-@pytest.mark.parametrize("invalid", ["missing_task_field", "extra_field", "assignment_task_fields"])
+@pytest.mark.parametrize(
+    "invalid", ["missing_task_field", "extra_field", "assignment_task_fields", "completion_field"]
+)
 def test_assignment_producer_rejects_invalid_phone_payloads(invalid):
     from scheduling.courier_feed import AssignmentProducerSerializer
 
@@ -862,7 +860,6 @@ def test_assignment_producer_rejects_invalid_phone_payloads(invalid):
         "category": None,
         "source": None,
         "protocol": None,
-        "is_completed": False,
         "target": 40,
     }
     assert AssignmentProducerSerializer(data=payload).is_valid()
@@ -870,6 +867,8 @@ def test_assignment_producer_rejects_invalid_phone_payloads(invalid):
         del payload["point"]
     elif invalid == "extra_field":
         payload["unexpected"] = 1
+    elif invalid == "completion_field":
+        payload["is_completed"] = False
     else:
         payload["kind"] = "quadrant_assignment"
     assert not AssignmentProducerSerializer(data=payload).is_valid()
@@ -951,3 +950,189 @@ def test_assignment_producer_projects_only_assignment_fields_and_hides_metadata(
     )
     assert serializer.is_valid(), serializer.errors
     assert serializer.data == payload
+
+
+@pytest.mark.django_db
+def test_bootstrap_includes_future_tasks_before_cursor_covers_them(monkeypatch):
+    from scheduling.selectors import local_midnight
+
+    planner = planner_setup()
+    next_week = week_start(planner.member.organization, WEEK) + timedelta(days=7)
+    clock = [local_midnight(planner.member.organization, next_week) - timedelta(minutes=5)]
+    monkeypatch.setattr(timezone, "now", lambda: clock[0])
+    phone = planning_phone(planner.member)
+    change_assignment(
+        planner.member, AssignmentChange(planner.quadrant.pk, planner.member.user_id, 0)
+    )
+    generate_schedule(planner.member, next_week)
+    task = ScheduledTask.objects.get()
+    upload = store_upload(
+        planner.member,
+        "future.csv",
+        (f"block_code,category,protocol\n{planner.point.block.code},high,next week\n".encode()),
+    )
+    risk_import = preview_import(
+        planner.member, ImportPreview(upload.pk, next_week, "company_rule")
+    )
+    apply_import(planner.member, risk_import.pk, 1)
+    bundle = phone.client.get("/api/v1/field/bootstrap/")
+    assert bundle.status_code == 200
+    rows = [row for row in bundle.data["assignments"] if row["kind"] == "task"]
+    assert [
+        (row["id"], row["date"], row["category"], row["source"], row["protocol"]) for row in rows
+    ] == [(str(task.pk), next_week.isoformat(), "high", "company_rule", "next week")]
+    clock[0] += timedelta(
+        minutes=10
+    )  # Cross the week boundary within the same access-token lifetime.
+    assert week_start(planner.member.organization, clock[0].date()) == next_week
+    pulled = phone.sync([], cursor=bundle.data["cursor"])
+    assert pulled.status_code == 200
+    assert pulled.data["changes"]["assignments"] == []
+
+
+def reading_schedule_field(convention, interval):
+    from dataclasses import replace
+
+    from scheduling.selectors import local_midnight
+    from tests.ovitrap_support import setup_field
+
+    field = setup_field()
+    field.batch.organization.epi_week = convention
+    field.batch.organization.save(update_fields=["epi_week"])
+    field.profile.permission_codes += [SCHEDULE_MANAGE, SCHEDULE_READ]
+    field.profile.save(update_fields=["permission_codes"])
+    parameter = RuleParameterFactory(
+        organization=field.batch.organization, key="revisit_interval_days"
+    )
+    RuleParameterVersionFactory(
+        parameter=parameter, value=interval, effective_from=NOW - timedelta(days=30)
+    )
+    field.week = week_start(field.batch.organization, WEEK)
+    field.placed_at = local_midnight(field.batch.organization, field.week) + timedelta(hours=12)
+    field.batch = replace(field.batch, sent_at=field.placed_at, received_at=field.placed_at)
+    return field
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("interval", [1, 3])
+@pytest.mark.parametrize("convention", ["iso", "mmwr"])
+def test_generation_checks_once_per_epi_week_and_stops_after_real_reading(
+    monkeypatch, interval, convention
+):
+    from dataclasses import replace
+
+    from tests.ovitrap_support import envelope, ingest
+
+    field = reading_schedule_field(convention, interval)
+    clock = [field.placed_at]
+    monkeypatch.setattr(timezone, "now", lambda: clock[0])
+    assert ingest(field, envelope(field, device_time=clock[0])).status == "accepted"
+    first = generate_schedule(field.membership, field.week)
+    assert first["created"] == 1
+    task = ScheduledTask.objects.get()
+    assert (task.action, task.due_date) == ("check", field.week + timedelta(days=interval))
+    clock[0] += timedelta(days=interval)
+    field.batch = replace(field.batch, sent_at=clock[0], received_at=clock[0])
+    reading = envelope(field, "ovitrap.check", device_time=clock[0])
+    assert ingest(field, reading).status == "accepted"
+    assert generate_schedule(field.membership, field.week)["created"] == 0
+    assert list(ScheduledTask.objects.values_list("due_date", flat=True)) == [task.due_date]
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("is_voided", [False, True])
+def test_week_reading_suppresses_generation_only_until_voided(monkeypatch, is_voided):
+    from dataclasses import replace
+
+    from tests.ovitrap_support import envelope, ingest
+
+    field = reading_schedule_field("iso", 3)
+    clock = [field.placed_at]
+    monkeypatch.setattr(timezone, "now", lambda: clock[0])
+    assert ingest(field, envelope(field, device_time=clock[0])).status == "accepted"
+    clock[0] += timedelta(days=1)
+    field.batch = replace(field.batch, sent_at=clock[0], received_at=clock[0])
+    reading = envelope(field, "ovitrap.check", device_time=clock[0])
+    assert ingest(field, reading).status == "accepted"
+    if is_voided:
+        void = envelope(
+            field,
+            "record.void",
+            device_time=clock[0],
+            voids_event_id=reading.id,
+            payload={"reason_code": "other", "reason": "Corrected field observation"},
+        )
+        assert ingest(field, void).status == "accepted"
+    assert generate_schedule(field.membership, field.week)["created"] == int(is_voided)
+    assert list(ScheduledTask.objects.values_list("due_date", flat=True)) == (
+        [field.week + timedelta(days=3)] if is_voided else []
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(("setting", "value"), [("timezone", "UTC"), ("epi_week", "mmwr")])
+def test_scope_loss_hides_import_even_when_week_policy_changes(setting, value):
+    from rest_framework.exceptions import NotFound
+
+    planner = planner_setup()
+    risk_import = preview(planner)
+    planner.member.scope["quadrants"] = {"mode": "none", "ids": []}
+    planner.member.save(update_fields=["scope"])
+    setattr(planner.member.organization, setting, value)
+    planner.member.organization.save(update_fields=[setting])
+    with pytest.raises(NotFound):
+        apply_import(planner.member, risk_import.pk, 0)  # Both policy and revision are stale.
+    assert not RiskCategoryVersion.objects.exists()
+    assert not RiskImportApplication.objects.exists()
+
+
+def test_task_feed_never_claims_completion_from_a_schedule_row():
+    from scheduling.courier_feed import AssignmentProducerSerializer, task_payload
+
+    row = {
+        "id": str(uuid4()),
+        "quadrant_id": str(uuid4()),
+        "courier": str(uuid4()),
+        "revision": 1,
+        "organization_id": str(uuid4()),
+        "center_id": str(uuid4()),
+        "code": "P:check:2026-02-02",
+        "point": str(uuid4()),
+        "action": "check",
+        "date": "2026-02-02",
+        "category": None,
+        "source": None,
+        "protocol": None,
+        "is_completed": True,
+        "target": 40,
+    }
+    produced = task_payload(row)
+    assert "is_completed" not in produced
+    serializer = AssignmentProducerSerializer(data=produced)
+    assert serializer.is_valid(), serializer.errors
+    assert "is_completed" not in serializer.data
+
+
+@pytest.mark.django_db
+def test_regeneration_keeps_one_check_when_future_revisit_rules_change(monkeypatch):
+    from scheduling.selectors import local_midnight
+    from tests.ovitrap_support import envelope, ingest
+
+    field = reading_schedule_field("iso", 3)
+    monkeypatch.setattr(timezone, "now", lambda: field.placed_at)
+    assert ingest(field, envelope(field, device_time=field.placed_at)).status == "accepted"
+    assert generate_schedule(field.membership, field.week)["created"] == 1
+    from rules.models import RuleParameter
+
+    parameter = RuleParameter.objects.get(
+        organization=field.batch.organization, key="revisit_interval_days"
+    )
+    RuleParameterVersionFactory(
+        parameter=parameter,
+        value=1,
+        effective_from=local_midnight(field.batch.organization, field.week + timedelta(days=1)),
+    )
+    assert generate_schedule(field.membership, field.week)["created"] == 0
+    assert list(ScheduledTask.objects.values_list("due_date", flat=True)) == [
+        field.week + timedelta(days=3)
+    ]

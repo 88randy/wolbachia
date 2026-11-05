@@ -36,8 +36,8 @@ optimization, screens, deployment or review acceptance is added.
    out-of-scope codes both yield block_inaccessible. Preview writes only import
    metadata and never categories/assignments/tasks. Any error blocks apply.
 5. Apply serializes Organization NO KEY UPDATE NOWAIT, affected couriers, then RiskImport NOWAIT.
-   Fresh application checks expected_revision=1 and re-resolves every scoped
-   block; scope loss is 404. Changed epi-week/timezone or recorded block scope
+   Every block is authorized before policy/revision/mismatch checks; scope loss
+   is 404 even after policy changes. Fresh application checks expected_revision=1. Changed epi-week/timezone or recorded block scope
    mismatch is 409 import_scope_mismatch. All category successors and the unique
    RiskImportApplication append atomically. applied_at/applied_by derive from
    that immutable application. Retries return the same application and append
@@ -55,8 +55,10 @@ optimization, screens, deployment or review acceptance is added.
    place/check are derived: no active nonvoided placement means place on week
    start; otherwise check is due once the latest nonvoided placement/reading's
    local date reaches revisit_interval_days at that due date. Overdue checks
-   start at week start; subsequent checks in that week use the configured rule
-   at each day, without a target cap. Applied rule version ids are retained.
+   start at week start. At most one check per active ovitrap/epi week is planned,
+   at the earliest due date; an active non-voided reading in that week suppresses
+   generation using core.time.epi_week_label, just like capture. Existing weekly
+   checks survive rule changes without appending another plan. Applied rule ids remain.
    Generate appends missing tasks once, under organization and point locks;
    GET never writes. The effective assignment at generation becomes ownership
    revision 1; invalidated/unassigned courier authority leaves no owner row and
@@ -86,11 +88,13 @@ optimization, screens, deployment or review acceptance is added.
    coordinate with existing ovitrap effect writers. No User/Device/Session/Token
    locks, storage, network or mail are taken under these locks; any future account
    integration must preserve User -> Device -> DeviceSession -> TokenPair first.
-10. SchedulingConfig.ready registers one assignments v1 BundleProducer. Its flat
+10. SchedulingConfig.ready registers one assignments v2 BundleProducer. Its flat
     rows have kind=quadrant_assignment|task, stable id (quadrant/task UUID), quadrant_id,
     courier and revision. Tasks add code, point, action, date, category, source,
-    protocol, is_completed and target; no egg counts. Bootstrap uses the active
-    courier membership and captured permission/paired scope; organization_id and
+    protocol and target; no completion state or egg counts. Bootstrap uses the active
+    courier membership and captured permission/paired scope, including every owned
+    task due on/after the current epi-week start with no upper bound. Each task uses
+    its own week's risk provenance. organization_id and
     center_id metadata are checked before serialization and remain private.
     change_assignment emits allocation remove/upsert without moving existing tasks;
     generate_schedule emits each new owned task; reassign_pending emits old-owner
@@ -131,6 +135,14 @@ there is no lock cycle. Both database contention and SyncInProgressError map to
 no account locks or network/storage/mail occur beneath them. The one documented
 courier BatchContext helper has device=cast(Device, None): producer lock/append
 APIs use only organization/user and planning has no sending device.
+
+Completion is derived from captures/voids, whose handlers emit no scheduling
+CourierChange. The assignments v2 payload therefore omits is_completed; GET
+/schedule/ still exposes it. A former owner's phone can retain a stale pending
+task until the next bootstrap/full resync refreshes projections. Capture is
+always revalidated server-side (one active reading per physical ovitrap/local
+epi week), and reassignment still rejects completed tasks. Producer v2 changes
+the bundle schema_version; bootstrap must replace the old projection.
 
 
 ## API
@@ -173,6 +185,10 @@ check generation atomically (409 revisit_rule_not_configured).
 | Concurrent reassignment/history | test_racing_reassign_retains_prior_owner_and_loser_has_explicit_conflict; test_assignment_at_retains_capture_time_owner_and_rejects_stale_revision |
 | Due/risk/load/target/scope | test_generation_due_risk_order_scope_load_and_target_are_the_returned_tasks; test_completed_tasks_abort_entire_reassignment_and_unassigned_tasks_are_explicit; test_planning_and_capture_share_epi_week_boundaries; test_normalized_first_supported_week_can_be_used_again_internally |
 | Contract/scoped wiring | test_endpoint_default_deny_and_foreign_org_center_quadrant_isolation; test_live_scheduling_schema_exposes_requests_paging_and_revision_contract; test_planning_date_extremes_have_coded_validation_instead_of_overflow; spectacular --validate --fail-on-warn; lead regenerates client |
+| Future tasks already covered by bootstrap cursor | test_bootstrap_includes_future_tasks_before_cursor_covers_them |
+| One weekly check, active/voided reading and changed-rule replay | test_generation_checks_once_per_epi_week_and_stops_after_real_reading; test_week_reading_suppresses_generation_only_until_voided; test_regeneration_keeps_one_check_when_future_revisit_rules_change |
+| Scope denial precedes policy/revision errors | test_scope_loss_hides_import_even_when_week_policy_changes |
+| Completion excluded from feed, retained in schedule | test_task_feed_never_claims_completion_from_a_schedule_row; test_completed_tasks_abort_entire_reassignment_and_unassigned_tasks_are_explicit |
 | Offline own/scope isolation | test_bootstrap_assignments_contains_only_own_in_scope_planning_rows |
 | Feed ownership and allocation revocation | test_reassignment_delivers_remove_and_upsert_with_contiguous_sequences; test_assignment_change_revokes_quadrant_without_moving_existing_tasks |
 | Courier contention/retry | test_busy_affected_courier_returns_retryable_429_without_partial_writes |

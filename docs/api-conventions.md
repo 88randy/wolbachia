@@ -244,7 +244,8 @@ Permissions default-deny, always intersected with center AND quadrant EffectiveS
 - POST /schedule/generate/ {week}, schedule.manage, appends only missing scoped
   place/check tasks; returns {created,revision}. GET never writes. remove is omitted:
   master has no accepted removal lifecycle. Check due dates use historical
-  revisit_interval_days and retain the rule version ids. Missing policy returns
+  revisit_interval_days and retain the rule version ids. At most one earliest-due
+  check is planned per ovitrap/epi week; an active reading in that week suppresses generation. Missing policy returns
   409 revisit_rule_not_configured and rolls back the entire generation.
 - GET /schedule/?week=&courier=&day=&quadrant=&code= requires schedule.read.
   Day is optional YYYY-MM-DD within the epi week. Exact task code is
@@ -270,7 +271,7 @@ fields only, 409 uses safe blocked_by, lock contention/deadlock is retryable
 NO KEY UPDATE locking precedes sorted courier try-locks and point locks; no network/storage/mail or account
 locks occur inside. Existing User -> Device -> DeviceSession -> TokenPair order
 is preserved. No void/delete endpoints, new sync events or result codes are added;
-#22 owns review acceptance. Scheduling registers the assignments v1 bundle producer
+#22 owns review acceptance. Scheduling registers the assignments v2 bundle producer
 and atomically emits scoped allocation/task deltas through #110 delivery APIs.
 See scheduling/README.md and ADR 113 for lead decisions and lock ordering.
 

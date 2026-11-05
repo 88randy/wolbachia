@@ -17,6 +17,7 @@ from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
 from core.exceptions import FieldValidationError
+from core.time import epi_week_label
 from field_sync.exceptions import SyncInProgressError
 from geography.models import Block, SamplingPoint
 from geography.selectors import get_quadrant, point_version_at
@@ -52,6 +53,7 @@ from scheduling.models import (
 )
 from scheduling.permissions import RISK_IMPORT_APPLY, SCHEDULE_MANAGE
 from scheduling.selectors import (
+    DAYS_PER_WEEK,
     assignment_at,
     check_courier_scope,
     courier_member,
@@ -200,11 +202,6 @@ def preview_import(member: Membership, preview: ImportPreview) -> RiskImport:
 
 
 def _import_blocks(member: Membership, risk_import: RiskImport) -> dict[str, Block]:
-    if risk_import.week_policy != {
-        "epi_week": member.organization.epi_week,
-        "timezone": member.organization.timezone,
-    }:
-        raise SchedulingConflictError("import_scope_mismatch")
     visible = filter_by_effective_scope(
         Block.objects.filter(organization=member.organization).select_related("quadrant"),
         member,
@@ -214,10 +211,15 @@ def _import_blocks(member: Membership, risk_import: RiskImport) -> dict[str, Blo
         str(block.pk): block
         for block in visible.filter(pk__in=[row["block_id"] for row in risk_import.preview_rows])
     }
+    if {row["block_id"] for row in risk_import.preview_rows} - blocks.keys():
+        raise NotFound
+    if risk_import.week_policy != {
+        "epi_week": member.organization.epi_week,
+        "timezone": member.organization.timezone,
+    }:
+        raise SchedulingConflictError("import_scope_mismatch")
     for row in risk_import.preview_rows:
-        block = blocks.get(row["block_id"])
-        if block is None:
-            raise NotFound
+        block = blocks[row["block_id"]]
         if row["quadrant_id"] != str(block.quadrant_id) or row["center_id"] != str(
             block.quadrant.center_id
         ):
@@ -324,11 +326,20 @@ def _due_actions(point: SamplingPoint, start: date) -> list[tuple[str, date, dic
     )
     if placement is None:
         return [("place", start, {})]
+    # Retain the first published plan even if future revisit rules change on replay.
+    if ScheduledTask.objects.filter(
+        organization=point.organization,
+        point=point,
+        action="check",
+        due_date__gte=start,
+        due_date__lt=start + timedelta(days=DAYS_PER_WEEK),
+    ).exists():
+        return []
+    readings = OvitrapReading.objects.filter(ovitrap=placement, event__voided_at__isnull=True)
+    if readings.filter(epi_week=epi_week_label(start, point.organization.epi_week)).exists():
+        return []
     reading = (
-        OvitrapReading.objects.filter(ovitrap=placement, event__voided_at__isnull=True)
-        .select_related("event")
-        .order_by("-event__device_time", "-created_at")
-        .first()
+        readings.select_related("event").order_by("-event__device_time", "-created_at").first()
     )
     last_capture = max(
         placement.event.device_time,
@@ -340,8 +351,7 @@ def _due_actions(point: SamplingPoint, start: date) -> list[tuple[str, date, dic
     parameter = RuleParameter.objects.filter(
         organization=point.organization, key="revisit_interval_days"
     ).first()
-    due = []
-    for offset in range(7):
+    for offset in range(DAYS_PER_WEEK):
         day = start + timedelta(days=offset)
         rule = (
             get_version_in_force(parameter, local_midnight(point.organization, day))
@@ -351,9 +361,8 @@ def _due_actions(point: SamplingPoint, start: date) -> list[tuple[str, date, dic
         if rule is None or rule.value < 1:
             raise SchedulingConflictError("revisit_rule_not_configured")
         if (day - last_day).days >= int(rule.value):
-            due.append(("check", day, {"revisit_interval_days": str(rule.pk)}))
-            last_day = day
-    return due
+            return [("check", day, {"revisit_interval_days": str(rule.pk)})]
+    return []
 
 
 def _generation_assignments(

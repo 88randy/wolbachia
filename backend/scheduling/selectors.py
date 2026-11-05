@@ -331,16 +331,6 @@ def courier_current_rows(
         if scope.allows(permission, str(quadrant.center_id), str(quadrant.pk))
     ]
     start = week_start(courier.organization, start)
-    tasks = _task_projection(
-        ScheduledTask.objects.filter(
-            organization=courier.organization,
-            point__block__quadrant_id__in=[quadrant.pk for quadrant in quadrants],
-            due_date__gte=start,
-            due_date__lt=start + timedelta(days=DAYS_PER_WEEK),
-        ),
-        courier.organization,
-        start,
-    ).filter(courier_id=courier.user_id)
     assignments = []
     for quadrant in quadrants:
         assignment = assignment_at(quadrant, instant)
@@ -356,4 +346,41 @@ def courier_current_rows(
                     "courier": str(courier.user_id),
                 }
             )
-    return {"assignments": assignments, "tasks": task_rows(tasks, {})}
+    return {"assignments": assignments, "tasks": _courier_task_rows(courier, start, quadrants)}
+
+
+def _courier_task_rows(
+    courier: Membership, start: date, quadrants: list[Quadrant]
+) -> list[dict[str, Any]]:
+    """The cursor covers future upserts too; project each owned task at its own epi week."""
+    owners = TaskOwnership.objects.filter(task=OuterRef("pk")).order_by("-revision")
+    tasks = (
+        cast(
+            "QuerySet[Any]",
+            ScheduledTask.objects.filter(
+                organization=courier.organization,
+                point__block__quadrant_id__in=[quadrant.pk for quadrant in quadrants],
+                due_date__gte=start,
+            ),
+        )
+        .annotate(current_courier=Subquery(owners.values("courier_id")[:1]))
+        .filter(current_courier=courier.user_id)
+    )
+    weeks = sorted(
+        {week_start(courier.organization, day) for day in tasks.values_list("due_date", flat=True)}
+    )
+    rows: list[dict[str, Any]] = []
+    for task_start in weeks:
+        projected = _task_projection(
+            tasks.filter(
+                due_date__gte=task_start,
+                due_date__lt=task_start + timedelta(days=DAYS_PER_WEEK),
+            ),
+            courier.organization,
+            task_start,
+        )
+        rows.extend(
+            {key: value for key, value in row.items() if key != "is_completed"}
+            for row in task_rows(projected, {})
+        )
+    return rows
