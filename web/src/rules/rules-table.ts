@@ -17,9 +17,8 @@ export const PARAMETERS_TABLE: TableQueryConfig = {
 };
 
 /**
- * Query string of a parameter's history. The API returns the whole history newest first and has
- * no `include_voided` parameter, so the "Include voided" toggle hides the voided versions of the
- * page in view (see `versions-table-data.ts`).
+ * Query string of a parameter's history: newest first, paged by the server, which leaves voided
+ * versions out unless `include_voided=true` (the "Include voided" toggle).
  */
 export const VERSIONS_TABLE: TableQueryConfig = {
   paging: "page",

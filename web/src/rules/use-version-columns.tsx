@@ -5,7 +5,7 @@ import { useFormatCalendarDate, useFormatNumber } from "../format/use-formatters
 import { useParameterLabels } from "./parameter-labels";
 import type { RuleParameter, RuleParameterVersion } from "./rules-query";
 import styles from "./rules.module.css";
-import { useAuthorLabel } from "./use-author-label";
+import { useAuthorName } from "./use-author-name";
 import { VersionStatusBadge } from "./VersionStatusBadge";
 import { VoidVersionButton } from "./VoidVersionButton";
 
@@ -16,7 +16,7 @@ interface Writers {
   value: (version: RuleParameterVersion) => string;
   day: (isoDate: string) => string;
   moment: (iso: string) => string;
-  author: (userId: string | null) => string;
+  author: (username: string | null) => string;
 }
 
 function detailColumns(write: Writers): Column[] {
@@ -40,7 +40,7 @@ function detailColumns(write: Writers): Column[] {
     {
       id: "author",
       headerKey: "rules.history.author",
-      cell: (version) => write.author(version.created_by),
+      cell: (version) => write.author(version.created_by_username),
     },
     {
       id: "created",
@@ -77,14 +77,14 @@ export function useVersionColumns(options: VersionColumnsOptions): readonly Colu
   const formatNumber = useFormatNumber();
   const formatCalendarDate = useFormatCalendarDate();
   const formatDateTime = useFormatDateTime();
-  const authorLabel = useAuthorLabel();
+  const authorName = useAuthorName();
   const { parameter, canVoid, onVoid, blockedNoteId } = options;
   return useMemo(() => {
     const write: Writers = {
       value: (version) => `${formatNumber(version.value)} ${labels.unit(parameter.unit)}`,
       day: formatCalendarDate,
       moment: formatDateTime,
-      author: authorLabel,
+      author: authorName,
     };
     const columns = detailColumns(write);
     return canVoid
@@ -99,6 +99,6 @@ export function useVersionColumns(options: VersionColumnsOptions): readonly Colu
     formatNumber,
     formatCalendarDate,
     formatDateTime,
-    authorLabel,
+    authorName,
   ]);
 }

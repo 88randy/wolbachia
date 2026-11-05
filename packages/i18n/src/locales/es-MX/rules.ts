@@ -29,12 +29,14 @@ export const rules = {
   "rules.param.sessionIdle": "Inactividad que cierra la sesión",
   "rules.param.reminderBeforeEnd": "Aviso antes del fin de la jornada",
   "rules.param.maxPaddleReuses": "Reutilizaciones máximas de la papeleta",
+  "rules.param.revisitInterval": "Intervalo entre revisitas",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
   "rules.unit.meters": "metros",
   "rules.unit.kmPerHour": "km/h",
   "rules.unit.seconds": "segundos",
   "rules.unit.minutes": "minutos",
+  "rules.unit.days": "días",
   "rules.unit.weeks": "semanas",
   "rules.unit.count": "veces",
   "rules.unit.kmPerLiter": "km/l",
@@ -106,9 +108,7 @@ export const rules = {
   "rules.history.voidLabel": "Anular la versión del {date}",
   "rules.history.voidBlocked":
     "Esta versión ya entró en vigor: queda como historial y no se puede anular.",
-  "rules.history.hiddenNote": "Versiones anuladas ocultas en esta página: {count}.",
   "rules.history.voidDone": "Versión anulada. Sigue en el historial, tachada.",
-  "rules.history.userRef": "Usuario {id}",
   "rules.history.system": "Sistema",
   "rules.status.scheduled": "Programada",
   "rules.status.inForce": "Vigente",

@@ -2,7 +2,6 @@ import { expect, test } from "@playwright/test";
 import { makeMe } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
 import { makeRuleParameter, makeRuleVersion } from "./fixtures/rules-mock";
-import type { ParameterFixture } from "./fixtures/rules-mock";
 
 const ADMIN = makeMe({
   permissions: [
@@ -12,20 +11,19 @@ const ADMIN = makeMe({
     "rule_parameter_version.void",
   ],
 });
-const PARAMETER = "/settings/rule-parameters/revisit_frequency_days";
+const PARAMETER = "/settings/rule-parameters/revisit_interval_days";
 const REASON = "Ajuste acordado con entomología para la temporada de lluvias.";
 
 /**
- * Journey R9 needs a revisit frequency in days. The backend seed has neither that parameter nor a
- * `day` unit yet (issue #36, "Initial parameter list and units" is [PENDING]), so the fixture
- * brings both; the web draws whatever the API lists, and an unknown unit shows as it came.
+ * Journey R9 runs on the parameter the backend seeds (`revisit_interval_days`, unit `day`, 7 days,
+ * 1 to 28; issue #88). The fixture mirrors it.
  */
-const REVISIT_FREQUENCY = {
+const REVISIT_INTERVAL = {
   parameter: makeRuleParameter({
-    key: "revisit_frequency_days",
-    unit: "day" as ParameterFixture["unit"],
+    key: "revisit_interval_days",
+    unit: "day",
     min_value: 1,
-    max_value: 30,
+    max_value: 28,
   }),
   versions: [makeRuleVersion({ value: 7 })],
 };
@@ -34,13 +32,13 @@ test.describe("rule parameters (W62), journey R9", () => {
   test("R9: the admin changes the revisit frequency from 7 to 6 days from a date, with a reason", async ({
     page,
   }) => {
-    const api = await mockApi(page, { me: ADMIN, rules: [REVISIT_FREQUENCY] });
+    const api = await mockApi(page, { me: ADMIN, rules: [REVISIT_INTERVAL] });
     await page.goto("/settings");
 
     await page.getByRole("main").getByRole("link", { name: "Parámetros de reglas" }).click();
-    const row = page.getByRole("row", { name: /revisit_frequency_days/ });
+    const row = page.getByRole("row", { name: /revisit_interval_days/ });
     await expect(row).toContainText("1 ene 2026");
-    await row.getByRole("link", { name: "revisit_frequency_days" }).click();
+    await row.getByRole("link", { name: "revisit_interval_days" }).click();
 
     await expect(page).toHaveURL(new RegExp(`${PARAMETER}$`));
     await expect(page.getByRole("region", { name: "Valor vigente" })).toContainText("7 day");
@@ -63,11 +61,11 @@ test.describe("rule parameters (W62), journey R9", () => {
     await expect(summary).toContainText("7 day");
     await expect(summary).toContainText("10 nov 2026");
     const sent = api.requests.find((entry) => entry.method === "POST");
-    expect(sent?.path).toBe("/api/v1/rule-parameters/revisit_frequency_days/versions/");
+    expect(sent?.path).toBe("/api/v1/rule-parameters/revisit_interval_days/versions/");
     expect(sent?.body).toEqual({ value: "6", effective_from: "2026-11-10", reason: REASON });
 
     await page.getByRole("link", { name: "Volver a parámetros" }).click();
-    await expect(page.getByRole("row", { name: /revisit_frequency_days/ })).toContainText(
+    await expect(page.getByRole("row", { name: /revisit_interval_days/ })).toContainText(
       "10 nov 2026",
     );
   });
