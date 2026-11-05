@@ -89,7 +89,7 @@ class FakeServer implements MockApi {
   ) {
     this.devices = new FakeDevices(options.devices ?? []);
     this.signedIn = options.me === undefined ? makeMe() : options.me;
-    this.rules = new FakeRules(options.rules ?? [], (this.signedIn ?? makeMe()).user.id);
+    this.rules = new FakeRules(options.rules ?? [], (this.signedIn ?? makeMe()).user);
     this.login = options.login ?? "ok";
   }
 
