@@ -251,7 +251,7 @@ P14 advances finding -> paddle present -> eggs Yes/No -> conditions/bag/reinstat
 -> confirmation. Closed-house/absent/missing/destroyed skip paddle/eggs/bag.
 There is no egg-count input, draft field or event payload field.
 
-### Decisions applied (ADR 101)
+### Decisions applied (ADR 113)
 
 - `domain.ts` contains strict ASCII `wbf:1:<kind>:<hyphenated UUID>` parsing,
   conditional boolean eggs and shared route transitions. Kinds are lot, ovitrap,
