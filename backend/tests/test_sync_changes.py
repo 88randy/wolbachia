@@ -187,7 +187,7 @@ def test_the_versions_are_the_hashes_of_the_snapshots_and_move_when_the_content_
 
 def test_cursor_roundtrip_keeps_the_sequence() -> None:
     organization_id, user_id = uuid.uuid4(), uuid.uuid4()
-    position = ChangesCursor(42)
+    position = ChangesCursor(42, 17, "0" * 64)
 
     token = encode_cursor(organization_id, user_id, position)
 
@@ -197,7 +197,7 @@ def test_cursor_roundtrip_keeps_the_sequence() -> None:
 
 def test_cursor_for_another_user_or_organization_does_not_decode() -> None:
     organization_id, user_id = uuid.uuid4(), uuid.uuid4()
-    token = encode_cursor(organization_id, user_id, ChangesCursor())
+    token = encode_cursor(organization_id, user_id, ChangesCursor(scope_revision="0" * 64))
 
     with pytest.raises(InvalidCursorError):
         decode_cursor(token, organization_id, uuid.uuid4())

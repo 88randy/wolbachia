@@ -105,3 +105,19 @@ api:generate failed on sandbox-denied uv interpreter-cache persistence; no cache
 relocation or permission change was attempted. openapi-typescript is not installed;
 the no-install command attempted package resolution and was cancelled. schema.ts
 remains stale and untouched; the orchestrator must regenerate with locked tools.
+
+## Offline bundle contract (#110 / B-13)
+
+OpenAPI adds bearer-only /field/bootstrap/, a registered-schema hash boundary,
+scope-bound cursor v2 and six typed change arrays plus next_change_at. The live
+device grant is field.bootstrap. V1/expired/scope-changed cursors require bootstrap
+recovery while keeping drafts and pending outbox events separate from projections.
+See docs/sync.md. Absent dependency producer payloads remain open object arrays;
+future producer PRs must publish their concrete schema.
+
+The locked local Python runtime exported/validated openapi.yaml for this delivery.
+`npm run api:generate` was blocked by uv trying to persist its interpreter cache
+outside the sandbox. No local openapi-typescript executable is installed; no
+package was installed and generated TypeScript was not hand-edited. Integration
+must run the complete generation command and verify a second run produces no
+diff, as required by .github/workflows/api-contract.yml.

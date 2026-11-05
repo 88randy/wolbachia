@@ -1,15 +1,11 @@
 """The `changes.cursor` of `/field/sync/`: a signed token bound to one organization and user.
 
-The cursor says how far the phone has read its review items: the `courier_sequence` of the last
-item delivered (a counter per courier, not a timestamp). It is signed with Django's `signing` (the secret
-key), so it cannot be forged or edited; it carries the organization and user it was issued for,
-so a token copied to another session is refused; and it expires after
-`SYNC_CURSOR_MAX_AGE_SECONDS` (default 30 days). It is not secret: the position is visible to
-whoever holds it.
-
-Position by sequence is safe because every writer of a courier's review items holds the same
-transaction advisory lock while assigning it and the pull runs under that lock (decision 71): no
-item can commit "behind" a cursor that was already issued, whatever the clocks say.
+Cursor v2 carries review sequence s, domain change sequence c and effective scope
+revision r, bound to organization o and courier u. Both feeds use sequences under
+the same courier transaction lock, never timestamp maxima. Missing c/r (v1), an
+expired signature or a changed scope is invalid_cursor; recover via bootstrap.
+Bootstrap starts reviews at zero for id-based replay and domain changes at the
+locked snapshot boundary. See docs/sync.md for phone outbox preservation.
 """
 
 import uuid
@@ -30,10 +26,18 @@ class ChangesCursor:
     """Where the next pull starts: after the review item with this `courier_sequence`."""
 
     sequence: int = 0
+    change_sequence: int = 0
+    scope_revision: str | None = None
 
 
 def encode_cursor(organization_id: uuid.UUID, user_id: uuid.UUID, cursor: ChangesCursor) -> str:
-    payload: dict[str, Any] = {"o": str(organization_id), "u": str(user_id), "s": cursor.sequence}
+    payload: dict[str, Any] = {
+        "o": str(organization_id),
+        "u": str(user_id),
+        "s": cursor.sequence,
+        "c": cursor.change_sequence,
+        "r": cursor.scope_revision,
+    }
     return signing.dumps(payload, salt=CURSOR_SALT, compress=True)
 
 
@@ -51,9 +55,13 @@ def decode_cursor(
         )
         if (payload["o"], payload["u"]) != (str(organization_id), str(user_id)):
             raise InvalidCursorError
-        sequence = payload["s"]
-        if not isinstance(sequence, int) or isinstance(sequence, bool) or sequence < 0:
+        sequence, change_sequence, revision = payload["s"], payload["c"], payload["r"]
+        if not all(
+            type(position) is int and position >= 0 for position in (sequence, change_sequence)
+        ):
             raise InvalidCursorError
-        return ChangesCursor(sequence)
+        if not isinstance(revision, str) or len(revision) != 64:
+            raise InvalidCursorError
+        return ChangesCursor(sequence, change_sequence, revision)
     except (signing.BadSignature, KeyError, TypeError, ValueError):
         raise InvalidCursorError from None

@@ -8,6 +8,7 @@ from rest_framework.views import APIView
 
 from core.exceptions import PayloadTooLargeError
 
+FIELD_BOOTSTRAP = "field.bootstrap"
 FIELD_EVENT_SYNC = "field_event.sync"
 
 
