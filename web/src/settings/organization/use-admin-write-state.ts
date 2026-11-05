@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import type { MessageKey } from "@wolbachia/i18n";
 export function useAdminWriteState() {
   const [isBusy, setBusy] = useState(false);

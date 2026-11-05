@@ -1,4 +1,4 @@
-﻿import type { QueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { reportSessionError } from "../../session/session-events";
 import type { ApiClient } from "@wolbachia/api-client";
 import { unwrap } from "@wolbachia/api-client";

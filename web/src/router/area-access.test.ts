@@ -31,7 +31,6 @@ describe("areas still waiting for a permission code", () => {
     expect(pendingAreaIds()).toEqual([
       "incidents",
       "operations",
-      "quadrants",
       "releases",
       "community",
       "inventory",

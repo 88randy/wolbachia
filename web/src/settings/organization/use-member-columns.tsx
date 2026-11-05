@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../../data-table/table-types";
 import type { Membership } from "./use-w-03";
 import { MembershipScopeCell } from "./MembershipScopeCell";

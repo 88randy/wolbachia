@@ -1,4 +1,4 @@
-﻿import type { Me } from "./me";
+import type { Me } from "./me";
 
 /**
  * Whether the user holds a permission code (`<resource>.<action>`, e.g. `catalog.read`). The

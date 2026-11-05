@@ -1,4 +1,4 @@
-﻿import { ROLE_UPDATE } from "./permissions";
+import { ROLE_UPDATE } from "./permissions";
 import { useTranslation } from "react-i18next";
 import { useMe } from "../../session/use-me";
 import { isReadOnlyProfile } from "./use-w-03";

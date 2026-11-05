@@ -62,4 +62,40 @@ export const sync: Record<keyof typeof source, string> = {
     "We couldn't refresh your inbox, so the app will load it in full again. You don't need to do anything.",
   "sync.batch.syncInProgress":
     "Information from your account is already being sent from another phone. The app will try again in a few seconds.",
+  "sync.result.fuelMotorcycleMismatch":
+    "The fuel load names a different motorcycle. Ask your supervisor to review it.",
+  "sync.result.fuelEfficiencyReview":
+    "The fuel load was saved for an efficiency review. You can close your shift and tell your supervisor.",
+  "sync.result.fuelEventNotVoidable":
+    "This fuel load needs an authorized correction. Ask your supervisor for help.",
+  "sync.result.ovitrapPointInaccessible":
+    "This point is unavailable in your scope. Contact your supervisor.",
+  "sync.result.ovitrapInaccessible":
+    "This ovitrap is unavailable in your scope. Contact your supervisor.",
+  "sync.result.ovitrapIdentityUsed":
+    "This identity has already been used. Contact your supervisor before correcting it.",
+  "sync.result.ovitrapPointOccupied":
+    "This point already has an active ovitrap. Contact your supervisor.",
+  "sync.result.ovitrapReadingExists":
+    "This week already has an active reading. Void the previous reading before correcting it.",
+  "sync.result.ovitrapBagCodeUsed":
+    "This bag code has already been used. Check the code with your supervisor.",
+  "sync.result.ovitrapCatalogItemUnknown":
+    "This choice is absent from the downloaded catalog. Contact your supervisor.",
+  "sync.result.ovitrapCatalogItemDeactivated":
+    "This choice was deactivated. Your supervisor will review the capture.",
+  "sync.result.ovitrapCatalogVersionUnavailable":
+    "The catalog used could not be recovered. Your supervisor will review the capture.",
+  "sync.result.ovitrapGpsUnusable":
+    "The location is not accurate enough. Your supervisor will review the capture.",
+  "sync.result.ovitrapRulesUnavailable":
+    "Valid rules are missing for this capture. Your supervisor will review it.",
+  "sync.result.ovitrapPointVersionUnavailable":
+    "No point location was in force for this capture. Your supervisor will review it.",
+  "sync.result.ovitrapTooFar":
+    "The capture is beyond the allowed distance. Your supervisor will review it.",
+  "sync.result.ovitrapSpeedAnomaly":
+    "The movement needs review. Your supervisor will review the capture.",
+  "sync.result.ovitrapVoidBlocked":
+    "This placement has linked readings. Contact your supervisor to correct them.",
 };

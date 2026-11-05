@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { useDocumentTitle } from "../shell/use-document-title";
 import { SettingsLinks } from "./SettingsLinks";
 import styles from "../styles/page.module.css";

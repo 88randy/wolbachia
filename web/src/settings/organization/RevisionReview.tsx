@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { ScopeEditor } from "./use-scope-editor";
 import { ScopeComparison } from "./ScopeComparison";
 export function RevisionReview({ editor }: { editor: ScopeEditor }) {

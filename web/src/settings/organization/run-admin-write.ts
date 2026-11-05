@@ -1,4 +1,4 @@
-﻿import { ApiError } from "@wolbachia/api-client";
+import { ApiError } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { RefObject } from "react";
 import type { SessionGuard } from "../../session/use-session-guard";

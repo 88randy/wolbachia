@@ -1,4 +1,4 @@
-﻿import { useReducer } from "react";
+import { useReducer } from "react";
 import type { Schemas } from "@wolbachia/api-client";
 import { createScopeDraft, scopeDraftReducer } from "./scope-draft";
 import type { ScopeDraft, ScopeDraftAction } from "./scope-draft";

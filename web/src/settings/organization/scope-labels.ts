@@ -1,4 +1,4 @@
-﻿import type { Schemas } from "@wolbachia/api-client";
+import type { Schemas } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
 const MODE_KEYS = {
   none: "orgAdmin.scope.none",

@@ -1,4 +1,4 @@
-﻿import { useSearch } from "@tanstack/react-router";
+import { useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { useDocumentTitle } from "../../shell/use-document-title";
 import { RolesTable } from "./RolesTable";

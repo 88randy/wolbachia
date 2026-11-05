@@ -1,0 +1,107 @@
+import type { geography as Spanish } from "../es-MX/geography.ts";
+export const geography = {
+  "geography.history.default": "Version history (default)",
+  "geography.retire.author": "Recorded by: {author}",
+  "geography.retire.dialogTitle": "Record retirement of {record}",
+  "geography.field.status": "Status",
+  "geography.page.title": "Quadrants and sampling",
+  "geography.page.list": "Quadrants in the active scope",
+  "geography.page.create": "New quadrant",
+  "geography.page.back": "Quadrant map",
+  "geography.field.code": "Fixed code",
+  "geography.field.center": "Center (ID)",
+  "geography.field.search": "Search",
+  "geography.field.polygon": "Polygon (longitude, latitude)",
+  "geography.field.location": "Coordinates (longitude, latitude)",
+  "geography.field.evidence": "Evidence",
+  "geography.field.decision": "Resolution",
+  "geography.field.view": "View",
+  "geography.field.block": "Block (ID)",
+  "geography.field.created": "Created",
+  "geography.field.author": "Author",
+  "geography.field.revision": "Revision",
+  "geography.field.effective": "Effective from",
+  "geography.field.geometry": "Published coordinates",
+  "geography.editor.title": "New version",
+  "geography.editor.publish": "Publish new version",
+  "geography.editor.discard": "Discard draft",
+  "geography.editor.hint":
+    "WGS84: one longitude,latitude pair per line. Close each ring by repeating its first vertex; separate holes with a blank line. The server validates geometry.",
+  "geography.editor.blocked":
+    "Resolve each excluded point with evidence before publishing. A point creator can relocate or retire points; a quadrant publisher can keep them outside.",
+  "geography.editor.pointsLoading":
+    "All points must be checked. Retry the query before publishing.",
+  "geography.editor.refresh": "Refresh revision and reapply draft",
+  "geography.editor.ready": "Every excluded point has a resolution.",
+  "geography.editor.emptyDecision": "Choose a resolution",
+  "geography.editor.keep": "Explicitly keep outside",
+  "geography.editor.move": "Relocate inside the quadrant",
+  "geography.editor.remove": "Retire with evidence",
+  "geography.error.geometry":
+    "Check the polygon: use valid coordinates, at least three distinct vertices and closed rings.",
+  "geography.error.stale":
+    "A newer revision exists. Refresh and review your draft and resolutions before publishing again.",
+  "geography.error.unresolved":
+    "The server found unresolved points. Review the highlighted points and refresh the list.",
+  "geography.error.busy":
+    "Geography is busy. Wait for the indicated interval and explicitly retry.",
+  "geography.error.wait": "Wait before retrying.",
+  "geography.error.invalid": "Check the fields and try again.",
+  "geography.error.noPoint":
+    "Point creation permission is needed to complete this resolution. Ask someone with that permission.",
+  "geography.status.saved": "Changes published",
+  "geography.status.active": "Active",
+  "geography.status.retired": "Retired",
+  "geography.status.unknown": "No record",
+  "geography.status.offline": "Offline: keep your draft and try again when connected.",
+  "geography.status.review":
+    "Unpublished proposal: review geometry and coordinates before accepting.",
+  "geography.history.title": "Version history",
+  "geography.history.resolutions": "Evidenced resolutions",
+  "geography.history.point": "Point history",
+  "geography.blocks.title": "Blocks",
+  "geography.blocks.suggest": "Request suggestions",
+  "geography.blocks.create": "Create block",
+  "geography.blocks.accept": "Accept block proposal",
+  "geography.blocks.code": "Fixed block code",
+  "geography.blocks.empty": "No proposals available.",
+  "geography.points.title": "Sampling points",
+  "geography.points.create": "Create point",
+  "geography.points.four": "Create four points",
+  "geography.points.code": "Fixed point code",
+  "geography.points.relocate": "Relocate point",
+  "geography.points.fixed":
+    "Code and block are permanent. Each location is appended as a version; retirement preserves history.",
+  "geography.points.partial":
+    "Created codes are retained. Review the remaining points and retry; saved points are never sent again.",
+  "geography.points.uncertain":
+    "The creation result is uncertain. The code and coordinates stay locked until you reconcile:",
+  "geography.points.reconcile": "Reconcile point creation",
+  "geography.points.unconfirmed":
+    "The scoped result does not confirm this block and location. Keep the code locked and ask a supervisor to verify.",
+  "geography.points.checkFailed":
+    "We could not verify the point. Keep the code locked and try reconciliation again.",
+  "geography.points.spacing": "Spacing warning (non-blocking)",
+  "geography.points.distance": "Distance (m)",
+  "geography.points.minimum": "Configured minimum (m)",
+  "geography.map.open": "Open map",
+  "geography.map.close": "Close map",
+  "geography.map.label": "Interactive map",
+  "geography.map.fallback":
+    "The map is unavailable. Use the table and coordinate fields to read or edit.",
+  "geography.map.hint":
+    "The map shows records on this page. The table offers the same records. To draw, enable adding vertices; coordinate editing is always available.",
+  "geography.map.draw": "Add vertices with the map",
+  "geography.map.undo": "Undo last vertex",
+  "geography.map.closeRing": "Close ring",
+  "geography.map.quadrants": "Quadrants: solid outline",
+  "geography.map.blocks": "Blocks: dashed outline",
+  "geography.map.points": "Points: circles",
+  "geography.map.draft": "Draft: dotted outline",
+  "geography.map.attribution": "© OpenStreetMap contributors",
+  "geography.map.source": "Map source",
+  "geography.retire.title": "Record retirement",
+  "geography.retire.hint":
+    "Retirement is published with the polygon and preserves the point identity and history. The reason is recorded as evidence.",
+  "geography.retire.confirm": "Use retirement reason",
+} as const satisfies Record<keyof typeof Spanish, string>;

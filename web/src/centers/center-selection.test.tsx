@@ -1,4 +1,4 @@
-﻿import { act, screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { createFakeApi, makeMe } from "../test/fake-api";

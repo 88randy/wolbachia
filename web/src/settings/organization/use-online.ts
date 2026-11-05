@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 /** Native connectivity gates writes; reads keep their existing retry/error states. */
 export function useOnline(): boolean {
   const [isOnline, setOnline] = useState(navigator.onLine);

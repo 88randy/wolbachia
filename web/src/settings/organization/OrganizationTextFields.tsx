@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { OrganizationFormController } from "./use-organization-form";
 type Field = "name" | "country" | "timezone" | "label_phone" | "support_contact";

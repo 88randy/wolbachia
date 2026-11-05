@@ -1,4 +1,4 @@
-﻿import { CenterState } from "./CenterState";
+import { CenterState } from "./CenterState";
 import { useTranslation } from "react-i18next";
 import { useCenterSelector } from "./use-center-selector";
 import { CenterOptions } from "./CenterOptions";

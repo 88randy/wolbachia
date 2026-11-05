@@ -65,7 +65,7 @@ def test_create_item_never_flags_the_new_item_as_other() -> None:
 
 def test_create_item_without_sort_fails_cleanly_when_the_order_is_exhausted() -> None:
     catalog = CatalogFactory()
-    CatalogItemFactory(catalog=catalog, code="last", sort=MAX_SORT, is_active=False)
+    CatalogItemFactory(catalog=catalog, code="last", sort=MAX_SORT)
 
     with pytest.raises(FieldValidationError) as error:
         create_catalog_item(catalog, CatalogItemSpec("new", "Nuevo"), UserFactory())
@@ -153,14 +153,14 @@ def test_deactivate_other_raises_a_locked_error_and_keeps_it_active() -> None:
     other = CatalogItemFactory(code="other", is_other=True)
 
     with pytest.raises(OtherItemLockedError):
-        deactivate_catalog_item(other)
+        deactivate_catalog_item(other, UserFactory())
 
     other.refresh_from_db()
     assert other.is_active is True
 
 
 def test_deactivate_a_regular_item() -> None:
-    assert deactivate_catalog_item(CatalogItemFactory()).is_active is False
+    assert deactivate_catalog_item(CatalogItemFactory(), UserFactory()).is_active is False
 
 
 def test_activate_a_deactivated_item() -> None:
@@ -170,7 +170,7 @@ def test_activate_a_deactivated_item() -> None:
 def test_deactivating_twice_is_harmless() -> None:
     item = CatalogItemFactory(is_active=False)
 
-    assert deactivate_catalog_item(item).is_active is False
+    assert deactivate_catalog_item(item, UserFactory()).is_active is False
 
 
 def test_snapshot_lists_only_active_items_in_display_order() -> None:
@@ -219,6 +219,6 @@ def test_snapshot_version_changes_when_an_item_is_deactivated() -> None:
     item = CatalogItemFactory(catalog=catalog)
     before = build_catalog_snapshot(catalog.organization)["version"]
 
-    deactivate_catalog_item(item)
+    deactivate_catalog_item(item, UserFactory())
 
     assert build_catalog_snapshot(catalog.organization)["version"] != before

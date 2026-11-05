@@ -1,4 +1,4 @@
-﻿import { ORGANIZATION_UPDATE } from "./permissions";
+import { ORGANIZATION_UPDATE } from "./permissions";
 import { useMe } from "../../session/use-me";
 import type { SyntheticEvent } from "react";
 import { useOnline } from "./use-online";

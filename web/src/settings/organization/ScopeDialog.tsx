@@ -1,4 +1,4 @@
-﻿import { useId } from "react";
+import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { useModalDialog } from "../../session/use-modal-dialog";
 import { useScopeEditor } from "./use-scope-editor";

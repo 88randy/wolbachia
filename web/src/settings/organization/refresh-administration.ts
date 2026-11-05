@@ -1,4 +1,4 @@
-﻿import type { ApiClient } from "@wolbachia/api-client";
+import type { ApiClient } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { SessionGuard } from "../../session/use-session-guard";
 import { fetchMeCommitted } from "../../session/me-query";

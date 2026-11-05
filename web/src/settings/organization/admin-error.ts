@@ -1,4 +1,4 @@
-﻿import { InvalidLogoError } from "./branding";
+import { InvalidLogoError } from "./branding";
 import { ApiError } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
 import { tableErrorKey } from "../../data-table/table-error";

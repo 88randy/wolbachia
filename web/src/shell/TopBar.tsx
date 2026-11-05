@@ -1,4 +1,4 @@
-﻿import { CenterSelector } from "../centers/CenterSelector";
+import { CenterSelector } from "../centers/CenterSelector";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { NotificationsSlot } from "./NotificationsSlot";
 import { SearchSlot } from "./SearchSlot";

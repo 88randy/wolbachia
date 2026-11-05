@@ -1,4 +1,4 @@
-﻿import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useApiClient } from "../../api/ApiClientProvider";
 import { useSessionGuard } from "../../session/use-session-guard";

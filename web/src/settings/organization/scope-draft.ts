@@ -1,4 +1,4 @@
-﻿import type { Schemas } from "@wolbachia/api-client";
+import type { Schemas } from "@wolbachia/api-client";
 import type { ScopeDimensionName, ScopeDimensionUpdate } from "./scope-types";
 export interface ScopeDraft {
   scope: Schemas["MeScope"];

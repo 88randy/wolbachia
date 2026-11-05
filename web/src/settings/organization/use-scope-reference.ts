@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import { useApiClient } from "../../api/ApiClientProvider";

@@ -1,4 +1,4 @@
-﻿import type { Me } from "../session/me";
+import type { Me } from "../session/me";
 import { can } from "../session/can";
 import { AREAS, PENDING } from "./areas";
 import type { Area } from "./areas";

@@ -1,4 +1,4 @@
-﻿import { unwrap } from "@wolbachia/api-client";
+import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import type { SessionGuard } from "../../session/use-session-guard";
 import { organizationBody, prepareLogo } from "./branding";

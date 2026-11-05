@@ -1,4 +1,4 @@
-﻿import { expect, test } from "./fixtures/test";
+import { expect, test } from "./fixtures/test";
 import type { Page } from "@playwright/test";
 import { makeMe, makeOrganization } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";

@@ -1,4 +1,4 @@
-﻿import { useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import type { BeginScopeLookup } from "./scope-types";
 /** Cleanup and settlement share an idempotent release; duplicate clicks cannot replace it. */
 export function useScopeLookupTask(begin: BeginScopeLookup) {

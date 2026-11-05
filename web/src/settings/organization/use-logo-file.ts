@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import type { ChangeEvent } from "react";
 import { isAllowedLogo } from "./branding";
 export function useLogoFile() {

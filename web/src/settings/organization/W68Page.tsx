@@ -1,4 +1,4 @@
-﻿import { useMe } from "../../session/use-me";
+import { useMe } from "../../session/use-me";
 import { authorizationKey } from "../../centers/center-selection";
 import { OrganizationScreen } from "./OrganizationScreen";
 /** Organization drafts belong to the actor and grants. The shell center is only a filter. */

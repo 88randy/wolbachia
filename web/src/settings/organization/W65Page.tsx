@@ -1,4 +1,4 @@
-﻿import { useMe } from "../../session/use-me";
+import { useMe } from "../../session/use-me";
 import { useActiveCenter } from "../../centers/use-active-center";
 import { authorizationKey } from "../../centers/center-selection";
 import { RolesScreen } from "./RolesScreen";

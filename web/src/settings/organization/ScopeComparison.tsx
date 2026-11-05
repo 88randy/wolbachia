@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { ScopeEditor } from "./use-scope-editor";
 export function ScopeComparison({ editor }: { editor: ScopeEditor }) {
   const { t } = useTranslation();

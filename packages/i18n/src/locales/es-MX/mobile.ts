@@ -2,6 +2,81 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  // M-04: P3-P7 shift opening
+  "mobile.shiftOpen.catalogChanged":
+    "El catálogo cambió. Revisa los puntos y confirma la nueva versión. Si una falla registrada ya no aparece, pide ayuda a tu supervisor; conservamos la evidencia.",
+  "mobile.shiftOpen.confirmCatalog": "Confirmar catálogo y volver a revisar",
+  "mobile.shiftOpen.start": "Abrir jornada",
+  "mobile.shiftOpen.resume": "Retomar apertura",
+  "mobile.shiftOpen.noShift": "Aún no abres jornada",
+  "mobile.shiftOpen.opened": "Jornada guardada en este teléfono",
+  "mobile.shiftOpen.noAssignment":
+    "La asignación de zona aún no está disponible en esta versión. Puedes preparar tu jornada.",
+  "mobile.shiftOpen.inbox": "Ver envíos",
+  "mobile.shiftOpen.motorcycleTitle": "Paso 1 de 4 · Elige tu moto",
+  "mobile.shiftOpen.motorcycleHint":
+    "Escribe y confirma el código de la moto. El servidor comprobará si existe, está bloqueada o está en uso al sincronizar.",
+  "mobile.shiftOpen.motorcycleCode": "Código de la moto",
+  "mobile.shiftOpen.continue": "Continuar",
+  "mobile.shiftOpen.checklistTitle": "Paso 2 de 4 · Revisa tu moto",
+  "mobile.shiftOpen.unconfigured":
+    "La lista de seguridad no está configurada. Descarga el catálogo o pide a tu supervisor que lo configure. No puedes salir.",
+  "mobile.shiftOpen.catalogUnavailable":
+    "No se pudo actualizar el catálogo. Conservamos la última copia guardada. Revisa tu sesión y conexión y vuelve a intentar.",
+  "mobile.shiftOpen.refreshCatalog": "Actualizar catálogo de seguridad",
+  "mobile.shiftOpen.ok": "Bien",
+  "mobile.shiftOpen.minor": "Falla leve",
+  "mobile.shiftOpen.severeResult": "Falla grave",
+  "mobile.shiftOpen.note": "Observación (opcional)",
+  "mobile.shiftOpen.requiredNote": "Observación obligatoria",
+  "mobile.shiftOpen.odometerTitle": "Paso 3 de 4 · Km inicial",
+  "mobile.shiftOpen.photoHint":
+    "La foto del odómetro es opcional, salvo que el catálogo requiera evidencia. Las fotos guardadas permanecen en este teléfono.",
+  "mobile.shiftOpen.capturePhoto": "Tomar foto",
+  "mobile.shiftOpen.photoUnavailable":
+    "La cámara no está disponible en esta versión. Conservamos tu captura; si se requiere foto, no podrás salir.",
+  "mobile.shiftOpen.photoCount": "Fotos guardadas en este teléfono:",
+  "mobile.shiftOpen.odometerKm": "Km que marca el odómetro (entero)",
+  "mobile.shiftOpen.lastOdometer": "Último km conocido por este teléfono:",
+  "mobile.shiftOpen.unknownOdometer":
+    "Sin referencia local; el servidor la comprobará al sincronizar.",
+  "mobile.shiftOpen.odometerWarning":
+    "Es menor que el último km conocido. Revisa la lectura; puedes continuar sin perderla. El servidor podrá ponerla en revisión.",
+  "mobile.shiftOpen.mapsTitle": "Paso 4 de 4 · Preparar mapa",
+  "mobile.shiftOpen.mapReady":
+    "Mapa verificado y con cobertura. Puedes continuar si la revisión de la moto está completa.",
+  "mobile.shiftOpen.mapUnavailable":
+    "El mapa aún no está listo. Esta versión no tiene el manifiesto de mapas. No puedes salir; vuelve a intentar cuando esté disponible.",
+  "mobile.shiftOpen.mapPreparing":
+    "Preparando mapa. La salida sigue bloqueada hasta verificar archivos y cobertura.",
+  "mobile.shiftOpen.mapFailed":
+    "No se pudo preparar el mapa. Conservamos el avance. Revisa la conexión y vuelve a intentar.",
+  "mobile.shiftOpen.mapIncomplete":
+    "Faltan archivos verificados o cobertura. Vuelve a preparar el mapa antes de salir.",
+  "mobile.shiftOpen.mapProgress": "Avance de preparación (%):",
+  "mobile.shiftOpen.recordSevere": "Guardar falla grave · No salir",
+  "mobile.shiftOpen.severe":
+    "No puedes salir con esta moto. Guarda la falla grave y avisa a tu supervisor para que gestione la liberación de flota. Guardarla no confirma que el servidor la recibió.",
+  "mobile.shiftOpen.editChecklist": "Volver a elegir moto y revisar",
+  "mobile.shiftOpen.motorcycle":
+    "Confirma el código de la moto. Si la copia local indica un bloqueo, pide ayuda a tu supervisor.",
+  "mobile.shiftOpen.checklist": "Contesta todos los puntos de seguridad antes de continuar.",
+  "mobile.shiftOpen.noteGate": "Describe la falla grave o el motivo de Otro antes de guardar.",
+  "mobile.shiftOpen.photo":
+    "El catálogo exige una foto. Captúrala antes de salir; en esta versión no hay cámara disponible.",
+  "mobile.shiftOpen.odometer":
+    "Escribe los kilómetros como un número entero. Conservamos lo que escribiste.",
+  "mobile.shiftOpen.map":
+    "La salida requiere un mapa con archivos verificados y cobertura completa. Vuelve a intentar la preparación.",
+  "mobile.shiftOpen.rejected":
+    "El servidor rechazó la apertura. Revisa el resultado en Envíos y consulta a tu supervisor antes de salir.",
+  "mobile.shiftOpen.phoneSaved": "Guardado en el teléfono · Recepción del servidor pendiente",
+  "mobile.shiftOpen.serverReceived": "Recibido por el servidor · Consulta el resultado",
+  "mobile.shiftOpen.reviewPending":
+    "Revisión posterior: sin confirmación de resolución en esta versión.",
+  "mobile.shiftOpen.correctAndRetry": "Corregir e intentar de nuevo",
+  "mobile.shiftOpen.retrySave": "Reintentar guardar los datos",
+
   // Boot
   "mobile.boot.loading": "Preparando la app",
   "mobile.boot.storageFailed":
@@ -10,7 +85,7 @@ export const mobile = {
     "No se pudo guardar en el teléfono. Libera espacio e inténtalo de nuevo; nada se envió.",
 
   "mobile.storage.actionFailed":
-    "No se pudo actualizar el almacenamiento del tel?fono. Libera espacio e int?ntalo de nuevo; tus registros siguen guardados.",
+    "No se pudo actualizar el almacenamiento del teléfono. Libera espacio e inténtalo de nuevo; tus registros siguen guardados.",
 
   // Navigation
   "mobile.nav.back": "Atrás",
@@ -97,6 +172,8 @@ export const mobile = {
   "mobile.settings.serverHint": "Dirección de la API, por ejemplo https://api.ejemplo.com",
   "mobile.settings.serverSave": "Guardar dirección",
   "mobile.settings.serverReset": "Usar la del build",
+  "mobile.settings.serverIdentityBound":
+    "El servidor forma parte de la identidad de este tel\u00e9fono y no se puede cambiar aqu\u00ed. Llama a tu supervisor.",
   "mobile.settings.serverSaved": "Dirección guardada",
   "mobile.settings.serverInvalid":
     "La dirección no es válida. Escríbela completa, sin ruta, por ejemplo https://api.ejemplo.com",
@@ -106,7 +183,56 @@ export const mobile = {
   // Test tools (development builds only)
   "mobile.dev.title": "Pruebas (solo builds de desarrollo)",
   "mobile.dev.deviceId": "ID de este teléfono",
-  "mobile.dev.tokenLabel": "Token de acceso de prueba",
-  "mobile.dev.tokenUse": "Usar token",
   "mobile.dev.addEvent": "Agregar registro de prueba",
+  // P1/P2 authentication and local unlock
+  "mobile.login.logo": "[Logo Codequim]",
+  "mobile.login.title": "Entra a tu cuenta",
+  "mobile.login.username": "Usuario",
+  "mobile.login.password": "Contraseña",
+  "mobile.login.showPassword": "Mostrar",
+  "mobile.login.hidePassword": "Ocultar",
+  "mobile.login.forgotPassword": "¿Olvidaste tu contraseña?",
+  "mobile.login.callSupervisor": "Llama a tu supervisor. Él puede cambiarla desde la oficina.",
+  "mobile.login.understood": "Entendido",
+  "mobile.login.enter": "Entrar",
+  "mobile.login.waitingSignal": "Entrar · esperando señal",
+  "mobile.login.noSignal": "Necesitas señal la primera vez. Después podrás entrar sin señal.",
+  "mobile.login.wrongCredentials": "Usuario o contraseña no coinciden. Revisa y vuelve a intentar.",
+  "mobile.login.sessionEnded": "Tu sesión se cerró por seguridad. Entra de nuevo.",
+  "mobile.login.deviceRevoked": "Este teléfono fue dado de baja. Llama a tu supervisor.",
+  "mobile.login.genericError":
+    "No pudimos iniciar sesión. Inténtalo de nuevo o llama a tu supervisor.",
+  "mobile.login.throttled": "Demasiados intentos. Espera {minutes} min y vuelve a intentar.",
+  "mobile.login.throttledUnknown": "Demasiados intentos. Espera un momento y vuelve a intentar.",
+  "mobile.login.clockSkew": "La hora del teléfono no coincide.",
+  "mobile.login.differentUser":
+    "Este teléfono tiene registros de otra cuenta. Llama a tu supervisor antes de cambiar de usuario.",
+  "mobile.login.onlineRequired":
+    "Por seguridad necesitas entrar de nuevo con señal. Lo que capturaste sigue guardado en el teléfono.",
+  "mobile.login.serverMissing":
+    "Falta configurar el servidor. Abre la configuración del servidor o llama a tu supervisor.",
+  "mobile.login.serverSettings": "Configurar servidor",
+  "mobile.login.version": "Versión {version}",
+  "mobile.unlock.greeting": "Hola, {name}",
+  "mobile.unlock.enterPin": "Escribe tu PIN",
+  "mobile.unlock.wrongPin": "PIN incorrecto. Te quedan {count} intentos.",
+  "mobile.unlock.passwordTitle": "Escribe tu contraseña",
+  "mobile.unlock.passwordRequired":
+    "Se alcanzó el límite de {count} intentos de PIN. Por seguridad, entra con tu contraseña completa.",
+  "mobile.unlock.savedWork": "Lo que capturaste sigue guardado en el teléfono.",
+  "mobile.unlock.wrongSecret": "No coincide. Revisa y vuelve a intentar.",
+  "mobile.unlock.biometric": "Usar huella",
+  "mobile.unlock.biometricPrompt": "Desbloquea con tu huella",
+  "mobile.unlock.cancel": "Cancelar",
+  "mobile.unlock.erase": "Borrar",
+  "mobile.unlock.createTitle": "Crea tu PIN",
+  "mobile.unlock.createPin": "Escribe un PIN de 4 dígitos.",
+  "mobile.unlock.confirmPin": "Confirma tu PIN.",
+  "mobile.unlock.trivialPin": "Elige 4 dígitos que no sean iguales ni consecutivos.",
+  "mobile.unlock.pinMismatch": "Los PIN no coinciden. Crea tu PIN de nuevo.",
+  "mobile.unlock.pinProgress": "Dígitos capturados: {count} de 4.",
+  "mobile.unlock.idleWarning": "Se bloqueará en 1 minuto.",
+  "mobile.unlock.keepWorking": "Seguir trabajando",
+  "mobile.unlock.resumeSetup": "Para terminar de crear tu PIN, escribe tu contraseña.",
+  "mobile.unlock.wrongPinLast": "PIN incorrecto. Te queda 1 intento.",
 } as const satisfies AreaCatalog<"mobile">;

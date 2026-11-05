@@ -1,4 +1,4 @@
-﻿import type { Me } from "../session/me";
+import type { Me } from "../session/me";
 import { readStored, removeStored, writeStored } from "../storage/safe-storage";
 const listeners = new Set<() => void>();
 const selections = new Map<string, string>();

@@ -63,4 +63,40 @@ export const sync = {
     "No pudimos actualizar tu bandeja, así que la app la pedirá completa otra vez. No tienes que hacer nada.",
   "sync.batch.syncInProgress":
     "Ya se está enviando información de tu cuenta desde otro teléfono. La app lo intentará de nuevo en unos segundos.",
+  "sync.result.fuelMotorcycleMismatch":
+    "La carga corresponde a otra motocicleta. Avisa a tu supervisor para revisarla.",
+  "sync.result.fuelEfficiencyReview":
+    "La carga se guardó para revisión del rendimiento. Puedes cerrar tu jornada y avisar a tu supervisor.",
+  "sync.result.fuelEventNotVoidable":
+    "Esta carga necesita una corrección autorizada. Pide apoyo a tu supervisor.",
+  "sync.result.ovitrapPointInaccessible":
+    "El punto no está disponible para tu alcance. Consulta a tu supervisor.",
+  "sync.result.ovitrapInaccessible":
+    "La ovitrampa no está disponible para tu alcance. Consulta a tu supervisor.",
+  "sync.result.ovitrapIdentityUsed":
+    "Esta identidad ya se utilizó. Consulta a tu supervisor antes de corregirla.",
+  "sync.result.ovitrapPointOccupied":
+    "El punto ya tiene una ovitrampa activa. Consulta a tu supervisor.",
+  "sync.result.ovitrapReadingExists":
+    "La semana ya tiene una lectura activa. Anula la lectura anterior antes de corregirla.",
+  "sync.result.ovitrapBagCodeUsed":
+    "El código de bolsa ya se utilizó. Revisa el código con tu supervisor.",
+  "sync.result.ovitrapCatalogItemUnknown":
+    "La opción no pertenece al catálogo descargado. Consulta a tu supervisor.",
+  "sync.result.ovitrapCatalogItemDeactivated":
+    "La opción fue desactivada. Tu supervisor revisará la captura.",
+  "sync.result.ovitrapCatalogVersionUnavailable":
+    "No se pudo recuperar el catálogo usado. Tu supervisor revisará la captura.",
+  "sync.result.ovitrapGpsUnusable":
+    "La ubicación no tiene precisión suficiente. Tu supervisor revisará la captura.",
+  "sync.result.ovitrapRulesUnavailable":
+    "Faltan reglas válidas para esa captura. Tu supervisor la revisará.",
+  "sync.result.ovitrapPointVersionUnavailable":
+    "No hay una ubicación vigente del punto para esa captura. Tu supervisor la revisará.",
+  "sync.result.ovitrapTooFar":
+    "La captura está fuera de la distancia permitida. Tu supervisor la revisará.",
+  "sync.result.ovitrapSpeedAnomaly":
+    "El desplazamiento necesita revisión. Tu supervisor revisará la captura.",
+  "sync.result.ovitrapVoidBlocked":
+    "Hay lecturas vinculadas a esta colocación. Consulta a tu supervisor para corregirlas.",
 } as const satisfies AreaCatalog<"sync">;

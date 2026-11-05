@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { tableErrorKey } from "../data-table/table-error";
 import type { CenterSelectorController } from "./use-center-selector";
 export function CenterState({ selector }: { selector: CenterSelectorController }) {

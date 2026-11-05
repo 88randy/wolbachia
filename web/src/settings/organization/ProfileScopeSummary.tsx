@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { scopeModeLabel } from "./scope-labels";
 export function ProfileScopeSummary({ scope }: { scope: Schemas["MeScope"] }) {

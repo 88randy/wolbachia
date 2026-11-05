@@ -1,4 +1,4 @@
-﻿import { ProfileScopeSummary } from "./ProfileScopeSummary";
+import { ProfileScopeSummary } from "./ProfileScopeSummary";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../../data-table/table-types";
 import { PermissionCells } from "./PermissionCells";

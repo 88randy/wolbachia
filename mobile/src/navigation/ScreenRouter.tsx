@@ -1,3 +1,4 @@
+import { OpenShiftScreen } from "../features/shift-open/OpenShiftScreen.tsx";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 
@@ -10,6 +11,8 @@ import type { Route } from "./routes.ts";
 
 function screenFor(route: Route): ReactNode {
   switch (route.name) {
+    case "openShift":
+      return <OpenShiftScreen />;
     case "home":
       return <HomeScreen />;
     case "inbox":

@@ -213,13 +213,14 @@ def test_seed_rerun_preserves_revoked_grants_and_government_boundary():
 
 
 @pytest.mark.django_db
-def test_launch_contract_has_thirteen_bounded_versioned_defaults_and_closed_items():
+def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
     from catalogs.models import Catalog
     from organizations.services import OrganizationSpec, create_organization
     from rules.models import RuleParameter
 
     organization = create_organization(OrganizationSpec("Launch", "launch-99", "MX", "UTC"))
     expected = {
+        "max_gps_accuracy_m": (50, "m", 1, 200),
         "max_distance_to_point_m": (50, "m", 10, 200),
         "min_distance_same_block_m": (50, "m", 10, 200),
         "speed_lock_kmh": (10, "km_h", 5, 15),
@@ -256,7 +257,7 @@ def test_catalog_metadata_preserves_protected_other_and_used_deactivated_labels(
     from catalogs.serializers import CatalogItemSerializer
     from catalogs.services import deactivate_catalog_item, update_catalog_item
     from shifts.models import MotorcycleCheck
-    from tests.factories import CatalogItemFactory, ShiftFactory
+    from tests.factories import CatalogItemFactory, ShiftFactory, UserFactory
 
     other = CatalogItemFactory(code="other", is_other=True)
     with pytest.raises(OtherItemLockedError):
@@ -269,7 +270,7 @@ def test_catalog_metadata_preserves_protected_other_and_used_deactivated_labels(
         organization=item.organization,
         result="ok",
     )
-    deactivate_catalog_item(item)
+    deactivate_catalog_item(item, UserFactory())
     item.refresh_from_db()
     projection = CatalogItemSerializer(item).data
     assert projection["in_use"] is True

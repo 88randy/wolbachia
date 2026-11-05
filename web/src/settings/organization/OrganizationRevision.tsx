@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { OrganizationFormController } from "./use-organization-form";
 import { OrganizationComparison } from "./OrganizationComparison";
 export function OrganizationRevision({ controller }: { controller: OrganizationFormController }) {

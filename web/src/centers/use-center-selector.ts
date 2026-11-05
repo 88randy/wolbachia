@@ -1,4 +1,4 @@
-﻿import { useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useMe } from "../session/use-me";

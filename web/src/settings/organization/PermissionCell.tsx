@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { moveMatrixFocus } from "./matrix-keyboard";
 interface Props {
   permission: string;

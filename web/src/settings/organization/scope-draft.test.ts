@@ -1,4 +1,4 @@
-﻿import { expect, test } from "vitest";
+import { expect, test } from "vitest";
 import { createScopeDraft, scopeDraftReducer } from "./scope-draft";
 import type { ScopeDimensionUpdate } from "./scope-types";
 const INITIAL = {

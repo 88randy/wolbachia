@@ -1,4 +1,4 @@
-﻿import { useSyncExternalStore } from "react";
+import { useSyncExternalStore } from "react";
 import { useMe } from "../session/use-me";
 import { centerStorageKey, readCenter, subscribeCenter } from "./center-selection";
 /** The filter is independent of session state and cannot mutate /me/ grants. */

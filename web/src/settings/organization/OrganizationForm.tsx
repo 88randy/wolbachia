@@ -1,4 +1,4 @@
-﻿import type { Organization } from "./use-w-03";
+import type { Organization } from "./use-w-03";
 import { useOrganizationForm } from "./use-organization-form";
 import { useOrganizationAvailability } from "./use-organization-availability";
 import { OrganizationFields } from "./OrganizationFields";

@@ -1,4 +1,4 @@
-﻿import type { QueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import type { AdminContext } from "./use-w-03";
 import type { useOrganizationDraft } from "./use-organization-draft";
 import { useAdminWrite } from "./use-admin-write";

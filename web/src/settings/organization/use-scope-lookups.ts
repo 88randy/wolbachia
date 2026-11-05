@@ -1,4 +1,4 @@
-﻿import { useCallback, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
 /** Tokens are released once, on settlement or unmount. Save checks the ref synchronously. */
 export function useScopeLookups() {
   const pending = useRef(new Set<symbol>());

@@ -1,4 +1,4 @@
-﻿import { CancelledError, queryOptions } from "@tanstack/react-query";
+import { CancelledError, queryOptions } from "@tanstack/react-query";
 import type { QueryClient, QueryFunction, QueryKey } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { isRecordedIdentity } from "./identity";

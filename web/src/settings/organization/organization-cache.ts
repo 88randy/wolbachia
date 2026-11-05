@@ -9,9 +9,11 @@ export async function publishOrganization(
   guard: SessionGuard,
 ): Promise<boolean> {
   if (guard.isStale()) return false;
+  const base = organizationOptions(context).queryKey.slice(0, 5);
   const filters = {
-    queryKey: organizationOptions(context).queryKey.slice(0, 5),
-    predicate: (query: Query) => query.meta?.["authorization"] === context.identity.authorization,
+    predicate: (query: Query) =>
+      base.every((part, index) => query.queryKey[index] === part) &&
+      query.meta?.["authorization"] === context.identity.authorization,
   };
   await context.queryClient.cancelQueries(filters);
   if (guard.isStale()) return false;

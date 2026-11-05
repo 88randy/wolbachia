@@ -1,3 +1,4 @@
+import type { SqlStatement } from "../db/sql.ts";
 import { KV_KEYS } from "../db/kv-store.ts";
 import type { FieldEventEnvelope } from "../outbox/outbox-event.ts";
 import { backoffDelayMs } from "./backoff.ts";
@@ -9,8 +10,10 @@ import type { SyncSnapshot } from "./sync-snapshot.ts";
 
 export interface SyncEngineDeps {
   readonly pass: SyncPassDeps;
-  /** True while a session token exists (login is #7). Without one nothing is sent. */
+  /** True while a securely stored session exists. Without one nothing is sent. */
   readonly hasSession: () => boolean;
+  /** Authoritative persisted level; notifications are hints, never the work queue. */
+  readonly hasPendingFinalUpload: () => Promise<boolean>;
   /** True while a server address is configured. Without one nothing is sent. */
   readonly hasServer: () => boolean;
   /** A number in [0, 1) for the backoff jitter. */
@@ -29,10 +32,12 @@ type Listener = () => void;
  * `async` I/O.
  *
  * The rule that makes a race impossible: **at most one pass runs at a time.** `requestSync`
- * while a pass is running does not start another one; it sets `#again`, and the running loop
- * makes exactly one more pass when it finishes. Since only a pass moves events through `sending`
- * (see `runSyncPass`), no two writers ever touch the same event. Pending recovery must finish
- * inside this loop before any pass can select a batch.
+ * while a pass is running does not start another one; it sets `#again`, which the loop checks
+ * together with durable pending work and retry/offline waits. Only a pass moves events through `sending`, so
+ * no two writers ever touch the same event (see `runSyncPass`). Pending recovery must finish
+ * inside this loop before any pass can select a batch. Final upload is level-triggered: each
+ * idle pass checks durable credentials before the loop closes; hints never override a
+ * blocked pass, a scheduled retry or an offline wait.
  */
 export class SyncEngine {
   readonly #deps: SyncEngineDeps;
@@ -43,6 +48,7 @@ export class SyncEngine {
   #started: Promise<void> | null = null;
   #isRecoveryPending = true;
   #again = false;
+  #hinted = false;
   #forceOffline = false;
   #failuresInARow = 0;
   #cancelRetry: (() => void) | null = null;
@@ -68,9 +74,13 @@ export class SyncEngine {
   }
 
   /** Saves a captured event on the phone, then syncs in the background. Resolves once it is saved. */
-  async enqueue(event: FieldEventEnvelope): Promise<void> {
-    await this.#deps.pass.outbox.enqueue(event);
-    await this.#refresh({});
+  async enqueue(event: FieldEventEnvelope, extra: readonly SqlStatement[] = []): Promise<void> {
+    await this.#deps.pass.outbox.enqueue(event, extra);
+    try {
+      await this.#refresh({});
+    } catch (error) {
+      this.#deps.report(error);
+    }
     void this.requestSync();
   }
 
@@ -89,12 +99,14 @@ export class SyncEngine {
   /** "Intentar ahora": parked events go back to the queue and a pass starts at once, even offline. */
   async retryNow(): Promise<void> {
     await this.#deps.pass.outbox.retryParked();
+    this.#cancelRetry?.();
+    this.#cancelRetry = null;
     this.#failuresInARow = 0;
     this.#forceOffline = true;
     await this.requestSync();
   }
 
-  /** Starts a pass, or asks the running one to repeat. Never rejects. */
+  /** Starts a pass now (cancelling a scheduled retry), or asks the running one to repeat. Never rejects. */
   requestSync(): Promise<void> {
     if (this.#running !== null) {
       this.#again = true;
@@ -102,9 +114,21 @@ export class SyncEngine {
     }
     this.#cancelRetry?.();
     this.#cancelRetry = null;
-    const loop = this.#loop().finally(() => {
-      this.#running = null;
-    });
+    return this.#start();
+  }
+
+  /** A session hint can wake idle work, but never resumes a blocked pass or cuts a retry short. */
+  hint(): Promise<void> {
+    if (this.#running !== null) {
+      this.#hinted = true;
+      return this.#running;
+    }
+    if (this.#cancelRetry !== null || this.#snapshot.phase !== "idle") return Promise.resolve();
+    return this.#start();
+  }
+
+  #start(): Promise<void> {
+    const loop = this.#loop();
     this.#running = loop;
     return loop;
   }
@@ -114,9 +138,14 @@ export class SyncEngine {
       let shouldRun = true;
       while (shouldRun) {
         this.#again = false;
+        this.#hinted = false;
         await this.#recoverPending();
         await this.#runOnce();
-        shouldRun = this.#wasRepeatRequested();
+        const hasFinalUpload =
+          this.#snapshot.phase === "idle" &&
+          this.#cancelRetry === null &&
+          (await this.#deps.hasPendingFinalUpload());
+        shouldRun = this.#shouldRunAgain(hasFinalUpload);
       }
     } catch (error) {
       // Recovery can fail too; schedule before refreshing counts touches storage again.
@@ -126,6 +155,9 @@ export class SyncEngine {
       } catch (retryError) {
         this.#deps.report(retryError);
       }
+    } finally {
+      // Close synchronously with the last repeat decision: a later hint must start a new loop.
+      this.#running = null;
     }
   }
 
@@ -136,9 +168,23 @@ export class SyncEngine {
     this.#isRecoveryPending = false;
   }
 
-  // A method, so the flag is read again after the awaits (a pass may have asked for another).
-  #wasRepeatRequested(): boolean {
-    return this.#again;
+  // Read hints/readiness AFTER the durable-level await, with no further await before loop exit.
+  // An explicit request made during the pass (enqueue, connectivity, foreground) repeats it at once,
+  // replacing a scheduled retry, as in #6. A session hint and the durable final-upload level
+  // only repeat after an idle pass, respecting blocked, retry and offline waits.
+  #shouldRunAgain(hasFinalUpload: boolean): boolean {
+    if (this.#again) {
+      this.#cancelRetry?.();
+      this.#cancelRetry = null;
+      return true;
+    }
+    return (
+      this.#snapshot.phase === "idle" &&
+      this.#cancelRetry === null &&
+      (this.#snapshot.isOnline || this.#forceOffline) &&
+      this.#missingCondition() === null &&
+      (hasFinalUpload || this.#hinted)
+    );
   }
 
   async #runOnce(): Promise<void> {

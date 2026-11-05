@@ -1,4 +1,4 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import type { Profile, Membership } from "./use-w-03";
 /** Reading a newer revision never adopts it until the user explicitly reviews the snapshot. */
 export function useScopeRevision(initial: number, onReviewed: () => void) {

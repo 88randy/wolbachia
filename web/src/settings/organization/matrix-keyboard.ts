@@ -1,4 +1,4 @@
-﻿import type { KeyboardEvent } from "react";
+import type { KeyboardEvent } from "react";
 const STEPS: Readonly<Record<string, number>> = {
   ArrowRight: 1,
   ArrowLeft: -1,

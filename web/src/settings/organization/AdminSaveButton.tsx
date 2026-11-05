@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { SubmitButton } from "../../forms/SubmitButton";
 interface Props {
   isBlocked: boolean;

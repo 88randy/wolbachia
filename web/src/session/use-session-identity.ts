@@ -1,4 +1,4 @@
-﻿import { useActiveCenter } from "../centers/use-active-center";
+import { useActiveCenter } from "../centers/use-active-center";
 import { hasCenterScope, authorizationKey } from "../centers/center-selection";
 import { useSyncExternalStore } from "react";
 import { sessionIdentityOf } from "./org-scoped-query";

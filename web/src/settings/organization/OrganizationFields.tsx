@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { OrganizationFormController } from "./use-organization-form";
 import { OrganizationTextFields } from "./OrganizationTextFields";
 import { OrganizationLanguages } from "./OrganizationLanguages";

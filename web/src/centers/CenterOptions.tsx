@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import type { CenterSelectorController } from "./use-center-selector";
 export function CenterOptions({ selector }: { selector: CenterSelectorController }) {
   const { t } = useTranslation();

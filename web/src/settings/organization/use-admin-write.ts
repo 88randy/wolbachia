@@ -1,4 +1,4 @@
-﻿import { useRef } from "react";
+import { useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSessionGuard } from "../../session/use-session-guard";
 import type { SessionGuard } from "../../session/use-session-guard";

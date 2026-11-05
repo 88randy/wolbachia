@@ -96,7 +96,7 @@ These apply to every screen. Designed once on the global-states board; they are 
 | W60 | Access log | REG, ADM | who viewed/exported personal data, when, from where, what; read-only; filters + export | — |
 | W61 | Retention | REG, ADM | per data type: period, action at expiry, last nightly run + receipt | — |
 | W62 | Rule parameters (versioned) | ADM | editing creates a new version; before/after; effective date; history; never overwrites | R9; built in #36 (`/settings/rule-parameters`) |
-| W63 | Catalogs | ADM | tabs per catalog; items in use are deactivated, never deleted | — |
+| W63 | Catalogs | ADM | tabs per catalog; items in use are deactivated, never deleted | implemented in #35 (`/settings/catalogs`); in-use counts and authors need backend follow-up |
 | W64 | Incident types | ADM | icon, default severity, owner, response time, escalation, what it blocks, required evidence; "Other" cannot be deactivated | — |
 | W65 | Roles and permissions matrix | ADM | profiles × actions with scope per cell; external profiles fixed read-only | — |
 | W66 | API keys | ADM | one key per institution with geo scope, endpoints, limit, validity; shown once | — |
@@ -129,3 +129,5 @@ These apply to every screen. Designed once on the global-states board; they are 
 2. **Parameters per organization.** W62 is designed "per region". The decision is per organization. **[PENDING]** Is there a regional override inside an organization?
 3. **"Other (specify)".** It is guaranteed in incident types (W64). It must also be checked in every open list (relocation reasons, write-off reasons, intervention types, ARCO types, etc.).
 4. **Small text.** Some badges and chart labels use 10–11px. Raise them to at least 12px.
+
+W22-W24 implementation (#157): [geography workflow](../web/src/quadrants/README.md). W24 is a section of /quadrants/<code>/versions.

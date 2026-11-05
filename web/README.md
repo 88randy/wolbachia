@@ -201,3 +201,79 @@ The shell center selector consumes backend-scoped centers across all server page
 Branding accepts PNG/JPEG/WebP; browser raster decoding normalizes all three formats, including grayscale/indexed PNG, to the bounded RGB/RGBA PNG currently accepted by B-01. Only the same-origin authenticated raster endpoint is loaded, via the generated client (organization header + cookie); CSP permits its PNG data URL. Missing/unsafe logos show initials. Country is read-only, as the update contract omits it. Revision history/effective timestamps, exports, voiding and tenant creation are absent from this contract.
 
 See [W-03 README](src/settings/organization/README.md) for the fixed-profile metadata/catalog gaps, design deviations, criterion-to-test map and local verification limits. `e2e/w-03.spec.ts` is one wiring journey across language/theme combinations, reserved for CI.
+
+## W22-W24 geography (#157)
+
+See [quadrants README](src/quadrants/README.md) for architecture, permissions,
+contract limits and the criterion-to-test map. W22 is /quadrants; W23 is
+/quadrants/<code>/versions; W24 renders inside that record. Every visible list
+uses DataTable/FilterBar and server paging. Form drafts stay in memory. The
+history dialog uses history_page without changing the background list page.
+
+### Lazy map dependencies and provenance
+
+Exact runtime pins: react-map-gl **8.0.4** (published 2025-04-16) and maplibre-gl
+**5.6.2** (published 2025-08-06), verified with npm registry metadata on 2026-11-05;
+both exceed the two-week age requirement. react-map-gl is the vis.gl maintained
+React binding; MapLibre GL JS is the MapLibre maintained renderer (MIT and BSD-3-Clause,
+respectively). These implement accepted decision 23, instead of a new map stack or
+hand-written WebGL renderer. Only react-map-gl/maplibre is imported, inside the
+lazy map module; no Mapbox renderer/token is used. The coordinate/list path has
+no renderer dependency. References: [react-map-gl installation](https://visgl.github.io/react-map-gl/docs/get-started),
+[MapLibre API](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/),
+[npm react-map-gl](https://www.npmjs.com/package/react-map-gl/v/8.0.4),
+[npm maplibre-gl](https://www.npmjs.com/package/maplibre-gl/v/5.6.2).
+
+### Tiles, attribution and production migration
+
+Public build configuration:
+
+| Variable | Meaning |
+| --- | --- |
+| VITE_MAP_TILES_URL | HTTPS raster XYZ template with {z}/{x}/{y}, or a HTTPS/same-origin MapLibre style URL. Empty defaults to the interim OSM raster source. |
+| VITE_MAP_ATTRIBUTION | Required plain-text provider/dataset attribution for a custom source; never HTML or a secret. OSM copyright attribution remains visible and linked. |
+
+The interim default is https://tile.openstreetmap.org/{z}/{x}/{y}.png for light,
+interactive web use only, under the [OSM Tile Usage Policy](https://operations.osmfoundation.org/policies/tiles/).
+No tile request starts until the person opens the map; max zoom is 19. There is
+no bulk download, scraping, prefetch, service-worker/offline tile cache or
+application cache bypass. Browser HTTP caching follows the provider headers.
+The visible OpenStreetMap contributors attribution links to its copyright page.
+The browser sends its normal User-Agent and an origin-only Referer; strict-origin
+never exposes record paths, reset paths or fragments.
+
+**[ASSUMPTION]** The IN10 organization-hosted versioned OSM-derived PMTiles archive
+and approved style/font package do not yet exist. Before production, host the
+approved archive behind an organization tile service that exposes raster XYZ or
+an approved MapLibre style with HTTPS tile/glyph/sprite resources. Set the two
+variables to that source/attribution and rebuild. A raw pmtiles:// archive URL is
+not supported by this raster/style adapter; serving the archive requires the
+organization's tile service. Dataset/style/font licenses and production coverage
+still require owner verification. No public OSM bulk/offline download is added.
+
+Vite emits dist/security-headers.conf from web/nginx/security-headers.conf using
+its resolved build environment (including --mode). Docker accepts both map build
+arguments and copies that generated file into nginx. CSP img-src/connect-src
+allow only self and the configured tile origin; worker-src allows self/blob for
+MapLibre. Styles must keep tile/glyph/sprite resources on that origin or self;
+no broad https wildcard is added. The static source config supports the default
+OSM source. API session/CSRF and API network access still use api-client only.
+
+Design differences: fixed center/code identity; no invented responsible/effective
+schedule/progress/risk data; evidenced keep/move/remove instead of transferring
+points between quadrants; non-blocking API spacing warnings without an invented
+save-with-reason endpoint; W24 inside W23; accessible coordinate editing and phone
+reflow added to the desktop intent. No production deployment is included.
+### Catalogs (W63, #35)
+
+`/settings/catalogs` opens the first catalog returned by the API, or an empty state.
+`/settings/catalogs/<slug>` provides API-defined tabs and a generic item editor, gated by
+`catalog.read`. Create, edit/reorder, deactivate and activate use their own permission codes.
+Queries use `orgScopedQueryOptions` with session identity; keys and `invalidateOrgScoped`
+for the `catalogs` resource live in `catalogs-query.ts`. The editor, dialogs and drafts are
+keyed by user, organization and catalog slug, so changing identity discards drafts and rows.
+See [catalog module](src/catalogs/README.md) for ordering, pagination, session guards and tests.
+Inactive items are hidden unless `include_deactivated=true`; configuration is deactivated
+after confirmation and can be reactivated, rather than voided. The boolean `in_use` is
+shown with an accessible icon/text badge. The usage count, authorship and atomic reorder
+remain follow-up #182. Other free-text validation belongs to consumer screens and mobile.

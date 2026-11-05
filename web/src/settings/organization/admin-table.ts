@@ -1,4 +1,4 @@
-﻿import type { TableQueryConfig, SelectFilter } from "../../data-table/table-types";
+import type { TableQueryConfig, SelectFilter } from "../../data-table/table-types";
 export const ADMIN_PAGE_SIZE = 50;
 const VIEW_FILTER: SelectFilter = {
   key: "view",
