@@ -1,5 +1,5 @@
 import { ApiError } from "@wolbachia/api-client";
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { apiError, createFakeApi, makeMe, makeOrganization, noContent } from "../test/fake-api";
@@ -134,7 +134,12 @@ describe("leaving the page during a pending sign-out", () => {
     await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
     await userEvent.type(screen.getByLabelText("Usuario"), "ana.supervisora");
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
-    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    const submit = screen.getByRole("button", { name: "Entrar" });
+    await userEvent.click(submit);
+    // A click can finish before async validation submits: keep logout held until login is pending.
+    await waitFor(() => {
+      expect(submit.getAttribute("aria-disabled")).toBe("true");
+    });
     return { api, app };
   }
 
