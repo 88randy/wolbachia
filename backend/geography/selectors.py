@@ -9,6 +9,7 @@ from django.utils import timezone
 from rest_framework.exceptions import NotFound
 
 from core.exceptions import FieldValidationError
+from field_sync.producers import ProducerContext, filter_producer_rows
 from geography.geometry import available_block_geometries, suggest_points
 from geography.models import (
     Block,
@@ -110,3 +111,86 @@ def block_suggestion(quadrant: Quadrant) -> list[dict[str, Any]]:
         ]
     except ValueError as error:
         raise FieldValidationError("quadrant", "suggestion_unavailable") from error
+
+
+REFERENCE_LOOKUPS = ("quadrant__center_id", "quadrant_id")
+POINT_LOOKUPS = ("block__quadrant__center_id", "block__quadrant_id")
+
+
+def quadrant_reference(version: QuadrantVersion | BlockVersion) -> dict[str, Any]:
+    is_block = isinstance(version, BlockVersion)
+    identity = version.block if isinstance(version, BlockVersion) else version.quadrant
+    quadrant = identity.quadrant if isinstance(identity, Block) else identity
+    return {
+        "organization_id": str(version.organization_id),
+        "resource_type": "block" if is_block else "quadrant",
+        "id": str(identity.pk),
+        "code": identity.code,
+        "center_id": str(quadrant.center_id),
+        "quadrant_id": str(quadrant.pk),
+        "revision": version.revision,
+    }
+
+
+def sampling_point_row(version: PointVersion) -> dict[str, Any]:
+    point = version.point
+    return {
+        "organization_id": str(version.organization_id),
+        "center_id": str(point.block.quadrant.center_id),
+        "quadrant_id": str(point.block.quadrant_id),
+        "id": str(point.pk),
+        "code": point.code,
+        "block_id": str(point.block_id),
+        "location": version.location,
+        "is_retired": version.is_retired,
+        "version": version.version,
+    }
+
+
+def build_quadrant_references(ctx: ProducerContext) -> list[dict[str, Any]]:
+    quadrants = filter_producer_rows(Quadrant.objects.all(), ctx, ("center_id", "pk"))
+    latest_quadrant = (
+        QuadrantVersion.objects.filter(quadrant=OuterRef("quadrant_id"))
+        .order_by("-revision")
+        .values("pk")[:1]
+    )
+    versions = (
+        QuadrantVersion.objects.filter(
+            organization=ctx.organization, quadrant__in=quadrants, pk=Subquery(latest_quadrant)
+        )
+        .select_related("quadrant")
+        .order_by("quadrant_id")
+    )
+    blocks = filter_producer_rows(Block.objects.all(), ctx, REFERENCE_LOOKUPS)
+    latest_block = (
+        BlockVersion.objects.filter(block=OuterRef("block_id"))
+        .order_by("-revision")
+        .values("pk")[:1]
+    )
+    block_versions = (
+        BlockVersion.objects.filter(
+            organization=ctx.organization, block__in=blocks, pk=Subquery(latest_block)
+        )
+        .select_related("block__quadrant")
+        .order_by("block_id")
+    )
+    return [quadrant_reference(version) for version in versions] + [
+        quadrant_reference(version) for version in block_versions
+    ]
+
+
+def build_sampling_points(ctx: ProducerContext) -> list[dict[str, Any]]:
+    points = filter_producer_rows(SamplingPoint.objects.all(), ctx, POINT_LOOKUPS)
+    latest = (
+        PointVersion.objects.filter(point=OuterRef("point_id"))
+        .order_by("-version")
+        .values("pk")[:1]
+    )
+    versions = (
+        PointVersion.objects.filter(
+            organization=ctx.organization, point__in=points, pk=Subquery(latest)
+        )
+        .select_related("point__block__quadrant")
+        .order_by("point_id")
+    )
+    return [sampling_point_row(version) for version in versions]

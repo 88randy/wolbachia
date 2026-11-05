@@ -114,7 +114,7 @@ class RejectionQuotaCounter(OrgScopedModel):
 class CourierChange(ImmutableMixin, OrgScopedModel):
     """Insert-only domain delivery log; every writer holds the courier batch lock.
 
-    Revocation appends a remove; it never rewrites or deletes a prior projection.
+    Voids append upsert tombstones; scope revision changes require bootstrap recovery.
     Sequence allocation and commit share the lock with bootstrap and sync pulls.
     """
 
@@ -149,6 +149,9 @@ class CourierChange(ImmutableMixin, OrgScopedModel):
                         "eligibility",
                         "history",
                         "map_manifests",
+                        "quadrants",
+                        "sampling_points",
+                        "ovitraps",
                     ]
                 ),
                 name="courier_change_kind_valid",

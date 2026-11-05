@@ -5,7 +5,7 @@ then re-reads authorization and the quadrant. No identity or published version
 is overwritten. Expected revisions are compared only after serialization.
 """
 
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
 from typing import Any
@@ -16,6 +16,7 @@ from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
 from core.exceptions import FieldValidationError
+from field_sync.services import ChangeInput, FanoutScope, fanout_courier_changes
 from geography.exceptions import (
     GeographyBusyError,
     StaleGeographyRevisionError,
@@ -38,7 +39,14 @@ from geography.models import (
     SamplingPoint,
 )
 from geography.permissions import QUADRANT_PUBLISH, SAMPLING_POINT_CREATE
-from geography.selectors import block_version_at, current_points, get_quadrant, quadrant_version_at
+from geography.selectors import (
+    block_version_at,
+    current_points,
+    get_quadrant,
+    quadrant_reference,
+    quadrant_version_at,
+    sampling_point_row,
+)
 from organizations.models import Center, Membership, Organization
 from organizations.services import effective_scope
 from rules.selectors import get_values_in_force
@@ -141,13 +149,15 @@ def _organization_write(membership: Membership) -> Iterator[Membership]:
 @contextmanager
 def _quadrant_write(
     quadrant: Quadrant, membership: Membership, permission: str
-) -> Iterator[tuple[Quadrant, Membership]]:
+) -> Iterator[tuple[Quadrant, Membership, Callable[[ChangeInput], None]]]:
     with _organization_write(membership) as current:
         if not effective_scope(current).allows(permission):
             raise PermissionDenied
         scoped = get_quadrant(current, quadrant.pk, permission)
-        locked = Quadrant.objects.select_for_update().get(pk=scoped.pk)
-        yield locked, current
+        scope = FanoutScope(current.organization, scoped.center_id, scoped.pk)
+        with fanout_courier_changes(scope) as emit:
+            locked = Quadrant.objects.select_for_update().get(pk=scoped.pk)
+            yield locked, current, emit
 
 
 def _check_revision(current: int, expected: int) -> None:
@@ -184,16 +194,20 @@ def create_quadrant(center: Center, change: QuadrantCreation) -> tuple[Quadrant,
             raise NotFound
         if Quadrant.objects.filter(organization=member.organization, code=quadrant.code).exists():
             raise FieldValidationError("code", "duplicate_code")
-        quadrant.save()
-        version = QuadrantVersion.objects.create(
-            organization=member.organization,
-            quadrant=quadrant,
-            revision=1,
-            geometry=geometry,
-            effective_from=timezone.now(),
-            created_by=member.user,
-        )
-        return quadrant, version
+        with fanout_courier_changes(
+            FanoutScope(member.organization, quadrant.center_id, quadrant.pk)
+        ) as emit:
+            quadrant.save()
+            version = QuadrantVersion.objects.create(
+                organization=member.organization,
+                quadrant=quadrant,
+                revision=1,
+                geometry=geometry,
+                effective_from=timezone.now(),
+                created_by=member.user,
+            )
+            emit_geography_reference(version, emit)
+            return quadrant, version
 
 
 def _validate_resolutions(
@@ -240,7 +254,7 @@ def _validate_resolution(resolution: PointResolution, geometry: dict[str, Any]) 
 
 def _append_resolution(
     version: QuadrantVersion, previous: PointVersion, resolution: PointResolution
-) -> None:
+) -> PointVersion:
     point_version = PointVersion.objects.create(
         organization_id=version.organization_id,
         point=previous.point,
@@ -259,12 +273,13 @@ def _append_resolution(
         evidence=resolution.evidence.strip(),
         created_by=version.created_by,
     )
+    return point_version
 
 
 def publish_quadrant(quadrant: Quadrant, change: QuadrantPublication) -> QuadrantVersion:
     """Append one revision only after exhaustive decisions; never mutate a prior row."""
     geometry = _geometry(change.geometry)
-    with _quadrant_write(quadrant, change.membership, QUADRANT_PUBLISH) as (locked, member):
+    with _quadrant_write(quadrant, change.membership, QUADRANT_PUBLISH) as (locked, member, emit):
         current = locked.versions.order_by("-revision").first()
         _check_revision(current.revision if current else 0, change.expected_revision)
         outside = _validate_resolutions(locked, change)
@@ -277,7 +292,9 @@ def publish_quadrant(quadrant: Quadrant, change: QuadrantPublication) -> Quadran
             created_by=member.user,
         )
         for resolution in change.point_resolutions:
-            _append_resolution(version, outside[resolution.point], resolution)
+            point_version = _append_resolution(version, outside[resolution.point], resolution)
+            emit_point_projection(point_version, emit)
+        emit_geography_reference(version, emit)
         version.spacing_warnings = _resolution_warnings(version)
         return version
 
@@ -305,7 +322,7 @@ def _check_block_geometry(quadrant: Quadrant, geometry: dict[str, Any]) -> None:
 def create_block(quadrant: Quadrant, change: BlockCreation) -> tuple[Block, BlockVersion]:
     """Create and return the block and its exact first published polygon."""
     geometry = _geometry(change.geometry)
-    with _quadrant_write(quadrant, change.membership, QUADRANT_PUBLISH) as (locked, member):
+    with _quadrant_write(quadrant, change.membership, QUADRANT_PUBLISH) as (locked, member, emit):
         _check_block_geometry(locked, geometry)
         code = _code(change.code)
         if Block.objects.filter(organization=member.organization, code=code).exists():
@@ -321,13 +338,18 @@ def create_block(quadrant: Quadrant, change: BlockCreation) -> tuple[Block, Bloc
             effective_from=timezone.now(),
             created_by=member.user,
         )
+        emit_geography_reference(version, emit)
         return block, version
 
 
 def publish_block(block: Block, change: BlockPublication) -> BlockVersion:
     """Append block geometry; active points outside it block publication."""
     geometry = _geometry(change.geometry)
-    with _quadrant_write(block.quadrant, change.membership, QUADRANT_PUBLISH) as (quadrant, member):
+    with _quadrant_write(block.quadrant, change.membership, QUADRANT_PUBLISH) as (
+        quadrant,
+        member,
+        emit,
+    ):
         block = Block.objects.get(pk=block.pk, organization=member.organization, quadrant=quadrant)
         current = block.versions.order_by("-revision").first()
         _check_revision(current.revision if current else 0, change.expected_revision)
@@ -339,7 +361,7 @@ def publish_block(block: Block, change: BlockPublication) -> BlockVersion:
         ]
         if excluded:
             raise UnresolvedPointsError(excluded)
-        return BlockVersion.objects.create(
+        version = BlockVersion.objects.create(
             organization=member.organization,
             block=block,
             geometry=geometry,
@@ -347,6 +369,8 @@ def publish_block(block: Block, change: BlockPublication) -> BlockVersion:
             effective_from=timezone.now(),
             created_by=member.user,
         )
+        emit_geography_reference(version, emit)
+        return version
 
 
 def _check_point_location(block: Block, location: list[float]) -> None:
@@ -399,6 +423,7 @@ def create_sampling_point(
     with _quadrant_write(block.quadrant, change.membership, SAMPLING_POINT_CREATE) as (
         _quadrant,
         member,
+        emit,
     ):
         if block.organization_id != member.organization_id:
             raise NotFound
@@ -418,6 +443,7 @@ def create_sampling_point(
             effective_from=timezone.now(),
             created_by=member.user,
         )
+        emit_point_projection(version, emit)
         return point, version, warnings
 
 
@@ -429,6 +455,7 @@ def publish_point(
     with _quadrant_write(point.block.quadrant, change.membership, SAMPLING_POINT_CREATE) as (
         _quadrant,
         member,
+        emit,
     ):
         if point.organization_id != member.organization_id:
             raise NotFound
@@ -446,4 +473,40 @@ def publish_point(
             effective_from=timezone.now(),
             created_by=member.user,
         )
+        emit_point_projection(version, emit)
         return version, warnings
+
+
+def emit_geography_reference(
+    version: QuadrantVersion | BlockVersion, emit: Callable[[ChangeInput], None]
+) -> None:
+    row = quadrant_reference(version)
+    emit(
+        ChangeInput(
+            kind="quadrants",
+            resource_type=row["resource_type"],
+            resource_id=row["id"],
+            resource_version=str(row["revision"]),
+            scope={"center_id": row["center_id"], "quadrant_id": row["quadrant_id"]},
+            action="upsert",
+            payload=row,
+        )
+    )
+
+
+def emit_point_projection(version: PointVersion, emit: Callable[[ChangeInput], None]) -> None:
+    from ovitraps.services import emit_point_ovitraps
+
+    row = sampling_point_row(version)
+    emit(
+        ChangeInput(
+            kind="sampling_points",
+            resource_type="sampling_point",
+            resource_id=row["id"],
+            resource_version=str(version.version),
+            scope={"center_id": row["center_id"], "quadrant_id": row["quadrant_id"]},
+            action="upsert",
+            payload=row,
+        )
+    )
+    emit_point_ovitraps(version, emit)

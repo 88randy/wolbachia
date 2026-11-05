@@ -315,7 +315,7 @@ field sync; out-of-range week/day returns 400 out_of_range, never date overflow.
 
 | Contract | Rule |
 | --- | --- |
-| GET /api/v1/field/bootstrap/ | Live pinned bearer device token, field.bootstrap, token/membership organization only; no final-upload entitlement. One courier try-locked transaction builds fixed assignments/supplies/permits/eligibility/history/map_manifests lists and cursor. |
+| GET /api/v1/field/bootstrap/ | Live pinned bearer device token, field.bootstrap, token/membership organization only; no final-upload entitlement. One courier try-locked transaction builds fixed assignments/supplies/permits/eligibility/history/map_manifests/quadrants/sampling_points/ovitraps lists and cursor. |
 | Bootstrap metadata | bundle_version (content hash/ETag), schema_version (opaque registered-schema hash), generated_at, scope_revision, cursor, catalog_version, rules_version, next_change_at, map_manifest_ready. Private no-cache, Vary X-Organization; conditional 304 only after auth/permission. |
 | Sync producer arrays | Six typed changes arrays with sequence/action/resource_type/resource_id/resource_version/data, plus nullable next_change_at. Independent sequence pages; has_more if either stream remains. Existing event order and final-upload restriction are preserved. |
 | Cursor v2 | Signed o/u/s/c/r, bound to effective paired scope and field.bootstrap/field_event.sync codes; v1, expired or changed scope returns 400 invalid_cursor before ingest. Recover with bootstrap and retain unsent phone events. |
