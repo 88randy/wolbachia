@@ -210,8 +210,9 @@ text. Only `other` requires a note and the #32 visible-character minimum. Regula
 allow an empty or short note; the character restrictions and 1000-character maximum still
 apply. `VoidSerializer` is shared by the HTTP actions and sync payloads. `void_record` resolves
 and writes; rule versions and sync reuse `resolve_void_reason` and `void_validated_record` so
-the catalog is queried once. Resolution and writing share one transaction, locking the catalog
-item before the target. All writers use this policy; inactive choices are refused by HTTP,
+the catalog is queried once. The item is read without a lock on purpose: a deactivation that
+commits between the read and the write is the same as the void committing just before it, and
+an item lock would add a lock edge against the sync batch's target locks (deadlock risk). All writers use this policy; inactive choices are refused by HTTP,
 while an old phone snapshot goes `in_review` without touching the target. See
 [`docs/api-conventions.md`](../docs/api-conventions.md) and [`docs/sync.md`](../docs/sync.md).
 Both `void_reason_code` and `void_reason` are stored and exposed read-only. Historical voids

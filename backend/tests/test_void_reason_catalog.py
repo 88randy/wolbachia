@@ -13,18 +13,10 @@ from core.void_reason import resolve_void_reason
 
 @pytest.fixture
 def catalog_query(monkeypatch):
-    # Policy tests replace the database; concurrency tests exercise real transactions.
-    monkeypatch.setattr("core.void_reason.connection", SimpleNamespace(in_atomic_block=True))
     query = Mock()
     monkeypatch.setattr("core.void_reason.CatalogItem.objects.filter", query)
-    query.return_value.select_for_update.return_value = query.return_value
     query.return_value.first.return_value = SimpleNamespace(is_active=True)
     return query
-
-
-def test_resolver_refuses_to_run_outside_a_transaction():
-    with pytest.raises(RuntimeError, match="requires an active transaction"):
-        resolve_void_reason(uuid.uuid4(), "", "duplicate-record")
 
 
 @pytest.mark.parametrize(
