@@ -22,9 +22,11 @@ export function makeRuleVersion(overrides: Partial<VersionFixture> = {}): Versio
     reason: "seed: design brief",
     status: "in_force",
     created_by: null,
+    created_by_username: null,
     created_at: "2026-01-01T06:00:00Z",
     voided_at: null,
     voided_by: null,
+    voided_by_username: null,
     void_reason: "",
     ...overrides,
   };
@@ -83,7 +85,7 @@ const byNewest = (a: VersionFixture, b: VersionFixture) =>
 export class FakeRules {
   constructor(
     private readonly fixtures: RuleParameterFixture[],
-    private readonly signedInUserId: string,
+    private readonly signedIn: { id: string; username: string },
   ) {}
 
   private find(key: string): RuleParameterFixture | undefined {
@@ -154,7 +156,8 @@ export class FakeRules {
       effective_from: date === TODAY ? RULES_NOW : `${date}T06:00:00Z`,
       effective_date: date,
       reason: body["reason"] ?? "",
-      created_by: this.signedInUserId,
+      created_by: this.signedIn.id,
+      created_by_username: this.signedIn.username,
       created_at: RULES_NOW,
     });
     fixture.versions.push(version);
@@ -173,7 +176,8 @@ export class FakeRules {
     }
     const voided = {
       voided_at: RULES_NOW,
-      voided_by: this.signedInUserId,
+      voided_by: this.signedIn.id,
+      voided_by_username: this.signedIn.username,
       void_reason: target.reason,
     };
     return json(route, 200, Object.assign(version, voided));
@@ -203,7 +207,9 @@ export class FakeRules {
   }
 
   private versions(route: Route, fixture: RuleParameterFixture, query: URLSearchParams) {
-    return this.page(route, this.historyOf(fixture), query);
+    const includeVoided = query.get("include_voided") === "true";
+    const history = this.historyOf(fixture).filter((version) => includeVoided || isLive(version));
+    return this.page(route, history, query);
   }
 
   private page(route: Route, rows: unknown[], query: URLSearchParams) {

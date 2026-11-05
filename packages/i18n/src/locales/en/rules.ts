@@ -29,12 +29,14 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.param.sessionIdle": "Inactivity that ends the session",
   "rules.param.reminderBeforeEnd": "Reminder before the shift ends",
   "rules.param.maxPaddleReuses": "Maximum egg paddle reuses",
+  "rules.param.revisitInterval": "Revisit interval",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.
   "rules.unit.meters": "meters",
   "rules.unit.kmPerHour": "km/h",
   "rules.unit.seconds": "seconds",
   "rules.unit.minutes": "minutes",
+  "rules.unit.days": "days",
   "rules.unit.weeks": "weeks",
   "rules.unit.count": "times",
   "rules.unit.kmPerLiter": "km/l",
@@ -105,9 +107,7 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.history.voidLabel": "Void the version of {date}",
   "rules.history.voidBlocked":
     "This version is already in force: it stays as history and cannot be voided.",
-  "rules.history.hiddenNote": "Voided versions hidden on this page: {count}.",
   "rules.history.voidDone": "Version voided. It stays in the history, struck through.",
-  "rules.history.userRef": "User {id}",
   "rules.history.system": "System",
   "rules.status.scheduled": "Scheduled",
   "rules.status.inForce": "In force",
