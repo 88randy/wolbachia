@@ -198,3 +198,17 @@ Design canvas (desktop design system, W1–W71, 10 clickable journeys): Wolbachi
 - Create uses React Hook Form/Zod (code up to 50, optional plate up to 20); `duplicate_code` focuses the code field and preserves the draft. No API generation, generated-file edits or new dependencies.
 - Follow-ups: B-05 (#103) center filtering, odometer/next-service data, services/responsibility/fuel/incident history and source links, comparable efficiency intervals/advisory and fault-specific inspection/clearance; plate PATCH UI. The existing unblock endpoint clears the single backend-recorded block, not an invented individual-fault endpoint.
 - Verification: component journeys live in `src/fleet/*.test.tsx`; the session suite uses deferred responses for identity/organization isolation and an expired-write reauthentication journey. `e2e/fleet.spec.ts` covers browser wiring, modal keyboard focus, axe and 320 CSS px in es-MX/en and light/dark; it must run in an environment with Playwright available. Component axe cannot establish browser contrast, native modal trapping or visual reflow.
+
+### Catalogs (W63, #35)
+
+`/settings/catalogs` opens the first catalog returned by the API, or an empty state.
+`/settings/catalogs/<slug>` provides API-defined tabs and a generic item editor, gated by
+`catalog.read`. Create, edit/reorder, deactivate and activate use their own permission codes.
+Queries use `orgScopedQueryOptions` with session identity; keys and `invalidateOrgScoped`
+for the `catalogs` resource live in `catalogs-query.ts`. The editor, dialogs and drafts are
+keyed by user, organization and catalog slug, so changing identity discards drafts and rows.
+See [catalog module](src/catalogs/README.md) for ordering, pagination, session guards and tests.
+Inactive items are hidden unless `include_deactivated=true`; configuration is deactivated
+after confirmation and can be reactivated, rather than voided. The boolean `in_use` is
+shown with an accessible icon/text badge. The usage count, authorship and atomic reorder
+remain follow-up #182. Other free-text validation belongs to consumer screens and mobile.
