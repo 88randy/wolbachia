@@ -6,6 +6,8 @@ Users and authentication (issue #4): login, token pairs, device sessions, revoca
 | --- | --- |
 | `services.py` | Login (`verify_credentials`, `authenticate_user`), `start_device_session`, `reset_password` |
 | `token_pairs.py` | Issuing and rotating `TokenPair`s, reuse and sibling rules |
+| `token_retention.py` | Bounded whole-family pruning after effective session end (#54); session audit rows remain |
+| `tasks.py` | Celery orchestration for password reset email and nightly token-pair retention |
 | `revocation.py` | Revoking sessions and devices, the single final upload |
 | `authentication.py` | `DeviceBearerAuthentication` (rejects only; never writes a revocation) |
 | `final_upload.py` | `FinalUploadMixin` for views that accept a revoked phone's last upload |
@@ -31,6 +33,7 @@ User rows are locked with `select_for_update(no_key=True)` (`FOR NO KEY UPDATE`)
 | Password reset (`reset_password`) | `User`, the user's active sessions |
 | Revoke a user's sessions | `User`, the sessions |
 | Revoke a device | `Device`, the device's sessions |
+| Token-family retention (`prune_ended_token_pairs`) | `DeviceSession` only, then delete its `TokenPair` family; re-check eligibility under the lock, never acquire `User` or `Device` afterwards |
 | Final upload (`consume_final_upload`) | `User`, `DeviceSession` |
 | Sync batch (`/field/sync/`, #5) | none of the above in a normal request; in a final upload it runs inside the `User` and `DeviceSession` locks above. Its serialization is two kinds of PostgreSQL advisory transaction lock (not row locks), taken after them: first a *try* lock per (organization, user) (never waits: a second batch is `429 sync_in_progress`), then `SET LOCAL lock_timeout` (`SYNC_LOCK_TIMEOUT_MS`) for the rest of the transaction: any other wait (a primary key insert on an id another batch holds, a void target row) ends in `429 sync_in_progress` after the timeout, and a deadlock (`40P01`) does too |
 

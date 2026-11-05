@@ -35,6 +35,19 @@ services:
       redis:
         condition: service_started
 
+  # Exactly one beat instance per environment; workers may be scaled separately.
+  beat:
+    build: .
+    command: celery -A config beat --loglevel=INFO --schedule /tmp/celerybeat-schedule
+    environment: *django-env
+    volumes:
+      - .:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
   db:
     # Keep the major version equal to the DigitalOcean managed cluster [PENDING: confirm in #18].
     image: postgres:18-alpine

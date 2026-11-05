@@ -225,8 +225,12 @@ def _lock_pair(digest: str) -> TokenPair | None:
     pair = (
         TokenPair.objects.select_for_update(of=("self",))
         .select_related("session__user", "session__device", "parent")
-        .get(pk=pair_pk)
+        .filter(pk=pair_pk)
+        .first()
     )
+    # Retention may have pruned the ended family while we waited for the session lock.
+    if pair is None:
+        return None
     if parent_pk is not None:
         TokenPair.objects.select_for_update().get(pk=parent_pk)
     return pair
