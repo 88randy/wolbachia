@@ -18,7 +18,7 @@ async function runGuarded(
   return guard.isStale() ? { kind: "stale" } : outcome;
 }
 
-/** One write at a time; revision checks gate outcomes, while finally releases only the request lock. */
+/** One write at a time; only a current guard may publish outcomes or invalidate org-scoped catalogs. */
 export function useCatalogWrite() {
   const queryClient = useQueryClient();
   const begin = useSessionGuard();

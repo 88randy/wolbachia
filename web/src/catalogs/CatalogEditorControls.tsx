@@ -4,7 +4,7 @@ import { CatalogAddButton } from "./CatalogAddButton";
 import { CatalogEditorDialogs } from "./CatalogEditorDialogs";
 import styles from "./catalogs.module.css";
 
-/** Dialogs are scoped to one slug; a route change aborts pending writes. */
+/** Dialogs are scoped to one identity and slug; remounting aborts pending writes. */
 export function CatalogEditorControls({
   editor,
   isReady,

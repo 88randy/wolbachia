@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { expect, test } from "vitest";
 import { catalogFailure, sendCatalogWrite } from "./catalog-outcome";
-import { acceptSession, currentRevision } from "../session/session-revision";
+import { bumpEpoch, currentRevision } from "../session/session-revision";
 test.each([
   ["duplicate_code", "code", "catalogs.error.duplicate"],
   ["reserved_code", "code", "catalogs.error.reserved"],
@@ -38,7 +38,7 @@ test("a late 401 after a session revision change is silently dropped", async () 
     () => pending,
     () => revision !== currentRevision(),
   );
-  acceptSession();
+  bumpEpoch();
   resolve({ response: new Response(null, { status: 401 }) });
   expect(await result).toEqual({ kind: "stale" });
   expect(queryClient.getQueryCache().getAll()).toEqual([]);

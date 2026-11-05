@@ -14,7 +14,7 @@ import {
   catalogRows,
   makeCatalogItem,
 } from "../test/catalog-fixtures";
-import { acceptSession } from "../session/session-revision";
+import { bumpEpoch } from "../session/session-revision";
 import type { CatalogItem } from "./catalogs-query";
 
 async function open(
@@ -141,12 +141,12 @@ test("deactivation confirms without reason, returns focus on cancel, and reactiv
     api.requests.filter((request) => request.method === "POST").map((request) => request.body),
   ).toEqual([undefined, undefined]);
 });
-test("late submit after a session change keeps the draft and does not refetch catalogs", async () => {
+test("a late submit after a same-identity revision change keeps the draft without extra refetches", async () => {
   let resolve!: (answer: Response) => void;
   const answer = new Promise<Response>((done) => {
     resolve = done;
   });
-  const { api } = await open({ routes: { [`POST ${ITEMS_PATH}`]: () => answer } });
+  const { api, app } = await open({ routes: { [`POST ${ITEMS_PATH}`]: () => answer } });
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Agregar elemento" }));
   await user.type(screen.getByLabelText("Código"), "new");
@@ -155,8 +155,15 @@ test("late submit after a session change keeps the draft and does not refetch ca
   await waitFor(() => {
     expect(api.requests.some((request) => request.method === "POST")).toBe(true);
   });
+  await act(async () => {
+    bumpEpoch();
+    await Promise.resolve();
+  });
+  // The session owns the epoch's read restart; only the late write must not add another one.
+  await waitFor(() => {
+    expect(app.queryClient.isFetching()).toBe(0);
+  });
   const reads = api.requests.filter((request) => request.method === "GET").length;
-  acceptSession();
   resolve(Response.json(makeCatalogItem()));
   await waitFor(() => {
     expect(
@@ -318,20 +325,27 @@ test("unmount aborts an in-flight submit", async () => {
   expect(api.requests.filter((request) => request.method === "GET")).toHaveLength(reads);
 });
 
-test("a session change between reorder PATCHes stops remaining writes and invalidation", async () => {
+test("a revision change between reorder PATCHes stops remaining writes and extra invalidation", async () => {
   let resolve!: (answer: Response) => void;
   const answer = new Promise<Response>((done) => {
     resolve = done;
   });
-  const { api } = await open({ routes: { [`PATCH ${ITEMS_PATH}item-b/`]: () => answer } });
+  const { api, app } = await open({ routes: { [`PATCH ${ITEMS_PATH}item-b/`]: () => answer } });
   const user = userEvent.setup();
   const move = screen.getByRole("button", { name: "Mover arriba: Nebulización" });
   await user.click(move);
   await waitFor(() => {
     expect(api.requests.some((request) => request.method === "PATCH")).toBe(true);
   });
+  await act(async () => {
+    bumpEpoch();
+    await Promise.resolve();
+  });
+  // The session owns the epoch's read restart; only the late write must not add another one.
+  await waitFor(() => {
+    expect(app.queryClient.isFetching()).toBe(0);
+  });
   const reads = api.requests.filter((request) => request.method === "GET").length;
-  acceptSession();
   resolve(Response.json(makeCatalogItem()));
   await waitFor(() => {
     expect(move.getAttribute("aria-disabled")).toBe("false");

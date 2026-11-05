@@ -204,6 +204,9 @@ Design canvas (desktop design system, W1–W71, 10 clickable journeys): Wolbachi
 `/settings/catalogs` opens the first catalog returned by the API, or an empty state.
 `/settings/catalogs/<slug>` provides API-defined tabs and a generic item editor, gated by
 `catalog.read`. Create, edit/reorder, deactivate and activate use their own permission codes.
+Queries use `orgScopedQueryOptions` with session identity; keys and `invalidateOrgScoped`
+for the `catalogs` resource live in `catalogs-query.ts`. The editor, dialogs and drafts are
+keyed by user, organization and catalog slug, so changing identity discards drafts and rows.
 See [catalog module](src/catalogs/README.md) for ordering, pagination, session guards and tests.
 Inactive items are hidden unless `include_deactivated=true`; configuration is deactivated
 after confirmation and can be reactivated, rather than voided. No usage count/author is

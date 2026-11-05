@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
+import { useSessionIdentity } from "../session/use-session-identity";
 import { CatalogEditorContext } from "./catalog-editor-context";
 import { catalogItemsQueryOptions } from "./catalogs-query";
 import type { Catalog } from "./catalogs-query";
@@ -8,11 +9,11 @@ import { useCatalogEditor } from "./use-catalog-editor";
 import { CatalogEditorControls } from "./CatalogEditorControls";
 import { CatalogTable } from "./CatalogTable";
 import styles from "./catalogs.module.css";
-/** Fetch every page and keep the editor, dialogs and table scoped to this slug. */
+/** Fetch every page and keep the editor, dialogs and table scoped to this session identity and slug. */
 export function CatalogItems({ catalog }: { catalog: Catalog }) {
   const { t } = useTranslation();
-  const client = useApiClient();
-  const query = useQuery(catalogItemsQueryOptions(client, catalog.slug));
+  const scope = { client: useApiClient(), identity: useSessionIdentity() };
+  const query = useQuery(catalogItemsQueryOptions(scope, catalog.slug));
   const editor = useCatalogEditor(catalog.slug, query.data ?? []);
   const tableItems = {
     rows: query.data ?? [],
