@@ -114,8 +114,14 @@ export class AuthController {
     this.#isBusy = true;
     const gate = this.#deps.credentials.unlockGate();
     try {
+      await this.#deps.credentials.runExclusive((transaction) => {
+        transaction.setLoginInFlight(true);
+      });
       await this.#login(username.trim(), password, gate);
     } finally {
+      await this.#deps.credentials.runExclusive((transaction) => {
+        transaction.setLoginInFlight(false);
+      });
       this.#isBusy = false;
     }
   }
@@ -140,13 +146,13 @@ export class AuthController {
       return;
     }
     const time = { serverTime: answer.login.server_time, phoneTime: this.#deps.now() };
-    await this.#acceptLogin(answer.login, password, { gate, time });
+    await this.#acceptLogin(answer.login, password, { gate, time, origin: answer.origin });
   }
 
   async #acceptLogin(
     login: Schemas["MobileLoginResponse"],
     password: string,
-    attempt: { gate: number; time: AcceptedLogin["time"] },
+    attempt: { gate: number; time: AcceptedLogin["time"]; origin: string },
   ): Promise<void> {
     const verifier = await createVerifier(password, PASSWORD_ITERATIONS, this.#deps.randomBytes);
     const accepted: AcceptedLogin = {
@@ -154,6 +160,7 @@ export class AuthController {
       profile: profileOf(login.me),
       credentials: {
         status: "active",
+        origin: attempt.origin,
         sessionId: toHex(this.#deps.randomBytes(16)),
         pair: { access: login.access, refresh: login.refresh },
         password: verifier,

@@ -69,7 +69,8 @@ export class ServerSettings {
   }
 
   async #canChange(transaction: CredentialTransaction): Promise<boolean> {
-    if (transaction.read().pair !== null) return false;
+    if (this.#identity.credentials.isLoginInFlight() || transaction.read().pair !== null)
+      return false;
     if ((await this.#kv.get("session_profile")) !== null) return false;
     const counts = await this.#identity.outbox.countByStatus();
     return counts.pending + counts.sending + counts.error === 0;

@@ -566,3 +566,54 @@ void it("an active POST's late 200 cannot consume final-upload provenance after 
     assert.equal(h.credentials.getSnapshot().pair, null);
   }
 });
+
+void it("an empty active POST revoked with 401 continues to a real final POST through the engine and observer", async () => {
+  const stores = await createStores();
+  const h = await makeCredentials();
+  const auth = controller(stores, h.credentials);
+  await auth.load();
+  let posts = 0;
+  const session = new SessionRequests({
+    credentials: h.credentials,
+    isOnline: () => true,
+    endSession: () => auth.endSession(),
+    refresh: () => {
+      throw new Error("No refresh for session_revoked.");
+    },
+  });
+  const client = createMobileApiClient({
+    baseUrl: "https://example.invalid",
+    tokens: h.credentials,
+    fetch: () => {
+      posts += 1;
+      if (posts === 1)
+        return Promise.resolve(jsonResponse({ code: "session_revoked", detail: "" }, 401));
+      const result = answer([]);
+      assert.ok(result.ok);
+      return Promise.resolve(jsonResponse(result.response, 200, true));
+    },
+  });
+  const engine = new SyncEngine({
+    pass: {
+      ...stores,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: createSyncTransport(client, session),
+    },
+    hasSession: h.credentials.hasSyncSession,
+    hasServer: () => true,
+    random: () => 0,
+    schedule: () => {
+      throw new Error("No retry for definitive answers.");
+    },
+    report: (error) => {
+      throw error;
+    },
+  });
+  const stop = observeSyncSession(engine, h.credentials);
+  await engine.start();
+  stop();
+  assert.equal(posts, 2);
+  assert.equal(h.credentials.getSnapshot().pair, null);
+  assert.equal(engine.getSnapshot().phase, "blocked");
+});

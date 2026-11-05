@@ -1,4 +1,4 @@
-import { randomUUID } from "expo-crypto";
+import { getRandomBytes, randomUUID } from "expo-crypto";
 
 import { createMobileApiClient } from "../api/create-api-client.ts";
 import { createAuth } from "../auth/create-auth.ts";
@@ -31,13 +31,9 @@ export interface AppServices {
 }
 
 // Initial provisioning selects the identity-bound address before authenticated work begins.
-function lazyTransport(
-  server: ServerSettings,
-  tokens: TokenStore,
-  session: SessionRequests,
-): SyncTransport {
+function lazyTransport(tokens: TokenStore, session: SessionRequests): SyncTransport {
   return async (request) => {
-    const baseUrl = server.baseUrl();
+    const baseUrl = tokens.getOrigin();
     if (baseUrl === null) return { ok: false, failure: { kind: "network" } };
     return createSyncTransport(createMobileApiClient({ baseUrl, tokens }), session)(request);
   };
@@ -60,6 +56,8 @@ export async function createServices(): Promise<AppServices> {
     credentials: tokens,
     requests,
   } = await createAuth({
+    randomBytes: getRandomBytes,
+    now: Date.now,
     credentials,
     kv,
     outbox,
@@ -73,13 +71,13 @@ export async function createServices(): Promise<AppServices> {
 
 async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
   const credentials = new CredentialStore(nativeSecrets);
-  await credentials.load((sessionId) => readEndedSession(kv, sessionId));
   const server = new ServerSettings(kv, BUILD_API_BASE_URL, {
     credentials,
     outbox,
     allowCleartext: __DEV__,
   });
   await server.load();
+  await credentials.load((sessionId) => readEndedSession(kv, sessionId), server.baseUrl());
   return { credentials, server };
 }
 
@@ -93,10 +91,10 @@ function createEngine(
       kv,
       deviceId,
       now: () => new Date(),
-      transport: lazyTransport(server, tokens, requests),
+      transport: lazyTransport(tokens, requests),
     },
     hasSession: () => tokens.hasSyncSession(),
-    hasServer: () => server.baseUrl() !== null,
+    hasServer: () => (tokens.hasSyncSession() ? tokens.getOrigin() : server.baseUrl()) !== null,
     random: Math.random,
     schedule: (callback, delayMs) => {
       const handle = setTimeout(callback, delayMs);

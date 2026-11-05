@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import type { Schemas } from "@wolbachia/api-client";
 
 import { CredentialStore, EMPTY_CREDENTIALS } from "../../src/auth/credential-store.ts";
 import type { SecretStorage } from "../../src/auth/secret-storage.ts";
@@ -23,6 +24,7 @@ export async function makeCredentials() {
   const passwordSecret = randomUUID();
   await credentials.update(() => ({
     ...EMPTY_CREDENTIALS,
+    origin: "https://example.invalid",
     sessionId: randomUUID(),
     pair: { access: randomUUID(), refresh: randomUUID() },
     pin: null,
@@ -42,4 +44,27 @@ export function deferred<Value>() {
     reject = fail;
   });
   return { promise, resolve, reject };
+}
+
+export function loginResponse(): Schemas["MobileLoginResponse"] {
+  return {
+    access: randomUUID(),
+    refresh: randomUUID(),
+    server_time: "2026-11-05T12:00:00Z",
+    me: {
+      user: {
+        id: randomUUID(),
+        username: "courier-test",
+        email: "",
+        first_name: "Test",
+        last_name: "",
+      },
+      organization: null,
+      profiles: [],
+      permissions: [],
+      scope: { centers: [], quadrants: [] },
+      organizations: [],
+      limits: { void_reason_min_length: 10, void_reason_max_length: 1000 },
+    },
+  };
 }

@@ -1,5 +1,3 @@
-import { getRandomBytes } from "expo-crypto";
-
 import type { ApiClient } from "@wolbachia/api-client";
 
 import { createMobileApiClient } from "../api/create-api-client.ts";
@@ -12,6 +10,9 @@ import type { CredentialStore } from "./credential-store.ts";
 import { SessionRequests } from "./session-requests.ts";
 
 interface CreateAuthDeps {
+  readonly randomBytes: (length: number) => Uint8Array;
+  readonly now: () => number;
+  readonly fetch?: (request: Request) => Promise<Response>;
   readonly credentials: CredentialStore;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
@@ -20,19 +21,18 @@ interface CreateAuthDeps {
   readonly appVersion: string;
 }
 
-/** Native composition only; policy and persistence are independently testable. */
+/** Auth composition uses injectable native ports and the generated API client. */
 export async function createAuth(deps: CreateAuthDeps) {
   const { credentials } = deps;
-  const client = () =>
-    createMobileApiClient({ baseUrl: deps.server.baseUrl() ?? "", tokens: credentials });
-  const anonymous = () => createMobileApiClient({ baseUrl: deps.server.baseUrl() ?? "" });
+  const client = () => createSessionClient(deps, true);
+  const anonymous = () => createSessionClient(deps, false);
   const auth: AuthController = new AuthController({
     credentials,
     kv: deps.kv,
     outbox: deps.outbox,
-    randomBytes: getRandomBytes,
-    now: Date.now,
-    login: (username, password) => loginConfigured(deps, anonymous(), { username, password }),
+    randomBytes: deps.randomBytes,
+    now: deps.now,
+    login: (username, password) => loginConfigured(deps, { username, password }),
     fetchRules: () => fetchAuthRules(client(), requests),
   });
   const requests: SessionRequests = new SessionRequests({
@@ -45,18 +45,32 @@ export async function createAuth(deps: CreateAuthDeps) {
   return { auth, credentials, requests };
 }
 
-function loginConfigured(
-  deps: CreateAuthDeps,
-  client: ApiClient,
-  secret: { username: string; password: string },
-) {
-  if (deps.server.baseUrl() === null) {
+/** Both bearer and refresh-body credentials are routed to their stored issuer. */
+function createSessionClient(deps: CreateAuthDeps, isAuthenticated: boolean): ApiClient {
+  return createMobileApiClient({
+    baseUrl: deps.credentials.getOrigin() ?? "",
+    ...(isAuthenticated ? { tokens: deps.credentials } : {}),
+    ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+  });
+}
+
+function loginConfigured(deps: CreateAuthDeps, secret: { username: string; password: string }) {
+  const origin = deps.server.baseUrl();
+  if (origin === null) {
     return Promise.resolve({
       ok: false as const,
       notice: { key: "mobile.login.serverMissing" as const },
     });
   }
-  return loginOnline(client, { ...secret, device_id: deps.deviceId, app_version: deps.appVersion });
+  const client = createMobileApiClient({
+    baseUrl: origin,
+    ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+  });
+  return loginOnline(
+    client,
+    { ...secret, device_id: deps.deviceId, app_version: deps.appVersion },
+    origin,
+  );
 }
 
 async function fetchAuthRules(client: ApiClient, requests: SessionRequests): Promise<unknown> {

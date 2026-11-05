@@ -219,7 +219,7 @@ async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): P
       call.failure.kind === "http" &&
       [401, 403].includes(call.failure.status)
     )
-      return CONTINUE;
+      return { next: "again", pull: true };
     return step;
   }
   await applyAnswer(context, batch, call.response);

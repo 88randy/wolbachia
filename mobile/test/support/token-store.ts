@@ -7,6 +7,7 @@ export function createMemoryTokenStore(): TokenStore & {
   const listeners = new Set<() => void>();
   return {
     hasSyncSession: () => accessToken !== undefined,
+    getOrigin: () => "http://192.168.1.20:8000",
     getAccessToken: () => accessToken,
     setAccessToken(token) {
       accessToken = token;

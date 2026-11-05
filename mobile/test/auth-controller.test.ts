@@ -128,7 +128,11 @@ void it("accepts online login despite a failed rules fetch, creates a PIN, and u
   const { auth, credentials } = await harness(
     () => {
       loginCalls += 1;
-      return Promise.resolve({ ok: true, login: loginResponse() });
+      return Promise.resolve({
+        ok: true,
+        origin: "https://example.invalid",
+        login: loginResponse(),
+      });
     },
     () => rules.promise,
   );

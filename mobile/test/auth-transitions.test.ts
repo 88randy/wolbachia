@@ -250,7 +250,7 @@ void it("locking during the accepted login secure write preserves the session an
     randomBytes,
     now: () => FIXED_NOW.getTime(),
     fetchRules: () => Promise.resolve(null),
-    login: () => Promise.resolve({ ok: true, login }),
+    login: () => Promise.resolve({ ok: true, origin: "https://example.invalid", login }),
   });
   await auth.load();
   auth.setOnline(true);

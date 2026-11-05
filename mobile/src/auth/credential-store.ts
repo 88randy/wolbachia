@@ -1,6 +1,8 @@
 import type { Schemas } from "@wolbachia/api-client";
 
 import { PASSWORD_ATTEMPT_LIMIT } from "./pin-rules.ts";
+import { isRecord, isTokenPair } from "./auth-response.ts";
+import { parseApiBaseUrl } from "../config/api-base-url.ts";
 import type { SecretStorage } from "./secret-storage.ts";
 import type { Verifier } from "./verifier.ts";
 
@@ -8,6 +10,7 @@ export type TokenPair = Pick<Schemas["RefreshResponse"], "access" | "refresh">;
 export type SessionStatus = "active" | "ended";
 export interface Credentials {
   readonly status: SessionStatus;
+  readonly origin: string | null;
   readonly sessionId: string | null;
   readonly pair: TokenPair | null;
   readonly pin: Verifier | null;
@@ -17,6 +20,7 @@ export interface Credentials {
 }
 export const EMPTY_CREDENTIALS: Credentials = {
   status: "active",
+  origin: null,
   sessionId: null,
   pair: null,
   pin: null,
@@ -30,6 +34,7 @@ export interface CredentialTransaction {
   readonly read: () => Credentials;
   readonly write: (next: Credentials) => Promise<void>;
   readonly grantUnlock: (expectedGate: number) => boolean;
+  readonly setLoginInFlight: (isInFlight: boolean) => void;
 }
 
 /**
@@ -45,6 +50,7 @@ export class CredentialStore {
   #credentials: Credentials = EMPTY_CREDENTIALS;
   #persisted: Credentials = EMPTY_CREDENTIALS;
   #isUnlocked = false;
+  #isLoginInFlight = false;
   #gate = 0;
   #tail: Promise<unknown> = Promise.resolve();
   #pendingEnd: { sessionId: string | null; journal: (() => Promise<void>) | undefined } | null =
@@ -56,16 +62,25 @@ export class CredentialStore {
       read: () => this.#credentials,
       write: (next) => this.#write(next),
       grantUnlock: (gate) => this.#grantUnlock(gate),
+      setLoginInFlight: (isInFlight) => {
+        this.#isLoginInFlight = isInFlight;
+        this.#emit();
+      },
     };
   }
 
   load(
     readEnd: (sessionId: string | null) => Promise<boolean> = () => Promise.resolve(false),
+    legacyOrigin: string | null = null,
   ): Promise<void> {
     return this.runExclusive(async (transaction) => {
       const saved = await this.#storage.get(ITEM);
-      this.#credentials = saved === null ? EMPTY_CREDENTIALS : decodeCredentials(saved);
-      this.#persisted = this.#credentials;
+      const decoded =
+        saved === null
+          ? { credentials: EMPTY_CREDENTIALS, needsMigration: false }
+          : decodeCredentials(saved, legacyOrigin);
+      this.#credentials = decoded.credentials;
+      this.#persisted = decoded.needsMigration ? EMPTY_CREDENTIALS : this.#credentials;
       this.#isUnlocked = false;
       if (await readEnd(this.#credentials.sessionId)) {
         await transaction.write(endedCredentials(this.#credentials));
@@ -74,6 +89,8 @@ export class CredentialStore {
         this.#credentials.passwordAttempts >= PASSWORD_ATTEMPT_LIMIT
       ) {
         await transaction.write(EMPTY_CREDENTIALS);
+      } else if (decoded.needsMigration && this.#credentials.pair !== null) {
+        await transaction.write({ ...this.#credentials });
       }
       this.#emit();
     });
@@ -86,7 +103,11 @@ export class CredentialStore {
       : this.#persisted;
   getAccessToken = (): string | undefined =>
     this.isSessionActive() ? this.getSnapshot().pair?.access : undefined;
+  getOrigin = (): string | null => this.getSnapshot().origin;
   hasSyncSession = (): boolean => this.getSnapshot().pair !== null;
+  isLoginInFlight(): boolean {
+    return this.#isLoginInFlight;
+  }
   isSessionActive(): boolean {
     const current = this.getSnapshot();
     return current.status === "active" && current.pair !== null;
@@ -232,36 +253,44 @@ export function endedCredentials(current: Credentials): Credentials {
   };
 }
 
-function decodeCredentials(saved: string): Credentials {
-  const parsed: unknown = JSON.parse(saved);
-  const value: unknown =
-    typeof parsed === "object" && parsed !== null ? { status: "active", ...parsed } : parsed;
-  if (!isCredentials(value)) throw new Error("Invalid secure credentials; refusing to unlock.");
-  return value;
+function decodeCredentials(saved: string, legacyOrigin: string | null) {
+  try {
+    const parsed: unknown = JSON.parse(saved);
+    if (!isRecord(parsed)) return { credentials: EMPTY_CREDENTIALS, needsMigration: false };
+    const needsMigration = !("origin" in parsed) && parsed.pair !== null;
+    const value = {
+      status: "active",
+      origin: null,
+      ...parsed,
+      ...(needsMigration ? { origin: legacyOrigin } : {}),
+    };
+    return { credentials: isCredentials(value) ? value : EMPTY_CREDENTIALS, needsMigration };
+  } catch {
+    // An unusable secret is isolated from local evidence: require login, never erase the database.
+    return { credentials: EMPTY_CREDENTIALS, needsMigration: false };
+  }
 }
 
-function isCredentials(value: unknown): value is Credentials {
-  if (typeof value !== "object" || value === null) return false;
-  const record = value as Record<string, unknown>;
+function isCredentials(
+  value: Record<string, unknown>,
+): value is Record<string, unknown> & Credentials {
+  return (
+    isSessionIdentity(value) &&
+    isVerifier(value.pin) &&
+    isVerifier(value.password) &&
+    isCounter(value.pinAttempts) &&
+    isCounter(value.passwordAttempts)
+  );
+}
+function isOrigin(value: unknown): value is string {
+  return typeof value === "string" && parseApiBaseUrl(value, true).ok;
+}
+function isSessionIdentity(record: Record<string, unknown>): boolean {
   return (
     isSessionStatus(record.status) &&
     (record.sessionId === null || typeof record.sessionId === "string") &&
-    isTokenPair(record.pair) &&
-    isVerifier(record.pin) &&
-    isVerifier(record.password) &&
-    isCounter(record.pinAttempts) &&
-    isCounter(record.passwordAttempts)
-  );
-}
-
-function isTokenPair(value: unknown): boolean {
-  if (value === null) return true;
-  if (typeof value !== "object") return false;
-  return (
-    "access" in value &&
-    typeof value.access === "string" &&
-    "refresh" in value &&
-    typeof value.refresh === "string"
+    (record.origin === null || isOrigin(record.origin)) &&
+    (record.pair === null || (isTokenPair(record.pair) && isOrigin(record.origin)))
   );
 }
 
