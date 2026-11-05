@@ -195,3 +195,12 @@ and protected Other; paddle-type adds standard/Other. max_gps_accuracy_m is vers
 index-exclusion rule exists: is_index_excluded=is_lagged is an explicit assumption.
 Sync event schemas/codes and no-effects review policy: sync.md. Full lead decisions,
 lock order and acceptance map: ../backend/ovitraps/README.md, ADR 98.
+
+
+Ovitrap identity isolation (#111 adversarial correction): the physical phone UUID
+is stored as client_uuid, unique per organization. A separate server-generated PK
+is used only for internal relations. Ovitrap responses retain physical UUID as
+id/code, /ovitraps/{id}/ and ?code= resolve that UUID inside organization/scope, and
+reading.ovitrap returns the same physical UUID. Identical phone UUIDs can coexist
+in different organizations without changing either organization's outcome or
+exposing the other row. No public response/type shape or sync result code changes.

@@ -31,6 +31,7 @@ class Migration(migrations.Migration):
                         serialize=False,
                     ),
                 ),
+                ("client_uuid", models.UUIDField(editable=False)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
                 (
                     "created_by",
@@ -345,6 +346,12 @@ class Migration(migrations.Migration):
                 "abstract": False,
                 "base_manager_name": "objects",
             },
+        ),
+        migrations.AddConstraint(
+            model_name="ovitrap",
+            constraint=models.UniqueConstraint(
+                fields=("organization", "client_uuid"), name="ovitrap_org_client_uuid"
+            ),
         ),
         migrations.AddIndex(
             model_name="ovitrapreading",

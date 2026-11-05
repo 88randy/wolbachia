@@ -126,6 +126,7 @@ Rules:
 
 | Term | English code | Meaning |
 | --- | --- | --- |
+| Physical ovitrap UUID | client_uuid | Phone-generated identity, unique per organization; public id/code and sync ovitrap_id. Internal PK is generated separately by the server. |
 | Placement attempt | PlacementAttempt | Immutable applied placement plus opaque supply/evidence UUID refs; doubtful attempts remain only in FieldEvent/ReviewItem. |
 | Ovitrap reading | OvitrapReading | Event-unique visit, conditional eggs and retained point/rule/catalog provenance. |
 | Ovitrap void lifecycle | OvitrapVoid | New authored lifecycle record linking a record.void event to its target; no original row is deleted. |

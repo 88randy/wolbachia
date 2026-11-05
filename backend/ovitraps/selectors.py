@@ -47,11 +47,13 @@ def accessible_ovitrap(ctx: EventContext, identifier: UUID) -> Ovitrap:
         sync_membership(ctx),
         FIELD_EVENT_SYNC,
     )
-    ovitrap = visible.filter(pk=identifier).first()
+    ovitrap = visible.filter(client_uuid=identifier).first()
     if ovitrap is None:
         raise EventRejected(OVITRAP_INACCESSIBLE)
     accessible_point(ctx, ovitrap.sampling_point_id)
-    locked = Ovitrap.objects.select_for_update(no_key=True).get(pk=ovitrap.pk)
+    locked = Ovitrap.objects.select_for_update(no_key=True).get(
+        organization=ctx.organization, pk=ovitrap.pk
+    )
     if locked.event.voided_at is not None:
         raise EventRejected(OVITRAP_INACCESSIBLE)
     return cast(Ovitrap, locked)

@@ -353,3 +353,12 @@ sample. Full decisions and assumptions: backend/ovitraps/README.md and ADR 98.
 
 Every code maps to sync.result.<camelCase> in es-MX/en. Lock contention retains
 retryable 429 sync_in_progress with Retry-After.
+
+
+Ovitrap UUID isolation (#111 adversarial correction): ovitrap_id in place/check is
+the phone-generated physical UUID, unique only inside the membership organization.
+The database uses a separate internal PK. Place prechecks and concurrent unique
+collisions apply only to (organization, client_uuid); a foreign existing UUID and
+an unused one follow the same validation/gates (including identical code/params
+for missing GPS). Check/void use the same scoped client UUID resolution. Own-org
+reuse still returns ovitrap_identity_used; no new sync code is added.

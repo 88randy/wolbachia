@@ -39,7 +39,9 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
     """Create identity and placement once; unverified supply/evidence refs have no stock effects."""
     lock_organization(ctx)
     point = accessible_point(ctx, payload["sampling_point_id"])
-    if Ovitrap.objects.filter(pk=payload["ovitrap_id"]).exists():
+    if Ovitrap.objects.filter(
+        organization=ctx.organization, client_uuid=payload["ovitrap_id"]
+    ).exists():
         raise EventRejected(codes.IDENTITY_USED)
     if Ovitrap.objects.filter(sampling_point=point, event__voided_at__isnull=True).exists():
         raise EventRejected(codes.POINT_OCCUPIED)
@@ -47,7 +49,7 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
     try:
         with transaction.atomic():
             ovitrap = Ovitrap.objects.create(
-                id=payload["ovitrap_id"],
+                client_uuid=payload["ovitrap_id"],
                 organization=ctx.organization,
                 created_by=ctx.user,
                 event_id=ctx.envelope.id,
@@ -67,7 +69,7 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
     except IntegrityError as error:
         if (
             getattr(getattr(error.__cause__, "diag", None), "constraint_name", "")
-            == "ovitraps_ovitrap_pkey"
+            == "ovitrap_org_client_uuid"
         ):
             raise EventRejected(codes.IDENTITY_USED) from None
         raise

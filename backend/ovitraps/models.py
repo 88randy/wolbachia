@@ -17,6 +17,7 @@ class OvitrapRecord(ImmutableMixin, OrgScopedModel):
 
 
 class Ovitrap(OvitrapRecord):
+    client_uuid = models.UUIDField(editable=False)
     sampling_point = models.ForeignKey(
         "geography.SamplingPoint", on_delete=models.PROTECT, related_name="ovitraps"
     )
@@ -26,9 +27,16 @@ class Ovitrap(OvitrapRecord):
     scope_center_lookup: ClassVar[str] = "sampling_point__block__quadrant__center_id"
     scope_quadrant_lookup: ClassVar[str] = "sampling_point__block__quadrant_id"
 
+    class Meta(OvitrapRecord.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "client_uuid"], name="ovitrap_org_client_uuid"
+            )
+        ]
+
     @property
     def code(self) -> str:
-        return str(self.pk)
+        return str(self.client_uuid)
 
 
 class PlacementAttempt(OvitrapRecord):

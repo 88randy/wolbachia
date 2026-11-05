@@ -48,7 +48,7 @@ class RecordViewSet(
         if self.query_serializer_class is IdentityQuerySerializer and (
             code := query.validated_data.get("code")
         ):
-            queryset = queryset.filter(pk=code)
+            queryset = queryset.filter(**{self.lookup_field: code})
         if self.action != "list":
             query.validated_data.setdefault("status", "all")
         return filter_records(
@@ -64,6 +64,8 @@ class RecordViewSet(
 
 
 class OvitrapViewSet(RecordViewSet):
+    lookup_field = "client_uuid"
+    lookup_url_kwarg = "id"
     queryset = Ovitrap.objects.select_related(
         "event", "placement", "sampling_point__block__quadrant", "point_version"
     )

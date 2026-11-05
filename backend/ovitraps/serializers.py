@@ -66,6 +66,7 @@ PROVENANCE_FIELDS = (
 
 
 class OvitrapSerializer(ProvenanceSerializer):
+    id = serializers.UUIDField(source="client_uuid", read_only=True)
     code = serializers.CharField(read_only=True)
     point_code = serializers.CharField(source="sampling_point.code", read_only=True)
     evaluated_rules = serializers.JSONField(source="placement.evaluated_rules", read_only=True)
@@ -91,6 +92,7 @@ class OvitrapSerializer(ProvenanceSerializer):
 
 
 class ReadingSerializer(ProvenanceSerializer):
+    ovitrap = serializers.UUIDField(source="ovitrap.client_uuid", read_only=True)
     code = serializers.UUIDField(source="id", read_only=True)
     bag_id = serializers.UUIDField(source="bag.id", read_only=True, allow_null=True)
     bag_code = serializers.CharField(source="bag.code", read_only=True, allow_null=True)

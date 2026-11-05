@@ -406,8 +406,8 @@ def test_read_endpoints_enforce_default_deny_and_org_center_quadrant_isolation(f
     from geography.models import Quadrant
     from organizations.models import Center, all_scope
     from ovitraps.models import Bag, Ovitrap, OvitrapReading
-    from tests.factories import MembershipFactory, ProfileFactory
-    from tests.ovitrap_support import envelope, ingest
+    from tests.factories import MembershipFactory
+    from tests.ovitrap_support import envelope, ingest, setup_field
 
     ingest(field, envelope(field))
     ingest(field, envelope(field, "ovitrap.check"))
@@ -428,16 +428,30 @@ def test_read_endpoints_enforce_default_deny_and_org_center_quadrant_isolation(f
         assert result.status_code == 200, result.data
         assert result.data["count"] == 1
         assert result.data["results"][0]["event_id"] == str(row.event_id)
-    foreign = MembershipFactory(scope=all_scope())
-    profile = ProfileFactory(
-        organization=foreign.organization,
-        scope=all_scope(),
-        permission_codes=["ovitrap.read", "reading.read"],
-    )
-    foreign.profiles.add(profile)
-    api_client.force_authenticate(foreign.user)
+        public_id = row.client_uuid if isinstance(row, Ovitrap) else row.pk
+        assert result.data["results"][0]["id"] == str(public_id)
+        detail = api_client.get(f"/api/v1/{path}/{public_id}/")
+        assert detail.status_code == 200, detail.data
+        assert detail.data["event_id"] == str(row.event_id)
+        if isinstance(row, OvitrapReading):
+            assert detail.data["ovitrap"] == str(field.identity)
+    foreign = setup_field()
+    foreign.identity = field.identity
+    foreign_placement = envelope(foreign)
+    assert ingest(foreign, foreign_placement).status == "accepted"
+    own_ovitrap = Ovitrap.objects.get(organization=field.batch.organization)
+    foreign_ovitrap = Ovitrap.objects.get(organization=foreign.batch.organization)
+    assert own_ovitrap.pk != foreign_ovitrap.pk
+    assert own_ovitrap.client_uuid == foreign_ovitrap.client_uuid == field.identity
+    api_client.force_authenticate(foreign.batch.user)
     for path, row in endpoints:
-        assert api_client.get(f"/api/v1/{path}/{row.pk}/").status_code == 404
+        public_id = row.client_uuid if isinstance(row, Ovitrap) else row.pk
+        detail = api_client.get(f"/api/v1/{path}/{public_id}/")
+        if isinstance(row, Ovitrap):
+            assert detail.status_code == 200, detail.data
+            assert detail.data["event_id"] == str(foreign_placement.id)
+        else:
+            assert detail.status_code == 404
         assert api_client.get(f"/api/v1/{path}/", {"point": str(field.point.pk)}).status_code == 404
     api_client.force_authenticate(field.batch.user)
     other_center = Center.objects.create(
@@ -457,7 +471,8 @@ def test_read_endpoints_enforce_default_deny_and_org_center_quadrant_isolation(f
         field.membership.save(update_fields=["scope"])
         for path, row in endpoints:
             assert api_client.get(f"/api/v1/{path}/").data["count"] == 0
-            assert api_client.get(f"/api/v1/{path}/{row.pk}/").status_code == 404
+            public_id = row.client_uuid if isinstance(row, Ovitrap) else row.pk
+            assert api_client.get(f"/api/v1/{path}/{public_id}/").status_code == 404
             assert (
                 api_client.get(f"/api/v1/{path}/", {"point": str(field.point.pk)}).status_code
                 == 404
@@ -592,3 +607,43 @@ def test_missing_accuracy_reaches_handler_instead_of_losing_event_at_envelope_va
     payload = SyncEventSerializer(data=sent)
     assert payload.is_valid(), payload.errors
     assert payload.validated_data["gps"]["accuracy_m"] is None
+
+
+def test_foreign_physical_uuid_and_unknown_uuid_share_gps_review(monkeypatch):
+    """A foreign identity cannot bypass the same missing-GPS gate as an unused one."""
+    from types import SimpleNamespace
+
+    from field_sync.exceptions import EventNeedsReview, EventSignal
+    from ovitraps import services
+    from ovitraps.models import Ovitrap
+
+    own_org, foreign_org = object(), object()
+    foreign_uuid = uuid4()
+    foreign_row = {"pk": foreign_uuid, "client_uuid": foreign_uuid, "organization": foreign_org}
+
+    def stored_rows(**filters):
+        # In-memory store implements equality only; scope is decided by the real service.
+        is_match = all(foreign_row.get(name) == value for name, value in filters.items())
+        return SimpleNamespace(exists=lambda: is_match)
+
+    def unusable_gps(_ctx, _point):
+        raise EventNeedsReview("ovitrap_gps_unusable")
+
+    monkeypatch.setattr(services, "lock_organization", lambda ctx: None)
+    monkeypatch.setattr(services, "accessible_point", lambda ctx, identifier: object())
+    monkeypatch.setattr(services, "capture_context", unusable_gps)
+    monkeypatch.setattr(Ovitrap.objects, "filter", stored_rows)
+    outcomes = []
+    for identity in (foreign_uuid, uuid4()):
+        with pytest.raises(EventSignal) as outcome:
+            services.place_ovitrap(
+                SimpleNamespace(organization=own_org),
+                {
+                    "sampling_point_id": uuid4(),
+                    "ovitrap_id": identity,
+                    "supply_refs": [],
+                    "evidence_ids": [],
+                },
+            )
+        outcomes.append((type(outcome.value), outcome.value.code, outcome.value.params))
+    assert outcomes == [(EventNeedsReview, "ovitrap_gps_unusable", {})] * 2

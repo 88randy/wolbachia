@@ -60,7 +60,10 @@ and ../../docs/engineering-rules.md before changing these handlers.
 8. QR is ASCII wbf:1:<kind>:<hyphenated UUID>; kinds lot/ovitrap/bag/release-device/
    sample. parse_qr never silently reinterprets a failed scan. Manual capture is
    explicit in the existing manual_capture envelope flag. Physical ovitrap UUID
-   is phone-generated; bag_code remains the separate human code.
+   is phone-generated, stored as client_uuid unique per organization. A separate
+   server-generated UUID primary key serves internal foreign keys. The public API
+   id/code, detail lookup and reading.ovitrap expose the physical client UUID;
+   bag_code remains the separate human code.
 9. GET /api/v1/ovitraps/, /readings/, /bags/ and /{uuid}/ details are read-only,
    page-number paged, stable ordered, with code/status/point/week filters.
    Ovitrap/reading code is the UUID; bag code is human. List status defaults active;
@@ -139,3 +142,41 @@ Verified API references:
   is stale until the orchestrator regenerates it with installed locked dependencies.
 - git diff --check: passed. Code/security review found and verified corrections for
   current-scope void checks, exact catalog archive resolution and voided detail reads.
+
+
+## Adversarial correction: organization-scoped physical identity
+
+Ovitrap.client_uuid reserves the phone-generated UUID only in its organization
+(ovitrap_org_client_uuid). Ovitrap.id is a separate server-generated internal PK;
+PlacementAttempt/reading foreign keys keep that internal identity. Sync place
+prechecks and the unique-collision mapping use organization/client_uuid, and
+check/void resolve the client UUID through the existing scoped selector. A UUID
+in another organization behaves exactly like an unused one, including missing-GPS
+review. The internal primary key collision is never reported as identity_used.
+
+Public id/code and /ovitraps/{id}/ continue using the phone UUID, as does the
+reading's ovitrap reference. ?code= filters client_uuid for ovitraps; reading
+and bag identifiers retain their existing semantics. The initial migration is
+updated because this app is new in this branch; no deployed-data migration is
+assumed. No new sync code or dependency is introduced.
+
+Regression: test_foreign_physical_uuid_and_unknown_uuid_share_gps_review compares
+signal class/code/params against a foreign existing and an unused UUID. It failed
+with identity_used versus gps_unusable before the fix, then passed. It runs without
+PostgreSQL using an equality-only in-memory store; the real handler decides scope.
+The single existing endpoint isolation test now places the same physical UUID
+in two organizations and checks distinct internal PKs plus public list/detail and
+reading references, ensuring each organization resolves its own identity. That
+PostgreSQL integration and real concurrent/constraint enforcement remain pending
+while Docker is blocked. No commit/push is part of this correction.
+
+
+Correction verification: B-14 + sync registry DB-free selection passed 51 cases
+(21 PostgreSQL cases deselected); mypy . passed on 164 source files; full backend
+Ruff 0.8.4 lint and 16 affected-file format checks passed. manage.py check passed;
+makemigrations --check --dry-run detected no changes, with migration-history
+connectivity still unavailable at placeholder 55499. OpenAPI validation/export
+passed without warnings and produced no schema diff: public UUID wire types are
+unchanged. git diff --check passed. Read-only review found no remaining concrete
+issue in the identity correction. Database application, unique constraints and
+concurrent PostgreSQL enforcement were not executed; Docker remains blocked.
