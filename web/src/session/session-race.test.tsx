@@ -364,6 +364,11 @@ describe("the cookie is the truth (#82)", () => {
     const userA = makeMe();
     const userB = makeMe({ user: { ...userA.user, id: "7a7a7a7a-0000-4000-8000-000000000002" } });
     const { api, app } = await openExpired({ [LOGIN]: () => login.promise });
+    const otherTab = new BroadcastChannel("wolbachia.session");
+    let announcements = 0;
+    otherTab.onmessage = () => {
+      announcements += 1;
+    };
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
     await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
     // Another tab signed in as B: this tab's /me/ records B while A's login is still in flight.
@@ -383,5 +388,15 @@ describe("the cookie is the truth (#82)", () => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
     expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userA.user.id);
+    // The server-confirmed login was announced exactly once (the reconcile does not echo it).
+    await new Promise<void>((resolve) => {
+      const hop = new MessageChannel();
+      hop.port1.onmessage = () => {
+        resolve();
+      };
+      hop.port2.postMessage(0);
+    });
+    expect(announcements).toBe(1);
+    otherTab.close();
   });
 });

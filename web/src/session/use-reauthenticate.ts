@@ -76,7 +76,10 @@ function startReauth({ client, queryClient, username, password }: ReauthRequest)
     const outcome = await requestLogin(client, { username, password }, signal);
     const isStale = revision !== currentRevision() || !isCurrent();
     if (outcome.ok && isStale) {
+      // Confirmed by the server: it counts as a login (revision bump and ONE broadcast) before
+      // this tab reconciles with `/me/`.
       commit();
+      acceptSession();
       state.diverged = true;
     } else if (outcome.ok) restoreSession(outcome.me, queryClient, commit);
     return outcome.ok || !isStale ? outcome : undefined;
@@ -111,8 +114,7 @@ export function useReauthenticate() {
     track(run);
     const outcome = await run.result;
     if (state.diverged) {
-      await reconcileSession(queryClient, client);
-      await router.invalidate();
+      if (await reconcileSession(queryClient, client)) await router.invalidate();
     } else if (outcome !== undefined && run.isCurrent()) {
       await settleReauth(outcome, { queryClient, router, setFailure });
     }

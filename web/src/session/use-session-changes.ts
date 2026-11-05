@@ -5,7 +5,9 @@ import { subscribeToIdentityChange } from "./identity";
 import { ME_QUERY_KEY } from "./me-query";
 import { removeOrganizationQueries } from "./organization-cache";
 import { clearOrganizationSlug } from "./organization-slug";
+import { restartOrgScoped } from "./org-scoped-query";
 import { subscribeToMembershipLost } from "./session-events";
+import { currentRevision, subscribeToRevision } from "./session-revision";
 
 /**
  * Things that change who the user is or where they work in the middle of a session:
@@ -34,4 +36,12 @@ export function useSessionChanges(): void {
       }),
     [router],
   );
+  useEffect(() => {
+    let seen = currentRevision();
+    return subscribeToRevision(() => {
+      if (currentRevision() === seen) return;
+      seen = currentRevision();
+      void restartOrgScoped(queryClient);
+    });
+  }, [queryClient]);
 }

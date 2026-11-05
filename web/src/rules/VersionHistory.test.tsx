@@ -208,7 +208,8 @@ describe("voiding a scheduled version", () => {
     expect(screen.getByRole("dialog")).toBeDefined();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText("Versión anulada. Sigue en el historial, tachada.")).toBeNull();
-    expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(1);
+    // The initial load plus the restart the revision change caused; the stale void answer adds none.
+    expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(2);
   });
 
   test("a version that took effect meanwhile is answered in the dialog and the history is refreshed", async () => {

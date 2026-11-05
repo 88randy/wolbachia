@@ -20,7 +20,9 @@ export function useCrossTabSession(): void {
   useEffect(
     () =>
       subscribeToSessionChanged(() => {
-        void reconcileSession(queryClient, client).then(() => router.invalidate());
+        void reconcileSession(queryClient, client).then((isKnown) => {
+          if (isKnown) return router.invalidate();
+        });
       }),
     [queryClient, client, router],
   );

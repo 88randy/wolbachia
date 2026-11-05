@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test } from "vitest";
 import { ME_QUERY_KEY } from "../session/me-query";
+import { acceptSession } from "../session/session-revision";
 import { apiError, createFakeApi, makeMe, makeOrganization } from "../test/fake-api";
 import type { RecordedRequest } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
@@ -194,6 +195,46 @@ describe("phones list (W67)", () => {
     expect(screen.queryByText("Teléfono de Norte")).toBeNull();
     release(pageOf([phone({ label: "Teléfono de Sur" })]));
     expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
+  });
+
+  test("an initial request pending across a same-user re-authentication is asked again, not left pending (#82)", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const first = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    let call = 0;
+    await open(() => {
+      call += 1;
+      return call === 1 ? first : pageOf([phone({ label: "Teléfono de Luis" })]);
+    });
+    await screen.findByText("Cargando resultados");
+
+    acceptSession();
+    release(pageOf([phone({ label: "Teléfono VIEJO" })]));
+
+    expect(await screen.findByRole("row", { name: /Teléfono de Luis/ })).toBeDefined();
+    expect(screen.queryByText("Teléfono VIEJO")).toBeNull();
+    expect(call).toBe(2);
+  });
+
+  test("if /me/ fails while reconciling the tab blocks, never falls back to the old identity, and retry recovers (#82)", async () => {
+    const user = userEvent.setup();
+    const { api } = await open(pageOf([phone({ label: "Teléfono de Norte" })]));
+    await screen.findByRole("row", { name: /Teléfono de Norte/ });
+    api.setRoute(ME, apiError(503, "server_error"));
+
+    announceFromAnotherTab();
+
+    expect(await screen.findByText("No pudimos verificar tu sesión")).toBeDefined();
+    expect(screen.queryByText("Teléfono de Norte")).toBeNull();
+    const requestsBefore = devicesRequests(api).length;
+    api.setRoute(ME, Response.json(ALLOWED));
+    api.setRoute(DEVICES, pageOf([phone({ label: "Teléfono de Sur" })]));
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+
+    expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
+    expect(screen.queryByText("No pudimos verificar tu sesión")).toBeNull();
+    expect(requestsBefore).toBe(1);
   });
 
   test("another tab signs in as someone else while this tab pages: no old rows, and the late answer is dropped (#82)", async () => {

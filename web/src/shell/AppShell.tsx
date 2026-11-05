@@ -1,4 +1,7 @@
 import { Outlet } from "@tanstack/react-router";
+import { useSyncExternalStore } from "react";
+import { isSessionUnknown, subscribeToRevision } from "../session/session-revision";
+import { SessionCheckFailed } from "../states/SessionCheckFailed";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
 import { useCrossTabSession } from "../session/use-cross-tab-session";
 import { useSessionChanges } from "../session/use-session-changes";
@@ -20,6 +23,7 @@ export function AppShell() {
   useFocusMainOnNavigation();
   useSessionChanges();
   useCrossTabSession();
+  const isUnknown = useSyncExternalStore(subscribeToRevision, isSessionUnknown);
   return (
     <div className={styles.shell}>
       <SkipLink />
@@ -29,7 +33,7 @@ export function AppShell() {
         <div className={styles.column}>
           <TopBar />
           <main id={MAIN_ID} className={styles.main} tabIndex={-1}>
-            <Outlet />
+            {isUnknown ? <SessionCheckFailed /> : <Outlet />}
           </main>
         </div>
       </div>

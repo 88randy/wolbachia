@@ -18,6 +18,7 @@ type Listener = () => void;
 let revision = 0;
 let isSignedOut = false;
 let reconciling = 0;
+let isUnknown = false;
 const listeners = new Set<Listener>();
 
 function emit(): void {
@@ -97,6 +98,27 @@ export function isReconcilingSession(): boolean {
   return reconciling > 0;
 }
 
+/**
+ * The session check failed (`/me/` unreachable while reconciling): the tab does not know who it
+ * is. State rule (#82): identity is known(user, org, revision) | reconciling | unknown, and
+ * org-scoped queries and mutations run ONLY in `known`. The tab never falls back to the identity
+ * it had before: it blocks and asks the user to retry.
+ */
+export function markSessionUnknown(): void {
+  isUnknown = true;
+  emit();
+}
+
+/** `/me/` answered: the identity is known again. */
+export function clearSessionUnknown(): void {
+  isUnknown = false;
+  emit();
+}
+
+export function isSessionUnknown(): boolean {
+  return isUnknown;
+}
+
 /** True between a confirmed sign-out and the next accepted login. */
 export function isSignedOutSession(): boolean {
   return isSignedOut;
@@ -107,4 +129,5 @@ export function resetSessionRevision(): void {
   revision = 0;
   isSignedOut = false;
   reconciling = 0;
+  isUnknown = false;
 }

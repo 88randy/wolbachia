@@ -1,6 +1,7 @@
 import { CancelledError, queryOptions } from "@tanstack/react-query";
 import type { QueryClient, QueryFunction, QueryKey } from "@tanstack/react-query";
 import type { Me } from "./me";
+import { isRecordedIdentity } from "./identity";
 import { currentRevision } from "./session-revision";
 
 /** Elements of the scope prefix: `["org", userId, organizationSlug]`. */
@@ -79,10 +80,16 @@ export function orgScopedQueryOptions<TData>(
     // Waits for `/me/` after another tab changed the session: the cached identity may be stale.
     enabled: identity.isSettled,
     queryFn: async (context) => {
+      // Known state only: a render that still holds an identity the cache no longer records
+      // (another identity was recorded a moment ago) must not send a request under its key.
+      if (!isRecordedIdentity(context.client, identity.userId, identity.organizationSlug)) {
+        throw new CancelledError({ revert: true });
+      }
+      const started = currentRevision();
       const data = await queryFn(context);
       // The session changed while this was in flight (this tab or another one): the answer was
       // sent with whatever cookie was current, so it is not stored under this identity.
-      if (currentRevision() !== identity.revision) throw new CancelledError({ revert: true });
+      if (currentRevision() !== started) throw new CancelledError({ revert: true });
       return data;
     },
     placeholderData: (previous, previousQuery) =>
@@ -96,4 +103,18 @@ export function invalidateOrgScoped(queryClient: QueryClient, resource: string):
     predicate: (query) =>
       query.queryKey[0] === ORG_SCOPE && query.queryKey[SCOPE_LENGTH] === resource,
   });
+}
+
+/**
+ * The session revision changed (a login of the same user, a sign-out, another tab). Queries
+ * pending from the old revision would be dropped as stale on arrival and, being initial fetches,
+ * would stay pending forever (invalidating dedupes with them). So they are CANCELLED first and
+ * the active ones asked again; data and drafts of the same identity stay on screen meanwhile.
+ */
+export async function restartOrgScoped(queryClient: QueryClient): Promise<void> {
+  const orgScoped = {
+    predicate: (query: { queryKey: QueryKey }) => query.queryKey[0] === ORG_SCOPE,
+  };
+  await queryClient.cancelQueries(orgScoped);
+  await queryClient.refetchQueries({ ...orgScoped, type: "active" });
 }
