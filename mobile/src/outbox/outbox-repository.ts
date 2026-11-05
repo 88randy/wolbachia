@@ -79,10 +79,10 @@ export class OutboxRepository {
   }
 
   /** Saves a captured event as `pending`. Throws `OutboxWriteError` when it could not be stored. */
-  async enqueue(event: FieldEventEnvelope): Promise<void> {
+  async enqueue(event: FieldEventEnvelope, extra: readonly SqlStatement[] = []): Promise<void> {
     const params = insertParams(event, this.#now().toISOString());
     try {
-      await this.#db.runAtomically([{ sql: COLUMNS_SQL, params }]);
+      await this.#db.runAtomically([{ sql: COLUMNS_SQL, params }, ...extra]);
     } catch (error) {
       throw new OutboxWriteError(error);
     }

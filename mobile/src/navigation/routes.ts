@@ -3,7 +3,10 @@
  * without a phone. Later epics add their routes here (one union member each).
  */
 export type Route =
-  { readonly name: "home" } | { readonly name: "inbox" } | { readonly name: "settings" };
+  | { readonly name: "openShift" }
+  | { readonly name: "home" }
+  | { readonly name: "inbox" }
+  | { readonly name: "settings" };
 
 export type RouteName = Route["name"];
 
