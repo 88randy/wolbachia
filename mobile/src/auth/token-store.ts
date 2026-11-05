@@ -1,33 +1,12 @@
-/**
- * Where the session's access token lives while the app runs.
- *
- * PLACEHOLDER (issue #6). Login, token refresh and secure storage (Android Keystore) arrive with
- * #7; until then the token is only ever in memory and nothing writes it to disk. The interface is
- * what the API client and the sync engine depend on, so #7 swaps the implementation, not the callers.
- */
+/** The read-only token boundary shared by the API client and sync worker. */
 export interface TokenStore {
-  /** The current access token, or `undefined` when nobody is signed in. */
-  getAccessToken(): string | undefined;
-  /** Replaces the token (`undefined` signs out). */
-  setAccessToken(token: string | undefined): void;
-  /** Calls `listener` after every change; returns the function that stops listening. */
-  subscribe(listener: () => void): () => void;
-}
-
-export function createMemoryTokenStore(): TokenStore {
-  let accessToken: string | undefined;
-  const listeners = new Set<() => void>();
-  return {
-    getAccessToken: () => accessToken,
-    setAccessToken(token) {
-      accessToken = token;
-      for (const listener of listeners) listener();
-    },
-    subscribe(listener) {
-      listeners.add(listener);
-      return () => {
-        listeners.delete(listener);
-      };
-    },
-  };
+  /** Issuing origin, retained through refresh and final upload. No settings fallback. */
+  readonly getOrigin: () => string | null;
+  /** Includes the retryable final-upload pair retained by an ended session. */
+  readonly hasSyncSession: () => boolean;
+  /** Reads durable ended + retained-pair state after pending persistence settles. */
+  readonly hasPendingFinalUpload: () => Promise<boolean>;
+  /** Ordinary requests can never read an ended session's access token. */
+  readonly getAccessToken: () => string | undefined;
+  readonly subscribe: (listener: () => void) => () => void;
 }

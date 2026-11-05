@@ -45,6 +45,7 @@ async function harness(
       now: () => FIXED_NOW,
     },
     hasSession: () => true,
+    hasPendingFinalUpload: () => Promise.resolve(false),
     hasServer: () => true,
     random: () => 0,
     schedule: (_callback, delayMs) => {
@@ -78,6 +79,33 @@ void describe("sync engine", () => {
     await running;
     await Promise.all(duringPass);
 
+    assert.equal(calls, 2);
+  });
+
+  void it("a hint arriving during the durable idle check is consumed before the worker closes", async () => {
+    const entered = deferred<undefined>();
+    const level = deferred<boolean>();
+    let hasRead = false;
+    let calls = 0;
+    const { engine } = await harness(
+      () => {
+        calls += 1;
+        return Promise.resolve(answer([]));
+      },
+      {
+        hasPendingFinalUpload: () => {
+          if (hasRead) return Promise.resolve(false);
+          hasRead = true;
+          entered.resolve(undefined);
+          return level.promise;
+        },
+      },
+    );
+    const running = engine.start();
+    await entered.promise;
+    void engine.requestSync();
+    level.resolve(false);
+    await running;
     assert.equal(calls, 2);
   });
 
