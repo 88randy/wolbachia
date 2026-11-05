@@ -136,9 +136,20 @@ describe("reset password: the page of the emailed link", () => {
   describe("a second link pasted into the same tab", () => {
     const SECOND_FRAGMENT = "uid=Mg&token=second-link";
 
-    function pasteLink(fragment: string) {
-      act(() => {
+    async function pasteLink(fragment: string) {
+      // Setting the hash only schedules hashchange. Flush its React updates before using the form.
+      await act(async () => {
+        const changed = new Promise<void>((resolve) => {
+          window.addEventListener(
+            "hashchange",
+            () => {
+              resolve();
+            },
+            { once: true },
+          );
+        });
         window.location.hash = fragment;
+        await changed;
       });
     }
 
@@ -154,7 +165,7 @@ describe("reset password: the page of the emailed link", () => {
       window.history.replaceState(null, "", LINK_PATH);
       const { api } = await openReset();
 
-      pasteLink(SECOND_FRAGMENT);
+      await pasteLink(SECOND_FRAGMENT);
 
       await vi.waitFor(() => {
         expect(window.location.href).not.toContain("second-link");
@@ -172,7 +183,7 @@ describe("reset password: the page of the emailed link", () => {
       await openReset();
       await userEvent.type(screen.getByLabelText("Contraseña nueva"), NEW_PASSWORD);
 
-      pasteLink(SECOND_FRAGMENT);
+      await pasteLink(SECOND_FRAGMENT);
 
       await vi.waitFor(() => {
         expect(screen.getByLabelText<HTMLInputElement>("Contraseña nueva").value).toBe("");
@@ -184,7 +195,7 @@ describe("reset password: the page of the emailed link", () => {
       const { api } = await openReset(noContent(204), "es-MX", "/reset-password");
       expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
 
-      pasteLink(SECOND_FRAGMENT);
+      await pasteLink(SECOND_FRAGMENT);
 
       expect(await screen.findByLabelText("Contraseña nueva")).toBeDefined();
       expect(await sendAndReadBody(api)).toEqual({
@@ -198,7 +209,7 @@ describe("reset password: the page of the emailed link", () => {
       window.history.replaceState(null, "", LINK_PATH);
       const { api } = await openReset();
 
-      pasteLink("uid=Mg");
+      await pasteLink("uid=Mg");
 
       expect((await screen.findByRole("alert")).textContent).toContain("Este enlace ya no sirve");
       expect(screen.queryByLabelText("Contraseña nueva")).toBeNull();
@@ -220,7 +231,7 @@ describe("reset password: the page of the emailed link", () => {
         expect(api.requests.length).toBe(1);
       });
 
-      pasteLink(SECOND_FRAGMENT);
+      await pasteLink(SECOND_FRAGMENT);
       await vi.waitFor(() => {
         expect(api.requests[0]?.signal.aborted).toBe(true);
       });
@@ -243,7 +254,7 @@ describe("reset password: the page of the emailed link", () => {
       window.history.replaceState(null, "", LINK_PATH);
       const { api } = await openReset();
 
-      pasteLink("uid=MQ&token=set-password-link");
+      await pasteLink("uid=MQ&token=set-password-link");
 
       await vi.waitFor(() => {
         expect(window.location.href).not.toContain("set-password-link");

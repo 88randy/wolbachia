@@ -28,7 +28,7 @@ from organizations.services import (
 from reviews.permissions import REVIEW_ITEM_READ
 from rules import permissions as rule_codes
 from rules.models import RuleParameter, RuleParameterVersion
-from rules.seeds import DEFAULT_PARAMETER_SEEDS
+from rules.seeds import DEFAULT_PARAMETER_SEEDS, seed_default_rule_parameters
 from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
 from tests.factories import OrganizationFactory
 
@@ -44,6 +44,7 @@ BRIEF_VALUES = {
     "incidents_to_relocate": 3,
     "reminder_minutes_before_end": 60,
     "max_paddle_reuses": 2,
+    "revisit_interval_days": 7,
 }
 PENDING_KEYS = [
     "speed_unlock_seconds",
@@ -97,6 +98,33 @@ def test_parameters_without_a_brief_value_are_seeded_without_version(key) -> Non
     organization = create_organization(SPEC)
 
     assert current_values(organization)[key] is None
+
+
+def test_revisit_interval_is_seeded_in_days_with_bounds() -> None:
+    organization = create_organization(SPEC)
+
+    parameter = RuleParameter.objects.get(organization=organization, key="revisit_interval_days")
+
+    assert (parameter.unit, parameter.value_type) == ("day", "integer")
+    assert (parameter.min_value, parameter.max_value) == (Decimal(1), Decimal(28))
+
+
+def test_seed_adds_the_revisit_interval_to_an_organization_seeded_before_it_existed(
+    monkeypatch,
+) -> None:
+    organization = OrganizationFactory()
+    older = tuple(s for s in DEFAULT_PARAMETER_SEEDS if s.key != "revisit_interval_days")
+    monkeypatch.setattr("rules.seeds.DEFAULT_PARAMETER_SEEDS", older)
+    seed_default_rule_parameters(organization)
+    monkeypatch.undo()
+    assert "revisit_interval_days" not in current_values(organization)
+    before = RuleParameterVersion.objects.filter(organization=organization).count()
+
+    seed_default_rule_parameters(organization)
+    seed_default_rule_parameters(organization)
+
+    assert current_values(organization)["revisit_interval_days"] == 7
+    assert RuleParameterVersion.objects.filter(organization=organization).count() == before + 1
 
 
 def test_seeded_versions_use_the_seed_reason_and_have_no_author() -> None:
@@ -371,7 +399,9 @@ def test_command_apply_updates_an_existing_organization() -> None:
 
     assert "Applied" in output
     assert Catalog.objects.filter(organization=organization).count() == 9
-    assert RuleParameter.objects.filter(organization=organization).count() == 12
+    assert RuleParameter.objects.filter(organization=organization).count() == len(
+        DEFAULT_PARAMETER_SEEDS
+    )
     courier = Profile.objects.get(organization=organization, slug="courier")
     assert "catalog.read" in courier.permission_codes
 
