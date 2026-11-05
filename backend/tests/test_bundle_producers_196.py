@@ -116,15 +116,25 @@ def test_voided_placement_remains_a_tombstone_in_snapshot_and_feed(field):
 
 
 @pytest.mark.django_db
-def test_bundle_build_query_count_stays_bounded_as_points_and_readings_grow(
-    field, django_assert_max_num_queries
-):
+def test_bundle_build_query_count_does_not_grow_with_points_and_readings(field):
+    from types import SimpleNamespace
+
+    from django.db import connection
+    from django.test.utils import CaptureQueriesContext
+
     from tests.ovitrap_support import make_point
+
+    def build_query_count() -> int:
+        with transaction.atomic():
+            services.lock_courier_batches(field.batch)
+            ctx = producer_context(field.batch, FIELD_BOOTSTRAP)
+            with CaptureQueriesContext(connection) as queries:
+                build_sections(ctx)
+        return len(queries)
 
     ingest(field, envelope(field))
     ingest(field, envelope(field, "ovitrap.check"))
-    from types import SimpleNamespace
-
+    baseline = build_query_count()
     for number in range(4):
         point = make_point(field.point.block.quadrant, f"P-extra-{number}")
         extra = SimpleNamespace(**{**vars(field), "point": point, "identity": uuid4()})
@@ -135,11 +145,8 @@ def test_bundle_build_query_count_stays_bounded_as_points_and_readings_grow(
             ).status
             == "accepted"
         )
-    with transaction.atomic():
-        services.lock_courier_batches(field.batch)
-        ctx = producer_context(field.batch, FIELD_BOOTSTRAP)
-        with django_assert_max_num_queries(4):
-            sections = build_sections(ctx)
+    assert build_query_count() == baseline
+    sections = bootstrap_bundle(field.batch)
     assert len(sections["sampling_points"]) == 5
     assert len(sections["ovitraps"]) == 5
 
