@@ -122,11 +122,12 @@ describe("re-authentication and sign-out are queued, not rejected", () => {
 
   test("a failed sign-out is reported inside the dialog", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    await openExpired({
+    const { api } = await openExpired({
       [LOGOUT]: () => {
         throw new TypeError("Failed to fetch");
       },
     });
+    api.setRoute(ME, apiError(401, "not_authenticated")); // the session really is gone
 
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
@@ -517,6 +518,46 @@ describe("the cookie is the truth (#82)", () => {
     expect(seen).not.toContain(userA.user.id);
     expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
     expect(sessionState()).toBe("known");
+  });
+
+  test("a login abandoned after its headers arrived reconciles with /me/: A's data never returns under B's cookie (#82)", async () => {
+    const userA = makeMe();
+    const userB = makeMe({ user: { ...userA.user, id: "b0b0b0b0-0000-4000-8000-000000000007" } });
+    const api = createFakeApi({
+      [ME]: Response.json(userA),
+      [CSRF]: noContent(204),
+      // The server already set B's cookie; the body is still pending and dies with the abort.
+      [LOGIN]: (request) =>
+        new Promise<Response>((_resolve, reject) => {
+          request.signal.addEventListener("abort", () => {
+            reject(new DOMException("aborted", "AbortError"));
+          });
+        }),
+    });
+    const app = await renderApp({ path: "/", fetch: api.fetch });
+    await screen.findByRole("main");
+    const orgKey = ["org", userA.user.id, userA.organization?.slug, "rows"];
+    app.queryClient.setQueryData(orgKey, ["A's row"]);
+    await app.router.navigate({ to: "/login" });
+    await userEvent.type(await screen.findByLabelText("Usuario"), "ana.supervisora");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => {
+      expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(true);
+    });
+    expect(app.queryClient.getQueryData(orgKey)).toBeUndefined(); // left `known` BEFORE sending
+    api.setRoute(ME, Response.json(userB)); // the cookie is B's now
+
+    await app.router.navigate({ to: "/" }); // Forward: the form unmounts and aborts the read
+
+    await waitFor(() => {
+      expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    });
+    expect(app.queryClient.getQueryData(orgKey)).toBeUndefined();
+    expect(sessionState()).toBe("known");
+    expect(api.requests.filter((request) => request.path === "/api/v1/me/").length).toBeGreaterThan(
+      1,
+    );
   });
 
   test("a re-authentication from the unknown state makes the identity known again", async () => {

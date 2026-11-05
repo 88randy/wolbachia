@@ -9,7 +9,7 @@ import { runAuthOperation, useAbandonOnUnmount } from "../session/auth-operation
 import type { Me } from "../session/me";
 import { begin, commitKnown, noteStaleLogin } from "../session/session-controller";
 import type { Token } from "../session/session-controller";
-import { reconcileSession } from "../session/session-reconcile";
+import { reconcileAndRevalidate } from "../session/session-reconcile";
 import type { LoginFailure } from "./login-failure";
 import { requestLogin } from "./request-login";
 import type { Credentials, LoginSuccess } from "./request-login";
@@ -43,29 +43,31 @@ export function useLogin(requestedTarget: string | undefined) {
   const router = useRouter();
   const track = useAbandonOnUnmount();
   return async (credentials: Credentials): Promise<LoginFailure | undefined> => {
-    const state = { diverged: false };
+    const state = { started: false, published: false };
     const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
-      // The token is taken when the queued task STARTS: a sign-out queued before it has finished.
-      const token = begin(queryClient, "passive");
+      // The request can change the cookie: the tab leaves `known` BEFORE it is sent (and the token
+      // is taken when the queued task STARTS: a sign-out queued before it has finished).
+      const token = begin(queryClient, "leave");
+      state.started = true;
       const outcome = await requestLogin(client, credentials, signal);
       if (!isCurrent()) return undefined;
       if (outcome.ok) {
         commit();
-        state.diverged = !publishLogin(outcome, queryClient, token);
+        state.published = publishLogin(outcome, queryClient, token);
       }
       return outcome;
     });
     track(run);
     const outcome = await run.result;
-    if (state.diverged) {
-      // The session moved while this login was in flight: its body is not published; the cookie
-      // is the truth, so `/me/` says who it belongs to.
-      if (await reconcileSession(queryClient, client)) await router.invalidate();
-      return undefined;
-    }
+    // Abandoned, aborted, failed or superseded: the tab left `known` before sending and does not
+    // know what the request did to the cookie, so `/me/` says who the session belongs to.
+    if (state.started && !state.published)
+      await reconcileAndRevalidate(queryClient, client, router);
     if (outcome === undefined) return undefined;
     if (!outcome.ok) return outcome.failure;
-    if (run.isCurrent()) await continueAfterLogin(outcome.me, requestedTarget, router);
+    if (state.published && run.isCurrent()) {
+      await continueAfterLogin(outcome.me, requestedTarget, router);
+    }
     return undefined;
   };
 }

@@ -16,7 +16,7 @@ import type { Me } from "./me";
 import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
 import { begin, commitKnown, noteStaleLogin } from "./session-controller";
-import { reconcileSession } from "./session-reconcile";
+import { reconcileAndRevalidate } from "./session-reconcile";
 import { currentRevision } from "./session-revision";
 import { useMe } from "./use-me";
 
@@ -59,10 +59,13 @@ interface ReauthRequest {
  * with `/me/` (`state.diverged`): the cookie is the truth (#82).
  */
 function startReauth({ client, queryClient, username, password }: ReauthRequest) {
-  const token = begin(queryClient, "passive");
-  const state = { diverged: false };
+  const shownFor = begin(queryClient, "passive");
+  const state = { started: false, published: false };
   const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
-    if (token !== currentRevision() || !isCurrent()) return undefined;
+    if (shownFor !== currentRevision() || !isCurrent()) return undefined;
+    // The request can change the cookie: leave `known` BEFORE it is sent.
+    const token = begin(queryClient, "leave");
+    state.started = true;
     const outcome = await requestLogin(client, { username, password }, signal);
     const isStale = token !== currentRevision() || !isCurrent();
     if (outcome.ok) {
@@ -70,7 +73,7 @@ function startReauth({ client, queryClient, username, password }: ReauthRequest)
       const { me, attestation } = outcome;
       const isPublished = commitKnown(queryClient, token, { me, attestation, ...PUBLISH_LOGIN });
       if (!isPublished) noteStaleLogin();
-      state.diverged = !isPublished;
+      state.published = isPublished;
     }
     return outcome.ok || !isStale ? outcome : undefined;
   });
@@ -105,8 +108,11 @@ export function useReauthenticate() {
     const { run, state } = startReauth({ client, queryClient, username: user.username, password });
     track(run);
     const outcome = await run.result;
-    if (state.diverged) {
-      if (await reconcileSession(queryClient, client)) await router.invalidate();
+    if (!state.published) {
+      // Not published (wrong password, abandoned, superseded, stale body): if the request went
+      // out the tab had left `known`, so it asks `/me/`; the cookie is the truth.
+      if (outcome?.ok === false && run.isCurrent()) setFailure(outcome.failure);
+      if (state.started) await reconcileAndRevalidate(queryClient, client, router);
     } else if (outcome !== undefined && run.isCurrent()) {
       await settleReauth(outcome, { queryClient, router, setFailure });
     }

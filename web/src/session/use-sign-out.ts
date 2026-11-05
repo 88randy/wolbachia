@@ -8,7 +8,7 @@ import type { ServiceFailure } from "../api/service-failure";
 import { runAuthOperation } from "./auth-operation";
 import { requestLogout } from "./request-logout";
 import { begin, clearAfterSignOut, commitSignedOut } from "./session-controller";
-import { reconcileSession } from "./session-reconcile";
+import { reconcileAndRevalidate } from "./session-reconcile";
 
 /**
  * Signs out: ends the server session and leaves it. It is queued with the other auth operations
@@ -31,8 +31,9 @@ export function useSignOut() {
     setIsBusy(true);
     setFailure(undefined);
     const run = runAuthOperation("logout", async ({ signal }) => {
-      // The token is taken when the queued task STARTS: a login queued before it has finished.
-      const token = begin(queryClient, "passive");
+      // The request changes the cookie: leave `known` BEFORE it is sent. The token is taken when
+      // the queued task STARTS: a login queued before it has finished.
+      const token = begin(queryClient, "leave");
       const outcome = await requestLogout(client, signal);
       if (!outcome.ok) return { ok: false as const, failure: outcome.failure };
       return { ok: true as const, epoch: commitSignedOut(queryClient, token) };
@@ -41,10 +42,14 @@ export function useSignOut() {
     if (done?.ok && done.epoch === undefined) {
       // The session moved while the sign-out was in flight: nothing is published; the cookie is
       // the truth, so ask `/me/` who it belongs to.
-      if (await reconcileSession(queryClient, client)) await router.invalidate();
+      await reconcileAndRevalidate(queryClient, client, router);
     } else if (done?.ok && done.epoch !== undefined) {
       await leaveSession(queryClient, router, done.epoch);
-    } else if (done) setFailure(done.failure);
+    } else if (done) {
+      // The server did not confirm: the outcome is indeterminate, so ask who the cookie is.
+      setFailure(done.failure);
+      await reconcileAndRevalidate(queryClient, client, router);
+    }
     setIsBusy(false);
   }
   return { signOut, isBusy, failure };

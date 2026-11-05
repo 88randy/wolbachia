@@ -66,3 +66,12 @@ async function run(queryClient: QueryClient, client: ApiClient, mode: ReconcileM
   }
   return isSessionKnown();
 }
+
+/** `reconcileSession`, and the route guards run again when the session is `known` afterwards. */
+export async function reconcileAndRevalidate(
+  queryClient: QueryClient,
+  client: ApiClient,
+  router: { invalidate: () => Promise<void> },
+): Promise<void> {
+  if (await reconcileSession(queryClient, client)) await router.invalidate();
+}
