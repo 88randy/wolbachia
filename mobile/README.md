@@ -156,7 +156,7 @@ Each sync POST records session status at SEND time. Only a POST sent while alrea
 Restart in the ended state keeps the pair for retry and never permits PIN/password/biometric unlock or refresh. If a response was lost after a committed final upload, a subsequent 401 confirms that it was consumed and permits cleanup; unsent local evidence remains available after same-user relogin. An offline restart waits for connectivity without consuming or clearing anything. A disconnect between the engine's online check and a session request also retains the pair and schedules the normal retry; reconnecting wakes the pending final upload automatically without a manual sync request.
 
 
-A different username with pending/sending/error events is refused BEFORE any server call; unknown ownership with unsent work is refused too. The owner binding survives both session-end steps. P1 temporarily disables login until a definitive sync answer finalizes the ended session, so a new login cannot overwrite or supersede the access token before its final POST.
+A different username is refused BEFORE any server call while the phone holds any local record (any outbox status), so another courier never sees or inherits someone else's records; unknown ownership with records is refused too. Reassigning a phone is an IT reprovisioning. The owner binding survives both session-end steps. P1 temporarily disables login until a definitive sync answer finalizes the ended session, so a new login cannot overwrite or supersede the access token before its final POST.
 
 
 Clock skew compares server_time with phone time at login-response arrival. The non-blocking banner uses defaults immediately and updates after the optional snapshot.

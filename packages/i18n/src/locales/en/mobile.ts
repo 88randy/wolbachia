@@ -128,7 +128,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.login.throttledUnknown": "Too many attempts. Wait a moment and try again.",
   "mobile.login.clockSkew": "The phone's time does not match.",
   "mobile.login.differentUser":
-    "This phone has unsent records from another account. Call your supervisor before changing users.",
+    "This phone has records from another account. Call your supervisor before changing users.",
   "mobile.login.onlineRequired":
     "For security, sign in again with a signal. Your work is still saved on the phone.",
   "mobile.login.serverMissing":

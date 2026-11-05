@@ -131,7 +131,7 @@ export const mobile = {
   "mobile.login.throttledUnknown": "Demasiados intentos. Espera un momento y vuelve a intentar.",
   "mobile.login.clockSkew": "La hora del teléfono no coincide.",
   "mobile.login.differentUser":
-    "Hay registros pendientes de otra cuenta en este teléfono. Llama a tu supervisor antes de cambiar de usuario.",
+    "Este teléfono tiene registros de otra cuenta. Llama a tu supervisor antes de cambiar de usuario.",
   "mobile.login.onlineRequired":
     "Por seguridad necesitas entrar de nuevo con señal. Lo que capturaste sigue guardado en el teléfono.",
   "mobile.login.serverMissing":

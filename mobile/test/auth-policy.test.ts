@@ -76,10 +76,10 @@ void it("maps first-login failures to localized P1 states and respects Retry-Aft
   );
 });
 
-void it("allows same-user relogin but blocks a different user for every unsent status", () => {
-  const counts = { pending: 0, sending: 0, error: 0, sent: 1, rejected: 0, in_review: 0 };
+void it("allows same-user relogin but blocks a different user while any local record exists", () => {
+  const counts = { pending: 0, sending: 0, error: 0, sent: 0, rejected: 0, in_review: 0 };
   assert.equal(canLoginAs("next", "previous", counts), true);
-  for (const status of ["pending", "sending", "error"] as const) {
+  for (const status of ["pending", "sending", "error", "sent", "rejected", "in_review"] as const) {
     const unsent = { ...counts, [status]: 1 };
     assert.equal(canLoginAs("next", "previous", unsent), false);
     assert.equal(canLoginAs("previous", "previous", unsent), true);
