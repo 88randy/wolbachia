@@ -5,6 +5,7 @@ environment variables (django-environ); see `backend/.env.example` for the full 
 """
 
 import environ
+from celery.schedules import crontab
 from django.core.exceptions import ImproperlyConfigured
 
 from ._env import BASE_DIR, load_dotenv
@@ -85,6 +86,15 @@ THROTTLE_USER_RATE = env("THROTTLE_USER_RATE", default="600/min")
 # organization is unknown before login), env-configurable defaults [PENDING client].
 AUTH_ACCESS_TOKEN_TTL_SECONDS = env.int("AUTH_ACCESS_TOKEN_TTL_SECONDS", default=900)
 AUTH_REFRESH_TOKEN_TTL_DAYS = env.int("AUTH_REFRESH_TOKEN_TTL_DAYS", default=30)  # idle, slides
+# Security metadata retention (#54): invalid configuration must fail before a worker starts.
+try:
+    AUTH_TOKEN_PAIR_RETENTION_DAYS = env.int("AUTH_TOKEN_PAIR_RETENTION_DAYS", default=90)
+except ValueError as error:
+    raise ImproperlyConfigured(
+        "AUTH_TOKEN_PAIR_RETENTION_DAYS must be an integer (30..365)."
+    ) from error
+if not 30 <= AUTH_TOKEN_PAIR_RETENTION_DAYS <= 365:
+    raise ImproperlyConfigured("AUTH_TOKEN_PAIR_RETENTION_DAYS must be between 30 and 365.")
 AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", default=60)
 AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
 AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)
@@ -217,6 +227,13 @@ SPECTACULAR_SETTINGS = {
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
+CELERY_TIMEZONE = "UTC"
+CELERY_BEAT_SCHEDULE = {
+    "prune-ended-token-pairs": {
+        "task": "accounts.tasks.prune_ended_token_pairs",
+        "schedule": crontab(hour=3, minute=30),
+    },
+}
 
 LOGGING = {
     "version": 1,
