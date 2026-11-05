@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures/test";
 import { CATALOG_ADMIN } from "../src/test/catalog-fixtures";
 import { mockApi } from "./fixtures/mock-api";
 import { mockCatalogs } from "./fixtures/catalogs-mock";
