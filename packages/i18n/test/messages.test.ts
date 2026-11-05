@@ -27,8 +27,6 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["rules.error.atMost", ["max"]],
   ["rules.error.range", ["max", "min"]],
   ["rules.form.scheduledNote", ["date"]],
-  ["rules.history.hiddenNote", ["count"]],
-  ["rules.history.userRef", ["id"]],
   ["rules.history.voidLabel", ["date"]],
   ["rules.range.atLeast", ["min"]],
   ["rules.range.atMost", ["max"]],

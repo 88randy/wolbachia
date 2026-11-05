@@ -358,7 +358,7 @@ def test_voided_version_can_still_be_retrieved(admin, speed) -> None:
     assert (response.status_code, response.data["status"]) == (200, "voided")
 
 
-@pytest.mark.parametrize("value", ["yes", "1", "True"])
+@pytest.mark.parametrize("value", ["yes", "1", "True", ""])
 def test_include_voided_with_another_value_is_400(admin, speed, value) -> None:
     response = admin.get(versions_url("speed_lock_kmh"), {"include_voided": value})
 

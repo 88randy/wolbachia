@@ -106,7 +106,7 @@ class RuleParameterVersionViewSet(
             return RuleParameterVersion.objects.none()
         include_voided = True
         if self.action == "list":
-            query = VersionFilterSerializer(data=self.request.query_params)
+            query = VersionFilterSerializer(data=self.request.query_params.dict())
             query.is_valid(raise_exception=True)
             include_voided = query.validated_data["include_voided"] == "true"
         return list_versions(self.get_parameter(), timezone.now(), include_voided=include_voided)
