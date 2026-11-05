@@ -15,7 +15,7 @@ export function displayLabel(row: { label_es: string; label_en: string }, langua
 }
 
 /** No write for ends, inactive items or the fixed Other item. */
-export function planMove(items: readonly CatalogItem[], id: string, direction: Direction) {
+export function moveOrderedIds(items: readonly CatalogItem[], id: string, direction: Direction) {
   const active = items.filter((item) => item.is_active && !item.is_other);
   const index = active.findIndex((item) => item.id === id);
   const neighborIndex = index + (direction === "up" ? -1 : 1);
@@ -25,15 +25,10 @@ export function planMove(items: readonly CatalogItem[], id: string, direction: D
   const swapped = [...active];
   swapped[index] = neighbor;
   swapped[neighborIndex] = current;
-  if (new Set(active.map((item) => item.sort)).size < active.length)
-    return swapped.map((item, position) => ({ id: item.id, sort: (position + 1) * SORT_STEP }));
-  return [
-    { id: current.id, sort: neighbor.sort },
-    { id: neighbor.id, sort: current.sort },
-  ];
+  return swapped.map((item) => item.id);
 }
 
-/** Avoid the backend's automatic order, which includes inactive items and can be exhausted. */
+/** Append after active regular items, preserving the editor's ten-step spacing. */
 export function nextItemSort(items: readonly CatalogItem[]): number {
   const highest = items.reduce(
     (maximum, item) => (item.is_active && !item.is_other ? Math.max(maximum, item.sort) : maximum),

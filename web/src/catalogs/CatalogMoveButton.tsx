@@ -1,5 +1,5 @@
 import { useTranslation } from "react-i18next";
-import { displayLabel, planMove } from "./catalog-domain";
+import { displayLabel, moveOrderedIds } from "./catalog-domain";
 import type { Direction } from "./catalog-domain";
 import type { CatalogItem } from "./catalogs-query";
 import { moveItem } from "./catalog-reorder";
@@ -15,7 +15,7 @@ interface Props {
 export function CatalogMoveButton({ editor, item, direction }: Props) {
   const { t } = useTranslation();
   const name = displayLabel(item, editor.language).label;
-  const isEnd = planMove(editor.items, item.id, direction).length === 0;
+  const isEnd = moveOrderedIds(editor.items, item.id, direction).length === 0;
   const isBlocked = isEnd || editor.write.isBusy;
   const reason = editor.write.isBusy
     ? t("catalogs.actions.busy")

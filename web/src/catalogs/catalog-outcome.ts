@@ -7,6 +7,7 @@ type FieldIssues = Partial<Record<"code" | "label_es" | "label_en", MessageKey>>
 export type CatalogOutcome =
   { kind: "saved" } | { kind: "stale" } | { kind: "failed"; key: MessageKey; fields: FieldIssues };
 const CODE_KEYS: Readonly<Record<string, MessageKey>> = {
+  catalog_version_conflict: "catalogs.error.versionConflict",
   duplicate_code: "catalogs.error.duplicate",
   reserved_code: "catalogs.error.reserved",
   sort_exhausted: "catalogs.error.sort",

@@ -8,9 +8,11 @@ from shifts.motorcycle_serializers import SnapshotMotorcycleSerializer
 
 
 class CatalogSerializer(OrgScopedModelSerializer):
+    version = serializers.IntegerField(source="revision", read_only=True)
+
     class Meta:
         model = Catalog
-        fields = ["slug", "label_es", "label_en", "is_open"]
+        fields = ["slug", "label_es", "label_en", "is_open", "version"]
         read_only_fields = fields
 
 
@@ -19,17 +21,35 @@ class CatalogItemSerializer(OrgScopedModelSerializer):
 
     protected = serializers.BooleanField(source="is_other", read_only=True)
     in_use = serializers.SerializerMethodField()
+    usage_count = serializers.SerializerMethodField()
+    catalog_version = serializers.IntegerField(source="catalog.revision", read_only=True)
+    created_by_username = serializers.CharField(
+        source="created_by.username", read_only=True, allow_null=True, default=None
+    )
+    deactivated_by_username = serializers.CharField(
+        source="deactivated_by.username", read_only=True, allow_null=True, default=None
+    )
 
     def get_in_use(self, item: CatalogItem) -> bool:
-        from catalogs.selectors import catalog_item_is_in_use
+        return self.get_usage_count(item) > 0
 
-        return catalog_item_is_in_use(item)
+    def get_usage_count(self, item: CatalogItem) -> int:
+        from catalogs.selectors import catalog_item_usage_count
+
+        return catalog_item_usage_count(item)
 
     class Meta:
         model = CatalogItem
         fields = [
             "protected",
             "in_use",
+            "usage_count",
+            "catalog_version",
+            "created_by",
+            "created_by_username",
+            "deactivated_at",
+            "deactivated_by",
+            "deactivated_by_username",
             "id",
             "code",
             "label_es",
@@ -43,6 +63,16 @@ class CatalogItemSerializer(OrgScopedModelSerializer):
             "updated_at",
         ]
         read_only_fields = fields
+
+
+class CatalogReorderSerializer(serializers.Serializer[Any]):
+    version = serializers.IntegerField(min_value=0)
+    ordered_ids = serializers.ListField(child=serializers.UUIDField(), max_length=200)
+
+
+class CatalogReorderResponseSerializer(serializers.Serializer[Any]):
+    version = serializers.IntegerField(read_only=True)
+    items = CatalogItemSerializer(many=True, read_only=True)
 
 
 class CatalogItemCreateSerializer(OrgScopedModelSerializer):
