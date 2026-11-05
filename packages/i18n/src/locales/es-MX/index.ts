@@ -7,6 +7,7 @@ import { common } from "./common.ts";
 import { errors } from "./errors.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
+import { rules } from "./rules.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
 import { table } from "./table.ts";
@@ -21,6 +22,7 @@ export const esMX = {
   ...sync,
   ...table,
   ...phones,
+  ...rules,
   ...voiding,
 } as const;
 

@@ -10,6 +10,9 @@ import { PhonesPage } from "../devices/PhonesPage";
 import { AppShell } from "../shell/AppShell";
 import { SettingsPage } from "../settings/SettingsPage";
 import { PHONES_PERMISSION } from "../devices/permissions";
+import { RULE_PARAMETER_READ } from "../rules/permissions";
+import { RuleParameterPage } from "../rules/RuleParameterPage";
+import { RuleParametersPage } from "../rules/RuleParametersPage";
 import { AreaErrorState } from "../states/AreaErrorState";
 import { AreaPlaceholder } from "../states/AreaPlaceholder";
 import { NotFoundState } from "../states/NotFoundState";
@@ -102,6 +105,30 @@ const phonesRoute = createRoute({
   errorComponent: AreaErrorState,
 });
 
+// W62, rule parameters: the list and one parameter by its key (its human code). Both need
+// `rule_parameter.read`; the page of a parameter shows the form and the history by their own codes.
+const ruleParametersRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/rule-parameters",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, RULE_PARAMETER_READ);
+  },
+  component: RuleParametersPage,
+  errorComponent: AreaErrorState,
+});
+
+const ruleParameterRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/rule-parameters/$key",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, RULE_PARAMETER_READ);
+  },
+  component: RuleParameterPage,
+  errorComponent: AreaErrorState,
+});
+
 // An unknown address behind the session is "not found" inside the shell; without a session the
 // guard of the layout sends the visitor to sign in first.
 const notFoundRoute = createRoute({
@@ -116,7 +143,13 @@ const routeTree = rootRoute.addChildren([
   resetPasswordRoute,
   legacyResetPasswordRoute,
   selectOrganizationRoute,
-  authenticatedRoute.addChildren([...areaRoutes, phonesRoute, notFoundRoute]),
+  authenticatedRoute.addChildren([
+    ...areaRoutes,
+    phonesRoute,
+    ruleParametersRoute,
+    ruleParameterRoute,
+    notFoundRoute,
+  ]),
 ]);
 
 interface AppRouterOptions extends RouterContext {

@@ -6,6 +6,46 @@ Status: **TEMPLATE, values blank.** The owner fills this in after testing on rea
 Result scale: **works** / **works with caveats** / **does not work** / **not tested**.
 Evidence: link to a video or file in the shared evidence folder (not in this repository).
 
+## Phone results 2026-11-04
+
+Source: the owner, first run of the spike debug APK. Evidence is in the shared folder, not in this repository.
+
+Phone: Samsung Galaxy S24 Ultra (SM-S928B), Android 16 (API 36).
+
+| Tab | Result | Observed |
+|---|---|---|
+| Store | works | Reported working. Numbers still to be recorded in section 1. |
+| QR | works | Scanning worked. The on-screen log printed a stale status (`denied (status not-determined)`): the log read `permission.status` right after the request, before React re-rendered. Fixed in `fix/1-spike-test-bugs`. |
+| Map | **does not work** | Pressing "Download map" crashes the app (native crash, see below). |
+| Go | **result invalid, repeat** | Reported working, but that build had no `<queries>` entry, so the Android 11+ package visibility rules could have hidden Organic Maps and any `geo:` handler. A "not installed" or a "no handler" from that first build proves nothing. Repeat every Go test with the build that has the `<queries>` fix. |
+| Speed (stationary) | works | Tested standing still only; moving and GPS-loss cases are pending. |
+| Admin (status) | works | Device status shown. Lock task, update and provisioning not reported yet. |
+
+Layout on Android 16 (edge-to-edge): the gesture bar overlapped the bottom tab bar and the top content touched the status bar. Fixed with `react-native-safe-area-context` insets in `fix/1-spike-test-bugs`. `targetSdk` after prebuild is 36 (`react-native/gradle/libs.versions.toml`, `targetSdk = "36"`) and `edgeToEdgeEnabled=true` in the generated `gradle.properties`, so Android 16 forces edge-to-edge.
+
+### Map crash: MapLibre native `std::regex_error`
+
+- Trigger: "Download map" (`OfflineManager.createPack`) with the default demo style `https://demotiles.maplibre.org/style.json`. The crash comes right after `createPack` returns.
+- Thread: MapLibre's `DatabaseFileSource` thread, inside `libmaplibre.so`.
+- Message: `std::regex_error: The expression contained an invalid range in a {} expression`.
+- It is a native abort (C++ exception), so JavaScript `try/catch` cannot catch it and the app dies.
+- Status: not fixed in this PR. [ASSUMPTION] it is a bug in the MapLibre Native regex used while reading the style or tile URL for the pack (the installed `@maplibre/maplibre-react-native` 11.5.1 uses native `org.maplibre.gl:android-sdk` 13.6.1). Not verified. Next steps to isolate: try a pack with a raster style (own tile URL) and with a local style file; test with another native version; report upstream with the log. The offline map result stays "does not work" for the demo style until then. The local PMTiles mode (issue #64) does not use `OfflineManager`, so it avoids this path.
+
+## Review notes (fix/1-spike-test-bugs)
+
+Points for whoever reads the numbers, no code behind them:
+
+- "Fix age" in the Speed tab is `Date.now() - location.timestamp`. The fix timestamp comes from the location provider (GNSS time or system time depending on the provider) and `Date.now()` is the system clock, so the value mixes two clocks and can be off by the clock error of the phone. Treat it as an estimate, not a latency. For a real latency use a monotonic clock on both ends.
+- "Callback to overlay commit" is measured in `useLayoutEffect`, which runs after React commits the change, not after the screen paints. Add the display refresh time (about 16 ms at 60 Hz) and the GPU time for a paint figure.
+- Permissions: the generated manifest (after prebuild) has no `FOREGROUND_SERVICE_LOCATION`, no `ACCESS_BACKGROUND_LOCATION` and no `RECEIVE_BOOT_COMPLETED`: `expo-location`'s config plugin only adds them when background location or the foreground service are enabled (`plugin/build/withLocation.js`), and this app enables neither. The library manifest declares two services with `foregroundServiceType="location"`; that is harmless without starting them. `SYSTEM_ALERT_WINDOW` is in the generated manifest too; it comes from the Expo template, nothing in the spike needs it. [ASSUMPTION] check the merged manifest of the built APK (`aapt dump permissions`) and block it before any production build.
+- Speed tab "GPS signal: LOST": the watchdog says "LOST" when no fix arrives for 3 s. Standing still, the provider may deliver fixes less often (a spaced fix), because the request uses `distanceInterval: 0` but providers can throttle when the phone does not move. So "LOST" while standing still may be a spaced fix and not a real loss of signal. Check the log: if fixes come back without the services toggled, it was spacing. The 3 s threshold is a spike default, not a decision.
+- Store: phones that ran the first build keep the old `event_status_time` index; the store now drops it at open and logs `PRAGMA index_list(event)` so the index set of each run is visible.
+- Android 11+ package visibility: `getPackageInfo("app.organicmaps")` needs a `<queries>` entry or it reports "not installed" for an installed app. The first build had none, so a "not installed" result in the Go tab on that build may be wrong. Added with a config plugin; repeat the Go tests on the new build.
+- Lock task after update or reboot: chosen `android:lockTaskMode="if_whitelisted"` on `MainActivity` (config plugin) over `startLockTask()` on mount. Reason: the Android docs offer it for "automatically run your activity in lock task mode" and warn not to start lock task while the device is locked, which a mount-time call cannot check cleanly. Source: https://developer.android.com/work/dpc/dedicated-devices/lock-task-mode. It does not make the app start by itself after a reboot (that needs the app to be the home app); it applies when the activity is launched, for example by the post-update relaunch receiver.
+- Kotlin long operations: in `expo-modules-core` (`AppContext.kt`) a plain `AsyncFunction` runs on one `HandlerThread` queue ("expo.modules.AsyncFunctionQueue"), so a long download blocks every other async call. Download, install and discard now use the `Coroutine` variant of `AsyncFunction` with `withContext(Dispatchers.IO)`. The Expo docs page (https://docs.expo.dev/modules/module-api/) shows the `Coroutine` syntax but does not say which dispatcher it uses by default, hence the explicit `Dispatchers.IO`.
+- Store fairness: both stores now index only `status` (WatermelonDB `isIndexed` on `status`; op-sqlite had an extra composite index) and both request `journal_mode=WAL`, `synchronous=FULL`; the values actually in effect are logged when each store opens. [ASSUMPTION] reading PRAGMAs through `Q.unsafeSqlQuery` works on WatermelonDB's Android async bridge; if not, the log line says so.
+- WatermelonDB Android async mode: no PRAGMA is set by the native Android code (`WMDatabase.java`); WAL + FULL are only in the JSI C++ code. Compare the logged values before comparing timings.
+
 ## 0. Test phones and build
 
 | Id | Phone model | Android version | Security patch | Free storage at start | Google services (yes/no) | Notes |
@@ -78,6 +118,20 @@ The OSM tile server policy forbids offline use and pre-seeding (`operations.osmf
 Estimate for one real operating quadrant (area ____ km2, zoom ____ to ____): ____ MB. Method: ____
 
 Attribution displayed correctly? ____
+
+### 3.1 Local PMTiles (issue #64, README 5.3.1)
+
+| Phone | File | File size | Zoom range (header) | Time to render finished | Features rendered per layer (earth / water / roads / landuse / buildings) | Offline (airplane, after app kill) | Errors in the log | Result | Evidence | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|
+| Galaxy S24 Ultra (SM-S928B), Android 16 | test-zone-z15.pmtiles (Mérida, about 49 km2) | 1.6 MB | 0 to 15 (v3, tile type 1 = MVT, bounds -89.66, 20.94, -89.59, 21.00) | not measured: `onDidFinishRenderingMapFully` never fired | not read: the field stayed "-" (same cause) | Airplane mode ON (verified with adb, `airplane_mode_on=1`) | no crash, no network use | **works** | owner's test, 2026-11-04 (build 701c2fd) | World renders; after manual zoom into Mérida, blocks, streets, the main avenue and parcel outlines render crisp ABOVE z15 (overzoom of the z15 tiles). |
+
+Issues found on that first phone test of the PMTiles mode, and the fix for each (same branch, `feat/64-pmtiles-poc`):
+
+1. Pinch zoom worked badly. The map was inside the screen's `ScrollView`, which competes for the touch gestures. Fix: a "Full screen map" layout where the map has no scroll container around it, so pinch, pan and rotate get every gesture. [ASSUMPTION] this fixes it; to be confirmed on the phone.
+2. The camera stayed at the world view after "Load file". Fix: `fitBounds` to the header bounds once the style (or the map) finishes loading, logged, with an error line if it fails; the fixed `center`/`zoom` from the header and the `maxBounds` limit were removed.
+3. "Time to render finished" and "Features rendered" stayed "-" for over 30 s although tiles were drawn, and the log said "first frame after n/a". `onDidFinishRenderingMapFully` does not fire in this setup, and the timer was only started inside `onWillStartLoadingMap`. Fix: the clock starts when the map is mounted (Load file, Reload, full screen toggle); the screen counts the rendered features per layer every 500 ms with `queryRenderedFeatures` and reports the first count above zero as "time to first features" (20 s timeout with a warning).
+
+Did `pmtiles://file://...` load through `@maplibre/maplibre-react-native` 11.5.1 (native 13.6.1)? ____ Were the Protomaps layer names and `kind` values right? ____
 
 ## 4. How to get there (Organic Maps via `geo:`)
 
