@@ -7,6 +7,8 @@ export interface ServerForm {
   readonly text: string;
   readonly setText: (text: string) => void;
   readonly feedback: ServerFeedback | null;
+  /** True while an address saved in Settings overrides the build's (only then can it be reset). */
+  readonly hasSavedAddress: boolean;
   readonly save: () => void;
   readonly reset: () => void;
 }
@@ -33,6 +35,8 @@ export function useServerForm(): ServerForm {
     text,
     setText,
     feedback,
+    // Read on every render: save/clear update the override before the feedback re-renders the form.
+    hasSavedAddress: server.savedOverride() !== "",
     save: () =>
       void save().catch(() => {
         setFeedback("storageFailed");
