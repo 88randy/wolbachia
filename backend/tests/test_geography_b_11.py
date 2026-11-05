@@ -671,3 +671,32 @@ def test_point_publish_http_response_stays_on_its_commit_after_another_publicati
     assert own[1][0]["point"] == str(neighbor.pk)
     assert newer[1] == []
     assert point.versions.latest("version").pk == newer[0].pk
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("query", "expected_codes"),
+    [
+        ({"search": "alpha"}, ["Q-alpha"]),
+        ({"ordering": "-code"}, ["Q-zeta", "Q-alpha", "Q-108"]),
+        ({}, ["Q-108", "Q-alpha", "Q-zeta"]),
+    ],
+    ids=["search", "requested_order", "default_order"],
+)
+def test_geography_list_filters_and_orders_across_pages(api_client, query, expected_codes):
+    from geography.models import Quadrant
+
+    member, quadrant = geography_setup()
+    # Insert in a different order from both the requested and default order.
+    for code in ["Q-zeta", "Q-alpha"]:
+        Quadrant.objects.create(organization=member.organization, center=quadrant.center, code=code)
+    api_client.force_authenticate(member.user)
+
+    actual_codes = []
+    for page in range(1, (len(expected_codes) + 1) // 2 + 1):
+        response = api_client.get("/api/v1/quadrants/", {**query, "page_size": 2, "page": page})
+        assert response.status_code == 200
+        assert response.data["count"] == len(expected_codes)
+        actual_codes.extend(row["code"] for row in response.data["results"])
+
+    assert actual_codes == expected_codes

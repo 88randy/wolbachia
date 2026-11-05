@@ -156,3 +156,29 @@ selection passed 31 cases, with 39 database cases deselected. Geography alone ha
 13 passing DB-free cases and 14 PostgreSQL cases pending; all 27 collect. The live
 schema comparison still passes, so the public schema/client shape is unchanged.
 No new assumptions, dependencies, commits or pushes are part of this round.
+
+## Adversarial round 2: list search and ordering
+
+GeographyViewSet explicitly registers CodeLookupFilter, SearchFilter and
+OrderingFilter, following CenterViewSet. search_fields/ordering_fields now apply
+on the server for quadrants, blocks and sampling points. Preserve exact ?code=
+and the deterministic default order (code, id) for page-number pagination.
+
+Criterion 4 maps to test_geography_list_filters_and_orders_across_pages: three
+PostgreSQL cases (search, requested -code order, default order) use deliberately
+unsorted insertion and read across pages. They check response counts and ordered
+codes, not backend class configuration or query implementation details. Existing
+scope-isolation coverage remains in its single dedicated endpoint test.
+
+The owner regenerates OpenAPI/client: search and ordering now appear in the live
+schema. Until that regeneration, the existing exported/live schema equality test
+is expected to report the stale export; its assertions remain intact.
+
+Round 2 local checks: ruff 0.8.4 lint for backend and format check for both changed
+Python files passed; mypy . passed (147 files); git diff --check passed. DB-free
+geography/#99/rule-contract selection: 30 passed, 1 failed (the retained exported/live
+schema equality assertion), 42 database cases deselected. Live spectacular schema
+validation passed with no warnings; comparing the three resource list operations
+confirmed the only operation changes are the new search/ordering parameters.
+The three PostgreSQL regression cases collect, but have not run here. The exported
+schema and generated client remain untouched for the owner's regeneration.

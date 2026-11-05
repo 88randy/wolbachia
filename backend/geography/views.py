@@ -6,9 +6,11 @@ from django.db.models import QuerySet
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework.decorators import action
+from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from core.filters import CodeLookupFilter
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSet
 from geography.models import Block, Quadrant, SamplingPoint
@@ -59,6 +61,7 @@ class GeographyViewSet(OrgScopedViewSet):
     http_method_names = ["get", "post", "head", "options"]
     pagination_class = StandardPagination
     code_lookup_field = "code"
+    filter_backends = [CodeLookupFilter, SearchFilter, OrderingFilter]
     ordering_fields = ["code", "created_at"]
     ordering = ["code", "id"]
     search_fields = ["code"]
