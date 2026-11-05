@@ -19,6 +19,7 @@ from catalogs.permissions import (
 )
 from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
 from field_sync.permissions import FIELD_EVENT_SYNC
+from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from geography.permissions import GEOGRAPHY_WRITE_CODES, QUADRANT_READ
 from organizations.models import Organization, Profile
 from reviews.permissions import REVIEW_ITEM_READ
@@ -58,6 +59,7 @@ ADMIN_CODES = (
     MOTORCYCLE_READ,
     MOTORCYCLE_MANAGE,
     MOTORCYCLE_UNBLOCK,
+    MOTORCYCLE_SERVICE_CLEAR,
 )
 COURIER_CODES = (*READ_ONLY_CODES, FIELD_EVENT_SYNC, MOTORCYCLE_READ)  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
@@ -68,6 +70,7 @@ SUPERVISOR_CODES = (
     SHIFT_READ,
     MOTORCYCLE_READ,
     MOTORCYCLE_UNBLOCK,
+    MOTORCYCLE_SERVICE_CLEAR,
 )
 # Keys are the slugs of `organizations.services.DEFAULT_PROFILE_SEEDS`.
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {

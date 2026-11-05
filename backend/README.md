@@ -250,3 +250,8 @@ Tool config lives in [`pyproject.toml`](pyproject.toml) (ruff, mypy, pytest, cov
 ## Next
 
 Deploy: #18. Each epic registers its event handlers with `field_sync.registry` (#8 onward); review decisions: #22.
+
+
+`fleet/` implements #103/B-05: immutable service/letter/fuel history, named
+inspection clearances, scoped nested routes and event-time efficiency advisories.
+It depends on shifts and registers optional hooks; see fleet/README.md.

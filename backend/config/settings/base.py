@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "reviews",
     "shifts",
     "geography",
+    "fleet",
 ]
 
 MIDDLEWARE = [
@@ -217,6 +218,7 @@ SPECTACULAR_SETTINGS = {
         "ReviewKindEnum": "reviews.models.ReviewKind",
         "ShiftStatusEnum": "shifts.models.ShiftStatus",
         "CheckResultEnum": "shifts.models.CheckResult",
+        "ServiceKindEnum": "fleet.models.ServiceKind",
         "StatusEnum": "rules.selectors.VERSION_STATUSES",
     },
     # The enum hook is spectacular's default; ours adds ErrorEnvelope and the `default` error

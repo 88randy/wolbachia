@@ -62,4 +62,10 @@ export const sync: Record<keyof typeof source, string> = {
     "We couldn't refresh your inbox, so the app will load it in full again. You don't need to do anything.",
   "sync.batch.syncInProgress":
     "Information from your account is already being sent from another phone. The app will try again in a few seconds.",
+  "sync.result.fuelMotorcycleMismatch":
+    "The fuel load names a different motorcycle. Ask your supervisor to review it.",
+  "sync.result.fuelEfficiencyReview":
+    "The fuel load was saved for an efficiency review. You can close your shift and tell your supervisor.",
+  "sync.result.fuelEventNotVoidable":
+    "This fuel load needs an authorized correction. Ask your supervisor for help.",
 };

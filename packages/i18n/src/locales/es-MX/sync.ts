@@ -63,4 +63,10 @@ export const sync = {
     "No pudimos actualizar tu bandeja, así que la app la pedirá completa otra vez. No tienes que hacer nada.",
   "sync.batch.syncInProgress":
     "Ya se está enviando información de tu cuenta desde otro teléfono. La app lo intentará de nuevo en unos segundos.",
+  "sync.result.fuelMotorcycleMismatch":
+    "La carga corresponde a otra motocicleta. Avisa a tu supervisor para revisarla.",
+  "sync.result.fuelEfficiencyReview":
+    "La carga se guardó para revisión del rendimiento. Puedes cerrar tu jornada y avisar a tu supervisor.",
+  "sync.result.fuelEventNotVoidable":
+    "Esta carga necesita una corrección autorizada. Pide apoyo a tu supervisor.",
 } as const satisfies AreaCatalog<"sync">;
