@@ -35,7 +35,6 @@ describe("areas still waiting for a permission code", () => {
       "releases",
       "community",
       "inventory",
-      "fleet",
       "lab",
       "people",
       "dashboards",
