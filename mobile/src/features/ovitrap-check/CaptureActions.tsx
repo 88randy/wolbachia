@@ -7,9 +7,10 @@ import type { M08Model } from "./use-m-08.ts";
 export function CaptureActions({ model }: { readonly model: M08Model }) {
   const t = useT();
   const { push } = useNavigation();
+  const eventId = model.state?.draft?.eventId ?? null;
   return (
     <View>
-      <CaptureCommand model={model} command="startPlace" />
+      <CaptureCommand eventId={eventId} model={model} command="startPlace" />
       <ShiftAction
         label={t("mobile.ovitrap.check")}
         disabled={model.isBusy || model.state?.canStartCapture !== true}
@@ -17,9 +18,9 @@ export function CaptureActions({ model }: { readonly model: M08Model }) {
           push({ name: "ovitrapScanner", target: "ovitrap" });
         }}
       />
-      <CaptureCommand model={model} command="refresh" />
+      <CaptureCommand eventId={eventId} model={model} command="refresh" />
       {model.state?.draft && !model.state.event ? (
-        <CaptureCommand model={model} command="adoptSnapshots" />
+        <CaptureCommand eventId={eventId} model={model} command="adoptSnapshots" />
       ) : null}
     </View>
   );

@@ -1,3 +1,4 @@
+import { assertCaptureIdentity } from "./capture-identity.ts";
 import { ImmutableCaptureError, OvitrapDraftBuffer } from "./draft-buffer.ts";
 import { ShiftBlockedError } from "./shift-authorization.ts";
 import { availability } from "./availability.ts";
@@ -23,6 +24,12 @@ interface Dependencies {
   readonly shiftId: () => Promise<string>;
   readonly refresh?: () => Promise<void>;
 }
+interface StartInput {
+  readonly mode: Draft["mode"];
+  readonly eventId: string | null;
+  readonly ovitrapId?: string;
+  readonly isManual?: boolean;
+}
 export interface Snapshot extends StoredCapture {
   readonly catalogChanged: boolean;
   readonly isScopeBlocked: boolean;
@@ -32,7 +39,7 @@ export interface Snapshot extends StoredCapture {
   readonly reuse: readonly Reuse[];
   readonly isBagReserved: boolean;
 }
-/** Serialize start/edit/commit. SQL slot/capture constraints protect against a second service instance. */
+/** Every command carries the displayed UUID; validate it inside the writer and on its loaded draft. */
 export class OvitrapService {
   readonly draftBuffer = new OvitrapDraftBuffer();
   readonly #deps: Dependencies;
@@ -40,15 +47,29 @@ export class OvitrapService {
   constructor(deps: Dependencies) {
     this.#deps = deps;
   }
-  #write<T>(action: () => Promise<T>, startsCapture = false, eventId?: string | null): Promise<T> {
+  #write<T>(action: () => Promise<T>, eventId: string | null, startsCapture = false): Promise<T> {
     const next = this.#tail.then(async () => {
-      const draft = startsCapture ? null : (await this.#deps.store.read()).draft;
-      if (eventId !== undefined && draft?.eventId !== eventId) throw new ImmutableCaptureError();
-      if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();
+      const state = await this.#deps.store.read();
+      assertCaptureIdentity(state, eventId);
+      if (await this.#isShiftBlocked(startsCapture ? null : state.draft))
+        throw new ShiftBlockedError();
       return action();
     });
     this.#tail = next.catch(() => undefined); // Caller owns the rejection; future writes remain possible.
     return next;
+  }
+  async #readExpected(eventId: string | null): Promise<Snapshot> {
+    const state = await this.read();
+    assertCaptureIdentity(state, eventId);
+    return state;
+  }
+  async #assertUpdated(isApplied: boolean, eventId: string | null): Promise<void> {
+    if (isApplied) return;
+    assertCaptureIdentity(await this.#deps.store.read(), eventId);
+    throw new ImmutableCaptureError();
+  }
+  async #updateDraft(draft: Draft): Promise<void> {
+    await this.#assertUpdated(await this.#deps.store.update(draft), draft.eventId);
   }
   async read(): Promise<Snapshot> {
     const state = await this.#deps.store.read();
@@ -71,24 +92,31 @@ export class OvitrapService {
     const id = await this.#deps.shiftId();
     return !id || Boolean(draft && draft.shiftId !== id);
   }
-  refresh(): Promise<void> {
-    return this.#deps.refresh?.() ?? Promise.resolve();
+  async refresh(eventId: string | null): Promise<void> {
+    assertCaptureIdentity(await this.#deps.store.read(), eventId);
+    await this.#deps.refresh?.();
   }
-  startPlace(): Promise<Snapshot> {
-    return this.#write(() => this.#start("place"), true);
+  startPlace(eventId: string | null): Promise<Snapshot> {
+    return this.#write(() => this.#start({ mode: "place", eventId }), eventId, true);
   }
-  startCheck(code: string, isManual: boolean): Promise<Snapshot> {
-    return this.#write(async () => {
-      const parsed = parseQr(code, "ovitrap");
-      const id =
-        parsed?.id ??
-        (isManual && UUID_PATTERN.test(code.trim()) ? code.trim().toLowerCase() : null);
-      if (!id) throw new Error("Invalid ovitrap code.");
-      return this.#start("check", id, isManual);
-    }, true);
+  startCheck(code: string, isManual: boolean, eventId: string | null): Promise<Snapshot> {
+    return this.#write(
+      async () => {
+        const parsed = parseQr(code, "ovitrap");
+        const id =
+          parsed?.id ??
+          (isManual && UUID_PATTERN.test(code.trim()) ? code.trim().toLowerCase() : null);
+        if (!id) throw new Error("Invalid ovitrap code.");
+        return this.#start({ mode: "check", ovitrapId: id, isManual, eventId });
+      },
+      eventId,
+      true,
+    );
   }
-  async #start(mode: Draft["mode"], ovitrapId?: string, isManual = false): Promise<Snapshot> {
+  async #start(input: StartInput): Promise<Snapshot> {
+    const { mode, ovitrapId, isManual = false, eventId } = input;
     const current = await this.#deps.store.read();
+    assertCaptureIdentity(current, eventId);
     const shiftId = await this.#deps.shiftId();
     if (!shiftId) throw new ShiftBlockedError();
     if (current.draft?.shiftId === shiftId && !current.event) {
@@ -106,6 +134,7 @@ export class OvitrapService {
     });
     const located = await this.#locateDraft(draft, isManual);
     if (await this.#isShiftBlocked(located)) throw new ShiftBlockedError();
+    assertCaptureIdentity(await store.read(), eventId);
     await store.begin(located);
     this.draftBuffer.rebind(located.eventId);
     const saved = await this.read();
@@ -128,87 +157,87 @@ export class OvitrapService {
   }
   update(
     patch: DraftPatch,
-    eventId?: string | null,
+    eventId: string | null,
   ): Promise<Snapshot & { readonly isUpdateApplied: boolean }> {
+    return this.#write(async () => {
+      const state = await this.#readExpected(eventId);
+      const { draft, event } = state;
+      if (!draft || event) return { ...state, isUpdateApplied: false };
+      if (state.isShiftBlocked) throw new ShiftBlockedError();
+      const manual = patch.bagCode !== undefined ? { manualCapture: true, bagUuid: null } : {};
+      const isUpdateApplied = await this.#deps.store.update(
+        normalizePaddle({ ...draft, ...patch, ...manual }),
+      );
+      await this.#assertUpdated(isUpdateApplied, eventId);
+      return { ...(await this.read()), isUpdateApplied };
+    }, eventId);
+  }
+  scan(target: "bag" | "ovitrap", eventId: string | null): Promise<string> {
     return this.#write(
       async () => {
-        const state = await this.read();
-        const { draft, event } = state;
-        if (eventId !== undefined && draft?.eventId !== eventId) throw new ImmutableCaptureError();
-        if (!draft || event) return { ...state, isUpdateApplied: false };
-        if (state.isShiftBlocked) throw new ShiftBlockedError();
-        const manual = patch.bagCode !== undefined ? { manualCapture: true, bagUuid: null } : {};
-        const isUpdateApplied = await this.#deps.store.update(
-          normalizePaddle({ ...draft, ...patch, ...manual }),
-        );
-        return { ...(await this.read()), isUpdateApplied };
+        const result = await this.#deps.scanner.scan();
+        if (result.status !== "read") return result.status;
+        const parsed = parseQr(result.value, target);
+        if (!parsed) return "invalid";
+        if (target === "ovitrap") {
+          await this.#start({ mode: "check", ovitrapId: parsed.id, eventId });
+          return "read";
+        }
+        const { draft, event } = await this.#readExpected(eventId);
+        if (!draft || event) return "cancelled";
+        const bagCode = draft.assignment?.bags.find((bag) => bag.id === parsed.id)?.code ?? "";
+        await this.#updateDraft({
+          ...draft,
+          bagUuid: parsed.id,
+          bagCode,
+          bagQrHistory: [...new Set([...draft.bagQrHistory, parsed.id])],
+        });
+        return "read";
       },
-      false,
       eventId,
+      target === "ovitrap",
     );
   }
-  scan(target: "bag" | "ovitrap"): Promise<string> {
+  enterBag(value: string, eventId: string | null): Promise<Snapshot> {
     return this.#write(async () => {
-      const result = await this.#deps.scanner.scan();
-      if (result.status !== "read") return result.status;
-      const parsed = parseQr(result.value, target);
-      if (!parsed) return "invalid";
-      if (target === "ovitrap") {
-        await this.#start("check", parsed.id);
-        return "read";
-      }
-      const { draft, event } = await this.read();
-      if (!draft || event) return "cancelled";
-      const bagCode = draft.assignment?.bags.find((bag) => bag.id === parsed.id)?.code ?? "";
-      await this.#deps.store.update({
-        ...draft,
-        bagUuid: parsed.id,
-        bagCode,
-        bagQrHistory: [...new Set([...draft.bagQrHistory, parsed.id])],
-      });
-      return "read";
-    }, target === "ovitrap");
-  }
-  enterBag(value: string): Promise<Snapshot> {
-    return this.#write(async () => {
-      const { draft, event } = await this.read();
+      const { draft, event } = await this.#readExpected(eventId);
       if (!draft || event) return this.read();
-      await this.#deps.store.update({
+      await this.#updateDraft({
         ...draft,
         ...bagIdentity(value, draft),
         manualCapture: true,
       });
       return this.read();
-    });
+    }, eventId);
   }
-  captureEvidence(): Promise<boolean> {
+  captureEvidence(eventId: string | null): Promise<boolean> {
     return this.#write(async () => {
       const evidence = await this.#deps.evidence.capture();
-      const { draft, event } = await this.read();
+      const { draft, event } = await this.#readExpected(eventId);
       if (!draft || event || !evidence) return false;
-      await this.#deps.store.update({
+      await this.#updateDraft({
         ...draft,
         evidence: [...draft.evidence.filter((item) => item.id !== evidence.id), evidence],
       });
       return true;
-    });
+    }, eventId);
   }
-  refreshGps(): Promise<Snapshot> {
+  refreshGps(eventId: string | null): Promise<Snapshot> {
     return this.#write(async () => {
-      const { draft, event } = await this.read();
+      const { draft, event } = await this.#readExpected(eventId);
       if (draft && !event)
-        await this.#deps.store.update({
+        await this.#updateDraft({
           ...draft,
           gps: normalizeGps(await this.#deps.gps.locate()),
           reviewAcknowledged: false,
         });
       return this.read();
-    });
+    }, eventId);
   }
   /** Explicitly adopt downloaded snapshots; already captured records keep their historical labels/tokens. */
-  adoptSnapshots(): Promise<Snapshot> {
+  adoptSnapshots(eventId: string | null): Promise<Snapshot> {
     return this.#write(async () => {
-      const { draft, event } = await this.read();
+      const { draft, event } = await this.#readExpected(eventId);
       if (!draft || event) return this.read();
       const snapshots = await this.#deps.store.snapshots();
       if (draft.finding && !snapshots.catalog?.findings.some((item) => item.code === draft.finding))
@@ -218,28 +247,28 @@ export class OvitrapService {
         !snapshots.catalog?.paddleTypes.some((item) => item.code === draft.paddleType)
       )
         throw new CatalogChangedError();
-      await this.#deps.store.update({
+      await this.#updateDraft({
         ...draft,
         ...snapshots,
         shiftId: draft.shiftId || (await this.#deps.shiftId()),
         reviewAcknowledged: false,
       });
       return this.read();
-    });
+    }, eventId);
   }
-  correct(): Promise<Snapshot> {
+  correct(eventId: string | null): Promise<Snapshot> {
     return this.#write(async () => {
-      const { draft, repeat } = await this.read();
+      const { draft, repeat } = await this.#readExpected(eventId);
       if (!draft || !repeat) return this.read();
       const source = await this.#deps.store.capturedDraft(repeat.envelope.id);
       if (!source) throw new Error("Original reading is unavailable.");
-      await this.#deps.store.update(correctionDraft(draft, source, this.#deps.uuid()));
+      await this.#updateDraft(correctionDraft(draft, source, this.#deps.uuid()));
       return this.read();
-    });
+    }, eventId);
   }
-  save(): Promise<Snapshot> {
+  save(eventId: string | null): Promise<Snapshot> {
     return this.#write(async () => {
-      const state = await this.read();
+      const state = await this.#readExpected(eventId);
       if (state.event) return state;
       if (!state.draft) throw new Error("No capture draft.");
       const draft = normalizePaddle(state.draft);
@@ -253,7 +282,7 @@ export class OvitrapService {
       if (state.isBagReserved) throw new Error("Bag code is reserved.");
       await this.#commit(draft);
       return this.read();
-    });
+    }, eventId);
   }
   async #commit(draft: Draft): Promise<void> {
     if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();

@@ -2,8 +2,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useServices } from "../../app/services-context.ts";
 import type { OvitrapDraftBuffer } from "./draft-buffer.ts";
-import { actionErrorKey } from "./action-error-key.ts";
-import { useCaptureActions } from "./use-capture-actions.ts";
+import { observeCaptureUpdates } from "./observe-capture-updates.ts";
+import { assertCaptureIdentity } from "./capture-identity.ts";
+import { reportCaptureError, useCaptureActions } from "./use-capture-actions.ts";
 import type { DraftPatch } from "./types.ts";
 import type { Snapshot } from "./service.ts";
 function useCaptureUpdates(
@@ -12,21 +13,16 @@ function useCaptureUpdates(
   setError: (key: MessageKey | null) => void,
 ) {
   const { engine, shiftOpen } = useServices();
-  useEffect(() => {
-    const update = () => {
-      void refresh().catch(() => {
-        setError("mobile.storage.actionFailed");
-      });
-    };
-    update();
-    const unsubscribe = engine.subscribe(update);
-    const unsubscribeShift = shiftOpen.subscribe(update);
-    return () => {
-      invalidate();
-      unsubscribe();
-      unsubscribeShift();
-    };
-  }, [engine, shiftOpen, refresh, setError, invalidate]);
+  useEffect(
+    () =>
+      observeCaptureUpdates({
+        subscriptions: [engine.subscribe, shiftOpen.subscribe],
+        refresh,
+        invalidate,
+        setError,
+      }),
+    [engine, shiftOpen, refresh, setError, invalidate],
+  );
 }
 function useCaptureState(buffer: OvitrapDraftBuffer, setError: (key: MessageKey | null) => void) {
   const { ovitrapCheck } = useServices();
@@ -52,16 +48,22 @@ export function useM08() {
   const buffer = ovitrapCheck.draftBuffer;
   const [errorKey, setError] = useState<MessageKey | null>(null);
   const { state, setState, refresh } = useCaptureState(buffer, setError);
-  const actions = useCaptureActions({ service: ovitrapCheck, buffer, refresh, setError });
-  const edit = (patch: DraftPatch) => {
-    if (!state?.draft) return;
-    buffer.edit(state.draft.eventId, patch);
+  const input = { service: ovitrapCheck, buffer, refresh, setError };
+  const actions = useCaptureActions(input);
+  const edit = (patch: DraftPatch, eventId: string) => {
+    try {
+      assertCaptureIdentity(state ?? { draft: null, event: null }, eventId);
+    } catch (error) {
+      void reportCaptureError(input, error);
+      return;
+    }
+    buffer.edit(eventId, patch);
     setState((current) => (current ? buffer.merge(current) : current));
     void buffer
       .persist(ovitrapCheck)
       .then(refresh)
       .catch((error: unknown) => {
-        setError(actionErrorKey(error));
+        return reportCaptureError(input, error);
       });
   };
   return { state, errorKey, setError, edit, service: ovitrapCheck, ...actions };

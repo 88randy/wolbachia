@@ -39,9 +39,9 @@ export class OvitrapDraftBuffer {
   }
   #discardWithNotice(): void {
     this.#hasDiscardedEdits ||= this.#pending !== null;
-    this.discard();
+    this.#discard();
   }
-  discard(): void {
+  #discard(): void {
     this.#pending = null;
     this.#revision++;
   }
@@ -52,9 +52,9 @@ export class OvitrapDraftBuffer {
     try {
       const result = await service.update(this.#pending, eventId);
       if (!result.isUpdateApplied) throw new ImmutableCaptureError();
-      if (revision === this.#revision) this.discard();
+      if (revision === this.#revision) this.#discard();
     } catch (error) {
-      if (error instanceof ImmutableCaptureError && eventId === this.#eventId) this.discard();
+      if (error instanceof ImmutableCaptureError && eventId === this.#eventId) this.#discard();
       throw error;
     }
   }

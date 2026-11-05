@@ -31,11 +31,11 @@ export function ReviewNotice({ model, draft }: CaptureProps) {
           selected={draft.reviewAcknowledged}
           disabled={model.isBusy}
           onPress={() => {
-            model.edit({ reviewAcknowledged: !draft.reviewAcknowledged });
+            model.edit({ reviewAcknowledged: !draft.reviewAcknowledged }, draft.eventId);
           }}
         />
       ) : null}
-      <CaptureCommand model={model} command="refreshGps" />
+      <CaptureCommand eventId={draft.eventId} model={model} command="refreshGps" />
     </View>
   );
 }

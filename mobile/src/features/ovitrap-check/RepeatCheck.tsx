@@ -12,7 +12,7 @@ export function RepeatCheck(props: CaptureProps) {
       {props.draft.replacesEventId ? (
         <CorrectionFields {...props} />
       ) : (
-        <CaptureCommand model={props.model} command="correct" />
+        <CaptureCommand eventId={props.draft.eventId} model={props.model} command="correct" />
       )}
     </View>
   );

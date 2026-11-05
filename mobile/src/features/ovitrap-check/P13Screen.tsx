@@ -16,8 +16,13 @@ export function P13Screen(props: CaptureProps) {
         label={t("mobile.ovitrap.next")}
         disabled={model.isBusy || !draft.point}
         onPress={() => {
-          void model.run(() =>
-            model.service.update({ step: draft.step === "point" ? "prepare" : "confirm" }),
+          void model.run(
+            () =>
+              model.service.update(
+                { step: draft.step === "point" ? "prepare" : "confirm" },
+                draft.eventId,
+              ),
+            { eventId: draft.eventId },
           );
         }}
       />

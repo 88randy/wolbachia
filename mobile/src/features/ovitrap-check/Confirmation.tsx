@@ -1,3 +1,4 @@
+import { editConfirmation } from "./confirmation-command.ts";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { Notice } from "../../ui/Notice.tsx";
@@ -29,12 +30,15 @@ export function Confirmation(props: CaptureProps) {
         label={t("mobile.ovitrap.edit")}
         disabled={model.isBusy}
         onPress={() => {
-          void model.run(() =>
-            model.service.update({ step: draft.mode === "place" ? "point" : "finding" }),
-          );
+          void model.run(() => editConfirmation(model.service, draft), { eventId: draft.eventId });
         }}
       />
-      <CaptureCommand model={model} command="save" disabled={gate !== null || isRepeatBlocked} />
+      <CaptureCommand
+        eventId={draft.eventId}
+        model={model}
+        command="save"
+        disabled={gate !== null || isRepeatBlocked}
+      />
     </View>
   );
 }

@@ -8,7 +8,7 @@ export function EvidenceCapture({ model, draft }: CaptureProps) {
       {draft.evidence.map((item) => (
         <AppText key={item.id}>{item.id}</AppText>
       ))}
-      <CaptureCommand model={model} command="captureEvidence" />
+      <CaptureCommand eventId={draft.eventId} model={model} command="captureEvidence" />
     </View>
   );
 }

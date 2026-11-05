@@ -43,3 +43,28 @@ Round 3 regressions in `test/m-08.test.ts` cover the exact 37/88 buffered-condit
 retry after a post-begin read failure, both merge/persist UUID mismatches, and a
 second writer replacing the draft during a queued update's read. Deferred promises
 control interleavings; no timer waits are used.
+
+## Round 4: displayed capture identity
+
+Every capture command carries the event UUID of the displayed draft/confirmation.
+`null` explicitly means the caller displayed no draft; it never means "use the
+current draft". Identity arguments are required, including new capture controls,
+scanner/manual entry, snapshot refresh/adoption, GPS/evidence, correction and save.
+Field input and every step transition pass the originating UUID explicitly.
+
+The action runner validates identity **before** flushing buffered input. The service
+validates inside its serialized writer, then checks the identity of the draft read
+by the command. Native-port continuations cannot adopt a newer draft. Conditional
+SQL edits and the existing capture-slot trigger retain their cross-writer guards.
+A mismatch applies no command effects, announces `mobile.ovitrap.staleView` in
+es-MX/en and refreshes from the store. If refresh fails, the notice keeps its retry
+instruction. Buffered input keeps its original identity. Discard is private buffer
+cleanup, never an unbound UI command; historical events remain immutable.
+
+| Criterion | Regression in `test/m-08.test.ts` |
+| --- | --- |
+| Every service command rejects a mismatched displayed UUID before writes/native ports | `round 4: every capture command rejects another displayed UUID before any effect` (12 command rows) |
+| Saving A and beginning B both commit but fail their later reads; engine notifications also fail; Edit on A cannot alter B or flush B's pending input | `round 4: Edit on A cannot change B after both post-commit read failures and engine notifications` |
+| Stale action shows its localized notice, reloads B at `point`, and a fresh service resumes B correctly | Same end-to-end local regression, using the production confirmation command and notification observer |
+
+No new dependencies, sync envelope changes or native layout changes.

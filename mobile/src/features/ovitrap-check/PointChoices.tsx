@@ -17,7 +17,7 @@ export function PointChoices({ model, draft }: CaptureProps) {
           selected={draft.point?.id === point.id}
           disabled={model.isBusy}
           onPress={() => {
-            model.edit({ point });
+            model.edit({ point }, draft.eventId);
           }}
         />
       ))}

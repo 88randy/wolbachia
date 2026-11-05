@@ -12,10 +12,11 @@ const LABELS = {
 } as const;
 interface Props {
   readonly model: M08Model;
+  readonly eventId: string | null;
   readonly command: keyof typeof LABELS;
   readonly disabled?: boolean;
 }
-export function CaptureCommand({ model, command, disabled = false }: Props) {
+export function CaptureCommand({ model, command, eventId, disabled = false }: Props) {
   const t = useT();
   const isBlocked =
     command === "startPlace"
@@ -26,11 +27,14 @@ export function CaptureCommand({ model, command, disabled = false }: Props) {
       label={t(LABELS[command])}
       disabled={model.isBusy || disabled || (command !== "refresh" && isBlocked)}
       onPress={() => {
-        void model.run(async () => {
-          const result = await model.service[command]();
-          if (command === "captureEvidence" && result === false)
-            model.setError("mobile.ovitrap.photoUnavailable");
-        }, command === "startPlace");
+        void model.run(
+          async () => {
+            const result = await model.service[command](eventId);
+            if (command === "captureEvidence" && result === false)
+              model.setError("mobile.ovitrap.photoUnavailable");
+          },
+          { eventId: eventId, startsCapture: command === "startPlace" },
+        );
       }}
     />
   );

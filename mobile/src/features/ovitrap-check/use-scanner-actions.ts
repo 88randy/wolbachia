@@ -22,21 +22,24 @@ function enterCode({ model, target, code }: Input, push: Push): void {
     .run(
       () =>
         target === "bag"
-          ? model.service.enterBag(code)
-          : model.service.startCheck(code.trim(), true),
-      target === "ovitrap",
+          ? model.service.enterBag(code, model.state?.draft?.eventId ?? null)
+          : model.service.startCheck(code.trim(), true, model.state?.draft?.eventId ?? null),
+      { eventId: model.state?.draft?.eventId ?? null, startsCapture: target === "ovitrap" },
     )
     .then((ok) => {
       if (ok) push({ name: "ovitrapCapture" });
     });
 }
 function scanCode({ model, target }: Input, push: Push): void {
-  void model.run(async () => {
-    const result = await model.service.scan(target);
-    if (result === "invalid") push({ name: "invalidOvitrapCode", target });
-    if (result === "unavailable") model.setError("mobile.ovitrap.scannerUnavailable");
-    if (result === "read") push({ name: "ovitrapCapture" });
-  }, target === "ovitrap");
+  void model.run(
+    async () => {
+      const result = await model.service.scan(target, model.state?.draft?.eventId ?? null);
+      if (result === "invalid") push({ name: "invalidOvitrapCode", target });
+      if (result === "unavailable") model.setError("mobile.ovitrap.scannerUnavailable");
+      if (result === "read") push({ name: "ovitrapCapture" });
+    },
+    { eventId: model.state?.draft?.eventId ?? null, startsCapture: target === "ovitrap" },
+  );
 }
 export function useScannerActions(input: Input) {
   const { push } = useNavigation();

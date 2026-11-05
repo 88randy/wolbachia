@@ -17,7 +17,7 @@ export function CorrectionFields({ model, draft }: CaptureProps) {
           selected={draft.reasonCode === item.code}
           disabled={model.isBusy}
           onPress={() => {
-            model.edit({ reasonCode: item.code });
+            model.edit({ reasonCode: item.code }, draft.eventId);
           }}
         />
       ))}
@@ -26,7 +26,7 @@ export function CorrectionFields({ model, draft }: CaptureProps) {
         disabled={model.isBusy}
         value={draft.reason}
         onChange={(reason) => {
-          model.edit({ reason });
+          model.edit({ reason }, draft.eventId);
         }}
       />
       <AppText>{t("mobile.ovitrap.newBag")}</AppText>

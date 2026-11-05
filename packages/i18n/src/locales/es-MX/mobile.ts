@@ -88,6 +88,8 @@ export const mobile = {
     "La jornada no permite capturar ni guardar. Revisa la apertura con tu supervisor; el borrador se conserva.",
   "mobile.ovitrap.staleWeekContext":
     "Falta la configuraci?n vigente de semana y zona horaria de la organizaci?n. Actualiza el contexto antes de guardar; el borrador se conserva.",
+  "mobile.ovitrap.staleView":
+    "La captura que ves cambió. No se aplicó esta acción. Actualiza la vista y vuelve a intentarlo.",
   "mobile.ovitrap.immutableEdit":
     "La edición tardía no se guardó y se descartó. Inicia una nueva captura o usa una corrección.",
   "mobile.ovitrap.gateShift": "Abre una jornada antes de guardar. El borrador se conserva.",

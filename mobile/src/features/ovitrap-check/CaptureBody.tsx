@@ -23,7 +23,7 @@ export function CaptureBody(props: CaptureProps) {
               disabled={model.isBusy}
               value={draft.otherText}
               onChange={(otherText) => {
-                model.edit({ otherText });
+                model.edit({ otherText }, draft.eventId);
               }}
             />
           ) : null}

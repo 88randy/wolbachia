@@ -1,3 +1,4 @@
+import { assertCaptureIdentity, StaleCaptureError } from "./capture-identity.ts";
 import { actionErrorKey } from "./action-error-key.ts";
 import { useState } from "react";
 import type { MessageKey } from "@wolbachia/i18n";
@@ -9,33 +10,58 @@ interface Input {
   readonly refresh: () => Promise<void>;
   readonly setError: (key: MessageKey | null) => void;
 }
-/** A new capture may supersede a blocked old-shift draft; all other commands persist first. */
+export interface CaptureActionContext {
+  readonly eventId: string | null;
+  readonly startsCapture?: boolean;
+}
+export async function reportCaptureError(
+  { refresh, setError }: Pick<Input, "refresh" | "setError">,
+  error: unknown,
+): Promise<void> {
+  setError(actionErrorKey(error));
+  if (!(error instanceof StaleCaptureError)) return;
+  try {
+    await refresh();
+  } catch {
+    // Keep the stale-view notice and its retry instruction when storage still cannot be read.
+    setError("mobile.ovitrap.staleView");
+    return;
+  }
+  setError("mobile.ovitrap.staleView");
+}
+/** Validate the displayed identity BEFORE flushing input or executing any command. */
 export async function runCaptureAction(
   { service, buffer, refresh, setError }: Input,
   action: () => Promise<unknown>,
-  startsCapture = false,
+  context: CaptureActionContext,
 ): Promise<boolean> {
   setError(null);
+  let isStale = false;
   try {
     const state = await service.read();
-    const abandonsDraft = startsCapture && state.canStartCapture && state.isShiftBlocked;
+    assertCaptureIdentity(state, context.eventId);
+    const abandonsDraft = context.startsCapture && state.canStartCapture && state.isShiftBlocked;
     if (!abandonsDraft) await buffer.persist(service);
     await action();
     await refresh();
     return true;
   } catch (error) {
-    setError(actionErrorKey(error));
+    isStale = error instanceof StaleCaptureError;
+    await reportCaptureError({ refresh, setError }, error);
     return false;
   } finally {
-    if (buffer.takeDiscardedEditNotice()) setError("mobile.ovitrap.immutableEdit");
+    if (buffer.takeDiscardedEditNotice() && !isStale) setError("mobile.ovitrap.immutableEdit");
   }
 }
 export function useCaptureActions(input: Input) {
   const [isBusy, setBusy] = useState(false);
-  const run = async (action: () => Promise<unknown>, startsCapture = false): Promise<boolean> => {
+  const run = async (
+    action: () => Promise<unknown>,
+    context: CaptureActionContext,
+  ): Promise<boolean> => {
     setBusy(true);
     try {
-      return await runCaptureAction(input, action, startsCapture);
+      return await runCaptureAction(input, action, context);
     } finally {
       setBusy(false);
     }

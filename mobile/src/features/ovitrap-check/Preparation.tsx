@@ -19,11 +19,14 @@ export function Preparation({ model, draft }: CaptureProps) {
           selected={draft.prepared.includes(key)}
           disabled={model.isBusy}
           onPress={() => {
-            model.edit({
-              prepared: draft.prepared.includes(key)
-                ? draft.prepared.filter((item) => item !== key)
-                : [...draft.prepared, key],
-            });
+            model.edit(
+              {
+                prepared: draft.prepared.includes(key)
+                  ? draft.prepared.filter((item) => item !== key)
+                  : [...draft.prepared, key],
+              },
+              draft.eventId,
+            );
           }}
         />
       ))}

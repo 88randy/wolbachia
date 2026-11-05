@@ -15,7 +15,7 @@ export function ConditionsFields({ model, draft }: CaptureProps) {
         label={t("mobile.ovitrap.temperature")}
         value={draft.temperature}
         onChange={(temperature) => {
-          model.edit({ temperature });
+          model.edit({ temperature }, draft.eventId);
         }}
       />
       <ConditionField
@@ -23,7 +23,7 @@ export function ConditionsFields({ model, draft }: CaptureProps) {
         label={t("mobile.ovitrap.humidity")}
         value={draft.humidity}
         onChange={(humidity) => {
-          model.edit({ humidity });
+          model.edit({ humidity }, draft.eventId);
         }}
       />
     </View>

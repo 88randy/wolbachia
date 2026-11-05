@@ -86,7 +86,7 @@ void test("AC2: reuse bounds, visible correction reasons and route tap measureme
   assert.equal(measureCheckTaps("normal"), 10);
 });
 
-import { harness, prepareCheck } from "./support/m-08-harness.ts";
+import { harness, prepareCheck, currentEventId } from "./support/m-08-harness.ts";
 import { POINT, RULES } from "./support/m-08-fixtures.ts";
 import { saveGate } from "../src/features/ovitrap-check/validation.ts";
 
@@ -130,38 +130,44 @@ void test("AC1: Other, missing configuration, GPS policy and invalid conditions 
 
 void test("AC2: placement, lagged bag and repeat correction retain fixed point and source evidence atomically", async () => {
   const h = await harness();
-  await h.service.startPlace();
-  await h.service.update({
-    point: POINT,
-    prepared: ["clean", "water", "liner", "shade", "height", "containers", "safe", "marked"],
-  });
-  await h.service.captureEvidence();
-  const placed = await h.service.save();
+  await h.service.startPlace(await currentEventId(h.store));
+  await h.service.update(
+    {
+      point: POINT,
+      prepared: ["clean", "water", "liner", "shade", "height", "containers", "safe", "marked"],
+    },
+    await currentEventId(h.store),
+  );
+  await h.service.captureEvidence(await currentEventId(h.store));
+  const placed = await h.service.save(await currentEventId(h.store));
   assert.equal(placed.event?.envelope.type, "ovitrap.place");
   assert.ok(placed.draft);
   assert.ok(placed.event);
   const id = placed.draft.ovitrapId;
-  await h.service.startCheck(id, true);
+  await h.service.startCheck(id, true, await currentEventId(h.store));
   await prepareCheck(h.service);
-  assert.equal(await h.service.scan("bag"), "read");
-  await h.service.update({ isLagged: true });
-  const original = await h.service.save();
+  assert.equal(await h.service.scan("bag", await currentEventId(h.store)), "read");
+  await h.service.update({ isLagged: true }, await currentEventId(h.store));
+  const original = await h.service.save(await currentEventId(h.store));
   assert.ok(original.event);
   assert.ok(original.draft);
   assert.equal(original.event.envelope.payload.is_lagged, true);
   assert.equal(original.event.envelope.payload.bag_code, "B-QR");
   assert.equal(original.draft.bagUuid, "33333333-3333-4333-8333-333333333333");
   assert.equal(original.draft.point?.id, POINT.id);
-  const repeat = await h.service.startCheck(id, true);
+  const repeat = await h.service.startCheck(id, true, await currentEventId(h.store));
   assert.equal(repeat.repeat?.envelope.id, original.event.envelope.id);
-  await h.service.correct();
-  await h.service.update({
-    reasonCode: "other",
-    reason: "Correcting the visit result",
-    bagCode: "B-NEW",
-    prepared: ["clean", "water", "liner"],
-  });
-  const replacement = await h.service.save();
+  await h.service.correct(await currentEventId(h.store));
+  await h.service.update(
+    {
+      reasonCode: "other",
+      reason: "Correcting the visit result",
+      bagCode: "B-NEW",
+      prepared: ["clean", "water", "liner"],
+    },
+    await currentEventId(h.store),
+  );
+  const replacement = await h.service.save(await currentEventId(h.store));
   const rows = await h.db.query("SELECT type, voids_event_id FROM outbox_event ORDER BY seq");
   assert.deepEqual(
     rows.map((row) => row.type),
@@ -179,37 +185,54 @@ void test("AC2: placement, lagged bag and repeat correction retain fixed point a
 
 void test("AC3: failed SQLite commit retains draft/evidence and never publishes a saved record", async () => {
   const h = await harness();
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
-  await h.service.update({ bagCode: "B-1", reviewAcknowledged: true });
+  await h.service.update(
+    { bagCode: "B-1", reviewAcknowledged: true },
+    await currentEventId(h.store),
+  );
   await h.db.runAtomically([
     {
       sql: "CREATE TRIGGER simulate_full BEFORE INSERT ON ovitrap_capture BEGIN SELECT RAISE(ABORT, 'disk full'); END",
     },
   ]);
-  await assert.rejects(h.service.save());
+  await assert.rejects(h.service.save(await currentEventId(h.store)));
   assert.equal((await h.service.read()).event, null);
   assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
   assert.equal((await h.service.read()).draft?.bagCode, "B-1");
   await h.db.runAtomically([{ sql: "DROP TRIGGER simulate_full" }]);
-  await Promise.all([h.service.save(), h.service.save()]);
+  await Promise.all([
+    h.service.save(await currentEventId(h.store)),
+    h.service.save(await currentEventId(h.store)),
+  ]);
   assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 1);
   await h.engine.requestSync();
 });
 
 void test("AC2: corrections retain current capture provenance and require a fresh bag", async () => {
   const h = await harness();
-  await h.service.startCheck("wbf:1:ovitrap:44444444-4444-4444-8444-444444444444", false);
-  await h.service.update({
-    finding: "fine",
-    paddlePresent: true,
-    hasEggs: true,
-    paddleType: "standard",
-    prepared: ["clean", "water", "liner"],
-    reviewAcknowledged: true,
-  });
-  await h.service.scan("bag");
-  const original = await h.service.save();
+  await h.service.startCheck(
+    "wbf:1:ovitrap:44444444-4444-4444-8444-444444444444",
+    false,
+    await currentEventId(h.store),
+  );
+  await h.service.update(
+    {
+      finding: "fine",
+      paddlePresent: true,
+      hasEggs: true,
+      paddleType: "standard",
+      prepared: ["clean", "water", "liner"],
+      reviewAcknowledged: true,
+    },
+    await currentEventId(h.store),
+  );
+  await h.service.scan("bag", await currentEventId(h.store));
+  const original = await h.service.save(await currentEventId(h.store));
   assert.ok(original.event);
   assert.equal(original.draft?.manualCapture, false);
   const originalId = original.event.envelope.id;
@@ -218,8 +241,12 @@ void test("AC2: corrections retain current capture provenance and require a fres
     gps: { locate: () => Promise.resolve({ lat: 20, lng: -100, accuracy_m: 70 }) },
     shiftId: () => Promise.resolve("66666666-6666-4666-8666-666666666666"),
   });
-  await changed.service.startCheck("44444444-4444-4444-8444-444444444444", true);
-  await changed.service.correct();
+  await changed.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(changed.store),
+  );
+  await changed.service.correct(await currentEventId(changed.store));
   const correction = await changed.service.read();
   assert.ok(correction.draft);
   assert.equal(correction.draft.manualCapture, true);
@@ -228,14 +255,17 @@ void test("AC2: corrections retain current capture provenance and require a fres
   assert.equal(correction.draft.reviewAcknowledged, false);
   assert.equal(correction.draft.bagCode, "");
   assert.equal(correction.draft.bagUuid, null);
-  await changed.service.update({
-    reasonCode: "other",
-    reason: "A visible correction reason",
-    bagCode: "B-QR",
-    reviewAcknowledged: true,
-    prepared: ["clean", "water", "liner"],
-  });
-  await assert.rejects(changed.service.save());
+  await changed.service.update(
+    {
+      reasonCode: "other",
+      reason: "A visible correction reason",
+      bagCode: "B-QR",
+      reviewAcknowledged: true,
+      prepared: ["clean", "water", "liner"],
+    },
+    await currentEventId(changed.store),
+  );
+  await assert.rejects(changed.service.save(await currentEventId(changed.store)));
   assert.equal((await changed.db.query("SELECT * FROM ovitrap_lineage")).length, 0);
   await changed.engine.requestSync();
   await h.engine.requestSync();
@@ -243,9 +273,19 @@ void test("AC2: corrections retain current capture provenance and require a fres
 
 void test("AC2: a different target never silently resumes the previous target draft", async () => {
   const h = await harness();
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
-  await assert.rejects(h.service.startCheck("99999999-9999-4999-8999-999999999999", true));
-  await assert.rejects(h.service.startPlace());
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
+  await assert.rejects(
+    h.service.startCheck(
+      "99999999-9999-4999-8999-999999999999",
+      true,
+      await currentEventId(h.store),
+    ),
+  );
+  await assert.rejects(h.service.startPlace(await currentEventId(h.store)));
   assert.equal((await h.service.read()).draft?.ovitrapId, "44444444-4444-4444-8444-444444444444");
 });
 
@@ -269,9 +309,13 @@ void test("AC3: null or omitted GPS accuracy remains readable and syncable after
     { lat: 19, lng: -99 },
   ]) {
     const h = await harness(undefined, { gps: { locate: () => Promise.resolve(gps) } });
-    await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+    await h.service.startCheck(
+      "44444444-4444-4444-8444-444444444444",
+      true,
+      await currentEventId(h.store),
+    );
     await prepareCheck(h.service);
-    const saved = await h.service.save();
+    const saved = await h.service.save(await currentEventId(h.store));
     assert.ok(saved.event);
     await h.engine.requestSync();
     assert.equal((await h.outbox.claimPending(10)).length, 1);
@@ -302,7 +346,11 @@ void test("AC3: cold SQLite reopen restores draft and interrupted upload sends t
   let phone = await openTestDatabase(path);
   try {
     const first = await harness(storesFor(phone.executor));
-    await first.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+    await first.service.startCheck(
+      "44444444-4444-4444-8444-444444444444",
+      true,
+      await currentEventId(first.store),
+    );
     await prepareCheck(first.service);
     const draftId = (await first.service.read()).draft?.eventId;
     assert.ok(draftId);
@@ -310,7 +358,7 @@ void test("AC3: cold SQLite reopen restores draft and interrupted upload sends t
     phone = await openTestDatabase(path);
     const second = await harness(storesFor(phone.executor));
     assert.equal((await second.service.read()).draft?.eventId, draftId);
-    const saved = await second.service.save();
+    const saved = await second.service.save(await currentEventId(second.store));
     assert.equal(saved.event?.status, "pending");
     await second.engine.requestSync();
     await second.outbox.claimPending(10);
@@ -337,24 +385,27 @@ void test("AC3: cold SQLite reopen restores draft and interrupted upload sends t
 void test("AC2: correction transaction failure keeps original lineage and evidence intact", async () => {
   const h = await harness();
   const target = "44444444-4444-4444-8444-444444444444";
-  await h.service.startCheck(target, true);
+  await h.service.startCheck(target, true, await currentEventId(h.store));
   await prepareCheck(h.service);
-  await h.service.save();
-  await h.service.startCheck(target, true);
-  await h.service.correct();
-  await h.service.update({
-    reasonCode: "other",
-    reason: "A visible correction reason",
-    bagCode: "B-NEW",
-    prepared: ["clean", "water", "liner"],
-    reviewAcknowledged: true,
-  });
+  await h.service.save(await currentEventId(h.store));
+  await h.service.startCheck(target, true, await currentEventId(h.store));
+  await h.service.correct(await currentEventId(h.store));
+  await h.service.update(
+    {
+      reasonCode: "other",
+      reason: "A visible correction reason",
+      bagCode: "B-NEW",
+      prepared: ["clean", "water", "liner"],
+      reviewAcknowledged: true,
+    },
+    await currentEventId(h.store),
+  );
   await h.db.runAtomically([
     {
       sql: "CREATE TRIGGER fail_lineage BEFORE INSERT ON ovitrap_lineage BEGIN SELECT RAISE(ABORT, 'disk full'); END",
     },
   ]);
-  await assert.rejects(h.service.save());
+  await assert.rejects(h.service.save(await currentEventId(h.store)));
   assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 1);
   assert.equal((await h.db.query("SELECT * FROM ovitrap_lineage")).length, 0);
   assert.equal((await h.service.read()).event, null);
@@ -368,10 +419,14 @@ void test("AC2: offline use consumes cached reuse eligibility before another cap
     rules: RULES,
     assignment: { ...ASSIGNMENT, reuse: [{ id: "paddle-1", reuses: 1, isEligible: true }] },
   });
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
-  await h.service.update({ reuseId: "paddle-1" });
-  await h.service.save();
+  await h.service.update({ reuseId: "paddle-1" }, await currentEventId(h.store));
+  await h.service.save(await currentEventId(h.store));
   await h.store.saveSnapshots({
     catalog: CATALOG,
     rules: RULES,
@@ -381,12 +436,16 @@ void test("AC2: offline use consumes cached reuse eligibility before another cap
       reuse: [{ id: "paddle-1", reuses: 1, isEligible: true }],
     },
   });
-  await h.service.startCheck("99999999-9999-4999-8999-999999999999", true);
+  await h.service.startCheck(
+    "99999999-9999-4999-8999-999999999999",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
-  await h.service.update({ reuseId: "paddle-1", bagCode: "B-NEW" });
+  await h.service.update({ reuseId: "paddle-1", bagCode: "B-NEW" }, await currentEventId(h.store));
   const current = await h.service.read();
   assert.equal(current.reuse[0]?.reuses, 2);
-  await assert.rejects(h.service.save());
+  await assert.rejects(h.service.save(await currentEventId(h.store)));
   await h.engine.requestSync();
 });
 
@@ -399,7 +458,11 @@ void test("AC1: an old source photo cannot satisfy current visit evidence and hi
     ),
   };
   await h.store.saveSnapshots({ catalog, rules: RULES, assignment: ASSIGNMENT });
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
   assert.equal(
     saveGate(
@@ -413,15 +476,18 @@ void test("AC1: an old source photo cannot satisfy current visit evidence and hi
     ),
     "evidence",
   );
-  await assert.rejects(h.service.save());
-  await h.service.captureEvidence();
-  await h.service.update({ finding: "other", otherText: "A visible finding" });
+  await assert.rejects(h.service.save(await currentEventId(h.store)));
+  await h.service.captureEvidence(await currentEventId(h.store));
+  await h.service.update(
+    { finding: "other", otherText: "A visible finding" },
+    await currentEventId(h.store),
+  );
   await h.store.saveSnapshots({
     catalog: { ...CATALOG, version: "catalog-v2", findings: [] },
     rules: RULES,
     assignment: ASSIGNMENT,
   });
-  const saved = await h.service.save();
+  const saved = await h.service.save(await currentEventId(h.store));
   assert.equal(saved.event?.envelope.catalog_version, "catalog-v1");
   assert.equal(saved.event.envelope.payload.other_text, "A visible finding");
   await h.engine.requestSync();
@@ -429,11 +495,15 @@ void test("AC1: an old source photo cannot satisfy current visit evidence and hi
 
 void test("AC3: a revoked downloaded assignment blocks capture without losing its draft", async () => {
   const h = await harness();
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
   await h.store.saveSnapshots({ catalog: CATALOG, rules: RULES, assignment: null });
   assert.equal((await h.service.read()).isScopeBlocked, true);
-  await assert.rejects(h.service.save());
+  await assert.rejects(h.service.save(await currentEventId(h.store)));
   assert.equal((await h.service.read()).draft?.bagCode, "B-TEST");
 });
 
@@ -503,43 +573,65 @@ void test("regression: a blocked shift prevents entry and saving an existing dra
     shiftId: () => Promise.resolve(isAuthorized ? "55555555-5555-4555-8555-555555555555" : ""),
   });
   const target = "44444444-4444-4444-8444-444444444444";
-  await assert.rejects(h.service.startCheck(target, true), /ShiftBlockedError/);
-  await assert.rejects(h.service.startPlace(), /ShiftBlockedError/);
+  await assert.rejects(
+    h.service.startCheck(target, true, await currentEventId(h.store)),
+    /ShiftBlockedError/,
+  );
+  await assert.rejects(h.service.startPlace(await currentEventId(h.store)), /ShiftBlockedError/);
   assert.equal((await h.service.read()).draft, null);
   isAuthorized = true;
-  await h.service.startCheck(target, true);
+  await h.service.startCheck(target, true, await currentEventId(h.store));
   await prepareCheck(h.service);
   const draft = (await h.service.read()).draft;
   isAuthorized = false;
-  await assert.rejects(h.service.startCheck(target, true), /ShiftBlockedError/);
-  await assert.rejects(h.service.save(), /ShiftBlockedError/);
+  await assert.rejects(
+    h.service.startCheck(target, true, await currentEventId(h.store)),
+    /ShiftBlockedError/,
+  );
+  await assert.rejects(h.service.save(await currentEventId(h.store)), /ShiftBlockedError/);
   assert.deepEqual((await h.service.read()).draft, draft);
   assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
   isAuthorized = true;
-  assert.ok((await h.service.save()).event);
+  assert.ok((await h.service.save(await currentEventId(h.store))).event);
   await h.engine.requestSync();
 });
 
 void test("regression: November 5 and 12 under the W45 package are different capture weeks", async () => {
   let now = new Date("2026-11-05T15:00:00Z");
   const h = await harness(undefined, { now: () => now });
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
-  await h.service.save();
+  await h.service.save(await currentEventId(h.store));
   now = new Date("2026-11-12T15:00:00Z");
-  const second = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  const second = await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   assert.equal(second.draft?.assignment?.epiWeek, "2026-W45");
   assert.equal(second.repeat, null);
   await prepareCheck(h.service);
-  await h.service.update({ bagCode: "B-NEXT-WEEK" });
-  await h.service.save();
+  await h.service.update({ bagCode: "B-NEXT-WEEK" }, await currentEventId(h.store));
+  await h.service.save(await currentEventId(h.store));
   assert.deepEqual(
     (await h.db.query("SELECT epi_week FROM ovitrap_capture ORDER BY rowid")).map(
       (row) => row.epi_week,
     ),
     ["2026-W45", "2026-W46"],
   );
-  assert.ok((await h.service.startCheck("44444444-4444-4444-8444-444444444444", true)).repeat);
+  assert.ok(
+    (
+      await h.service.startCheck(
+        "44444444-4444-4444-8444-444444444444",
+        true,
+        await currentEventId(h.store),
+      )
+    ).repeat,
+  );
   await h.engine.requestSync();
 });
 
@@ -550,9 +642,13 @@ void test("regression: missing organization week configuration blocks explicitly
     rules: RULES,
     assignment: { ...ASSIGNMENT, organization: undefined },
   });
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
-  await assert.rejects(h.service.save(), /weekContext/);
+  await assert.rejects(h.service.save(await currentEventId(h.store)), /weekContext/);
   assert.equal((await h.service.read()).draft?.bagCode, "B-TEST");
   assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
 });
@@ -561,7 +657,11 @@ void test("regression: an immutable late edit is reported and does not block the
   const entered = barrier();
   const release = barrier();
   const h = await harness();
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
   const enqueue = h.engine.enqueue.bind(h.engine);
   h.engine.enqueue = async (...args) => {
@@ -569,7 +669,7 @@ void test("regression: an immutable late edit is reported and does not block the
     await release.promise;
     await enqueue(...args);
   };
-  const saving = h.service.save();
+  const saving = h.service.save(await currentEventId(h.store));
   await entered.promise;
   const buffer = h.service.draftBuffer;
   const editingDraft = (await h.service.read()).draft;
@@ -589,13 +689,24 @@ void test("regression: an immutable late edit is reported and does not block the
       notice = key;
     },
   };
-  const editing = runCaptureAction(commands, () => h.service.startPlace());
+  const editing = runCaptureAction(
+    commands,
+    async () => h.service.startPlace(await currentEventId(h.store)),
+    { eventId: await currentEventId(commands.service) },
+  );
   release.resolve();
   const saved = await saving;
   assert.equal(await editing, false);
   assert.equal(notice, "mobile.ovitrap.immutableEdit");
   assert.equal((await h.service.read()).draft?.otherText, "");
-  assert.equal(await runCaptureAction(commands, () => h.service.startPlace()), true);
+  assert.equal(
+    await runCaptureAction(
+      commands,
+      async () => h.service.startPlace(await currentEventId(h.store)),
+      { eventId: await currentEventId(commands.service) },
+    ),
+    true,
+  );
   const next = await h.service.read();
   assert.notEqual(next.draft?.eventId, saved.draft?.eventId);
   assert.equal(buffer.merge(next).draft?.otherText, "");
@@ -652,7 +763,7 @@ void test("regression: real departure authorization blocks severe_check in_revie
   assert.ok(opened.opening);
   const capture = await harness(h, { shiftId: async () => captureShiftId(await shift.read()) });
   const target = "44444444-4444-4444-8444-444444444444";
-  await capture.service.startCheck(target, true);
+  await capture.service.startCheck(target, true, await currentEventId(capture.store));
   await prepareCheck(capture.service);
   const draft = (await capture.service.read()).draft;
   await h.outbox.claimPending(10);
@@ -668,9 +779,18 @@ void test("regression: real departure authorization blocks severe_check in_revie
   assert.equal(blocked.gate, "severe");
   assert.equal(captureShiftId(blocked), ""); // Same decision used by P3 and the production factory.
   assert.equal((await capture.service.read()).isShiftBlocked, true);
-  await assert.rejects(capture.service.startCheck(target, true), /ShiftBlockedError/);
-  await assert.rejects(capture.service.startPlace(), /ShiftBlockedError/);
-  await assert.rejects(capture.service.save(), /ShiftBlockedError/);
+  await assert.rejects(
+    capture.service.startCheck(target, true, await currentEventId(capture.store)),
+    /ShiftBlockedError/,
+  );
+  await assert.rejects(
+    capture.service.startPlace(await currentEventId(capture.store)),
+    /ShiftBlockedError/,
+  );
+  await assert.rejects(
+    capture.service.save(await currentEventId(capture.store)),
+    /ShiftBlockedError/,
+  );
   assert.deepEqual((await capture.service.read()).draft, draft);
   assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
   await capture.engine.requestSync();
@@ -712,7 +832,11 @@ void test("regression: SQL skipped immutable edits are reported and discarded af
   const entered = barrier();
   const release = barrier();
   const h = await harness();
-  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   await prepareCheck(h.service);
   const update = h.store.update.bind(h.store);
   h.store.update = async (draft) => {
@@ -727,7 +851,7 @@ void test("regression: SQL skipped immutable edits are reported and discarded af
   const persisting = assert.rejects(buffer.persist(h.service), ImmutableCaptureError);
   await entered.promise;
   const other = await harness(h);
-  await other.service.save();
+  await other.service.save(await currentEventId(other.store));
   release.resolve();
   await persisting;
   assert.equal(actionErrorKey(new ImmutableCaptureError()), "mobile.ovitrap.immutableEdit");
@@ -747,9 +871,13 @@ void test("regression: an authorized replacement shift supersedes the old draft 
     assert.ok(opened.opening);
     const shiftId = async () => captureShiftId(await shift.read());
     const capture = await harness(h, { shiftId });
-    await capture.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+    await capture.service.startCheck(
+      "44444444-4444-4444-8444-444444444444",
+      true,
+      await currentEventId(capture.store),
+    );
     await prepareCheck(capture.service);
-    await capture.service.captureEvidence();
+    await capture.service.captureEvidence(await currentEventId(capture.store));
     const original = (await capture.service.read()).draft;
     assert.ok(original);
     await h.outbox.claimPending(10);
@@ -760,7 +888,10 @@ void test("regression: an authorized replacement shift supersedes the old draft 
         result: { code: "motorcycle_blocked", params: {} },
       },
     ]);
-    await assert.rejects(capture.service.startPlace(), /ShiftBlockedError/);
+    await assert.rejects(
+      capture.service.startPlace(await currentEventId(capture.store)),
+      /ShiftBlockedError/,
+    );
     await shift.restartRejected();
     const item = CATALOG.findings[0];
     assert.ok(item);
@@ -772,10 +903,16 @@ void test("regression: an authorized replacement shift supersedes the old draft 
     assert.equal(beforeStart.canStartCapture, true);
     assert.equal(beforeStart.isShiftBlocked, true);
     await assert.rejects(
-      capture.service.update({ otherText: "Cannot reassign old evidence" }),
+      capture.service.update(
+        { otherText: "Cannot reassign old evidence" },
+        await currentEventId(capture.store),
+      ),
       /ShiftBlockedError/,
     );
-    await assert.rejects(capture.service.adoptSnapshots(), /ShiftBlockedError/);
+    await assert.rejects(
+      capture.service.adoptSnapshots(await currentEventId(capture.store)),
+      /ShiftBlockedError/,
+    );
     const buffer = capture.service.draftBuffer;
     buffer.edit(original.eventId, { otherText: "Old shift input" });
     let notice: string | null = null;
@@ -789,7 +926,14 @@ void test("regression: an authorized replacement shift supersedes the old draft 
         notice = key;
       },
     };
-    assert.equal(await runCaptureAction(command, () => capture.service.startPlace(), true), true);
+    assert.equal(
+      await runCaptureAction(
+        command,
+        async () => capture.service.startPlace(await currentEventId(capture.store)),
+        { eventId: await currentEventId(command.service), startsCapture: true },
+      ),
+      true,
+    );
     assert.equal(notice, "mobile.ovitrap.immutableEdit");
     const fresh = buffer.merge(await capture.service.read());
     assert.ok(fresh.draft);
@@ -822,11 +966,14 @@ void test("regression: an authorized replacement shift supersedes the old draft 
       shiftId: async () => captureShiftId(await restoredShift.read()),
     });
     assert.equal((await restored.service.read()).draft?.eventId, fresh.draft.eventId);
-    await restored.service.update({
-      point: POINT,
-      prepared: ["clean", "water", "liner", "shade", "height", "containers", "safe", "marked"],
-    });
-    assert.ok((await restored.service.save()).event);
+    await restored.service.update(
+      {
+        point: POINT,
+        prepared: ["clean", "water", "liner", "shade", "height", "containers", "safe", "marked"],
+      },
+      await currentEventId(restored.store),
+    );
+    assert.ok((await restored.service.save(await currentEventId(restored.store))).event);
     const [retained] = await restored.db.query("SELECT draft FROM ovitrap_superseded_draft");
     assert.ok(retained);
     assert.deepEqual(JSON.parse(String(retained.draft)), original);
@@ -840,7 +987,11 @@ void test("regression: an authorized replacement shift supersedes the old draft 
 void test("regression: retry after a post-begin read failure never saves the previous shift's buffered conditions", async () => {
   let shiftId = "55555555-5555-4555-8555-555555555555";
   const h = await harness(undefined, { shiftId: () => Promise.resolve(shiftId) });
-  const original = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  const original = await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   assert.ok(original.draft);
   const buffer = h.service.draftBuffer;
   buffer.edit(original.draft.eventId, { temperature: "37", humidity: "88" });
@@ -872,7 +1023,11 @@ void test("regression: retry after a post-begin read failure never saves the pre
   };
   const target = "99999999-9999-4999-8999-999999999999";
   assert.equal(
-    await runCaptureAction(commands, () => h.service.startCheck(target, true), true),
+    await runCaptureAction(
+      commands,
+      async () => h.service.startCheck(target, true, await currentEventId(h.store)),
+      { eventId: await currentEventId(commands.service), startsCapture: true },
+    ),
     false,
   );
   const replacement = await h.service.read();
@@ -881,11 +1036,20 @@ void test("regression: retry after a post-begin read failure never saves the pre
   assert.equal(replacement.draft.ovitrapId, target);
   assert.ok(notices.includes("mobile.ovitrap.immutableEdit"));
   assert.equal(
-    await runCaptureAction(commands, () => h.service.startCheck(target, true), true),
+    await runCaptureAction(
+      commands,
+      async () => h.service.startCheck(target, true, await currentEventId(h.store)),
+      { eventId: await currentEventId(commands.service), startsCapture: true },
+    ),
     true,
   );
   await prepareCheck(h.service);
-  assert.equal(await runCaptureAction(commands, () => h.service.save()), true);
+  assert.equal(
+    await runCaptureAction(commands, async () => h.service.save(await currentEventId(h.store)), {
+      eventId: await currentEventId(commands.service),
+    }),
+    true,
+  );
   const saved = await h.service.read();
   assert.equal(saved.event?.envelope.payload.temperature_c, null);
   assert.equal(saved.event.envelope.payload.humidity_pct, null);
@@ -896,12 +1060,20 @@ void test("regression: neither merge nor persist can apply a buffer to another e
   for (const operation of ["merge", "persist"] as const) {
     let shiftId = "55555555-5555-4555-8555-555555555555";
     const h = await harness(undefined, { shiftId: () => Promise.resolve(shiftId) });
-    const original = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+    const original = await h.service.startCheck(
+      "44444444-4444-4444-8444-444444444444",
+      true,
+      await currentEventId(h.store),
+    );
     assert.ok(original.draft);
     const buffer = new OvitrapDraftBuffer();
     buffer.edit(original.draft.eventId, { temperature: "37", humidity: "88" });
     shiftId = "66666666-6666-4666-8666-666666666666";
-    const replacement = await h.service.startCheck("99999999-9999-4999-8999-999999999999", true);
+    const replacement = await h.service.startCheck(
+      "99999999-9999-4999-8999-999999999999",
+      true,
+      await currentEventId(h.store),
+    );
     if (operation === "merge") {
       const displayed = buffer.merge(replacement);
       assert.equal(displayed.draft?.temperature, "");
@@ -919,7 +1091,11 @@ void test("regression: neither merge nor persist can apply a buffer to another e
 void test("regression: a draft replaced while a buffered update reads cannot receive the old patch", async () => {
   let shiftId = "55555555-5555-4555-8555-555555555555";
   const h = await harness(undefined, { shiftId: () => Promise.resolve(shiftId) });
-  const original = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  const original = await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
   assert.ok(original.draft);
   const buffer = h.service.draftBuffer;
   buffer.edit(original.draft.eventId, { temperature: "37", humidity: "88" });
@@ -935,11 +1111,156 @@ void test("regression: a draft replaced while a buffered update reads cannot rec
   await entered.promise;
   shiftId = "66666666-6666-4666-8666-666666666666";
   const other = await harness(h, { shiftId: () => Promise.resolve(shiftId) });
-  await other.service.startCheck("99999999-9999-4999-8999-999999999999", true);
+  await other.service.startCheck(
+    "99999999-9999-4999-8999-999999999999",
+    true,
+    await currentEventId(other.store),
+  );
   release.resolve();
   await persisting;
   const replacement = await h.service.read();
   assert.equal(replacement.draft?.temperature, "");
   assert.equal(replacement.draft.humidity, "");
   await buffer.persist(h.service);
+});
+
+import { observeCaptureUpdates } from "../src/features/ovitrap-check/observe-capture-updates.ts";
+import { editConfirmation } from "../src/features/ovitrap-check/confirmation-command.ts";
+
+void test("round 4: every capture command rejects another displayed UUID before any effect", async () => {
+  const portEffect = () => assert.fail("A stale command must not open a native port");
+  const h = await harness();
+  const current = await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
+  assert.ok(current.draft);
+  const guarded = await harness(h, {
+    gps: { locate: portEffect },
+    scanner: { scan: portEffect },
+    evidence: { capture: portEffect },
+  });
+  const service = guarded.service;
+  const staleId = "99999999-9999-4999-8999-999999999999";
+  const commands = {
+    refresh: () => service.refresh(staleId),
+    update: () => service.update({ step: "confirm" }, staleId),
+    save: () => service.save(staleId),
+    correct: () => service.correct(staleId),
+    enterBag: () => service.enterBag("B-STALE", staleId),
+    scanBag: () => service.scan("bag", staleId),
+    scanOvitrap: () => service.scan("ovitrap", staleId),
+    captureEvidence: () => service.captureEvidence(staleId),
+    refreshGps: () => service.refreshGps(staleId),
+    adoptSnapshots: () => service.adoptSnapshots(staleId),
+    startPlace: () => service.startPlace(staleId),
+    startCheck: () => service.startCheck("44444444-4444-4444-8444-444444444444", true, staleId),
+  };
+  for (const [name, command] of Object.entries(commands)) {
+    await assert.rejects(command(), { name: "StaleCaptureError" }, name);
+    assert.deepEqual((await h.store.read()).draft, current.draft, name);
+    assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0, name);
+  }
+});
+
+void test("round 4: Edit on A cannot change B after both post-commit read failures and engine notifications", async () => {
+  const h = await harness();
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
+  await prepareCheck(h.service);
+  await h.service.update({ step: "confirm" }, await currentEventId(h.store));
+  let displayed = await h.service.read();
+  assert.ok(displayed.draft);
+  const displayedA = displayed.draft;
+  let shouldFailRead = false;
+  const snapshots = h.store.snapshots.bind(h.store);
+  h.store.snapshots = () =>
+    shouldFailRead ? Promise.reject(new Error("Post-commit snapshot read failed")) : snapshots();
+  const pending: Promise<void>[] = [];
+  let failedNotifications = 0;
+  const refresh = async () => {
+    displayed = h.service.draftBuffer.merge(await h.service.read());
+  };
+  const unsubscribe = observeCaptureUpdates({
+    subscriptions: [h.engine.subscribe],
+    invalidate: () => undefined,
+    refresh: () => {
+      const reading = refresh();
+      pending.push(reading.catch(() => undefined));
+      return reading;
+    },
+    setError: () => {
+      failedNotifications++;
+    },
+  });
+  await Promise.all(pending);
+  const notices: string[] = [];
+  const input = {
+    service: h.service,
+    buffer: h.service.draftBuffer,
+    refresh,
+    setError: (key: string | null) => {
+      if (key) notices.push(key);
+    },
+  };
+  const enqueue = h.outbox.enqueue.bind(h.outbox);
+  h.outbox.enqueue = async (...args) => {
+    await enqueue(...args);
+    shouldFailRead = true;
+  };
+  assert.equal(
+    await runCaptureAction(input, () => h.service.save(displayedA.eventId), {
+      eventId: displayedA.eventId,
+    }),
+    false,
+  );
+  await h.engine.requestSync();
+  await Promise.all(pending);
+  assert.ok(failedNotifications > 0);
+  const failedAfterSave = failedNotifications;
+  assert.equal(displayed.event, null);
+  shouldFailRead = false;
+  const begin = h.store.begin.bind(h.store);
+  h.store.begin = async (draft) => {
+    await begin(draft);
+    shouldFailRead = true;
+  };
+  assert.equal(
+    await runCaptureAction(input, () => h.service.startPlace(displayedA.eventId), {
+      eventId: displayedA.eventId,
+      startsCapture: true,
+    }),
+    false,
+  );
+  const storedB = await h.store.read();
+  assert.ok(storedB.draft);
+  assert.equal(storedB.draft.mode, "place");
+  assert.equal(storedB.draft.step, "point");
+  assert.equal(storedB.draft.point, null);
+  assert.equal(displayed.draft.eventId, displayedA.eventId);
+  h.engine.setOnline(false);
+  await Promise.all(pending);
+  assert.ok(failedNotifications > failedAfterSave);
+  assert.equal(displayed.draft.eventId, displayedA.eventId);
+  shouldFailRead = false;
+  h.service.draftBuffer.edit(storedB.draft.eventId, { temperature: "37" });
+  const ok = await runCaptureAction(input, () => editConfirmation(h.service, displayedA), {
+    eventId: displayedA.eventId,
+  });
+  assert.equal(ok, false);
+  assert.equal(notices.at(-1), "mobile.ovitrap.staleView");
+  assert.deepEqual(await h.store.read(), storedB);
+  assert.equal(displayed.draft.eventId, storedB.draft.eventId);
+  assert.equal(displayed.draft.step, "point");
+  await assert.rejects(editConfirmation(h.service, displayedA), { name: "StaleCaptureError" });
+  const restarted = await harness(h);
+  const resumed = await restarted.service.startPlace(storedB.draft.eventId);
+  assert.equal(resumed.draft?.step, "point");
+  assert.equal(resumed.draft.point, null);
+  unsubscribe();
+  await h.engine.requestSync();
 });

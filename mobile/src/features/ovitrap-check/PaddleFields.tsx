@@ -18,7 +18,7 @@ export function PaddleFields(props: CaptureProps) {
           selected={draft.paddleType === item.code}
           disabled={model.isBusy}
           onPress={() => {
-            model.edit({ paddleType: item.code });
+            model.edit({ paddleType: item.code }, draft.eventId);
           }}
         />
       ))}

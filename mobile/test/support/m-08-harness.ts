@@ -70,13 +70,21 @@ export async function harness(
   return { ...local, engine, store, service };
 }
 export async function prepareCheck(service: OvitrapService): Promise<void> {
-  await service.update({
-    finding: "fine",
-    paddlePresent: true,
-    hasEggs: true,
-    paddleType: "standard",
-    prepared: ["clean", "water", "liner"],
-    bagCode: "B-TEST",
-    reviewAcknowledged: true,
-  });
+  await service.update(
+    {
+      finding: "fine",
+      paddlePresent: true,
+      hasEggs: true,
+      paddleType: "standard",
+      prepared: ["clean", "water", "liner"],
+      bagCode: "B-TEST",
+      reviewAcknowledged: true,
+    },
+    await currentEventId(service),
+  );
+}
+
+/** Snapshot identity supplied by each test caller; stale-view tests retain an earlier explicit ID. */
+export async function currentEventId(reader: Pick<OvitrapStore, "read">): Promise<string | null> {
+  return (await reader.read()).draft?.eventId ?? null;
 }

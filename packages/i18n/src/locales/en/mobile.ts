@@ -87,6 +87,8 @@ export const mobile: Record<keyof typeof source, string> = {
     "This shift does not allow capture or saving. Review the opening with your supervisor; the draft is retained.",
   "mobile.ovitrap.staleWeekContext":
     "Current organization week and time zone settings are missing. Update the context before saving; the draft is retained.",
+  "mobile.ovitrap.staleView":
+    "The capture you are viewing changed. This action was not applied. Refresh the view and try again.",
   "mobile.ovitrap.immutableEdit":
     "The late edit was not saved and has been discarded. Start a new capture or use a correction.",
   "mobile.ovitrap.gateShift": "Open a shift before saving. The draft is retained.",

@@ -16,7 +16,10 @@ export function PlacementPreparation(props: CaptureProps) {
         label={t("mobile.ovitrap.supplies")}
         value={draft.supplyRefs.join(",")}
         onChange={(value) => {
-          model.edit({ supplyRefs: value ? value.split(",").map((ref) => ref.trim()) : [] });
+          model.edit(
+            { supplyRefs: value ? value.split(",").map((ref) => ref.trim()) : [] },
+            draft.eventId,
+          );
         }}
       />
       <EvidenceCapture {...props} />

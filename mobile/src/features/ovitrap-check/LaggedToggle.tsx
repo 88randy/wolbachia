@@ -12,7 +12,7 @@ export function LaggedToggle({ model, draft }: CaptureProps) {
         selected={draft.isLagged}
         disabled={model.isBusy}
         onPress={() => {
-          model.edit({ isLagged: !draft.isLagged });
+          model.edit({ isLagged: !draft.isLagged }, draft.eventId);
         }}
       />
       {draft.isLagged ? <AppText>{t("mobile.ovitrap.laggedHint")}</AppText> : null}

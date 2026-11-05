@@ -19,7 +19,9 @@ export function CheckDetails(props: CaptureProps) {
         label={t("mobile.ovitrap.next")}
         disabled={model.isBusy}
         onPress={() => {
-          void model.run(() => model.service.update({ step: "confirm" }));
+          void model.run(() => model.service.update({ step: "confirm" }, draft.eventId), {
+            eventId: draft.eventId,
+          });
         }}
       />
     </View>

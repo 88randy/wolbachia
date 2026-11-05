@@ -16,7 +16,7 @@ export function ReuseChoices({ model, draft }: CaptureProps) {
         selected={draft.reuseId === null}
         disabled={model.isBusy}
         onPress={() => {
-          model.edit({ reuseId: null });
+          model.edit({ reuseId: null }, draft.eventId);
         }}
       />
       {eligible.map((item) => (
@@ -26,7 +26,7 @@ export function ReuseChoices({ model, draft }: CaptureProps) {
           selected={draft.reuseId === item.id}
           disabled={model.isBusy}
           onPress={() => {
-            model.edit({ reuseId: item.id });
+            model.edit({ reuseId: item.id }, draft.eventId);
           }}
         />
       ))}
