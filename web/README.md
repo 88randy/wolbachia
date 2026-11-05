@@ -100,7 +100,7 @@ The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only f
 | `forms/` | shared form pieces: `TextField`, `PasswordField`, `FormAlert`, `FormNotice`, `SubmitButton`, field-error translation |
 | `config/` | `readAppConfig`: validates the environment (the only place that exposes `apiBaseUrl`) |
 | `i18n/` | i18next fed by `@wolbachia/i18n` (typed keys, `{param}`), `useLanguage` |
-| `theme/` | light by default; `data-theme="dark"` on `<html>`; stored per browser |
+| `theme/` | Light/Dark/System preference, System by default; resolved light/dark `data-theme` on `<html>` before the first render; System follows live `prefers-color-scheme` changes |
 | `router/` | code-based TanStack Router routes: public routes, the guarded layout and one placeholder per area (`areas.ts`, each with its `requiredPermissions`); `guards.ts`, `safe-redirect.ts` |
 | `shell/` | skip link, sidebar (232 px, 64 px collapsed), top bar, offline banner |
 | `states/` | placeholder, not found, route error, loading skeleton, configuration error |
@@ -116,7 +116,8 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 ### What the shell does today
 
 - Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists only the areas the user may open (see "Session, guards and permissions"); a group with no visible area loses its heading.
-- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered) and the user menu. The center selector is **[PENDING]**: `scope.centers` are plain strings and there is no centers endpoint.
+- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), a native Light/Dark/System selector beside it, and the user menu. The center selector is **[PENDING]**: `scope.centers` are plain strings and there is no centers endpoint.
+- The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. An explicit Light/Dark choice removes the system listener. The selector uses the shared focus ring and 32 px control token; narrow top bars put search on its own row so all controls remain reachable.
 - Below 768 px (`web.layout.compactBreakpoint`) the sidebar stays collapsed, so the page reflows at 320 CSS px without two-axis scroll (WCAG 1.4.10; e2e checks it). Each page sets its own `document.title` ("<page> · Wolbachia", WCAG 2.4.2).
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
