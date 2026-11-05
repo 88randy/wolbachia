@@ -306,10 +306,14 @@ Photos are not part of #5. The first epic that needs them (#9 relocation or #11 
 ```
 
 Despite the field name, motorcycle_id identifies the immutable motorcycle **code**,
-like shift.open schema 1. Requires the courier's open shift, matching motorcycle,
-and motorcycle.manage with applicable center scope. Unknown/foreign/unauthorized
-motorcycles return motorcycle_unknown without disclosing existence. Existing
-shift_not_open, odometer_decreased and invalid_payload codes also apply.
+like shift.open schema 1. Requires the pipeline's field_event.sync permission and
+the courier's open shift on the matching motorcycle, without motorcycle.manage.
+Unknown/foreign motorcycles return motorcycle_unknown without disclosing existence.
+Existing shift_not_open, odometer_decreased and invalid_payload codes also apply.
+[ASSUMPTION] Center scope/default-deny apply to the admin REST API. Field capture
+retains #68 shift ownership semantics: a courier restricted to center A can still
+open a center B motorcycle and capture fuel in that shift. Scoping field capture
+requires a follow-up issue; shift.open/close semantics are unchanged here.
 
 | Code | Status | Meaning |
 | --- | --- | --- |

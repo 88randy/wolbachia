@@ -34,8 +34,8 @@ Revisions also advance for PATCH, severe blocks and legacy unblock.
 All paths are under /api/v1/; organization comes from membership, never a body
 selector. Motorcycle has a nullable organizations.Center FK (the actual geography
 center identity in this repository). No center means only an explicit all center
-grant can read/write it. Center none/empty selected denies; action and center must
-come from the same effective profile grant. Motorcycles have no quadrant relation,
+grant can read/write it through the admin API. Center none/empty selected denies;
+action and center must come from the same effective profile grant. Motorcycles have no quadrant relation,
 so quadrant is not an applicable object dimension; a quadrant grant cannot widen
 center scope. Foreign/out-of-scope parents and write references return 404.
 
@@ -53,12 +53,19 @@ center scope. Foreign/out-of-scope parents and write references return 404.
 - GET /incidents/: severe-check block audits and their inspection-clearance state,
   scoped through motorcycle center; page-number paging and created_at ordering.
 
-Reads require motorcycle.read. Service/letter writes and fuel.load require
+Admin reads require motorcycle.read. Service/letter writes require
 motorcycle.manage; clear-fault requires motorcycle.service_clear. Admin/supervisor
 receive service_clear through existing once-only seed bookkeeping; revoked grants
-are never restored. No courier manage grant is inferred: organizations must
-explicitly authorize fuel writers under the permission policy supplied in #103.
-Web uses existing session+CSRF; field sync remains pinned bearer only.
+are never restored. Web uses existing session+CSRF; field sync remains pinned
+bearer only.
+
+[ASSUMPTION] Center scope and default-deny apply to the admin REST API. Field
+capture uses the pipeline's field_event.sync permission: shift.open establishes
+courier ownership and fuel.load requires that courier's open shift on the named
+motorcycle, without motorcycle.manage. A courier restricted to center A can still
+open a center B motorcycle and capture fuel for that shift (pre-existing #68
+behavior). Scoping field capture requires a follow-up issue; shift.open/close
+semantics are unchanged here.
 
 ## History and due metrics
 
@@ -86,9 +93,10 @@ positive finite Decimals. Receipt absence persists as receipt_pending=true.
 Only a full refill immediately following an accepted full refill of the same
 motorcycle, without intervening partial loads, is comparable. Unknown/partial,
 late and equal-device-time intervals are unavailable. Efficiency is distance over
-current litres. Thresholds come from ctx.rules_at(device_time); values, version ids
-and effective_from are persisted, with baseline id. Compare unrounded efficiency:
-15 and 60 are inclusive with the seeded rules; 14.99/60.01 request review. A lower
+current litres. Thresholds and provenance come from the same annotated rows of one
+list_parameters_with_current query at device_time; Decimal values, version ids and
+effective_from are persisted, with baseline id. No separate rules_at read is used.
+Compare unrounded efficiency: 15 and 60 are inclusive with the seeded rules; 14.99/60.01 request review. A lower
 odometer retains evidence in review. No advisory refuses capture or shift close.
 A replay returns the immutable original event result and creates no second FuelLoad.
 
@@ -111,8 +119,13 @@ service interval representation is per-service configuration, not a global defau
 Acceptance -> test map is at the top of tests/test_fleet_b_05.py. PostgreSQL is
 required for its migrations, trigger guards and barrier allocation/clearance test;
 Docker is prohibited for this implementer, so the lead must run these checks.
-Input and registry contracts run without a DB in test_fleet_payloads.py and existing
-test_sync_registry.py. No dependencies are added.
+Fuel capture tests use plain courier phones with field_event.sync only. Input and
+registry contracts run without a DB in test_fleet_payloads.py and existing
+test_sync_registry.py. test_fleet_fuel_rules.py deterministically supplies discordant
+old values/new version rows and checks that limits and provenance use the same
+source, including an unconfigured limit. It fails against the former two-read
+implementation. This is a unit regression, not a PostgreSQL publication barrier;
+no live database concurrency was exercised. No dependencies are added.
 
 Official APIs checked for this implementation:
 - https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update

@@ -76,7 +76,7 @@ def test_fuel_intervals_keep_capture_and_close(org_a, make_member, km, status):
         )
     make_check_items(org_a)
     motorcycle = MotorcycleFactory(organization=org_a)
-    phone = make_phone(make_member, org_a, codes=("field_event.sync", "motorcycle.manage"))
+    phone = make_phone(make_member, org_a, codes=("field_event.sync",))
     shift_id = uuid.uuid4()
     assert (
         phone.sync([open_event(motorcycle.code, shift_id)]).data["results"][0]["status"]
@@ -121,7 +121,7 @@ def test_decreased_or_pre_reviewed_fuel_never_enters_metrics(org_a, make_member,
 
     make_check_items(org_a)
     motorcycle = MotorcycleFactory(organization=org_a)
-    phone = make_phone(make_member, org_a, codes=("field_event.sync", "motorcycle.manage"))
+    phone = make_phone(make_member, org_a, codes=("field_event.sync",))
     shift_id = uuid.uuid4()
     phone.sync([open_event(motorcycle.code, shift_id)])
     km = 11999 if review_code == "odometer_decreased" else 12001
@@ -289,8 +289,8 @@ def test_clearance_races_with_use_without_losing_other_blocks(org_a, make_member
             reason="Configured service due",
         )
     first, second = (
-        make_phone(make_member, org_a, codes=("field_event.sync", "motorcycle.manage")),
-        make_phone(make_member, org_a, codes=("field_event.sync", "motorcycle.manage")),
+        make_phone(make_member, org_a, codes=("field_event.sync",)),
+        make_phone(make_member, org_a, codes=("field_event.sync",)),
     )
     request = ClearanceRequest(fault.pk, [uuid.uuid4()], "Inspection completed", 0)
     # run_in_threads uses a barrier and separate DB connections; all contenders take Motorcycle.

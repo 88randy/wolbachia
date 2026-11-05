@@ -3,17 +3,14 @@
 from decimal import Decimal
 from typing import Any, cast
 
-from django.http import Http404
-
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.registry import EventContext
 from fleet.codes import FUEL_EFFICIENCY_REVIEW, FUEL_MOTORCYCLE_MISMATCH
 from fleet.models import EfficiencyStatus, FuelLoad
-from rules.selectors import list_parameters_with_current
-from shifts.access import authorize_motorcycle, lock_motorcycle
+from rules.selectors import list_parameters_with_current, to_number
+from shifts.access import lock_motorcycle
 from shifts.codes import MOTORCYCLE_UNKNOWN, ODOMETER_DECREASED, SHIFT_NOT_OPEN
 from shifts.models import Motorcycle, Shift
-from shifts.permissions import MOTORCYCLE_MANAGE
 from shifts.selectors import highest_recorded_km
 
 MIN_KEY = "fuel_efficiency_min_km_l"
@@ -28,7 +25,6 @@ def apply_fuel_load(ctx: EventContext, values: dict[str, Any]) -> None:
     if motorcycle is None:
         raise EventRejected(MOTORCYCLE_UNKNOWN)
     with lock_motorcycle(motorcycle) as locked:
-        _authorize_capture(ctx, locked)
         if ctx.envelope.shift_id is None:
             raise EventRejected(SHIFT_NOT_OPEN)
         shift = Shift.objects.filter(
@@ -44,34 +40,37 @@ def apply_fuel_load(ctx: EventContext, values: dict[str, Any]) -> None:
         raise review_signal
 
 
-def _authorize_capture(ctx: EventContext, motorcycle: Motorcycle) -> None:
-    try:
-        authorize_motorcycle(motorcycle, ctx.user, MOTORCYCLE_MANAGE)
-    except Http404:
-        raise EventRejected(MOTORCYCLE_UNKNOWN) from None
-
-
 def _thresholds(ctx: EventContext) -> dict[str, Any]:
-    values = ctx.rules_at(ctx.envelope.device_time)
     versions = list_parameters_with_current(ctx.organization, ctx.envelope.device_time).filter(
         key__in=[MIN_KEY, MAX_KEY]
     )
-    version_fields = ("key", "current_version_id", "current_effective_from")
+    version_fields = (
+        "key",
+        "value_type",
+        "current_value",
+        "current_version_id",
+        "current_effective_from",
+    )
+    # One statement snapshot supplies both limits and the versions they are attributed to.
+    threshold_rows = list(versions.values(*version_fields))
+    limits = {row["key"]: row["current_value"] for row in threshold_rows}
     provenance = {
         row["key"]: {
             "version_id": None
             if row["current_version_id"] is None
             else str(row["current_version_id"]),
-            "value": values.get(row["key"]),
+            "value": None
+            if row["current_value"] is None
+            else to_number(row["value_type"], row["current_value"]),
             "effective_from": None
             if row["current_effective_from"] is None
             else row["current_effective_from"].isoformat(),
         }
-        for row in versions.values(*version_fields)
+        for row in threshold_rows
     }
     return {
-        "threshold_min": None if values.get(MIN_KEY) is None else Decimal(str(values[MIN_KEY])),
-        "threshold_max": None if values.get(MAX_KEY) is None else Decimal(str(values[MAX_KEY])),
+        "threshold_min": limits.get(MIN_KEY),
+        "threshold_max": limits.get(MAX_KEY),
         "rule_provenance": provenance,
     }
 
