@@ -1,4 +1,5 @@
 import { geography } from "./geography.ts";
+import { catalogs } from "./catalogs.ts";
 /**
  * Mexican Spanish catalog: the SOURCE of the key list. `MessageKey` is derived from it and
  * `../en` must provide the same keys. One file per area; see the package README.
@@ -18,6 +19,7 @@ import { voiding } from "./voiding.ts";
 
 export const esMX = {
   ...geography,
+  ...catalogs,
   ...fleet,
   ...common,
   ...errors,

@@ -188,3 +188,7 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 | GET | /portal/downloads/ · /portal/downloads/{id}/?format=pdf\|csv | reports with cut-off date | GOB | W71 |
 
 Machine access via API keys (W66) uses the same `/portal/` endpoints, limited by the key's scope and rate limit. **[PENDING]** Confirm.
+
+W63 (#35): the boolean `in_use` is shown with an accessible icon/text badge in Status.
+The usage count, authorship and atomic reorder remain follow-up #182; the editor omits
+the design's count and author columns until the API provides those fields.

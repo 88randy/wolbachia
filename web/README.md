@@ -262,3 +262,16 @@ schedule/progress/risk data; evidenced keep/move/remove instead of transferring
 points between quadrants; non-blocking API spacing warnings without an invented
 save-with-reason endpoint; W24 inside W23; accessible coordinate editing and phone
 reflow added to the desktop intent. No production deployment is included.
+### Catalogs (W63, #35)
+
+`/settings/catalogs` opens the first catalog returned by the API, or an empty state.
+`/settings/catalogs/<slug>` provides API-defined tabs and a generic item editor, gated by
+`catalog.read`. Create, edit/reorder, deactivate and activate use their own permission codes.
+Queries use `orgScopedQueryOptions` with session identity; keys and `invalidateOrgScoped`
+for the `catalogs` resource live in `catalogs-query.ts`. The editor, dialogs and drafts are
+keyed by user, organization and catalog slug, so changing identity discards drafts and rows.
+See [catalog module](src/catalogs/README.md) for ordering, pagination, session guards and tests.
+Inactive items are hidden unless `include_deactivated=true`; configuration is deactivated
+after confirmation and can be reactivated, rather than voided. The boolean `in_use` is
+shown with an accessible icon/text badge. The usage count, authorship and atomic reorder
+remain follow-up #182. Other free-text validation belongs to consumer screens and mobile.

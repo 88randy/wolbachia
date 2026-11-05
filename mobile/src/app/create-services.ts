@@ -1,3 +1,5 @@
+import { createShiftOpen } from "../features/shift-open/create-shift-open.ts";
+import type { ShiftOpenService } from "../features/shift-open/service.ts";
 import { randomUUID } from "expo-crypto";
 
 import { createMobileApiClient } from "../api/create-api-client.ts";
@@ -15,6 +17,7 @@ import type { SyncTransport } from "../sync/sync-transport.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -63,5 +66,6 @@ export async function createServices(): Promise<AppServices> {
     },
     report: logEngineError,
   });
-  return { kv, outbox, engine, tokens, server, deviceId };
+  const shiftOpen = createShiftOpen({ db, engine, server, tokens });
+  return { kv, outbox, engine, tokens, server, deviceId, shiftOpen };
 }

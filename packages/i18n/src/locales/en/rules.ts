@@ -113,4 +113,5 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.status.inForce": "In force",
   "rules.status.superseded": "Superseded",
   "rules.status.voided": "Voided",
+  "rules.param.maxGpsAccuracyM": "Maximum GPS accuracy (m)",
 };

@@ -1,5 +1,6 @@
 import { W22Page } from "../quadrants/geography/W22Page";
 import { W23Page } from "../quadrants/geography/W23Page";
+import { CatalogsPage } from "../catalogs/CatalogsPage";
 import { W20Page } from "../fleet/W20Page";
 import { W21Page } from "../fleet/W21Page";
 import { FleetHome } from "../fleet/FleetHome";
@@ -185,6 +186,26 @@ const notFoundRoute = createRoute({
   component: NotFoundState,
 });
 
+const catalogsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/catalogs",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, "catalog.read");
+  },
+  component: CatalogsPage,
+  errorComponent: AreaErrorState,
+});
+const catalogRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/catalogs/$slug",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, "catalog.read");
+  },
+  component: CatalogsPage,
+  errorComponent: AreaErrorState,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
@@ -194,6 +215,8 @@ const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     ...areaRoutes,
     quadrantVersionsRoute,
+    catalogsRoute,
+    catalogRoute,
     motorcyclesRoute,
     motorcycleRoute,
     phonesRoute,

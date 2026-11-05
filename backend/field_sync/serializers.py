@@ -14,6 +14,7 @@ from field_sync.envelope import (
     describe_payload,
 )
 from field_sync.models import TYPE_MAX_LENGTH, VERSION_MAX_LENGTH, EventStatus
+from field_sync.producers import MapManifestSerializer
 from reviews.models import ReviewKind
 
 MAX_LATITUDE = 90
@@ -48,7 +49,7 @@ def validate_plausible_time(value: Any) -> None:  # noqa: ANN401
 class GpsSerializer(serializers.Serializer[Any]):
     lat = serializers.FloatField(min_value=-MAX_LATITUDE, max_value=MAX_LATITUDE)
     lng = serializers.FloatField(min_value=-MAX_LONGITUDE, max_value=MAX_LONGITUDE)
-    accuracy_m = serializers.FloatField(min_value=0)
+    accuracy_m = serializers.FloatField(min_value=0, required=False, allow_null=True, default=None)
 
 
 class SyncEventSerializer(serializers.Serializer[Any]):
@@ -136,15 +137,49 @@ class ReviewChangeSerializer(serializers.Serializer[Any]):
     created_at = serializers.DateTimeField()
 
 
+class ProducerChangeSerializer(serializers.Serializer[Any]):
+    sequence = serializers.IntegerField(min_value=1)
+    action = serializers.ChoiceField(choices=["upsert", "remove"])
+    resource_type = serializers.CharField()
+    resource_id = serializers.CharField()
+    resource_version = serializers.CharField()
+    data = serializers.DictField()  # type: ignore[assignment]  # Required wire name overlaps Serializer.data.
+
+
 class ChangesSerializer(serializers.Serializer[Any]):
     cursor = serializers.CharField(allow_null=True)
     reviews = ReviewChangeSerializer(many=True)
     catalog_version = serializers.CharField(allow_null=True)
     rules_version = serializers.CharField(allow_null=True)
     has_more = serializers.BooleanField()
+    next_change_at = serializers.DateTimeField(allow_null=True)
+    assignments = ProducerChangeSerializer(many=True)
+    supplies = ProducerChangeSerializer(many=True)
+    permits = ProducerChangeSerializer(many=True)
+    eligibility = ProducerChangeSerializer(many=True)
+    history = ProducerChangeSerializer(many=True)
+    map_manifests = ProducerChangeSerializer(many=True)
 
 
 class SyncResponseSerializer(serializers.Serializer[Any]):
     server_time = serializers.DateTimeField()
     results = EventResultSerializer(many=True)
     changes = ChangesSerializer()
+
+
+class BootstrapSerializer(serializers.Serializer[Any]):
+    bundle_version = serializers.CharField()
+    schema_version = serializers.CharField()
+    generated_at = serializers.DateTimeField()
+    scope_revision = serializers.CharField()
+    cursor = serializers.CharField()
+    catalog_version = serializers.CharField()
+    rules_version = serializers.CharField()
+    next_change_at = serializers.DateTimeField(allow_null=True)
+    map_manifest_ready = serializers.BooleanField()
+    assignments = serializers.ListField(child=serializers.DictField())
+    supplies = serializers.ListField(child=serializers.DictField())
+    permits = serializers.ListField(child=serializers.DictField())
+    eligibility = serializers.ListField(child=serializers.DictField())
+    history = serializers.ListField(child=serializers.DictField())
+    map_manifests = MapManifestSerializer(many=True)

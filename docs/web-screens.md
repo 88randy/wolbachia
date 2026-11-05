@@ -96,7 +96,7 @@ These apply to every screen. Designed once on the global-states board; they are 
 | W60 | Access log | REG, ADM | who viewed/exported personal data, when, from where, what; read-only; filters + export | — |
 | W61 | Retention | REG, ADM | per data type: period, action at expiry, last nightly run + receipt | — |
 | W62 | Rule parameters (versioned) | ADM | editing creates a new version; before/after; effective date; history; never overwrites | R9; built in #36 (`/settings/rule-parameters`) |
-| W63 | Catalogs | ADM | tabs per catalog; items in use are deactivated, never deleted | — |
+| W63 | Catalogs | ADM | tabs per catalog; items in use are deactivated, never deleted | implemented in #35 (`/settings/catalogs`); in-use counts and authors need backend follow-up |
 | W64 | Incident types | ADM | icon, default severity, owner, response time, escalation, what it blocks, required evidence; "Other" cannot be deactivated | — |
 | W65 | Roles and permissions matrix | ADM | profiles × actions with scope per cell; external profiles fixed read-only | — |
 | W66 | API keys | ADM | one key per institution with geo scope, endpoints, limit, validity; shown once | — |
