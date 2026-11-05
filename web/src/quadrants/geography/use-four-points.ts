@@ -80,24 +80,27 @@ async function sendFourPoints(options: SendOptions) {
   }
   setBatchRunning(options, false);
 }
+type PointDelivery = "definitive-rejection" | "committed" | "unknown";
 async function sendPoint(
   scope: GeographyScope,
   request: Schemas["SamplingPointCreateRequest"],
   write: FourPoints["write"],
 ) {
-  const delivery = { didSend: false, isUncertain: false };
+  const delivery: { outcome?: PointDelivery } = {};
   const result = await write.execute(async (signal) => {
-    delivery.didSend = true;
-    delivery.isUncertain = true;
+    delivery.outcome = "unknown";
     const reply = await scope.client.POST("/api/v1/sampling-points/", { body: request, signal });
-    delivery.isUncertain =
-      !(reply.response.ok && reply.data !== undefined) && !isDefinitiveRejection(reply);
+    delivery.outcome = classifyPointDelivery(reply);
     return reply;
   });
-  return {
-    result,
-    isUncertain: delivery.isUncertain || (delivery.didSend && result.kind === "stale"),
-  };
+  const isDiscardedSuccess = delivery.outcome === "committed" && result.kind !== "saved";
+  return { result, isUncertain: delivery.outcome === "unknown" || isDiscardedSuccess };
+}
+/** HTTP evidence precedes session handling: a definitive rejection stays rejected across revision changes. */
+function classifyPointDelivery(reply: WriteReply<Schemas["PointWrite"]>): PointDelivery {
+  if (isDefinitiveRejection(reply)) return "definitive-rejection";
+  if (reply.response.ok && reply.data !== undefined) return "committed";
+  return "unknown";
 }
 const FIRST_CLIENT_ERROR = 400;
 const FIRST_SERVER_ERROR = 500;

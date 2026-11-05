@@ -29,6 +29,11 @@ with scoped `?code=`; all detail writes use resolved UUIDs.
   Only explicit reconciliation via scoped `?code=` can count it as saved, after
   verifying the exact block and active coordinates. Empty/mismatched reads keep
   the batch locked; absence cannot prove the original write did not commit.
+  Delivery is classified before session handling: definitive HTTP rejection,
+  committed, or unknown. A definitive 401 stays rejected even when session
+  handling discards its response as stale; reauthentication permits only a manual
+  retry of pending points. Unknown outcomes and discarded committed successes
+  keep their reservation. An attempt that never left the client reserves nothing.
   Reconciliation never writes or automatically continues the batch.
   This is not a backend transaction.
 - `MapPanel` imports `GeographyMap` lazily. MapLibre failure, missing WebGL or
@@ -61,7 +66,7 @@ There is no geography export operation in OpenAPI, so no export is offered.
 | Criterion | Cheapest proof |
 | --- | --- |
 | R2: every excluded point resolved before publish | `w-15.test.tsx`; pure validation in `geometry.test.ts` |
-| Block proposal, four fixed codes, partial/lost-response recovery and spacing codes | `w-15-blocks.test.tsx` |
+| Block proposal, four fixed codes, partial/lost-response recovery, definitive 401 manual retry and spacing codes | `w-15-blocks.test.tsx` |
 | Geometry/stale revision recovery, unknown blockers, Retry-After | `w-15.test.tsx`, `w-15-recovery.test.tsx` |
 | History, keyboard map/form parity at 1280/1440, dialog focus return | `w-15-accessibility.test.tsx`, independent history paging in recovery tests |
 | Explicit grants, denied/unknown/foreign deep links, scope clearing | `w-15-access.test.tsx`, router area-access tests |

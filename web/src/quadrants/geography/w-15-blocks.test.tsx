@@ -373,3 +373,73 @@ function releaseCreationReply(reply: ReturnType<typeof deferredReply>, outcome: 
     apiError(400, "validation_error", { fields: { code: [{ code: "duplicate_code" }] } }),
   );
 }
+
+test.each([0, 1])(
+  "a definitive point POST 401 after %i saved points permits only a manual pending retry after reauthentication",
+  async (savedBeforeRejection) => {
+    const rejection = deferredReply();
+    const persisted = new Map<string, Schemas["SamplingPoint"]>();
+    let attempts = 0;
+    const { api, app, codes, create } = await prepareBatch({
+      "POST /api/v1/sampling-points/": (request) => {
+        attempts += 1;
+        if (attempts === savedBeforeRejection + 1) return rejection.promise;
+        const body = request.body as Schemas["SamplingPointCreateRequest"];
+        const saved = persistedPoint(body);
+        persisted.set(body.code, saved);
+        return Response.json({ point: saved, spacing_warnings: [] }, { status: 201 });
+      },
+      "GET /api/v1/sampling-points/": (request) =>
+        new URL(request.path, "https://test.invalid").searchParams.has("code")
+          ? pageOf()
+          : pageOf([...persisted.values()]),
+      "POST /api/v1/auth/login/": Response.json({
+        me: ALLOWED,
+        server_time: "2026-11-04T12:00:00Z",
+      }),
+    });
+    document.cookie = "csrftoken=test-csrf; path=/";
+    await userEvent.click(create);
+    await waitFor(() => {
+      expect(attempts).toBe(savedBeforeRejection + 1);
+    });
+    expect(persisted.size).toBe(savedBeforeRejection);
+    await act(async () => {
+      rejection.resolve(apiError(401, "not_authenticated"));
+      await Promise.resolve();
+    });
+    fireEvent.change(await screen.findByLabelText("Password"), {
+      target: { value: fakePassword() },
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Continue" }));
+    await waitFor(() => {
+      expect(screen.queryByLabelText("Password")).toBeNull();
+    });
+    await act(async () => {
+      await app.queryClient.refetchQueries({ queryKey: ["me"] });
+    });
+    expect(screen.queryByRole("button", { name: "Reconcile point creation" })).toBeNull();
+    await waitFor(() => {
+      expect(create.hasAttribute("disabled")).toBe(false);
+    });
+    expect(codes[savedBeforeRejection]?.matches(":disabled")).toBe(false);
+    expect(attempts).toBe(savedBeforeRejection + 1);
+    expect(persisted.size).toBe(savedBeforeRejection);
+    await userEvent.click(create);
+    await waitFor(() => {
+      expect(persisted.size).toBe(4);
+    });
+    await waitFor(() => {
+      expect(create.hasAttribute("disabled")).toBe(true);
+    });
+    const sentCodes = api.requests
+      .filter(({ method, path }) => method === "POST" && path === "/api/v1/sampling-points/")
+      .map(({ body }) => (body as Schemas["SamplingPointCreateRequest"]).code);
+    const fixedCodes = ["OV-100", "OV-101", "OV-102", "OV-103"];
+    expect(sentCodes).toEqual([
+      ...fixedCodes.slice(0, savedBeforeRejection + 1),
+      ...fixedCodes.slice(savedBeforeRejection),
+    ]);
+    expect([...persisted.keys()]).toEqual(fixedCodes);
+  },
+);
