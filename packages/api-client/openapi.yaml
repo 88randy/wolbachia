@@ -3374,14 +3374,6 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
-    ActionEnum:
-      enum:
-      - upsert
-      - remove
-      type: string
-      description: |-
-        * `upsert` - upsert
-        * `remove` - remove
     Bag:
       type: object
       description: |-
@@ -3752,6 +3744,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MapManifest'
+        quadrants:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantReference'
+        sampling_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/SamplingPointBundle'
+        ovitraps:
+          type: array
+          items:
+            $ref: '#/components/schemas/OvitrapBundle'
       required:
       - assignments
       - bundle_version
@@ -3763,8 +3767,11 @@ components:
       - map_manifest_ready
       - map_manifests
       - next_change_at
+      - ovitraps
       - permits
+      - quadrants
       - rules_version
+      - sampling_points
       - schema_version
       - scope_revision
       - supplies
@@ -3978,6 +3985,18 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ProducerChange'
+        quadrants:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantChange'
+        sampling_points:
+          type: array
+          items:
+            $ref: '#/components/schemas/SamplingPointChange'
+        ovitraps:
+          type: array
+          items:
+            $ref: '#/components/schemas/OvitrapChange'
       required:
       - assignments
       - catalog_version
@@ -3987,9 +4006,12 @@ components:
       - history
       - map_manifests
       - next_change_at
+      - ovitraps
       - permits
+      - quadrants
       - reviews
       - rules_version
+      - sampling_points
       - supplies
     CheckResultEnum:
       enum:
@@ -4001,6 +4023,14 @@ components:
         * `ok` - Ok
         * `minor` - Minor
         * `severe` - Severe
+    CourierChangeActionEnum:
+      enum:
+      - upsert
+      - remove
+      type: string
+      description: |-
+        * `upsert` - upsert
+        * `remove` - remove
     DecisionEnum:
       enum:
       - keep
@@ -4668,6 +4698,9 @@ components:
           maxLength: 20
       required:
       - code
+    NullEnum:
+      enum:
+      - null
     OrganizationSettings:
       type: object
       properties:
@@ -4827,6 +4860,114 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    OvitrapBundle:
+      type: object
+      properties:
+        version:
+          type: string
+        id:
+          type: string
+          format: uuid
+        client_uuid:
+          type: string
+          format: uuid
+        code:
+          type: string
+        sampling_point_id:
+          type: string
+          format: uuid
+        point_version:
+          type: string
+          format: uuid
+        sampling_point_version:
+          type: integer
+          minimum: 1
+        placed_at:
+          type: string
+          format: date-time
+        reading_id:
+          type: string
+          format: uuid
+          nullable: true
+        finding_code:
+          type: string
+          nullable: true
+        paddle_present:
+          type: boolean
+          nullable: true
+        has_eggs:
+          type: boolean
+          nullable: true
+        checked_at:
+          type: string
+          format: date-time
+          nullable: true
+        is_lagged:
+          type: boolean
+          nullable: true
+        placement_voided:
+          type: boolean
+        voided:
+          type: boolean
+        voided_resource_type:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/VoidedResourceTypeEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        voided_event_id:
+          type: string
+          format: uuid
+          nullable: true
+        void_reason_code:
+          type: string
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - checked_at
+      - client_uuid
+      - code
+      - finding_code
+      - has_eggs
+      - id
+      - is_lagged
+      - paddle_present
+      - placed_at
+      - placement_voided
+      - point_version
+      - reading_id
+      - sampling_point_id
+      - sampling_point_version
+      - version
+      - void_reason_code
+      - voided
+      - voided_at
+      - voided_event_id
+      - voided_resource_type
+    OvitrapChange:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          minimum: 1
+        action:
+          $ref: '#/components/schemas/ProjectionUpsertActionEnum'
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        resource_version:
+          type: string
+        data:
+          $ref: '#/components/schemas/OvitrapBundle'
+      required:
+      - action
+      - data
+      - resource_id
+      - resource_type
+      - resource_version
+      - sequence
     OvitrapLifecycleStatusEnum:
       type: string
       enum:
@@ -5488,7 +5629,7 @@ components:
           type: integer
           minimum: 1
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/CourierChangeActionEnum'
         resource_type:
           type: string
         resource_id:
@@ -5571,6 +5712,11 @@ components:
       - expected_revision
       - permissions
       - scope
+    ProjectionUpsertActionEnum:
+      enum:
+      - upsert
+      type: string
+      description: '* `upsert` - upsert'
     Quadrant:
       type: object
       description: |-
@@ -5613,6 +5759,29 @@ components:
       - created_by
       - current_version
       - id
+    QuadrantChange:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          minimum: 1
+        action:
+          $ref: '#/components/schemas/ProjectionUpsertActionEnum'
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        resource_version:
+          type: string
+        data:
+          $ref: '#/components/schemas/QuadrantReference'
+      required:
+      - action
+      - data
+      - resource_id
+      - resource_type
+      - resource_version
+      - sequence
     QuadrantCreateRequest:
       type: object
       description: |-
@@ -5691,6 +5860,32 @@ components:
       required:
       - expected_revision
       - geometry
+    QuadrantReference:
+      type: object
+      properties:
+        resource_type:
+          $ref: '#/components/schemas/ResourceTypeEnum'
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+      required:
+      - center_id
+      - code
+      - id
+      - quadrant_id
+      - resource_type
+      - revision
     QuadrantVersion:
       type: object
       description: |-
@@ -5982,6 +6177,14 @@ components:
       - access
       - refresh
       - server_time
+    ResourceTypeEnum:
+      enum:
+      - quadrant
+      - block
+      type: string
+      description: |-
+        * `quadrant` - quadrant
+        * `block` - block
     ReviewChange:
       type: object
       description: A review item as the phone's inbox sees it (the courier's own events
@@ -6296,6 +6499,63 @@ components:
       - created_by
       - current_version
       - id
+    SamplingPointBundle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        block_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+        location:
+          type: array
+          items:
+            type: number
+            format: double
+          maxItems: 2
+          minItems: 2
+        is_retired:
+          type: boolean
+        version:
+          type: integer
+          minimum: 1
+      required:
+      - block_id
+      - code
+      - id
+      - is_retired
+      - location
+      - quadrant_id
+      - version
+    SamplingPointChange:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          minimum: 1
+        action:
+          $ref: '#/components/schemas/ProjectionUpsertActionEnum'
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        resource_version:
+          type: string
+        data:
+          $ref: '#/components/schemas/SamplingPointBundle'
+      required:
+      - action
+      - data
+      - resource_id
+      - resource_type
+      - resource_version
+      - sequence
     SamplingPointCreateRequest:
       type: object
       description: |-
@@ -6724,6 +6984,14 @@ components:
           default: ''
       required:
       - reason_code
+    VoidedResourceTypeEnum:
+      enum:
+      - placement
+      - reading
+      type: string
+      description: |-
+        * `placement` - placement
+        * `reading` - reading
     WebLoginResponse:
       type: object
       properties:

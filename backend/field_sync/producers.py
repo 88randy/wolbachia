@@ -3,9 +3,10 @@
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, Literal
 
 from django.core.exceptions import ImproperlyConfigured
+from django.db.models import Q, QuerySet
 from rest_framework import serializers
 
 from accounts.models import User
@@ -13,7 +14,17 @@ from core.snapshots import snapshot_hash
 from organizations.models import Organization
 from organizations.scope import EffectiveScope
 
-SECTION_KEYS = ("assignments", "supplies", "permits", "eligibility", "history", "map_manifests")
+SECTION_KEYS = (
+    "assignments",
+    "supplies",
+    "permits",
+    "eligibility",
+    "history",
+    "map_manifests",
+    "quadrants",
+    "sampling_points",
+    "ovitraps",
+)
 BOOTSTRAP_SCHEMA_VERSION = 1
 
 
@@ -131,3 +142,21 @@ def bundle_schema_version() -> str:
             "producers": {key: producer.schema_version for key, producer in PRODUCERS.items()},
         }
     )
+
+
+def filter_producer_rows(
+    queryset: QuerySet[Any], ctx: ProducerContext, lookups: tuple[str, str]
+) -> QuerySet[Any]:
+    """Apply the captured paired grants in SQL, without a second membership read."""
+    allowed = Q(pk__in=[])
+    for codes, scope in ctx.scope.grants:
+        if ctx.permission not in codes:
+            continue
+        grant = Q(pk__isnull=False)
+        dimensions: tuple[Literal["centers", "quadrants"], ...] = ("centers", "quadrants")
+        for dimension, lookup in zip(dimensions, lookups, strict=True):
+            bound = scope[dimension]
+            if bound["mode"] != "all":
+                grant &= Q(**{f"{lookup}__in": bound["ids"] if bound["mode"] == "selected" else []})
+        allowed |= grant
+    return queryset.filter(allowed, organization=ctx.organization)

@@ -29,7 +29,7 @@ INSTALLED_APPS = [
     "field_sync",
     "reviews",
     "shifts",
-    "geography",
+    "geography.apps.GeographyConfig",
     "ovitraps",
 ]
 
@@ -141,6 +141,9 @@ SYNC_MAX_EVENTS = env.int("SYNC_MAX_EVENTS", default=200)
 SYNC_MAX_EVENT_PAYLOAD_BYTES = env.int("SYNC_MAX_EVENT_PAYLOAD_BYTES", default=16_384)  # 16 KB
 SYNC_CURSOR_MAX_AGE_SECONDS = env.int("SYNC_CURSOR_MAX_AGE_SECONDS", default=2_592_000)  # 30 days
 SYNC_LOCK_TIMEOUT_MS = env.int("SYNC_LOCK_TIMEOUT_MS", default=3_000)
+SYNC_MAX_FANOUT_COURIERS = env.int("SYNC_MAX_FANOUT_COURIERS", default=1000)
+if SYNC_MAX_FANOUT_COURIERS < 1:
+    raise ImproperlyConfigured("SYNC_MAX_FANOUT_COURIERS must be positive.")
 SYNC_RETRY_AFTER_SECONDS = env.int("SYNC_RETRY_AFTER_SECONDS", default=2)
 
 # SA09 / #56: deployment limits, validated at startup rather than silently clamped.
@@ -214,6 +217,8 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "CourierChangeActionEnum": ["upsert", "remove"],
+        "ProjectionUpsertActionEnum": ["upsert"],
         "EventStatusEnum": "field_sync.models.EventStatus",
         "ReviewKindEnum": "reviews.models.ReviewKind",
         "ShiftStatusEnum": "shifts.models.ShiftStatus",

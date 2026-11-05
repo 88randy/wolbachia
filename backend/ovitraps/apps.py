@@ -7,5 +7,7 @@ class OvitrapsConfig(AppConfig):
 
     def ready(self) -> None:
         from ovitraps.handlers import register_ovitrap_handlers
+        from ovitraps.producers import register_ovitrap_producers
 
         register_ovitrap_handlers()
+        register_ovitrap_producers()

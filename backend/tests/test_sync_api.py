@@ -60,6 +60,9 @@ def test_the_answer_has_results_and_changes(phone: Phone) -> None:
         "eligibility",
         "history",
         "map_manifests",
+        "quadrants",
+        "sampling_points",
+        "ovitraps",
     }
     assert response.data["results"][0]["id"] == sent["id"]
 
@@ -221,6 +224,9 @@ def test_the_final_upload_pulls_nothing(phone: Phone) -> None:
         "eligibility": [],
         "history": [],
         "map_manifests": [],
+        "quadrants": [],
+        "sampling_points": [],
+        "ovitraps": [],
     }
 
 

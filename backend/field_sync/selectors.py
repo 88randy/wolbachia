@@ -5,14 +5,14 @@ from typing import Any
 
 from django.conf import settings
 from django.contrib.postgres.expressions import ArraySubquery
-from django.db.models import Max, OuterRef, Q
+from django.db.models import Max, OuterRef, Q, QuerySet
 from django.db.models.functions import JSONObject
 from rest_framework.exceptions import PermissionDenied
 
 from catalogs.selectors import build_catalog_snapshot
 from core.snapshots import snapshot_hash
 from field_sync.cursor import ChangesCursor, encode_cursor
-from field_sync.envelope import BatchContext
+from field_sync.envelope import BatchContext, CourierContext
 from field_sync.models import CourierChange, FieldEvent
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from field_sync.producers import (
@@ -21,8 +21,8 @@ from field_sync.producers import (
     bundle_schema_version,
     map_manifests_ready,
 )
-from organizations.models import Membership, Profile
-from organizations.scope import Dimension
+from organizations.models import Membership, Organization, Profile
+from organizations.scope import Dimension, EffectiveScope
 from organizations.services import effective_scope
 from reviews.models import ReviewItem
 from reviews.selectors import list_courier_reviews
@@ -82,9 +82,12 @@ class Changes:
     eligibility: list[dict[str, Any]] = field(default_factory=list)
     history: list[dict[str, Any]] = field(default_factory=list)
     map_manifests: list[dict[str, Any]] = field(default_factory=list)
+    quadrants: list[dict[str, Any]] = field(default_factory=list)
+    sampling_points: list[dict[str, Any]] = field(default_factory=list)
+    ovitraps: list[dict[str, Any]] = field(default_factory=list)
 
 
-def _capture_membership(batch: BatchContext) -> Membership | None:
+def membership_snapshots(organization: Organization) -> QuerySet[Membership]:
     """One SQL snapshot for membership, user/org activity and active assigned profiles.
 
     READ COMMITTED gives each statement its own snapshot. A separate profile query
@@ -107,23 +110,30 @@ def _capture_membership(batch: BatchContext) -> Membership | None:
             )
         )
     )
-    membership: Membership | None = (
+    return (
         Membership.objects.select_related("user", "organization")
-        .filter(organization=batch.organization, user=batch.user, is_active=True)
+        .filter(
+            organization=organization,
+            is_active=True,
+            user__is_active=True,
+            organization__is_active=True,
+        )
         .annotate(scope_profiles=ArraySubquery(profiles))
-        .first()
     )
-    return membership
+
+
+def captured_scope(membership: Membership) -> EffectiveScope:
+    snapshots: list[dict[str, Any]] = membership.scope_profiles  # type: ignore[attr-defined]
+    profiles = [Profile(organization_id=membership.organization_id, **row) for row in snapshots]
+    return effective_scope(membership, profiles=profiles)
 
 
 def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
     """Compute paired grants exclusively from one captured configuration snapshot."""
-    membership = _capture_membership(batch)
+    membership = membership_snapshots(batch.organization).filter(user=batch.user).first()
     if membership is None:
         raise PermissionDenied
-    snapshots: list[dict[str, Any]] = membership.scope_profiles  # type: ignore[attr-defined]
-    profiles = [Profile(organization_id=membership.organization_id, **row) for row in snapshots]
-    scope = effective_scope(membership, profiles=profiles)
+    scope = captured_scope(membership)
     if not scope.allows(permission):
         raise PermissionDenied
     return ProducerContext(batch.organization, batch.user, scope, batch.received_at, permission)
@@ -141,7 +151,7 @@ def scope_revision(ctx: ProducerContext) -> str:
     return snapshot_hash({"grants": [json.loads(grant) for grant in sorted(unique)]})
 
 
-def latest_change_sequence(batch: BatchContext) -> int:
+def latest_change_sequence(batch: BatchContext | CourierContext) -> int:
     value = (
         CourierChange.objects.for_org(batch.organization)
         .filter(courier=batch.user)
