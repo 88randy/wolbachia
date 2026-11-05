@@ -23,6 +23,7 @@ from rest_framework.exceptions import NotFound
 
 from core.exceptions import FieldValidationError
 from core.time import epi_week_start
+from field_sync.producers import ProducerContext
 from geography.models import Block, Quadrant
 from geography.selectors import get_quadrant, visible_quadrants
 from organizations.models import Membership, Organization
@@ -156,14 +157,20 @@ def task_query(
         membership,
         permission,
     )
+    return _task_projection(tasks, membership.organization, start)
+
+
+def _task_projection(
+    tasks: QuerySet[Any], organization: Organization, start: date
+) -> QuerySet[Any]:
     owners = TaskOwnership.objects.filter(task=OuterRef("pk")).order_by("-revision")
     risk = RiskCategoryVersion.objects.filter(
         block_id=OuterRef("point__block_id"), week_start=start
     ).order_by("-version")
-    capture_tz = ZoneInfo(membership.organization.timezone)
+    capture_tz = ZoneInfo(organization.timezone)
     placements = (
         Ovitrap.objects.filter(
-            organization=membership.organization,
+            organization=organization,
             sampling_point_id=OuterRef("point_id"),
             event__voided_at__isnull=True,
         )
@@ -172,7 +179,7 @@ def task_query(
     )
     readings = (
         OvitrapReading.objects.filter(
-            organization=membership.organization,
+            organization=organization,
             ovitrap__sampling_point_id=OuterRef("point_id"),
             event__voided_at__isnull=True,
         )
@@ -309,19 +316,39 @@ def assignment_rows(membership: Membership, query: dict[str, Any]) -> list[dict[
     return rows
 
 
-def courier_current_rows(courier: Membership, start: date) -> dict[str, list[dict[str, Any]]]:
-    """B-13 integration seam: plain rows, authorized with courier field scope, no producer imports."""
-    tasks = cast(
-        "QuerySet[Any]",
-        task_query(courier, week_start(courier.organization, start), "field_event.sync"),
+def courier_current_rows(
+    courier: Membership, start: date, ctx: ProducerContext | None = None
+) -> dict[str, list[dict[str, Any]]]:
+    """Use the captured producer grants without re-reading membership/profile scopes."""
+    scope = ctx.scope if ctx else effective_scope(courier)
+    permission = ctx.permission if ctx else "field_event.sync"
+    instant = ctx.now if ctx else timezone.now()
+    quadrants = [
+        quadrant
+        for quadrant in Quadrant.objects.filter(organization=courier.organization).order_by(
+            "code", "pk"
+        )
+        if scope.allows(permission, str(quadrant.center_id), str(quadrant.pk))
+    ]
+    start = week_start(courier.organization, start)
+    tasks = _task_projection(
+        ScheduledTask.objects.filter(
+            organization=courier.organization,
+            point__block__quadrant_id__in=[quadrant.pk for quadrant in quadrants],
+            due_date__gte=start,
+            due_date__lt=start + timedelta(days=DAYS_PER_WEEK),
+        ),
+        courier.organization,
+        start,
     ).filter(courier_id=courier.user_id)
     assignments = []
-    for quadrant in visible_quadrants(courier, "field_event.sync"):
-        assignment = assignment_at(quadrant, timezone.now())
+    for quadrant in quadrants:
+        assignment = assignment_at(quadrant, instant)
         if assignment and assignment.courier_id == courier.user_id:
             assignments.append(
                 {
-                    "id": str(assignment.pk),
+                    "id": str(quadrant.pk),
+                    "kind": "quadrant_assignment",
                     "organization_id": str(courier.organization_id),
                     "center_id": str(quadrant.center_id),
                     "quadrant_id": str(quadrant.pk),
@@ -329,4 +356,4 @@ def courier_current_rows(courier: Membership, start: date) -> dict[str, list[dic
                     "courier": str(courier.user_id),
                 }
             )
-    return {"assignments": assignments, "tasks": task_rows(tasks, task_loads(tasks))}
+    return {"assignments": assignments, "tasks": task_rows(tasks, {})}

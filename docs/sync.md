@@ -366,18 +366,26 @@ reuse still returns ovitrap_identity_used; no new sync code is added.
 
 ## Scheduling integration boundary (#109, B-12)
 
-Scheduling adds no field events or sync result codes, and does not change ingest
-status, capture/receipt timestamps or review acceptance (#22). Its retained
-assignment_at selector resolves ownership at capture time after later allocation
-changes. courier_current_rows exposes plain current assignment/task rows with
-organization_id, center_id and quadrant_id for the B-13 producer.
+SchedulingConfig.ready registers the assignments v1 producer. Bootstrap returns
+one flat list of kind=quadrant_assignment and kind=task rows, filtered by active
+courier membership, organization and captured permission/paired center/quadrant
+scope. IDs are stable quadrant/task UUIDs. Common fields are id, kind, quadrant_id,
+courier, revision; tasks add code, point, action, date, category, source, protocol,
+is_completed and target. Current-week tasks retain completion state; no egg counts.
+Organization/center metadata is checked before serialization and is not exposed.
 
-The offline bundle producer is #110 / PR #194 and is absent from this baseline.
-Whichever PR lands second must register that selector and wrap the scheduling
-writers with lock_courier_batches + append_courier_change. No phone deltas are
-claimed before that wiring. Scheduling does not import or duplicate those APIs;
-account lock order remains User -> Device -> DeviceSession -> TokenPair before
-courier/domain locks. See [scheduling lead decisions](../backend/scheduling/README.md).
+change_assignment emits allocation remove/upsert (existing tasks retain ownership);
+generate_schedule emits new owned tasks; reassign_pending removes from the old
+owner and upserts for the new one; apply_import refreshes affected owned tasks in
+its week when category/source/protocol changes. Each writer holds the planning
+NOWAIT lock then every affected courier try-lock in sorted user UUID order before
+point/domain locks and writes, through domain write + CourierChange append + commit.
+Resource types are quadrant_assignment/task, scope is {center_id,quadrant_id}, and
+resource_version hashes the payload, including risk provenance. Retryable scheduling
+contention is 429 scheduling_in_progress, Retry-After: 1; replays append no extra rows.
+No field events/result codes, capture timestamps or review acceptance (#22) change.
+See [ADR 113 lead decisions](../backend/scheduling/README.md).
+
 ## Bootstrap and projection recovery (B-13, #110)
 
 `GET /api/v1/field/bootstrap/` requires a live pinned device bearer token and

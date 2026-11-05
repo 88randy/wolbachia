@@ -1,7 +1,7 @@
-"""Atomic append-only writers: Organization NOWAIT -> import/points -> planning rows.
+"""Atomic writers: Organization NOWAIT -> courier try-locks -> domain NOWAIT locks.
 
-No account locks, external IO or B-13 producer calls occur below this boundary.
-Point locks also serialize completion checks with ovitraps' effect writers.
+No account locks or external IO occur below this boundary. Domain facts and feed
+rows commit together; point locks also serialize ovitrap completion effects.
 """
 
 import hashlib
@@ -17,6 +17,7 @@ from django.utils import timezone
 from rest_framework.exceptions import NotFound, PermissionDenied
 
 from core.exceptions import FieldValidationError
+from field_sync.exceptions import SyncInProgressError
 from geography.models import Block, SamplingPoint
 from geography.selectors import get_quadrant, point_version_at
 from organizations.models import Membership, Organization
@@ -25,6 +26,12 @@ from organizations.services import effective_scope
 from ovitraps.models import Ovitrap, OvitrapReading
 from rules.models import RuleParameter
 from rules.selectors import get_version_in_force
+from scheduling.courier_feed import (
+    append_assignment_changes,
+    append_task_changes,
+    lock_couriers,
+    task_feed_rows,
+)
 from scheduling.csv_import import (
     MAX_UPLOAD_BYTES,
     SOURCES,
@@ -91,6 +98,8 @@ def planning_lock(member: Membership, permission: str) -> Iterator[Membership]:
             if not effective_scope(current).allows(permission):
                 raise PermissionDenied
             yield current
+    except SyncInProgressError as error:
+        raise SchedulingBusyError from error
     except DatabaseError as error:
         if getattr(error.__cause__, "sqlstate", None) in {"55P03", "40P01"}:
             raise SchedulingBusyError from error
@@ -221,11 +230,9 @@ def apply_import(
 ) -> RiskImportApplication:
     """Replay the same application, or atomically append all accepted risk versions once."""
     with planning_lock(member, RISK_IMPORT_APPLY) as current:
-        risk_import = (
-            RiskImport.objects.select_for_update()
-            .filter(organization=current.organization, pk=identifier)
-            .first()
-        )
+        risk_import = RiskImport.objects.filter(
+            organization=current.organization, pk=identifier
+        ).first()
         if risk_import is None:
             raise NotFound
         blocks = _import_blocks(current, risk_import)
@@ -235,6 +242,14 @@ def apply_import(
         _check_revision(risk_import.revision, expected_revision)
         if risk_import.errors:
             raise SchedulingConflictError("import_has_errors")
+        tasks = list(
+            task_query(current, risk_import.week_start, RISK_IMPORT_APPLY)
+            .filter(point__block_id__in=blocks)
+            .exclude(**{"courier_id": None})
+        )
+        before = {row["id"]: row for row in task_feed_rows(current, tasks, RISK_IMPORT_APPLY)}
+        batches = lock_couriers(current, (task.courier_id for task in tasks))
+        RiskImport.objects.select_for_update(nowait=True).get(pk=risk_import.pk)
         for row in risk_import.preview_rows:
             block = blocks[row["block_id"]]
             previous = (
@@ -253,6 +268,12 @@ def apply_import(
                 protocol=row["protocol"],
                 version=previous.version + 1 if previous else 1,
             )
+        changed = [
+            row
+            for row in task_feed_rows(current, tasks, RISK_IMPORT_APPLY)
+            if any(row[key] != before[row["id"]][key] for key in ("category", "source", "protocol"))
+        ]
+        append_task_changes(batches, changed)
         _append_schedule_revision(current, "risk_import")
         return RiskImportApplication.objects.create(
             organization=current.organization, created_by=current.user, risk_import=risk_import
@@ -267,6 +288,9 @@ def change_assignment(member: Membership, change: AssignmentChange) -> dict[str,
             check_courier_scope(courier_member(current, change.courier_id), quadrant)
         previous = AssignmentVersion.objects.filter(quadrant=quadrant).order_by("-version").first()
         _check_revision(previous.version if previous else 0, change.expected_revision)
+        batches = lock_couriers(
+            current, (change.courier_id, previous.courier_id if previous else None)
+        )
         assignment = AssignmentVersion.objects.create(
             organization=current.organization,
             created_by=current.user,
@@ -275,6 +299,7 @@ def change_assignment(member: Membership, change: AssignmentChange) -> dict[str,
             valid_from=timezone.now(),
             version=change.expected_revision + 1,
         )
+        append_assignment_changes(batches, assignment, previous)
         revision = _append_schedule_revision(current, "assignment")
         return {
             "id": str(assignment.pk),
@@ -331,15 +356,29 @@ def _due_actions(point: SamplingPoint, start: date) -> list[tuple[str, date, dic
     return due
 
 
-def _initial_owner(task: ScheduledTask, member: Membership) -> None:
-    assignment = assignment_at(task.point.block.quadrant, timezone.now())
+def _generation_assignments(
+    member: Membership, points: list[SamplingPoint]
+) -> dict[UUID, AssignmentVersion | None]:
+    """Capture eligible initial owners before locking any points or writing tasks."""
+    quadrants = {point.block.quadrant_id: point.block.quadrant for point in points}
+    assignments = {}
+    instant = timezone.now()
+    for identifier, quadrant in quadrants.items():
+        assignment = assignment_at(quadrant, instant)
+        if assignment and assignment.courier_id:
+            try:
+                check_courier_scope(courier_member(member, assignment.courier_id), quadrant)
+            except NotFound:
+                assignment = None  # Lost field authority leaves generated tasks unassigned.
+        assignments[identifier] = assignment
+    return assignments
+
+
+def _initial_owner(
+    task: ScheduledTask, member: Membership, assignment: AssignmentVersion | None
+) -> None:
     if assignment is None or assignment.courier_id is None:
         return
-    try:
-        courier = courier_member(member, assignment.courier_id)
-        check_courier_scope(courier, task.point.block.quadrant)
-    except NotFound:
-        return  # Retained assignment has lost field authority; generated task is unassigned.
     TaskOwnership.objects.create(
         organization=member.organization,
         created_by=member.user,
@@ -359,8 +398,16 @@ def generate_schedule(member: Membership, week: date) -> dict[str, int]:
             current,
             SCHEDULE_MANAGE,
         )
+        ordered_points = list(
+            points.select_related("organization", "block__quadrant").order_by("pk")
+        )
+        assignments = _generation_assignments(current, ordered_points)
+        batches = lock_couriers(
+            current, (assignment.courier_id for assignment in assignments.values() if assignment)
+        )
+        new_tasks = []
         created = 0
-        for point in points.select_related("organization", "block__quadrant").order_by("pk"):
+        for point in ordered_points:
             SamplingPoint.objects.select_for_update(no_key=True, nowait=True).get(pk=point.pk)
             version = point_version_at(point, timezone.now())
             if version is None or version.is_retired:
@@ -374,8 +421,10 @@ def generate_schedule(member: Membership, week: date) -> dict[str, int]:
                     defaults={"created_by": current.user, "rule_version_ids": rules},
                 )
                 if is_created:
-                    _initial_owner(task, current)
+                    _initial_owner(task, current, assignments[point.block.quadrant_id])
+                    new_tasks.append(task)
                     created += 1
+        append_task_changes(batches, task_feed_rows(current, new_tasks, SCHEDULE_MANAGE))
         revision = (
             _append_schedule_revision(current, "generate")
             if created
@@ -384,7 +433,7 @@ def generate_schedule(member: Membership, week: date) -> dict[str, int]:
         return {"created": created, "revision": revision}
 
 
-def _locked_pending_tasks(member: Membership, change: PendingReassignment) -> list[ScheduledTask]:
+def _pending_tasks(member: Membership, change: PendingReassignment) -> list[ScheduledTask]:
     identifiers = set(change.task_ids)
     if not identifiers or len(change.task_ids) > MAX_REASSIGN_TASKS:
         raise FieldValidationError("task_ids", "invalid_task_count")
@@ -396,9 +445,12 @@ def _locked_pending_tasks(member: Membership, change: PendingReassignment) -> li
     tasks = list(visible.select_related("point__block__quadrant").order_by("point_id", "pk"))
     if len(tasks) != len(identifiers):
         raise NotFound
+    return tasks
+
+
+def _lock_task_points(tasks: list[ScheduledTask]) -> None:
     for point_id in sorted({task.point_id for task in tasks}):
         SamplingPoint.objects.select_for_update(nowait=True, no_key=True).get(pk=point_id)
-    return tasks
 
 
 def _check_pending(member: Membership, tasks: list[ScheduledTask]) -> None:
@@ -416,11 +468,17 @@ def _check_pending(member: Membership, tasks: list[ScheduledTask]) -> None:
 def reassign_pending(member: Membership, change: PendingReassignment) -> dict[str, Any]:
     """Append one owner per visible pending task; stale writers never override a winner."""
     with planning_lock(member, SCHEDULE_MANAGE) as current:
-        tasks = _locked_pending_tasks(current, change)
+        tasks = _pending_tasks(current, change)
         courier = courier_member(current, change.courier)
         for task in tasks:
             check_courier_scope(courier, task.point.block.quadrant)
         _check_revision(schedule_revision(current.organization), change.expected_revision)
+        previous_owners = {
+            row["id"]: UUID(row["courier"]) if row["courier"] else None
+            for row in task_feed_rows(current, tasks, SCHEDULE_MANAGE)
+        }
+        batches = lock_couriers(current, (change.courier, *previous_owners.values()))
+        _lock_task_points(tasks)
         _check_pending(current, tasks)
         owners = []
         for task in tasks:
@@ -436,4 +494,7 @@ def reassign_pending(member: Membership, change: PendingReassignment) -> dict[st
             owners.append(
                 {"task": str(task.pk), "courier": str(owner.courier_id), "revision": owner.revision}
             )
+        append_task_changes(
+            batches, task_feed_rows(current, tasks, SCHEDULE_MANAGE), previous_owners
+        )
         return {"revision": _append_schedule_revision(current, "reassign"), "owners": owners}

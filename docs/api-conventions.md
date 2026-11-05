@@ -267,11 +267,12 @@ All references/filters are scoped (foreign organization/center/quadrant=404);
 unknown and inaccessible identifiers are indistinguishable. 400 uses code/detail/
 fields only, 409 uses safe blocked_by, lock contention/deadlock is retryable
 429 scheduling_in_progress with Retry-After: 1. Shared organization NOWAIT
-NO KEY UPDATE locking precedes point locks; no network/storage/mail or account
+NO KEY UPDATE locking precedes sorted courier try-locks and point locks; no network/storage/mail or account
 locks occur inside. Existing User -> Device -> DeviceSession -> TokenPair order
 is preserved. No void/delete endpoints, new sync events or result codes are added;
-#22 owns review acceptance and #110 owns delivery of offline assignment/task deltas.
-See scheduling/README.md and ADR 113 for lead decisions and the integration seam.
+#22 owns review acceptance. Scheduling registers the assignments v1 bundle producer
+and atomically emits scoped allocation/task deltas through #110 delivery APIs.
+See scheduling/README.md and ADR 113 for lead decisions and lock ordering.
 
 Planning input dates use the same technical 2020-01-01..2100-01-01 window as
 field sync; out-of-range week/day returns 400 out_of_range, never date overflow.

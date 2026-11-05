@@ -3,7 +3,7 @@
 B-12 / #109: protocol-labelled risk imports, courier allocations and day/week
 planning. The owner's supplied full issue and lead decisions define this work;
 GitHub inventory remains unverified (401 reported by the lead). No route
-optimization, screens, deployment, review acceptance or offline producer is added.
+optimization, screens, deployment or review acceptance is added.
 
 ## Lead decisions (ADR 113)
 
@@ -35,7 +35,7 @@ optimization, screens, deployment, review acceptance or offline producer is adde
    within organization AND risk_import.apply center/quadrant scope. Unknown and
    out-of-scope codes both yield block_inaccessible. Preview writes only import
    metadata and never categories/assignments/tasks. Any error blocks apply.
-5. Apply serializes Organization NO KEY UPDATE NOWAIT then locks RiskImport.
+5. Apply serializes Organization NO KEY UPDATE NOWAIT, affected couriers, then RiskImport NOWAIT.
    Fresh application checks expected_revision=1 and re-resolves every scoped
    block; scope loss is 404. Changed epi-week/timezone or recorded block scope
    mismatch is 409 import_scope_mismatch. All category successors and the unique
@@ -86,14 +86,20 @@ optimization, screens, deployment, review acceptance or offline producer is adde
    coordinate with existing ovitrap effect writers. No User/Device/Session/Token
    locks, storage, network or mail are taken under these locks; any future account
    integration must preserve User -> Device -> DeviceSession -> TokenPair first.
-10. Offline bundle production is #110 / PR #194, absent here. No field_sync.producers
-    imports, lock_courier_batches or append_courier_change reimplementation.
-    courier_current_rows returns plain scoped assignments/tasks with organization_id,
-    center_id, quadrant_id and revisions for later AppConfig.ready registration.
-    Whichever PR lands second MUST wire lock_courier_batches + append_courier_change
-    around the writers here and register the selector with that producer. Until
-    then these changes are not delivered as phone deltas. Capture-time assignment
-    resolution is available; late offline review/acceptance policy remains #22.
+10. SchedulingConfig.ready registers one assignments v1 BundleProducer. Its flat
+    rows have kind=quadrant_assignment|task, stable id (quadrant/task UUID), quadrant_id,
+    courier and revision. Tasks add code, point, action, date, category, source,
+    protocol, is_completed and target; no egg counts. Bootstrap uses the active
+    courier membership and captured permission/paired scope; organization_id and
+    center_id metadata are checked before serialization and remain private.
+    change_assignment emits allocation remove/upsert without moving existing tasks;
+    generate_schedule emits each new owned task; reassign_pending emits old-owner
+    remove/new-owner upsert; apply_import refreshes owned tasks in its week when
+    category/source/protocol changes. Every domain write and CourierChange append
+    shares the planning transaction. Resource types are quadrant_assignment/task,
+    scope is {center_id,quadrant_id}, and content-hash resource_version changes even
+    when risk changes without an ownership revision. Replays append no extra changes.
+    Capture-time assignment resolution remains available; review acceptance is #22.
 11. Permissions default-deny: schedule.read/manage for seeded supervisor/admin;
     schedule.read and risk_import.apply for entomologist; risk_import.apply for
     admin. Existing once-only defaults preserve revoked grants/custom profiles.
@@ -112,7 +118,20 @@ optimization, screens, deployment, review acceptance or offline producer is adde
     PR; no generated client is hand edited here. No sync events/result codes change.
 14. All new tests are in tests/test_scheduling_b_12.py. PostgreSQL cases use the
     existing pytest setup; races use Barrier/Event, never sleeps. No host port
-    5432, gh, Docker, commit or push is used in this worktree.
+    5432, commit or push is used in this worktree. PostgreSQL/CI checks remain a separate gate.
+
+## Integration and lock order
+
+Organization NO KEY UPDATE NOWAIT stays first; all affected courier advisory
+try-locks follow in sorted user UUID order, before domain writes or point locks.
+Domain row locks use NOWAIT. These explicit locks never wait: if sync holds a
+courier while seeking a planning lock, either attempt fails and rolls back, so
+there is no lock cycle. Both database contention and SyncInProgressError map to
+429 scheduling_in_progress with Retry-After: 1. Locks stay held through commit;
+no account locks or network/storage/mail occur beneath them. The one documented
+courier BatchContext helper has device=cast(Device, None): producer lock/append
+APIs use only organization/user and planning has no sending device.
+
 
 ## API
 
@@ -154,6 +173,12 @@ check generation atomically (409 revisit_rule_not_configured).
 | Concurrent reassignment/history | test_racing_reassign_retains_prior_owner_and_loser_has_explicit_conflict; test_assignment_at_retains_capture_time_owner_and_rejects_stale_revision |
 | Due/risk/load/target/scope | test_generation_due_risk_order_scope_load_and_target_are_the_returned_tasks; test_completed_tasks_abort_entire_reassignment_and_unassigned_tasks_are_explicit; test_planning_and_capture_share_epi_week_boundaries; test_normalized_first_supported_week_can_be_used_again_internally |
 | Contract/scoped wiring | test_endpoint_default_deny_and_foreign_org_center_quadrant_isolation; test_live_scheduling_schema_exposes_requests_paging_and_revision_contract; test_planning_date_extremes_have_coded_validation_instead_of_overflow; spectacular --validate --fail-on-warn; lead regenerates client |
+| Offline own/scope isolation | test_bootstrap_assignments_contains_only_own_in_scope_planning_rows |
+| Feed ownership and allocation revocation | test_reassignment_delivers_remove_and_upsert_with_contiguous_sequences; test_assignment_change_revokes_quadrant_without_moving_existing_tasks |
+| Courier contention/retry | test_busy_affected_courier_returns_retryable_429_without_partial_writes |
+| Strict phone payload | test_assignment_producer_rejects_invalid_phone_payloads; test_assignment_producer_projects_only_assignment_fields_and_hides_metadata |
+| Feed rollback and replay | test_failed_generation_rolls_back_domain_and_courier_changes; test_generation_replay_does_not_append_duplicate_courier_changes |
+| Risk feed provenance/current owner | test_import_delivers_changed_risk_to_current_task_owner_once |
 | Insert-only durability | test_database_guards_protect_import_and_ownership_history |
 
 Default profile grant expectations in test_seed_defaults.py are updated in place;
@@ -162,6 +187,7 @@ Seed-count assertions already derive len(DEFAULT_PARAMETER_SEEDS), now 15.
 
 ## Verified APIs (no added dependencies)
 
+- [Django 5.2 AppConfig auto-discovery and ready](https://docs.djangoproject.com/en/5.2/ref/applications/)
 - [Django 5.2 QuerySet locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update)
 - [Django 5.2 upload handlers](https://docs.djangoproject.com/en/5.2/ref/files/uploads/#writing-custom-upload-handlers)
 - [Python 3.13 csv](https://docs.python.org/3.13/library/csv.html)
@@ -170,7 +196,7 @@ Planning input dates use the same technical 2020-01-01..2100-01-01 window as
 field sync; out-of-range week/day returns 400 out_of_range, never date overflow.
 
 
-## Local handoff (2026-11-05)
+## Initial B-12 handoff (2026-11-05, before producer integration)
 
 - Branch feat/109-assignments-scheduling. No commit, push, PR, merge or deployment.
 - Runtime: Django 5.2.19, DRF 3.18.3, drf-spectacular 0.30.0; no new dependency.

@@ -9,8 +9,10 @@ from uuid import uuid4
 
 import pytest
 from django.db import DatabaseError, close_old_connections, connection, transaction
+from django.utils import timezone
 
 from core.time import epi_week_label, epi_week_start
+from field_sync.models import CourierChange
 from geography.models import Block, PointVersion, Quadrant, SamplingPoint
 from organizations.models import Center, all_scope
 from scheduling.csv_import import MAX_UPLOAD_BYTES, parse_csv
@@ -614,3 +616,338 @@ def test_normalized_first_supported_week_can_be_used_again_internally(convention
     start = week_start(organization, date(2020, 1, 1))
     assert start.year == 2019
     assert week_start(organization, start) == start
+
+
+# Use the real phone/bootstrap boundary with the courier membership already under test.
+def planning_phone(member):
+    from tests.sync_support import make_phone
+
+    member.profiles.add(
+        ProfileFactory(
+            organization=member.organization,
+            scope=all_scope(),
+            permission_codes=["field.bootstrap", "field_event.sync"],
+        )
+    )
+    return make_phone(lambda *args, **kwargs: (member.user, member), member.organization)
+
+
+@pytest.mark.django_db
+def test_bootstrap_assignments_contains_only_own_in_scope_planning_rows(monkeypatch):
+    monkeypatch.setattr(timezone, "now", lambda: NOW)
+    planner = planner_setup()
+    courier = another_courier(planner)
+    phone = planning_phone(courier)
+    other = another_courier(planner)
+    hidden = Quadrant.objects.create(
+        organization=planner.member.organization, center=planner.quadrant.center, code="Q-hidden"
+    )
+    planning_point(hidden, "P-hidden")
+    other_quadrant = Quadrant.objects.create(
+        organization=planner.member.organization, center=planner.quadrant.center, code="Q-other"
+    )
+    planning_point(other_quadrant, "P-other")
+    for quadrant, owner in (
+        (planner.quadrant, courier),
+        (hidden, courier),
+        (other_quadrant, other),
+    ):
+        change_assignment(planner.member, AssignmentChange(quadrant.pk, owner.user_id, 0))
+    generate_schedule(planner.member, WEEK)
+    other_task = ScheduledTask.objects.create(
+        organization=planner.member.organization, point=planner.point, action="check", due_date=WEEK
+    )
+    TaskOwnership.objects.create(
+        organization=planner.member.organization, task=other_task, courier=other.user, revision=1
+    )
+    foreign = planner_setup()
+    foreign_courier = MembershipFactory(
+        organization=foreign.member.organization, user=courier.user, scope=all_scope()
+    )
+    foreign_courier.profiles.add(foreign.profile)
+    change_assignment(foreign.member, AssignmentChange(foreign.quadrant.pk, courier.user_id, 0))
+    generate_schedule(foreign.member, WEEK)
+    courier.scope["quadrants"] = {"mode": "selected", "ids": [str(planner.quadrant.pk)]}
+    courier.save(update_fields=["scope"])
+    response = phone.client.get("/api/v1/field/bootstrap/")
+    assert response.status_code == 200
+    rows = response.data["assignments"]
+    task = ScheduledTask.objects.get(point=planner.point, action="place")
+    assert {(row["kind"], row["id"]) for row in rows} == {
+        ("quadrant_assignment", str(planner.quadrant.pk)),
+        ("task", str(task.pk)),
+    }
+    assert all(row["courier"] == str(courier.user_id) for row in rows)
+    assert all(row["quadrant_id"] == str(planner.quadrant.pk) for row in rows)
+    task_row = next(row for row in rows if row["kind"] == "task")
+    assert set(task_row) == {
+        "id",
+        "kind",
+        "quadrant_id",
+        "courier",
+        "revision",
+        "code",
+        "point",
+        "action",
+        "date",
+        "category",
+        "source",
+        "protocol",
+        "is_completed",
+        "target",
+    }
+    assert (task_row["point"], task_row["target"], task_row["is_completed"]) == (
+        str(planner.point.pk),
+        1,
+        False,
+    )
+
+
+@pytest.mark.django_db
+def test_reassignment_delivers_remove_and_upsert_with_contiguous_sequences(monkeypatch):
+    monkeypatch.setattr(timezone, "now", lambda: NOW)
+    planner = planner_setup()
+    courier = another_courier(planner)
+    old_phone, new_phone = planning_phone(planner.member), planning_phone(courier)
+    change_assignment(
+        planner.member, AssignmentChange(planner.quadrant.pk, planner.member.user_id, 0)
+    )
+    generate_schedule(planner.member, WEEK)
+    task = ScheduledTask.objects.get()
+    old_cursor = old_phone.client.get("/api/v1/field/bootstrap/").data["cursor"]
+    new_cursor = new_phone.client.get("/api/v1/field/bootstrap/").data["cursor"]
+    reassign_pending(
+        planner.member,
+        PendingReassignment(
+            (task.pk,), courier.user_id, schedule_revision(planner.member.organization)
+        ),
+    )
+    old_delta = old_phone.sync([], cursor=old_cursor).data["changes"]["assignments"]
+    new_delta = new_phone.sync([], cursor=new_cursor).data["changes"]["assignments"]
+    assert [(row["action"], row["resource_type"], row["resource_id"]) for row in old_delta] == [
+        ("remove", "task", str(task.pk))
+    ]
+    assert [(row["action"], row["resource_type"], row["resource_id"]) for row in new_delta] == [
+        ("upsert", "task", str(task.pk))
+    ]
+    assert new_delta[0]["data"]["courier"] == str(courier.user_id)
+    assert new_delta[0]["data"]["revision"] == 2
+    for owner in (planner.member.user, courier.user):
+        sequences = list(
+            CourierChange.objects.filter(courier=owner)
+            .order_by("sequence")
+            .values_list("sequence", flat=True)
+        )
+        assert sequences == list(range(1, len(sequences) + 1))
+
+
+@pytest.mark.django_db
+def test_failed_generation_rolls_back_domain_and_courier_changes(monkeypatch):
+    monkeypatch.setattr(timezone, "now", lambda: NOW)
+    planner = planner_setup()
+    change_assignment(
+        planner.member, AssignmentChange(planner.quadrant.pk, planner.member.user_id, 0)
+    )
+    before = set(CourierChange.objects.values_list("pk", flat=True))
+    with (
+        patch(
+            "scheduling.services._append_schedule_revision",
+            side_effect=SchedulingConflictError("forced_rollback"),
+        ),
+        pytest.raises(SchedulingConflictError),
+    ):
+        generate_schedule(planner.member, WEEK)
+    assert not ScheduledTask.objects.exists()
+    assert not TaskOwnership.objects.exists()
+    assert set(CourierChange.objects.values_list("pk", flat=True)) == before
+
+
+@pytest.mark.django_db
+def test_generation_replay_does_not_append_duplicate_courier_changes(monkeypatch):
+    monkeypatch.setattr(timezone, "now", lambda: NOW)
+    planner = planner_setup()
+    change_assignment(
+        planner.member, AssignmentChange(planner.quadrant.pk, planner.member.user_id, 0)
+    )
+    generated = generate_schedule(planner.member, WEEK)
+    changes = list(CourierChange.objects.filter(resource_type="task"))
+    assert len(changes) == generated["created"] == 1
+    assert changes[0].payload["point"] == str(planner.point.pk)
+    before = set(CourierChange.objects.values_list("pk", flat=True))
+    assert generate_schedule(planner.member, WEEK) == {
+        "created": 0,
+        "revision": generated["revision"],
+    }
+    assert set(CourierChange.objects.values_list("pk", flat=True)) == before
+
+
+@pytest.mark.django_db
+def test_assignment_change_revokes_quadrant_without_moving_existing_tasks(monkeypatch):
+    monkeypatch.setattr(timezone, "now", lambda: NOW)
+    planner = planner_setup()
+    courier = another_courier(planner)
+    change_assignment(
+        planner.member, AssignmentChange(planner.quadrant.pk, planner.member.user_id, 0)
+    )
+    generate_schedule(planner.member, WEEK)
+    before = set(CourierChange.objects.values_list("pk", flat=True))
+    change_assignment(planner.member, AssignmentChange(planner.quadrant.pk, courier.user_id, 1))
+    changes = CourierChange.objects.exclude(pk__in=before)
+    assert set(changes.values_list("courier_id", "action", "resource_type", "resource_id")) == {
+        (planner.member.user_id, "remove", "quadrant_assignment", str(planner.quadrant.pk)),
+        (courier.user_id, "upsert", "quadrant_assignment", str(planner.quadrant.pk)),
+    }
+    assert changes.get(action="upsert").payload["revision"] == 2
+    assert TaskOwnership.objects.get().courier_id == planner.member.user_id
+    change_assignment(planner.member, AssignmentChange(planner.quadrant.pk, None, 2))
+    removed = CourierChange.objects.filter(courier=courier.user).latest("sequence")
+    assert (removed.action, removed.resource_id) == ("remove", str(planner.quadrant.pk))
+
+
+@pytest.mark.django_db
+def test_import_delivers_changed_risk_to_current_task_owner_once(monkeypatch):
+    monkeypatch.setattr(timezone, "now", lambda: NOW)
+    planner = planner_setup()
+    courier = another_courier(planner)
+    change_assignment(
+        planner.member, AssignmentChange(planner.quadrant.pk, planner.member.user_id, 0)
+    )
+    generate_schedule(planner.member, WEEK)
+    task = ScheduledTask.objects.get()
+    reassign_pending(
+        planner.member,
+        PendingReassignment(
+            (task.pk,), courier.user_id, schedule_revision(planner.member.organization)
+        ),
+    )
+    risk_import = preview(planner)
+    before = set(CourierChange.objects.values_list("pk", flat=True))
+    apply_import(planner.member, risk_import.pk, 1)
+    change = CourierChange.objects.exclude(pk__in=before).get()
+    assert (change.courier_id, change.action, change.resource_id) == (
+        courier.user_id,
+        "upsert",
+        str(task.pk),
+    )
+    assert (change.payload["category"], change.payload["source"], change.payload["protocol"]) == (
+        "high",
+        "official_import",
+        "pilot",
+    )
+    prior = CourierChange.objects.filter(courier=courier.user, resource_id=str(task.pk)).earliest(
+        "sequence"
+    )
+    assert change.resource_version != prior.resource_version
+    after = set(CourierChange.objects.values_list("pk", flat=True))
+    apply_import(planner.member, risk_import.pk, 1)
+    identical = preview(planner)
+    apply_import(planner.member, identical.pk, 1)
+    assert set(CourierChange.objects.values_list("pk", flat=True)) == after
+
+
+@pytest.mark.parametrize("invalid", ["missing_task_field", "extra_field", "assignment_task_fields"])
+def test_assignment_producer_rejects_invalid_phone_payloads(invalid):
+    from scheduling.courier_feed import AssignmentProducerSerializer
+
+    payload = {
+        "id": str(uuid4()),
+        "kind": "task",
+        "quadrant_id": str(uuid4()),
+        "courier": str(uuid4()),
+        "revision": 1,
+        "code": "P:place:2026-02-02",
+        "point": str(uuid4()),
+        "action": "place",
+        "date": "2026-02-02",
+        "category": None,
+        "source": None,
+        "protocol": None,
+        "is_completed": False,
+        "target": 40,
+    }
+    assert AssignmentProducerSerializer(data=payload).is_valid()
+    if invalid == "missing_task_field":
+        del payload["point"]
+    elif invalid == "extra_field":
+        payload["unexpected"] = 1
+    else:
+        payload["kind"] = "quadrant_assignment"
+    assert not AssignmentProducerSerializer(data=payload).is_valid()
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("busy_owner", ["previous", "next"])
+def test_busy_affected_courier_returns_retryable_429_without_partial_writes(
+    monkeypatch, api_client, busy_owner
+):
+    from scheduling.courier_feed import lock_couriers
+
+    monkeypatch.setattr(timezone, "now", lambda: NOW)
+    planner = planner_setup()
+    courier = another_courier(planner)
+    change_assignment(
+        planner.member, AssignmentChange(planner.quadrant.pk, planner.member.user_id, 0)
+    )
+    generate_schedule(planner.member, WEEK)
+    task = ScheduledTask.objects.get()
+    revision = schedule_revision(planner.member.organization)
+    before = set(CourierChange.objects.values_list("pk", flat=True))
+    held, release = Event(), Event()
+    owner = planner.member if busy_owner == "previous" else courier
+
+    def hold_courier():
+        close_old_connections()
+        try:
+            with transaction.atomic():
+                lock_couriers(owner, (owner.user_id,))
+                held.set()
+                assert release.wait(30)
+        finally:
+            connection.close()
+
+    api_client.force_authenticate(planner.member.user)
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        holder = pool.submit(hold_courier)
+        try:
+            assert held.wait(15)
+            response = api_client.post(
+                "/api/v1/schedule/reassign-pending/",
+                {
+                    "task_ids": [str(task.pk)],
+                    "courier": str(courier.user_id),
+                    "expected_revision": revision,
+                },
+                format="json",
+            )
+        finally:
+            release.set()
+            holder.result(timeout=15)
+    assert (response.status_code, response.data["code"], response["Retry-After"]) == (
+        429,
+        "scheduling_in_progress",
+        "1",
+    )
+    assert TaskOwnership.objects.get().courier_id == planner.member.user_id
+    assert schedule_revision(planner.member.organization) == revision
+    assert set(CourierChange.objects.values_list("pk", flat=True)) == before
+
+
+def test_assignment_producer_projects_only_assignment_fields_and_hides_metadata():
+    from scheduling.courier_feed import AssignmentProducerSerializer
+
+    payload = {
+        "id": str(uuid4()),
+        "kind": "quadrant_assignment",
+        "quadrant_id": str(uuid4()),
+        "courier": str(uuid4()),
+        "revision": 1,
+    }
+    serializer = AssignmentProducerSerializer(
+        data={
+            **payload,
+            "organization_id": str(uuid4()),
+            "center_id": str(uuid4()),
+        }
+    )
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.data == payload
