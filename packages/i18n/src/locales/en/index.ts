@@ -3,6 +3,7 @@ import type { MessageKey } from "../es-MX/index.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
+import { mobile } from "./mobile.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
 import { rules } from "./rules.ts";
@@ -14,6 +15,7 @@ import { voiding } from "./voiding.ts";
 export const en: Record<MessageKey, string> = {
   ...common,
   ...errors,
+  ...mobile,
   ...shell,
   ...states,
   ...auth,

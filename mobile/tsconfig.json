@@ -1,0 +1,13 @@
+{
+  "extends": "../tsconfig.base.json",
+  "compilerOptions": {
+    "jsx": "react-jsx",
+    // The shared packages are TypeScript sources whose internal imports keep the .ts extension
+    // (Node runs them directly), and so does this app: pure modules are unit-tested with Node's
+    // type stripping (no enums, namespaces or parameter properties).
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true,
+    "types": ["node"]
+  },
+  "include": ["src", "test", "index.ts", "App.tsx"]
+}

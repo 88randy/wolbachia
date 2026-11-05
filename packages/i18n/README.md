@@ -35,7 +35,7 @@ src/locales/
   en/index.ts        composes every area
 ```
 
-Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`, `table`, `phones`, `rules`, `voiding`.
+Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`, `table`, `phones`, `rules`, `voiding`, `mobile`.
 
 - A new key goes in the file named after its first segment, in **both** languages: `auth.login.title` -> `es-MX/auth.ts` and `en/auth.ts`.
 - A new area (first segment) means: create `es-MX/<area>.ts` and `en/<area>.ts` (copy a small pair such as `common.ts`), then add one line to each `index.ts`. `test/areas.test.ts` reads the directories, so it needs no edit.

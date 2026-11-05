@@ -22,6 +22,13 @@ const locales = Object.keys(messages) as Locale[];
 const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = [
   ["auth.lockout.message", ["minutes"]],
   ["errors.api.blocked", ["role"]],
+  ["mobile.chip.noSignal", ["count"]],
+  ["mobile.chip.toUpload", ["count"]],
+  ["mobile.inbox.groupTitle", ["count", "label"]],
+  ["mobile.inbox.lastConnection", ["time"]],
+  ["mobile.inbox.onPhone", ["count"]],
+  ["mobile.inbox.sent", ["count"]],
+  ["mobile.inbox.timeRange", ["from", "to"]],
   ["rules.compare.from", ["date"]],
   ["rules.error.atLeast", ["min"]],
   ["rules.error.atMost", ["max"]],
