@@ -22,6 +22,7 @@ class CatalogItemSerializer(OrgScopedModelSerializer):
     protected = serializers.BooleanField(source="is_other", read_only=True)
     in_use = serializers.SerializerMethodField()
     usage_count = serializers.SerializerMethodField()
+    catalog_version = serializers.IntegerField(source="catalog.revision", read_only=True)
     created_by_username = serializers.CharField(
         source="created_by.username", read_only=True, allow_null=True, default=None
     )
@@ -43,6 +44,7 @@ class CatalogItemSerializer(OrgScopedModelSerializer):
             "protected",
             "in_use",
             "usage_count",
+            "catalog_version",
             "created_by",
             "created_by_username",
             "deactivated_at",

@@ -1247,6 +1247,7 @@ export interface components {
             readonly protected: boolean;
             readonly in_use: boolean;
             readonly usage_count: number;
+            readonly catalog_version: number;
             /** Format: uuid */
             readonly created_by: string | null;
             readonly created_by_username: string | null;

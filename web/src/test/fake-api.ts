@@ -162,6 +162,7 @@ const VOID_REASON_BASE = {
   protected: false,
   in_use: false,
   usage_count: 0,
+  catalog_version: 0,
   created_by: null,
   created_by_username: null,
   deactivated_at: null,

@@ -16,7 +16,10 @@ Permissions independently hide create, edit/move, deactivate and activate contro
 
 Reorder swaps active non-Other neighbors in the full server-ordered id list and
 sends ONE POST /api/v1/catalogs/{catalog_slug}/items/reorder/ with {version, ordered_ids}.
-The version comes from the catalogs query. The server normalizes sorts atomically;
+The version is the minimum catalog_version of the SAME fetched items used to plan
+the order, including all pages. It never comes from the separately cached catalogs
+query: that revision can be newer than the order on screen. When pages straddle a
+write, the minimum may produce a spurious 409, which is safe. The server normalizes sorts atomically;
 Other stays fixed and inactive items keep their sort. Every completed attempt
 invalidates both catalog and item queries. A 409 catalog_version_conflict maps to a
 localized retry message, never server detail. No optimistic order is retained.

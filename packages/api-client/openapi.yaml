@@ -3231,6 +3231,9 @@ components:
         usage_count:
           type: integer
           readOnly: true
+        catalog_version:
+          type: integer
+          readOnly: true
         created_by:
           type: string
           format: uuid
@@ -3291,6 +3294,7 @@ components:
           format: date-time
           readOnly: true
       required:
+      - catalog_version
       - code
       - created_at
       - created_by

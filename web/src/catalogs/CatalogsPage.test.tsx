@@ -177,7 +177,7 @@ test("a late submit after a same-identity revision change keeps the draft withou
 });
 
 test("reorder sends one conditional POST and displays the refreshed order", async () => {
-  let rows = catalogRows();
+  let rows = catalogRows().map((item) => ({ ...item, catalog_version: 4 }));
   let version = 4;
   const { api } = await open({
     routes: {
@@ -185,7 +185,10 @@ test("reorder sends one conditional POST and displays the refreshed order", asyn
       [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
       [`POST ${ITEMS_PATH}reorder/`]: () => {
         version += 1;
-        rows = [...rows.slice(1, 2), ...rows.slice(0, 1), ...rows.slice(2)];
+        rows = [...rows.slice(1, 2), ...rows.slice(0, 1), ...rows.slice(2)].map((item) => ({
+          ...item,
+          catalog_version: version,
+        }));
         return Response.json({ version, items: rows });
       },
     },
@@ -490,4 +493,64 @@ test("create sends an explicit sort despite an inactive item at the backend maxi
     label_en: "",
     sort: 30,
   });
+});
+
+function deferredCatalogRead() {
+  let release!: (response: Response) => void;
+  const promise = new Promise<Response>((resolve) => {
+    release = resolve;
+  });
+  return { promise, release };
+}
+
+test("reorder uses the oldest item-page revision even when the catalog query is newer", async () => {
+  const catalogs = deferredCatalogRead();
+  const firstPage = deferredCatalogRead();
+  const secondPage = deferredCatalogRead();
+  const older = catalogRows().map((item) => ({ ...item, catalog_version: 1 }));
+  const newer = older.map((item) => ({ ...item, catalog_version: 2 }));
+  const api = createFakeApi({
+    "GET /api/v1/me/": Response.json(CATALOG_ADMIN),
+    "GET /api/v1/catalogs/": () => catalogs.promise.then((response) => response.clone()),
+    [`GET ${ITEMS_PATH}`]: (request) =>
+      (request.path.includes("page=2") ? secondPage : firstPage).promise.then((response) =>
+        response.clone(),
+      ),
+    [`POST ${ITEMS_PATH}reorder/`]: apiError(409, "catalog_version_conflict"),
+  });
+  await renderApp({ path: CATALOG_PATH, fetch: api.fetch });
+  await waitFor(() => {
+    expect(api.requests.some((request) => request.path.startsWith("/api/v1/catalogs/?"))).toBe(
+      true,
+    );
+  });
+  await act(async () => {
+    catalogs.release(pageOf([{ ...CATALOG, version: 2 }]));
+    await catalogs.promise;
+  });
+  await screen.findByRole("link", { name: "Intervenciones" });
+  await act(async () => {
+    firstPage.release(
+      Response.json({
+        count: older.length,
+        next: `${ITEMS_PATH}?page=2`,
+        previous: null,
+        results: older.slice(0, 2),
+      }),
+    );
+    await firstPage.promise;
+  });
+  await waitFor(() => {
+    expect(api.requests.some((request) => request.path.includes("page=2"))).toBe(true);
+  });
+  await act(async () => {
+    secondPage.release(pageOf(newer.slice(2)));
+    await secondPage.promise;
+  });
+  await screen.findByRole("row", { name: /spraying/ });
+  await userEvent.setup().click(screen.getByRole("button", { name: /Mover arriba: Nebulizaci/ }));
+  await screen.findByRole("alert");
+  expect(
+    api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+  ).toEqual([{ version: 1, ordered_ids: ["item-b", "item-a"] }]);
 });

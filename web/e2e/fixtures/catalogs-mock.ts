@@ -25,7 +25,7 @@ export async function mockCatalogs(page: Page) {
     const path = new URL(request.url()).pathname;
     if (path === "/api/v1/catalogs/")
       return json(route, pageOf([{ ...CATALOG, version: state.version }]));
-    if (request.method() === "GET") return json(route, pageOf(ordered(state.items)));
+    if (request.method() === "GET") return json(route, pageOf(readItems(state)));
     const body = (request.postData() ? request.postDataJSON() : {}) as WriteBody;
     if (path.endsWith("/reorder/") && body.version !== state.version)
       return route.fulfill({
@@ -41,16 +41,17 @@ export async function mockCatalogs(page: Page) {
 function applyWrite(state: CatalogState, path: string, body: WriteBody) {
   const version = state.version + 1;
   if (path.endsWith("/reorder/")) {
-    const items = reorderItems(state.items, body.ordered_ids ?? []);
+    const items = withCatalogVersion(reorderItems(state.items, body.ordered_ids ?? []), version);
     return { state: { items, version }, answer: { version, items: ordered(items) } };
   }
   const created = path.endsWith("/items/") ? createItem(body) : undefined;
-  const items = created
-    ? [...state.items, created]
-    : state.items.map((item) => updateItem(item, path, body));
+  const items = withCatalogVersion(
+    created ? [...state.items, created] : state.items.map((item) => updateItem(item, path, body)),
+    version,
+  );
   return {
     state: { items, version },
-    answer: created ?? items.find((item) => path.includes(item.id)),
+    answer: items.find((item) => (created ? item.id === created.id : path.includes(item.id))),
   };
 }
 
@@ -87,4 +88,12 @@ function updateItem(item: CatalogItem, path: string, body: WriteBody): CatalogIt
   if (path.endsWith("/deactivate/")) return { ...item, is_active: false };
   if (path.endsWith("/activate/")) return { ...item, is_active: true };
   return { ...item, ...body };
+}
+
+function readItems(state: CatalogState) {
+  return ordered(withCatalogVersion(state.items, state.version));
+}
+
+function withCatalogVersion(items: CatalogItem[], version: number): CatalogItem[] {
+  return items.map((item) => ({ ...item, catalog_version: version }));
 }

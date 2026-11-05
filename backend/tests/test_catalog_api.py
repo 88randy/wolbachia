@@ -457,3 +457,25 @@ def test_void_usage_sums_historical_sources_and_isolates_organization(admin, cat
     response = admin.get(items_url(catalog.slug))
     assert response.data["results"][0]["usage_count"] == 2
     assert response.data["results"][0]["in_use"] is True
+
+
+def test_item_reads_carry_the_catalog_revision_and_follow_item_writes(admin, catalog):
+    catalog.revision = 7
+    catalog.save(update_fields=["revision"])
+    first = CatalogItemFactory(catalog=catalog)
+    CatalogItemFactory(catalog=catalog, is_active=False)
+    CatalogItemFactory(catalog=catalog, code="other", is_other=True)
+    url = items_url(catalog.slug)
+
+    before = admin.get(url)
+    assert before.status_code == 200
+    assert {row["catalog_version"] for row in before.data["results"]} == {7}
+    detail = admin.get(f"{url}{first.pk}/")
+    assert detail.data["catalog_version"] == 7
+
+    changed = admin.patch(f"{url}{first.pk}/", {"label_es": "Changed"}, format="json")
+    assert changed.status_code == 200
+    catalog.refresh_from_db()
+    after = admin.get(url)
+    assert catalog.revision == 8
+    assert {row["catalog_version"] for row in after.data["results"]} == {catalog.revision}

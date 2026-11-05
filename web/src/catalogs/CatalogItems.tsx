@@ -14,7 +14,7 @@ export function CatalogItems({ catalog }: { catalog: Catalog }) {
   const { t } = useTranslation();
   const scope = { client: useApiClient(), identity: useSessionIdentity() };
   const query = useQuery(catalogItemsQueryOptions(scope, catalog.slug));
-  const editor = useCatalogEditor(catalog, query.data ?? []);
+  const editor = useCatalogEditor(catalog.slug, query.data ?? []);
   const tableItems = {
     rows: query.data ?? [],
     paging: undefined,

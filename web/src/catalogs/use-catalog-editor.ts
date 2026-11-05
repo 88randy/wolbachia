@@ -4,15 +4,14 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useLanguage } from "../i18n/use-language";
 
-import type { Catalog, CatalogItem } from "./catalogs-query";
+import type { CatalogItem } from "./catalogs-query";
 import { useCatalogSave } from "./use-catalog-save";
 import { useCatalogWrite } from "./use-catalog-write";
 
 export type DialogState = { kind: "create" } | { kind: "edit" | "deactivate"; item: CatalogItem };
 
 /** Preserve drafts across refreshes while catalog revisions guard conditional reorders. */
-export function useCatalogEditor(catalog: Catalog, items: readonly CatalogItem[]) {
-  const { slug, version } = catalog;
+export function useCatalogEditor(slug: string, items: readonly CatalogItem[]) {
   const client = useApiClient();
   const write = useCatalogWrite();
   const { t } = useTranslation();
@@ -37,7 +36,6 @@ export function useCatalogEditor(catalog: Catalog, items: readonly CatalogItem[]
     save,
     items,
     slug,
-    version,
   };
 }
 

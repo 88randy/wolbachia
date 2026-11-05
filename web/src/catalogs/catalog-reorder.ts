@@ -5,12 +5,14 @@ import type { CatalogEditor } from "./use-catalog-editor";
 
 /** A single request keeps every sort change in the same server transaction. */
 async function writeOrder(editor: CatalogEditor, orderedIds: string[]) {
+  // Every page belongs to its own read snapshot; the oldest revision is conservative.
+  const version = Math.min(...editor.items.map((item) => item.catalog_version));
   return editor.write.run((guard) =>
     editor.write.send(
       () =>
         editor.client.POST("/api/v1/catalogs/{catalog_slug}/items/reorder/", {
           params: { path: { catalog_slug: editor.slug } },
-          body: { version: editor.version, ordered_ids: orderedIds },
+          body: { version, ordered_ids: orderedIds },
           signal: guard.signal,
         }),
       guard,

@@ -101,7 +101,13 @@ The void path reads its catalog choice WITHOUT an item lock (decision 91); do no
 add a lock there. Seeds retain Organization NO KEY UPDATE -> Catalog -> items.
 
 Catalog.revision is a monotonic integer exposed as version in GET /catalogs/ and
-reorder responses. Every effective item write (create, any editable field update,
+reorder responses. Item reads also expose read-only catalog_version = item.catalog.revision.
+The list loads catalog and items in the same SQL statement (select_related), so
+catalog_version belongs to the returned order. A reorder MUST use the minimum
+catalog_version across the same fetched items it plans from, never the independently
+cached GET /catalogs/ version. Pages may straddle a write; the oldest revision
+safely produces a 409 rather than overwriting a newer order.
+Every effective item write (create, any editable field update,
 deactivate, activate, reorder, inserted seed items) bumps it under the catalog lock using F expressions.
 It is not part of the field snapshot content/hash. Automatic item sort uses only
 active non-Other items; an inactive sort=10000 does not exhaust the order.
@@ -133,7 +139,7 @@ References: [correlated aggregates and F expressions](https://docs.djangoproject
 [row locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update).
 
 
-## Implementation validation (2026-11-05)
+## Initial implementation validation (2026-11-05)
 
 | Check | Result in the implementation worktree |
 | --- | --- |
@@ -156,3 +162,29 @@ References: [correlated aggregates and F expressions](https://docs.djangoproject
 No records drill-down is introduced (explicitly outside #182). The count sources,
 reorder conflict envelope and nullable legacy/seed audit fields follow the lead's
 approved decisions; there are no new functional assumptions or dependencies.
+
+
+## Coherent reorder reads (adversarial follow-up, #182)
+
+GET item list/detail projections include catalog_version alongside item fields,
+with the catalog relation loaded by the same SQL query. Only the minimum revision
+from the fetched item list may be used to plan its reorder; the catalog-list
+revision is an independent read and must never replace it. Reorder responses
+retain the top-level version; no migration is needed for this read-only field.
+
+Regression mapping:
+- tests/test_catalog_api.py::test_item_reads_carry_the_catalog_revision_and_follow_item_writes
+  checks list/detail revision 7, then revision 8 after PATCH (PostgreSQL gate).
+- CatalogsPage.test.tsx::reorder uses the oldest item-page revision even when the
+  catalog query is newer holds responses with deferred promises. Catalogs are at
+  revision 2, item pages straddle revisions 1/2, and the POST must send version 1.
+  Before the fix it failed with actual version 2; after the fix all 49 catalog
+  Vitest tests passed. There are no fixed-duration waits.
+
+The api:generate wrapper remains blocked by uv cache persistence. Both generation
+steps ran with the worktree Python and local pinned openapi-typescript 7.13.0;
+a second generation left both artifact hashes unchanged. PostgreSQL API tests
+remain unexecuted because Docker is blocked. Follow-up static checks passed: ruff check for the backend, ruff format --check
+on the changed Python files, mypy on 148 source files, repository ESLint,
+repository TypeScript workspace checks and repository Prettier format:check.
+The API module collected 47 cases; collection is not database execution.
