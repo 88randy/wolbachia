@@ -34,6 +34,7 @@ from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from functools import partial
 from typing import Any, Self
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 from django.conf import settings
@@ -62,9 +63,18 @@ from field_sync.exceptions import (
     EventNeedsReview,
     EventRejected,
     EventSignal,
+    InvalidCursorError,
     SyncInProgressError,
 )
-from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent, RejectionQuotaCounter
+from field_sync.models import (
+    ACCEPTED_CODE,
+    CourierChange,
+    EventStatus,
+    FieldEvent,
+    RejectionQuotaCounter,
+)
+from field_sync.permissions import FIELD_EVENT_SYNC
+from field_sync.producers import get_producer, serialize_payload
 from field_sync.registry import (
     EventContext,
     EventHandler,
@@ -72,7 +82,16 @@ from field_sync.registry import (
     find_handler,
     run_envelope_checks,
 )
-from field_sync.selectors import Changes, StoredEvent, build_changes, find_stored_event
+from field_sync.selectors import (
+    Changes,
+    StoredEvent,
+    build_bootstrap,
+    build_changes,
+    find_stored_event,
+    latest_change_sequence,
+    producer_context,
+    scope_revision,
+)
 from reviews.services import create_review_item
 
 logger = logging.getLogger(__name__)
@@ -182,12 +201,20 @@ def lock_courier_batches(batch: BatchContext) -> None:
     A PostgreSQL advisory transaction lock, released at commit or rollback. It is not a row
     lock on purpose (a final upload already holds the `DeviceSession` row; see accounts/README.md).
     """
+    if not connection.in_atomic_block:
+        raise RuntimeError("Courier locks require an explicit transaction.")
     key = advisory_key("courier", batch.organization.pk, batch.user.pk)
     with connection.cursor() as cursor:
         cursor.execute("SELECT pg_try_advisory_xact_lock(%s)", [key])
         row = cursor.fetchone()
     if row is None or not row[0]:
         raise SyncInProgressError
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT set_config('field_sync.courier_locks', "
+            "concat_ws(',', nullif(current_setting('field_sync.courier_locks', true), ''), %s), true)",
+            [str(key)],
+        )
 
 
 def set_batch_lock_timeout() -> None:
@@ -234,8 +261,15 @@ def sync_batch(
         with transaction.atomic():
             lock_courier_batches(batch)
             set_batch_lock_timeout()
+            ctx = None if cursor is None else producer_context(batch, FIELD_EVENT_SYNC)
+            if cursor is not None and ctx is not None:
+                revision = scope_revision(ctx)
+                if cursor.scope_revision is not None and cursor.scope_revision != revision:
+                    raise InvalidCursorError
             results = ingest_batch(batch, envelopes)
-            changes = Changes() if cursor is None else build_changes(batch, cursor)
+            changes = (
+                Changes() if cursor is None or ctx is None else build_changes(batch, cursor, ctx)
+            )
             check_deferred_constraints_now()
     except OperationalError as error:
         if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
@@ -481,3 +515,72 @@ def rejection_params(error: ValidationError) -> dict[str, Any]:
     if carried:
         params["field_params"] = carried
     return params
+
+
+@dataclass(frozen=True)
+class ChangeInput:
+    kind: str
+    resource_type: str
+    resource_id: str
+    resource_version: str
+    scope: dict[str, str | None] | None
+    action: str
+    payload: dict[str, Any]
+
+
+def require_courier_lock(batch: BatchContext) -> None:
+    """Transaction-local marker: cannot outlive commit or savepoint rollback."""
+    if not connection.in_atomic_block:
+        raise RuntimeError("CourierChange append requires the courier transaction lock.")
+    key = str(advisory_key("courier", batch.organization.pk, batch.user.pk))
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT current_setting('field_sync.courier_locks', true)")
+        row = cursor.fetchone()
+    if row is None or key not in (row[0] or "").split(","):
+        raise RuntimeError("CourierChange append requires the courier transaction lock.")
+
+
+def _validate_change_scope(scope: dict[str, str | None] | None) -> None:
+    if scope is None:
+        return
+    if set(scope) != {"center_id", "quadrant_id"}:
+        raise ValueError("Change scope requires center_id and quadrant_id (null if inapplicable).")
+    for identifier in scope.values():
+        if identifier is not None and str(UUID(identifier)) != identifier:
+            raise ValueError("Change scope identifiers must be canonical UUID strings.")
+
+
+def append_courier_change(batch: BatchContext, change: ChangeInput) -> CourierChange:
+    """Append a validated producer change; caller holds the lock through domain write + commit."""
+    require_courier_lock(batch)
+    producer = get_producer(change.kind)
+    if change.action not in {"upsert", "remove"}:
+        raise ValueError("Change action must be upsert or remove.")
+    _validate_change_scope(change.scope)
+    payload = serialize_payload(producer, change.payload) if change.action == "upsert" else {}
+    return CourierChange.objects.create(
+        organization=batch.organization,
+        courier=batch.user,
+        created_by=batch.user,
+        sequence=latest_change_sequence(batch) + 1,
+        kind=change.kind,
+        resource_type=change.resource_type,
+        resource_id=change.resource_id,
+        resource_version=change.resource_version,
+        scope=change.scope,
+        action=change.action,
+        payload=payload,
+    )
+
+
+def bootstrap_bundle(batch: BatchContext) -> dict[str, Any]:
+    """Read bootstrap and its feed boundary in one try-locked transaction; no external I/O."""
+    try:
+        with transaction.atomic():
+            lock_courier_batches(batch)
+            set_batch_lock_timeout()
+            return build_bootstrap(batch)
+    except OperationalError as error:
+        if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
+            raise SyncInProgressError from None
+        raise

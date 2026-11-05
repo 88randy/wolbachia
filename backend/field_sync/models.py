@@ -109,3 +109,48 @@ class RejectionQuotaCounter(OrgScopedModel):
                 fields=["device", "local_date"], name="rejection_quota_device_day_unique"
             ),
         ]
+
+
+class CourierChange(ImmutableMixin, OrgScopedModel):
+    """Insert-only domain delivery log; every writer holds the courier batch lock.
+
+    Revocation appends a remove; it never rewrites or deletes a prior projection.
+    Sequence allocation and commit share the lock with bootstrap and sync pulls.
+    """
+
+    courier = models.ForeignKey("accounts.User", on_delete=models.PROTECT, related_name="+")
+    sequence = models.PositiveBigIntegerField()
+    kind = models.CharField(max_length=TYPE_MAX_LENGTH)
+    resource_type = models.CharField(max_length=TYPE_MAX_LENGTH)
+    resource_id = models.CharField(max_length=255)
+    resource_version = models.CharField(max_length=VERSION_MAX_LENGTH)
+    scope = models.JSONField(null=True)
+    action = models.CharField(max_length=6, choices=[("upsert", "Upsert"), ("remove", "Remove")])
+    payload = models.JSONField()
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "courier", "sequence"],
+                name="courier_change_sequence_unique",
+            ),
+            models.CheckConstraint(
+                condition=Q(sequence__gt=0), name="courier_change_sequence_positive"
+            ),
+            models.CheckConstraint(
+                condition=Q(action__in=["upsert", "remove"]), name="courier_change_action_valid"
+            ),
+            models.CheckConstraint(
+                condition=Q(
+                    kind__in=[
+                        "assignments",
+                        "supplies",
+                        "permits",
+                        "eligibility",
+                        "history",
+                        "map_manifests",
+                    ]
+                ),
+                name="courier_change_kind_valid",
+            ),
+        ]
