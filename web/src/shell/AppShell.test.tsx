@@ -22,7 +22,7 @@ describe("landmarks", () => {
   });
 
   test("the main landmark holds the single page heading", async () => {
-    await renderApp({ path: "/fleet" });
+    await renderApp({ path: "/fleet", me: makeMe({ permissions: ["motorcycle.read"] }) });
 
     const main = screen.getByRole("main");
 
@@ -33,7 +33,7 @@ describe("landmarks", () => {
 
 describe("sidebar navigation", () => {
   test("lists every area as a link inside lists", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
     const nav = screen.getByRole("navigation", { name: "Navegación principal" });
 
     const links = within(nav).getAllByRole("link");
@@ -52,7 +52,8 @@ describe("sidebar navigation", () => {
 
     expect(hrefs).toContain("/");
     expect(hrefs).not.toContain("/settings");
-    expect(hrefs).toHaveLength(AREAS.length - 1);
+    expect(hrefs).not.toContain("/fleet");
+    expect(hrefs).toHaveLength(AREAS.length - 2);
   });
 
   test("groups the areas under headings", async () => {
@@ -100,7 +101,7 @@ describe("keyboard", () => {
   });
 
   test("tab order is skip link, sidebar links, collapse button, search, bell, language", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
     const names: string[] = [];
 
     for (let step = 0; step < AREAS.length + 5; step += 1) {
@@ -157,7 +158,7 @@ describe("keyboard", () => {
 
 describe("focus on navigation", () => {
   test("does not steal focus on the first load", async () => {
-    await renderApp({ path: "/fleet" });
+    await renderApp({ path: "/fleet", me: makeMe({ permissions: ["motorcycle.read"] }) });
 
     expect(document.activeElement).toBe(document.body);
   });
