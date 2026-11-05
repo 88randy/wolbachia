@@ -1,20 +1,43 @@
 import { readStored, STORAGE_KEYS } from "../storage/safe-storage";
 
 export type ThemeName = "light" | "dark";
+export type ThemePreference = ThemeName | "system";
 
-/** Light unless the user chose otherwise. The user setting itself comes with the session (#28). */
-const DEFAULT_THEME: ThemeName = "light";
+const DEFAULT_THEME: ThemePreference = "system";
+const DARK_SCHEME_QUERY = "(prefers-color-scheme: dark)";
+let stopFollowingSystem: (() => void) | undefined;
 
-function isThemeName(value: unknown): value is ThemeName {
-  return value === "light" || value === "dark";
+/** Validates browser preferences and native selector values at the boundary. */
+export function isThemePreference(value: unknown): value is ThemePreference {
+  return value === "light" || value === "dark" || value === "system";
 }
 
-export function getInitialTheme(): ThemeName {
+/** Restores a saved preference; absent, invalid or unavailable storage defaults to System. */
+export function getInitialTheme(): ThemePreference {
   const stored = readStored(STORAGE_KEYS.theme);
-  return isThemeName(stored) ? stored : DEFAULT_THEME;
+  return isThemePreference(stored) ? stored : DEFAULT_THEME;
 }
 
-/** `data-theme="dark"` on <html> switches every token variable (see packages/tokens). */
-export function applyTheme(theme: ThemeName): void {
-  document.documentElement.dataset["theme"] = theme;
+/**
+ * Applies the preference before rendering; only resolved light/dark values reach the tokens.
+ * System follows prefers-color-scheme, falling back to Light when matchMedia is unavailable.
+ * Exactly one system listener can exist. Replacing the preference removes it first, so an
+ * explicit choice cannot be overwritten by a later system change. Storage is not changed here.
+ */
+export function applyTheme(preference: ThemePreference): void {
+  stopFollowingSystem?.();
+  stopFollowingSystem = undefined;
+  if (preference !== "system" || typeof window.matchMedia !== "function") {
+    document.documentElement.dataset["theme"] = preference === "dark" ? "dark" : "light";
+    return;
+  }
+  const query = window.matchMedia(DARK_SCHEME_QUERY);
+  const updateTheme = () => {
+    document.documentElement.dataset["theme"] = query.matches ? "dark" : "light";
+  };
+  query.addEventListener("change", updateTheme);
+  stopFollowingSystem = () => {
+    query.removeEventListener("change", updateTheme);
+  };
+  updateTheme();
 }
