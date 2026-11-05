@@ -221,6 +221,7 @@ def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
     organization = create_organization(OrganizationSpec("Launch", "launch-99", "MX", "UTC"))
     expected = {
         "max_gps_accuracy_m": (50, "m", 1, 200),
+        "daily_task_target": (40, "count", 1, 200),
         "max_distance_to_point_m": (50, "m", 10, 200),
         "min_distance_same_block_m": (50, "m", 10, 200),
         "speed_lock_kmh": (10, "km_h", 5, 15),

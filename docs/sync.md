@@ -398,6 +398,38 @@ collisions apply only to (organization, client_uuid); a foreign existing UUID an
 an unused one follow the same validation/gates (including identical code/params
 for missing GPS). Check/void use the same scoped client UUID resolution. Own-org
 reuse still returns ovitrap_identity_used; no new sync code is added.
+
+
+## Scheduling integration boundary (#109, B-12)
+
+SchedulingConfig.ready registers the assignments v2 producer. Bootstrap returns
+one flat list of kind=quadrant_assignment and kind=task rows, filtered by active
+courier membership, organization and captured permission/paired center/quadrant
+scope. IDs are stable quadrant/task UUIDs. Common fields are id, kind, quadrant_id,
+courier, revision; tasks add code, point, action, date, category, source, protocol
+and target. Include every owned task due on/after the current organization epi-week
+start, with no upper bound, so the bootstrap cursor cannot skip future upserts.
+Risk provenance resolves at each task's own week. No completion state or egg counts.
+Organization/center metadata is checked before serialization and is not exposed.
+
+change_assignment emits allocation remove/upsert (existing tasks retain ownership);
+generate_schedule emits new owned tasks; reassign_pending removes from the old
+owner and upserts for the new one; apply_import refreshes affected owned tasks in
+its week when category/source/protocol changes. Each writer holds the planning
+NOWAIT lock then every affected courier try-lock in sorted user UUID order before
+point/domain locks and writes, through domain write + CourierChange append + commit.
+Resource types are quadrant_assignment/task, scope is {center_id,quadrant_id}, and
+resource_version hashes the payload, including risk provenance. Retryable scheduling
+contention is 429 scheduling_in_progress, Retry-After: 1; replays append no extra rows.
+No field events/result codes, capture timestamps or review acceptance (#22) change.
+Capture/void handlers emit no scheduling CourierChange, so assignments v2 omits
+is_completed; GET /schedule/ retains it. A former owner's phone may retain a stale
+pending task until the next bootstrap/full resync refreshes projections. Capture
+is revalidated server-side; duplicate physical-ovitrap/local-week readings are
+rejected and completed tasks cannot be reassigned. Producer v2 changes the bundle
+schema_version and requires replacing the prior projection through bootstrap.
+See [ADR 117 lead decisions](../backend/scheduling/README.md).
+
 ## Bootstrap and projection recovery (B-13, #110)
 
 `GET /api/v1/field/bootstrap/` requires a live pinned device bearer token and
