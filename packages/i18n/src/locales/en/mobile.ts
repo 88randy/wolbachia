@@ -2,6 +2,77 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  // M-04: P3-P7 shift opening
+  "mobile.shiftOpen.catalogChanged":
+    "The catalog changed. Review the items and confirm the new version. If a captured fault is no longer listed, ask your supervisor for help; the evidence is retained.",
+  "mobile.shiftOpen.confirmCatalog": "Confirm catalog and review again",
+  "mobile.shiftOpen.start": "Open shift",
+  "mobile.shiftOpen.resume": "Resume opening",
+  "mobile.shiftOpen.noShift": "No open shift",
+  "mobile.shiftOpen.opened": "Shift saved on this phone",
+  "mobile.shiftOpen.noAssignment":
+    "Zone assignments are not available in this build yet. You can prepare your shift.",
+  "mobile.shiftOpen.inbox": "View uploads",
+  "mobile.shiftOpen.motorcycleTitle": "Step 1 of 4 · Your motorcycle",
+  "mobile.shiftOpen.motorcycleHint":
+    "Enter and confirm the motorcycle code. At sync, the server checks whether it exists, is blocked or is in use.",
+  "mobile.shiftOpen.motorcycleCode": "Motorcycle code",
+  "mobile.shiftOpen.continue": "Continue",
+  "mobile.shiftOpen.checklistTitle": "Step 2 of 4 · Check your motorcycle",
+  "mobile.shiftOpen.unconfigured":
+    "The safety checklist is not configured. Download the catalog or ask your supervisor to configure it. You cannot depart.",
+  "mobile.shiftOpen.catalogUnavailable":
+    "The catalog could not be updated. The last saved copy is retained. Check your session and connection, then retry.",
+  "mobile.shiftOpen.refreshCatalog": "Update safety catalog",
+  "mobile.shiftOpen.ok": "OK",
+  "mobile.shiftOpen.minor": "Minor fault",
+  "mobile.shiftOpen.severeResult": "Severe fault",
+  "mobile.shiftOpen.note": "Note (optional)",
+  "mobile.shiftOpen.requiredNote": "Required note",
+  "mobile.shiftOpen.odometerTitle": "Step 3 of 4 · Opening odometer",
+  "mobile.shiftOpen.photoHint":
+    "The odometer photo is optional unless the catalog requires evidence. Saved photos stay on this phone.",
+  "mobile.shiftOpen.capturePhoto": "Take photo",
+  "mobile.shiftOpen.photoUnavailable":
+    "The camera is not available in this build. Your input is retained; if a photo is required, departure stays blocked.",
+  "mobile.shiftOpen.photoCount": "Photos saved on this phone:",
+  "mobile.shiftOpen.odometerKm": "Odometer km (whole number)",
+  "mobile.shiftOpen.lastOdometer": "Last odometer known to this phone:",
+  "mobile.shiftOpen.unknownOdometer": "No local reference; the server will check at sync.",
+  "mobile.shiftOpen.odometerWarning":
+    "This is below the last known reading. Check it; you can continue without losing it. The server may flag it for review.",
+  "mobile.shiftOpen.mapsTitle": "Step 4 of 4 · Prepare map",
+  "mobile.shiftOpen.mapReady":
+    "Map verified with coverage. You may continue once the motorcycle checklist is complete.",
+  "mobile.shiftOpen.mapUnavailable":
+    "The map is not ready. This build has no map manifest. You cannot depart; retry when it is available.",
+  "mobile.shiftOpen.mapPreparing":
+    "Preparing map. Departure stays blocked until files and coverage are verified.",
+  "mobile.shiftOpen.mapFailed":
+    "Map preparation failed. Progress is retained. Check your connection and retry.",
+  "mobile.shiftOpen.mapIncomplete":
+    "Verified files or coverage are missing. Prepare the map again before departure.",
+  "mobile.shiftOpen.mapProgress": "Preparation progress (%):",
+  "mobile.shiftOpen.recordSevere": "Save severe fault · Do not depart",
+  "mobile.shiftOpen.severe":
+    "You cannot depart with this motorcycle. Save the severe fault and contact your supervisor to arrange fleet clearance. Saving does not confirm server receipt.",
+  "mobile.shiftOpen.editChecklist": "Return to motorcycle selection and checklist",
+  "mobile.shiftOpen.motorcycle":
+    "Confirm the motorcycle code. If the local copy shows a block, ask your supervisor for help.",
+  "mobile.shiftOpen.checklist": "Answer every safety item before continuing.",
+  "mobile.shiftOpen.noteGate": "Describe the severe fault or Other before saving.",
+  "mobile.shiftOpen.photo":
+    "The catalog requires a photo. Capture it before departure; this build has no camera support.",
+  "mobile.shiftOpen.odometer": "Enter kilometers as a whole number. Your input is retained.",
+  "mobile.shiftOpen.map":
+    "Departure requires verified map files and full coverage. Retry preparation.",
+  "mobile.shiftOpen.rejected":
+    "The server rejected the opening. Check Uploads for the outcome and contact your supervisor before departure.",
+  "mobile.shiftOpen.phoneSaved": "Saved on phone · Awaiting server receipt",
+  "mobile.shiftOpen.serverReceived": "Received by server · Check the outcome",
+  "mobile.shiftOpen.reviewPending": "Subsequent review: no confirmed resolution in this build.",
+  "mobile.shiftOpen.retrySave": "Retry saving input",
+
   // Boot
   "mobile.boot.loading": "Getting the app ready",
   "mobile.boot.storageFailed":
