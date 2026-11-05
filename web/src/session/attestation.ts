@@ -48,9 +48,18 @@ export function resetAttestation(): void {
 
 /** Login, logout and refresh change the identity on purpose: they are never compared. */
 const AUTH_PATH_PREFIX = "/api/v1/auth/";
+/** `/me/` is how an identity is learned: it may be answered while no value is expected yet. */
+const ME_PATH = "/api/v1/me/";
 
-/** The expectation each request was issued under, by the unique id openapi-fetch gives it. */
-const issuedUnder = new Map<string, string | undefined>();
+type Kind = "exempt" | "me" | "scoped";
+
+/** What each request was issued under, by the unique id openapi-fetch gives it. */
+const issuedUnder = new Map<string, { kind: Kind; expected: string | undefined }>();
+
+function kindOf(schemaPath: string): Kind {
+  if (schemaPath.startsWith(AUTH_PATH_PREFIX)) return "exempt";
+  return schemaPath === ME_PATH ? "me" : "scoped";
+}
 
 interface Issued {
   id: string;
@@ -62,20 +71,33 @@ interface Answered extends Issued {
 }
 
 /**
+ * Whether a response is attested for the identity its request was issued under. Only successful
+ * answers carry data, so only they are compared (an error answer may legitimately come before the
+ * organization is resolved and carries nothing to store). While NO value is expected only `/me/`
+ * (which teaches it) and `/auth/` may pass: any other 2xx answer is rejected, never "accepted
+ * because nothing is known". An answer without the header cannot be attested and is rejected too.
+ */
+function isAttested(kind: Kind, under: string | undefined, response: Response): boolean {
+  if (kind === "exempt" || !response.ok) return true;
+  if (under === undefined) return kind === "me";
+  return response.headers.get(IDENTITY_HEADER) === under;
+}
+
+/**
  * The api-client middleware (the one fetch layer of the web): it records what the request was
- * issued under, and when the response arrives with another attestation it never resolves the data:
- * it reports the mismatch (the root leaves `known` and reconciles) and throws.
+ * issued under, and when the response is not attested it never resolves the data: it reports the
+ * mismatch (the root leaves `known` and reconciles) and throws.
  */
 export const attestationMiddleware = {
   onRequest({ id, schemaPath }: Issued) {
-    issuedUnder.set(id, schemaPath.startsWith(AUTH_PATH_PREFIX) ? undefined : expected);
+    issuedUnder.set(id, { kind: kindOf(schemaPath), expected });
     return undefined;
   },
   onResponse({ id, response }: Answered) {
-    const under = issuedUnder.get(id);
+    const issued = issuedUnder.get(id);
     issuedUnder.delete(id);
-    const got = response.headers.get(IDENTITY_HEADER);
-    if (under === undefined || got === null || got === under) return undefined;
+    if (issued === undefined || isAttested(issued.kind, issued.expected, response))
+      return undefined;
     onMismatch?.();
     throw new IdentityMismatchError();
   },

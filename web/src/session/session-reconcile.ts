@@ -60,7 +60,7 @@ let inFlight: Promise<boolean> | undefined;
  * revision (`fetchMeForRevision`). A cancelled query is reverted by TanStack to the value it had
  * before and `query()` then resolves with that old data; that must never count as success.
  */
-async function askMe(
+export async function askMe(
   queryClient: QueryClient,
   client: ApiClient,
   run: AbortController,

@@ -3,7 +3,9 @@ import { ApiError } from "@wolbachia/api-client";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test, vi } from "vitest";
+import { createWebApiClient } from "../api/create-web-api-client";
 import { ME_QUERY_KEY } from "../session/me-query";
+import { switchOrganization } from "../session/organization-switch";
 import { acceptSession, sessionState, subscribeToRevision } from "../session/session-revision";
 import { apiError, createFakeApi, makeMe, makeOrganization } from "../test/fake-api";
 import type { RecordedRequest } from "../test/fake-api";
@@ -430,6 +432,46 @@ describe("phones list (W67)", () => {
     expect(meCalls).toBeGreaterThan(1); // it reconciled: /me/ was asked again
     expect(states).toContain("unknown"); // and it left `known` through the one transition
     stop();
+  });
+
+  test("switching organization is a leave-known transition: with the new /me/ held, Back to the old screen fetches and stores nothing (#82)", async () => {
+    let releaseMe: (response: Response) => void = () => undefined;
+    const meOfSur = new Promise<Response>((resolve) => {
+      releaseMe = resolve;
+    });
+    const { api, app } = await open(pageOf([phone({ label: "Teléfono de Norte" })]));
+    await screen.findByRole("row", { name: /Teléfono de Norte/ });
+    const requestsBefore = devicesRequests(api).length;
+    api.setRoute(ME, () => meOfSur);
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
+
+    const switching = switchOrganization(app.queryClient, client, "sur");
+    expect(sessionState()).toBe("reconciling"); // entered synchronously, before anything else
+    await app.router.navigate({ to: "/settings" });
+    app.router.history.back(); // Back to the screen of the old organization
+    await new Promise<void>((resolve) => {
+      const hop = new MessageChannel();
+      hop.port1.onmessage = () => {
+        resolve();
+      };
+      hop.port2.postMessage(0);
+    });
+
+    const stored = () =>
+      app.queryClient
+        .getQueryCache()
+        .findAll({ predicate: (query) => query.queryKey[0] === "org" })
+        .filter((query) => query.state.data !== undefined);
+    expect(devicesRequests(api)).toHaveLength(requestsBefore); // nothing fetched
+    expect(stored()).toEqual([]); // nothing stored
+    api.setRoute(DEVICES, pageOf([phone({ label: "Teléfono de Sur" })]));
+    releaseMe(
+      Response.json({ ...ALLOWED, organization: makeOrganization("sur", "Sur") }, { status: 200 }),
+    );
+    await switching;
+
+    expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
+    expect(stored().map((query) => query.queryKey[2])).toEqual(["sur"]);
   });
 
   test("another tab signs in as someone else while this tab pages: no old rows, and the late answer is dropped (#82)", async () => {

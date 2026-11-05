@@ -1,10 +1,20 @@
 import type { ApiClient } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
+import { CancelledError } from "@tanstack/react-query";
 import { clearExpectedAttestation } from "./attestation";
-import { fetchMe, ME_QUERY_KEY } from "./me-query";
-import { broadcastSessionChanged } from "./session-sync";
+import { ME_QUERY_KEY } from "./me-query";
 import { removeOrganizationQueries } from "./organization-cache";
+import { endSessionExpiry } from "./session-events";
+import { askMe } from "./session-reconcile";
+import {
+  beginExternalChange,
+  clearSessionUnknown,
+  endExternalChange,
+  startReconcileRun,
+} from "./session-revision";
+import { broadcastSessionChanged } from "./session-sync";
+import { leaveKnown } from "./session-transition";
 import {
   clearOrganizationSlug,
   getOrganizationSlug,
@@ -17,11 +27,15 @@ function restoreSlug(previous: string | undefined): void {
 }
 
 /**
- * Makes `slug` the active organization: stores it (it travels as `X-Organization` from now on),
- * drops every cached answer of the previous organization and asks `/me/` again, which is the
- * server's answer about what the user can do there. A `/me/` still in flight for the previous
- * organization is cancelled first (the cache would otherwise hand its answer to this call). If
- * the new `/me/` fails, the previous slug is restored. Rejects with the error of `/me/`.
+ * Makes `slug` the active organization. Switching is a LEAVE-KNOWN transition (#82): first,
+ * synchronously and BEFORE the slug or the expected attestation change, the tab becomes
+ * `reconciling`, the revision changes, requests in flight are cancelled and the organization data
+ * of the previous organization is removed; so nothing can fetch or store org-scoped data (not even
+ * after a Back to a screen of the old organization) until the new identity is verified. Then the
+ * slug is stored (it travels as `X-Organization`) and `/me/` is asked: the server's answer about
+ * who the user is and what they can do there. The tab is `known` again only after that `/me/` is
+ * accepted for this run. If it fails the previous slug is restored and the tab stays `unknown`
+ * (blocking retry). Rejects with the error of `/me/`.
  */
 export async function switchOrganization(
   queryClient: QueryClient,
@@ -29,20 +43,27 @@ export async function switchOrganization(
   slug: string,
 ): Promise<Me> {
   const previous = getOrganizationSlug();
-  await queryClient.cancelQueries({ queryKey: ME_QUERY_KEY });
-  setOrganizationSlug(slug);
-  clearExpectedAttestation(); // the new organization has its own attestation: re-learn it from /me/
+  beginExternalChange();
+  clearExpectedAttestation();
+  const cancelled = queryClient.cancelQueries();
   removeOrganizationQueries(queryClient);
+  const mine = startReconcileRun();
+  setOrganizationSlug(slug);
   try {
-    const me = await queryClient.query({
-      queryKey: ME_QUERY_KEY,
-      queryFn: ({ signal }) => fetchMe(client, signal),
-      staleTime: 0,
-    });
+    await cancelled;
+    const isAccepted = await askMe(queryClient, client, mine);
+    const me = queryClient.getQueryData<Me>(ME_QUERY_KEY);
+    // A newer run or login superseded this switch, or the answer was cancelled and reverted.
+    if (mine.signal.aborted || !isAccepted || me === undefined) throw new CancelledError();
+    endSessionExpiry();
+    clearSessionUnknown();
     broadcastSessionChanged();
     return me;
   } catch (error) {
     restoreSlug(previous);
+    if (!mine.signal.aborted) await leaveKnown(queryClient);
     throw error;
+  } finally {
+    endExternalChange();
   }
 }

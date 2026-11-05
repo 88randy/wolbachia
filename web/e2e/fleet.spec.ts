@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures/test";
 import type { Schemas } from "@wolbachia/api-client";
 import { makeMe, makeVoidReasonItems } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";

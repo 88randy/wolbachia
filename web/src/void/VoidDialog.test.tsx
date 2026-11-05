@@ -2,8 +2,6 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider } from "../api/ApiClientProvider";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { createAppQueryClient } from "../api/query-client";
-import { recordIdentity } from "../session/identity";
-import { ME_QUERY_KEY } from "../session/me-query";
 import { apiError, createFakeApi, makeMe, makeVoidReasonItems } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import type { VoidChoice } from "./use-void-form";
@@ -12,6 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test, vi } from "vitest";
 import { renderWithI18n } from "../test/render-with-i18n";
+import { signInForTest } from "../test/sign-in-for-test";
 import { VoidHarness } from "../../harness/VoidHarness";
 import type { VoidResult } from "./submit-void";
 import type { VoidFailure } from "./void-failure";
@@ -46,8 +45,7 @@ async function openChoiceDialog(
   const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
   const queryClient = createAppQueryClient({ retry: false });
   const me = makeMe(); // the signed-in user: queries are org-scoped
-  recordIdentity(queryClient, me);
-  queryClient.setQueryData(ME_QUERY_KEY, me);
+  signInForTest(queryClient, me);
   await renderWithI18n(
     <QueryClientProvider client={queryClient}>
       <ApiClientProvider client={client}>

@@ -75,8 +75,11 @@ describe("switchOrganization", () => {
     await inFlight;
 
     expect(getOrganizationSlug()).toBe("sur");
-    expect(api.requests).toHaveLength(2);
+    // The first request is aborted; a guard that asks again (the revision changed) uses the new slug.
     expect(api.requests[0]?.signal.aborted).toBe(true);
+    expect(
+      api.requests.slice(1).every((request) => request.headers.get("X-Organization") === "sur"),
+    ).toBe(true);
   });
 
   test("restores the previous slug when the new /me/ fails", async () => {
