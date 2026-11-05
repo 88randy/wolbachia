@@ -1,10 +1,16 @@
 import { ApiError } from "@wolbachia/api-client";
+import { CancelledError } from "@tanstack/react-query";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
 import { createAppQueryClient } from "../api/query-client";
-import { fetchMe, ME_QUERY_KEY } from "./me-query";
-import { confirmSignOut, isSignedOutSession } from "./session-revision";
+import { fetchMe, fetchMeForRevision, ME_QUERY_KEY } from "./me-query";
+import {
+  changeIdentity,
+  confirmSignOut,
+  currentRevision,
+  isSignedOutSession,
+} from "./session-revision";
 import { endSessionExpiry, isSessionExpired, reportSessionError } from "./session-events";
 import {
   clearOrganizationSlug,
@@ -51,9 +57,27 @@ describe("fetchMe and the signed-out state", () => {
 
     confirmSignOut();
     release(Response.json(makeMe()));
-    await pending;
+    // The answer belongs to a revision that is gone: it is discarded, never stored (#82).
+    await expect(pending).rejects.toBeInstanceOf(CancelledError);
 
     expect(isSignedOutSession()).toBe(true);
+  });
+
+  test("/me/ is accepted only for the revision that asked for it: a change before it answers discards it", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const late = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const api = createFakeApi({ [ME_PATH]: () => late });
+    const asked = fetchMeForRevision(clientFor(api), currentRevision());
+    await vi.waitFor(() => {
+      expect(api.requests).toHaveLength(1);
+    });
+
+    changeIdentity();
+    release(Response.json(makeMe()));
+
+    await expect(asked).rejects.toBeInstanceOf(CancelledError);
   });
 });
 

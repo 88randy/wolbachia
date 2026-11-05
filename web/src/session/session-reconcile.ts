@@ -1,6 +1,7 @@
 import type { ApiClient } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
-import { fetchMe, ME_QUERY_KEY } from "./me-query";
+import { CancelledError } from "@tanstack/react-query";
+import { fetchMeForRevision, ME_QUERY_KEY } from "./me-query";
 import { removeOrganizationQueries } from "./organization-cache";
 import { leaveKnown } from "./session-transition";
 import { endSessionExpiry } from "./session-events";
@@ -8,7 +9,9 @@ import {
   beginExternalChange,
   beginVerification,
   clearSessionUnknown,
+  currentRevision,
   endExternalChange,
+  startReconcileRun,
 } from "./session-revision";
 
 /** `full`: another tab or this one changed the session. `verify`: only checking (focus). */
@@ -28,9 +31,12 @@ export type ReconcileMode = "full" | "verify";
  *
  * `/me/` is then stored and, because it answered, the session exists: the expiry dialog closes and
  * the state is `known`. If it fails the identity is `unknown` (blocking retry), never the one held
- * before. Calls are serialized and a `verify` that arrives while another run is in flight shares
- * it. Resolves `true` when `/me/` answered (callers re-run the route guards only then); never
- * rejects. Receivers of another tab's announcement call this WITHOUT broadcasting again.
+ * before. LATEST WINS: starting a run (or a login, or a confirmed sign-out) aborts the one in
+ * flight; `/me/` is accepted only for the revision that asked for it (`fetchMeForRevision`), so a
+ * superseded run can neither store its answer nor change the state. A `verify` that arrives while
+ * another run is in flight shares it. Resolves `true` when `/me/` answered (callers re-run the
+ * route guards only then); never rejects. Receivers of another tab's announcement call this
+ * WITHOUT broadcasting again.
  */
 export function reconcileSession(
   queryClient: QueryClient,
@@ -38,7 +44,7 @@ export function reconcileSession(
   mode: ReconcileMode = "full",
 ): Promise<boolean> {
   if (inFlight !== undefined && mode === "verify") return inFlight;
-  const current = (inFlight ?? Promise.resolve(true)).then(() => run(queryClient, client, mode));
+  const current = run(queryClient, client, mode);
   inFlight = current;
   void current.finally(() => {
     if (inFlight === current) inFlight = undefined;
@@ -48,24 +54,33 @@ export function reconcileSession(
 
 let inFlight: Promise<boolean> | undefined;
 
+async function askMe(queryClient: QueryClient, client: ApiClient, run: AbortController) {
+  await queryClient.cancelQueries({ queryKey: ME_QUERY_KEY }); // never share an older run's request
+  await queryClient.query({
+    queryKey: ME_QUERY_KEY,
+    queryFn: ({ signal }) =>
+      fetchMeForRevision(client, currentRevision(), AbortSignal.any([signal, run.signal])),
+    staleTime: 0,
+  });
+}
+
 async function run(queryClient: QueryClient, client: ApiClient, mode: ReconcileMode) {
   if (mode === "full") {
     beginExternalChange();
     await queryClient.cancelQueries();
     removeOrganizationQueries(queryClient);
   } else beginVerification();
+  const mine = startReconcileRun();
   try {
-    await queryClient.query({
-      queryKey: ME_QUERY_KEY,
-      queryFn: ({ signal }) => fetchMe(client, signal),
-      staleTime: 0,
-    });
+    await askMe(queryClient, client, mine);
+    if (mine.signal.aborted) return false; // superseded: it never changes the state
     endSessionExpiry();
     clearSessionUnknown();
     return true;
-  } catch {
-    // A 401 or a lost membership is also reported by the caches (like any request). Whatever the
-    // failure, the identity is UNKNOWN: never fall back to the one held before.
+  } catch (error) {
+    // Superseded, or the session changed while asking (the answer was discarded): not this run's
+    // call. Any other failure (a 401 is also reported by the caches) makes the identity UNKNOWN.
+    if (mine.signal.aborted || error instanceof CancelledError) return false;
     await leaveKnown(queryClient);
     return false;
   } finally {

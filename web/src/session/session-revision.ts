@@ -20,6 +20,7 @@ let isSignedOut = false;
 let reconciling = 0;
 let isUnknown = false;
 const listeners = new Set<Listener>();
+let reconcileRun: AbortController | undefined;
 
 function emit(): void {
   listeners.forEach((listener) => {
@@ -30,6 +31,21 @@ function emit(): void {
 function bump(): void {
   revision += 1;
   emit();
+}
+
+/**
+ * Latest wins: starting a reconcile run aborts the one in flight, and a login or a confirmed
+ * sign-out aborts it too (it is about to be stale). A stale run never changes the session state.
+ */
+export function startReconcileRun(): AbortController {
+  reconcileRun?.abort();
+  reconcileRun = new AbortController();
+  return reconcileRun;
+}
+
+function abortReconcileRun(): void {
+  reconcileRun?.abort();
+  reconcileRun = undefined;
 }
 
 /** Calls `listener` when the revision or the reconciling state changes (React: `useSyncExternalStore`). */
@@ -46,6 +62,7 @@ export function currentRevision(): number {
 
 /** A login was accepted (its `/me/` is being stored). */
 export function acceptSession(): void {
+  abortReconcileRun();
   bump();
   isSignedOut = false;
   broadcastSessionChanged();
@@ -71,6 +88,7 @@ export function changeIdentity(): void {
 
 /** The server confirmed the sign-out. Returns the new revision. */
 export function confirmSignOut(): number {
+  abortReconcileRun();
   bump();
   isSignedOut = true;
   broadcastSessionChanged();
@@ -152,4 +170,5 @@ export function resetSessionRevision(): void {
   isSignedOut = false;
   reconciling = 0;
   isUnknown = false;
+  reconcileRun = undefined;
 }

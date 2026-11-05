@@ -9,7 +9,7 @@ import { renderApp } from "../test/render-app";
 import type { Me } from "./me";
 import { clearOrganizationSlug } from "./organization-slug";
 import { endSessionExpiry } from "./session-events";
-import { isSessionKnown, markSessionUnknown } from "./session-revision";
+import { isSessionKnown, markSessionUnknown, sessionState } from "./session-revision";
 
 const ME = "GET /api/v1/me/";
 const LOGIN = "POST /api/v1/auth/login/";
@@ -59,6 +59,23 @@ async function openExpired(routes: FakeApiRoutes = {}, path = "/", me: Me = make
   });
   await screen.findByRole("dialog");
   return { api, app };
+}
+
+/** What another tab does when it signs in: it announces the change on the shared channel. */
+function announce(): void {
+  const otherTab = new BroadcastChannel("wolbachia.session");
+  otherTab.postMessage("changed");
+  otherTab.close();
+}
+
+function hop(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      resolve();
+    };
+    channel.port2.postMessage(0);
+  });
 }
 
 function logoutRequests(api: { requests: { path: string }[] }) {
@@ -360,6 +377,48 @@ describe("the dialog cannot be closed from the keyboard", () => {
 });
 
 describe("the cookie is the truth (#82)", () => {
+  test("/me/ is accepted only for the revision that asked for it: a superseded reconcile never stores B and the state ends unknown", async () => {
+    const login = deferred();
+    const meOfB = deferred();
+    const userA = makeMe();
+    const userB = {
+      ...makeMe({ user: { ...userA.user, id: "7a7a7a7a-0000-4000-8000-000000000003" } }),
+      organization: null,
+    };
+    let meCalls = 0;
+    const { api, app } = await openExpired({ [LOGIN]: () => login.promise });
+    const seen: string[] = [];
+    app.queryClient.getQueryCache().subscribe(() => {
+      const id = app.queryClient.getQueryData<Me>(["me"])?.user.id;
+      if (id !== undefined) seen.push(id);
+    });
+    api.setRoute(ME, () => {
+      meCalls += 1;
+      return meCalls === 1 ? meOfB.promise : Promise.resolve(apiError(503, "server_error"));
+    });
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    announce(); // another tab signed in as B: this tab's reconcile asks /me/ (pending)
+    await waitFor(() => {
+      expect(meCalls).toBe(1);
+    });
+
+    // A's login completes: it supersedes B's reconcile, whose /me/ then fails to be A's follow-up.
+    login.release(Response.json({ me: userA, server_time: "2026-11-04T12:00:00Z" }));
+    await waitFor(() => {
+      expect(meCalls).toBe(2);
+    });
+    meOfB.release(Response.json(userB));
+    await hop();
+    await waitFor(() => {
+      expect(sessionState()).toBe("unknown");
+    });
+
+    expect(seen).not.toContain(userB.user.id);
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userA.user.id);
+    expect(app.router.state.location.pathname).not.toBe("/select-organization");
+  });
+
   test("a re-authentication from the unknown state makes the identity known again", async () => {
     const { app } = await openExpired();
     markSessionUnknown(); // the expiry dialog is the way out, so the blocker stays hidden

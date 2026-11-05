@@ -1,6 +1,6 @@
 import { isErrorEnvelope, unwrap } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
-import { queryOptions } from "@tanstack/react-query";
+import { CancelledError, queryOptions } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
@@ -25,10 +25,27 @@ export const ME_STALE_TIME_MS = 60_000;
  * real 401s count as expiry again. An answer to a request that started before a sign-out carries
  * an older revision and changes nothing.
  */
-export async function fetchMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
-  const revision = currentRevision();
+export function fetchMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
+  return fetchMeForRevision(client, currentRevision(), signal);
+}
+
+/**
+ * `/me/` is accepted only for the revision that asked for it (#82): this is the ONLY path by which
+ * `/me/` data reaches the cache (and so `recordIdentity`). The answer is discarded, with no
+ * `setQueryData`, no `recordIdentity` and no state change, when the session revision changed
+ * since `revision` was captured (a login, a sign-out, another identity, another tab) or the
+ * request was aborted (a newer run superseded it).
+ */
+export async function fetchMeForRevision(
+  client: ApiClient,
+  revision: number,
+  signal?: AbortSignal,
+): Promise<Me> {
   const me = await requestMe(client, signal);
-  if (revision === currentRevision()) recoverSession();
+  if (revision !== currentRevision() || signal?.aborted === true) {
+    throw new CancelledError({ revert: true });
+  }
+  recoverSession();
   return me;
 }
 
