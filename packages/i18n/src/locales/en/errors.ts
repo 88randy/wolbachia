@@ -3,6 +3,13 @@ import type { errors as source } from "../es-MX/errors.ts";
 
 export const errors: Record<keyof typeof source, string> = {
   // API errors: the API returns `code` + `params`, never text
+  "errors.api.immutableCode":
+    "The code cannot be changed. Void the motorcycle and create another with the correct code.",
+  "errors.api.motorcycleNotBlocked":
+    "This motorcycle is already unblocked. Refresh the list to see its state.",
+  "errors.api.motorcycleInUse":
+    "This motorcycle has an open shift. Close the shift before voiding it.",
+  "errors.api.duplicateCode": "That code is already registered. Use another code and try again.",
   "errors.api.generic": "We couldn't complete the action. Please try again.",
   "errors.api.network": "We can't reach the server. Check your signal and try again.",
   "errors.api.validation": "Some data is not valid. Review the highlighted fields and fix them.",

@@ -43,6 +43,8 @@ export interface MockApi {
   devices: Pick<FakeDevices, "hold" | "setFailing">;
   /** The server forgets the session (it expired): the next `/me/` is 401. */
   expireSession: () => void;
+  /** `/me/` fails with a 503 (the session check cannot be completed). */
+  setMeFailing: (isFailing: boolean) => void;
   setLogin: (behavior: LoginBehavior) => void;
 }
 
@@ -97,6 +99,12 @@ class FakeServer implements MockApi {
     this.signedIn = null;
   };
 
+  private isMeFailing = false;
+
+  setMeFailing = (isFailing: boolean): void => {
+    this.isMeFailing = isFailing;
+  };
+
   setLogin = (behavior: LoginBehavior): void => {
     this.login = behavior;
   };
@@ -115,6 +123,7 @@ class FakeServer implements MockApi {
   }
 
   private answerMe(route: Route, request: RecordedRequest) {
+    if (this.isMeFailing) return route.fulfill(envelope(503, "server_error"));
     if (this.signedIn === null) return route.fulfill(envelope(401, "not_authenticated"));
     return route.fulfill({ json: meFor(this.signedIn, request.headers["x-organization"]) });
   }
@@ -147,6 +156,7 @@ class FakeServer implements MockApi {
 
   /** Paths with variable parts (`/rule-parameters/{key}/...`); anything else is a 404. */
   private handleOther(route: Route, request: RecordedRequest) {
+    if (request.path === "/api/v1/catalogs/void-reason/items/") return this.rules.catalog(route);
     if (request.path.startsWith("/api/v1/rule-parameters/")) return this.rules.answer(route);
     return route.fulfill(envelope(404, "not_found"));
   }

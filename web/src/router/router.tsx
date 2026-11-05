@@ -1,4 +1,8 @@
 import { CatalogsPage } from "../catalogs/CatalogsPage";
+import { W20Page } from "../fleet/W20Page";
+import { W21Page } from "../fleet/W21Page";
+import { FleetHome } from "../fleet/FleetHome";
+import { MOTORCYCLE_READ } from "../fleet/permissions";
 import { createRootRouteWithContext, createRoute, createRouter } from "@tanstack/react-router";
 import type { RouterHistory } from "@tanstack/react-router";
 import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
@@ -20,6 +24,7 @@ import { NotFoundState } from "../states/NotFoundState";
 import { PendingState } from "../states/PendingState";
 import { RouteErrorState } from "../states/RouteErrorState";
 import { AREAS } from "./areas";
+import { installSessionSync } from "../session/install-session-sync";
 import { parseFlatSearch, stringifyFlatSearch } from "./flat-search";
 import {
   requireAreaAccess,
@@ -88,10 +93,37 @@ const areaRoutes = AREAS.map((area) =>
     beforeLoad: ({ context }) => {
       requireAreaAccess(area, context.me);
     },
-    component: area.id === "settings" ? SettingsPage : () => <AreaPlaceholder areaId={area.id} />,
+    component:
+      area.id === "settings"
+        ? SettingsPage
+        : area.id === "fleet"
+          ? FleetHome
+          : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
+
+// W20-W21: the fleet area and both motorcycle routes require motorcycle.read.
+const motorcyclesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/fleet/motorcycles",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("fleet", context.me, MOTORCYCLE_READ);
+  },
+  component: W20Page,
+  errorComponent: AreaErrorState,
+});
+const motorcycleRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/fleet/motorcycles/$code",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("fleet", context.me, MOTORCYCLE_READ);
+  },
+  component: W21Page,
+  errorComponent: AreaErrorState,
+});
 
 // W67, phones. Path `/<area>/<resource>` (CLAUDE.md, Web > Routes). The area guard above is any of
 // the Settings codes; this screen needs its own, `device.read`.
@@ -168,6 +200,8 @@ const routeTree = rootRoute.addChildren([
     ...areaRoutes,
     catalogsRoute,
     catalogRoute,
+    motorcyclesRoute,
+    motorcycleRoute,
     phonesRoute,
     ruleParametersRoute,
     ruleParameterRoute,
@@ -181,7 +215,7 @@ interface AppRouterOptions extends RouterContext {
 }
 
 export function createAppRouter({ client, queryClient, history }: AppRouterOptions) {
-  return createRouter({
+  const router = createRouter({
     routeTree,
     context: { client, queryClient },
     parseSearch: parseFlatSearch,
@@ -191,6 +225,10 @@ export function createAppRouter({ client, queryClient, history }: AppRouterOptio
     defaultErrorComponent: RouteErrorState,
     defaultPendingComponent: PendingState,
   });
+  // At the root, before the first guard runs: a login in another tab during the initial `/me/`
+  // must not be missed (#82).
+  installSessionSync({ queryClient, client, invalidateRoutes: () => router.invalidate() });
+  return router;
 }
 
 declare module "@tanstack/react-router" {

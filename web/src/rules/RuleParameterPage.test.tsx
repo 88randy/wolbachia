@@ -1,8 +1,9 @@
+import { invalidateRuleParameters } from "./rules-query";
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test } from "vitest";
-import { acceptSession, confirmSignOut } from "../session/session-revision";
+import { simulateLogin, simulateSignOut } from "../test/simulate-session";
 import { isSessionExpired } from "../session/session-events";
 import { apiError, makeMe } from "../test/fake-api";
 import {
@@ -110,6 +111,23 @@ describe("rule parameter page: permissions of its parts", () => {
 
     expect(screen.queryByRole("heading", { name: "Historial de versiones" })).toBeNull();
     expect(requestsTo(api, "GET", VERSIONS_PATH_API)).toHaveLength(0);
+  });
+});
+
+describe("void action needs the reasons catalog", () => {
+  test("without catalog.read there is no Void action even with rule_parameter_version.void", async () => {
+    await openParameterPage({
+      me: makeMe({
+        permissions: [
+          "rule_parameter.read",
+          "rule_parameter_version.read",
+          "rule_parameter_version.void",
+        ],
+      }),
+    });
+    await screen.findByRole("heading", { name: "Historial de versiones" });
+
+    expect(screen.queryByRole("button", { name: /Anular/ })).toBeNull();
   });
 });
 
@@ -319,8 +337,8 @@ describe("rule parameter page: regressions found in review", () => {
     await save(user);
     await screen.findByRole("button", { name: "Guardando…" });
 
-    confirmSignOut();
-    acceptSession();
+    simulateSignOut();
+    simulateLogin();
     release(apiError(401, "not_authenticated"));
 
     await waitFor(() => {
@@ -337,7 +355,7 @@ describe("rule parameter page: regressions found in review", () => {
     await user.type(await screen.findByLabelText(/Valor nuevo/), "40");
     api.setRoute(PARAMETER_ROUTE, apiError(500, "server_error"));
 
-    await app.queryClient.invalidateQueries({ queryKey: ["rule-parameters"] });
+    await invalidateRuleParameters(app.queryClient);
 
     expect(await screen.findByText(/No pudimos actualizar/)).toBeDefined();
     expect(screen.getByLabelText<HTMLInputElement>(/Valor nuevo/).value).toBe("40");

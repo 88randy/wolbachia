@@ -1,3 +1,5 @@
+import type { Schemas } from "@wolbachia/api-client";
+import { IDENTITY_HEADER } from "../session/attestation";
 import type { Me } from "../session/me";
 
 /** One request the app made, as a test wants to inspect it. */
@@ -54,9 +56,19 @@ export function createFakeApi(initial: FakeApiRoutes = {}): FakeApi {
       const key = `${recorded.method} ${recorded.path.split("?")[0] ?? ""}`;
       const reply = routes.get(key);
       if (reply === undefined) throw new Error(`No fake route for ${key}`);
-      return typeof reply === "function" ? reply(recorded) : reply.clone();
+      const answer = typeof reply === "function" ? await reply(recorded) : reply.clone();
+      return attested(answer);
     },
   };
+}
+
+/** The identity every answer of the fake server is attested for, unless a test sets its own. */
+export const FAKE_IDENTITY = "fake-session-identity";
+
+/** The fake network plays the server: every answer carries `X-Session-Identity` (#82). */
+function attested(response: Response): Response {
+  if (!response.headers.has(IDENTITY_HEADER)) response.headers.set(IDENTITY_HEADER, FAKE_IDENTITY);
+  return response;
 }
 
 /** An API error answer: `{code, detail, fields?}` with the status and headers of the real API. */
@@ -129,4 +141,48 @@ export function makeMe(overrides: Partial<Me> = {}): Me {
     limits: { void_reason_min_length: 10, void_reason_max_length: 1000 },
     ...overrides,
   };
+}
+
+/** The backend stores the chosen code and optional note, never the catalog label as free text. */
+export function makeVoidReasonFields(reasonCode: string, reason = "") {
+  return { void_reason_code: reasonCode, void_reason: reason };
+}
+
+const VOID_REASON_BASE = {
+  icon: "",
+  sort: 0,
+  is_active: true,
+  is_other: false,
+  requires_photo: false,
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
+};
+
+/** Catalog fixture in API order, including an inactive reason that the picker must hide. */
+export function makeVoidReasonItems(): Schemas["CatalogItem"][] {
+  return [
+    {
+      ...VOID_REASON_BASE,
+      id: "duplicate",
+      code: "duplicate",
+      label_es: "Capturado dos veces",
+      label_en: "Duplicate entry",
+    },
+    {
+      ...VOID_REASON_BASE,
+      id: "inactive",
+      code: "inactive",
+      label_es: "Inactivo",
+      label_en: "Inactive",
+      is_active: false,
+    },
+    {
+      ...VOID_REASON_BASE,
+      id: "other",
+      code: "other",
+      label_es: "Otro (especificar)",
+      label_en: "Other (specify)",
+      is_other: true,
+    },
+  ];
 }

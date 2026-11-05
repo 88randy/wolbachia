@@ -18,6 +18,7 @@ from accounts.request_context import requested_organization_slug
 from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
 from core.permissions import HasPermissionCode
 from core.services import lock_record_for_update, void_record
+from core.session_identity import remember_active_organization
 from core.void_reason import VoidSerializer
 from organizations.selectors import resolve_active_membership
 
@@ -65,6 +66,7 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
             )
             request.membership = membership  # type: ignore[attr-defined]
             request.organization = membership.organization  # type: ignore[attr-defined]
+            remember_active_organization(request, membership.organization_id)
         super().initial(request, *args, **kwargs)
 
     def get_queryset(self) -> QuerySet[Any]:
@@ -105,7 +107,7 @@ class OrgScopedViewSet(
 
 
 class VoidActionMixin:
-    """Adds `POST .../{id}/void/` with `{reason}` for resources that use `VoidableMixin`."""
+    """Adds `POST .../{id}/void/` with `{reason_code, reason?}` for resources that use `VoidableMixin`."""
 
     @extend_schema(request=VoidSerializer, responses=None)
     @action(detail=True, methods=["post"])
@@ -113,6 +115,6 @@ class VoidActionMixin:
         instance = self.get_object()  # type: ignore[attr-defined]
         payload = VoidSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        voided = void_record(instance, request.user, payload.validated_data["reason"])  # type: ignore[arg-type]
+        voided = void_record(instance, request.user, **payload.validated_data)  # type: ignore[arg-type]
         serializer = self.get_serializer(voided)  # type: ignore[attr-defined]
         return Response(serializer.data, status=status.HTTP_200_OK)

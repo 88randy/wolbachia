@@ -14,6 +14,7 @@ import { PendingState } from "../states/PendingState";
 import { RouteErrorState } from "../states/RouteErrorState";
 import { renderApp } from "../test/render-app";
 import { renderWithI18n } from "../test/render-with-i18n";
+import { makeMe } from "../test/fake-api";
 import { AREAS } from "./areas";
 
 afterEach(() => {
@@ -38,7 +39,7 @@ const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
 
 describe("area routes", () => {
   test.each(AREAS)("$path opens the placeholder of $id", async ({ path, id }) => {
-    await renderApp({ path });
+    await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
 
     expect(
       await screen.findByRole("heading", { level: 1, name: AREA_TITLES_ES[id] }),

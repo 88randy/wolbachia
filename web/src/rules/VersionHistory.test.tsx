@@ -1,13 +1,14 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
-import { acceptSession } from "../session/session-revision";
-import { apiError, makeMe } from "../test/fake-api";
+import { simulateLogin } from "../test/simulate-session";
+import { apiError, makeMe, makeVoidReasonFields, makeVoidReasonItems } from "../test/fake-api";
 import {
   ADMIN,
   PARAMETER_PATH,
   makeVersion,
   openParameterPage,
+  pageOf,
   requestsTo,
 } from "../test/rules-fixtures";
 
@@ -51,6 +52,7 @@ const VOIDED = makeVersion({
   voided_at: "2026-11-04T20:00:00Z",
   voided_by: OTHER_USER,
   voided_by_username: "luis.promotor",
+  void_reason_code: "other",
   void_reason: "Se capturó dos veces",
 });
 const HISTORY = [SCHEDULED, IN_FORCE, SUPERSEDED, VOIDED];
@@ -95,6 +97,64 @@ describe("version history", () => {
     expect(within(voided).getByText("Anulado")).toBeDefined();
     expect(screen.getByText("Mostrando 1 a 4 de 4")).toBeDefined();
     expect(requestsTo(api, "GET", VERSIONS_API).at(-1)?.path).toContain("include_voided=true");
+  });
+
+  test.each([
+    { code: "duplicate", note: "", language: "es-MX", label: "Capturado dos veces" },
+    {
+      code: "duplicate",
+      note: "Same date entered twice",
+      language: "en",
+      label: "Duplicate entry",
+    },
+    { code: "inactive", note: "", language: "en", label: "Inactivo" },
+    { code: "retired_code", note: "", language: "es-MX", label: "retired_code" },
+  ] as const)(
+    "shows the catalog reason $code in $language with its note separately",
+    async ({ code, note, language, label }) => {
+      const items = makeVoidReasonItems().map((item) =>
+        item.code === "inactive" ? { ...item, label_en: "" } : item,
+      );
+      await openParameterPage({
+        versions: [makeVersion({ ...VOIDED, ...makeVoidReasonFields(code, note) })],
+        path: `${PARAMETER_PATH}?include_voided=true`,
+        language,
+        routes: { "GET /api/v1/catalogs/void-reason/items/": pageOf(items) },
+      });
+
+      const row = await screen.findByRole("row", { name: /45/ });
+      const prefix = language === "en" ? "Reason" : "Motivo";
+      const reason = await within(row).findByText(`${prefix}: ${label}`);
+      if (note !== "") {
+        expect(within(row).getByText(note)).toBeDefined();
+        expect(reason.textContent).not.toContain(note);
+      }
+    },
+  );
+
+  test("keeps the history readable with a raw reason code while the catalog loads or fails", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const { app } = await openParameterPage({
+      versions: [makeVersion({ ...VOIDED, ...makeVoidReasonFields("duplicate") })],
+      path: `${PARAMETER_PATH}?include_voided=true`,
+      routes: { "GET /api/v1/catalogs/void-reason/items/": () => pending },
+    });
+
+    const row = await screen.findByRole("row", { name: /45 metros/ });
+    expect(within(row).getByText("Motivo: duplicate")).toBeDefined();
+    release(apiError(500, "server_error"));
+    await waitFor(() => {
+      expect(
+        app.queryClient
+          .getQueryCache()
+          .findAll({ predicate: (query) => query.queryKey[3] === "void-reasons" })[0]?.state.status,
+      ).toBe("error");
+    });
+    expect(within(row).getByText("Motivo: duplicate")).toBeDefined();
+    expect(within(row).getByText("Anuló: luis.promotor")).toBeDefined();
   });
 
   test("only a scheduled version has an enabled Void; the others say why they cannot be voided", async () => {
@@ -168,7 +228,8 @@ describe("voiding a scheduled version", () => {
       await screen.findByRole("button", { name: "Anular la versión del 10 nov 2026" }),
     );
     const dialog = await screen.findByRole("dialog");
-    await user.type(within(dialog).getByRole("textbox", { name: /Motivo/ }), REASON);
+    await user.selectOptions(within(dialog).getByRole("combobox"), "other");
+    await user.type(within(dialog).getByRole("textbox", { name: /Detalle/ }), REASON);
     return { user, ...opened };
   }
 
@@ -183,11 +244,24 @@ describe("voiding a scheduled version", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
-    expect(requestsTo(api, "POST", VOID_PATH)[0]?.body).toEqual({ reason: REASON });
+    expect(requestsTo(api, "POST", VOID_PATH)[0]?.body).toEqual({
+      reason_code: "other",
+      reason: REASON,
+    });
     expect(screen.getByText("Versión anulada. Sigue en el historial, tachada.")).toBeDefined();
     await waitFor(() => {
       expect(requestsTo(api, "GET", VERSIONS_API).length).toBeGreaterThan(1);
     });
+  });
+
+  test("a catalog reason is sent without an empty note", async () => {
+    const { user, api } = await startVoid(Response.json({ ...SCHEDULED, status: "voided" }));
+    await user.selectOptions(within(screen.getByRole("dialog")).getByRole("combobox"), "duplicate");
+    await user.click(screen.getByRole("button", { name: "Anular" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    expect(requestsTo(api, "POST", VOID_PATH)[0]?.body).toEqual({ reason_code: "duplicate" });
   });
 
   test("regression: a void answered after a re-authentication is ignored, not shown as an error", async () => {
@@ -199,7 +273,7 @@ describe("voiding a scheduled version", () => {
     await user.click(screen.getByRole("button", { name: "Anular" }));
     await screen.findByRole("button", { name: "Anulando…" });
 
-    acceptSession();
+    simulateLogin();
     release(Response.json({ ...SCHEDULED, status: "voided" }));
 
     await waitFor(() => {
@@ -208,7 +282,8 @@ describe("voiding a scheduled version", () => {
     expect(screen.getByRole("dialog")).toBeDefined();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText("Versión anulada. Sigue en el historial, tachada.")).toBeNull();
-    expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(1);
+    // The initial load plus the restart the revision change caused; the stale void answer adds none.
+    expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(2);
   });
 
   test("a version that took effect meanwhile is answered in the dialog and the history is refreshed", async () => {

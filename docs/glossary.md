@@ -77,6 +77,7 @@ Rules:
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
+| evento de bloqueo de motocicleta | motorcycle block event | `MotorcycleBlockEvent`, `action` (`block`, `unblock`) | Insert-only audit of severe-check blocks and manual unblocks; stores the actor and reason. |
 | motocicleta | motorcycle | `/motorcycles/`, `motorcycle` | Never "bike". |
 | revisión de la moto | motorcycle check | `MotorcycleCheck`, `checks`, `result` (`ok`, `minor`, `severe`) | One line of the checklist done when the shift opens; the items are the catalog `motorcycle-check-item`. A `severe` result blocks the motorcycle. |
 | odómetro | odometer | `odometer_km`, `odometer_open_km`, `odometer_close_km` | Kilometers shown by the motorcycle. Never "mileage". |
@@ -85,7 +86,7 @@ Rules:
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
-| anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason` | Nothing is deleted; a void references the original (decision 3). |
+| anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason`, `void_reason_code` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 
 ## Sync

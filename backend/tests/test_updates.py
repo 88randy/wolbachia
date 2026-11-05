@@ -10,7 +10,7 @@ from tests.factories import OrganizationFactory, WidgetFactory
 from tests.testapp.models import Widget
 from tests.testapp.views import WidgetViewSet
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("void_catalog")]
 
 WIDGETS = "/api/v1/widgets/"
 
@@ -19,7 +19,7 @@ def test_patch_on_a_voided_widget_is_409_already_voided(
     client_a: APIClient, org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a, name="before")
-    void_record(widget, member_a, "a clear mistake")
+    void_record(widget, member_a, "a clear mistake", "other")
 
     response = client_a.patch(f"{WIDGETS}{widget.pk}/", {"name": "after"}, format="json")
 
@@ -33,7 +33,7 @@ def test_put_on_a_voided_widget_is_409_already_voided(
     client_a: APIClient, org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a)
-    void_record(widget, member_a, "a clear mistake")
+    void_record(widget, member_a, "a clear mistake", "other")
 
     response = client_a.put(f"{WIDGETS}{widget.pk}/", {"name": "after"}, format="json")
 
@@ -52,7 +52,7 @@ def test_void_committed_between_read_and_save_survives_the_patch(
 
     def void_then_update(self, serializer) -> None:
         # The record was already read by the PATCH; another request voids it before the save.
-        void_record(Widget.objects.get(pk=widget.pk), member_a, "concurrent void")
+        void_record(Widget.objects.get(pk=widget.pk), member_a, "concurrent void", "other")
         real_perform_update(self, serializer)
 
     monkeypatch.setattr(WidgetViewSet, "perform_update", void_then_update)
@@ -75,7 +75,12 @@ def test_patch_on_a_live_widget_keeps_void_fields_empty(
 
     response = client_a.patch(
         f"{WIDGETS}{widget.pk}/",
-        {"name": "after", "void_reason": "sneaky", "voided_at": "2026-01-01T00:00:00Z"},
+        {
+            "name": "after",
+            "void_reason": "sneaky",
+            "void_reason_code": "duplicate-record",
+            "voided_at": "2026-01-01T00:00:00Z",
+        },
         format="json",
     )
 
@@ -83,7 +88,7 @@ def test_patch_on_a_live_widget_keeps_void_fields_empty(
     assert response.status_code == 200
     assert widget.name == "after"
     assert widget.voided_at is None
-    assert widget.void_reason == ""
+    assert (widget.void_reason, widget.void_reason_code) == ("", "")
 
 
 def test_related_widget_of_another_organization_is_rejected_like_a_missing_one(

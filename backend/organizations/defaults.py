@@ -28,7 +28,7 @@ from rules.permissions import (
     RULE_PARAMETER_VERSION_VOID,
 )
 from rules.seeds import missing_parameter_keys, seed_default_rule_parameters
-from shifts.permissions import SHIFT_READ
+from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
@@ -46,10 +46,19 @@ ADMIN_CODES = (
     *ADMIN_AUTH_PERMISSION_CODES,  # device and session administration (#4)
     REVIEW_ITEM_READ,
     SHIFT_READ,
+    MOTORCYCLE_READ,
+    MOTORCYCLE_MANAGE,
+    MOTORCYCLE_UNBLOCK,
 )
-COURIER_CODES = (*READ_ONLY_CODES, FIELD_EVENT_SYNC)  # the phone syncs (#5)
+COURIER_CODES = (*READ_ONLY_CODES, FIELD_EVENT_SYNC, MOTORCYCLE_READ)  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
-SUPERVISOR_CODES = (*READ_ONLY_CODES, REVIEW_ITEM_READ, SHIFT_READ)
+SUPERVISOR_CODES = (
+    *READ_ONLY_CODES,
+    REVIEW_ITEM_READ,
+    SHIFT_READ,
+    MOTORCYCLE_READ,
+    MOTORCYCLE_UNBLOCK,
+)
 # Keys are the slugs of `organizations.services.DEFAULT_PROFILE_SEEDS`.
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,

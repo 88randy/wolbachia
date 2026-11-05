@@ -1,0 +1,19 @@
+import type { TableQueryConfig } from "../data-table/table-types";
+export const FLEET_PAGE_SIZE = 25;
+export const FLEET_TABLE: TableQueryConfig = {
+  paging: "page",
+  pageSize: FLEET_PAGE_SIZE,
+  sortableIds: [],
+  supportsVoided: true,
+  filters: [
+    {
+      kind: "select",
+      key: "is_blocked",
+      labelKey: "fleet.column.status",
+      options: [
+        { value: "false", labelKey: "fleet.status.available" },
+        { value: "true", labelKey: "fleet.status.blocked" },
+      ],
+    },
+  ],
+};

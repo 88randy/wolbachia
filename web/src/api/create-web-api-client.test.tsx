@@ -85,7 +85,9 @@ describe("createWebApiClient", () => {
     const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: fakeFetch });
 
     // The schema has no unsafe endpoint yet; the middleware does not care which path it is.
-    await (client as unknown as { POST: (path: string) => Promise<unknown> }).POST("/api/v1/x/");
+    await (client as unknown as { POST: (path: string) => Promise<unknown> })
+      .POST("/api/v1/x/")
+      .catch(() => undefined); // an unattested answer is refused; only the request matters here
 
     expect(requests[0]?.headers.get("X-CSRFToken")).toBe("secret");
   });

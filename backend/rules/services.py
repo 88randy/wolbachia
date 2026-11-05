@@ -8,8 +8,9 @@ from django.utils import timezone
 
 from accounts.models import User
 from core.exceptions import FieldValidationError
-from core.services import lock_record_for_update, void_record
+from core.services import lock_record_for_update, void_validated_record
 from core.time import local_today
+from core.void_reason import resolve_void_reason
 from rules.exceptions import VersionNotScheduledError
 from rules.models import RuleParameter, RuleParameterVersion, ValueType
 from rules.selectors import to_number
@@ -111,8 +112,8 @@ def _is_date_taken(parameter: RuleParameter, effective_date: date) -> bool:
     ).exists()
 
 
-def void_rule_version(
-    version: RuleParameterVersion, user: User, reason: str
+def void_rule_version(  # noqa: PLR0913 -- explicit void contract
+    version: RuleParameterVersion, user: User, reason: str, reason_code: str
 ) -> RuleParameterVersion:
     """Void a version that has not taken effect yet (writes the void fields). Never deletes.
 
@@ -121,7 +122,8 @@ def void_rule_version(
     in force and from the snapshots but stays in the history.
     """
     with transaction.atomic():
+        choice = resolve_void_reason(version.organization_id, reason, reason_code)
         locked = lock_record_for_update(version)
         if locked.effective_from <= timezone.now():
             raise VersionNotScheduledError
-        return void_record(locked, user, reason)
+        return void_validated_record(locked, user, choice)

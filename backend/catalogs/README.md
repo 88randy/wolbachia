@@ -19,9 +19,17 @@ Per-organization option lists (incident reasons, removal reasons, the motorcycle
 | `services.py` | `create_catalog_item`, `update_catalog_item`, `deactivate_catalog_item`, `activate_catalog_item` (lock the row; `FieldValidationError` for a taken code) |
 | `selectors.py` | `list_catalogs`, `build_catalog_snapshot` |
 | `permissions.py` | Permission codes of this app |
-| `seeds.py` | `seed_default_catalogs`: the nine catalogs and the "Other" item |
+| `seeds.py` | `seed_default_catalogs`: the ten catalogs, default void reasons and the "Other" item |
 | `views.py`, `serializers.py`, `urls.py` | Thin DRF layer; nested routes by regex prefix (no extra dependency) |
 
 ## Snapshot
 
-`GET /api/v1/field/catalog/` returns active items only and a `version` hash that is also the `ETag` (`core/snapshots.py`). It changes when any label, order, flag or active state changes.
+`GET /api/v1/field/catalog/` returns active items and the non-voided fleet (`motorcycles`, including blocked motorcycles with their reason, #72), plus a `version` hash that is also the `ETag` (`core/snapshots.py`). It changes when any label, order, flag, active state or fleet content changes. The same hash is sync `catalog_version`; the snapshot keeps `catalog.read` for this compact organization configuration.
+
+## Void reasons (#80)
+
+`void-reason` is open and seeded for every existing and new organization: `data-entry-error`,
+`duplicate-record`, `wrong-location`, plus the enforced `other`. **[PENDING] client/entomologist**:
+the final item list. Seeds use `get_or_create` by code and preserve admin labels and inactive
+states. The existing generic field snapshot includes this catalog automatically. Void storage
+keeps the immutable item code rather than a foreign key; deactivation never rewrites old voids.

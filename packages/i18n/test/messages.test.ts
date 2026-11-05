@@ -27,6 +27,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["catalogs.actions.moveUp", ["name"]],
   ["catalogs.confirm.title", ["name"]],
   ["errors.api.blocked", ["role"]],
+  ["fleet.unblock.title", ["record"]],
   ["rules.compare.from", ["date"]],
   ["rules.error.atLeast", ["min"]],
   ["rules.error.atMost", ["max"]],

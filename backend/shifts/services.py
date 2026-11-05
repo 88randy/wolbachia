@@ -13,12 +13,18 @@ batch's `lock_timeout`.
 """
 
 import uuid
+from collections.abc import Iterator, Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, cast
 
 from django.db import IntegrityError, transaction
 
+from accounts.models import User
 from catalogs.models import CatalogItem
+from core.exceptions import FieldValidationError
+from core.services import lock_record_for_update, void_validated_record
+from core.void_reason import resolve_void_reason, validate_void_reason
 from field_sync.codes import INVALID_PAYLOAD
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.registry import EventContext
@@ -34,10 +40,13 @@ from shifts.codes import (
     SHIFT_ALREADY_OPEN,
     SHIFT_NOT_OPEN,
 )
+from shifts.exceptions import MotorcycleInUseError, MotorcycleNotBlockedError
 from shifts.models import (
     BlockedReason,
     CheckResult,
     Motorcycle,
+    MotorcycleBlockAction,
+    MotorcycleBlockEvent,
     MotorcycleCheck,
     Shift,
     ShiftStatus,
@@ -48,6 +57,8 @@ from shifts.selectors import highest_recorded_km
 # limit of the instrument, not a business threshold, so it is not a rule parameter.
 MAX_ODOMETER_KM = 999_999
 SHIFT_PRIMARY_KEY_CONSTRAINT = "shifts_shift_pkey"
+EDITABLE_MOTORCYCLE_FIELDS = ("plate",)
+MOTORCYCLE_CODE_CONSTRAINT = "motorcycle_unique_code_per_organization"
 
 
 @dataclass(frozen=True)
@@ -80,7 +91,7 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     shift = _insert_shift(ctx, NewShift(shift_id, motorcycle, data["odometer_km"], data["note"]))
     _insert_checks(shift, data["checks"], items)
     if any(line["result"] == CheckResult.SEVERE for line in data["checks"]):
-        _block_motorcycle(motorcycle)
+        _block_motorcycle(motorcycle, ctx)
         raise EventNeedsReview(SEVERE_CHECK, {"motorcycle_code": motorcycle.code})
     if previous_km is not None and data["odometer_km"] < previous_km:
         raise EventNeedsReview(
@@ -166,11 +177,14 @@ def _resolve_check_items(
 def _lock_motorcycle(organization: Organization, code: str) -> Motorcycle:
     """The motorcycle with that code, row-locked so a severe check and an open cannot interleave."""
     motorcycle = (
-        Motorcycle.objects.for_org(organization).select_for_update().filter(code=code).first()
+        Motorcycle.objects.for_org(organization)
+        .select_for_update()
+        .filter(code=code, voided_at__isnull=True)
+        .first()
     )
     if motorcycle is None:
         raise EventRejected(MOTORCYCLE_UNKNOWN)
-    return motorcycle
+    return cast(Motorcycle, motorcycle)
 
 
 def _ensure_no_open_shift(ctx: EventContext) -> None:
@@ -248,7 +262,105 @@ def _insert_checks(
     )
 
 
-def _block_motorcycle(motorcycle: Motorcycle) -> None:
+def _block_motorcycle(motorcycle: Motorcycle, ctx: EventContext) -> None:
     motorcycle.is_blocked = True
     motorcycle.blocked_reason = BlockedReason.SEVERE_CHECK
     motorcycle.save(update_fields=["is_blocked", "blocked_reason"])
+    MotorcycleBlockEvent.objects.create(
+        organization_id=motorcycle.organization_id,
+        created_by=ctx.user,
+        motorcycle=motorcycle,
+        action=MotorcycleBlockAction.BLOCK,
+        blocked_reason=BlockedReason.SEVERE_CHECK,
+        reason=SEVERE_CHECK,
+        field_event_id=ctx.envelope.id,
+    )
+
+
+@contextmanager
+def _motorcycle_code_conflict() -> Iterator[None]:
+    """Map only the code unique constraint to a field error, after rolling back the savepoint.
+
+    PostgreSQL arbitrates concurrent creates; an application pre-check alone races.
+    Other integrity errors propagate so real bugs are never disguised as a duplicate code.
+    """
+    try:
+        with transaction.atomic():
+            yield
+    except IntegrityError as error:
+        if _violated_constraint(error) != MOTORCYCLE_CODE_CONSTRAINT:
+            raise
+        raise FieldValidationError("code", "duplicate_code") from None
+
+
+def create_motorcycle(
+    organization: Organization, values: Mapping[str, str], user: User
+) -> Motorcycle:
+    """Insert fleet configuration; block/void metadata cannot be supplied by a caller."""
+    with _motorcycle_code_conflict():
+        return Motorcycle.objects.create(
+            organization=organization,
+            created_by=user,
+            code=values["code"],
+            plate=values.get("plate", ""),
+        )
+
+
+def update_motorcycle(motorcycle: Motorcycle, changes: Mapping[str, object]) -> Motorcycle:
+    """Write the plate under the same lock as shift.open, void and unblock.
+
+    Code is immutable because pending schema-1 offline events resolve by code. Reject it even
+    when unchanged; a correction requires void + create, and the voided code remains reserved.
+    """
+    if "code" in changes:
+        raise FieldValidationError("code", "immutable_code")
+    fields = [name for name in EDITABLE_MOTORCYCLE_FIELDS if name in changes]
+    with transaction.atomic():
+        locked = lock_record_for_update(motorcycle)
+        for name in fields:
+            setattr(locked, name, changes[name])
+        if fields:
+            locked.save(update_fields=fields)
+    return locked
+
+
+def void_motorcycle(  # noqa: PLR0913 -- explicit void contract
+    motorcycle: Motorcycle, user: User, reason: str, reason_code: str
+) -> Motorcycle:
+    """Void fleet configuration while retaining all shifts/checks. Refuse an open shift.
+
+    Lock rule: acquire Motorcycle first, as shift.open does. Once locked, either the opening
+    committed and void refuses, or void commits first and the opening cannot find a live row.
+    No Shift lock is acquired, so shift.close cannot form a lock cycle.
+    """
+    with transaction.atomic():
+        choice = resolve_void_reason(motorcycle.organization_id, reason, reason_code)
+        locked = lock_record_for_update(motorcycle)
+        if Shift.objects.filter(motorcycle=locked, status=ShiftStatus.OPEN).exists():
+            raise MotorcycleInUseError
+        return void_validated_record(locked, user, choice)
+
+
+def unblock_motorcycle(motorcycle: Motorcycle, user: User, reason: str) -> Motorcycle:
+    """Clear a block and insert its audit atomically; an unblocked motorcycle is a conflict.
+
+    Motorcycle is locked before checking state and writing both rows. A concurrent severe
+    check uses the same lock, and two unblocks cannot create two transitions.
+    """
+    cleaned = validate_void_reason(reason, "reason")
+    with transaction.atomic():
+        locked = lock_record_for_update(motorcycle)
+        if not locked.is_blocked:
+            raise MotorcycleNotBlockedError
+        MotorcycleBlockEvent.objects.create(
+            organization_id=locked.organization_id,
+            created_by=user,
+            motorcycle=locked,
+            action=MotorcycleBlockAction.UNBLOCK,
+            blocked_reason=locked.blocked_reason,
+            reason=cleaned,
+        )
+        locked.is_blocked = False
+        locked.blocked_reason = ""
+        locked.save(update_fields=["is_blocked", "blocked_reason"])
+    return locked

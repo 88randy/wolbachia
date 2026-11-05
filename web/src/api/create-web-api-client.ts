@@ -1,6 +1,7 @@
 import { createApiClient } from "@wolbachia/api-client";
 import type { ApiClient } from "@wolbachia/api-client";
 import type { AppConfig } from "../config/app-config";
+import { attestationMiddleware } from "../session/attestation";
 import { getOrganizationSlug } from "../session/organization-slug";
 
 /** Django's default CSRF cookie name. [ASSUMPTION] until backend #4 says otherwise. */
@@ -39,10 +40,13 @@ export function createWebApiClient(
   config: AppConfig,
   options: WebApiClientOptions = {},
 ): ApiClient {
-  return createApiClient({
+  const client = createApiClient({
     baseUrl: apiOriginOf(config.apiBaseUrl, window.location.origin),
     auth: { kind: "session", getCsrfToken: () => readCookie(CSRF_COOKIE_NAME, document.cookie) },
     getOrganizationSlug,
     ...(options.fetch ? { fetch: options.fetch } : {}),
   });
+  // The one fetch layer: every response is checked against the identity it was issued under.
+  client.use(attestationMiddleware);
+  return client;
 }

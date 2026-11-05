@@ -29,7 +29,7 @@ from reviews.permissions import REVIEW_ITEM_READ
 from rules import permissions as rule_codes
 from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS, seed_default_rule_parameters
-from shifts.permissions import SHIFT_READ
+from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
 from tests.factories import OrganizationFactory
 
 pytestmark = pytest.mark.django_db
@@ -72,7 +72,9 @@ def test_create_organization_seeds_catalogs_and_parameters() -> None:
     organization = create_organization(SPEC)
 
     assert (
-        Catalog.objects.filter(organization=organization).count() == len(DEFAULT_CATALOG_SEEDS) == 9
+        Catalog.objects.filter(organization=organization).count()
+        == len(DEFAULT_CATALOG_SEEDS)
+        == 10
     )
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
@@ -158,12 +160,15 @@ def test_catalogs_follow_the_open_and_closed_defaults() -> None:
     assert closed == CLOSED_CATALOGS
 
 
-def test_every_open_catalog_has_exactly_the_other_item_and_closed_ones_have_none() -> None:
+def test_catalogs_have_the_expected_initial_items() -> None:
     organization = create_organization(SPEC)
 
     for catalog in Catalog.objects.filter(organization=organization):
         codes_in_catalog = [item.code for item in catalog.items.all()]
-        assert codes_in_catalog == (["other"] if catalog.is_open else [])
+        expected = ["other"] if catalog.is_open else []
+        if catalog.slug == "void-reason":
+            expected = ["data-entry-error", "duplicate-record", "wrong-location", "other"]
+        assert codes_in_catalog == expected
     other = CatalogItem.objects.filter(organization=organization, is_other=True).first()
     assert (other.label_es, other.label_en, other.is_active) == (
         "Otro (especificar)",
@@ -211,24 +216,29 @@ def test_seed_never_adds_a_second_version_to_a_parameter_an_admin_changed() -> N
 
 def test_seed_keeps_admin_edits_to_catalog_labels() -> None:
     organization = create_organization(SPEC)
-    Catalog.objects.filter(organization=organization, slug="removal-reason").update(
-        label_es="Editado"
+    Catalog.objects.filter(organization=organization, slug="void-reason").update(label_es="Editado")
+
+    item = CatalogItem.objects.get(
+        catalog__organization=organization, catalog__slug="void-reason", code="data-entry-error"
     )
+    item.label_es = "Edited"
+    item.is_active = False
+    item.save()
 
     seed_organization_defaults(organization)
 
-    assert (
-        Catalog.objects.get(organization=organization, slug="removal-reason").label_es == "Editado"
-    )
+    item.refresh_from_db()
+    assert (item.label_es, item.is_active) == ("Edited", False)
+    assert Catalog.objects.get(organization=organization, slug="void-reason").label_es == "Editado"
 
 
 def test_seed_does_not_cross_organizations() -> None:
     first = create_organization(SPEC)
     second = create_organization(OrganizationSpec("Beta", "beta", "MX", "America/Mexico_City"))
 
-    assert Catalog.objects.filter(organization=first).count() == 9
-    assert Catalog.objects.filter(organization=second).count() == 9
-    assert Catalog.objects.count() == 18
+    assert Catalog.objects.filter(organization=first).count() == 10
+    assert Catalog.objects.filter(organization=second).count() == 10
+    assert Catalog.objects.count() == 20
 
 
 def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
@@ -239,8 +249,14 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
 
     reader = {catalog_codes.CATALOG_READ, rule_codes.RULE_PARAMETER_READ}
-    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC}
-    assert by_slug["supervisor"] == {*reader, REVIEW_ITEM_READ, SHIFT_READ}
+    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, MOTORCYCLE_READ}
+    assert by_slug["supervisor"] == {
+        *reader,
+        REVIEW_ITEM_READ,
+        SHIFT_READ,
+        MOTORCYCLE_READ,
+        MOTORCYCLE_UNBLOCK,
+    }
     assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
     assert by_slug["admin"] == {
         catalog_codes.CATALOG_READ,
@@ -255,6 +271,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         *ADMIN_AUTH_PERMISSION_CODES,
         REVIEW_ITEM_READ,
         SHIFT_READ,
+        MOTORCYCLE_READ,
+        MOTORCYCLE_MANAGE,
+        MOTORCYCLE_UNBLOCK,
     }
 
 
@@ -283,6 +302,7 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     assert courier.seeded_permission_codes == [
         "catalog.read",
         "field_event.sync",
+        "motorcycle.read",
         "rule_parameter.read",
     ]
 
@@ -300,6 +320,7 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     assert courier.permission_codes == [
         "catalog.read",
         "field_event.sync",
+        "motorcycle.read",
         "rule_parameter.read",
         "widget.read",
     ]
@@ -325,7 +346,7 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     plan = seed_default_permission_codes(organization)
 
-    assert plan.grants == {"courier": ("rule_parameter.read", FIELD_EVENT_SYNC)}
+    assert plan.grants == {"courier": ("rule_parameter.read", FIELD_EVENT_SYNC, MOTORCYCLE_READ)}
 
 
 def test_seed_skips_profiles_not_created_by_the_seed_and_reports_them() -> None:
@@ -387,7 +408,7 @@ def test_command_apply_updates_an_existing_organization() -> None:
     output = run_command("--organization", organization.slug, "--apply")
 
     assert "Applied" in output
-    assert Catalog.objects.filter(organization=organization).count() == 9
+    assert Catalog.objects.filter(organization=organization).count() == 10
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
     )
@@ -431,6 +452,11 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
         ("admin", REVIEW_ITEM_READ),
         ("supervisor", SHIFT_READ),
         ("admin", SHIFT_READ),
+        ("courier", MOTORCYCLE_READ),
+        ("supervisor", MOTORCYCLE_READ),
+        ("supervisor", MOTORCYCLE_UNBLOCK),
+        ("admin", MOTORCYCLE_MANAGE),
+        ("admin", MOTORCYCLE_UNBLOCK),
     ],
 )
 def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_existed(
@@ -451,7 +477,14 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
 
 @pytest.mark.parametrize(
     ("slug", "code"),
-    [("courier", FIELD_EVENT_SYNC), ("supervisor", REVIEW_ITEM_READ), ("supervisor", SHIFT_READ)],
+    [
+        ("courier", FIELD_EVENT_SYNC),
+        ("supervisor", REVIEW_ITEM_READ),
+        ("supervisor", SHIFT_READ),
+        ("courier", MOTORCYCLE_READ),
+        ("admin", MOTORCYCLE_MANAGE),
+        ("admin", MOTORCYCLE_UNBLOCK),
+    ],
 )
 def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str) -> None:
     organization, profile = seeded_profile(slug)

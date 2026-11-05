@@ -1,6 +1,7 @@
 import { catalogs } from "./catalogs.ts";
 /** English catalog: exactly the keys of `../es-MX`, composed from one file per area. */
 import type { MessageKey } from "../es-MX/index.ts";
+import { fleet } from "./fleet.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
@@ -14,6 +15,7 @@ import { voiding } from "./voiding.ts";
 
 export const en: Record<MessageKey, string> = {
   ...catalogs,
+  ...fleet,
   ...common,
   ...errors,
   ...shell,

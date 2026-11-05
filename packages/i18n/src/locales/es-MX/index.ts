@@ -3,6 +3,7 @@ import { catalogs } from "./catalogs.ts";
  * Mexican Spanish catalog: the SOURCE of the key list. `MessageKey` is derived from it and
  * `../en` must provide the same keys. One file per area; see the package README.
  */
+import { fleet } from "./fleet.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
@@ -16,6 +17,7 @@ import { voiding } from "./voiding.ts";
 
 export const esMX = {
   ...catalogs,
+  ...fleet,
   ...common,
   ...errors,
   ...shell,
