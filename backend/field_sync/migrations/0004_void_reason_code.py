@@ -57,7 +57,7 @@ def restore_legacy_notes(apps, schema_editor):
 class Migration(migrations.Migration):
     atomic = True
     dependencies = [
-        ("field_sync", "0002_clock_skew_bigint"),
+        ("field_sync", "0003_rejection_quota_counter"),
         ("catalogs", "0003_void_reason_catalog"),
     ]
     operations = [

@@ -115,7 +115,9 @@ def test_voided_motorcycle_remains_retrievable(fleet_client, voided_motorcycle):
 def test_reason_actions_use_shared_validator_before_state(fleet_client, org_a, action):
     motorcycle = MotorcycleFactory(organization=org_a)
     response = fleet_client.post(
-        f"{URL}{motorcycle.pk}/{action}/", {"reason": "\u200b"}, format="json"
+        f"{URL}{motorcycle.pk}/{action}/",
+        {"reason": "\u200b", **({"reason_code": "other"} if action == "void" else {})},
+        format="json",
     )
     assert response.status_code == 400
     assert response.data["fields"]["reason"] == [
