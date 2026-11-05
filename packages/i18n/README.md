@@ -35,7 +35,7 @@ src/locales/
   en/index.ts        composes every area
 ```
 
-Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`, `table`, `phones`, `rules`, `voiding`.
+Areas today: `common`, `errors`, `shell`, `states`, `auth`, `sync`, `table`, `phones`, `rules`, `voiding`, `mobile`.
 
 - A new key goes in the file named after its first segment, in **both** languages: `auth.login.title` -> `es-MX/auth.ts` and `en/auth.ts`.
 - A new area (first segment) means: create `es-MX/<area>.ts` and `en/<area>.ts` (copy a small pair such as `common.ts`), then add one line to each `index.ts`. `test/areas.test.ts` reads the directories, so it needs no edit.
@@ -54,7 +54,7 @@ Keys are flat strings, so no key is the prefix of another. Add new keys to **bot
 
 ## Placeholders
 
-Messages use simple `{name}` placeholders (letters and digits, no spaces), for example `Espera {seconds} segundos`. There is no ICU syntax: no plurals, selects or formats. Both locales must use the same placeholder names for a key (tested). The runtime library that fills them and handles plurals is chosen later (#6 mobile, #27 web); if it needs ICU, the catalogs will be migrated then.
+Messages use simple `{name}` placeholders (letters and digits, no spaces), for example `Espera {seconds} segundos`. There is no ICU syntax: no plurals, selects or formats. Both locales must use the same placeholder names for a key (tested). The runtime that fills them is chosen per app: web uses i18next (#27); mobile uses a small `{name}` interpolation in `mobile/src/i18n/translate.ts` (#6, decision 93). If an app needs plurals or ICU, the catalogs will be migrated then.
 
 A message may only take a placeholder if it is listed in `ALLOWED_PLACEHOLDERS` in `test/messages.test.ts` (a test fails otherwise): adding one is a deliberate act, and its wording must not need plural or gender agreement.
 
