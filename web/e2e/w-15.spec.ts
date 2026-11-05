@@ -208,7 +208,9 @@ for (const language of LANGUAGES) {
         await expectNoHorizontalScroll(page);
       }
       // Real layout checks are kept in this unrun browser journey, not claimed from jsdom.
-      await page.addStyleTag({ content: "body { font-size: 130%; }" });
+      await page.evaluate(() => {
+        document.body.style.fontSize = "130%";
+      });
       await expectNoHorizontalScroll(page);
       await coordinates.fill("0,0\n2,0\n0,2\n0,0");
       const publish = page.getByRole("button", { name: copy["geography.editor.publish"] });
