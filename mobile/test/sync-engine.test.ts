@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 
+import type { SqlStatement } from "../src/db/sql.ts";
 import { SyncEngine } from "../src/sync/sync-engine.ts";
 import type { SyncEngineDeps } from "../src/sync/sync-engine.ts";
 import type { SyncCallResult, SyncTransport } from "../src/sync/sync-transport.ts";
@@ -93,6 +94,40 @@ void describe("sync engine", () => {
     assert.equal(engine.getSnapshot().counts.pending, 1);
   });
 
+  void it("keeps only the latest retry timer when another pass was queued during a failure", async () => {
+    const first = deferred<SyncCallResult>();
+    const reached = deferred<undefined>();
+    let calls = 0;
+    let activeTimers = 0;
+    const { engine } = await harness(
+      () => {
+        calls += 1;
+        if (calls === 1) {
+          reached.resolve(undefined);
+          return first.promise;
+        }
+        return Promise.resolve(failure({ kind: "network" }));
+      },
+      {
+        schedule: () => {
+          activeTimers += 1;
+          return () => {
+            activeTimers -= 1;
+          };
+        },
+      },
+    );
+    const running = engine.requestSync();
+    await reached.promise;
+    void engine.requestSync();
+    first.resolve(failure({ kind: "network" }));
+
+    await running;
+
+    assert.equal(calls, 2);
+    assert.equal(activeTimers, 1);
+  });
+
   void it("sends nothing without a session or a server, and says why", async () => {
     let calls = 0;
     const transport: SyncTransport = () => {
@@ -139,13 +174,57 @@ void describe("sync engine", () => {
     assert.equal(engine.getSnapshot().counts.sent, 1);
   });
 
-  void it("reports a storage failure instead of rejecting, and keeps running", async () => {
-    const transport: SyncTransport = () => Promise.resolve(answer([]));
+  void it("recovers an event after saving its answer fails, then sends it next pass", async () => {
+    const event = makeEnvelope();
+    const sent: string[] = [];
+    const transport: SyncTransport = (request) => {
+      sent.push(...request.events.map((item) => item.id));
+      return Promise.resolve(answer(request.events.map((item) => accepted(item.id))));
+    };
     const { engine, reported, stores } = await harness(transport);
-    await stores.db.runAtomically([{ sql: "DROP TABLE kv" }]);
+    await stores.outbox.enqueue(event);
+    const run = stores.db.runAtomically.bind(stores.db);
+    let failOnce = true;
+    mock.method(stores.db, "runAtomically", async (statements: readonly SqlStatement[]) => {
+      if (failOnce && statements.some((statement) => statement.params?.[0] === "sent")) {
+        failOnce = false;
+        throw new Error("Disk full");
+      }
+      await run(statements);
+    });
 
     await engine.requestSync();
 
-    assert.ok(reported.length > 0);
+    assert.equal(reported.length, 1);
+    assert.equal((await stores.outbox.countByStatus()).pending, 1);
+    assert.equal((await stores.outbox.countByStatus()).sending, 0);
+    await engine.requestSync();
+    assert.equal((await stores.outbox.countByStatus()).sent, 1);
+    assert.deepEqual(sent, [event.id, event.id]);
+  });
+
+  void it("repeated start calls cannot recover an event being uploaded by the live worker", async () => {
+    const gate = deferred<SyncCallResult>();
+    const reached = deferred<undefined>();
+    const event = makeEnvelope();
+    let calls = 0;
+    const { engine, stores } = await harness(() => {
+      calls += 1;
+      reached.resolve(undefined);
+      return gate.promise;
+    });
+    await stores.outbox.enqueue(event);
+    const starting = engine.start();
+    await reached.promise;
+    const startingAgain = engine.start();
+    assert.equal(startingAgain, starting);
+    // A repeated mount must not release the active upload.
+    await Promise.resolve();
+    assert.equal((await stores.outbox.countByStatus()).sending, 1);
+    gate.resolve(answer([accepted(event.id)]));
+    await Promise.all([starting, startingAgain]);
+    await engine.requestSync();
+    assert.equal((await stores.outbox.countByStatus()).sent, 1);
+    assert.equal(calls, 2);
   });
 });

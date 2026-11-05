@@ -9,6 +9,9 @@ export const mobile = {
   "mobile.storage.saveFailed":
     "No se pudo guardar en el teléfono. Libera espacio e inténtalo de nuevo; nada se envió.",
 
+  "mobile.storage.actionFailed":
+    "No se pudo actualizar el almacenamiento del tel?fono. Libera espacio e int?ntalo de nuevo; tus registros siguen guardados.",
+
   // Navigation
   "mobile.nav.back": "Atrás",
   "mobile.nav.settings": "Ajustes",
@@ -41,6 +44,8 @@ export const mobile = {
   "mobile.inbox.timeRange": "{from} a {to}",
   "mobile.inbox.offline":
     "Sin señal. Tus registros están guardados y se enviarán cuando vuelva la conexión.",
+  "mobile.inbox.rejectionQuota":
+    "Se alcanz? el l?mite diario de registros por revisar. Tus registros siguen guardados; se enviar?n despu?s de la espera indicada por el servidor.",
   "mobile.inbox.waitingRetry":
     "No pudimos conectar con el servidor. La app lo intentará de nuevo sola.",
   "mobile.inbox.parkedHint":
@@ -96,7 +101,7 @@ export const mobile = {
   "mobile.settings.serverInvalid":
     "La dirección no es válida. Escríbela completa, sin ruta, por ejemplo https://api.ejemplo.com",
   "mobile.settings.serverCleartext":
-    "Solo se permite http en redes privadas, por ejemplo http://192.168.1.20:8000. Para otros servidores usa https.",
+    "Usa https. Solo los builds de desarrollo permiten http en redes privadas, por ejemplo http://192.168.1.20:8000.",
 
   // Test tools (development builds only)
   "mobile.dev.title": "Pruebas (solo builds de desarrollo)",

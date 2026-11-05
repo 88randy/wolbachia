@@ -22,6 +22,7 @@ class AuthEvent(StrEnum):
     LOGIN_FAILED = "login_failed"
     LOGIN_LOCKED_OUT = "login_locked_out"
     LOGIN_REFUSED = "login_refused"
+    TOKEN_PAIRS_PRUNED = "token_pairs_pruned"  # noqa: S105
     REFRESH = "refresh"
     REFRESH_GRACE_RETRY = "refresh_grace_retry"
     REFRESH_REUSE_DETECTED = "refresh_reuse_detected"

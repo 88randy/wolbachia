@@ -3,6 +3,14 @@ import type { AreaCatalog } from "../area.ts";
 
 export const errors = {
   // API errors: the API returns `code` + `params`, never text
+  "errors.api.immutableCode":
+    "El código no se puede cambiar. Anula la motocicleta y crea otra con el código correcto.",
+  "errors.api.motorcycleNotBlocked":
+    "La motocicleta ya está desbloqueada. Actualiza la lista para ver su estado.",
+  "errors.api.motorcycleInUse":
+    "La motocicleta tiene una jornada abierta. Cierra la jornada antes de anularla.",
+  "errors.api.duplicateCode":
+    "Ese código ya está registrado. Usa otro código e inténtalo de nuevo.",
   "errors.api.generic": "No pudimos completar la acción. Inténtalo de nuevo.",
   "errors.api.network": "No hay conexión con el servidor. Revisa tu señal e inténtalo de nuevo.",
   "errors.api.validation": "Hay datos que no son válidos. Revisa los campos marcados y corrígelos.",

@@ -1,4 +1,4 @@
-import { radius, spacing } from "@wolbachia/tokens";
+import { mobileLayout, radius, spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
 import { StyleSheet, View } from "react-native";
 import type { ReactNode } from "react";
@@ -13,7 +13,7 @@ const createStyles = (theme: Theme) =>
       borderColor: theme.color.border.default,
       borderRadius: radius.lg,
       padding: spacing[2],
-      gap: spacing[0.5] + 2,
+      gap: mobileLayout.compactGap,
     },
     critical: { borderColor: theme.color.status.critical.fg },
   });

@@ -23,6 +23,8 @@ export interface OutboxTransition {
   readonly action: OutboxAction;
   readonly lastError?: string | null;
   readonly result?: EventResult | null;
+  /** Earliest resend time for evidence not stored by the server (rejection quota). */
+  readonly retryAt?: string;
 }
 
 export type OutboxCounts = Readonly<Record<OutboxStatus, number>>;
@@ -40,7 +42,7 @@ const COLUMNS_SQL = `INSERT INTO outbox_event (id, type, schema_version, device_
   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
 const UPDATE_SQL = `UPDATE outbox_event SET local_status = ?, attempts = ?, last_error = ?,
-  result_code = ?, result_params = ? , updated_at = ? WHERE id = ? AND local_status = ?`;
+  result_code = ?, result_params = ? , updated_at = ?, retry_at = ? WHERE id = ? AND local_status = ?`;
 
 function placeholders(count: number): string {
   return Array.from({ length: count }, () => "?").join(", ");
@@ -89,8 +91,9 @@ export class OutboxRepository {
   /** Takes up to `limit` pending events, oldest first, and marks them `sending`. */
   async claimPending(limit: number): Promise<readonly OutboxEvent[]> {
     const rows = await this.#db.query(
-      "SELECT * FROM outbox_event WHERE local_status = 'pending' ORDER BY seq LIMIT ?",
-      [limit],
+      `SELECT * FROM outbox_event WHERE local_status = 'pending'
+       AND (retry_at IS NULL OR retry_at <= ?) ORDER BY seq LIMIT ?`,
+      [this.#now().toISOString(), limit],
     );
     await this.settle(rows.map((row) => ({ id: idOf(row), action: "claim" as const })));
     return rows.map((row) => ({ ...toOutboxEvent(row), status: "sending" as const }));
@@ -106,7 +109,21 @@ export class OutboxRepository {
   ): Promise<void> {
     const current = await this.#loadRows(transitions.map((transition) => transition.id));
     const updates = transitions.map((transition) => this.#updateFor(transition, current));
+    // SqlExecutor does not return affected rows. The engine serializes ALL sending transitions
+    // (including startup/error recovery) in one loop; retryParked only touches error rows.
+    // No concurrent writer can change a selected row between this read and its guarded UPDATE.
     await this.#db.runAtomically([...updates, ...extra]);
+  }
+
+  /** Wait until the earliest quota-limited event is eligible; zero means it became due after claiming. */
+  async nextRetryDelayMs(): Promise<number | null> {
+    const [row] = await this.#db.query(
+      "SELECT MIN(retry_at) AS retry_at FROM outbox_event WHERE local_status = 'pending' AND retry_at IS NOT NULL",
+    );
+    const retryAt = row?.retry_at;
+    return typeof retryAt === "string"
+      ? Math.max(0, Date.parse(retryAt) - this.#now().getTime())
+      : null;
   }
 
   /** Puts events a dead process left in `sending` back to `pending`. Returns how many. */
@@ -221,6 +238,7 @@ export class OutboxRepository {
       result?.code ?? null,
       result === null ? null : JSON.stringify(result.params),
       this.#now().toISOString(),
+      transition.retryAt ?? null,
       transition.id,
       from,
     ];

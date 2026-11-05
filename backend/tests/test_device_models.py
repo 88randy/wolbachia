@@ -53,7 +53,7 @@ def test_token_digests_are_unique(org_a: Organization, field: str) -> None:
         TokenPairFactory(session=first.session, **{field: getattr(first, field)})
 
 
-def test_token_pairs_are_org_scoped_and_never_deleted(org_a: Organization) -> None:
+def test_token_pairs_are_org_scoped_and_refuse_general_delete(org_a: Organization) -> None:
     pair = TokenPairFactory(session__organization=org_a)
 
     assert isinstance(pair, OrgScopedModel)

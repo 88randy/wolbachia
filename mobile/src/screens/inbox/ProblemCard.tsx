@@ -1,9 +1,9 @@
 import { spacing } from "@wolbachia/tokens";
 import { StyleSheet, View } from "react-native";
 
-import { useT } from "../../i18n/I18nProvider.tsx";
+import { useLocale, useT } from "../../i18n/I18nProvider.tsx";
 import type { ProblemItem } from "../../outbox/outbox-event.ts";
-import { formatClock } from "../../sync/format-time.ts";
+import { formatInboxTime } from "../../sync/format-time.ts";
 import { eventTypeKey, problemMessageKey, STATUS_BADGE_KEY } from "../../sync/inbox-model.ts";
 import { AppText } from "../../ui/AppText.tsx";
 import { Badge } from "../../ui/Badge.tsx";
@@ -23,6 +23,7 @@ const styles = StyleSheet.create({
 /** One event the server refused or put in review, or that could not be sent: what happened, in plain words. */
 export function ProblemCard({ item }: { readonly item: ProblemItem }) {
   const t = useT();
+  const locale = useLocale();
   const { tone, icon } = STATUS_PRESENTATION[item.status];
   return (
     <Card isCritical={item.status === "rejected" || item.status === "error"}>
@@ -30,7 +31,7 @@ export function ProblemCard({ item }: { readonly item: ProblemItem }) {
         <View style={styles.title}>
           <AppText variant="bodyStrong">{t(eventTypeKey(item.type))}</AppText>
           <AppText variant="caption" tone="secondary">
-            {formatClock(item.deviceTime)}
+            {formatInboxTime(item.deviceTime, { locale })}
           </AppText>
         </View>
         <Badge tone={tone} icon={icon} label={t(STATUS_BADGE_KEY[item.status])} />

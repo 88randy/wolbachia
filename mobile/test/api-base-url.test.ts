@@ -4,6 +4,13 @@ import { describe, it } from "node:test";
 import { isPrivateLanHost, parseApiBaseUrl } from "../src/config/api-base-url.ts";
 
 void describe("API base URL", () => {
+  void it("refuses even private http addresses in a release build", () => {
+    assert.deepEqual(parseApiBaseUrl("http://10.0.0.1", false), {
+      ok: false,
+      problem: "cleartextNotAllowed",
+    });
+  });
+
   void it("accepts https for any host and normalizes trailing slashes and spaces", () => {
     assert.deepEqual(parseApiBaseUrl("  https://api.example.com/ "), {
       ok: true,
@@ -33,6 +40,9 @@ void describe("API base URL", () => {
       "192.169.1.1",
       "api.example.com",
       "10.0.0.256",
+      "010.0.0.1",
+      "172.016.0.1",
+      "0x0a.0.0.1",
     ]) {
       assert.deepEqual(
         parseApiBaseUrl(`http://${host}`),

@@ -1,4 +1,4 @@
-import { radius, spacing } from "@wolbachia/tokens";
+import { mobileLayout, radius, spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
 import { Pressable, StyleSheet } from "react-native";
 
@@ -21,9 +21,9 @@ const createStyles = (theme: Theme) =>
       minHeight: MIN_HEIGHT,
       flexDirection: "row",
       alignItems: "center",
-      gap: spacing[0.5] + 2,
+      gap: mobileLayout.compactGap,
       paddingHorizontal: spacing[1.5],
-      borderRadius: radius.xl + radius.sm,
+      borderRadius: radius.full,
     },
     success: { backgroundColor: theme.color.status.success.bg },
     warning: { backgroundColor: theme.color.status.warning.bg },

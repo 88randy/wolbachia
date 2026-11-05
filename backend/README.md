@@ -24,7 +24,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
-| `shifts/` | `Shift`, `MotorcycleCheck`, `Motorcycle`; the `shift.open` / `shift.close` sync handlers and `GET /shifts/` (see its README) |
+| `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
 | `core/` | Org-scoped and insert-only base models, snapshots (hash, ETag, `304`), time helpers, base viewset, void service, error handler, pagination, permissions, schema hooks, health |
 | `tests/` | pytest suite; `tests/testapp` is a test-only app (installed by `config.settings.test`) |
 
@@ -38,7 +38,71 @@ docker compose -f backend/compose.yaml up --build
 curl http://127.0.0.1:8000/api/v1/health/    # {"status":"ok"}
 ```
 
-Services: `api` (migrate + runserver), `worker` (Celery), `db` (PostgreSQL 18; keep the major equal to the DigitalOcean managed cluster [PENDING: #18]), `redis`. If a host port is taken: `POSTGRES_PORT=55432 REDIS_PORT=56379 API_PORT=18000 docker compose -f backend/compose.yaml up`. Postgres and Redis are published on 127.0.0.1 so the code can also run outside Docker; the venv lives in the image (`/opt/venv`), so rebuild with `--build` after changing `uv.lock`. In dev a Redis outage makes throttled requests fail with 500 (the cache backend does not ignore errors). The compose file carries throwaway dev credentials only; production deploy is #18.
+Services: `api` (migrate + runserver), `worker` (Celery), `beat` (single Celery scheduler), `db` (PostgreSQL 18; keep the major equal to the DigitalOcean managed cluster [PENDING: #18]), `redis`. If a host port is taken: `POSTGRES_PORT=55432 REDIS_PORT=56379 API_PORT=18000 docker compose -f backend/compose.yaml up`. Postgres and Redis are published on 127.0.0.1 so the code can also run outside Docker; the venv lives in the image (`/opt/venv`), so rebuild with `--build` after changing `uv.lock`. In dev a Redis outage makes throttled requests fail with 500 (the cache backend does not ignore errors). The compose file carries throwaway dev credentials only; production deploy is #18.
+
+## Testing with a phone on the LAN
+
+**Use only on a trusted network.** This exposes the development API over plain HTTP
+on all IPv4 interfaces; it is not a production setup. Connect the PC and phone to
+the same Wi-Fi with client isolation disabled. The default API binding remains
+`127.0.0.1`; PostgreSQL and Redis stay on loopback even when LAN access is enabled.
+
+From the repo root, copy the root [`.env.example`](../.env.example) to `.env`,
+uncomment both LAN overrides and replace `192.168.1.50` with the PC's LAN IPv4
+address (`ipconfig` on Windows). Do not commit `.env`. Start Compose explicitly
+with that file:
+
+```bash
+docker compose --env-file .env -f backend/compose.yaml up --build -d
+```
+
+Alternatively, set the variables in PowerShell without creating a file:
+
+```powershell
+$env:API_BIND = "0.0.0.0"
+$env:DJANGO_ALLOWED_HOSTS = "localhost,127.0.0.1,[::1],192.168.1.50"
+docker compose -f backend/compose.yaml up --build -d
+```
+
+Compose passes `DJANGO_ALLOWED_HOSTS` to Django. In `config/settings/dev.py`,
+`env.list` reads comma-separated hosts, **replacing** the default
+`localhost,127.0.0.1,[::1]` list. Keep those entries and add the PC's IP without a
+scheme or port; do not use `*`. `API_BIND` controls the host interface and
+`API_PORT` controls the host port (default `8000`). After changing the overrides,
+run `up` again so Compose recreates the affected containers.
+
+On the phone, open `http://192.168.1.50:8000/api/v1/health/`, substituting the PC's
+IP and port. Expect HTTP `200` with `{"status":"ok"}`. Use
+`http://192.168.1.50:8000` as the mobile app's backend origin, not the phone's
+localhost. HTTP `400` with `DisallowedHost` in the API logs means the IP is missing
+from the allowlist; a timeout can indicate a firewall or Wi-Fi isolation problem.
+
+If Windows Firewall blocks the port, ensure the trusted Wi-Fi uses the **Private**
+network profile. In elevated PowerShell, add an inbound rule for that profile and
+the local subnet only (adjust `8000` if using a different `API_PORT`):
+
+```powershell
+New-NetFirewallRule -Name "WolbachiaDevApiLan" -DisplayName "Wolbachia dev API (LAN)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8000 -Profile Private -RemoteAddress LocalSubnet
+```
+
+Do not disable the firewall or allow public networks. When finished, remove the
+rule from elevated PowerShell:
+
+```powershell
+Remove-NetFirewallRule -Name "WolbachiaDevApiLan"
+```
+
+To restore loopback-only access, comment out both overrides in the root `.env`
+(if used), remove any shell overrides below, and rerun the same Compose `up -d`
+command. Shell variables take precedence over the file.
+
+```powershell
+Remove-Item Env:API_BIND -ErrorAction SilentlyContinue
+Remove-Item Env:DJANGO_ALLOWED_HOSTS -ErrorAction SilentlyContinue
+```
+
+References: [Compose interpolation and `--env-file`](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/),
+[Windows Firewall rule parameters](https://learn.microsoft.com/powershell/module/netsecurity/new-netfirewallrule).
 
 ## Run and test without Docker
 
@@ -60,7 +124,7 @@ Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache
 
 ## Settings and environment
 
-All variables are documented in [`.env.example`](.env.example). Settings are chosen only by a real `DJANGO_SETTINGS_MODULE` environment variable or `--settings`, never by `.env`. Required everywhere: `DATABASE_URL`, `REDIS_URL`; `DJANGO_SECRET_KEY` in dev and prod (tests use a fixed key). Production also requires `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; `manage.py check --deploy` is clean with `config.settings.prod`.
+Deployment variables are documented in [`.env.example`](.env.example) and the tables below. Settings are chosen only by a real `DJANGO_SETTINGS_MODULE` environment variable or `--settings`, never by `.env`. Required everywhere: `DATABASE_URL`, `REDIS_URL`; `DJANGO_SECRET_KEY` in dev and prod (tests use a fixed key). Production also requires `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; `manage.py check --deploy` is clean with `config.settings.prod`.
 
 Authentication, token and email settings are described in [Authentication](#authentication-4). Defaults (all env-configurable): page size 50 (max 200 via `?page_size=`), cursor page 100, throttles 60/min anonymous and 600/min per user (`DRF_NUM_PROXIES`=0: `X-Forwarded-For` is ignored), schema endpoint public only in dev.
 
@@ -100,13 +164,15 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 - **Final upload**: only when an administrator revokes with `allow_final_upload: true`. A view that accepts it is declared like `class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, GenericViewSet)` (`field_sync/views.py`, #5) (`accounts/final_upload.py`): the mixin opts the view in for `final_upload_methods` (default `POST`; `OPTIONS`/`GET` never spend it), opens one transaction after authentication, spends the single final upload first (a failed request gives it back), adds `X-Session-Revoked: true` and sets `self.is_final_upload`, which the view must use to mark the events it records as `in_review`. Nothing else to remember. `tests/testapp/views.py::FinalUploadView` is the reference.
 - **Lock order**: User, Device, DeviceSession, TokenPair everywhere ([`accounts/README.md`](accounts/README.md)).
 - **Transactions**: revocation and rotation commit before they raise, so they must not run inside an outer `atomic()`; `ATOMIC_REQUESTS` stays off (a test checks it).
-- **Token rows**: every refresh adds a `TokenPair` (hashes only); rows are never deleted, so the table grows with use [PENDING retention policy].
+- **Token rows (#54)**: every refresh adds a `TokenPair` (hashes only). Token pairs are security metadata: retention is an explicit exception to "nothing is deleted" for business records. Live sessions keep their full family for reuse detection. The retention service deletes a complete family only when its **effective end** is strictly earlier than `now - AUTH_TOKEN_PAIR_RETENTION_DAYS` (default 90, valid range 30..365; an invalid value fails startup). For revoked sessions, effective end is the later of `revoked_at` and `final_upload_deadline` (even when the upload was used). For unrevoked sessions it is the maximum of **both** access and refresh expiry over the entire family; every token must have expired. Empty families need no work. `DeviceSession` is never deleted or modified by retention: its revocation and reason remain as the audit trail. Business records are untouched; dissociating the audit after 365 days is a follow-up.
+- **Nightly retention**: `accounts.tasks.prune_ended_token_pairs` runs at 03:30 UTC via `CELERY_BEAT_SCHEDULE` (built-in Celery beat, no new dependency). Run **exactly one beat instance per environment** alongside one or more workers: `docker compose -f backend/compose.yaml up --build api worker beat db redis`. The `beat` service writes its scheduler state to `/tmp/celerybeat-schedule`; outside Compose use `celery -A config beat --loglevel=INFO --schedule /tmp/celerybeat-schedule`. The service attempts at most 500 candidate sessions per run, one short transaction each; backlog continues on subsequent runs. It re-checks eligibility under the session lock before deleting all pairs in one parameterized statement (including parents and siblings), and logs one `token_pairs_pruned` event with only `sessions_pruned` and `pairs_deleted` counts. A repeated run is safe; pruned tokens answer `401 invalid_token`, just like unknown tokens.
 - **Production proxy**: `DRF_NUM_PROXIES` is required (the app fails at startup without it). The TLS proxy in front must overwrite `X-Forwarded-For` (never append to what the client sent) and the app servers must not be reachable except through it (#18). `WEB_BASE_URL` must be https.
 - A refresh response lost outside the 60 s grace window drops the session: the courier must log in again (needs signal and password).
 
 | Variable | Default | Meaning |
 | --- | --- | --- |
 | `AUTH_ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
+| `AUTH_TOKEN_PAIR_RETENTION_DAYS` | `90` | Days after effective session end before pruning its whole token family; integer 30..365, invalid configuration fails startup |
 | `AUTH_REFRESH_TOKEN_TTL_DAYS` | `30` | Refresh token idle lifetime (slides on every refresh) [PENDING absolute maximum] |
 | `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `60` | A consumed refresh token presented again inside this window (and before any later token was used) is accepted once more; otherwise the session is revoked |
 | `AUTH_REVOKED_FINAL_UPLOAD_HOURS` | `72` | Final upload window after an admin revoke that allows it; `0` disables it [PENDING client] |
@@ -133,6 +199,8 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `SYNC_CURSOR_MAX_AGE_SECONDS` | `2592000` | Lifetime of a `changes.cursor` (30 days) |
 | `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for any lock in a batch transaction (then `429 sync_in_progress`) |
 | `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
+| `SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY` | `1000` | New stored rejections per device/organization-local day; env integer in 100..10000, fail fast (#56, SA09) |
+| `SYNC_REJECTION_ALERT_PERCENTS` | `80,100` | Nonempty env list of percentages in 1..100; warning once per crossing on commit (#56) |
 
 ## Void reasons (#32)
 

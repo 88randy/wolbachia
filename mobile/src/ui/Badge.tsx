@@ -1,4 +1,4 @@
-import { radius, spacing } from "@wolbachia/tokens";
+import { mobileLayout, radius, spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
 import { StyleSheet, View } from "react-native";
 
@@ -20,7 +20,7 @@ const createStyles = (theme: Theme) =>
       flexDirection: "row",
       alignItems: "center",
       alignSelf: "flex-start",
-      gap: spacing[0.5] + 2,
+      gap: mobileLayout.compactGap,
       paddingHorizontal: spacing[1.5] - 2,
       paddingVertical: 2,
       borderRadius: radius.lg,

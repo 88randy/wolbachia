@@ -45,6 +45,7 @@ const MIGRATIONS: readonly (readonly string[])[] = [
        rules_version, catalog_version, manual_capture, voids_event_id ON outbox_event
      BEGIN SELECT RAISE(ABORT, 'the event envelope never changes'); END`,
   ],
+  ["ALTER TABLE outbox_event ADD COLUMN retry_at TEXT"],
 ];
 
 /** Highest schema version this build knows. */

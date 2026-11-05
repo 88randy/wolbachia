@@ -193,3 +193,40 @@ def test_atomic_requests_stay_off() -> None:
     from django.conf import settings
 
     assert not settings.DATABASES["default"].get("ATOMIC_REQUESTS", False)
+
+
+@pytest.mark.parametrize("limit", ["99", "10001", "invalid"])
+def test_rejection_quota_limit_fails_fast_outside_supported_range(limit):
+    result = run_python(
+        "import config.settings.test",
+        {"DJANGO_READ_DOT_ENV_FILE": "false", "SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY": limit},
+    )
+
+    assert result.returncode != 0
+    assert "SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY" in result.stderr
+
+
+@pytest.mark.parametrize("percents", ["0,100", "80,101", "invalid", ""])
+def test_rejection_alert_percents_fail_fast_when_invalid(percents):
+    result = run_python(
+        "import config.settings.test",
+        {"DJANGO_READ_DOT_ENV_FILE": "false", "SYNC_REJECTION_ALERT_PERCENTS": percents},
+    )
+
+    assert result.returncode != 0
+    assert "SYNC_REJECTION_ALERT_PERCENTS" in result.stderr
+
+
+@pytest.mark.parametrize("limit", ["100", "10000"])
+def test_rejection_quota_settings_accept_boundaries_and_normalize_alerts(limit):
+    result = run_python(
+        "import config.settings.test as s; print(s.SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY, s.SYNC_REJECTION_ALERT_PERCENTS)",
+        {
+            "DJANGO_READ_DOT_ENV_FILE": "false",
+            "SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY": limit,
+            "SYNC_REJECTION_ALERT_PERCENTS": "100,25,25",
+        },
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == f"{limit} [25, 100]"

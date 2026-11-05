@@ -3,6 +3,7 @@ import type { KvStore } from "../db/kv-store.ts";
 import type { SqlStatement } from "../db/sql.ts";
 import type { OutboxEvent } from "../outbox/outbox-event.ts";
 import type { OutboxRepository, OutboxTransition } from "../outbox/outbox-repository.ts";
+import { quotaTransition, quotaWaitOutcome, missingResultOutcome } from "./sync-results.ts";
 import { planFailure } from "./sync-failure.ts";
 import type { BlockReason, SyncFailure } from "./sync-failure.ts";
 import type { SyncBatchRequest, SyncResponse, SyncTransport } from "./sync-transport.ts";
@@ -63,9 +64,12 @@ function failureCode(failure: SyncFailure): string {
   return failure.code === "unknown_error" ? `http_${String(failure.status)}` : failure.code;
 }
 
-function transitionFor(event: OutboxEvent, response: SyncResponse): OutboxTransition {
+function transitionFor(event: OutboxEvent, response: SyncResponse, now: Date): OutboxTransition {
   const result = response.results.find((candidate) => candidate.id === event.envelope.id);
-  if (result === undefined) return { id: event.envelope.id, action: "release" };
+  if (result === undefined) {
+    return { id: event.envelope.id, action: "failTransient", lastError: "missing_event_result" };
+  }
+  if (result.code === "rejection_quota_exceeded") return quotaTransition(result, now);
   const action = { accepted: "accept", rejected: "reject", in_review: "review" } as const;
   return {
     id: event.envelope.id,
@@ -100,7 +104,7 @@ async function applyAnswer(
       result: { code: review.code, params: review.params },
     })),
   );
-  const answered = batch.map((event) => transitionFor(event, response));
+  const answered = batch.map((event) => transitionFor(event, response, deps.now()));
   // One transaction: statuses, cursor and versions are saved together or not at all.
   await deps.outbox.settle([...answered, ...pulled], bookkeeping(response, deps.now()));
 }
@@ -145,6 +149,30 @@ async function shrinkBatch(context: PassContext, batch: readonly OutboxEvent[]):
   return CONTINUE;
 }
 
+/** An indexed envelope error quarantines just those records; the rest were never processed. */
+async function parkMalformed(
+  context: PassContext,
+  batch: readonly OutboxEvent[],
+  failure: SyncFailure,
+): Promise<Step> {
+  const fields = failure.kind === "http" ? Object.keys(failure.fieldCodes) : [];
+  const indices = new Set(
+    fields
+      .flatMap((field) => {
+        const match = /^events\.(0|[1-9]\d*)(?:\.|$)/.exec(field);
+        return match === null ? [] : [Number(match[1])];
+      })
+      .filter((index) => index < batch.length),
+  );
+  const changes = batch.map((event, index): OutboxTransition => ({
+    id: event.envelope.id,
+    action: indices.size === 0 || indices.has(index) ? "failPermanent" : "release",
+    lastError: failureCode(failure),
+  }));
+  await context.deps.outbox.settle(changes);
+  return CONTINUE;
+}
+
 async function handleFailure(
   context: PassContext,
   batch: readonly OutboxEvent[],
@@ -165,8 +193,7 @@ async function handleFailure(
       await outbox.settle(eventsTo(batch, "release", code));
       return stop({ kind: "blocked", reason: plan.reason, code });
     case "park":
-      await outbox.settle(eventsTo(batch, "failPermanent", code));
-      return CONTINUE;
+      return parkMalformed(context, batch, failure);
     case "resetCursor":
       return dropCursor(context, batch);
     case "splitBatch":
@@ -186,6 +213,8 @@ async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): P
   const call = await deps.transport(request);
   if (!call.ok) return handleFailure(context, batch, call.failure);
   await applyAnswer(context, batch, call.response);
+  const missing = missingResultOutcome(batch, call.response);
+  if (missing !== null) return stop(missing);
   return { next: "again", pull: call.response.changes.has_more };
 }
 
@@ -203,7 +232,10 @@ export async function runSyncPass(deps: SyncPassDeps, state: PassState): Promise
   let pull = true;
   for (;;) {
     const batch = await deps.outbox.claimPending(state.batchSize);
-    if (batch.length === 0 && !pull) return { kind: "idle" };
+    if (batch.length === 0 && !pull) {
+      const delayMs = await deps.outbox.nextRetryDelayMs();
+      return delayMs === null ? { kind: "idle" } : quotaWaitOutcome(delayMs);
+    }
     const step = await sendBatch(context, batch);
     if (step.next === "stop") return step.outcome;
     pull = step.pull;

@@ -4,12 +4,12 @@ The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md
 
 | Module | What lives there |
 | --- | --- |
-| `models.py` | `FieldEvent`: insert-only (client UUID pk, raw `payload`, status `accepted`/`rejected`/`in_review`); only the void fields can change; a trigger guards raw SQL |
+| `models.py` | `RejectionQuotaCounter`: mutable device/local-day bookkeeping (#56); `FieldEvent`: insert-only (client UUID pk, raw `payload`, status `accepted`/`rejected`/`in_review`); only the void fields can change; a trigger guards raw SQL |
 | `registry.py` | `EventHandler`, `register()`, `find_handler()`, `EventContext`: each epic registers its event types from `AppConfig.ready()` |
-| `services.py` | `sync_batch` (courier try lock, lock timeout, ingest, pull) and `ingest_batch`: `(device_time, id)` order, one savepoint per event, idempotency, rejection storage |
+| `services.py` | `sync_batch` (courier try lock, lock timeout, ingest, pull) and `ingest_batch`: `(device_time, id)` order, one savepoint per event, idempotency, atomic rejection quota claims and on-commit threshold alerts |
 | `clock.py` | Clock skew policy (`sent_at` against the server clock, threshold from `get_values_in_force`) |
 | `envelope.py` | Plain dataclasses: `EventEnvelope`, `EventResult`, `BatchContext`, payload facts (size, hash, NUL, depth) |
-| `codes.py` | The per-event result codes (one list; i18n and docs are tested against it) |
+| `codes.py` | Per-event codes: final verdict groups plus the retry-only quota control code; i18n/docs contract tested |
 | `exceptions.py` | `EventRejected`, `EventNeedsReview` (per event) and the batch errors |
 | `cursor.py`, `selectors.py` | The signed strict `changes.cursor`; `build_changes`; the stored-event lookup |
 | `handlers/void.py` | `record.void` |
@@ -18,4 +18,22 @@ The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md
 
 Dependency: `field_sync` creates `reviews.ReviewItem` rows (`reviews.services`) and reads them for `changes`; `reviews` only points at `FieldEvent` by a string foreign key and never imports `field_sync` code except constants and the event model type. Keep it one-way.
 
-Rules for code in this app and in handlers: nothing is deleted; a handler writes only inside the savepoint the pipeline opens and calls no external service; no user-facing text (codes and params only); a new result code needs a row in `docs/sync.md` and `sync.result.*` keys in both languages of `packages/i18n` (a test checks it). Tests: `backend/tests/test_sync_*.py`; test-only event types live in `tests/testapp/handlers.py`.
+Rules for code in this app and in handlers: nothing is deleted; a handler writes only inside the savepoint the pipeline opens and calls no external service; no user-facing text (codes and params only); a new final result code needs a row in `docs/sync.md` and `sync.result.*` keys in both languages of `packages/i18n` (a test checks it). The retry-only quota code is documented here; its mobile handling/localization is outside #56's backend scope. Tests: `backend/tests/test_sync_*.py`; test-only event types live in `tests/testapp/handlers.py`.
+
+## Rejection quota (#56)
+
+`SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY` defaults to 1000 (env range 100..10000; fail fast).
+`SYNC_REJECTION_ALERT_PERCENTS` defaults to 80,100 (nonempty comma-separated integers in 1..100).
+Only new rejected rows count; accepted/in-review events and replays do not. The quota row is
+mutable and scoped to the organization; its unique `(device, local_date)` index arbitrates
+creation and the conditional `F` increment arbitrates shared-device concurrent batches.
+The claim and `on_commit` alerts are inside the rejection savepoint, so a lost id race returns
+its slot. All events use the batch receipt's organization-local day (one quota row per batch).
+A quota wait uses the existing timeout/deadlock-to-429 mapping. See the accounts lock order.
+
+Quota exhaustion is `200` with per-event `rejection_quota_exceeded`, not a blanket `429`.
+That event has no FieldEvent or ReviewItem; the phone must preserve its evidence and retry
+after `params.retry_after_seconds` (also the response's conditional `Retry-After` header).
+Other events in the batch proceed. The retry-only control code is separate from final,
+translated rejection codes; mobile recovery/localization is outside this backend issue.
+Full contract and concurrency rule: [`docs/sync.md`](../../docs/sync.md#rejection-quota-56-sa09).

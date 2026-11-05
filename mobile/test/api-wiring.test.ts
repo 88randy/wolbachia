@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
-import { describe, it } from "node:test";
+import { describe, it, mock } from "node:test";
 
 import { unwrap } from "@wolbachia/api-client";
 
@@ -8,6 +8,8 @@ import { createMobileApiClient } from "../src/api/create-api-client.ts";
 import { createMemoryTokenStore } from "../src/auth/token-store.ts";
 import { createSyncTransport } from "../src/sync/sync-transport.ts";
 import { FIXED_DEVICE_ID, makeEnvelope } from "./support/factories.ts";
+
+import { answer } from "./support/scripted-transport.ts";
 
 const BASE_URL = "http://192.168.1.20:8000";
 // Generated at run time (docs/engineering-rules.md section 9): no token literal in the repo.
@@ -40,6 +42,80 @@ function recordingFetch(respond: () => Response) {
 }
 
 void describe("mobile API wiring (through @wolbachia/api-client)", () => {
+  void it("bounds a hung sync request and classifies an abort as network failure", async () => {
+    const controller = new AbortController();
+    const timeout = mock.method(AbortSignal, "timeout", () => controller.signal);
+    const fetch = (request: Request): Promise<Response> => {
+      assert.equal(timeout.mock.calls[0]?.arguments[0], 30_000);
+      return new Promise((_resolve, reject) => {
+        request.signal.addEventListener(
+          "abort",
+          () => {
+            reject(new Error("Sync request aborted", { cause: request.signal.reason }));
+          },
+          {
+            once: true,
+          },
+        );
+        controller.abort();
+      });
+    };
+    try {
+      const transport = createSyncTransport(
+        createMobileApiClient({
+          baseUrl: BASE_URL,
+          tokens: createMemoryTokenStore(),
+          fetch,
+        }),
+      );
+      assert.deepEqual(
+        await transport({
+          device_id: FIXED_DEVICE_ID,
+          sent_at: "2026-01-15T12:00:00Z",
+          events: [],
+        }),
+        { ok: false, failure: { kind: "network" } },
+      );
+      assert.equal(timeout.mock.calls[0]?.arguments[0], 30_000);
+    } finally {
+      timeout.mock.restore();
+    }
+  });
+
+  void it("retries malformed 200 answers instead of passing unchecked payloads to the outbox", async () => {
+    const valid = answer([]);
+    assert.ok(valid.ok);
+    for (const body of [
+      null,
+      {},
+      {
+        ...valid.response,
+        results: [{ id: "one", status: "unknown", code: "accepted", params: {} }],
+      },
+      { ...valid.response, changes: { ...valid.response.changes, reviews: [{}] } },
+      {
+        ...valid.response,
+        results: [{ id: "one", status: ["accepted"], code: "accepted", params: {} }],
+      },
+      valid.response,
+    ]) {
+      const transport = createSyncTransport(
+        createMobileApiClient({
+          baseUrl: BASE_URL,
+          tokens: createMemoryTokenStore(),
+          fetch: () => Promise.resolve(jsonResponse(body)),
+        }),
+      );
+      const result = await transport({
+        device_id: FIXED_DEVICE_ID,
+        sent_at: "2026-01-15T12:00:00Z",
+        events: [],
+      });
+      assert.equal(result.ok, body === valid.response);
+      if (!result.ok) assert.equal(result.failure.kind, "http");
+    }
+  });
+
   void it("calls GET /api/v1/me/ on the configured server with the bearer token and no cookies", async () => {
     const tokens = createMemoryTokenStore();
     tokens.setAccessToken(TEST_TOKEN);

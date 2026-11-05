@@ -169,7 +169,7 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 |---|---|---|---|---|
 | GET | /rule-parameters/ | current value + effective date per key (e.g. min point distance 50 m, max speed 10 km/h, revisit days) | ADM (read: internal) | W62 |
 | POST | /rule-parameters/{key}/versions/ | new version with `effective_from`; never overwrites | ADM | W62 |
-| GET | /rule-parameters/{key}/versions/ | history | ADM | W62 (author names and `include_voided` are missing: #88) |
+| GET | /rule-parameters/{key}/versions/ | history | ADM | W62 (author names and `include_voided`: #88, done) |
 | GET | /catalogs/ · GET/POST/PATCH /catalogs/{slug}/items/ | catalogs (incl. motorcycle checklist, reasons, intervention types); "Other (specify)" fixed | ADM (read: internal) | W63 |
 | POST | /catalogs/{slug}/items/{id}/deactivate/ | deactivated; "Other" returns `409` | ADM | W63 |
 | GET/POST/PATCH | /incident-types/ | severity, owner, response time, escalation, blocks, required evidence | ADM | W64 |

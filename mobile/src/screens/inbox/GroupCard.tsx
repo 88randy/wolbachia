@@ -1,9 +1,9 @@
 import { spacing } from "@wolbachia/tokens";
 import { StyleSheet, View } from "react-native";
 
-import { useT } from "../../i18n/I18nProvider.tsx";
+import { useLocale, useT } from "../../i18n/I18nProvider.tsx";
 import type { TypeGroup } from "../../outbox/outbox-event.ts";
-import { formatClock } from "../../sync/format-time.ts";
+import { formatInboxTime } from "../../sync/format-time.ts";
 import { eventTypeKey, STATUS_BADGE_KEY } from "../../sync/inbox-model.ts";
 import { AppText } from "../../ui/AppText.tsx";
 import { Badge } from "../../ui/Badge.tsx";
@@ -23,9 +23,10 @@ const styles = StyleSheet.create({
 /** Events of one type and status: "10 · Ovitrampas revisadas", the span of their times and a status badge. */
 export function GroupCard({ group }: { readonly group: TypeGroup }) {
   const t = useT();
+  const locale = useLocale();
   const { tone, icon } = STATUS_PRESENTATION[group.status];
-  const first = formatClock(group.firstDeviceTime);
-  const last = formatClock(group.lastDeviceTime);
+  const first = formatInboxTime(group.firstDeviceTime, { locale });
+  const last = formatInboxTime(group.lastDeviceTime, { locale });
   return (
     <Card>
       <View style={styles.row}>

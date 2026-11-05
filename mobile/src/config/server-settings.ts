@@ -10,11 +10,13 @@ import type { ApiBaseUrlResult } from "./api-base-url.ts";
 export class ServerSettings {
   readonly #kv: KvStore;
   readonly #buildUrl: string | undefined;
+  readonly #allowCleartext: boolean;
   #override: string | null = null;
 
-  constructor(kv: KvStore, buildUrl: string | undefined) {
+  constructor(kv: KvStore, buildUrl: string | undefined, allowCleartext = false) {
     this.#kv = kv;
     this.#buildUrl = buildUrl;
+    this.#allowCleartext = allowCleartext;
   }
 
   /** Reads the saved override. Call once at startup. */
@@ -24,9 +26,9 @@ export class ServerSettings {
 
   /** The address to use now, or `null` when none is configured. */
   baseUrl(): string | null {
-    const fromOverride = parseApiBaseUrl(this.#override ?? undefined);
+    const fromOverride = parseApiBaseUrl(this.#override ?? undefined, this.#allowCleartext);
     if (fromOverride.ok) return fromOverride.url;
-    const fromBuild = parseApiBaseUrl(this.#buildUrl);
+    const fromBuild = parseApiBaseUrl(this.#buildUrl, this.#allowCleartext);
     return fromBuild.ok ? fromBuild.url : null;
   }
 
@@ -37,7 +39,7 @@ export class ServerSettings {
 
   /** Validates and saves an address. Nothing is saved when it is not valid. */
   async save(input: string): Promise<ApiBaseUrlResult> {
-    const result = parseApiBaseUrl(input);
+    const result = parseApiBaseUrl(input, this.#allowCleartext);
     if (!result.ok) return result;
     await this.#kv.set(KV_KEYS.apiBaseUrlOverride, result.url);
     this.#override = result.url;

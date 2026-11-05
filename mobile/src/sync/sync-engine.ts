@@ -39,6 +39,8 @@ export class SyncEngine {
   readonly #passState: PassState = { batchSize: SYNC_BATCH_SIZE };
   #snapshot: SyncSnapshot = INITIAL_SNAPSHOT;
   #running: Promise<void> | null = null;
+  #started: Promise<void> | null = null;
+  #initialized = false;
   #again = false;
   #forceOffline = false;
   #failuresInARow = 0;
@@ -59,10 +61,9 @@ export class SyncEngine {
   };
 
   /** Call once at startup: events a killed process left in `sending` go back to `pending`. */
-  async start(): Promise<void> {
-    await this.#deps.pass.outbox.recoverInterrupted();
-    await this.#refresh({ lastSyncAt: await this.#deps.pass.kv.get(KV_KEYS.lastSyncAt) });
-    void this.requestSync();
+  start(): Promise<void> {
+    this.#started ??= this.requestSync();
+    return this.#started;
   }
 
   /** Saves a captured event on the phone, then syncs in the background. Resolves once it is saved. */
@@ -109,6 +110,11 @@ export class SyncEngine {
 
   async #loop(): Promise<void> {
     try {
+      if (!this.#initialized) {
+        await this.#deps.pass.outbox.recoverInterrupted();
+        await this.#refresh({ lastSyncAt: await this.#deps.pass.kv.get(KV_KEYS.lastSyncAt) });
+        this.#initialized = true;
+      }
       let shouldRun = true;
       while (shouldRun) {
         this.#again = false;
@@ -149,6 +155,7 @@ export class SyncEngine {
       return await runSyncPass(this.#deps.pass, this.#passState);
     } catch (error) {
       this.#deps.report(error);
+      await this.#deps.pass.outbox.recoverInterrupted();
       return null;
     }
   }
@@ -157,6 +164,8 @@ export class SyncEngine {
     if (outcome === null) return this.#retryLater({ countsAsFailure: true, code: "storage" });
     if (outcome.kind === "retry") return this.#retryLater(outcome);
     this.#failuresInARow = 0;
+    this.#cancelRetry?.();
+    this.#cancelRetry = null;
     if (outcome.kind === "blocked") {
       return this.#refresh({
         phase: "blocked",
@@ -178,6 +187,7 @@ export class SyncEngine {
   }): Promise<void> {
     if (outcome.countsAsFailure) this.#failuresInARow += 1;
     const delayMs = outcome.delayMs ?? backoffDelayMs(this.#failuresInARow, this.#deps.random());
+    this.#cancelRetry?.();
     this.#cancelRetry = this.#deps.schedule(() => {
       this.#cancelRetry = null;
       void this.requestSync();

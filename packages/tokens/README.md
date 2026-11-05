@@ -28,6 +28,8 @@ Color roles (`theme.color`): `brand`, `action`, `actionStrong`, `onAction`, `nav
 
 Colors, the mobile type scale, `radius.sm`..`xl` and `shadow` come from the design CSS variables, and the design-CSS test compares them. `web.control`, `web.layout`, `web.icon`, `web.focus`, `web.typography`, `web.*.banner`, the sidebar `groupText` role, `radius.xs`, `radius.full` and `spacing` come from the approved proposal in `docs/web-tokens-diff.md` (section 4), not from CSS variables, so that test does not cover them.
 
+Mobile compact components use `mobileLayout.compactGap` (6 dp from design P28); `radius.full` draws pills.
+
 ### Provisional chart colors
 
 `web.*.chart[2]` (#D9620B light, #FFA25C dark) and `web.*.chart[4]` (#7A3CC4, #C9A2FF) are **not in the Codequim palette**. They ship as provisional until the client approves or replaces them ([PENDING] in issue #17). Use them only for chart series.

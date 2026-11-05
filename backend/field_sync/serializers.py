@@ -116,6 +116,9 @@ def _build_envelope(index: int, event: dict[str, Any]) -> EventEnvelope:
 
 
 class EventResultSerializer(serializers.Serializer[Any]):
+    """One ingestion verdict. rejection_quota_exceeded is not stored: retain and retry the event
+    after params.retry_after_seconds (also the 200 response's Retry-After header)."""
+
     id = serializers.UUIDField()
     status = serializers.ChoiceField(choices=EventStatus.choices)
     code = serializers.CharField()

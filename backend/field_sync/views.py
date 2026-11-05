@@ -3,7 +3,7 @@
 from typing import Any
 
 from django.conf import settings
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
 from rest_framework import viewsets
 from rest_framework.exceptions import NotAuthenticated, ParseError
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +17,7 @@ from core.exceptions import PayloadTooLargeError
 from core.permissions import HasPermissionCode
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
+from field_sync.codes import REJECTION_QUOTA_EXCEEDED
 from field_sync.cursor import decode_cursor
 from field_sync.envelope import BatchContext, EventEnvelope
 from field_sync.exceptions import DeviceMismatchError
@@ -55,7 +56,19 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
     permission_classes = [IsAuthenticated, HasPermissionCode, BodySizeWithinLimit]
     required_permissions = {"create": FIELD_EVENT_SYNC}
 
-    @extend_schema(request=SyncBatchSerializer, responses={200: SyncResponseSerializer})
+    @extend_schema(
+        request=SyncBatchSerializer,
+        responses={200: SyncResponseSerializer},
+        parameters=[
+            OpenApiParameter(
+                "Retry-After",
+                OpenApiTypes.INT,
+                OpenApiParameter.HEADER,
+                response=[200],
+                description="Present only when a result has code rejection_quota_exceeded. Seconds until the next organization-local midnight (minimum 1). Keep those events in the outbox/quarantine and resend after this delay; they were not stored. Other results remain final.",
+            )
+        ],
+    )
     def create(self, request: Request, *args: object, **kwargs: object) -> Response:
         """Ingest the events idempotently and answer with one result per event plus `changes`."""
         session, user = request.auth, request.user
@@ -81,7 +94,15 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
         )
         outcome = sync_batch(batch, self._envelopes(data), cursor)
         body = {"server_time": server_now(), "results": outcome.results, "changes": outcome.changes}
-        return Response(SyncResponseSerializer(body).data)
+        response = Response(SyncResponseSerializer(body).data)
+        retry_after = [
+            result.params["retry_after_seconds"]
+            for result in outcome.results
+            if result.code == REJECTION_QUOTA_EXCEEDED
+        ]
+        if retry_after:
+            response["Retry-After"] = str(max(retry_after))
+        return response
 
     @staticmethod
     def _envelopes(data: dict[str, Any]) -> list[EventEnvelope]:

@@ -30,6 +30,9 @@ export const spacing = {
   6: 48,
 } as const;
 
+/** Compact component gap from the mobile design (.bd, P28 cards); outside the spacing grid. */
+export const mobileLayout = { compactGap: 6 } as const;
+
 /** Names of the mobile type scale steps (`--fs-*` in codequim.css). */
 export interface MobileTypeScale {
   /** Large figures (counters). */

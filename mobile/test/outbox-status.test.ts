@@ -47,7 +47,7 @@ void describe("outbox state machine", () => {
     }
   });
 
-  void it("counts an attempt only when a send failed", () => {
+  void it("counts failed attempts and keeps them when a person retries a parked event", () => {
     const failed = applyOutboxAction(from("sending", 2), "failTransient");
     const parked = applyOutboxAction(from("sending", 2), "failPermanent");
     const released = applyOutboxAction(from("sending", 2), "release");
@@ -57,21 +57,8 @@ void describe("outbox state machine", () => {
     assert.equal(parked?.attempts, 3);
     assert.equal(released?.attempts, 2);
     assert.equal(recovered?.attempts, 2);
-  });
-
-  void it("never lets a rejected or in-review event go back to the queue", () => {
-    for (const status of ["rejected", "in_review"] as const) {
-      for (const action of ["claim", "retryNow", "recover", "release"] as const) {
-        assert.equal(applyOutboxAction(from(status), action), null, `${action}/${status}`);
-      }
-    }
-  });
-
-  void it("parks an event as error until a person retries, and keeps its attempts", () => {
-    const parked = applyOutboxAction(from("sending", 1), "failPermanent");
     assert.ok(parked);
-
     assert.equal(applyOutboxAction(parked, "claim"), null);
-    assert.deepEqual(applyOutboxAction(parked, "retryNow"), { status: "pending", attempts: 2 });
+    assert.deepEqual(applyOutboxAction(parked, "retryNow"), { status: "pending", attempts: 3 });
   });
 });

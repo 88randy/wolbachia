@@ -41,7 +41,7 @@ function logEngineError(error: unknown): void {
 export async function createServices(): Promise<AppServices> {
   const db = await openDatabase();
   const kv = new KvStore(db);
-  const server = new ServerSettings(kv, BUILD_API_BASE_URL);
+  const server = new ServerSettings(kv, BUILD_API_BASE_URL, __DEV__);
   await server.load();
   const tokens = createMemoryTokenStore();
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);

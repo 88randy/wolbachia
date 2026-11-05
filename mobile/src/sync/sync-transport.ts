@@ -1,7 +1,12 @@
 import { isErrorEnvelope, UNKNOWN_ERROR_CODE } from "@wolbachia/api-client";
 import type { ApiClient, ErrorEnvelope, Schemas } from "@wolbachia/api-client";
 
+import { isSyncResponse } from "./sync-response.ts";
+
 import type { SyncFailure } from "./sync-failure.ts";
+
+/** [ASSUMPTION] Bound each request to 30 s until the field test (#13). */
+export const SYNC_REQUEST_TIMEOUT_MS = 30_000;
 
 export type SyncBatchRequest = Schemas["SyncBatchRequest"];
 export type SyncResponse = Schemas["SyncResponse"];
@@ -28,8 +33,11 @@ function parseRetryAfter(header: string | null): number | null {
 export function createSyncTransport(client: ApiClient): SyncTransport {
   return async (request) => {
     try {
-      const result = await client.POST("/api/v1/field/sync/", { body: request });
-      if (result.response.ok && result.data !== undefined) {
+      const result = await client.POST("/api/v1/field/sync/", {
+        body: request,
+        signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS),
+      });
+      if (result.response.ok && isSyncResponse(result.data)) {
         return { ok: true, response: result.data };
       }
       const envelope = isErrorEnvelope(result.error) ? result.error : undefined;
@@ -38,7 +46,9 @@ export function createSyncTransport(client: ApiClient): SyncTransport {
         failure: {
           kind: "http",
           status: result.response.status,
-          code: envelope?.code ?? UNKNOWN_ERROR_CODE,
+          code: result.response.ok
+            ? "invalid_sync_response"
+            : (envelope?.code ?? UNKNOWN_ERROR_CODE),
           fieldCodes: fieldCodesOf(envelope),
           retryAfterSeconds: parseRetryAfter(result.response.headers.get("Retry-After")),
         },

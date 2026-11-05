@@ -22,6 +22,12 @@ const BLOCKED_NOTICE: Readonly<Record<BlockReason, InboxNotice>> = {
 export function noticeFor(snapshot: SyncSnapshot): InboxNotice | null {
   if (snapshot.blockReason !== null) return BLOCKED_NOTICE[snapshot.blockReason];
   if (!snapshot.isOnline) return { tone: "warning", messageKey: "mobile.inbox.offline" };
+  if (
+    snapshot.phase === "waitingRetry" &&
+    snapshot.lastFailureCode === "rejection_quota_exceeded"
+  ) {
+    return { tone: "info", messageKey: "mobile.inbox.rejectionQuota" };
+  }
   if (snapshot.phase === "waitingRetry") {
     return { tone: "info", messageKey: "mobile.inbox.waitingRetry" };
   }

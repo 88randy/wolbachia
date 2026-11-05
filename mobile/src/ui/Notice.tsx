@@ -45,7 +45,11 @@ export function Notice({ tone, icon, message }: NoticeProps) {
   const styles = useStyles(createStyles);
   const { theme } = useTheme();
   return (
-    <View style={[styles.notice, styles[tone]]} accessibilityRole="alert">
+    <View
+      style={[styles.notice, styles[tone]]}
+      accessibilityRole="alert"
+      accessibilityLiveRegion="polite"
+    >
       <Icon name={icon} color={theme.color.status[tone].fg} />
       <View style={styles.text}>
         <AppText>{message}</AppText>

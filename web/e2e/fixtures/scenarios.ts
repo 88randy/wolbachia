@@ -49,6 +49,7 @@ const RULES = [
         effective_date: "2026-12-15",
         voided_at: "2026-11-04T18:00:00Z",
         voided_by: "9d3c8a77-1b2e-4f60-a5c1-0f7e6d5c4b3a",
+        voided_by_username: "luis.promotor",
         void_reason: "Se capturó dos veces",
       }),
     ],

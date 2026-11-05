@@ -33,7 +33,13 @@ export function useServerForm(): ServerForm {
     text,
     setText,
     feedback,
-    save: () => void save(),
-    reset: () => void reset(),
+    save: () =>
+      void save().catch(() => {
+        setFeedback("storageFailed");
+      }),
+    reset: () =>
+      void reset().catch(() => {
+        setFeedback("storageFailed");
+      }),
   };
 }

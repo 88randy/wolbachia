@@ -2,6 +2,8 @@ import { spacing } from "@wolbachia/tokens";
 import { StyleSheet, View } from "react-native";
 
 import { useServices } from "../../app/services-context.ts";
+import { useOutboxAction } from "../../outbox/use-outbox-action.ts";
+import { Notice } from "../../ui/Notice.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Button } from "../../ui/Button.tsx";
@@ -18,6 +20,7 @@ const styles = StyleSheet.create({ section: { gap: spacing[1] } });
 export function DevToolsSection() {
   const t = useT();
   const { deviceId, engine } = useServices();
+  const { run, errorKey } = useOutboxAction(() => engine.enqueue(buildTestEvent(new Date())));
   return (
     <View style={styles.section}>
       <AppText variant="h2">{t("mobile.dev.title")}</AppText>
@@ -26,13 +29,8 @@ export function DevToolsSection() {
       </AppText>
       <AppText selectable>{deviceId}</AppText>
       <TestTokenField />
-      <Button
-        variant="outline"
-        label={t("mobile.dev.addEvent")}
-        onPress={() => {
-          void engine.enqueue(buildTestEvent(new Date()));
-        }}
-      />
+      {errorKey !== null && <Notice tone="critical" icon="alert" message={t(errorKey)} />}
+      <Button variant="outline" label={t("mobile.dev.addEvent")} onPress={run} />
     </View>
   );
 }

@@ -9,6 +9,9 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.storage.saveFailed":
     "It could not be saved on the phone. Free up space and try again; nothing was sent.",
 
+  "mobile.storage.actionFailed":
+    "The phone storage could not be updated. Free up space and try again; your records are still saved.",
+
   // Navigation
   "mobile.nav.back": "Back",
   "mobile.nav.settings": "Settings",
@@ -40,6 +43,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.inbox.timeRange": "{from} to {to}",
   "mobile.inbox.offline":
     "No signal. Your records are saved and will be sent when the connection comes back.",
+  "mobile.inbox.rejectionQuota":
+    "The daily limit for records needing review was reached. Your records are still saved and will be sent after the server's waiting period.",
   "mobile.inbox.waitingRetry": "We couldn't reach the server. The app will try again by itself.",
   "mobile.inbox.parkedHint":
     "This record could not be sent as it is. Tap “Try now”; if it happens again, tell your supervisor.",
@@ -94,7 +99,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.settings.serverInvalid":
     "The address is not valid. Write it in full, without a path, for example https://api.example.com",
   "mobile.settings.serverCleartext":
-    "Plain http is only allowed on private networks, for example http://192.168.1.20:8000. For other servers use https.",
+    "Use https. Only development builds allow plain http on private networks, for example http://192.168.1.20:8000.",
 
   // Test tools (development builds only)
   "mobile.dev.title": "Test tools (development builds only)",

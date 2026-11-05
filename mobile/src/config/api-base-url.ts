@@ -15,7 +15,7 @@ export type ApiBaseUrlResult =
 
 // scheme://host[:port], nothing else: the client adds `/api/v1/...` itself.
 const ORIGIN_PATTERN = /^(https?):\/\/([A-Za-z0-9.-]+)(?::(\d{1,5}))?$/;
-const IPV4_PATTERN = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/;
+const IPV4_PATTERN = /^(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})\.(0|[1-9]\d{0,2})$/;
 const MAX_PORT = 65535;
 const MAX_OCTET = 255;
 
@@ -45,11 +45,18 @@ function hasValidPort(port: string | undefined): boolean {
   return port === undefined || (Number(port) >= 1 && Number(port) <= MAX_PORT);
 }
 
+function canUseScheme(scheme: string, host: string, allowCleartext: boolean): boolean {
+  return scheme !== "http" || (allowCleartext && isPrivateLanHost(host));
+}
+
 /**
  * Validates and normalizes an API origin typed by a person or set at build time.
  * Trailing slashes are removed. A path, query, user info or an https-less public host is refused.
  */
-export function parseApiBaseUrl(input: string | undefined): ApiBaseUrlResult {
+export function parseApiBaseUrl(
+  input: string | undefined,
+  allowCleartext = true,
+): ApiBaseUrlResult {
   const trimmed = (input ?? "").trim().replace(/\/+$/, "");
   if (trimmed === "") return { ok: false, problem: "empty" };
   const match = ORIGIN_PATTERN.exec(trimmed);
@@ -57,7 +64,7 @@ export function parseApiBaseUrl(input: string | undefined): ApiBaseUrlResult {
   if (scheme === undefined || host === undefined || !hasValidPort(port)) {
     return { ok: false, problem: "invalid" };
   }
-  if (scheme === "http" && !isPrivateLanHost(host)) {
+  if (!canUseScheme(scheme, host, allowCleartext)) {
     return { ok: false, problem: "cleartextNotAllowed" };
   }
   return { ok: true, url: trimmed };
