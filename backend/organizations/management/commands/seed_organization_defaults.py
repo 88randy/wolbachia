@@ -13,9 +13,10 @@ from organizations.models import Organization
 class Command(BaseCommand):
     help = (
         "Show (default) or apply (--apply) the default permission codes, catalogs and rule "
-        "parameters an organization is missing. Applying only adds: a permission code is granted "
+        "parameters an organization is missing. A permission code is granted "
         "once, only to profiles the seed created, and a code an admin revoked is never granted "
-        "again. Existing catalogs, items, parameters and versions are never changed."
+        "again. Existing labels, deactivations and versions are preserved; reviewed parameter "
+        "bounds are applied."
     )
 
     def add_arguments(self, parser: CommandParser) -> None:
@@ -40,6 +41,8 @@ class Command(BaseCommand):
         self._print_plan(plan)
 
     def _print_plan(self, plan: DefaultsPlan) -> None:
+        if plan.missing_profiles:
+            self.stdout.write(f"  create profiles: {', '.join(plan.missing_profiles)}")
         for profile_slug, codes in plan.permissions.grants.items():
             self.stdout.write(f"  grant to profile '{profile_slug}': {', '.join(codes)}")
         for profile_slug in plan.permissions.skipped:
@@ -47,16 +50,19 @@ class Command(BaseCommand):
                 f"  skip profile '{profile_slug}': not created by the seed, set its codes by hand"
             )
         if plan.missing_catalogs:
-            self.stdout.write(f"  create catalogs: {', '.join(plan.missing_catalogs)}")
+            self.stdout.write(f"  seed catalogs/items: {', '.join(plan.missing_catalogs)}")
         if plan.missing_parameters:
-            self.stdout.write(f"  create parameters: {', '.join(plan.missing_parameters)}")
+            self.stdout.write(
+                f"  seed parameter definitions/defaults: {', '.join(plan.missing_parameters)}"
+            )
         if self._is_empty(plan):
             self.stdout.write("  nothing to do")
 
     @staticmethod
     def _is_empty(plan: DefaultsPlan) -> bool:
         return not (
-            plan.permissions.grants
+            plan.missing_profiles
+            or plan.permissions.grants
             or plan.permissions.skipped
             or plan.missing_catalogs
             or plan.missing_parameters

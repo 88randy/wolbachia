@@ -1,11 +1,12 @@
 """Default catalogs of a new organization. Safe to run twice; it never overwrites admin edits.
 
-[PENDING #35] The launch list of catalogs and which are open or closed is not confirmed by the
-client. The void-reason item list is [PENDING] client/entomologist confirmation.
-Other open catalogs start with the fixed "Other (specify)" item only: admins add the real items.
+OP01 confirms the nine launch catalogs; decision 91 retains the additional #80 void catalog.
+Closed lists have actual launch checks/findings. Seeds preserve labels and deactivations.
 """
 
 from dataclasses import dataclass
+
+from django.db import transaction
 
 from catalogs.models import OTHER_ITEM_CODE, Catalog, CatalogItem
 from organizations.models import Organization
@@ -41,30 +42,53 @@ DEFAULT_CATALOG_SEEDS = (
 
 
 def missing_catalog_slugs(organization: Organization) -> list[str]:
-    """Read-only: default catalogs the organization does not have yet."""
-    existing = set(Catalog.objects.filter(organization=organization).values_list("slug", flat=True))
-    return [seed.slug for seed in DEFAULT_CATALOG_SEEDS if seed.slug not in existing]
+    """Read-only: catalogs or launch items the idempotent seed would add."""
+    existing = {
+        catalog.slug: catalog
+        for catalog in Catalog.objects.filter(organization=organization).prefetch_related("items")
+    }
+    return [
+        seed.slug
+        for seed in DEFAULT_CATALOG_SEEDS
+        if _needs_catalog_seed(existing.get(seed.slug), seed)
+    ]
+
+
+def _needs_catalog_seed(catalog: Catalog | None, seed: CatalogSeed) -> bool:
+    if catalog is None:
+        return True
+    required = {OTHER_ITEM_CODE} if catalog.is_open else set()
+    if seed.slug == "void-reason":
+        required.update(row[0] for row in VOID_REASON_ITEMS)
+    required.update(row[0] for row in CLOSED_CATALOG_ITEMS.get(seed.slug, ()))
+    return not required <= {item.code for item in catalog.items.all()}
 
 
 def seed_default_catalogs(organization: Organization) -> list[Catalog]:
-    """Create the default catalogs and the "Other" item of the open ones (writes Catalog, CatalogItem)."""
-    catalogs = []
-    for seed in DEFAULT_CATALOG_SEEDS:
-        catalog, _ = Catalog.objects.get_or_create(
-            organization=organization,
-            slug=seed.slug,
-            defaults={
-                "label_es": seed.label_es,
-                "label_en": seed.label_en,
-                "is_open": seed.is_open,
-            },
-        )
-        if catalog.is_open:
-            _ensure_other_item(catalog)
-        if catalog.slug == "void-reason":
-            _seed_void_reason_items(catalog)
-        catalogs.append(catalog)
-    return catalogs
+    """Seed atomically in Organization -> Catalog -> item order, including direct calls."""
+    with transaction.atomic():
+        Organization.objects.select_for_update(no_key=True).get(pk=organization.pk)
+        return [_seed_catalog(organization, seed) for seed in DEFAULT_CATALOG_SEEDS]
+
+
+def _seed_catalog(organization: Organization, seed: CatalogSeed) -> Catalog:
+    catalog, _ = Catalog.objects.get_or_create(
+        organization=organization,
+        slug=seed.slug,
+        defaults={
+            "label_es": seed.label_es,
+            "label_en": seed.label_en,
+            "is_open": seed.is_open,
+        },
+    )
+    # Lock before item reads/inserts: unique-index waits must not invert deferred FK locks.
+    locked = Catalog.objects.select_for_update().get(pk=catalog.pk, organization=organization)
+    if locked.is_open:
+        _ensure_other_item(locked)
+    if locked.slug == "void-reason":
+        _seed_void_reason_items(locked)
+    _seed_closed_items(locked)
+    return locked
 
 
 def _ensure_other_item(catalog: Catalog) -> None:
@@ -90,6 +114,41 @@ VOID_REASON_ITEMS = (
 
 def _seed_void_reason_items(catalog: Catalog) -> None:
     for code, label_es, label_en, sort in VOID_REASON_ITEMS:
+        CatalogItem.objects.get_or_create(
+            catalog=catalog,
+            code=code,
+            defaults={
+                "organization_id": catalog.organization_id,
+                "label_es": label_es,
+                "label_en": label_en,
+                "sort": sort,
+            },
+        )
+
+
+# Operational launch items; never count an empty checklist as a completed safety check.
+CLOSED_CATALOG_ITEMS = {
+    "motorcycle-check-item": (
+        ("brakes", "Frenos", "Brakes"),
+        ("tires", "Llantas", "Tires"),
+        ("lights", "Luces", "Lights"),
+        ("horn", "Claxon", "Horn"),
+        ("mirrors", "Espejos", "Mirrors"),
+        ("fuel", "Combustible", "Fuel"),
+    ),
+    "ovitrap-finding": (
+        ("intact", "Intacta", "Intact"),
+        ("dry", "Seca", "Dry"),
+        ("damaged", "Dañada", "Damaged"),
+        ("missing", "No encontrada", "Missing"),
+    ),
+}
+
+
+def _seed_closed_items(catalog: Catalog) -> None:
+    for sort, (code, label_es, label_en) in enumerate(
+        CLOSED_CATALOG_ITEMS.get(catalog.slug, ()), start=1
+    ):
         CatalogItem.objects.get_or_create(
             catalog=catalog,
             code=code,

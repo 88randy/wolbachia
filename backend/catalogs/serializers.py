@@ -17,9 +17,19 @@ class CatalogSerializer(OrgScopedModelSerializer):
 class CatalogItemSerializer(OrgScopedModelSerializer):
     """Read shape of an item. `is_active` and `is_other` change only through their own rules."""
 
+    protected = serializers.BooleanField(source="is_other", read_only=True)
+    in_use = serializers.SerializerMethodField()
+
+    def get_in_use(self, item: CatalogItem) -> bool:
+        from catalogs.selectors import catalog_item_is_in_use
+
+        return catalog_item_is_in_use(item)
+
     class Meta:
         model = CatalogItem
         fields = [
+            "protected",
+            "in_use",
             "id",
             "code",
             "label_es",

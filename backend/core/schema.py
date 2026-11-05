@@ -59,6 +59,11 @@ ERROR_COMPONENTS: dict[str, dict[str, Any]] = {
         "description": "Why a `409` action is blocked and who can unblock it.",
         "properties": {
             "reason": {"type": "string"},
+            "point": {
+                "type": "string",
+                "format": "uuid",
+                "description": "Authorized geography point requiring a resolution, when applicable.",
+            },
             "unblocked_by_role": {"type": "string"},
             "link": {"type": "string"},
         },

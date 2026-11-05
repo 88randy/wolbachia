@@ -2,7 +2,7 @@ import pytest
 from rest_framework.test import APIClient
 
 from accounts.models import User
-from organizations.models import Organization
+from organizations.models import Organization, all_scope
 from tests.factories import MembershipFactory, OrganizationFactory, ProfileFactory, UserFactory
 
 pytestmark = pytest.mark.django_db
@@ -14,15 +14,19 @@ def test_me_returns_user_organization_profiles_permissions_and_scope(
     api_client: APIClient, org_a: Organization
 ) -> None:
     user = UserFactory(first_name="Ana", last_name="Lopez")
-    membership = MembershipFactory(
-        user=user, organization=org_a, scope={"centers": ["c1"], "quadrants": []}
-    )
+    membership = MembershipFactory(user=user, organization=org_a, scope=all_scope())
     membership.profiles.add(
         ProfileFactory(
-            organization=org_a, slug="courier", permission_codes=["ovitrap.read", "shift.write"]
+            organization=org_a,
+            slug="courier",
+            scope=all_scope(),
+            permission_codes=["ovitrap.read", "shift.write"],
         ),
         ProfileFactory(
-            organization=org_a, slug="supervisor", permission_codes=["ovitrap.read", "report.read"]
+            organization=org_a,
+            slug="supervisor",
+            scope=all_scope(),
+            permission_codes=["ovitrap.read", "report.read"],
         ),
     )
     api_client.force_authenticate(user)
@@ -38,7 +42,7 @@ def test_me_returns_user_organization_profiles_permissions_and_scope(
     assert body["organization"]["languages"] == ["es-MX"]
     assert [p["slug"] for p in body["profiles"]] == ["courier", "supervisor"]
     assert body["permissions"] == ["ovitrap.read", "report.read", "shift.write"]
-    assert body["scope"] == {"centers": ["c1"], "quadrants": []}
+    assert body["scope"] == all_scope()
     assert body["organizations"] == [{"slug": "org-a", "name": org_a.name}]
 
 
@@ -119,7 +123,7 @@ def test_me_survives_a_malformed_scope(
 
     assert response.status_code == 200
     assert set(response.data["scope"]) == {"centers", "quadrants"}
-    assert response.data["scope"]["quadrants"] == []
+    assert response.data["scope"]["quadrants"] == {"mode": "none", "ids": []}
 
 
 def test_me_ignores_profiles_of_another_organization_attached_to_the_membership(

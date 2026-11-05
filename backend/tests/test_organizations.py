@@ -25,7 +25,17 @@ def test_create_organization_seeds_the_default_profiles() -> None:
     organization = create_organization(SPEC)
 
     slugs = set(Profile.objects.filter(organization=organization).values_list("slug", flat=True))
-    assert slugs == {"courier", "supervisor", "entomologist", "community_promoter", "admin"}
+    assert slugs == {
+        "courier",
+        "supervisor",
+        "entomologist",
+        "community_promoter",
+        "admin",
+        "coordinator",
+        "warehouse",
+        "regulatory",
+        "government",
+    }
 
 
 def test_seed_default_profiles_is_idempotent() -> None:
@@ -187,6 +197,10 @@ def test_membership_rejects_a_malformed_scope(scope: object, org_a: Organization
         membership.clean()
 
 
-def test_membership_accepts_the_default_and_a_partial_scope(org_a: Organization) -> None:
+def test_membership_accepts_the_default_and_an_explicit_scope(org_a: Organization) -> None:
     Membership(user=UserFactory(), organization=org_a).clean()
-    Membership(user=UserFactory(), organization=org_a, scope={"centers": ["c1"]}).clean()
+    Membership(
+        user=UserFactory(),
+        organization=org_a,
+        scope={"centers": {"mode": "selected", "ids": []}, "quadrants": {"mode": "all", "ids": []}},
+    ).clean()

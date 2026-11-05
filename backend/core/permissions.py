@@ -4,7 +4,7 @@ from rest_framework.permissions import BasePermission
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
-from organizations.selectors import get_permission_codes
+from organizations.services import effective_scope
 
 
 class HasPermissionCode(BasePermission):
@@ -23,4 +23,21 @@ class HasPermissionCode(BasePermission):
         membership = getattr(request, "membership", None)
         if required is None or membership is None:
             return False
-        return required in get_permission_codes(membership)
+        return effective_scope(membership).allows(required)
+
+    def has_object_permission(self, request: Request, view: APIView, instance: object) -> bool:
+        required = getattr(view, "required_permissions", {}).get(getattr(view, "action", ""))
+        if required is None:
+            return False
+        center = getattr(instance, "center_id", None)
+        if getattr(getattr(instance, "_meta", None), "label_lower", "") == "organizations.center":
+            center = getattr(instance, "pk", None)
+        quadrant = getattr(instance, "quadrant_id", None)
+        membership = getattr(request, "membership", None)
+        if membership is None:
+            return False
+        return effective_scope(membership).allows(
+            required,
+            str(center) if center is not None else None,
+            str(quadrant) if quadrant is not None else None,
+        )
