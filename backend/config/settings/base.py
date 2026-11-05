@@ -140,6 +140,30 @@ SYNC_CURSOR_MAX_AGE_SECONDS = env.int("SYNC_CURSOR_MAX_AGE_SECONDS", default=2_5
 SYNC_LOCK_TIMEOUT_MS = env.int("SYNC_LOCK_TIMEOUT_MS", default=3_000)
 SYNC_RETRY_AFTER_SECONDS = env.int("SYNC_RETRY_AFTER_SECONDS", default=2)
 
+# SA09 / #56: deployment limits, validated at startup rather than silently clamped.
+try:
+    SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY = env.int(
+        "SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY", default=1000
+    )
+except ValueError as error:
+    raise ImproperlyConfigured(
+        "SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY must be an integer."
+    ) from error
+if not 100 <= SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY <= 10000:
+    raise ImproperlyConfigured("SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY must be within 100..10000.")
+try:
+    SYNC_REJECTION_ALERT_PERCENTS = sorted(
+        set(env.list("SYNC_REJECTION_ALERT_PERCENTS", cast=int, default=[80, 100]))
+    )
+except ValueError as error:
+    raise ImproperlyConfigured(
+        "SYNC_REJECTION_ALERT_PERCENTS must be a list of integers."
+    ) from error
+if not SYNC_REJECTION_ALERT_PERCENTS or any(
+    not 1 <= percent <= 100 for percent in SYNC_REJECTION_ALERT_PERCENTS
+):
+    raise ImproperlyConfigured("SYNC_REJECTION_ALERT_PERCENTS must contain integers within 1..100.")
+
 # Void reasons (#32): minimum characters after trimming, shared by every void path and sent to
 # the web in `GET /me/` (`limits`). Owner delegated the value to the orchestrator (2026-11-04).
 VOID_REASON_MIN_LENGTH = env.int("VOID_REASON_MIN_LENGTH", default=10)

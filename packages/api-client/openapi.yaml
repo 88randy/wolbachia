@@ -690,6 +690,14 @@ paths:
       - bearerAuth: []
       responses:
         '200':
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Present only when a result has code rejection_quota_exceeded.
+                Seconds until the next organization-local midnight (minimum 1). Keep
+                those events in the outbox/quarantine and resend after this delay;
+                they were not stored. Other results remain final.
           content:
             application/json:
               schema:
@@ -1466,6 +1474,9 @@ components:
       - serial
     EventResult:
       type: object
+      description: |-
+        One ingestion verdict. rejection_quota_exceeded is not stored: retain and retry the event
+        after params.retry_after_seconds (also the 200 response's Retry-After header).
       properties:
         id:
           type: string
