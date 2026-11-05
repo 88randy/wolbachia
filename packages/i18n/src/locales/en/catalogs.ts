@@ -10,9 +10,11 @@ export const catalogs: Record<keyof typeof spanish, string> = {
     "Every open list keeps “Other (specify)” last. Choosing it in a form requires free text. Older records keep deactivated items.",
   "catalogs.page.closed":
     "This catalog is closed and has no “Other (specify)” item. Older records keep deactivated items.",
+  "catalogs.table.unknownAuthor": "—",
+  "catalogs.table.usage": "In use",
   "catalogs.table.item": "Item",
   "catalogs.table.code": "Code",
-  "catalogs.table.created": "Created",
+  "catalogs.table.created": "Since",
   "catalogs.table.status": "Status",
   "catalogs.table.actions": "Actions",
   "catalogs.table.include": "Include deactivated",
@@ -56,6 +58,8 @@ export const catalogs: Record<keyof typeof spanish, string> = {
   "catalogs.error.limit":
     "The catalog has reached 200 active items. Deactivate one before continuing.",
   "catalogs.error.other": "“Other (specify)” is fixed and cannot be deactivated.",
+  "catalogs.error.versionConflict":
+    "The catalog changed. The list was reloaded; review the order and try again.",
   "catalogs.error.reorder":
     "The order change could not be completed. The list was reloaded; review it before trying again.",
 };

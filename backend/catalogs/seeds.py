@@ -5,8 +5,10 @@ Closed lists have actual launch checks/findings. Seeds preserve labels and deact
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 from django.db import transaction
+from django.db.models import F
 
 from catalogs.models import OTHER_ITEM_CODE, Catalog, CatalogItem
 from organizations.models import Organization
@@ -92,7 +94,7 @@ def _seed_catalog(organization: Organization, seed: CatalogSeed) -> Catalog:
 
 
 def _ensure_other_item(catalog: Catalog) -> None:
-    CatalogItem.objects.get_or_create(
+    _create_seed_item(
         catalog=catalog,
         code=OTHER_ITEM_CODE,
         defaults={
@@ -114,7 +116,7 @@ VOID_REASON_ITEMS = (
 
 def _seed_void_reason_items(catalog: Catalog) -> None:
     for code, label_es, label_en, sort in VOID_REASON_ITEMS:
-        CatalogItem.objects.get_or_create(
+        _create_seed_item(
             catalog=catalog,
             code=code,
             defaults={
@@ -149,7 +151,7 @@ def _seed_closed_items(catalog: Catalog) -> None:
     for sort, (code, label_es, label_en) in enumerate(
         CLOSED_CATALOG_ITEMS.get(catalog.slug, ()), start=1
     ):
-        CatalogItem.objects.get_or_create(
+        _create_seed_item(
             catalog=catalog,
             code=code,
             defaults={
@@ -159,3 +161,11 @@ def _seed_closed_items(catalog: Catalog) -> None:
                 "sort": sort,
             },
         )
+
+
+def _create_seed_item(*, catalog: Catalog, code: str, defaults: dict[str, Any]) -> None:
+    """The caller holds Catalog; only inserted seed items invalidate existing reorder plans."""
+    _, is_created = CatalogItem.objects.get_or_create(catalog=catalog, code=code, defaults=defaults)
+    if is_created:
+        Catalog.objects.filter(pk=catalog.pk).update(revision=F("revision") + 1)
+        catalog.revision += 1

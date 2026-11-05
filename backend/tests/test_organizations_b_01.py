@@ -256,7 +256,7 @@ def test_catalog_metadata_preserves_protected_other_and_used_deactivated_labels(
     from catalogs.serializers import CatalogItemSerializer
     from catalogs.services import deactivate_catalog_item, update_catalog_item
     from shifts.models import MotorcycleCheck
-    from tests.factories import CatalogItemFactory, ShiftFactory
+    from tests.factories import CatalogItemFactory, ShiftFactory, UserFactory
 
     other = CatalogItemFactory(code="other", is_other=True)
     with pytest.raises(OtherItemLockedError):
@@ -269,7 +269,7 @@ def test_catalog_metadata_preserves_protected_other_and_used_deactivated_labels(
         organization=item.organization,
         result="ok",
     )
-    deactivate_catalog_item(item)
+    deactivate_catalog_item(item, UserFactory())
     item.refresh_from_db()
     projection = CatalogItemSerializer(item).data
     assert projection["in_use"] is True

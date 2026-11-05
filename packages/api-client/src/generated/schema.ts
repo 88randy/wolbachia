@@ -279,6 +279,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/catalogs/{catalog_slug}/items/reorder/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE: items are deactivated. */
+        post: operations["catalogs_items_reorder_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/centers/": {
         parameters: {
             query?: never;
@@ -1223,11 +1240,21 @@ export interface components {
             readonly label_es: string;
             readonly label_en: string;
             readonly is_open: boolean;
+            readonly version: number;
         };
         /** @description Read shape of an item. `is_active` and `is_other` change only through their own rules. */
         CatalogItem: {
             readonly protected: boolean;
             readonly in_use: boolean;
+            readonly usage_count: number;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            readonly created_by_username: string | null;
+            /** Format: date-time */
+            readonly deactivated_at: string | null;
+            /** Format: uuid */
+            readonly deactivated_by: string | null;
+            readonly deactivated_by_username: string | null;
             /** Format: uuid */
             readonly id: string;
             readonly code: string;
@@ -1251,6 +1278,14 @@ export interface components {
             icon?: string;
             sort?: number;
             requires_photo?: boolean;
+        };
+        CatalogReorderRequest: {
+            version: number;
+            ordered_ids: string[];
+        };
+        CatalogReorderResponse: {
+            readonly version: number;
+            readonly items: components["schemas"]["CatalogItem"][];
         };
         /** @description Every catalog with its active items. `version` is also the `ETag`. */
         CatalogSnapshot: {
@@ -3012,6 +3047,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogItem"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    catalogs_items_reorder_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                catalog_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CatalogReorderRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CatalogReorderResponse"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

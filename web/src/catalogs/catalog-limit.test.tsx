@@ -16,7 +16,7 @@ import { useCatalogEditor } from "./use-catalog-editor";
 import type { CatalogItem } from "./catalogs-query";
 
 function LimitedControls({ items }: { items: CatalogItem[] }) {
-  const editor = useCatalogEditor(CATALOG.slug, items);
+  const editor = useCatalogEditor(CATALOG, items);
   return (
     <CatalogEditorContext value={editor}>
       <CatalogAddButton editor={editor} isReady />

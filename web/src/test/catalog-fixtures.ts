@@ -14,6 +14,7 @@ export const CATALOG: Catalog = {
   label_es: "Intervenciones",
   label_en: "Interventions",
   is_open: true,
+  version: 0,
 };
 export const CATALOG_PATH = "/settings/catalogs/intervention-type";
 export const ITEMS_PATH = "/api/v1/catalogs/intervention-type/items/";
@@ -29,6 +30,12 @@ export function makeCatalogItem(overrides: Partial<CatalogItem> = {}): CatalogIt
     is_other: false,
     protected: false,
     in_use: false,
+    usage_count: 0,
+    created_by: null,
+    created_by_username: null,
+    deactivated_at: null,
+    deactivated_by: null,
+    deactivated_by_username: null,
     icon: "",
     requires_photo: false,
     created_at: "2026-01-01T05:00:00Z",

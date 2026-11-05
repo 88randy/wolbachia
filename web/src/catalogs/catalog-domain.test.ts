@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { displayLabel, nextItemSort, planMove } from "./catalog-domain";
+import { displayLabel, moveOrderedIds, nextItemSort } from "./catalog-domain";
 import type { CatalogItem } from "./catalogs-query";
 
 const item = (id: string, sort: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
@@ -13,6 +13,12 @@ const item = (id: string, sort: number, overrides: Partial<CatalogItem> = {}): C
   is_other: false,
   protected: false,
   in_use: false,
+  usage_count: 0,
+  created_by: null,
+  created_by_username: null,
+  deactivated_at: null,
+  deactivated_by: null,
+  deactivated_by_username: null,
   requires_photo: false,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
@@ -26,20 +32,10 @@ describe("catalog ordering invariants", () => {
       item("b", 20),
       item("other", 0, { is_other: true, protected: true }),
     ];
-    expect(planMove(rows, "b", "up")).toEqual([
-      { id: "b", sort: 10 },
-      { id: "a", sort: 20 },
-    ]);
-    expect(planMove(rows, "a", "up")).toEqual([]);
-    expect(planMove(rows, "b", "down")).toEqual([]);
-    expect(planMove(rows, "other", "up")).toEqual([]);
-  });
-  test("renumbers active items once when seed sorts collide", () => {
-    expect(planMove([item("a", 0), item("b", 0), item("c", 0)], "b", "up")).toEqual([
-      { id: "b", sort: 10 },
-      { id: "a", sort: 20 },
-      { id: "c", sort: 30 },
-    ]);
+    expect(moveOrderedIds(rows, "b", "up")).toEqual(["b", "a"]);
+    expect(moveOrderedIds(rows, "a", "up")).toEqual([]);
+    expect(moveOrderedIds(rows, "b", "down")).toEqual([]);
+    expect(moveOrderedIds(rows, "other", "up")).toEqual([]);
   });
   test("English falls back to Spanish API data with a warning", () => {
     expect(displayLabel(item("Rociado", 10), "en")).toEqual({

@@ -3,34 +3,32 @@ import { I18nextProvider } from "react-i18next";
 import { expect, test } from "vitest";
 import { setupI18n } from "../i18n/setup-i18n";
 import { makeCatalogItem } from "../test/catalog-fixtures";
-import { CatalogStatus } from "./CatalogStatus";
+import { CatalogUsage } from "./CatalogUsage";
 
 test.each([
-  ["es-MX", "En uso", "Permanece en los registros anteriores y solo se puede desactivar."],
-  ["en", "In use", "It stays on older records and can only be deactivated."],
+  ["es-MX", "Permanece en los registros anteriores y solo se puede desactivar."],
+  ["en", "It stays on older records and can only be deactivated."],
 ] as const)(
-  "%s shows usage independently of availability with an accessible explanation",
-  async (locale, label, description) => {
+  "%s shows historical usage counts with an accessible explanation",
+  async (locale, description) => {
     const instance = await setupI18n(locale);
     const { rerender } = render(
       <I18nextProvider i18n={instance}>
-        <CatalogStatus item={makeCatalogItem({ in_use: true })} />
+        <CatalogUsage item={makeCatalogItem({ usage_count: 4, in_use: true })} />
       </I18nextProvider>,
     );
-    const badge = screen.getByText(label);
-    expect(badge.getAttribute("aria-description")).toBe(description);
-    expect(badge.querySelector('svg[aria-hidden="true"]')).not.toBeNull();
+    expect(screen.getByText("4").getAttribute("aria-description")).toBe(description);
     rerender(
       <I18nextProvider i18n={instance}>
-        <CatalogStatus item={makeCatalogItem({ in_use: true, is_active: false })} />
+        <CatalogUsage item={makeCatalogItem({ usage_count: 4, in_use: true, is_active: false })} />
       </I18nextProvider>,
     );
-    expect(screen.getByText(label)).not.toBeNull();
+    expect(screen.getByText("4")).toBeDefined();
     rerender(
       <I18nextProvider i18n={instance}>
-        <CatalogStatus item={makeCatalogItem()} />
+        <CatalogUsage item={makeCatalogItem()} />
       </I18nextProvider>,
     );
-    expect(screen.queryByText(label)).toBeNull();
+    expect(screen.getByText("0")).toBeDefined();
   },
 );

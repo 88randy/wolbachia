@@ -7,7 +7,7 @@ Per-organization option lists (incident reasons, removal reasons, the motorcycle
 - Catalogs and items are configuration, not records: nothing is deleted. An item is **deactivated** (old records keep showing it) and can be **reactivated**.
 - Every catalog that is open ends with the fixed "Other (specify)" item (`is_other`). The database guarantees one per catalog and that it stays active (`CheckConstraint`); the service answers `409 other_item_cannot_be_deactivated`. Its labels/icon/order/photo flag are protected too (`409 other_item_protected`). It is always listed last, whatever its `sort`.
 - Catalogs are created by the seed (`catalogs/seeds.py`), so there is no `POST /catalogs/`. OP01 confirms the nine launch catalogs; the additional #80 void-reason catalog is retained under decision 91.
-- `code` identifies an item and never changes (lowercase; `other` is reserved for the seed). Reordering is `PATCH {sort}`; `sort` is 0 to 10000 and an exhausted automatic order answers `sort_exhausted`.
+- `code` identifies an item and never changes (lowercase; `other` is reserved for the seed). Reordering uses conditional `POST /catalogs/{slug}/items/reorder/`; individual `PATCH {sort}` remains supported; `sort` is 0 to 10000 and an exhausted automatic order answers `sort_exhausted`.
 - Limits: 200 active items per catalog (`409 catalog_item_limit_reached`, also when reactivating); `icon` is a token `^[a-z0-9-]+$`.
 - `label_en` may be blank: clients fall back to `label_es`. Labels are data, the only user-facing text the API returns.
 
@@ -37,8 +37,14 @@ keeps the immutable item code rather than a foreign key; deactivation never rewr
 
 ## Launch metadata (#99)
 
-Admin item projections expose `protected` (fixed Other) and `in_use` (a stored
-MotorcycleCheck FK or a recorded void-code reference). Inactive items remain
+Admin item projections expose `protected` (fixed Other), integer `usage_count` and
+compatible `in_use = usage_count > 0`. Correlated Subquery counts (Coalesce to zero)
+sum MotorcycleCheck FKs and, for void-reason, every organization-scoped model with
+void_reason_code. Historical references count even after item deactivation; no
+per-item queries or join multiplication. Lists select_related both authors.
+Reads include created_by/created_by_username and nullable deactivated_at,
+deactivated_by/deactivated_by_username. Seed authors are null. Deactivation records
+the request actor and time; activation clears both. Repeated state actions are no-ops. Inactive items remain
 readable in admin lists/details; deactivation never rewrites their labels or
 history. Field snapshots continue to omit inactive choices and retain Other last.
 
@@ -84,3 +90,69 @@ agent environment.
 References: [Django row locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update),
 [PostgreSQL blocking-session inspection](https://www.postgresql.org/docs/18/functions-info.html#FUNCTIONS-INFO-SESSION).
 No new dependency, API/schema shape, migration or void-reason validation change.
+
+
+## Conditional reorder and global write lock order (#182)
+
+Every item writer locks Catalog FIRST, then item rows (ordered by id for a batch).
+Update and availability services resolve the catalog id without a row lock, lock
+that catalog and then re-read/lock the item. Reorder never locks an item first.
+The void path reads its catalog choice WITHOUT an item lock (decision 91); do not
+add a lock there. Seeds retain Organization NO KEY UPDATE -> Catalog -> items.
+
+Catalog.revision is a monotonic integer exposed as version in GET /catalogs/ and
+reorder responses. Every effective item write (create, any editable field update,
+deactivate, activate, reorder, inserted seed items) bumps it under the catalog lock using F expressions.
+It is not part of the field snapshot content/hash. Automatic item sort uses only
+active non-Other items; an inactive sort=10000 does not exhaust the order.
+
+POST /catalogs/{slug}/items/reorder/ requires catalog_item.update and accepts
+{version, ordered_ids: UUID[]} with at most 200 ids. Under the catalog lock it first
+rejects stale versions with 409 catalog_version_conflict. The existing DomainError
+409 envelope has no params, so current_version is not included. A matching version
+must supply exactly all active non-Other ids, once each; every mismatch (including
+foreign ids) is the same 400 validation_error, fields.ordered_ids code
+reorder_ids_mismatch. Unknown/foreign catalog slugs are 404. Active capacity stays
+200 with catalog_item_limit_reached on create/reactivation; Other counts toward it.
+
+The transaction rewrites changed sorts as 10,20,30..., leaves inactive and Other
+sorts alone, and returns {version, items: [...]} with the full list in server order.
+The list and reference counts are materialized under the catalog lock so the
+returned order belongs to that revision. Other stays last through model ordering.
+
+Acceptance tests: tests/test_catalog_api.py covers usage/authors, historical sums,
+query count, automatic sort, state metadata and the permission wiring.
+tests/test_catalog_reorder.py covers the conditional contract, invalid-id matrix,
+organization isolation, every write's revision, unchanged snapshot hash and one
+real two-connection PostgreSQL concurrency regression. Docker is blocked in the
+implementation environment; the lead must execute database tests and migration.
+No separate activate/reorder deadlock test is claimed: the shared catalog-first
+helper enforces the structural rule; real lock behavior remains a PostgreSQL gate.
+
+References: [correlated aggregates and F expressions](https://docs.djangoproject.com/en/5.2/ref/models/expressions/),
+[row locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update).
+
+
+## Implementation validation (2026-11-05)
+
+| Check | Result in the implementation worktree |
+| --- | --- |
+| `uv run ruff check .`, `uv run ruff format .`, `uv run mypy .` | Blocked: uv interpreter-cache persistence is denied by the sandbox. |
+| Installed `ruff check .` | Passed. |
+| Installed `ruff format .` | Ran; unrelated formatting in tests/test_motorcycle_services.py was restored to preserve scope. |
+| Installed `ruff format --check` on catalogs and changed backend tests | Passed: 16 files. Full-tree check still reports the pre-existing motorcycle-services formatting. |
+| `.venv/Scripts/python.exe -m mypy . --no-incremental` | Passed: 148 source files. |
+| `.venv/Scripts/python.exe -m pytest tests/test_void_reason_catalog.py -q` | Passed: 12 non-database tests. |
+| Collection of test_catalog_api, test_catalog_reorder, test_catalog_services, test_field_snapshots and test_organizations_b_01 | 147 tests collected; database cases were NOT executed. |
+| `manage.py makemigrations catalogs --name catalog_revision_and_item_deactivation --skip-checks` | Generated additive 0004; migration-history validation warned because PostgreSQL is unavailable. Migration was NOT applied. |
+| `npm run api:generate` | Blocked at uv. Its schema-export and TypeScript-generator steps completed separately with the worktree Python and the pinned openapi-typescript 7.13.0. No generated code was hand-edited. Full wrapper reproducibility remains unverified. |
+| `manage.py spectacular --validate --fail-on-warn --file ../packages/api-client/openapi.yaml` | Passed using the worktree Python/dev schema settings, without database access. |
+| `npm test --workspace=packages/i18n` | Passed: 13 tests. |
+| Direct Node checks of catalog-domain.ts | Passed: full active-id order, boundary/inactive/Other guards and inactive maximum ignored. These do not replace Vitest. |
+| `npm run lint`, `npm run format:check`, web catalog Vitest | Blocked: ESLint, Prettier and Vitest executables are missing from node_modules. |
+| `npm run typecheck` | Failed on missing local types/toolchain and incompatible available compiler options; no successful web typecheck is claimed. |
+| PostgreSQL API/service tests, two-connection concurrency, migration application | NOT run: Docker is blocked; the lead owns this gate. No host port 5432 was used. |
+
+No records drill-down is introduced (explicitly outside #182). The count sources,
+reorder conflict envelope and nullable legacy/seed audit fields follow the lead's
+approved decisions; there are no new functional assumptions or dependencies.

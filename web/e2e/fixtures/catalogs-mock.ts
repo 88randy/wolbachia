@@ -7,36 +7,70 @@ interface WriteBody {
   label_es?: string;
   label_en?: string;
   sort?: number;
+  version?: number;
+  ordered_ids?: string[];
 }
 const json = (route: Route, body: unknown) => route.fulfill({ json: body });
 
+interface CatalogState {
+  items: CatalogItem[];
+  version: number;
+}
+
 /** Stateful API fixtures: the journey sees its writes after each query invalidation. */
 export async function mockCatalogs(page: Page) {
-  let items = catalogRows();
+  let state: CatalogState = { items: catalogRows(), version: CATALOG.version };
   await page.route("**/api/v1/catalogs/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
-    if (path === "/api/v1/catalogs/") return json(route, pageOf([CATALOG]));
-    if (request.method() === "GET") return json(route, pageOf(ordered(items)));
+    if (path === "/api/v1/catalogs/")
+      return json(route, pageOf([{ ...CATALOG, version: state.version }]));
+    if (request.method() === "GET") return json(route, pageOf(ordered(state.items)));
     const body = (request.postData() ? request.postDataJSON() : {}) as WriteBody;
-    if (path.endsWith("/items/")) {
-      const created = makeCatalogItem({
-        id: crypto.randomUUID(),
-        code: body.code ?? "",
-        label_es: body.label_es ?? "",
-        label_en: body.label_en ?? "",
-        sort: 40,
+    if (path.endsWith("/reorder/") && body.version !== state.version)
+      return route.fulfill({
+        status: 409,
+        json: { code: "catalog_version_conflict", detail: "Catalog changed." },
       });
-      items = [...items, created];
-      return json(route, created);
-    }
-    items = items.map((item) => updateItem(item, path, body));
-    return json(
-      route,
-      items.find((item) => path.includes(item.id)),
-    );
+    const write = applyWrite(state, path, body);
+    state = write.state;
+    return json(route, write.answer);
   });
 }
+
+function applyWrite(state: CatalogState, path: string, body: WriteBody) {
+  const version = state.version + 1;
+  if (path.endsWith("/reorder/")) {
+    const items = reorderItems(state.items, body.ordered_ids ?? []);
+    return { state: { items, version }, answer: { version, items: ordered(items) } };
+  }
+  const created = path.endsWith("/items/") ? createItem(body) : undefined;
+  const items = created
+    ? [...state.items, created]
+    : state.items.map((item) => updateItem(item, path, body));
+  return {
+    state: { items, version },
+    answer: created ?? items.find((item) => path.includes(item.id)),
+  };
+}
+
+function reorderItems(items: CatalogItem[], ids: string[]) {
+  return items.map((item) => {
+    const position = ids.indexOf(item.id);
+    return position < 0 ? item : { ...item, sort: (position + 1) * 10 };
+  });
+}
+
+function createItem(body: WriteBody) {
+  return makeCatalogItem({
+    id: crypto.randomUUID(),
+    code: body.code ?? "",
+    label_es: body.label_es ?? "",
+    label_en: body.label_en ?? "",
+    sort: 40,
+  });
+}
+
 function pageOf(results: readonly unknown[]) {
   return { count: results.length, next: null, previous: null, results };
 }

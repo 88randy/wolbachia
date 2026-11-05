@@ -176,29 +176,80 @@ test("a late submit after a same-identity revision change keeps the draft withou
   expect(api.requests.filter((request) => request.method === "GET")).toHaveLength(reads);
 });
 
-test("a partial reorder failure refetches the server order and shows an alert", async () => {
+test("reorder sends one conditional POST and displays the refreshed order", async () => {
+  let rows = catalogRows();
+  let version = 4;
   const { api } = await open({
     routes: {
-      [`PATCH ${ITEMS_PATH}item-b/`]: Response.json(makeCatalogItem()),
-      [`PATCH ${ITEMS_PATH}item-a/`]: apiError(400, "validation_error", {
-        fields: { sort: [{ code: "sort_exhausted" }] },
-      }),
+      "GET /api/v1/catalogs/": () => pageOf([{ ...CATALOG, version }]),
+      [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
+      [`POST ${ITEMS_PATH}reorder/`]: () => {
+        version += 1;
+        rows = [...rows.slice(1, 2), ...rows.slice(0, 1), ...rows.slice(2)];
+        return Response.json({ version, items: rows });
+      },
     },
   });
-  const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Mover arriba: Nebulización" }));
+  await userEvent.setup().click(screen.getByRole("button", { name: "Mover arriba: Nebulización" }));
+  await waitFor(() => {
+    expect(screen.getAllByRole("row")[1]?.textContent).toContain("Nebulización");
+  });
+  const writes = api.requests
+    .filter((request) => request.method !== "GET")
+    .map(({ path, method, body }) => ({ path, method, body }));
+  expect(writes).toEqual([
+    {
+      path: `${ITEMS_PATH}reorder/`,
+      method: "POST",
+      body: { version: 4, ordered_ids: ["item-b", "item-a"] },
+    },
+  ]);
+});
+
+test("a stale reorder refetches both queries and asks to retry without showing server text", async () => {
+  const { api } = await open({
+    routes: { [`POST ${ITEMS_PATH}reorder/`]: apiError(409, "catalog_version_conflict") },
+  });
+  await userEvent.setup().click(screen.getByRole("button", { name: "Mover arriba: Nebulización" }));
   expect(await screen.findByRole("alert")).toHaveProperty(
     "textContent",
-    "No se pudo completar el cambio de orden. Se recargó la lista; revísala antes de reintentar.",
+    "El catálogo cambió. Se recargó la lista; revisa el orden e intenta de nuevo.",
   );
-  expect(
-    api.requests.filter((request) => request.method === "PATCH").map((request) => request.body),
-  ).toEqual([{ sort: 10 }, { sort: 20 }]);
+  expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
+  expect(api.requests.some((request) => request.method === "PATCH")).toBe(false);
   expect(
     api.requests.filter(
       (request) => request.method === "GET" && request.path.startsWith(ITEMS_PATH),
     ).length,
   ).toBeGreaterThan(1);
+  expect(
+    api.requests.filter(
+      (request) => request.method === "GET" && request.path.startsWith("/api/v1/catalogs/?"),
+    ).length,
+  ).toBeGreaterThan(1);
+});
+
+test("table shows usage, creation author and deactivation actor and date", async () => {
+  await open({
+    path: `${CATALOG_PATH}?include_deactivated=true`,
+    rows: [
+      makeCatalogItem({ usage_count: 4, in_use: true, created_by_username: "test-author" }),
+      makeCatalogItem({
+        id: "old",
+        code: "old",
+        label_es: "Anterior",
+        is_active: false,
+        deactivated_at: "2026-02-05T12:00:00Z",
+        deactivated_by_username: "test-editor",
+      }),
+    ],
+  });
+  const used = within(screen.getByRole("row", { name: /spraying/ }));
+  expect(used.getByText("4")).toBeDefined();
+  expect(used.getByText(/test-author/)).toBeDefined();
+  const inactive = within(screen.getByRole("row", { name: /Anterior/ }));
+  expect(inactive.getByText(/test-editor/)).toBeDefined();
+  expect(inactive.getByText(/5.*feb.*2026/)).toBeDefined();
 });
 
 test("fetches all catalog and item pages without following arbitrary next URLs", async () => {
@@ -325,17 +376,17 @@ test("unmount aborts an in-flight submit", async () => {
   expect(api.requests.filter((request) => request.method === "GET")).toHaveLength(reads);
 });
 
-test("a revision change between reorder PATCHes stops remaining writes and extra invalidation", async () => {
+test("a session revision change during the reorder POST drops its answer and extra invalidation", async () => {
   let resolve!: (answer: Response) => void;
   const answer = new Promise<Response>((done) => {
     resolve = done;
   });
-  const { api, app } = await open({ routes: { [`PATCH ${ITEMS_PATH}item-b/`]: () => answer } });
+  const { api, app } = await open({ routes: { [`POST ${ITEMS_PATH}reorder/`]: () => answer } });
   const user = userEvent.setup();
   const move = screen.getByRole("button", { name: "Mover arriba: Nebulización" });
   await user.click(move);
   await waitFor(() => {
-    expect(api.requests.some((request) => request.method === "PATCH")).toBe(true);
+    expect(api.requests.some((request) => request.method === "POST")).toBe(true);
   });
   await act(async () => {
     bumpEpoch();
@@ -346,11 +397,11 @@ test("a revision change between reorder PATCHes stops remaining writes and extra
     expect(app.queryClient.isFetching()).toBe(0);
   });
   const reads = api.requests.filter((request) => request.method === "GET").length;
-  resolve(Response.json(makeCatalogItem()));
+  resolve(Response.json({ version: 2, items: [] }));
   await waitFor(() => {
     expect(move.getAttribute("aria-disabled")).toBe("false");
   });
-  expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(1);
+  expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
   expect(api.requests.filter((request) => request.method === "GET")).toHaveLength(reads);
   expect(screen.queryByText("Se movió Nebulización arriba.")).toBeNull();
 });
