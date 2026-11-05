@@ -4,10 +4,11 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
 import { createAppQueryClient } from "../api/query-client";
-import { fetchMeCommitted, ME_QUERY_KEY } from "./me-query";
+import { fetchMeCommitted, ME_QUERY_KEY, meQueryOptions } from "./me-query";
+import { reconcileSession } from "./session-reconcile";
 import { begin } from "./session-controller";
 import type { Token } from "./session-controller";
-import { bumpEpoch, isSignedOutSession } from "./session-revision";
+import { bumpEpoch, isSignedOutSession, sessionState } from "./session-revision";
 import { simulateSignOut } from "../test/simulate-session";
 import { endSessionExpiry, isSessionExpired, reportSessionError } from "./session-events";
 import {
@@ -137,5 +138,32 @@ describe("fetchMe", () => {
     await expect(fetchMe(clientFor(api))).rejects.toBeInstanceOf(ApiError);
 
     expect(getOrganizationSlug()).toBe("norte");
+  });
+});
+
+describe("a verify next to a pending passive read (#82)", () => {
+  test("the verify runs its own /me/ request and ends known, never stuck reconciling", async () => {
+    let calls = 0;
+    let release: (response: Response) => void = () => undefined;
+    const held = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const api = createFakeApi({
+      [ME_PATH]: () => (++calls === 1 ? held : Response.json(makeMe())),
+    });
+    const client = clientFor(api);
+    const queryClient = createAppQueryClient({ retry: false });
+    const passive = queryClient.fetchQuery(meQueryOptions(client)).catch((error: unknown) => error);
+    await vi.waitFor(() => {
+      expect(api.requests).toHaveLength(1);
+    });
+
+    const verifying = reconcileSession(queryClient, client, "verify"); // focus
+    release(Response.json(makeMe()));
+    await passive;
+
+    expect(await verifying).toBe(true);
+    expect(sessionState()).toBe("known");
+    expect(api.requests.length).toBeGreaterThanOrEqual(2);
   });
 });

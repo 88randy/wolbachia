@@ -50,6 +50,9 @@ function isNoMembership(error: unknown): boolean {
 
 async function run(queryClient: QueryClient, client: ApiClient, mode: ReconcileMode) {
   const token = begin(queryClient, mode === "full" ? "leave" : "verify");
+  // Its own request: a `/me/` already in flight (a passive read) belongs to an older token and
+  // would be shared by TanStack, then rejected, ending this run without an answer.
+  await queryClient.cancelQueries({ queryKey: ME_QUERY_KEY });
   try {
     await queryClient.query({
       queryKey: ME_QUERY_KEY,
@@ -64,6 +67,9 @@ async function run(queryClient: QueryClient, client: ApiClient, mode: ReconcileM
     if (isNoMembership(error)) settleWithoutIdentity(token);
     else await failIfCurrent(queryClient, token);
   }
+  // An outcome that neither published nor failed leaves the tab `reconciling` with no way out:
+  // if this run is still the latest, it ends like a failure (the blocker then offers Retry).
+  if (!isSessionKnown()) await failIfCurrent(queryClient, token);
   return isSessionKnown();
 }
 
