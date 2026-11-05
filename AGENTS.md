@@ -19,7 +19,7 @@ The task prompt names your role. Read and follow its definition, then the shared
 - `qa` → `.claude/agents/qa.md`; `code-reviewer` → `.claude/agents/code-reviewer.md`; `security-reviewer` → `.claude/agents/security-reviewer.md`
 - Every implementer: "Working protocol (all implementers)" in `.claude/agents/README.md`.
 
-Skills named in those files are optional Claude plugins; ignore them and follow `docs/engineering-rules.md`.
+Skills named in those files are optional Claude plugins; ignore them and follow `docs/engineering-rules.md`. Exception: the project skills in `.claude/skills/` (`dashboard-designer`, `chart-builder`, `business-analyst`) are plain Markdown; read the matching `SKILL.md` before UI, dashboard or chart work. Project rules prevail over them.
 
 ## Codex-specific notes
 
