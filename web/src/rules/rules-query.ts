@@ -40,16 +40,20 @@ export function parameterQueryOptions(client: ApiClient, key: string) {
   });
 }
 
-/** `GET /api/v1/rule-parameters/{key}/versions/`: the whole history, voided versions included. */
+/** `GET /api/v1/rule-parameters/{key}/versions/`: the history; voided versions only with `include_voided`. */
 export function versionsQueryOptions(client: ApiClient, key: string, state: TableState) {
   return queryOptions({
-    queryKey: [ROOT, "versions", key, state.page],
+    queryKey: [ROOT, "versions", key, state.page, state.includeVoided],
     queryFn: async ({ signal }) =>
       unwrap(
         await client.GET("/api/v1/rule-parameters/{parameter_key}/versions/", {
           params: {
             path: { parameter_key: key },
-            query: { page: state.page, page_size: VERSIONS_PAGE_SIZE },
+            query: {
+              page: state.page,
+              page_size: VERSIONS_PAGE_SIZE,
+              include_voided: state.includeVoided ? "true" : "false",
+            },
           },
           signal,
         }),

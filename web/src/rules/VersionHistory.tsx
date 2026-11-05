@@ -9,12 +9,11 @@ import { useTableUrlState } from "../data-table/use-table-url-state";
 import { FormNotice } from "../forms/FormNotice";
 import { useFormatDateTime } from "../format/use-format-date-time";
 import { voidInfoOf } from "../void";
-import { hideVoidedVersions } from "./hide-voided-versions";
 import { versionsQueryOptions } from "./rules-query";
 import type { RuleParameter, RuleParameterVersion } from "./rules-query";
 import { VERSIONS_PAGE_SIZE, VERSIONS_TABLE } from "./rules-table";
 import styles from "./rules.module.css";
-import { useAuthorLabel } from "./use-author-label";
+import { useAuthorName } from "./use-author-name";
 import { useVersionColumns } from "./use-version-columns";
 import { VoidVersionDialog } from "./VoidVersionDialog";
 
@@ -49,32 +48,28 @@ interface HistoryTableProps extends VersionHistoryProps {
   onVoid: (version: RuleParameterVersion) => void;
 }
 
-/** Filter bar ("Include voided") and table of the versions of the page in view. */
+/** Filter bar ("Include voided") and table of the versions of the page in view (voided ones only when asked, by the server). */
 function HistoryTable({ parameter, canVoid, onVoid }: HistoryTableProps) {
   const { t } = useTranslation();
   const client = useApiClient();
   const controller = useTableUrlState(VERSIONS_TABLE);
   const query = useQuery(versionsQueryOptions(client, parameter.key, controller.state));
   const columns = useVersionColumns({ parameter, canVoid, onVoid, blockedNoteId: NOTE_ID });
-  const authorLabel = useAuthorLabel();
+  const authorName = useAuthorName();
   const formatDateTime = useFormatDateTime();
   const rows = pageTableData(query, controller.state.page, VERSIONS_PAGE_SIZE);
-  const visible = hideVoidedVersions(rows, controller.state.includeVoided);
   return (
     <>
       <FilterBar controller={controller} />
-      {visible.hiddenCount > 0 && (
-        <p className={styles.voidBlocked} role="status">
-          {t("rules.history.hiddenNote", { count: visible.hiddenCount })}
-        </p>
-      )}
       <DataTable
         caption={t("rules.history.caption")}
         columns={columns}
         getRowId={getVersionId}
         controller={controller}
-        data={visible.data}
-        voidOf={(version) => voidInfoOf(version, authorLabel, formatDateTime)}
+        data={rows}
+        voidOf={(version) =>
+          voidInfoOf(version, () => authorName(version.voided_by_username), formatDateTime)
+        }
       />
     </>
   );
@@ -82,7 +77,7 @@ function HistoryTable({ parameter, canVoid, onVoid }: HistoryTableProps) {
 
 /**
  * The history of one parameter, read only: every version with its value, day, status, reason,
- * author and date, newest first. Voided versions are hidden until "Include voided" is on, then
+ * author and date, newest first. Voided versions are left out by the server until "Include voided" is on, then
  * shown struck through with their reason and author. A scheduled version can be voided from here
  * (the shared dialog); the ones that took effect cannot, and the button says why.
  */

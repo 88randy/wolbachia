@@ -44,3 +44,5 @@ The W62 history names every author, filters voided versions on the server, and t
 
 ## Notes
 - Opened from the W62 PR. Web follow-up: switch `web/src/rules/use-author-label.ts` to the username, drop `web/src/rules/hide-voided-versions.ts`, add the unit label for `day` and the parameter name.
+
+- Decisions taken (lead, from docs/pending-decisions-proposal.md OP02/OP03): key `revisit_interval_days` (not `revisit_frequency_days`), integer, unit `day`, default 7, range 1 to 28. `include_voided` accepts only `true` or `false`. The web follow-up is done in the same PR.

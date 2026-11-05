@@ -47,9 +47,11 @@ export function makeVersion(overrides: Partial<RuleParameterVersion> = {}): Rule
     reason: "seed: design brief",
     status: "in_force",
     created_by: null,
+    created_by_username: null,
     created_at: "2026-01-01T06:00:00Z",
     voided_at: null,
     voided_by: null,
+    voided_by_username: null,
     void_reason: "",
     ...overrides,
   };
@@ -76,7 +78,10 @@ export async function openParameterPage(options: OpenOptions = {}) {
   const api: FakeApi = createFakeApi({
     [ME]: Response.json(me),
     [PARAMETER_ROUTE]: () => Response.json(parameter),
-    [VERSIONS_ROUTE]: () => pageOf(versions),
+    [VERSIONS_ROUTE]: ({ path }) => {
+      const includeVoided = new URL(path, "http://localhost").searchParams.get("include_voided");
+      return pageOf(versions.filter((v) => includeVoided === "true" || v.status !== "voided"));
+    },
     ...options.routes,
   });
   const app = await renderApp({
