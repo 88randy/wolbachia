@@ -15,7 +15,7 @@ import { runAuthOperation, useAbandonOnUnmount } from "./auth-operation";
 import type { Me } from "./me";
 import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
-import { begin, commitKnown, noteStaleLogin } from "./session-controller";
+import { begin, commitKnown, isLatest, noteStaleLogin } from "./session-controller";
 import { reconcileAndRevalidate } from "./session-reconcile";
 import { currentRevision } from "./session-revision";
 import { useMe } from "./use-me";
@@ -59,7 +59,7 @@ interface ReauthRequest {
  * with `/me/` (`state.diverged`): the cookie is the truth (#82).
  */
 function startReauth({ client, queryClient, username, password }: ReauthRequest) {
-  const shownFor = begin(queryClient, "passive");
+  const shownFor = currentRevision();
   const state = { started: false, published: false };
   const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
     if (shownFor !== currentRevision() || !isCurrent()) return undefined;
@@ -67,7 +67,7 @@ function startReauth({ client, queryClient, username, password }: ReauthRequest)
     const token = begin(queryClient, "leave");
     state.started = true;
     const outcome = await requestLogin(client, { username, password }, signal);
-    const isStale = token !== currentRevision() || !isCurrent();
+    const isStale = !isLatest(token) || !isCurrent();
     if (outcome.ok) {
       commit(); // the dialog unmounting because of the commit must not abandon it
       const { me, attestation } = outcome;

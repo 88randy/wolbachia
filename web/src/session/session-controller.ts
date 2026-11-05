@@ -25,18 +25,30 @@ import { broadcastSessionChanged } from "./session-sync";
  * expected attestation and the cached `/me/`; nothing else writes them (a test fails otherwise).
  *
  * - Every operation (login, re-authentication, sign-out, organization switch, reconcile, a 401, a
- *   cross-tab event) starts with `begin()`. It returns the TOKEN: the epoch, after `leaveKnown`
- *   bumped it when the operation leaves `known`.
+ *   cross-tab event) starts with `begin()`. It returns a FRESH TOKEN (epoch after `leaveKnown`
+ *   when it leaves `known`, plus a unique operation id): no two operations share a token, so only
+ *   the most recently begun one can commit (latest wins).
  * - Operations never publish. They produce a CANDIDATE from the network response itself (never
  *   from reading the query cache afterwards) and call `commitKnown(token, candidate)`, which checks
- *   `token === epoch` synchronously and only then writes everything in ONE step. A stale
+ *   `isLatest(token)` (the token is the latest begun operation, in its epoch) synchronously and only then writes everything in ONE step. A stale
  *   candidate is dropped and nothing happens.
  * - Failure paths never restore anything: a failed operation does nothing if its token is stale,
  *   or calls `leaveKnown` if it is current (`failIfCurrent`). After a failed switch the session is
  *   `unknown` and the tab reconciles.
  * - `leaveKnown` always bumps the epoch, so it invalidates every token in flight.
  */
-export type Token = number;
+export interface Token {
+  readonly epoch: number;
+  /** Unique per `begin()`: no two operations ever share a token. */
+  readonly operation: number;
+}
+
+let latestOperation = 0;
+
+/** Strictly latest-wins: only the most recently begun operation, in the epoch it began in, may commit. */
+export function isLatest(token: Token): boolean {
+  return token.operation === latestOperation && token.epoch === currentRevision();
+}
 
 export interface Candidate {
   me: Me;
@@ -95,7 +107,18 @@ export function begin(queryClient: QueryClient, kind: BeginKind): Token {
   } else if (kind === "verify") {
     setSessionState("reconciling");
   }
-  return currentRevision();
+  latestOperation += 1; // a verify or a passive begin takes a new identity but clears nothing
+  return { epoch: currentRevision(), operation: latestOperation };
+}
+
+/**
+ * The token of a plain read of `/me/` (a guard, a refresh): it is NOT an operation. It takes no
+ * operation id, so it never makes an operation in flight stale (no churn); any operation begun
+ * after it does make the read stale, and the read only commits while the tab is `known`
+ * (`passive`), which no operation in flight allows.
+ */
+export function readToken(): Token {
+  return { epoch: currentRevision(), operation: latestOperation };
 }
 
 /** What a commit publishes (the candidate) and how (the flags). */
@@ -125,7 +148,7 @@ export function commitKnown(
   token: Token,
   publication: Publication,
 ): boolean {
-  if (token !== currentRevision()) return false;
+  if (!isLatest(token)) return false;
   if (publication.passive === true && !isSessionKnown()) return false;
   if (publication.replace === true) {
     queryClient.clear();
@@ -148,12 +171,12 @@ export function commitKnown(
  * Only for a current token.
  */
 export function settleWithoutIdentity(token: Token): void {
-  if (token === currentRevision()) setSessionState("known");
+  if (isLatest(token)) setSessionState("known");
 }
 
 /** A failed operation: only one whose token is current takes the tab out of `known`. */
 export function failIfCurrent(queryClient: QueryClient, token: Token): Promise<void> {
-  return token === currentRevision() ? leaveKnown(queryClient) : Promise.resolve();
+  return isLatest(token) ? leaveKnown(queryClient) : Promise.resolve();
 }
 
 /**
@@ -161,8 +184,8 @@ export function failIfCurrent(queryClient: QueryClient, token: Token): Promise<v
  * session moved meanwhile, so nothing is published and the caller reconciles. Nobody is signed in
  * afterwards: the identity and the organization are forgotten and the other tabs are told.
  */
-export function commitSignedOut(queryClient: QueryClient, token: Token): Token | undefined {
-  if (token !== currentRevision()) return undefined;
+export function commitSignedOut(queryClient: QueryClient, token: Token): number | undefined {
+  if (!isLatest(token)) return undefined;
   bumpEpoch();
   void queryClient.cancelQueries();
   removeOrganizationQueries(queryClient);
@@ -180,7 +203,7 @@ export function commitSignedOut(queryClient: QueryClient, token: Token): Token |
  * After the sign-in page opened: empty the cache, but only if nothing happened since the sign-out
  * (`epoch` is the one `commitSignedOut` returned): a sign-in accepted meanwhile keeps its session.
  */
-export function clearAfterSignOut(queryClient: QueryClient, epoch: Token): void {
+export function clearAfterSignOut(queryClient: QueryClient, epoch: number): void {
   if (epoch === currentRevision()) queryClient.clear();
 }
 

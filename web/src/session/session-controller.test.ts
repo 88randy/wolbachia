@@ -72,7 +72,7 @@ describe("failures and the transitions never restore anything", () => {
     const queryClient = freshClient();
     const stale = begin(queryClient, "leave");
     const current = begin(queryClient, "leave");
-    expect(current).toBe(currentRevision());
+    expect(current.epoch).toBe(currentRevision());
 
     await failIfCurrent(queryClient, stale);
     expect(sessionState()).toBe("reconciling");
@@ -87,7 +87,7 @@ describe("failures and the transitions never restore anything", () => {
 
     await leaveKnown(queryClient);
 
-    expect(currentRevision()).toBe(token + 1);
+    expect(currentRevision()).toBe(token.epoch + 1);
     expect(commitKnown(queryClient, token, CANDIDATE)).toBe(false);
   });
 
@@ -99,5 +99,27 @@ describe("failures and the transitions never restore anything", () => {
 
     expect(commitSignedOut(queryClient, token)).toBeUndefined();
     expect(getOrganizationSlug()).toBe("norte");
+  });
+});
+
+describe("only the latest begun operation can commit", () => {
+  test("every begin returns a token of its own, even with no epoch change", () => {
+    const queryClient = freshClient();
+    const first = begin(queryClient, "passive");
+    const second = begin(queryClient, "verify");
+    expect(second.operation).not.toBe(first.operation);
+    expect(commitKnown(queryClient, first, CANDIDATE)).toBe(false);
+    expect(commitKnown(queryClient, second, CANDIDATE)).toBe(true);
+  });
+
+  test("a token that is not the latest is rejected, even one begun in the same epoch", () => {
+    const queryClient = freshClient();
+    setOrganizationSlug("previous");
+    const login = begin(queryClient, "leave");
+    const verify = begin(queryClient, "verify"); // same epoch, newer operation
+    expect(commitKnown(queryClient, login, CANDIDATE)).toBe(false);
+    expect(commitSignedOut(queryClient, login)).toBeUndefined();
+    expect(getOrganizationSlug()).toBe("previous"); // the rejected commit wrote nothing
+    expect(commitKnown(queryClient, verify, CANDIDATE)).toBe(true);
   });
 });

@@ -5,7 +5,9 @@ import { createWebApiClient } from "../api/create-web-api-client";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
 import { createAppQueryClient } from "../api/query-client";
 import { fetchMeCommitted, ME_QUERY_KEY } from "./me-query";
-import { bumpEpoch, currentRevision, isSignedOutSession } from "./session-revision";
+import { begin } from "./session-controller";
+import type { Token } from "./session-controller";
+import { bumpEpoch, isSignedOutSession } from "./session-revision";
 import { simulateSignOut } from "../test/simulate-session";
 import { endSessionExpiry, isSessionExpired, reportSessionError } from "./session-events";
 import {
@@ -23,7 +25,7 @@ beforeEach(() => {
 });
 
 /** `/me/` as a candidate of an operation that began now (or with `token`), on a fresh cache. */
-function fetchMe(client: ReturnType<typeof clientFor>, token?: number) {
+function fetchMe(client: ReturnType<typeof clientFor>, token?: Token) {
   const queryClient = createAppQueryClient({ retry: false });
   return fetchMeCommitted({ client, queryClient }, token === undefined ? {} : { token });
 }
@@ -71,7 +73,7 @@ describe("fetchMe and the signed-out state", () => {
       release = resolve;
     });
     const api = createFakeApi({ [ME_PATH]: () => late });
-    const asked = fetchMe(clientFor(api), currentRevision());
+    const asked = fetchMe(clientFor(api), begin(createAppQueryClient(), "passive"));
     await vi.waitFor(() => {
       expect(api.requests).toHaveLength(1);
     });

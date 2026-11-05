@@ -6,7 +6,9 @@ import { apiError, createFakeApi, makeMe, makeOrganization, noContent } from "..
 import type { FakeApiRoutes } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
+import { createWebApiClient } from "../api/create-web-api-client";
 import type { Me } from "./me";
+import { reconcileSession } from "./session-reconcile";
 import { clearOrganizationSlug } from "./organization-slug";
 import { endSessionExpiry } from "./session-events";
 import {
@@ -558,6 +560,43 @@ describe("the cookie is the truth (#82)", () => {
     expect(api.requests.filter((request) => request.path === "/api/v1/me/").length).toBeGreaterThan(
       1,
     );
+  });
+
+  test("a verify that confirms B between a login's cookie and its late body: B stays, A is never stored (#82)", async () => {
+    const login = deferred();
+    const userA = makeMe();
+    const userB = makeMe({ user: { ...userA.user, id: "b0b0b0b0-0000-4000-8000-000000000007" } });
+    const api = createFakeApi({
+      [CSRF]: noContent(204),
+      [LOGIN]: () => login.promise, // A's cookie was applied; the body is still pending
+      [ME]: () => Response.json(userB), // another tab moved the cookie to B
+    });
+    const app = await renderApp({ path: "/login", fetch: api.fetch });
+    const seen: string[] = [];
+    app.queryClient.getQueryCache().subscribe(() => {
+      const id = app.queryClient.getQueryData<Me>(["me"])?.user.id;
+      if (id !== undefined) seen.push(id);
+    });
+    await userEvent.type(await screen.findByLabelText("Usuario"), "ana.supervisora");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => {
+      expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(true);
+    });
+
+    await reconcileSession(
+      app.queryClient,
+      createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch }),
+      "verify",
+    );
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    login.release(Response.json({ me: userA, server_time: "2026-11-04T12:00:00Z" }));
+    await hop();
+    await hop();
+
+    expect(seen).not.toContain(userA.user.id);
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    expect(sessionState()).toBe("known");
   });
 
   test("a re-authentication from the unknown state makes the identity known again", async () => {

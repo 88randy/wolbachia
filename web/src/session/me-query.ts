@@ -7,7 +7,7 @@ import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { IDENTITY_HEADER } from "./attestation";
 import { ME_QUERY_KEY } from "./me-key";
 import { getOrganizationSlug } from "./organization-slug";
-import { begin, commitKnown, forgetRefusedSlug } from "./session-controller";
+import { commitKnown, forgetRefusedSlug, readToken } from "./session-controller";
 import type { Token } from "./session-controller";
 import { currentRevision } from "./session-revision";
 
@@ -87,7 +87,7 @@ interface MeRequest {
 export async function fetchMeCommitted(deps: MeDeps, request: MeRequest = {}): Promise<Me> {
   const { client, queryClient, signal } = deps;
   const isPassive = request.token === undefined;
-  const token = request.token ?? begin(queryClient, "passive");
+  const token = request.token ?? readToken();
   const asked = await requestMe(client, {
     ...(signal ? { signal } : {}),
     ...(request.slug === undefined ? {} : { slug: request.slug }),
