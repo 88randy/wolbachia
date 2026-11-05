@@ -189,6 +189,6 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 
 Machine access via API keys (W66) uses the same `/portal/` endpoints, limited by the key's scope and rate limit. **[PENDING]** Confirm.
 
-W63 (#35): catalog item reads do not expose an in-use count or an author. The editor omits
-the design's usage and author columns; a backend follow-up must define these fields before
-the web can show them or enforce usage-specific editing rules.
+W63 (#35): the boolean `in_use` is shown with an accessible icon/text badge in Status.
+The usage count, authorship and atomic reorder remain follow-up #182; the editor omits
+the design's count and author columns until the API provides those fields.

@@ -12,6 +12,7 @@ const CODE_KEYS: Readonly<Record<string, MessageKey>> = {
   sort_exhausted: "catalogs.error.sort",
   catalog_item_limit_reached: "catalogs.error.limit",
   other_item_cannot_be_deactivated: "catalogs.error.other",
+  other_item_protected: "catalogs.error.other",
 };
 interface Answer {
   response: Response;

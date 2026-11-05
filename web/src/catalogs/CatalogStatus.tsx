@@ -1,4 +1,4 @@
-import { Ban, Check, LockKeyhole } from "lucide-react";
+import { Ban, Check, Link, LockKeyhole } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { CatalogItem } from "./catalogs-query";
 import styles from "./catalogs.module.css";
@@ -13,9 +13,17 @@ export function CatalogStatus({ item }: { item: CatalogItem }) {
       ? "catalogs.status.active"
       : "catalogs.status.inactive";
   return (
-    <span className={styles.badge}>
-      <Icon className={styles.icon} aria-hidden="true" />
-      {t(key)}
-    </span>
+    <div className={styles.actions}>
+      <span className={styles.badge}>
+        <Icon className={styles.icon} aria-hidden="true" />
+        {t(key)}
+      </span>
+      {item.in_use && (
+        <span className={styles.badge} aria-description={t("catalogs.status.inUseDescription")}>
+          <Link className={styles.icon} aria-hidden="true" />
+          {t("catalogs.status.inUse")}
+        </span>
+      )}
+    </div>
   );
 }

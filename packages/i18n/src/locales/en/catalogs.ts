@@ -16,6 +16,8 @@ export const catalogs: Record<keyof typeof spanish, string> = {
   "catalogs.table.status": "Status",
   "catalogs.table.actions": "Actions",
   "catalogs.table.include": "Include deactivated",
+  "catalogs.status.inUse": "In use",
+  "catalogs.status.inUseDescription": "It stays on older records and can only be deactivated.",
   "catalogs.status.active": "Active",
   "catalogs.status.inactive": "Deactivated",
   "catalogs.status.fixed": "Fixed",

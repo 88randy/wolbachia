@@ -34,7 +34,9 @@ Create sends max(active non-Other sort) + 10, capped at 10000, instead of relyin
 the backend automatic order (which includes inactive items). The sort_exhausted mapping remains a fallback.
 No icon/requires_photo fields are sent. Error codes map to localized keys; never server detail.
 
-The API lacks in-use counts and authors; the editor does not invent either.
+The API boolean `in_use` is shown in the Status column with an icon, text and an
+accessible description: old records retain the item, which can only be deactivated.
+The usage count, authorship and atomic reorder remain follow-up #182.
 Consumer screens/mobile must enforce free text when choosing Other; this editor
 does not select catalog items for records. The catalog launch list remains pending.
 

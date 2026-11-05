@@ -209,5 +209,6 @@ for the `catalogs` resource live in `catalogs-query.ts`. The editor, dialogs and
 keyed by user, organization and catalog slug, so changing identity discards drafts and rows.
 See [catalog module](src/catalogs/README.md) for ordering, pagination, session guards and tests.
 Inactive items are hidden unless `include_deactivated=true`; configuration is deactivated
-after confirmation and can be reactivated, rather than voided. No usage count/author is
-invented. Other free-text validation belongs to consumer screens and mobile.
+after confirmation and can be reactivated, rather than voided. The boolean `in_use` is
+shown with an accessible icon/text badge. The usage count, authorship and atomic reorder
+remain follow-up #182. Other free-text validation belongs to consumer screens and mobile.

@@ -27,6 +27,8 @@ export function makeCatalogItem(overrides: Partial<CatalogItem> = {}): CatalogIt
     sort: 10,
     is_active: true,
     is_other: false,
+    protected: false,
+    in_use: false,
     icon: "",
     requires_photo: false,
     created_at: "2026-01-01T05:00:00Z",
@@ -59,6 +61,7 @@ export function catalogRows(): CatalogItem[] {
       label_en: "Other (specify)",
       sort: 0,
       is_other: true,
+      protected: true,
     }),
   ];
 }

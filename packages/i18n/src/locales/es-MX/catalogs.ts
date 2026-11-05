@@ -16,6 +16,9 @@ export const catalogs = {
   "catalogs.table.status": "Estado",
   "catalogs.table.actions": "Acciones",
   "catalogs.table.include": "Incluir desactivados",
+  "catalogs.status.inUse": "En uso",
+  "catalogs.status.inUseDescription":
+    "Permanece en los registros anteriores y solo se puede desactivar.",
   "catalogs.status.active": "Activo",
   "catalogs.status.inactive": "Desactivado",
   "catalogs.status.fixed": "Fijo",

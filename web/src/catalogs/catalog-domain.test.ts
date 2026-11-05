@@ -11,6 +11,8 @@ const item = (id: string, sort: number, overrides: Partial<CatalogItem> = {}): C
   icon: "",
   is_active: true,
   is_other: false,
+  protected: false,
+  in_use: false,
   requires_photo: false,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
@@ -22,7 +24,7 @@ describe("catalog ordering invariants", () => {
       item("a", 10),
       item("inactive", 15, { is_active: false }),
       item("b", 20),
-      item("other", 0, { is_other: true }),
+      item("other", 0, { is_other: true, protected: true }),
     ];
     expect(planMove(rows, "b", "up")).toEqual([
       { id: "b", sort: 10 },
@@ -57,7 +59,11 @@ describe("new item sort", () => {
     { name: "empty list", rows: [], expected: 10 },
     {
       name: "active items exclude fixed Other",
-      rows: [item("a", 10), item("b", 20), item("other", 10000, { is_other: true })],
+      rows: [
+        item("a", 10),
+        item("b", 20),
+        item("other", 10000, { is_other: true, protected: true }),
+      ],
       expected: 30,
     },
     { name: "cap", rows: [item("a", 10000)], expected: 10000 },
