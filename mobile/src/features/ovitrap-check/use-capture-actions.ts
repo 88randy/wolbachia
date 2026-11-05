@@ -41,7 +41,7 @@ export async function runCaptureAction(
     const state = await service.read();
     assertCaptureIdentity(state, context.eventId);
     const abandonsDraft = context.startsCapture && state.canStartCapture && state.isShiftBlocked;
-    if (!abandonsDraft) await buffer.persist(service);
+    if (!abandonsDraft) await buffer.persist(service, context.eventId);
     await action();
     await refresh();
     return true;

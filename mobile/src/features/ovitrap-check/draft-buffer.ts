@@ -1,11 +1,7 @@
 import type { DraftPatch } from "./types.ts";
 import type { OvitrapService, Snapshot } from "./service.ts";
-export class ImmutableCaptureError extends Error {
-  constructor() {
-    super("The capture changed or is immutable; pending edits were not saved.");
-    this.name = "ImmutableCaptureError";
-  }
-}
+import { ImmutableCaptureError, StaleCaptureError } from "./capture-identity.ts";
+export { ImmutableCaptureError } from "./capture-identity.ts";
 /** Pending input belongs to one event UUID; changing captures discards it with an explicit notice. */
 export class OvitrapDraftBuffer {
   #eventId: string | null = null;
@@ -45,10 +41,10 @@ export class OvitrapDraftBuffer {
     this.#pending = null;
     this.#revision++;
   }
-  async persist(service: OvitrapService): Promise<void> {
+  async persist(service: OvitrapService, eventId = this.#eventId): Promise<void> {
     if (!this.#pending) return;
+    if (eventId !== this.#eventId) throw new StaleCaptureError();
     const revision = this.#revision;
-    const eventId = this.#eventId;
     try {
       const result = await service.update(this.#pending, eventId);
       if (!result.isUpdateApplied) throw new ImmutableCaptureError();

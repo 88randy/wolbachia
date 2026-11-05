@@ -1264,3 +1264,67 @@ void test("round 4: Edit on A cannot change B after both post-commit read failur
   unsubscribe();
   await h.engine.requestSync();
 });
+
+void test("round 5: Edit on A cannot flush B's failed buffered input after reading an old snapshot", async () => {
+  const h = await harness();
+  await h.service.startCheck(
+    "44444444-4444-4444-8444-444444444444",
+    true,
+    await currentEventId(h.store),
+  );
+  await prepareCheck(h.service);
+  await h.service.update({ step: "confirm" }, await currentEventId(h.store));
+  const savedA = await h.service.save(await currentEventId(h.store));
+  assert.ok(savedA.draft);
+  const displayedA = savedA.draft;
+  const entered = barrier();
+  const release = barrier();
+  const read = h.service.read.bind(h.service);
+  let shouldPause = true;
+  h.service.read = async () => {
+    const snapshot = await read();
+    if (shouldPause) {
+      shouldPause = false;
+      entered.resolve();
+      await release.promise;
+    }
+    return snapshot;
+  };
+  const notices: string[] = [];
+  const buffer = h.service.draftBuffer;
+  const editing = runCaptureAction(
+    {
+      service: h.service,
+      buffer,
+      refresh: async () => {
+        await h.service.read();
+      },
+      setError: (key: string | null) => {
+        if (key) notices.push(key);
+      },
+    },
+    () => editConfirmation(h.service, displayedA),
+    { eventId: displayedA.eventId },
+  );
+  await entered.promise;
+  const startedB = await h.service.startPlace(displayedA.eventId);
+  assert.ok(startedB.draft);
+  assert.notEqual(startedB.draft.eventId, displayedA.eventId);
+  buffer.edit(startedB.draft.eventId, { temperature: "37" });
+  const update = h.store.update.bind(h.store);
+  h.store.update = () => Promise.reject(new Error("Storage write failed"));
+  await assert.rejects(buffer.persist(h.service), /Storage write failed/);
+  h.store.update = update;
+  const storedB = await h.store.read();
+  assert.equal(storedB.draft?.temperature, "");
+  const outbox = await h.db.query("SELECT * FROM outbox_event");
+  release.resolve();
+  assert.equal(await editing, false);
+  assert.equal(notices.at(-1), "mobile.ovitrap.staleView");
+  assert.deepEqual(await h.store.read(), storedB);
+  assert.deepEqual(await h.db.query("SELECT * FROM outbox_event"), outbox);
+  assert.equal(buffer.merge(await h.service.read()).draft?.temperature, "37");
+  await buffer.persist(h.service);
+  assert.equal((await h.store.read()).draft?.temperature, "37");
+  await h.engine.requestSync();
+});
