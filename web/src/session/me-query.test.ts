@@ -1,4 +1,4 @@
-import { ApiError } from "@wolbachia/api-client";
+﻿import { ApiError } from "@wolbachia/api-client";
 import { CancelledError } from "@tanstack/react-query";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
@@ -153,7 +153,7 @@ describe("a verify next to a pending passive read (#82)", () => {
     });
     const client = clientFor(api);
     const queryClient = createAppQueryClient({ retry: false });
-    const passive = queryClient.fetchQuery(meQueryOptions(client)).catch((error: unknown) => error);
+    const passive = queryClient.query(meQueryOptions(client)).catch((error: unknown) => error);
     await vi.waitFor(() => {
       expect(api.requests).toHaveLength(1);
     });
