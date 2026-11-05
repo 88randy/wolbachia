@@ -1,0 +1,108 @@
+import type { AreaCatalog } from "../area.ts";
+export const geography = {
+  "geography.history.default": "Historial de versiones (predeterminado)",
+  "geography.retire.author": "Registr\u00f3: {author}",
+  "geography.retire.dialogTitle": "Registrar retiro de {record}",
+  "geography.field.status": "Estado",
+  "geography.page.title": "Cuadrantes y muestreo",
+  "geography.page.list": "Cuadrantes del alcance activo",
+  "geography.page.create": "Nuevo cuadrante",
+  "geography.page.back": "Mapa de cuadrantes",
+  "geography.field.code": "Código fijo",
+  "geography.field.center": "Centro (ID)",
+  "geography.field.search": "Buscar",
+  "geography.field.polygon": "Polígono (longitud, latitud)",
+  "geography.field.location": "Coordenadas (longitud, latitud)",
+  "geography.field.evidence": "Evidencia",
+  "geography.field.decision": "Resolución",
+  "geography.field.view": "Ver",
+  "geography.field.block": "Manzana (ID)",
+  "geography.field.created": "Creado",
+  "geography.field.author": "Autor",
+  "geography.field.revision": "Revisión",
+  "geography.field.effective": "Vigente desde",
+  "geography.field.geometry": "Coordenadas publicadas",
+  "geography.editor.title": "Nueva versión",
+  "geography.editor.publish": "Publicar nueva versión",
+  "geography.editor.discard": "Descartar borrador",
+  "geography.editor.hint":
+    "WGS84: un par longitud,latitud por línea. Cierra cada anillo repitiendo el primer vértice; separa los huecos con una línea vacía. El servidor valida la geometría.",
+  "geography.editor.blocked":
+    "Resuelve cada punto excluido con evidencia antes de publicar. Quien tenga permiso para crear puntos puede reubicarlos o retirarlos; quien publica cuadrantes puede conservarlos fuera.",
+  "geography.editor.pointsLoading":
+    "Falta verificar todos los puntos. Reintenta la consulta antes de publicar.",
+  "geography.editor.refresh": "Actualizar revisión y reaplicar borrador",
+  "geography.editor.ready": "Todos los puntos excluidos tienen resolución.",
+  "geography.editor.emptyDecision": "Elige una resolución",
+  "geography.editor.keep": "Conservar fuera explícitamente",
+  "geography.editor.move": "Reubicar dentro del cuadrante",
+  "geography.editor.remove": "Retirar con evidencia",
+  "geography.error.geometry":
+    "Revisa el polígono: usa coordenadas válidas, al menos tres vértices distintos y anillos cerrados.",
+  "geography.error.stale":
+    "Hay una revisión más reciente. Actualiza y revisa tu borrador y sus resoluciones antes de volver a publicar.",
+  "geography.error.unresolved":
+    "El servidor encontró puntos sin resolver. Revisa los puntos señalados y actualiza su lista.",
+  "geography.error.busy":
+    "La geografía está en uso. Espera el plazo indicado y vuelve a intentar explícitamente.",
+  "geography.error.wait": "Espera antes de volver a intentar.",
+  "geography.error.invalid": "Revisa los campos y vuelve a intentar.",
+  "geography.error.noPoint":
+    "Necesitas permiso para crear puntos para completar esta resolución. Pide apoyo a quien tenga ese permiso.",
+  "geography.status.saved": "Cambios publicados",
+  "geography.status.active": "Activo",
+  "geography.status.retired": "Retirado",
+  "geography.status.unknown": "Sin registro",
+  "geography.status.offline":
+    "Sin conexión: conserva tu borrador y vuelve a intentar cuando tengas red.",
+  "geography.status.review":
+    "Propuesta sin publicar: revisa geometría y coordenadas antes de aceptar.",
+  "geography.history.title": "Historial de versiones",
+  "geography.history.resolutions": "Resoluciones con evidencia",
+  "geography.history.point": "Historial del punto",
+  "geography.blocks.title": "Manzanas",
+  "geography.blocks.suggest": "Solicitar sugerencias",
+  "geography.blocks.create": "Crear manzana",
+  "geography.blocks.accept": "Aceptar propuesta de manzana",
+  "geography.blocks.code": "Código fijo de manzana",
+  "geography.blocks.empty": "No hay propuestas disponibles.",
+  "geography.points.title": "Puntos de muestreo",
+  "geography.points.create": "Crear punto",
+  "geography.points.four": "Crear cuatro puntos",
+  "geography.points.code": "Código fijo del punto",
+  "geography.points.relocate": "Reubicar punto",
+  "geography.points.fixed":
+    "El código y la manzana son permanentes. Cada ubicación se agrega como una versión; un retiro conserva el historial.",
+  "geography.points.partial":
+    "Los códigos ya creados se conservan. Revisa los restantes y reintenta; los puntos guardados no se envían de nuevo.",
+  "geography.points.uncertain":
+    "No pudimos confirmar la creación. El código y las coordenadas seguirán bloqueados hasta conciliar:",
+  "geography.points.reconcile": "Conciliar creación del punto",
+  "geography.points.unconfirmed":
+    "El resultado del alcance no confirma esta manzana y ubicación. Conserva el código bloqueado y pide al supervisor que lo verifique.",
+  "geography.points.checkFailed":
+    "No pudimos verificar el punto. Conserva el código bloqueado y vuelve a intentar la conciliación.",
+  "geography.points.spacing": "Advertencia de separación (no bloquea)",
+  "geography.points.distance": "Distancia (m)",
+  "geography.points.minimum": "Mínimo configurado (m)",
+  "geography.map.open": "Abrir mapa",
+  "geography.map.close": "Cerrar mapa",
+  "geography.map.label": "Mapa interactivo",
+  "geography.map.fallback":
+    "El mapa no está disponible. Usa la tabla y los campos de coordenadas para consultar o editar.",
+  "geography.map.hint":
+    "El mapa muestra los registros de esta página. La tabla ofrece los mismos registros. Para dibujar, activa agregar vértices; la edición por coordenadas siempre está disponible.",
+  "geography.map.draw": "Agregar vértices con el mapa",
+  "geography.map.undo": "Deshacer último vértice",
+  "geography.map.closeRing": "Cerrar anillo",
+  "geography.map.quadrants": "Cuadrantes: borde sólido",
+  "geography.map.blocks": "Manzanas: borde discontinuo",
+  "geography.map.points": "Puntos: círculos",
+  "geography.map.draft": "Borrador: borde punteado",
+  "geography.map.attribution": "© OpenStreetMap contributors",
+  "geography.map.source": "Fuente cartográfica",
+  "geography.retire.title": "Registrar retiro",
+  "geography.retire.hint":
+    "El retiro se publica con el polígono y conserva la identidad y el historial del punto. El motivo se registra como evidencia.",
+  "geography.retire.confirm": "Usar motivo de retiro",
+} as const satisfies AreaCatalog<"geography">;

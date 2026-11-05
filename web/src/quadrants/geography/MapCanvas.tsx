@@ -1,0 +1,36 @@
+import { useTranslation } from "react-i18next";
+import Map from "react-map-gl/maplibre";
+import type { MapProps } from "./map-types";
+import type { MapSource } from "./map-source";
+import { MAX_MAP_ZOOM } from "./map-source";
+import { baseMapStyle, initialMapView } from "./map-features";
+import { GeographyLayers } from "./GeographyLayers";
+import type { LayerVisibility } from "./use-map-display";
+import styles from "./geography.module.css";
+interface Props {
+  features: MapProps;
+  source: MapSource;
+  visible: LayerVisibility;
+  onFailure: () => void;
+}
+export function MapCanvas({ features, source, visible, onFailure }: Props) {
+  const { t } = useTranslation();
+  const options = {
+    locale: { "Map.Title": t("geography.map.label") },
+    initialViewState: initialMapView(features),
+    mapStyle: baseMapStyle(source),
+    maxZoom: MAX_MAP_ZOOM,
+    attributionControl: false as const,
+    onError: onFailure,
+    onClick: (event: { lngLat: { lng: number; lat: number } }) => {
+      features.onVertex?.([event.lngLat.lng, event.lngLat.lat]);
+    },
+  };
+  return (
+    <div className={styles.canvas}>
+      <Map {...options}>
+        <GeographyLayers features={features} visible={visible} />
+      </Map>
+    </div>
+  );
+}
