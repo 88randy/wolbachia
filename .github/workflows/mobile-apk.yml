@@ -52,6 +52,9 @@ jobs:
       # (device id, test token, test record) are on in this debug APK only. The API address is empty unless a
       # dispatch run asks for one; it can always be changed in Settings on the phone.
       EXPO_PUBLIC_DEV_TOOLS: "1"
+      # The bundle is built in production mode (no Metro), so __DEV__ is false: this flag lets Settings accept
+      # http on loopback/private LAN, matching the debug manifest's cleartext rule (#189). Never set in release.
+      EXPO_PUBLIC_ALLOW_LAN_HTTP: "1"
       EXPO_PUBLIC_API_BASE_URL: ${{ inputs.api_base_url || '' }}
       # Versions required by React Native 0.88.1 (packages/react-native/gradle/libs.versions.toml, tag v0.88.1):
       # compileSdk 37, buildTools 37.0.0, ndkVersion 27.1.12297006. Gradle 9.4.1 (Expo SDK 58 template wrapper)

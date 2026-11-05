@@ -3,7 +3,7 @@ import { randomUUID } from "expo-crypto";
 import { createMobileApiClient } from "../api/create-api-client.ts";
 import { createMemoryTokenStore } from "../auth/token-store.ts";
 import type { TokenStore } from "../auth/token-store.ts";
-import { BUILD_API_BASE_URL } from "../config/build-config.ts";
+import { BUILD_API_BASE_URL, LAN_HTTP_FLAG, allowsPrivateLanHttp } from "../config/build-config.ts";
 import { ServerSettings } from "../config/server-settings.ts";
 import { KvStore } from "../db/kv-store.ts";
 import { openDatabase } from "../db/open-database.ts";
@@ -41,7 +41,11 @@ function logEngineError(error: unknown): void {
 export async function createServices(): Promise<AppServices> {
   const db = await openDatabase();
   const kv = new KvStore(db);
-  const server = new ServerSettings(kv, BUILD_API_BASE_URL, __DEV__);
+  const server = new ServerSettings(
+    kv,
+    BUILD_API_BASE_URL,
+    allowsPrivateLanHttp(__DEV__, LAN_HTTP_FLAG),
+  );
   await server.load();
   const tokens = createMemoryTokenStore();
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);
