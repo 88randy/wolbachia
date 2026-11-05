@@ -1,4 +1,4 @@
-import { test } from "@playwright/test";
+import { test } from "./fixtures/test";
 import { LANGUAGES, rememberPreferences, THEMES } from "./fixtures/a11y";
 import { mockApi } from "./fixtures/mock-api";
 import { scenarios } from "./fixtures/scenarios";

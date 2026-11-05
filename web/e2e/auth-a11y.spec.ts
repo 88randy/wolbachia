@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures/test";
 import { expectNoAxeViolations, LANGUAGES, rememberPreferences, THEMES } from "./fixtures/a11y";
 import { mockApi } from "./fixtures/mock-api";
 import { scenarios } from "./fixtures/scenarios";

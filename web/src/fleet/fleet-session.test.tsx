@@ -3,7 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 import { makeMe, makeOrganization, apiError } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
-import { ALLOWED, GET, LIST, motorcycle, openFleet, pageOf } from "./fleet-test-helpers";
+import {
+  ALLOWED,
+  GET,
+  LIST,
+  motorcycle,
+  openFleet,
+  otherReasonField,
+  pageOf,
+} from "./fleet-test-helpers";
 
 function deferred() {
   let release: (reply: Response) => void = () => undefined;
@@ -31,7 +39,7 @@ describe("fleet session isolation", () => {
       let refresh: Promise<void> = Promise.resolve();
       act(() => {
         refresh = app.queryClient.refetchQueries({
-          predicate: (query) => query.queryKey[0] === "fleet",
+          predicate: (query) => query.queryKey[3] === "fleet",
         });
       });
       await waitFor(() => {
@@ -63,7 +71,7 @@ describe("fleet session isolation", () => {
       routes: { [`POST /api/v1/motorcycles/${motorcycle().id}/unblock/`]: () => late.promise },
     });
     await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
-    await userEvent.type(screen.getByRole("textbox"), "Private inspection evidence");
+    await userEvent.type(await otherReasonField(), "Private inspection evidence");
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
     );
@@ -110,7 +118,7 @@ describe("fleet session isolation", () => {
     });
     document.cookie = "csrftoken=test-csrf; path=/";
     await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
-    await userEvent.type(screen.getByRole("textbox"), "Repair checked and recorded");
+    await userEvent.type(await otherReasonField(), "Repair checked and recorded");
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
     );

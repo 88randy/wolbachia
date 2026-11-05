@@ -17,6 +17,10 @@ export const states = {
   "states.config.title": "La aplicación no está lista",
   "states.config.missingApiUrl":
     "La dirección del servidor no está configurada o no es válida. Avisa a soporte técnico para que la corrijan.",
+  "states.sessionCheck.title": "No pudimos verificar tu sesión",
+  "states.sessionCheck.body":
+    "Otra pestaña cambió la sesión y no logramos confirmar quién eres. No mostramos datos de la organización hasta saberlo. Revisa tu conexión y reintenta.",
+  "states.sessionCheck.checking": "Verificando tu sesión…",
   "states.offline.banner":
     "Sin conexión. Lo que ves puede no estar actualizado; se actualizará cuando vuelva la red.",
 } as const satisfies AreaCatalog<"states">;

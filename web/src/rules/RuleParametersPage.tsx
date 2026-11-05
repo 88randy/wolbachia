@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useSessionIdentity } from "../session/use-session-identity";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 import { DataTable } from "../data-table/DataTable";
@@ -26,7 +27,8 @@ export function RuleParametersPage() {
   const client = useApiClient();
   const controller = useTableUrlState(PARAMETERS_TABLE);
   const columns = useParameterColumns();
-  const query = useQuery(parametersQueryOptions(client, controller.state));
+  const identity = useSessionIdentity();
+  const query = useQuery(parametersQueryOptions(client, identity, controller.state));
   return (
     <section className={page.page}>
       <h1 className={page.title}>{t("rules.page.title")}</h1>

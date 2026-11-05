@@ -1,5 +1,7 @@
+import { screen, within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import type { Schemas } from "@wolbachia/api-client";
-import { createFakeApi, makeMe } from "../test/fake-api";
+import { createFakeApi, makeMe, makeVoidReasonItems } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 
@@ -19,6 +21,7 @@ export function motorcycle(overrides: Partial<Schemas["Motorcycle"]> = {}): Sche
     created_by: null,
     voided_at: null,
     voided_by: null,
+    void_reason_code: "",
     void_reason: "",
     ...overrides,
   };
@@ -37,6 +40,12 @@ export async function openFleet(
   const api = createFakeApi({
     "GET /api/v1/me/": Response.json(options.me ?? ALLOWED),
     [GET]: pageOf(),
+    "GET /api/v1/catalogs/void-reason/items/": Response.json({
+      count: 3,
+      next: null,
+      previous: null,
+      results: makeVoidReasonItems(),
+    }),
     ...options.routes,
   });
   const app = await renderApp({
@@ -45,4 +54,11 @@ export async function openFleet(
     language: options.language ?? "es-MX",
   });
   return { api, app };
+}
+
+/** The shared void dialog (#80) asks for a catalog reason first; "Other" shows the free-text field. */
+export async function otherReasonField(): Promise<HTMLTextAreaElement> {
+  const dialog = within(await screen.findByRole("dialog"));
+  await userEvent.selectOptions(await dialog.findByRole("combobox"), "other");
+  return dialog.getByRole<HTMLTextAreaElement>("textbox");
 }

@@ -1,11 +1,13 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
+import { useApiClient } from "../api/ApiClientProvider";
 import { subscribeToIdentityChange } from "./identity";
-import { ME_QUERY_KEY } from "./me-query";
-import { removeOrganizationQueries } from "./organization-cache";
-import { clearOrganizationSlug } from "./organization-slug";
+import { restartOrgScoped } from "./org-scoped-query";
 import { subscribeToMembershipLost } from "./session-events";
+import { forgetSlugOfLostMembership } from "./session-controller";
+import { reconcileSession } from "./session-reconcile";
+import { currentRevision, subscribeToRevision } from "./session-revision";
 
 /**
  * Things that change who the user is or where they work in the middle of a session:
@@ -16,16 +18,18 @@ import { subscribeToMembershipLost } from "./session-events";
  */
 export function useSessionChanges(): void {
   const queryClient = useQueryClient();
+  const client = useApiClient();
   const router = useRouter();
   useEffect(
     () =>
       subscribeToMembershipLost(() => {
-        clearOrganizationSlug();
-        removeOrganizationQueries(queryClient);
-        void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
-        void router.invalidate();
+        // The organization is gone: forget it and reconcile, so `/me/` says where the user is now.
+        forgetSlugOfLostMembership();
+        void reconcileSession(queryClient, client).then((isKnown) => {
+          if (isKnown) return router.invalidate();
+        });
       }),
-    [queryClient, router],
+    [queryClient, client, router],
   );
   useEffect(
     () =>
@@ -34,4 +38,12 @@ export function useSessionChanges(): void {
       }),
     [router],
   );
+  useEffect(() => {
+    let seen = currentRevision();
+    return subscribeToRevision(() => {
+      if (currentRevision() === seen) return;
+      seen = currentRevision();
+      void restartOrgScoped(queryClient);
+    });
+  }, [queryClient]);
 }
