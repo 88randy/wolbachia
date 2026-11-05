@@ -21,4 +21,10 @@ export const errors: Record<keyof typeof source, string> = {
   "errors.api.rateLimited": "Too many requests in a row. Wait a moment and try again.",
   "errors.api.serverError":
     "Something went wrong on our side. Try again in a few minutes; if it keeps happening, contact support.",
+  "errors.api.motorcycleRevisionConflict":
+    "The motorcycle changed. Refresh its details and try again.",
+  "errors.api.motorcycleFaultNotOpen":
+    "The fault is no longer open. Refresh its details to continue.",
+  "errors.api.motorcycleInspectionRequired":
+    "The motorcycle needs an authorized inspection. Ask your supervisor for help.",
 };

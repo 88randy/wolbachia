@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "reviews",
     "shifts",
     "geography",
+    "fleet",
     "ovitraps",
 ]
 
@@ -218,6 +219,7 @@ SPECTACULAR_SETTINGS = {
         "ReviewKindEnum": "reviews.models.ReviewKind",
         "ShiftStatusEnum": "shifts.models.ShiftStatus",
         "CheckResultEnum": "shifts.models.CheckResult",
+        "ServiceKindEnum": "fleet.models.ServiceKind",
         "StatusEnum": "rules.selectors.VERSION_STATUSES",
         "OvitrapLifecycleStatusEnum": ["active", "voided"],
         "OvitrapStatusFilterEnum": ["active", "voided", "all"],

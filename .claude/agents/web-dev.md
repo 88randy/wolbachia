@@ -15,6 +15,8 @@ For any screen W, read `design/web/README.md`, its PNG in `design/web/screens/` 
 
 Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `ecc:react-patterns`, `ecc:frontend-a11y`, `ecc:react-testing`.
 
+Project skills in `.claude/skills/` (load them for UI and data work): `dashboard-designer` for any dashboard or KPI screen, `chart-builder` for charts, `business-analyst` when a screen's workflow or requirements are unclear. They are guidance: project rules prevail (WCAG 2.2 AA, colors only from `packages/tokens`, status = color + icon/text, every chart has an equivalent data table, all copy from `packages/i18n`, no CDN scripts, no new chart library without justification in the PR).
+
 ## Rules that matter most
 
 - Presentational components without business logic; logic in hooks or domain modules; one component per file.
