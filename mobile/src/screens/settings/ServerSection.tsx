@@ -16,7 +16,7 @@ const styles = StyleSheet.create({ section: { gap: spacing[1] } });
  */
 export function ServerSection() {
   const t = useT();
-  const { text, setText, feedback, save, reset } = useServerForm();
+  const { text, setText, feedback, hasSavedAddress, save, reset } = useServerForm();
   return (
     <View style={styles.section}>
       <AppText variant="bodyStrong">{t("mobile.settings.server")}</AppText>
@@ -31,7 +31,9 @@ export function ServerSection() {
       />
       {feedback === null ? null : <AppText>{t(feedbackKey(feedback))}</AppText>}
       <Button label={t("mobile.settings.serverSave")} onPress={save} />
-      <Button variant="text" label={t("mobile.settings.serverReset")} onPress={reset} />
+      {hasSavedAddress ? (
+        <Button variant="text" label={t("mobile.settings.serverReset")} onPress={reset} />
+      ) : null}
     </View>
   );
 }

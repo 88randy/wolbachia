@@ -9,7 +9,7 @@ import type { AuthController } from "../auth/auth-controller.ts";
 import type { SessionRequests } from "../auth/session-requests.ts";
 import appManifest from "../../package.json";
 import type { TokenStore } from "../auth/token-store.ts";
-import { BUILD_API_BASE_URL } from "../config/build-config.ts";
+import { BUILD_API_BASE_URL, LAN_HTTP_FLAG, allowsPrivateLanHttp } from "../config/build-config.ts";
 import { ServerSettings } from "../config/server-settings.ts";
 import { KvStore } from "../db/kv-store.ts";
 import { openDatabase } from "../db/open-database.ts";
@@ -74,7 +74,7 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
   const server = new ServerSettings(kv, BUILD_API_BASE_URL, {
     credentials,
     outbox,
-    allowCleartext: __DEV__,
+    allowCleartext: allowsPrivateLanHttp(__DEV__, LAN_HTTP_FLAG),
   });
   await server.load();
   await credentials.load((sessionId) => readEndedSession(kv, sessionId), server.baseUrl());

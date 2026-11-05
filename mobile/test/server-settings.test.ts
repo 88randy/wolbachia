@@ -5,6 +5,7 @@ import { randomUUID } from "node:crypto";
 import { CredentialStore } from "../src/auth/credential-store.ts";
 import { makeCredentials, memorySecrets, deferred } from "./support/auth-fakes.ts";
 
+import { allowsPrivateLanHttp } from "../src/config/build-config.ts";
 import { ServerSettings } from "../src/config/server-settings.ts";
 import { KV_KEYS } from "../src/db/kv-store.ts";
 import { createStores } from "./support/factories.ts";
@@ -98,4 +99,10 @@ void it("server mutation waits behind accepted credentials and cannot redirect a
   await accepting;
   assert.deepEqual(await changing, { ok: false, problem: "identityBound" });
   assert.equal(server.baseUrl(), "https://original.example.invalid");
+});
+
+void it("the CI debug APK allows private-LAN http although its bundle is production-mode (#189)", () => {
+  assert.equal(allowsPrivateLanHttp(false, "1"), true);
+  assert.equal(allowsPrivateLanHttp(false, undefined), false);
+  assert.equal(allowsPrivateLanHttp(true, undefined), true);
 });

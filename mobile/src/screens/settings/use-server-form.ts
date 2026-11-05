@@ -7,6 +7,8 @@ export interface ServerForm {
   readonly text: string;
   readonly setText: (text: string) => void;
   readonly feedback: ServerFeedback | null;
+  /** True while an address saved in Settings overrides the build's (only then can it be reset). */
+  readonly hasSavedAddress: boolean;
   readonly save: () => void;
   readonly reset: () => void;
 }
@@ -24,12 +26,9 @@ export function useServerForm(): ServerForm {
   };
   const reset = async () => {
     const result = await server.clear();
-    if (!result.ok) {
-      setFeedback(result.problem);
-      return;
-    }
+    setFeedback(result.ok ? "saved" : result.problem);
+    if (!result.ok) return;
     setText("");
-    setFeedback("saved");
     engine.notifyConditionsChanged();
   };
 
@@ -40,6 +39,7 @@ export function useServerForm(): ServerForm {
     text,
     setText,
     feedback,
+    hasSavedAddress: server.savedOverride() !== "", // read per render: save/clear update it first
     save: () => void save().catch(reportStorageFailure),
     reset: () => void reset().catch(reportStorageFailure),
   };
