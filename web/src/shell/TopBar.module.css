@@ -106,3 +106,36 @@
   width: var(--web-icon-md);
   height: var(--web-icon-md);
 }
+
+/* Uses the global focus ring and resolved color-scheme, including the native option popup. */
+.themeSelect {
+  min-width: var(--web-control-md);
+  min-height: var(--web-control-md);
+  padding: 0 var(--space-0-5);
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+  font-size: var(--web-type-label-small-font-size);
+  cursor: pointer;
+}
+
+/* Keep every control reachable at 320 CSS px; search gets its own full-width row. */
+@media (max-width: 40rem) {
+  .topBar {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: var(--web-layout-top-bar-height);
+    padding: var(--space-1);
+  }
+
+  .spacer {
+    display: none;
+  }
+
+  .search {
+    flex-basis: 100%;
+    max-width: none;
+  }
+}

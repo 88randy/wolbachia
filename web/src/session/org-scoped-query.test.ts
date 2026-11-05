@@ -1,10 +1,11 @@
-import { QueryClient } from "@tanstack/react-query";
+import { CancelledError, QueryClient } from "@tanstack/react-query";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 import { findUnscopedQueries } from "../test/find-unscoped-queries";
 import { orgScopedQueryOptions } from "./org-scoped-query";
 import type { SessionIdentity } from "./org-scoped-query";
+import { changeIdentity } from "./session-revision";
 
 const NORTE: SessionIdentity = {
   userId: "u1",
@@ -23,17 +24,18 @@ function optionsFor(identity: SessionIdentity) {
 /** The placeholder the options give for `previous` data that was loaded under `loadedAs`. */
 function placeholderFrom(loadedAs: SessionIdentity, current: SessionIdentity) {
   const client = new QueryClient();
-  const previousQuery = client
-    .getQueryCache()
-    .build<number>(client, { queryKey: [...optionsFor(loadedAs).queryKey] });
+  const previousQuery = client.getQueryCache().build<number>(client, {
+    queryKey: [...optionsFor(loadedAs).queryKey],
+    meta: { revision: loadedAs.revision },
+  });
   const { placeholderData } = optionsFor(current);
   if (typeof placeholderData !== "function") throw new TypeError("expected a function");
   return placeholderData(7, previousQuery);
 }
 
 describe("orgScopedQueryOptions", () => {
-  test("the key starts with the session identity and its revision", () => {
-    expect(optionsFor(NORTE).queryKey).toEqual(["org", "u1", "norte", 0, "things", 1]);
+  test("the key starts with the user and the organization", () => {
+    expect(optionsFor(NORTE).queryKey).toEqual(["org", "u1", "norte", "things", 1]);
   });
 
   test("the previous page stays as placeholder within the same identity", () => {
@@ -46,6 +48,21 @@ describe("orgScopedQueryOptions", () => {
     ["an earlier session revision", NEXT_REVISION],
   ])("never reuses data of %s as placeholder", (_name, current) => {
     expect(placeholderFrom(NORTE, current)).toBeUndefined();
+  });
+
+  test("drops an answer that arrives after the session revision changed", async () => {
+    let answer: (value: number) => void = () => undefined;
+    const late = new Promise<number>((resolve) => {
+      answer = resolve;
+    });
+    const { queryFn } = orgScopedQueryOptions(NORTE, { key: ["things"], queryFn: () => late });
+    if (typeof queryFn !== "function") throw new TypeError("expected a function");
+    const request = queryFn({ queryKey: [], signal: new AbortController().signal } as never);
+
+    changeIdentity();
+    answer(5);
+
+    await expect(request).rejects.toBeInstanceOf(CancelledError);
   });
 
   test("does not run while the tab waits for /me/ after another tab changed the session", () => {

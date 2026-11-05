@@ -3,7 +3,10 @@ import { broadcastSessionChanged } from "./session-sync";
 /**
  * Which session the page is in, as a counter instead of clocks. The revision changes ONLY when a
  * login is accepted (login page or re-authentication), when a sign-out is confirmed by the
- * server, and when another tab announces that it changed the shared session (#82). Anything that began before a change can ask "is this still my session?" by comparing
+ * server, when `/me/` names another identity (`changeIdentity`) and when another tab announces
+ * that it changed the shared session (#82). It is the ONLY staleness signal: never compare
+ * against React-rendered state, which lags behind. Anything that began before a change can ask
+ * "is this still my session?" by comparing
  * revisions, with no dependence on timing.
  *
  * After a confirmed sign-out the page is "signed out" until the next accepted login or a valid
@@ -54,6 +57,15 @@ export function acceptSession(): void {
  */
 export function recoverSession(): void {
   isSignedOut = false;
+}
+
+/**
+ * `/me/` named another user or organization than the cache holds (`recordIdentity`). Bumps the
+ * revision SYNCHRONOUSLY, in the same call that swaps the identity, so a request that began under
+ * the old one is stale from that instant, before React or TanStack notify anybody.
+ */
+export function changeIdentity(): void {
+  bump();
 }
 
 /** The server confirmed the sign-out. Returns the new revision. */

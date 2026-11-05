@@ -3,6 +3,8 @@ import type { Me } from "../../src/session/me";
 import { makeMe } from "../../src/test/fake-api";
 import { FakeDevices } from "./devices-mock";
 import type { PhoneFixture } from "./devices-mock";
+import { FakeRules } from "./rules-mock";
+import type { RuleParameterFixture } from "./rules-mock";
 
 /** Fake password for the e2e runs: obviously fake (`pw-for-...`) and generated at runtime. */
 export const E2E_PASSWORD = `pw-for-${crypto.randomUUID()}`;
@@ -23,6 +25,8 @@ export interface MockApiOptions {
   resetConfirm?: ResetBehavior;
   /** Phones `GET /devices/` lists (W67). Default: none. */
   devices?: readonly PhoneFixture[];
+  /** Rule parameters with their versions (W62). Default: none. */
+  rules?: RuleParameterFixture[];
 }
 
 export interface RecordedRequest {
@@ -75,6 +79,7 @@ function meFor(user: Me, slug: string | undefined): Me {
 class FakeServer implements MockApi {
   readonly requests: RecordedRequest[] = [];
   readonly devices: FakeDevices;
+  private readonly rules: FakeRules;
   private signedIn: Me | null;
   private login: LoginBehavior;
 
@@ -84,6 +89,7 @@ class FakeServer implements MockApi {
   ) {
     this.devices = new FakeDevices(options.devices ?? []);
     this.signedIn = options.me === undefined ? makeMe() : options.me;
+    this.rules = new FakeRules(options.rules ?? [], (this.signedIn ?? makeMe()).user);
     this.login = options.login ?? "ok";
   }
 
@@ -139,6 +145,12 @@ class FakeServer implements MockApi {
       .addCookies([{ name: "csrftoken", value: CSRF_VALUE, domain: hostname, path: "/" }]);
   }
 
+  /** Paths with variable parts (`/rule-parameters/{key}/...`); anything else is a 404. */
+  private handleOther(route: Route, request: RecordedRequest) {
+    if (request.path.startsWith("/api/v1/rule-parameters/")) return this.rules.answer(route);
+    return route.fulfill(envelope(404, "not_found"));
+  }
+
   async handle(route: Route): Promise<void> {
     const request = this.record(route);
     switch (`${request.method} ${request.path}`) {
@@ -149,6 +161,8 @@ class FakeServer implements MockApi {
         return this.answerMe(route, request);
       case "GET /api/v1/devices/":
         return this.devices.answer(route);
+      case "GET /api/v1/rule-parameters/":
+        return this.rules.answer(route);
       case "POST /api/v1/auth/login/":
         return this.answerLogin(route, request);
       case "POST /api/v1/auth/logout/":
@@ -159,7 +173,7 @@ class FakeServer implements MockApi {
       case "POST /api/v1/auth/password-reset/confirm/":
         return route.fulfill(confirmReply(this.options.resetConfirm ?? "ok"));
       default:
-        return route.fulfill(envelope(404, "not_found"));
+        return this.handleOther(route, request);
     }
   }
 }

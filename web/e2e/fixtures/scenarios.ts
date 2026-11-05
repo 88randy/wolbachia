@@ -3,6 +3,7 @@ import type { Page } from "@playwright/test";
 import { makeMe } from "../../src/test/fake-api";
 import { makePhone } from "./devices-mock";
 import { E2E_PASSWORD } from "./mock-api";
+import { makeRuleParameter, makeRuleVersion } from "./rules-mock";
 import type { MockApi, MockApiOptions } from "./mock-api";
 
 const TWO_ORGANIZATIONS = [
@@ -21,6 +22,46 @@ const PHONES_ME = makeMe({ permissions: ["device.read"] });
 const PHONES = [
   makePhone({ label: "Teléfono 01" }),
   makePhone({ label: "Teléfono 02", is_revoked: true, last_seen_at: null }),
+];
+
+const RULES_ME = makeMe({
+  permissions: [
+    "rule_parameter.read",
+    "rule_parameter_version.read",
+    "rule_parameter_version.create",
+    "rule_parameter_version.void",
+  ],
+});
+const SPEED = "/settings/rule-parameters/speed_lock_kmh";
+const RULES = [
+  {
+    parameter: makeRuleParameter({ key: "speed_lock_kmh", unit: "km_h" }),
+    versions: [
+      makeRuleVersion({ value: 10 }),
+      makeRuleVersion({
+        value: 8,
+        effective_from: "2026-12-01T06:00:00Z",
+        effective_date: "2026-12-01",
+      }),
+      makeRuleVersion({
+        value: 12,
+        effective_from: "2026-12-15T06:00:00Z",
+        effective_date: "2026-12-15",
+        voided_at: "2026-11-04T18:00:00Z",
+        voided_by: "9d3c8a77-1b2e-4f60-a5c1-0f7e6d5c4b3a",
+        voided_by_username: "luis.promotor",
+        void_reason: "Se capturó dos veces",
+      }),
+    ],
+  },
+  {
+    parameter: makeRuleParameter({
+      key: "fuel_efficiency_min_km_l",
+      value_type: "decimal",
+      unit: "km_l",
+    }),
+    versions: [],
+  },
 ];
 
 const SESSION_MS = 61_000; // just over how long /me/ counts as fresh (60 s)
@@ -182,6 +223,35 @@ export const scenarios: Scenario[] = [
       api.devices.setFailing(true);
       await page.goto("/settings/phones");
       await expect(page.getByRole("alert")).toBeVisible();
+    },
+  },
+  {
+    name: "rule parameters list",
+    api: { me: RULES_ME, rules: RULES },
+    reach: async (page) => {
+      await page.goto("/settings/rule-parameters");
+      await expect(page.getByRole("row", { name: /speed_lock_kmh/ })).toBeVisible();
+    },
+  },
+  {
+    name: "rule parameter with history and voided versions",
+    api: { me: RULES_ME, rules: RULES },
+    reach: async (page) => {
+      await page.goto(`${SPEED}?include_voided=true`);
+      await expect(page.getByText(/Se capturó dos veces/)).toBeVisible();
+      await expect(page.locator("tbody tr")).toHaveCount(3);
+    },
+  },
+  {
+    name: "rule parameter form with the comparison and a missing reason",
+    api: { me: RULES_ME, rules: RULES },
+    reach: async (page) => {
+      await page.goto(SPEED);
+      await page.locator("#rule-version-value").fill("8");
+      await page.locator("#rule-version-date").fill("2026-12-20");
+      await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
+      await page.locator("form button[type=submit]").click();
+      await expect(page.locator("#rule-version-reason-error")).toBeVisible();
     },
   },
   {

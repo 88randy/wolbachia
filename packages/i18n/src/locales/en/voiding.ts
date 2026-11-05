@@ -20,5 +20,5 @@ export const voiding: Record<keyof typeof source, string> = {
     "The reason has characters that cannot be saved (control or text-direction characters). Remove them and try again.",
   "voiding.error.alreadyVoided": "Someone already voided this record. Refresh the page to see it.",
   "voiding.error.blocked":
-    "This record can no longer be voided, because another part of the system depends on it.",
+    "This record can no longer be voided in its current state. Refresh the page to see what changed.",
 };

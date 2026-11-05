@@ -1,5 +1,5 @@
 import { ApiError } from "@wolbachia/api-client";
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { apiError, createFakeApi, makeMe, makeOrganization, noContent } from "../test/fake-api";
@@ -134,7 +134,12 @@ describe("leaving the page during a pending sign-out", () => {
     await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
     await userEvent.type(screen.getByLabelText("Usuario"), "ana.supervisora");
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
-    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    const submit = screen.getByRole("button", { name: "Entrar" });
+    await userEvent.click(submit);
+    // A click can finish before async validation submits: keep logout held until login is pending.
+    await waitFor(() => {
+      expect(submit.getAttribute("aria-disabled")).toBe("true");
+    });
     return { api, app };
   }
 
@@ -350,5 +355,33 @@ describe("the dialog cannot be closed from the keyboard", () => {
 
     expect(dialog.open).toBe(true);
     expect(document.activeElement).toBe(screen.getByLabelText("Contraseña"));
+  });
+});
+
+describe("the cookie is the truth (#82)", () => {
+  test("a login the server accepted is not dropped when another identity was recorded meanwhile", async () => {
+    const login = deferred();
+    const userA = makeMe();
+    const userB = makeMe({ user: { ...userA.user, id: "7a7a7a7a-0000-4000-8000-000000000002" } });
+    const { api, app } = await openExpired({ [LOGIN]: () => login.promise });
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    // Another tab signed in as B: this tab's /me/ records B while A's login is still in flight.
+    api.setRoute(ME, Response.json(userB));
+    await act(async () => {
+      await app.queryClient.invalidateQueries({ queryKey: ["me"] });
+    });
+    await waitFor(() => {
+      expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    });
+
+    // The server accepted A's login last, so the cookie is A's.
+    api.setRoute(ME, Response.json(userA));
+    login.release(Response.json({ me: userA, server_time: "2026-11-04T12:00:00Z" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userA.user.id);
   });
 });

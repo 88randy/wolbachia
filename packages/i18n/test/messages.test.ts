@@ -14,12 +14,23 @@ const locales = Object.keys(messages) as Locale[];
  * wording around a number or a noun must not need plural or gender agreement (see the README).
  * `table.*` fill in the range, the count, a translated column header or filter name, and a row
  * name the screen provides; each sentence reads the same for 1 and for many.
+ * `rules.*` fill in a formatted date, a formatted bound of the allowed range and a short user
+ * reference; none needs plural or gender agreement.
  * `voiding.*` fill in a count, the configured length limits, a record code and the reason or
  * author of a void; the minimum is 10 by default, so no sentence has a singular form.
  */
 const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = [
   ["auth.lockout.message", ["minutes"]],
   ["errors.api.blocked", ["role"]],
+  ["rules.compare.from", ["date"]],
+  ["rules.error.atLeast", ["min"]],
+  ["rules.error.atMost", ["max"]],
+  ["rules.error.range", ["max", "min"]],
+  ["rules.form.scheduledNote", ["date"]],
+  ["rules.history.voidLabel", ["date"]],
+  ["rules.range.atLeast", ["min"]],
+  ["rules.range.atMost", ["max"]],
+  ["rules.range.between", ["max", "min"]],
   ["table.filters.ignoredBody", ["names"]],
   ["table.filters.ignoredMore", ["count"]],
   ["table.filters.remove", ["filter", "value"]],

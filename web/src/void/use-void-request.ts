@@ -30,7 +30,7 @@ function useIsMounted() {
 }
 
 function statusAfter(result: VoidResult): VoidStatus {
-  if (result.ok) return { kind: "editing" };
+  if (result.ok || "isStale" in result) return { kind: "editing" };
   if (result.failure.kind === "reasonTooShort") return { kind: "tooShort" };
   return { kind: "failed", failure: result.failure };
 }
@@ -49,7 +49,7 @@ export function useVoidRequest(
     const result = await submit(reason);
     if (!mounted.current) return;
     setStatus(statusAfter(result));
-    if (!result.ok && result.failure.kind === "reasonTooShort") {
+    if (!result.ok && !("isStale" in result) && result.failure.kind === "reasonTooShort") {
       setServerMin(result.failure.minLength);
     }
     if (result.ok) onVoided();

@@ -19,5 +19,5 @@ export const voiding = {
     "El motivo tiene caracteres que no se pueden guardar (de control o que cambian el sentido del texto). Quítalos y vuelve a intentar.",
   "voiding.error.alreadyVoided": "Alguien ya anuló este registro. Actualiza la página para verlo.",
   "voiding.error.blocked":
-    "Este registro ya no se puede anular, porque otra parte del sistema depende de él.",
+    "Este registro ya no se puede anular en su estado actual. Actualiza la página para ver qué cambió.",
 } as const satisfies AreaCatalog<"voiding">;
