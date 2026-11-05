@@ -133,6 +133,8 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `SYNC_CURSOR_MAX_AGE_SECONDS` | `2592000` | Lifetime of a `changes.cursor` (30 days) |
 | `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for any lock in a batch transaction (then `429 sync_in_progress`) |
 | `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
+| `SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY` | `1000` | New stored rejections per device/organization-local day; env integer in 100..10000, fail fast (#56, SA09) |
+| `SYNC_REJECTION_ALERT_PERCENTS` | `80,100` | Nonempty env list of percentages in 1..100; warning once per crossing on commit (#56) |
 
 ## Void reasons (#32)
 

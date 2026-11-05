@@ -10,7 +10,7 @@ from django.core.exceptions import ImproperlyConfigured
 from rest_framework import serializers
 
 from field_sync import registry
-from field_sync.codes import IN_REVIEW_CODES, REJECTED_CODES
+from field_sync.codes import IN_REVIEW_CODES, REJECTED_CODES, REJECTION_QUOTA_EXCEEDED
 from field_sync.exceptions import EventRejected
 from field_sync.registry import HANDLERS, EventContext, EventHandler, find_handler, register
 
@@ -94,11 +94,14 @@ def translated_and_documented(code: str, prefix: str) -> None:
     assert f"`{code}`" in documentation, f"{code} missing in docs/sync.md"
 
 
-def test_every_builtin_result_code_is_translated_in_both_languages_and_documented() -> None:
+def test_builtin_result_codes_keep_their_translation_and_documentation_contract() -> None:
     for code in (*REJECTED_CODES, *IN_REVIEW_CODES):
         translated_and_documented(code, "result")
     for code in ("device_mismatch", "payload_too_large", "invalid_cursor", "sync_in_progress"):
         translated_and_documented(code, "batch")
+    # Quota is a retry-only control code: its mobile handling/localization is outside #56's scope.
+    documentation = (REPO_ROOT / "docs" / "sync.md").read_text(encoding="utf-8")
+    assert f"`{REJECTION_QUOTA_EXCEEDED}`" in documentation
 
 
 def test_every_code_an_epic_handler_declares_is_translated_and_documented() -> None:
