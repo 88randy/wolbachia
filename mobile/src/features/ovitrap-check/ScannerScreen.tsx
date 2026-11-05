@@ -16,7 +16,10 @@ export function ScannerScreen({ target }: { readonly target: "ovitrap" | "bag" }
   const t = useT();
   const styles = useStyles(createShiftStyles);
   const actions = useScannerActions({ model, target, code });
-  const canCapture = model.state?.isShiftBlocked === false;
+  const canCapture =
+    target === "ovitrap"
+      ? model.state?.canStartCapture === true
+      : model.state?.isShiftBlocked === false;
   const isBusy = model.isBusy || !canCapture;
   return (
     <View style={styles.root}>

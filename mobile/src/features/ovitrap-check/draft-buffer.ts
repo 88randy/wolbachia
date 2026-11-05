@@ -6,7 +6,7 @@ export class ImmutableCaptureError extends Error {
     this.name = "ImmutableCaptureError";
   }
 }
-/** Failed or newer keystrokes survive sync refreshes; only a matching successful write clears them. */
+/** Retryable writes retain input; immutable late edits are discarded and reported to the caller. */
 export class OvitrapDraftBuffer {
   #pending: DraftPatch | null = null;
   #revision = 0;
@@ -22,14 +22,18 @@ export class OvitrapDraftBuffer {
       ? { ...snapshot, draft: { ...snapshot.draft, ...this.#pending } }
       : snapshot;
   }
+  discard(): void {
+    this.#pending = null;
+    this.#revision++;
+  }
   async persist(service: OvitrapService): Promise<void> {
     if (!this.#pending) return;
     const revision = this.#revision;
     const result = await service.update(this.#pending);
-    if (!result.isUpdateApplied) throw new ImmutableCaptureError();
-    if (revision === this.#revision) {
-      this.#pending = null;
-      this.#revision++;
+    if (!result.isUpdateApplied) {
+      this.discard();
+      throw new ImmutableCaptureError();
     }
+    if (revision === this.#revision) this.discard();
   }
 }

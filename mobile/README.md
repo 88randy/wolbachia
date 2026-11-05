@@ -334,16 +334,23 @@ There is no egg-count input, draft field or event payload field.
   departure authorization (`canDepart`, gate and current shift UUID). Every serialized
   capture mutation checks authorization, and save checks again immediately before
   enqueue, including restored drafts. Blocked shifts keep drafts and show an es-MX/en
-  notice; the capture form and actions remain unavailable until authorization returns.
+  notice; edits and saves remain unavailable until authorization returns. Starting
+  place/check under a different authorized shift archives the unsaved old draft,
+  including all evidence references and its replacement UUID, before replacing the
+  active slot in one SQLite transaction (migration **6**). New-capture controls use
+  live departure authorization; the old draft cannot be edited or saved under B.
 - Other/reason and the remaining capture text inputs are disabled during a save.
   `update` reports whether its conditional SQLite write applied. A queued edit after
-  commit throws `ImmutableCaptureError` in the buffer, retains pending text/revision,
-  and displays a localized notice instead of silently acknowledging the edit.
+  commit discards the late buffer and throws `ImmutableCaptureError`. The es-MX/en
+  notice explicitly says the edit was not saved; the next new-capture/correction
+  command is unblocked. Retryable storage errors still retain pending text.
 - `test/m-08.test.ts` covers both UUID orders and later replacement failure with the
   backend ordering model, real `severe_check` / `in_review` departure authorization,
   blocked entry/save with a retained draft, November 5/12 under a W45 package,
   unavailable week context, ISO/MMWR local/year boundaries, deferred enqueue, and a
-  second writer committing before a conditional update. No timer waits are used.
+  second writer committing before a conditional update. It also covers rejected A,
+  `restartRejected`, authorized B, retained superseded evidence, a cold SQLite reopen,
+  and the next command after an immutable late edit. No timer waits are used.
 
 APIs verified against [React Native TextInput](https://reactnative.dev/docs/textinput#editable)
 [ECMA-402 DateTimeFormat](https://tc39.es/ecma402/#sec-intl-datetimeformat-prototype-formattoparts),
@@ -395,7 +402,7 @@ Run from the repository root on Windows (`npx.cmd`/`npm.cmd`):
 | `npx eslint mobile packages/i18n` | Passed |
 | `npx prettier --check mobile packages docs` | Passed; Markdown and generated artifacts follow the repository ignore rules |
 | `node scripts/typecheck.mjs mobile` | Passed |
-| `npm test --workspace=mobile -- --test-concurrency=1` | 113 passed, including 23 M-08 cases |
+| `npm test --workspace=mobile -- --test-concurrency=1` | 114 passed, including 24 M-08 cases |
 | `git diff --check` | Passed |
 
 This adversarial-fix follow-up was verified locally with the commands above.

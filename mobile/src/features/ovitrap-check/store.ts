@@ -46,7 +46,14 @@ export class OvitrapStore {
   async begin(draft: Draft): Promise<void> {
     await this.#db.runAtomically([
       {
-        sql: `INSERT INTO ovitrap_draft(slot, draft) VALUES (1, ?) ON CONFLICT(slot) DO UPDATE SET draft = excluded.draft, event_id = NULL WHERE ovitrap_draft.event_id IS NOT NULL`,
+        sql: `INSERT INTO ovitrap_superseded_draft(event_id, replacement_event_id, draft)
+          SELECT json_extract(draft, '$.eventId'), ?, draft FROM ovitrap_draft
+          WHERE slot = 1 AND event_id IS NULL AND json_extract(draft, '$.shiftId') <> ?`,
+        params: [draft.eventId, draft.shiftId],
+      },
+      {
+        sql: `INSERT INTO ovitrap_draft(slot, draft) VALUES (1, ?) ON CONFLICT(slot) DO UPDATE SET draft = excluded.draft, event_id = NULL
+          WHERE ovitrap_draft.event_id IS NOT NULL OR json_extract(ovitrap_draft.draft, '$.shiftId') <> json_extract(excluded.draft, '$.shiftId')`,
         params: [JSON.stringify(draft)],
       },
     ]);

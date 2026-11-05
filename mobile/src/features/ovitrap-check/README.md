@@ -19,4 +19,13 @@ Departure authorization is read live through ShiftOpenService before starting/re
 and saving. Capture-week identity derives from deviceTime plus downloaded organization
 ISO/MMWR and timezone settings, never the assignment package week label. Missing
 settings block explicitly. Conditional SQL updates report application; the draft buffer
-retains and surfaces edits skipped because another writer made the capture immutable.
+discards immutable late edits after surfacing the explicit not-saved notice. Retryable
+storage errors keep their buffer; a subsequent command can start a capture/correction.
+
+Starting place/check under a different authorized shift explicitly supersedes the old
+unsaved draft. Migration 6 archives its complete JSON (including evidence references)
+and replacement UUID in an immutable table in the same transaction that replaces the
+active slot. Saved events keep their existing append-only projections. Old-shift
+edits/saves stay blocked; only new-capture controls use live departure authorization.
+The command runner skips the old-shift buffer only for this explicit new capture,
+and discards it only once the draft UUID actually changes.

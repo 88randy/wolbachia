@@ -84,6 +84,13 @@ const MIGRATIONS: readonly (readonly string[])[] = [
       `CREATE TRIGGER ${table}_no_delete BEFORE DELETE ON ${table} BEGIN SELECT RAISE(ABORT, 'capture evidence is retained'); END`,
     ]),
   ],
+  [
+    `CREATE TABLE ovitrap_superseded_draft (event_id TEXT PRIMARY KEY NOT NULL, replacement_event_id TEXT NOT NULL UNIQUE, draft TEXT NOT NULL)`,
+    `CREATE TRIGGER ovitrap_superseded_draft_immutable BEFORE UPDATE ON ovitrap_superseded_draft
+      BEGIN SELECT RAISE(ABORT, 'superseded draft evidence is immutable'); END`,
+    `CREATE TRIGGER ovitrap_superseded_draft_no_delete BEFORE DELETE ON ovitrap_superseded_draft
+      BEGIN SELECT RAISE(ABORT, 'superseded draft evidence is retained'); END`,
+  ],
 ];
 
 /** Highest schema version this build knows. */

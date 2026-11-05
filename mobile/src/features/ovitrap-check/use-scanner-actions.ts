@@ -19,8 +19,12 @@ function enterCode({ model, target, code }: Input, push: Push): void {
     return;
   }
   void model
-    .run(() =>
-      target === "bag" ? model.service.enterBag(code) : model.service.startCheck(code.trim(), true),
+    .run(
+      () =>
+        target === "bag"
+          ? model.service.enterBag(code)
+          : model.service.startCheck(code.trim(), true),
+      target === "ovitrap",
     )
     .then((ok) => {
       if (ok) push({ name: "ovitrapCapture" });
@@ -32,7 +36,7 @@ function scanCode({ model, target }: Input, push: Push): void {
     if (result === "invalid") push({ name: "invalidOvitrapCode", target });
     if (result === "unavailable") model.setError("mobile.ovitrap.scannerUnavailable");
     if (result === "read") push({ name: "ovitrapCapture" });
-  });
+  }, target === "ovitrap");
 }
 export function useScannerActions(input: Input) {
   const { push } = useNavigation();

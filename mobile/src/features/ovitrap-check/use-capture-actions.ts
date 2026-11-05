@@ -9,19 +9,33 @@ interface Input {
   readonly refresh: () => Promise<void>;
   readonly setError: (key: MessageKey | null) => void;
 }
-export function useCaptureActions({ service, buffer, refresh, setError }: Input) {
+/** A new capture may supersede a blocked old-shift draft; all other commands persist first. */
+export async function runCaptureAction(
+  { service, buffer, refresh, setError }: Input,
+  action: () => Promise<unknown>,
+  startsCapture = false,
+): Promise<boolean> {
+  setError(null);
+  try {
+    const state = await service.read();
+    const abandonsDraft = startsCapture && state.canStartCapture && state.isShiftBlocked;
+    if (!abandonsDraft) await buffer.persist(service);
+    await action();
+    if (abandonsDraft && (await service.read()).draft?.eventId !== state.draft?.eventId)
+      buffer.discard();
+    await refresh();
+    return true;
+  } catch (error) {
+    setError(actionErrorKey(error));
+    return false;
+  }
+}
+export function useCaptureActions(input: Input) {
   const [isBusy, setBusy] = useState(false);
-  const run = async (action: () => Promise<unknown>): Promise<boolean> => {
+  const run = async (action: () => Promise<unknown>, startsCapture = false): Promise<boolean> => {
     setBusy(true);
-    setError(null);
     try {
-      await buffer.persist(service);
-      await action();
-      await refresh();
-      return true;
-    } catch (error) {
-      setError(actionErrorKey(error));
-      return false;
+      return await runCaptureAction(input, action, startsCapture);
     } finally {
       setBusy(false);
     }

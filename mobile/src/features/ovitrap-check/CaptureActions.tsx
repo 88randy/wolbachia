@@ -12,7 +12,7 @@ export function CaptureActions({ model }: { readonly model: M08Model }) {
       <CaptureCommand model={model} command="startPlace" />
       <ShiftAction
         label={t("mobile.ovitrap.check")}
-        disabled={model.isBusy || model.state?.isShiftBlocked !== false}
+        disabled={model.isBusy || model.state?.canStartCapture !== true}
         onPress={() => {
           push({ name: "ovitrapScanner", target: "ovitrap" });
         }}

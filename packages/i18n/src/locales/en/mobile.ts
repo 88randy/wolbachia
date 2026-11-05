@@ -88,7 +88,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.ovitrap.staleWeekContext":
     "Current organization week and time zone settings are missing. Update the context before saving; the draft is retained.",
   "mobile.ovitrap.immutableEdit":
-    "The record is already saved and cannot be edited. Your pending text is retained; review the record and use a correction.",
+    "The late edit was not saved and has been discarded. Start a new capture or use a correction.",
   "mobile.ovitrap.gateShift": "Open a shift before saving. The draft is retained.",
   "mobile.ovitrap.gateAssignment":
     "An assignment with explicit scope and epi week is missing. Download it before saving.",

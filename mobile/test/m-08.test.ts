@@ -439,6 +439,7 @@ void test("AC3: a revoked downloaded assignment blocks capture without losing it
 
 import { correctionDraft } from "../src/features/ovitrap-check/correction.ts";
 import { OvitrapDraftBuffer } from "../src/features/ovitrap-check/draft-buffer.ts";
+import { runCaptureAction } from "../src/features/ovitrap-check/use-capture-actions.ts";
 import type { FieldEventEnvelope } from "../src/outbox/outbox-event.ts";
 
 function barrier() {
@@ -556,7 +557,7 @@ void test("regression: missing organization week configuration blocks explicitly
   assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
 });
 
-void test("regression: an edit queued behind deferred enqueue is rejected and remains buffered", async () => {
+void test("regression: an immutable late edit is reported and does not block the next capture command", async () => {
   const entered = barrier();
   const release = barrier();
   const h = await harness();
@@ -572,17 +573,28 @@ void test("regression: an edit queued behind deferred enqueue is rejected and re
   await entered.promise;
   const buffer = new OvitrapDraftBuffer();
   buffer.edit({ otherText: "Late finding text", reason: "Late correction reason" });
-  const revision = buffer.revision;
-  const editing = assert.rejects(buffer.persist(h.service), /ImmutableCaptureError/);
+  let notice: string | null = null;
+  const commands = {
+    service: h.service,
+    buffer,
+    refresh: async () => {
+      await h.service.read();
+    },
+    setError: (key: string | null) => {
+      notice = key;
+    },
+  };
+  const editing = runCaptureAction(commands, () => h.service.startPlace());
   release.resolve();
   const saved = await saving;
-  await editing;
-  assert.equal(buffer.revision, revision);
-  const pending = buffer.merge({ ...saved, event: null });
-  assert.equal(pending.draft?.otherText, "Late finding text");
-  assert.equal(pending.draft.reason, "Late correction reason");
+  assert.equal(await editing, false);
+  assert.equal(notice, "mobile.ovitrap.immutableEdit");
   assert.equal((await h.service.read()).draft?.otherText, "");
-  await assert.rejects(buffer.persist(h.service), /ImmutableCaptureError/);
+  assert.equal(await runCaptureAction(commands, () => h.service.startPlace()), true);
+  const next = await h.service.read();
+  assert.notEqual(next.draft?.eventId, saved.draft?.eventId);
+  assert.equal(buffer.merge(next).draft?.otherText, "");
+  assert.equal(buffer.merge(next).draft?.reason, "");
   await h.engine.requestSync();
 });
 
@@ -594,8 +606,7 @@ import { UNAVAILABLE_MAP } from "../src/features/shift-open/domain.ts";
 import { actionErrorKey } from "../src/features/ovitrap-check/action-error-key.ts";
 import { ImmutableCaptureError } from "../src/features/ovitrap-check/draft-buffer.ts";
 
-void test("regression: real departure authorization blocks severe_check in_review at entry and save", async () => {
-  const h = await harness();
+async function authorizedShift(h: Awaited<ReturnType<typeof harness>>) {
   const store = new ShiftOpenStore(h.db);
   const item = CATALOG.findings[0];
   assert.ok(item);
@@ -626,6 +637,13 @@ void test("regression: real departure authorization blocks severe_check in_revie
   await shift.update({ odometer_km: "100", checks: [{ item: item.code, result: "ok" }] });
   const opened = await shift.open();
   assert.equal(opened.canDepart, true);
+  assert.ok(opened.opening);
+  return { shift, opened };
+}
+
+void test("regression: real departure authorization blocks severe_check in_review at entry and save", async () => {
+  const h = await harness();
+  const { shift, opened } = await authorizedShift(h);
   assert.ok(opened.opening);
   const capture = await harness(h, { shiftId: async () => captureShiftId(await shift.read()) });
   const target = "44444444-4444-4444-8444-444444444444";
@@ -685,7 +703,7 @@ void test("regression: capture week matches organization-local ISO/MMWR year and
   );
 });
 
-void test("regression: SQL skipped updates cannot clear buffered text after another writer commits", async () => {
+void test("regression: SQL skipped immutable edits are reported and discarded after another writer commits", async () => {
   const entered = barrier();
   const release = barrier();
   const h = await harness();
@@ -699,15 +717,113 @@ void test("regression: SQL skipped updates cannot clear buffered text after anot
   };
   const buffer = new OvitrapDraftBuffer();
   buffer.edit({ reason: "Pending correction text" });
-  const revision = buffer.revision;
   const persisting = assert.rejects(buffer.persist(h.service), ImmutableCaptureError);
   await entered.promise;
   const other = await harness(h);
   await other.service.save();
   release.resolve();
   await persisting;
-  assert.equal(buffer.revision, revision);
   assert.equal(actionErrorKey(new ImmutableCaptureError()), "mobile.ovitrap.immutableEdit");
+  await buffer.persist(h.service);
   await h.engine.requestSync();
   await other.engine.requestSync();
+});
+
+void test("regression: an authorized replacement shift supersedes the old draft with evidence across restart", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "wolbachia-m08-shift-"));
+  assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + sep));
+  const path = join(directory, "phone.sqlite");
+  let phone = await openTestDatabase(path);
+  try {
+    const h = await harness(storesFor(phone.executor));
+    const { shift, opened } = await authorizedShift(h);
+    assert.ok(opened.opening);
+    const shiftId = async () => captureShiftId(await shift.read());
+    const capture = await harness(h, { shiftId });
+    await capture.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+    await prepareCheck(capture.service);
+    await capture.service.captureEvidence();
+    const original = (await capture.service.read()).draft;
+    assert.ok(original);
+    await h.outbox.claimPending(10);
+    await h.outbox.settle([
+      {
+        id: opened.opening.envelope.id,
+        action: "reject",
+        result: { code: "motorcycle_blocked", params: {} },
+      },
+    ]);
+    await assert.rejects(capture.service.startPlace(), /ShiftBlockedError/);
+    await shift.restartRejected();
+    const item = CATALOG.findings[0];
+    assert.ok(item);
+    await shift.update({ motorcycle_code: "M-RETRY" });
+    await shift.update({ odometer_km: "100", checks: [{ item: item.code, result: "ok" }] });
+    const replacement = await shift.open();
+    assert.equal(replacement.canDepart, true);
+    const beforeStart = await capture.service.read();
+    assert.equal(beforeStart.canStartCapture, true);
+    assert.equal(beforeStart.isShiftBlocked, true);
+    await assert.rejects(
+      capture.service.update({ otherText: "Cannot reassign old evidence" }),
+      /ShiftBlockedError/,
+    );
+    await assert.rejects(capture.service.adoptSnapshots(), /ShiftBlockedError/);
+    const buffer = new OvitrapDraftBuffer();
+    buffer.edit({ otherText: "Old shift input" });
+    const command = {
+      service: capture.service,
+      buffer,
+      refresh: async () => {
+        await capture.service.read();
+      },
+      setError: (key: string | null) => {
+        if (key) assert.fail(key);
+      },
+    };
+    assert.equal(await runCaptureAction(command, () => capture.service.startPlace(), true), true);
+    const fresh = buffer.merge(await capture.service.read());
+    assert.ok(fresh.draft);
+    assert.ok(replacement.draft);
+    assert.equal(fresh.draft.otherText, "");
+    assert.equal(fresh.isShiftBlocked, false);
+    assert.equal(fresh.draft.shiftId, replacement.draft.clientShiftId);
+    assert.notEqual(fresh.draft.eventId, original.eventId);
+    assert.deepEqual(fresh.draft.evidence, []);
+    const [archived] = await h.db.query(
+      "SELECT draft, replacement_event_id FROM ovitrap_superseded_draft WHERE event_id = ?",
+      [original.eventId],
+    );
+    assert.ok(archived);
+    assert.deepEqual(JSON.parse(String(archived.draft)), original);
+    assert.equal(archived.replacement_event_id, fresh.draft.eventId);
+    await capture.engine.requestSync();
+    await h.engine.requestSync();
+    phone.close();
+    phone = await openTestDatabase(path);
+    const restoredShift = new ShiftOpenService({
+      store: new ShiftOpenStore(phone.executor),
+      engine: h.engine,
+      now: () => FIXED_NOW,
+      uuid: () => assert.fail("Restart must retain the authorized shift"),
+      maps: { prepare: () => Promise.resolve(UNAVAILABLE_MAP) },
+      photos: { capture: () => Promise.resolve({ status: "unavailable" }) },
+    });
+    const restored = await harness(storesFor(phone.executor), {
+      shiftId: async () => captureShiftId(await restoredShift.read()),
+    });
+    assert.equal((await restored.service.read()).draft?.eventId, fresh.draft.eventId);
+    await restored.service.update({
+      point: POINT,
+      prepared: ["clean", "water", "liner", "shade", "height", "containers", "safe", "marked"],
+    });
+    assert.ok((await restored.service.save()).event);
+    const [retained] = await restored.db.query("SELECT draft FROM ovitrap_superseded_draft");
+    assert.ok(retained);
+    assert.deepEqual(JSON.parse(String(retained.draft)), original);
+    await restored.engine.requestSync();
+  } finally {
+    phone.close();
+    rmSync(directory, { recursive: true });
+  }
 });

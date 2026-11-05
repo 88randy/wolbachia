@@ -26,6 +26,7 @@ export interface Snapshot extends StoredCapture {
   readonly catalogChanged: boolean;
   readonly isScopeBlocked: boolean;
   readonly isShiftBlocked: boolean;
+  readonly canStartCapture: boolean;
   readonly repeat: OutboxEvent | null;
   readonly reuse: readonly Reuse[];
   readonly isBagReserved: boolean;
@@ -37,9 +38,10 @@ export class OvitrapService {
   constructor(deps: Dependencies) {
     this.#deps = deps;
   }
-  #write<T>(action: () => Promise<T>): Promise<T> {
+  #write<T>(action: () => Promise<T>, startsCapture = false): Promise<T> {
     const next = this.#tail.then(async () => {
-      if (!(await this.#deps.shiftId())) throw new ShiftBlockedError();
+      const draft = startsCapture ? null : (await this.#deps.store.read()).draft;
+      if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();
       return action();
     });
     this.#tail = next.catch(() => undefined); // Caller owns the rejection; future writes remain possible.
@@ -47,9 +49,11 @@ export class OvitrapService {
   }
   async read(): Promise<Snapshot> {
     const state = await this.#deps.store.read();
+    const shiftId = await this.#deps.shiftId();
     return {
       ...state,
-      isShiftBlocked: await this.#isShiftBlocked(state.draft),
+      canStartCapture: Boolean(shiftId),
+      isShiftBlocked: !shiftId || Boolean(state.draft && state.draft.shiftId !== shiftId),
       ...availability(state.draft, await this.#deps.store.snapshots()),
       reuse: state.draft ? await this.#deps.store.reuse(state.draft) : [],
       isBagReserved: Boolean(
@@ -68,7 +72,7 @@ export class OvitrapService {
     return this.#deps.refresh?.() ?? Promise.resolve();
   }
   startPlace(): Promise<Snapshot> {
-    return this.#write(() => this.#start("place"));
+    return this.#write(() => this.#start("place"), true);
   }
   startCheck(code: string, isManual: boolean): Promise<Snapshot> {
     return this.#write(async () => {
@@ -78,13 +82,13 @@ export class OvitrapService {
         (isManual && UUID_PATTERN.test(code.trim()) ? code.trim().toLowerCase() : null);
       if (!id) throw new Error("Invalid ovitrap code.");
       return this.#start("check", id, isManual);
-    });
+    }, true);
   }
   async #start(mode: Draft["mode"], ovitrapId?: string, isManual = false): Promise<Snapshot> {
     const current = await this.#deps.store.read();
-    if (await this.#isShiftBlocked(current.event ? null : current.draft))
-      throw new ShiftBlockedError();
-    if (current.draft && !current.event) {
+    const shiftId = await this.#deps.shiftId();
+    if (!shiftId) throw new ShiftBlockedError();
+    if (current.draft?.shiftId === shiftId && !current.event) {
       assertSameTarget(current.draft, mode, ovitrapId);
       return this.read();
     }
@@ -94,10 +98,12 @@ export class OvitrapService {
       now: now(),
       mode,
       ovitrapId,
-      shiftId: await this.#deps.shiftId(),
+      shiftId,
       snapshots: await store.snapshots(),
     });
-    await store.begin(await this.#locateDraft(draft, isManual));
+    const located = await this.#locateDraft(draft, isManual);
+    if (await this.#isShiftBlocked(located)) throw new ShiftBlockedError();
+    await store.begin(located);
     const saved = await this.read();
     if (saved.draft) assertSameTarget(saved.draft, mode, ovitrapId);
     return saved;
@@ -149,7 +155,7 @@ export class OvitrapService {
         bagQrHistory: [...new Set([...draft.bagQrHistory, parsed.id])],
       });
       return "read";
-    });
+    }, target === "ovitrap");
   }
   enterBag(value: string): Promise<Snapshot> {
     return this.#write(async () => {

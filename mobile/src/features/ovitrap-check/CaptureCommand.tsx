@@ -17,18 +17,20 @@ interface Props {
 }
 export function CaptureCommand({ model, command, disabled = false }: Props) {
   const t = useT();
+  const isBlocked =
+    command === "startPlace"
+      ? model.state?.canStartCapture !== true
+      : model.state?.isShiftBlocked !== false;
   return (
     <ShiftAction
       label={t(LABELS[command])}
-      disabled={
-        model.isBusy || disabled || (command !== "refresh" && model.state?.isShiftBlocked !== false)
-      }
+      disabled={model.isBusy || disabled || (command !== "refresh" && isBlocked)}
       onPress={() => {
         void model.run(async () => {
           const result = await model.service[command]();
           if (command === "captureEvidence" && result === false)
             model.setError("mobile.ovitrap.photoUnavailable");
-        });
+        }, command === "startPlace");
       }}
     />
   );
