@@ -1,13 +1,19 @@
+import { DayViewController, dayViewPhase } from "../src/features/day/day-view-controller.ts";
+import { AuthController } from "../src/auth/auth-controller.ts";
+import { randomBytes, randomUUID } from "node:crypto";
 import { locationMessage } from "../src/features/day/location-presentation.ts";
 import { scheduleDueRefresh } from "../src/features/day/due-refresh.ts";
 import { createScopedSyncTransport } from "../src/sync/scoped-sync-transport.ts";
-import { randomUUID } from "node:crypto";
 import { createLinkingLauncher } from "../src/navigation/linking-launcher.ts";
 import { DayService } from "../src/features/day/service.ts";
 import { ShiftOpenStore } from "../src/features/shift-open/store.ts";
 import { refreshDay } from "../src/features/day/refresh-day.ts";
+import { createScopedApiClient } from "../src/api/create-scoped-api-client.ts";
 import { createMobileApiClient } from "../src/api/create-api-client.ts";
-import { createMemoryTokenStore } from "../src/auth/token-store.ts";
+import { createMemoryTokenStore } from "./support/token-store.ts";
+import { SessionRequests } from "../src/auth/session-requests.ts";
+import { makeCredentials } from "./support/auth-fakes.ts";
+import { createSyncTransport } from "../src/sync/sync-transport.ts";
 import { createBootstrapTransport } from "../src/features/day/bootstrap-transport.ts";
 import { OutboxWorkOverlay } from "../src/features/day/local-work.ts";
 import type { SyncCallResult } from "../src/sync/sync-transport.ts";
@@ -458,7 +464,7 @@ void test("AC bootstrap wiring: api-client object response/quoted ETag/304/force
     new Response(JSON.stringify(bundle()), { headers: { "Content-Type": "application/json" } }),
   ];
   const client = createMobileApiClient({
-    baseUrl: "https://field.example.test",
+    baseUrl: "http://192.168.1.20:8000",
     tokens: createMemoryTokenStore(),
     fetch: (request) => {
       requests.push(request);
@@ -609,7 +615,7 @@ void test("AC access errors: only revoked session/scope clear downloads; expired
     const event = makeEnvelope();
     await outbox.enqueue(event);
     const client = createMobileApiClient({
-      baseUrl: "https://field.example.test",
+      baseUrl: "http://192.168.1.20:8000",
       tokens: createMemoryTokenStore(),
       fetch: () =>
         Promise.resolve(
@@ -631,38 +637,43 @@ void test("AC access errors: only revoked session/scope clear downloads; expired
   }
 });
 
-void test("Regression: stale sync responses from a prior token or server cannot install projections", async () => {
-  for (const changed of ["token", "server"] as const) {
-    const tokens = createMemoryTokenStore();
-    tokens.setAccessToken(randomUUID());
-    let baseUrl = "https://first.example.test";
-    const response = deferred<Response>();
-    const entered = deferred<undefined>();
-    const transport = createScopedSyncTransport({
-      baseUrl: () => baseUrl,
-      tokens,
-      fetch: () => {
-        entered.resolve(undefined);
-        return response.promise;
-      },
-    });
-    const pending = transport({
-      device_id: FIXED_DEVICE_ID,
-      sent_at: FIXED_NOW.toISOString(),
-      events: [],
-    });
-    await entered.promise;
-    if (changed === "token") tokens.setAccessToken(randomUUID());
-    else baseUrl = "https://second.example.test";
-    const success = answer([]);
-    assert.ok(success.ok);
-    response.resolve(
-      new Response(JSON.stringify(success.response), {
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-    assert.deepEqual(await pending, { ok: false, failure: { kind: "network" } });
-  }
+void test("Regression: a sync response from a replacement session cannot install projections", async () => {
+  const { credentials } = await makeCredentials();
+  const response = deferred<Response>();
+  const entered = deferred<undefined>();
+  const requests = new SessionRequests({
+    credentials,
+    isOnline: () => true,
+    endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
+    refresh: () => Promise.reject(new Error("No refresh expected.")),
+  });
+  const transport = createScopedSyncTransport({
+    tokens: credentials,
+    requests,
+    fetch: () => {
+      entered.resolve(undefined);
+      return response.promise;
+    },
+  });
+  const pending = transport({
+    device_id: FIXED_DEVICE_ID,
+    sent_at: FIXED_NOW.toISOString(),
+    events: [],
+  });
+  await entered.promise;
+  await credentials.update((current) => ({
+    ...current,
+    sessionId: randomUUID(),
+    origin: "https://replacement.invalid",
+  }));
+  const success = answer([]);
+  assert.ok(success.ok);
+  response.resolve(
+    new Response(JSON.stringify(success.response), {
+      headers: { "Content-Type": "application/json" },
+    }),
+  );
+  assert.deepEqual(await pending, { ok: false, failure: { kind: "network" } });
 });
 
 void test("Regression: a second capture for the staged ovitrap remains visible on later removal", async () => {
@@ -793,18 +804,20 @@ void test("Regression final upload: a revoked 200 settles its results, removes d
   const final = answer([accepted(first.id)]);
   assert.ok(final.ok);
   let requests = 0;
-  const transport = createScopedSyncTransport({
-    baseUrl: () => "https://field.example.test",
-    tokens: createMemoryTokenStore(),
-    fetch: () => {
-      requests += 1;
-      return Promise.resolve(
-        new Response(JSON.stringify(final.response), {
-          headers: { "Content-Type": "application/json", "X-Session-Revoked": "true" },
-        }),
-      );
-    },
-  });
+  const transport = createSyncTransport(
+    createMobileApiClient({
+      baseUrl: "http://192.168.1.20:8000",
+      tokens: createMemoryTokenStore(),
+      fetch: () => {
+        requests += 1;
+        return Promise.resolve(
+          new Response(JSON.stringify(final.response), {
+            headers: { "Content-Type": "application/json", "X-Session-Revoked": "true" },
+          }),
+        );
+      },
+    }),
+  );
   const outcome = await runSyncPass(
     {
       ...fixture,
@@ -946,4 +959,477 @@ void test("Regression manifest boundary: a malformed manifest cannot advance the
     ),
   );
   assert.equal(await fixture.kv.get(KV_KEYS.syncCursor), "bootstrap-cursor");
+});
+
+function sessionScope(
+  credentials: Awaited<ReturnType<typeof makeCredentials>>["credentials"],
+): string | null {
+  const current = credentials.getSnapshot();
+  return current.status === "active" && current.pair !== null
+    ? JSON.stringify([current.sessionId, current.origin])
+    : null;
+}
+async function authDayFixture() {
+  const fixture = await dayFixture();
+  const { credentials, secrets } = await makeCredentials();
+  // eslint-disable-next-line prefer-const -- the transport closure needs it before the wrapper is built
+  let requests!: SessionRequests;
+  const service = new DayBundleService({
+    store: fixture.store,
+    now: () => FIXED_NOW,
+    getScopeKey: () => sessionScope(credentials),
+    transport: (etag) =>
+      createBootstrapTransport(
+        createScopedApiClient({
+          tokens: credentials,
+          fetch: () => Promise.resolve(jsonResponse(bundle())),
+        }),
+        requests,
+      )(etag),
+  });
+  const auth = new AuthController({
+    ...fixture,
+    credentials,
+    clearSessionData: service.clearSessionData,
+    randomBytes,
+    now: () => FIXED_NOW.getTime(),
+    hasLocalRecords: () => Promise.resolve(true),
+    login: () => Promise.reject(new Error("No login in this fixture.")),
+    fetchRules: () => Promise.resolve(null),
+  });
+  requests = new SessionRequests({
+    credentials,
+    isOnline: () => true,
+    endSession: () => auth.endSession(),
+    refresh: () => Promise.resolve({ access: randomUUID(), refresh: randomUUID() }),
+  });
+  await auth.load();
+  return { ...fixture, credentials, secrets, auth, requests, service };
+}
+function jsonResponse(
+  body: unknown,
+  options: { status?: number; isFinal?: boolean } = {},
+): Response {
+  return new Response(JSON.stringify(body), {
+    status: options.status ?? 200,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.isFinal === true ? { "X-Session-Revoked": "true" } : {}),
+    },
+  });
+}
+void test("Merge session: bootstrap accepts a rotated bearer at its pinned issuer and preserves If-None-Match", async () => {
+  const fixture = await authDayFixture();
+  const sent: Request[] = [];
+  const client = createScopedApiClient({
+    tokens: fixture.credentials,
+    fetch: (request) => {
+      sent.push(request);
+      return Promise.resolve(
+        sent.length === 1
+          ? jsonResponse({ code: "token_expired", detail: "Fixture" }, { status: 401 })
+          : jsonResponse(bundle()),
+      );
+    },
+  });
+  const original = fixture.credentials.getAccessToken();
+  const service = new DayBundleService({
+    store: fixture.store,
+    now: () => FIXED_NOW,
+    getScopeKey: () => sessionScope(fixture.credentials),
+    transport: createBootstrapTransport(client, fixture.requests),
+  });
+  await service.refresh();
+  assert.equal(sent.length, 2);
+  assert.ok(sent.every((request) => new URL(request.url).origin === "https://example.invalid"));
+  assert.ok(sent.every((request) => request.headers.get("If-None-Match") === '"bundle-1"'));
+  assert.notEqual(fixture.credentials.getAccessToken(), original);
+  assert.equal((await service.read()).tasks.length, 1);
+});
+void test("Merge session: logout during a pending bootstrap clears downloads without deadlock or resurrection", async () => {
+  const fixture = await authDayFixture();
+  const entered = deferred<undefined>();
+  const network = deferred<import("../src/features/day/bundle-service.ts").BundleResult>();
+  const service = new DayBundleService({
+    store: fixture.store,
+    now: () => FIXED_NOW,
+    getScopeKey: () => sessionScope(fixture.credentials),
+    transport: () => {
+      entered.resolve(undefined);
+      return network.promise;
+    },
+  });
+  const auth = new AuthController({
+    ...fixture,
+    clearSessionData: service.clearSessionData,
+    randomBytes,
+    now: () => FIXED_NOW.getTime(),
+    hasLocalRecords: () => Promise.resolve(true),
+    login: () => Promise.reject(new Error("No login")),
+    fetchRules: () => Promise.resolve(null),
+  });
+  await auth.load();
+  await fixture.navigation.select("task-1");
+  await fixture.outbox.enqueue(makeEnvelope());
+  const refreshing = service.refresh();
+  await entered.promise;
+  await auth.endSession();
+  assert.equal((await service.read()).tasks.length, 0);
+  assert.equal(await fixture.navigation.read(), null);
+  network.resolve({ kind: "bundle", body: bundle() });
+  await assert.rejects(refreshing);
+  assert.equal((await service.read()).tasks.length, 0);
+  assert.equal((await fixture.outbox.countByStatus()).pending, 1);
+});
+void test("Merge session: ordinary local lock retains downloads while boot reconciles ended-session cleanup", async () => {
+  const fixture = await authDayFixture();
+  await fixture.auth.lock();
+  assert.equal((await fixture.service.read()).tasks.length, 1);
+  await fixture.auth.endSession();
+  // An interrupted earlier cleanup can leave old projections on disk.
+  await fixture.store.replace(bundle(), FIXED_NOW);
+  await fixture.auth.load();
+  assert.equal((await fixture.service.read()).tasks.length, 0);
+});
+void test("Merge session: final upload completes credential erasure only after result settlement and projection cleanup", async () => {
+  const fixture = await authDayFixture();
+  const event = makeEnvelope();
+  await fixture.outbox.enqueue(event);
+  const result = answer([accepted(event.id)]);
+  assert.ok(result.ok);
+  const transport = createScopedSyncTransport({
+    tokens: fixture.credentials,
+    requests: fixture.requests,
+    fetch: () => Promise.resolve(jsonResponse(result.response, { isFinal: true })),
+  });
+  await runSyncPass(
+    {
+      ...fixture,
+      ...fixture.service.syncHooks(),
+      transport,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+    },
+    { batchSize: 50 },
+  );
+  assert.equal((await fixture.outbox.countByStatus()).sent, 1);
+  assert.equal((await fixture.service.read()).tasks.length, 0);
+  assert.equal(fixture.credentials.getSnapshot().pair, null);
+});
+void test("UI state: local loading is distinct from empty, refresh retains data and a failed refresh can retry", async () => {
+  const fixture = await dayFixture();
+  const network = deferred<import("../src/features/day/bundle-service.ts").BundleResult>();
+  const entered = deferred<undefined>();
+  let shouldFail = true;
+  const service = new DayBundleService({
+    store: fixture.store,
+    now: () => FIXED_NOW,
+    transport: () => {
+      entered.resolve(undefined);
+      return shouldFail ? network.promise : Promise.resolve({ kind: "unchanged" });
+    },
+  });
+  const view = new DayViewController(createTestDay(fixture, service));
+  assert.equal(dayViewPhase(view.getSnapshot()), "loading");
+  await view.load();
+  assert.equal(view.getSnapshot().state?.tasks.length, 1);
+  const refreshing = view.refresh();
+  assert.equal(view.getSnapshot().isRefreshing, true);
+  assert.equal(view.getSnapshot().state?.tasks.length, 1);
+  await entered.promise;
+  network.reject(new Error("offline"));
+  await refreshing;
+  assert.equal(view.getSnapshot().isRefreshing, false);
+  assert.ok(view.getSnapshot().errors.refresh);
+  assert.equal(view.getSnapshot().state?.tasks.length, 1);
+  shouldFail = false;
+  await view.refresh();
+  assert.equal(view.getSnapshot().errors.refresh, null);
+});
+void test("UI state: a local read failure stays scoped and retry distinguishes no tasks from completed work", async () => {
+  const fixture = await dayFixture();
+  const day = createTestDay(fixture);
+  let isReadable = false;
+  const view = new DayViewController({
+    bundle: day.bundle,
+    verifyMap: () => day.verifyMap(),
+    read: () => (isReadable ? day.read() : Promise.reject(new Error("storage"))),
+  });
+  await view.load();
+  assert.equal(dayViewPhase(view.getSnapshot()), "error");
+  isReadable = true;
+  await fixture.store.replace(bundle([]), FIXED_NOW);
+  await view.load();
+  assert.equal(dayViewPhase(view.getSnapshot()), "empty");
+  await fixture.store.replace(bundle([task({ status: "done" })]), FIXED_NOW);
+  await view.load();
+  assert.equal(dayViewPhase(view.getSnapshot()), "complete");
+});
+void test("Merge session: an active POST returning after logout settles evidence without resurrecting projections before the final POST", async () => {
+  const fixture = await authDayFixture();
+  const event = makeEnvelope();
+  await fixture.outbox.enqueue(event);
+  const active = deferred<Response>();
+  const final = deferred<Response>();
+  const firstEntered = deferred<undefined>();
+  const finalEntered = deferred<undefined>();
+  let calls = 0;
+  const transport = createScopedSyncTransport({
+    tokens: fixture.credentials,
+    requests: fixture.requests,
+    fetch: () => {
+      calls += 1;
+      if (calls === 1) {
+        firstEntered.resolve(undefined);
+        return active.promise;
+      }
+      finalEntered.resolve(undefined);
+      return final.promise;
+    },
+  });
+  const running = runSyncPass(
+    {
+      ...fixture,
+      ...fixture.service.syncHooks(),
+      transport,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+    },
+    { batchSize: 50 },
+  );
+  await firstEntered.promise;
+  await fixture.auth.endSession();
+  const success = answer([accepted(event.id)], { cursor: "old-session-cursor" });
+  assert.ok(success.ok);
+  active.resolve(
+    jsonResponse({
+      ...success.response,
+      changes: {
+        ...success.response.changes,
+        assignments: [change("upsert", 2, task({ version: 2 }))],
+      },
+    }),
+  );
+  await finalEntered.promise;
+  assert.equal((await fixture.service.read()).tasks.length, 0);
+  assert.equal(await fixture.kv.get(KV_KEYS.syncCursor), null);
+  assert.equal((await fixture.outbox.countByStatus()).sent, 1);
+  assert.notEqual(fixture.credentials.getSnapshot().pair, null);
+  const empty = answer([]);
+  assert.ok(empty.ok);
+  final.resolve(jsonResponse(empty.response, { isFinal: true }));
+  await running;
+  assert.equal(fixture.credentials.getSnapshot().pair, null);
+  assert.equal(calls, 2);
+});
+void test("UI state: a late read cannot restore a snapshot captured before session cleanup", async () => {
+  const fixture = await dayFixture();
+  const day = createTestDay(fixture);
+  const old = await day.read();
+  const pending = deferred<Awaited<ReturnType<typeof day.read>>>();
+  let reads = 0;
+  const view = new DayViewController({
+    bundle: day.bundle,
+    verifyMap: () => day.verifyMap(),
+    read: () => (++reads === 1 ? pending.promise : day.read()),
+  });
+  const stale = view.load();
+  await fixture.service.clearSessionData();
+  await view.load();
+  pending.resolve(old);
+  await stale;
+  assert.equal(view.getSnapshot().state?.tasks.length, 0);
+});
+
+void test("Merge session: logout during a local assignment read prevents selection or navigation", async () => {
+  const fixture = await dayFixture();
+  const entered = deferred<undefined>();
+  const pending = deferred<Awaited<ReturnType<DayStore["read"]>>>();
+  let scope: string | null = "active-session";
+  class DeferredStore extends DayStore {
+    override read() {
+      entered.resolve(undefined);
+      return pending.promise;
+    }
+  }
+  const service = new DayBundleService({
+    store: new DeferredStore(fixture.db),
+    now: () => FIXED_NOW,
+    getScopeKey: () => scope,
+    transport: () => Promise.resolve({ kind: "unchanged" }),
+  });
+  let actions = 0;
+  const selection = service.withAssignments(() => {
+    actions += 1;
+    return Promise.resolve();
+  });
+  const rejected = assert.rejects(selection);
+  await entered.promise;
+  scope = null;
+  const cleanup = service.clearSessionData();
+  pending.resolve(await fixture.store.read());
+  await rejected;
+  await cleanup;
+  assert.equal(actions, 0);
+  assert.equal((await fixture.store.read()).tasks.length, 0);
+});
+
+void test("Merge session: password exhaustion blocks replacement login until downloaded data cleanup completes", async () => {
+  const fixture = await authDayFixture();
+  const entered = deferred<undefined>();
+  const cleanup = deferred<undefined>();
+  let logins = 0;
+  await fixture.credentials.update((current) => ({ ...current, passwordAttempts: 4 }));
+  const auth = new AuthController({
+    ...fixture,
+    clearSessionData: async () => {
+      entered.resolve(undefined);
+      await cleanup.promise;
+      await fixture.service.clearSessionData();
+    },
+    randomBytes,
+    now: () => FIXED_NOW.getTime(),
+    hasLocalRecords: () => Promise.resolve(false),
+    login: () => {
+      logins += 1;
+      return Promise.reject(new Error("Replacement login must remain gated."));
+    },
+    fetchRules: () => Promise.resolve(null),
+    verify: () => Promise.resolve(false),
+  });
+  await auth.load();
+  auth.setOnline(true);
+  const unlocking = auth.unlock("incorrect", "password");
+  await entered.promise;
+  assert.equal(fixture.credentials.getSnapshot().pair, null);
+  assert.equal(auth.canLogin(), false);
+  await auth.login("replacement", "password");
+  assert.equal(logins, 0);
+  assert.equal((await fixture.store.read()).tasks.length, 1);
+  cleanup.resolve(undefined);
+  await unlocking;
+  assert.equal((await fixture.store.read()).tasks.length, 0);
+  assert.equal(auth.canLogin(), true);
+});
+
+void test("Merge session: a queued sync batch cannot use a replacement account on the same issuer", async () => {
+  const fixture = await authDayFixture();
+  const entered = deferred<undefined>();
+  const release = deferred<undefined>();
+  const replacing = fixture.credentials.runExclusive(async (transaction) => {
+    entered.resolve(undefined);
+    await release.promise;
+    await transaction.write({ ...transaction.read(), sessionId: randomUUID() });
+  });
+  await entered.promise;
+  let posts = 0;
+  const transport = createScopedSyncTransport({
+    tokens: fixture.credentials,
+    requests: fixture.requests,
+    fetch: () => {
+      posts += 1;
+      return Promise.reject(new Error("A stale batch must not reach HTTP."));
+    },
+  });
+  const sending = transport({
+    device_id: FIXED_DEVICE_ID,
+    sent_at: FIXED_NOW.toISOString(),
+    events: [],
+  });
+  release.resolve(undefined);
+  await replacing;
+  assert.deepEqual(await sending, { ok: false, failure: { kind: "network" } });
+  assert.equal(posts, 0);
+});
+
+void test("Merge session: a bootstrap client cannot attach a replacement account's bearer on the same issuer", async () => {
+  const fixture = await authDayFixture();
+  let gets = 0;
+  const client = createScopedApiClient({
+    tokens: fixture.credentials,
+    fetch: () => {
+      gets += 1;
+      return Promise.reject(new Error("A stale client must not reach HTTP."));
+    },
+  });
+  await fixture.credentials.update((current) => ({ ...current, sessionId: randomUUID() }));
+  await assert.rejects(createBootstrapTransport(client, fixture.requests)("bundle-1"));
+  assert.equal(gets, 0);
+});
+
+void test("UI state: an abandoned session controller cannot publish a pending local read", async () => {
+  const fixture = await dayFixture();
+  const day = createTestDay(fixture);
+  const pending = deferred<Awaited<ReturnType<typeof day.read>>>();
+  const view = new DayViewController({
+    bundle: day.bundle,
+    verifyMap: () => day.verifyMap(),
+    read: () => pending.promise,
+  });
+  const loading = view.load();
+  view.stop();
+  pending.resolve(await day.read());
+  await loading;
+  assert.equal(view.getSnapshot().state, null);
+});
+
+void test("Merge revocation: late map preparation progress and completion cannot recreate cleared metadata", async () => {
+  const fixture = await dayFixture();
+  await fixture.kv.remove("shift_open_map");
+  const report = deferred<(progress: MapPreparation) => Promise<void>>();
+  const prepared = deferred<MapPreparation>();
+  const day = new DayService({
+    bundle: fixture.service,
+    kv: fixture.kv,
+    shift: fixture.shift,
+    navigation: fixture.navigation,
+    work: new OutboxWorkOverlay(fixture.db),
+    location: { start: () => Promise.resolve(() => undefined) },
+    maps: {
+      prepare: (publish) => {
+        report.resolve(publish);
+        return prepared.promise;
+      },
+    },
+    inspect: () => Promise.resolve({ sha256: manifest.sha256, size: 127 }),
+    hasOpenShift: () => Promise.resolve(true),
+  });
+  const verifying = day.verifyMap(true);
+  const rejected = assert.rejects(verifying);
+  const publish = await report.promise;
+  // A scope revocation can leave the same session identity active.
+  await fixture.service.clearSessionData();
+  await assert.rejects(publish(preparation));
+  prepared.resolve(preparation);
+  await rejected;
+  assert.equal(await fixture.shift.map(), null);
+  assert.equal((await day.read()).map.kind, "unavailable");
+});
+
+void test("Merge revocation: a late file inspection cannot publish a map into a subsequent bundle", async () => {
+  const fixture = await dayFixture();
+  const entered = deferred<undefined>();
+  const inspected = deferred<{ sha256: string; size: number }>();
+  const day = new DayService({
+    bundle: fixture.service,
+    kv: fixture.kv,
+    shift: fixture.shift,
+    navigation: fixture.navigation,
+    work: new OutboxWorkOverlay(fixture.db),
+    location: { start: () => Promise.resolve(() => undefined) },
+    maps: { prepare: () => Promise.resolve(preparation) },
+    inspect: () => {
+      entered.resolve(undefined);
+      return inspected.promise;
+    },
+    hasOpenShift: () => Promise.resolve(true),
+  });
+  const verifying = day.verifyMap();
+  const rejected = assert.rejects(verifying);
+  await entered.promise;
+  await fixture.service.clearSessionData();
+  await fixture.store.replace(bundle(), FIXED_NOW);
+  inspected.resolve({ sha256: manifest.sha256, size: 127 });
+  await rejected;
+  assert.equal((await day.read()).map.kind, "unavailable");
 });

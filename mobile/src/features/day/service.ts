@@ -2,7 +2,7 @@ import type { KvStore } from "../../db/kv-store.ts";
 import type { NavigationService } from "../../navigation/navigation-service.ts";
 import type { ShiftOpenStore } from "../shift-open/store.ts";
 import type { MapPreparationSource } from "../shift-open/domain.ts";
-import type { DayBundleService } from "./bundle-service.ts";
+import type { DayBundleService, ProjectionWriter } from "./bundle-service.ts";
 import type { LocalWorkOverlay } from "./types.ts";
 import { maxGpsAccuracy } from "./location.ts";
 import type { LocationSource } from "./location.ts";
@@ -70,22 +70,29 @@ export class DayService {
     };
   }
   async verifyMap(retry = false): Promise<void> {
+    const write = this.#deps.bundle.captureProjectionWriter();
     const cache = await this.#deps.bundle.read();
-    let preparation = await this.#deps.shift.map();
-    if (retry && preparation?.status !== "ready") {
-      preparation = await this.#deps.maps.prepare(
-        (progress) => this.#deps.shift.saveMap(progress),
-        preparation,
-      );
-      await this.#deps.shift.saveMap(preparation);
-    }
+    const preparation = await this.#prepareMap(retry, write);
     const map = await verifyMap({
       preparation,
       manifests: cache.manifests,
       inspect: this.#deps.inspect,
     });
-    this.#map = map;
-    this.#mapVersion = JSON.stringify(cache.manifests);
+    await write(() => {
+      this.#map = map;
+      this.#mapVersion = JSON.stringify(cache.manifests);
+      return Promise.resolve();
+    });
+  }
+  async #prepareMap(retry: boolean, write: ProjectionWriter) {
+    const preparation = await this.#deps.shift.map();
+    if (!retry || preparation?.status === "ready") return preparation;
+    const prepared = await this.#deps.maps.prepare(
+      (progress) => write(() => this.#deps.shift.saveMap(progress)),
+      preparation,
+    );
+    await write(() => this.#deps.shift.saveMap(prepared));
+    return prepared;
   }
 }
 export type DaySnapshot = Awaited<ReturnType<DayService["read"]>>;

@@ -4,16 +4,19 @@ from typing import Any, cast
 
 from django.db.models import QuerySet
 from drf_spectacular.utils import OpenApiParameter, extend_schema
-from rest_framework import mixins, serializers, status, viewsets
+from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.models import User
+from core.filters import CodeLookupFilter
 from core.views import OrgScopedViewSetMixin
 from core.void_reason import UnblockSerializer, VoidSerializer
+from shifts.access import authorize_center, lock_authorized_motorcycle
 from shifts.models import Motorcycle
 from shifts.motorcycle_serializers import (
+    MotorcycleDetailSerializer,
     MotorcycleFilterSerializer,
     MotorcycleSerializer,
     MotorcycleUpdateSerializer,
@@ -38,6 +41,8 @@ class MotorcycleViewSet(
     queryset = Motorcycle.objects.all()
     serializer_class = MotorcycleSerializer
     code_lookup_field = "code"
+    filter_backends = [CodeLookupFilter, filters.OrderingFilter]
+    ordering_fields = ["code", "plate", "created_at", "center"]
     http_method_names = ["get", "post", "patch", "head", "options"]
     required_permissions = {
         "list": MOTORCYCLE_READ,
@@ -59,6 +64,8 @@ class MotorcycleViewSet(
         return scoped
 
     def get_serializer_class(self) -> type[serializers.BaseSerializer[Any]]:
+        if self.action == "retrieve":
+            return MotorcycleDetailSerializer
         if self.action == "create":
             return MotorcycleWriteSerializer
         if self.action == "partial_update":
@@ -68,6 +75,7 @@ class MotorcycleViewSet(
     @extend_schema(
         parameters=[
             MotorcycleFilterSerializer,
+            MotorcycleDetailSerializer,
             OpenApiParameter(
                 "include_voided", bool, description="Include voided motorcycles (default false)."
             ),
@@ -80,6 +88,12 @@ class MotorcycleViewSet(
     def create(self, request: Request, *args: object, **kwargs: object) -> Response:
         payload = self.get_serializer(data=request.data)
         payload.is_valid(raise_exception=True)
+        membership = request.membership  # type: ignore[attr-defined]
+        payload.validated_data["center"] = authorize_center(
+            membership,
+            payload.validated_data.get("center"),
+            MOTORCYCLE_MANAGE,
+        )  # type: ignore[attr-defined]
         organization = request.organization  # type: ignore[attr-defined]
         motorcycle = create_motorcycle(
             organization, payload.validated_data, cast(User, request.user)
@@ -90,7 +104,7 @@ class MotorcycleViewSet(
         request=MotorcycleUpdateSerializer,
         responses={200: MotorcycleSerializer},
         description=(
-            "Update the plate only. Supplying code (even unchanged) returns 400 validation_error "
+            "Update the plate and scoped center. Supplying code (even unchanged) returns 400 validation_error "
             "with fields.code immutable_code. To correct a code, void the motorcycle and create "
             "a new one; the voided code remains reserved."
         ),
@@ -99,7 +113,17 @@ class MotorcycleViewSet(
         motorcycle = self.get_object()
         payload = self.get_serializer(motorcycle, data=request.data, partial=True)
         payload.is_valid(raise_exception=True)
-        return self._response(update_motorcycle(motorcycle, payload.validated_data))
+        if "center" in payload.validated_data:
+            membership = request.membership  # type: ignore[attr-defined]
+            payload.validated_data["center"] = authorize_center(
+                membership,
+                payload.validated_data["center"],
+                MOTORCYCLE_MANAGE,
+            )  # type: ignore[attr-defined]
+        with lock_authorized_motorcycle(
+            motorcycle, cast(User, request.user), MOTORCYCLE_MANAGE
+        ) as locked:
+            return self._response(update_motorcycle(locked, payload.validated_data))
 
     @extend_schema(request=VoidSerializer, responses={200: MotorcycleSerializer})
     @action(detail=True, methods=["post"])
@@ -107,9 +131,12 @@ class MotorcycleViewSet(
         motorcycle = self.get_object()
         payload = VoidSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        return self._response(
-            void_motorcycle(motorcycle, cast(User, request.user), **payload.validated_data)
-        )
+        with lock_authorized_motorcycle(
+            motorcycle, cast(User, request.user), MOTORCYCLE_MANAGE
+        ) as locked:
+            return self._response(
+                void_motorcycle(locked, cast(User, request.user), **payload.validated_data)
+            )
 
     @extend_schema(request=UnblockSerializer, responses={200: MotorcycleSerializer})
     @action(detail=True, methods=["post"])
@@ -117,11 +144,14 @@ class MotorcycleViewSet(
         motorcycle = self.get_object()
         payload = UnblockSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        return self._response(
-            unblock_motorcycle(
-                motorcycle, cast(User, request.user), payload.validated_data["reason"]
+        with lock_authorized_motorcycle(
+            motorcycle, cast(User, request.user), MOTORCYCLE_UNBLOCK
+        ) as locked:
+            return self._response(
+                unblock_motorcycle(
+                    locked, cast(User, request.user), payload.validated_data["reason"]
+                )
             )
-        )
 
     def _response(self, motorcycle: Motorcycle, status_code: int = status.HTTP_200_OK) -> Response:
         return Response(

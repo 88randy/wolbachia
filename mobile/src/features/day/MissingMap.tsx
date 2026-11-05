@@ -19,6 +19,7 @@ export function MissingMap({ model }: { readonly model: M06Model }) {
       <Button
         label={t("mobile.day.retryMap")}
         icon="refresh"
+        disabled={model.isMapLoading}
         onPress={() => {
           void model.retryMap();
         }}

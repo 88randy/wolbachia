@@ -22,6 +22,7 @@ export function PointDirections({ model, compact = false }: Props) {
         icon="navigation"
         variant="outline"
         onPress={navigate}
+        disabled={model.isActing}
       />
       <NavigationFeedback outcome={model.state?.navigation?.outcome ?? null} />
       <AppText selectable>{t("mobile.day.coordinates", { coordinates })}</AppText>

@@ -1,3 +1,4 @@
+import { DayRefreshStatus } from "./DayRefreshStatus.tsx";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
@@ -19,8 +20,9 @@ export function P10Screen() {
     <View style={styles.root}>
       <ScreenHeader title={t("mobile.day.title")} />
       <DayToggle isMap />
+      <DayRefreshStatus model={model} />
       <DayNotices model={model} />
-      <LocationNotice model={model} />
+      {model.state === null ? null : <LocationNotice model={model} />}
       <DayMap model={model} />
       <AppText variant="caption" style={styles.attribution}>
         {t("mobile.day.attribution")}

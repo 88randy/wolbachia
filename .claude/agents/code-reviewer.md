@@ -17,6 +17,7 @@ Skill to invoke with the Skill tool if available (optional; see `.claude/agents/
 
 - Does the change do what the issue says (acceptance criteria, edge cases, out of scope respected)?
 - Engineering rules: layering (services/selectors, hooks), function size and parameters, naming and glossary terms, no swallowed exceptions, no magic numbers, no dead code, no new dependency without justification.
+- UI changes: check them against `.claude/skills/ui-ux-standards/SKILL.md` (§15 anti-patterns, §16 definition of done): skeletons, empty/error states, no native alerts, undo vs confirm, tokens only, a11y.
 - Project decisions: organization isolation, nothing deleted (void), offline-first, API only through `packages/api-client`, no user-facing literals.
 - Tests: behavior-focused, regression test for bug fixes.
 - Run the linters and tests; do not trust claims. Run backend tests on your own compose project and a free host port from 55432 upward (never 5432), and tear it down with `down -v`.

@@ -3,8 +3,13 @@ import NetInfo from "@react-native-community/netinfo";
 import { useEffect } from "react";
 import { AppState } from "react-native";
 /** Screen entry, reconnect and foreground return refresh the bundle; callers preserve cached UI on failure. */
-export function useDayRefresh(refresh: () => Promise<void>, nextChangeAt: string | null) {
+export function useDayRefresh(
+  refresh: () => Promise<void>,
+  nextChangeAt: string | null,
+  isEnabled = true,
+) {
   useEffect(() => {
+    if (!isEnabled) return;
     void refresh();
     let wasConnected = true;
     const stop = NetInfo.addEventListener((state) => {
@@ -19,8 +24,8 @@ export function useDayRefresh(refresh: () => Promise<void>, nextChangeAt: string
       stop();
       subscription.remove();
     };
-  }, [refresh]);
-  useDueRefresh(refresh, nextChangeAt);
+  }, [refresh, isEnabled]);
+  useDueRefresh(refresh, isEnabled ? nextChangeAt : null);
 }
 function useDueRefresh(refresh: () => Promise<void>, nextChangeAt: string | null) {
   useEffect(() => {

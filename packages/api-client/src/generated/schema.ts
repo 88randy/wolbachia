@@ -523,6 +523,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/fuel-loads/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["fuel_loads_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health/": {
         parameters: {
             query?: never;
@@ -532,6 +558,32 @@ export interface paths {
         };
         /** @description Liveness probe: no authentication, no organization, no throttling. */
         get: operations["health_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["incidents_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -686,6 +738,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/motorcycles/{motorcycle_id}/responsibility-letters/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["motorcycles_responsibility_letters_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["motorcycles_responsibility_letters_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/motorcycles/{motorcycle_id}/responsibility-letters/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["motorcycles_responsibility_letters_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/motorcycles/{motorcycle_id}/services/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["motorcycles_services_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["motorcycles_services_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/motorcycles/{motorcycle_id}/services/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["motorcycles_services_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/motorcycles/{id}/": {
         parameters: {
             query?: never;
@@ -709,8 +885,34 @@ export interface paths {
         delete?: never;
         options?: never;
         head?: never;
-        /** @description Update the plate only. Supplying code (even unchanged) returns 400 validation_error with fields.code immutable_code. To correct a code, void the motorcycle and create a new one; the voided code remains reserved. */
+        /** @description Update the plate and scoped center. Supplying code (even unchanged) returns 400 validation_error with fields.code immutable_code. To correct a code, void the motorcycle and create a new one; the voided code remains reserved. */
         patch: operations["motorcycles_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/motorcycles/{id}/clear-fault/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["motorcycles_clear_fault_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/motorcycles/{id}/unblock/": {
@@ -1581,6 +1783,13 @@ export interface components {
          * @enum {string}
          */
         CheckResultEnum: "ok" | "minor" | "severe";
+        ClearanceRequest: {
+            /** Format: uuid */
+            fault_id: string;
+            evidence_ids: string[];
+            reason: string;
+            expected_revision: number;
+        };
         /**
          * @description * `keep` - keep
          *     * `move` - move
@@ -1608,6 +1817,13 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `unavailable` - Unavailable
+         *     * `ok` - Ok
+         *     * `review` - Review
+         * @enum {string}
+         */
+        EfficiencyStatusEnum: "unavailable" | "ok" | "review";
         /**
          * @description * `iso` - iso
          *     * `mmwr` - mmwr
@@ -1656,6 +1872,57 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        FuelLoad: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly event: string;
+            /** Format: uuid */
+            readonly shift: string;
+            /** Format: uuid */
+            readonly motorcycle: string;
+            /** Format: uuid */
+            readonly courier: string;
+            /** Format: decimal */
+            readonly litres: string;
+            /** Format: decimal */
+            readonly amount: string;
+            readonly currency: string;
+            readonly odometer_km: number;
+            /** Format: uuid */
+            readonly receipt_upload_id: string | null;
+            readonly receipt_pending: boolean;
+            readonly is_full_refill: boolean;
+            /** Format: decimal */
+            readonly efficiency_km_l: string | null;
+            readonly efficiency_status: components["schemas"]["EfficiencyStatusEnum"];
+            /** Format: decimal */
+            readonly threshold_min: string | null;
+            /** Format: decimal */
+            readonly threshold_max: string | null;
+            readonly rule_provenance: unknown;
+            /** Format: uuid */
+            readonly baseline: string | null;
+            readonly provisional: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly device_time: string;
+            /** Format: date-time */
+            readonly server_received_at: string;
+            readonly rules_version: string;
+            readonly catalog_version: string;
+        };
         GeometryPublicationRequest: {
             expected_revision: number;
             geometry: {
@@ -1676,11 +1943,52 @@ export interface components {
             status: string;
         };
         /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Incident: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly motorcycle: string;
+            /** Format: uuid */
+            readonly field_event: string | null;
+            readonly blocked_reason: components["schemas"]["BlockedReasonEnum"];
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            readonly is_cleared: boolean;
+            /** Format: date-time */
+            readonly cleared_at: string | null;
+        };
+        /**
          * @description * `es-MX` - es-MX
          *     * `en` - en
          * @enum {string}
          */
         LanguagesEnum: "es-MX" | "en";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        LetterWriteRequest: {
+            /** Format: uuid */
+            courier: string;
+            /** Format: date */
+            issued_at: string;
+            /** Format: uuid */
+            document_reference?: string | null;
+            notes?: string;
+        };
         /** @description With `device_id` the login is a mobile one (tokens); without it, a web session. */
         LoginRequest: {
             username: string;
@@ -1820,6 +2128,9 @@ export interface components {
             readonly id: string;
             readonly code: string;
             readonly plate: string;
+            /** Format: uuid */
+            readonly center: string | null;
+            readonly revision: number;
             readonly is_blocked: boolean;
             readonly blocked_reason: components["schemas"]["BlockedReasonEnum"] | components["schemas"]["BlankEnum"];
             /** Format: date-time */
@@ -1851,9 +2162,53 @@ export interface components {
          *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
          *     build with `ImproperlyConfigured`.
          */
+        MotorcycleDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly plate: string;
+            /** Format: uuid */
+            readonly center: string | null;
+            readonly revision: number;
+            readonly is_blocked: boolean;
+            readonly blocked_reason: components["schemas"]["BlockedReasonEnum"] | components["schemas"]["BlankEnum"];
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            /** Format: uuid */
+            readonly voided_by: string | null;
+            readonly void_reason: string;
+            readonly void_reason_code: string;
+            readonly metrics: components["schemas"]["MotorcycleMetrics"];
+        };
+        MotorcycleMetrics: {
+            /** Format: uuid */
+            last_service: string | null;
+            next_service_due_km: number | null;
+            /** Format: date */
+            next_service_due_date: string | null;
+            latest_odometer: number | null;
+            /** Format: decimal */
+            latest_efficiency: string | null;
+            efficiency_status: string;
+            due_metric_provenance: unknown;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
         MotorcycleWriteRequest: {
             code: string;
             plate?: string;
+            /** Format: uuid */
+            center?: string | null;
         };
         OrganizationSettings: {
             /** Format: uuid */
@@ -2021,6 +2376,36 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Device"][];
         };
+        PaginatedFuelLoadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["FuelLoad"][];
+        };
+        PaginatedIncidentList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Incident"][];
+        };
         PaginatedMembershipList: {
             /** @example 123 */
             count: number;
@@ -2141,6 +2526,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Reading"][];
         };
+        PaginatedResponsibilityLetterList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ResponsibilityLetter"][];
+        };
         PaginatedReviewItemList: {
             /**
              * Format: uri
@@ -2199,6 +2599,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["SamplingPoint"][];
         };
+        PaginatedServiceRecordList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ServiceRecord"][];
+        };
         PaginatedShiftList: {
             /** @example 123 */
             count: number;
@@ -2232,9 +2647,11 @@ export interface components {
             sort?: number;
             requires_photo?: boolean;
         };
-        /** @description Only the plate can change; code identifies pending schema-1 offline events forever. */
+        /** @description Plate and center can change; code identifies pending schema-1 offline events forever. */
         PatchedMotorcycleUpdateRequest: {
             plate?: string;
+            /** Format: uuid */
+            center?: string | null;
         };
         PatchedOrganizationUpdateRequest: {
             expected_revision?: number;
@@ -2470,6 +2887,37 @@ export interface components {
             /** Format: date-time */
             server_time: string;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ResponsibilityLetter: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly motorcycle: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            /** Format: uuid */
+            readonly voided_by: string | null;
+            readonly void_reason: string;
+            readonly void_reason_code: string;
+            /** Format: uuid */
+            readonly courier: string;
+            /** Format: date */
+            readonly issued_at: string;
+            /** Format: uuid */
+            readonly document_reference: string | null;
+            readonly notes: string;
+        };
         /** @description A review item as the phone's inbox sees it (the courier's own events only). */
         ReviewChange: {
             /** Format: uuid */
@@ -2625,6 +3073,62 @@ export interface components {
         ScopeDimensionRequest: {
             mode: components["schemas"]["ModeEnum"];
             ids: string[];
+        };
+        /**
+         * @description * `routine` - Routine
+         *     * `repair` - Repair
+         *     * `inspection` - Inspection
+         * @enum {string}
+         */
+        ServiceKindEnum: "routine" | "repair" | "inspection";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ServiceRecord: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly motorcycle: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            /** Format: uuid */
+            readonly voided_by: string | null;
+            readonly void_reason: string;
+            readonly void_reason_code: string;
+            readonly kind: components["schemas"]["ServiceKindEnum"];
+            /** Format: date */
+            readonly performed_at: string;
+            readonly odometer_km: number;
+            readonly notes: string;
+            readonly service_interval_km: number | null;
+            readonly service_interval_days: number | null;
+            readonly due_metric_provenance: unknown;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ServiceWriteRequest: {
+            kind: components["schemas"]["ServiceKindEnum"];
+            /** Format: date */
+            performed_at: string;
+            odometer_km: number;
+            notes?: string;
+            service_interval_km?: number | null;
+            service_interval_days?: number | null;
         };
         /**
          * @description A shift as the supervisor sees it. Times marked `_device` are the phone's clock; the events
@@ -3958,6 +4462,54 @@ export interface operations {
             };
         };
     };
+    fuel_loads_list: {
+        parameters: {
+            query?: {
+                courier?: string;
+                date_before?: string;
+                date_from?: string;
+                /**
+                 * @description * `unavailable` - Unavailable
+                 *     * `ok` - Ok
+                 *     * `review` - Review
+                 */
+                efficiency_status?: "unavailable" | "ok" | "review";
+                motorcycle?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedFuelLoadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     health_retrieve: {
         parameters: {
             query?: never;
@@ -3973,6 +4525,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Health"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    incidents_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedIncidentList"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -4168,11 +4758,14 @@ export interface operations {
     motorcycles_list: {
         parameters: {
             query?: {
+                center?: string;
                 /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
                 code?: string;
                 /** @description Include voided motorcycles (default false). */
                 include_voided?: boolean;
                 is_blocked?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
@@ -4241,6 +4834,236 @@ export interface operations {
             };
         };
     };
+    motorcycles_responsibility_letters_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                motorcycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedResponsibilityLetterList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    motorcycles_responsibility_letters_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                motorcycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LetterWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponsibilityLetter"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    motorcycles_responsibility_letters_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+                motorcycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResponsibilityLetter"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    motorcycles_services_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                motorcycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedServiceRecordList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    motorcycles_services_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                motorcycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ServiceWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRecord"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    motorcycles_services_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+                motorcycle_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceRecord"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     motorcycles_retrieve: {
         parameters: {
             query?: never;
@@ -4261,7 +5084,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Motorcycle"];
+                    "application/json": components["schemas"]["MotorcycleDetail"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -4291,6 +5114,43 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["PatchedMotorcycleUpdateRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Motorcycle"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    motorcycles_clear_fault_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ClearanceRequest"];
             };
         };
         responses: {

@@ -8,14 +8,11 @@ import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Button } from "../../ui/Button.tsx";
 import { buildTestEvent } from "./test-event.ts";
-import { TestTokenField } from "./TestTokenField.tsx";
 
 const styles = StyleSheet.create({ section: { gap: spacing[1] } });
 
 /**
- * Tools to try the sync against a local backend before login exists (#7): this phone's id (the
- * server binds a session to it), a place to paste an access token, and a button that saves a test
- * record. Shown only when the build sets `EXPO_PUBLIC_DEV_TOOLS=1`.
+ * Tools to inspect this phone's id and save a test record using the authenticated session. Shown only when the build sets `EXPO_PUBLIC_DEV_TOOLS=1`.
  */
 export function DevToolsSection() {
   const t = useT();
@@ -28,7 +25,6 @@ export function DevToolsSection() {
         {t("mobile.dev.deviceId")}
       </AppText>
       <AppText selectable>{deviceId}</AppText>
-      <TestTokenField />
       {errorKey !== null && <Notice tone="critical" icon="alert" message={t(errorKey)} />}
       <Button variant="outline" label={t("mobile.dev.addEvent")} onPress={run} />
     </View>

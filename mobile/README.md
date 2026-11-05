@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Day list/offline map/navigation P9-P10 (#135) is implemented against fixture-backed producer contracts; native/device qualification is pending. Login remains #7; supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
+> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Day list/offline map/navigation P9-P10 (#135) is implemented against fixture-backed producer contracts; native/device qualification is pending. P1/P2 login and local unlock are #7 (decision 116); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
 
 ## Rules
 
@@ -21,6 +21,7 @@ App.tsx, index.ts      entry (SafeAreaProvider, then AppRoot)
 metro.config.js        pins React to this app's copy (see decision 95)
 plugins/               Expo config plugin: plain http in debug builds only
 src/app/               boot (fonts, database, saved settings), providers, shell
+src/auth/              secure credentials, local unlock, rules, refresh and idle policy
 src/config/            API address rule and settings, build-time variables
 src/db/                SqlExecutor, migrations, key-value store, op-sqlite adapter
 src/outbox/            event envelope, state machine, outbox repository
@@ -50,18 +51,10 @@ Pure logic (state machine, failure table, backoff, chip, inbox model, URL rule) 
 You need the backend reachable from the phone ([#92](https://github.com/88randy/wolbachia/issues/92) covers the opt-in LAN exposure; until it lands, the compose API listens on `127.0.0.1` only) and a debug APK (see below).
 
 1. Install the debug APK from the pull request (artifact `wolbachia-debug-apk-<sha>`).
-2. Open **Ajustes** (gear on the home top bar), field **Servidor**, type `http://<PC LAN IP>:8000` and press **Guardar dirección**. In debug builds, plain http is accepted only for `localhost` and private addresses (`10.x`, `172.16` to `172.31`, `192.168.x`); release builds and any other server need https. A dispatch run of the `mobile-apk` workflow can also bake the address into the APK (input `api_base_url`), and a local bundle reads `EXPO_PUBLIC_API_BASE_URL`.
-3. Until login exists (#7), the debug build shows **Pruebas** at the bottom of Ajustes: this phone's id, a field for an access token (kept in memory only) and **Agregar registro de prueba**. Sign in with the phone's id so the session is bound to it (the server answers `device_mismatch` otherwise):
-
-   ```bash
-   curl -X POST http://<PC LAN IP>:8000/api/v1/auth/login/ \
-     -H "Content-Type: application/json" \
-     -d '{"username": "<user>", "password": "<password>", "device_id": "<id shown in the app>"}'
-   ```
-
-   Paste the `access` value into the app and press **Usar token**. Then press **Agregar registro de prueba**: it voids a record that does not exist, so a real server answers `rejected` / `void_target_not_found` and the inbox shows it under "Con problema". The access token expires; refresh is #7.
-4. Tap the chip in the top bar to open the inbox. Turn on airplane mode to see "Sin señal".
-
+2. On P1 open **Configurar servidor**, enter the API address and save. Debug builds allow private LAN http; release builds require https. Server settings also remain available in Ajustes.
+3. Sign in with signal, then create and confirm a nontrivial four-digit PIN. Login sends the generated device_id and the version in mobile/package.json.
+4. Open Ajustes to inspect the device id and add a test event. These tools use the authenticated session; there is no pasted-token field. The test void references a nonexistent record, so the inbox shows void_target_not_found.
+5. Tap the sync chip for the inbox. Background the app or wait for idle locking, then unlock offline.
 The test tools exist only when the build sets `EXPO_PUBLIC_DEV_TOOLS=1` (the CI debug APK does). Release builds must not.
 
 ## Lint, format, type-check and tests
@@ -140,6 +133,87 @@ When React Native or Expo is upgraded, re-read `node_modules/react-native/gradle
 - Local write failures from enqueue/retry are announced on screen; Notice uses a polite live region. Inbox timestamps include a localized date outside today.
 - No new dependencies. Configuration references: [Expo Android config](https://docs.expo.dev/versions/latest/config/app/), [Expo blocked permissions](https://docs.expo.dev/guides/permissions/), [React Native AbortSignal source](https://github.com/facebook/react-native/blob/v0.88.1/src/private/webapis/dom/abort-api/AbortSignal.js).
 
+## P1/P2 authentication and lock (#7)
+
+Authentication logic and native boundaries live in src/auth/; screens are in src/screens/auth/ and the mounted-shell overlay in src/app/AuthGate.tsx. All API calls use generated packages/api-client methods. Login and refresh clients never attach an access bearer; refresh authenticates with its body token, including when access is expired. P1 includes password visibility, wrong credentials, no signal on first login, remote session end, the supervisor-only password-help sheet, device deactivation and Retry-After rate limiting. Auth and sync share ONE NetInfo subscription in useSyncLifecycle, normalized once by observeConnectivity as isConnected === true. Unknown/disconnected readings hold both offline before sync starts; each later reading updates auth BEFORE waking the engine. isInternetReachable is deliberately ignored: a connected private LAN can reach the backend without Internet (#189). Failed requests use the normal network failure/backoff table. No-connectivity guards, including refresh and final upload, are retryable network waits, never session-ended/needsLogin signals; an online transition automatically wakes the engine while an ended pair is retained. Server setup is visible on P1 only during initial provisioning. The address is part of phone identity: both save and reset require no login in flight, no active/ended token pair, no pending/sending/error events and no stored profile/owner. ServerSettings enforces this inside the credential queue, including writes submitted while login persistence is pending. Settings refuses a bound-phone change with localized supervisor guidance. The existing release https and debug private-http validation still applies. No raw server code is shown.
+
+Owner binding uses one hasLocalRecords query before the login POST: any outbox event (all statuses) OR any durable draft/projection belongs to the previous owner. This includes #133 shift_open_state with an unfinished draft and zero events. Same-owner relogin preserves that draft. Shift-open catalog/rules GETs use SessionRequests.run and credentials.origin; refresh rotation is accepted by session id/origin, while revocation ends local auth and keeps drafts.
+
+Credentials (issuing origin, token pair, PIN/password verifiers and write-ahead counters) occupy ONE SecureStore JSON item. Login captures its origin at request start and stores it atomically with the accepted pair; the domain reservation blocks server save/reset until login acceptance/failure and persistence have settled. Rules, sync, refresh and final upload always use credentials.origin, never the current server setting. The shared bearer-client boundary ignores a caller-supplied alternate base URL and refuses to attach a replacement origin's bearer to an old client. A final pre-send middleware check also covers explicit sync/final-upload Authorization headers; a stale client is rejected before fetch rather than sending the new origin's bearer to its old target. One CredentialStore command queue owns accepted logins, PIN creation, attempt counters/results, unlock grants, locks, session end and final-upload settlement. Each reducer changes authoritative memory before native I/O; persistence completion never restores an older snapshot. Readers see additions only after persistence. Session end synchronously marks memory ended before its first await, then queues the journal and SecureStore write: a pending fifth wrong password cannot erase the retained pair. Only definitive final-upload settlement may erase an ended pair. No secret enters SQLite, AsyncStorage or logs. Encrypted kv keeps the profile subset (username, first name, organization, permissions), owner binding, session-ended marker and versioned rules snapshot. A confirmed remote end persists a journal containing the session id and end status, then the monotonic credential status. Boot reconciles the journal before interrupted-password exhaustion can erase credentials. The journal reconstructs the ended gate if the process dies between those writes; it never records a consumed network attempt. The local gate closes immediately; after restart the ended session stays on P1 and cannot unlock. The retained pair is private to the final-upload path, never ordinary API calls or refresh. The serialization barrier never retains command rejections: callers receive the individual error, rejected ending promises are released, and the next sync retries any pending end journal/SecureStore persistence before sending. The in-memory ended restriction remains in force throughout.
+
+PINs are four digits, excluding identical digits and ascending/descending runs. PBKDF2-HMAC-SHA256 uses pbkdf2Async, independent random 16-byte salts, a versioned cost record and constant-time comparison. The password verifier is created only after successful online login. PINs never leave the phone; only online login sends a password. PIN creation requires confirmation.
+
+Attempts are saved BEFORE checking a secret. The PIN limit disables PIN and biometrics and requires the full local password. Five wrong local passwords erase both verifiers and tokens, requiring online login. An interrupted fifth password attempt clears credentials on restart too. Outbox events, drafts and the database are never erased. Successful PIN/password verification resets counters. Successful biometrics leave the PIN counter unchanged: they do not demonstrate PIN knowledge. Failed/canceled biometrics change no counter.
+
+The reader consumes only pin_max_attempts (default 3, 1..10), session_idle_minutes (default 5, 1..30), and clock_skew_review_seconds (default 300, 30..3600). A minimal rules fetch runs after login with immediate defaults; it never delays PIN creation. The cached snapshot includes its version. Ended/replaced-session responses are ignored. There is no general configuration sync. The generated rules endpoint describes a collection; the runtime validates the documented single Schemas["RulesSnapshot"] object without changing the client. **Lead follow-up:** pin_max_attempts is not seeded today; default 3 applies pending client confirmation.
+
+The opaque lock overlay preserves the MOUNTED shell, navigation and half-filled forms, hiding covered content from touch and accessibility. Android back cannot pop covered screens. Sync continues. Cold sessions start locked; backgrounding locks immediately. Any touch resets injectable idle deadlines; the one-minute warning includes a keep-working action. With a one-minute idle limit the warning is immediate. Idle warning at T-1 minute, lock at T, touch reset and background lock apply in both unlocked and createPin (including confirmation), and an expired PIN setup requires the local password before creation resumes. The UI phase is derived from credentials plus one in-memory unlocked flag, never independently published: no pair or ended means login; an active locked pair means locked; an unlocked pair without a PIN means PIN creation. Lock clears the flag immediately and revokes stale unlock grants only; it never cancels an accepted login or PIN write. Backgrounding during a pending login save therefore yields a locked session requiring its cached password, then PIN creation. Session notifications use engine.hint() to wake idle sync workers, preserving blocked states, in-flight passes and retry deadlines. A persisted local session identity stays stable across token refresh: a valid PIN can finish during sync refresh, while a replaced/revoked session cannot be unlocked by an old result. Interrupted PIN setup requires the cached full password before setup resumes.
+
+Login responses validate nonempty token strings, a parseable server_time and the profile fields consumed by the app before acceptance. Refresh validates both nonempty token strings before returning a replacement. Malformed successful responses are failures and never replace previous credentials. Authenticated requests use SessionRequests.run (auth rules and shift-open catalog/rules) or runSync (sync). Active sessions refresh online once on 401 token_expired and retry once; refresh remains single-flight and the new pair is stored BEFORE retrying. A late old-access 401 uses the persisted replacement without consuming another refresh. Successful refresh stays inside the sync pass, avoiding a needsLogin block.
+
+**Session end is two steps, not eager credential deletion.** Step 1 immediately shows P1 with the session-closed notice, even offline, and persists the ended state. PIN/password verifiers are disabled/erased at this step, including after restart; the gate rejects already-running unlock results. No refresh is ever started again for that session. The pair is retained ONLY for final POST /field/sync/ retries using its existing access token, even expired. If refresh confirms revocation after a sync token_expired, retry that POST with the old access token without another refresh.
+
+The server owns final-upload consumption: FinalUploadMixin spends it inside the request transaction and rolls it back on answers >=400; event ids remain idempotent. The client stores only active/ended, with no reservation, attempt-consumption status or crash cleanup. Network failure, timeout, process loss, 5xx, 429, 400 and 413 keep the ended pair. Sync uses its existing backoff, Retry-After, offline wait, cursor correction, splitting and parking policies; parked malformed events still require correction/manual retry. A missing server retains the pair and blocks until configuration is restored. Session-end or token-rotation notifications are hints that preserve blocked states and backoff/Retry-After deadlines; explicit condition changes wake the worker.
+
+Each sync POST records session status at SEND time. Only a POST sent while already ended, or a response carrying X-Session-Revoked: true, can complete the session. A normal 200 sent while active and arriving after another call ends the session is applied normally; the pass then makes an actual final POST, including an empty pull when no events remain. The same explicit pull applies to an active empty POST answered 401/403 with needsFinalUpload; it cannot fall idle before sending the final POST. Only a DEFINITIVE server answer with that provenance completes step 2: 2xx after valid batch results/reviews/cursor are applied and persisted, or 401/403 after the failed batch is settled. A 200 with X-Session-Revoked: true immediately marks local auth ended, then commits the results before clearing the retained pair. Malformed 2xx payloads cannot clear the pair before results have been persisted. After a definitive answer, stop even if has_more is true. Drafts, outbox envelopes and their durable results are never erased. Completion is scoped to the original session id and cannot clear a newer login. Final upload is level-triggered: only after a pass ends idle does the engine read durable credentials and run again while an ended session retains a pair. Neither the level nor a session hint (`engine.hint()`) resumes blocked (clockWrong, needsLogin, noServer, permission) or waitingRetry passes: an explicit request during the pass (#again), notifyConditionsChanged or the retry timer must resume them; scheduled retries, Retry-After and offline waits remain in force; explicit triggers (enqueue, connectivity back, foreground, Intentar ahora) still run at once as in #6.
+
+Restart in the ended state keeps the pair for retry and never permits PIN/password/biometric unlock or refresh. If a response was lost after a committed final upload, a subsequent 401 confirms that it was consumed and permits cleanup; unsent local evidence remains available after same-user relogin. An offline restart waits for connectivity without consuming or clearing anything. A disconnect between the engine's online check and a session request also retains the pair and schedules the normal retry; reconnecting wakes the pending final upload automatically without a manual sync request.
+
+
+A different username is refused BEFORE any server call while the phone holds any local record (any outbox status), so another courier never sees or inherits someone else's records; unknown ownership with records is refused too. Reassigning a phone is an IT reprovisioning. The owner binding survives both session-end steps. P1 temporarily disables login until a definitive sync answer finalizes the ended session, so a new login cannot overwrite or supersede the access token before its final POST.
+
+
+Clock skew compares server_time with phone time at login-response arrival. The non-blocking banner uses defaults immediately and updates after the optional snapshot.
+
+Credential loading separates unusable secret data from the database: malformed JSON or invalid credential/verifier/token/origin fields become an in-memory empty credential state, with no unlock and P1 login. The unreadable SecureStore item is left untouched until a later successful login overwrites it; profile/owner, outbox and drafts remain in the encrypted database. A native SecureStore read failure still propagates as a storage error; it is not mistaken for corrupt JSON.
+
+Migration: a valid pre-origin credential item is bound once to the configured server at load, including an ended pair, and that origin is persisted before startup continues. Later configuration changes cannot migrate it again. **[ASSUMPTION]** this migration trusts the currently configured server as the legacy issuer because the historical origin was never recorded. If no valid server is configured, or an explicitly stored origin is invalid, credentials are unusable and require online login; there is no bearer fallback to a different origin.
+
+## SQLCipher storage (#7)
+
+mobile/package.json sets "op-sqlite": {"sqlcipher": true}. The installed Android build.gradle reads mobile/package.json in this layout. The NEW file is wolbachia_field_encrypted_v1.db. The unreleased #6 debug plaintext file wolbachia_field.db stays untouched: no import, deletion or replacement.
+
+The key is 32 Expo random bytes encoded as hex and held in Keystore-backed SecureStore without user-auth binding so sync runs while locked. When missing, generate a candidate IN MEMORY. Open with name/encryptionKey, require nonempty PRAGMA cipher_version, then actually read SELECT count(*) FROM sqlite_master. Only then save the fresh key; only after saving run durability pragmas/migrations. An existing encrypted file with another key fails the real read; its candidate is never saved and nothing is deleted. SecureStore save failure stops boot before migrations/writes. No file-system dependency or plaintext fallback.
+
+Biometrics are a UI gate, NOT a key unwrap. The database key and credentials are Keystore-bound but not user-auth-bound. Hardware, enrollment and strong Class 3 enrollment are required. Native authentication requests strong biometrics and disables device-credential fallback.
+## Verification and assumptions (#7)
+
+| Criterion / invariant | Lowest-layer evidence |
+| --- | --- |
+| PIN format/trivial-PIN rejection; salted verifier round trip and wrong secret | test/local-unlock.test.ts |
+| Persist before verification; restarted attempts; password-required limit | test/local-unlock.test.ts |
+| Cold start locked, offline unlock, biometrics retain PIN attempts and cannot bypass the limit | test/auth-controller.test.ts |
+| Remote end or five password failures retain real outbox/draft/owner binding | test/auth-controller.test.ts with Node SQLite |
+| Concurrent refresh, late 401, persist before use, offline handling, stale-session responses | test/session-requests.test.ts with deferred promises |
+| Refresh inside sync succeeds without needsLogin blocking | test/auth-sync.test.ts |
+| Refresh confirms revoke: old-access retry, no second refresh; results precede cleanup | test/session-end.test.ts, deferred refresh/final-response promises |
+| X-Session-Revoked disables local unlock immediately, saves results before cleanup, survives restart | test/session-end.test.ts, deferred SQLite commit |
+| Network/timeout backoff with same-access retry; 5xx/429/400/413 retention; restart/offline/no-server wait; definitive 401/403 cleanup; retained outbox/drafts | test/session-end.test.ts, real Node SQLite and engine wiring |
+| Synchronous end dominates a fifth wrong password during a blocked journal; final POST retains its pair and preserves data | test/auth-transitions.test.ts, deferred verifier/journal and real Node SQLite |
+| Session end wakes an idle worker automatically; lock during login persistence requires password before PIN setup | test/auth-transitions.test.ts, deferred final response and SecureStore write |
+| Server mutation/reset denied for active/ended pairs, each unsent status or a stored owner; allowed on a fresh phone | test/server-settings.test.ts |
+| Late active 200 after rules revoke cannot finalize the session; results persist before the actual final POST | test/session-end.test.ts, deferred response with real Node SQLite |
+| Transient secure-write failures do not poison later sync; pending end persists before its next POST | test/session-requests.test.ts |
+| Login in-flight blocks server save/reset; forced substitution still routes rules/refresh/sync/final upload to the captured origin | test/auth-origin.test.ts, deferred login and generated client composition |
+| Legacy active/ended origin migration persists once; unusable credentials boot into P1 without deleting local evidence | test/credential-recovery.test.ts with real Node SQLite |
+| Malformed successful login/refresh cannot poison persisted credentials | test/auth-api.test.ts, generated client and restarted CredentialStore |
+| Empty active sync revoked with 401 still sends its final POST | test/session-end.test.ts with the real engine/observer |
+| One connectivity publisher maps connected LAN/no Internet to online for auth and sync, with auth published first | test/connectivity.test.ts, pure ports |
+| Ended cold start offline and mid-pass disconnect both resume with exactly one final POST on connectivity alone, preserving draft/results | test/connectivity.test.ts, real engine/observer and deterministic barriers |
+| Connectivity lost before token_expired is retryable, never needsLogin or an offline refresh | test/auth-sync.test.ts |
+| Anonymous device/version-bound auth payloads and refresh-expiry/revoke classification | test/auth-api.test.ts |
+| P1 error mapping and Retry-After; rules clamps/defaults; owner policy; clock skew | test/auth-policy.test.ts plus one controller wiring test before the network boundary |
+| Warning at T-1, lock at T, touch reset, background lock | test/idle-lock.test.ts with a fake clock |
+| Fail closed without cipher or on wrong-key read; key persistence before migrations | test/encrypted-database.test.ts |
+| Locale parity and explicit interpolation placeholders | packages/i18n/test/messages.test.ts |
+
+**[ASSUMPTION]** PBKDF2 costs (1000 PIN / 10000 password; pure JS, measured 4.5 s for 20000 iterations under `node --jitless`) need S24 Ultra calibration. The local-password limit of 5 is a lead-selected assumption. Native SQLCipher read failures, Keystore durability/atomic replacement, strong-enrollment reporting, cancel behavior, safe areas, TalkBack and 130% text need APK/device checks. No Android build or Docker run was performed.
+
+**Known native limitation / [ASSUMPTION] durability:** the installed expo-secure-store 58.0.2 Android SecureStoreModule.kt calls saveEncryptedItem without checking its returned SharedPreferences.commit() boolean (non-null writes). A resolved JavaScript setItemAsync therefore does not prove a successful disk commit. A failed commit could lose the last attempt-counter increment, token/status replacement or database-key save after a crash; a read-back cannot establish disk durability. The TypeScript ordering and retry tests cover rejected promises, not this silent native failure. Proposed follow-up issue: make the Android adapter reject commit() == false, add a native disk-failure regression, and validate counter/key recovery on the S24 Ultra. This needs a native/upstream patch; #7 does not change native code or add patch-package.
+
+Design additions without supplied artwork: PIN enter/confirm creation, P1 server setup, throttling/device-deactivation/generic errors and the keep-working action. The S01 logo stays a placeholder. Password reset only shows the supervisor instruction sheet; there is no logout UI.
+
+Verified API references: [OP-SQLite installation](https://op-engineering.github.io/op-sqlite/docs/installation/), [OP-SQLite open/encryption](https://op-engineering.github.io/op-sqlite/docs/api/), [Expo SecureStore SDK 58](https://docs.expo.dev/versions/v58.0.0/sdk/securestore/), [Expo biometrics](https://docs.expo.dev/versions/latest/sdk/local-authentication/), [noble PBKDF2](https://github.com/paulmillr/noble-hashes). Installed sources also verify Gradle's configuration path and native/TypeScript signatures. Documentation checks do not replace pending Android runtime checks.
 
 ## M-04: home and open shift (#133)
 
@@ -295,7 +369,8 @@ navigation button says "How to get there", without claiming a specific navigator
   version as a quoted ETag. 304 preserves cache. Open/reconnect/foreground/due-time
   triggers refresh while cached list/point actions remain usable. Local map
   verification is published before HTTP starts, including a stalled transport.
-  A response from a changed bearer token or server is discarded.
+  A response from a replacement session or changed issuer is discarded; legitimate
+  bearer rotation through SessionRequests remains valid.
 - Foreground `expo-location` runs only while Day/Map is mounted, the app is active
   and a local shift is open. Background/unmount stops subscriptions, including
   late permission/watch completions. No local fix is persisted or uploaded.
@@ -328,8 +403,8 @@ navigation button says "How to get there", without claiming a specific navigator
   configuration; `launched` means Linking resolved, not that navigation/return was
   qualified. A failed local state write is never reported as success.
 - AppText, wrapping layouts, theme tokens, runtime-free shared es-MX/en catalogs,
-  existing mobile translation adapter and 56 dp controls are reused. Login/native
-  i18next migration remain separate work; no additional i18n runtime was introduced.
+  existing mobile translation adapter and 56 dp controls are reused. Auth/session composition follows master #7 (decision 116); the native
+  i18next migration remains separate work. No additional i18n runtime was introduced.
 
 ### Dependencies and primary references
 
@@ -396,3 +471,52 @@ outbox retention, same-version bootstrap restoration, repeated staged bootstrap,
 all four unavailable-manifest signals alongside another valid asset, and malformed
 manifest cursor retention. These use SQLite and a scripted API-client transport,
 with no timing sleeps. The native/API/device UNVERIFIED limits above are unchanged.
+
+### Master #7 integration and field UI standard
+
+The #135 merge retains master's encrypted database, CredentialStore, SessionRequests,
+identity-pinned origin and final-upload lifecycle (decision 116; M-06 is decision
+117). Bootstrap uses `tokens.getOrigin()` and the 401 refresh wrapper, retains ETag/
+304 handling, and checks session identity/origin rather than access-token equality.
+The scoped sync adapter delegates refresh/final upload to master's transport and
+guards both queued requests and late responses against a replacement session/origin. Ordinary locked sessions
+keep their offline assignments and map preparation. Foreground local fixes and
+automatic day refresh run only with the auth gate unlocked. The screen model is
+keyed by session identity, so a failed replacement-session read cannot expose an
+old in-memory assignment snapshot; an ordinary lock keeps the same cache.
+
+Auth end's durable journal awaits downloaded-data cleanup using the short
+projection gate; it never reacquires the network gate held by SessionRequests.
+Boot reconciles ended/missing sessions, and password credential erasure also clears
+downloaded projections before another login is permitted. Cleanup removes assigned/map projections, navigation state
+and cursor while preserving drafts and outbox evidence. An active POST returning
+after logout settles evidence but cannot restore projections/cursor; master's real
+final POST still follows. Final results are durable before projection cleanup and
+`completeSession` credential erasure. Revocation also invalidates captured local
+writers, so late map preparation progress, final metadata saves or file inspection
+cannot recreate downloaded state, including a scope revocation that keeps the same
+session identity.
+
+P9/P10 follow `.claude/skills/ui-ux-standards/SKILL.md` sections 3/4/12/13: local
+reads show motion-free row/card or map skeletons, never an empty-state flash or a
+spinner. Static shapes deliberately avoid shimmer/battery cost on field devices.
+Refresh is single-flight, keeps the last snapshot/map visible and shows an Updating
+chip. Read/refresh/map/action errors keep separate retry actions, optional real API
+error-code details and the useful list. Empty assignments offer Refresh; completed
+work offers Back to home (shift closing belongs to its own issue). Buttons keep
+56 dp targets, shared tokens, AppText and es-MX/en copy. No Alert.alert, haptic
+package, new dependency or optimistic audit claim was added.
+
+`test/m-06.test.ts` adds deterministic session refresh/logout/final-upload/boot/lock
+regressions and deferred load/refresh/error/retry/stale-read UI-model tests. These
+are pure controller/SQLite/API-client checks, not native rendering certification.
+Light/dark, 130% text, TalkBack, reduced-motion presentation and actual navigation
+return remain UNVERIFIED on devices; no Docker, Playwright or Expo build is run.
+
+Current merge validation (2026-11-05): the i18n suite passes 13 tests. Dependency
+installation (`npm ci --ignore-scripts`) was blocked by Windows EPERM and left
+node_modules incomplete. ESLint/Prettier are unavailable; mobile typecheck cannot
+use the required compiler/types. The mobile command reports 53 passes and 21
+module-loading failures from missing dependencies; the new M-06 regressions could
+not execute. Earlier evidence above does not certify this merged build. Reinstall
+the locked dependencies and rerun all required checks before integration.

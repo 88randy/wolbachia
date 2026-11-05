@@ -1,6 +1,8 @@
 import { spacing, radius } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
 import { StyleSheet } from "react-native";
+import { createSkeletonStyles } from "./skeleton-styles.ts";
+
 export const createDayStyles = (theme: Theme) =>
   StyleSheet.create({
     root: { flex: 1, backgroundColor: theme.color.background },
@@ -14,6 +16,7 @@ export const createDayStyles = (theme: Theme) =>
       backgroundColor: theme.color.surface,
     },
     map: { flex: 1 },
+    ...createSkeletonStyles(theme),
     card: { minHeight: 56, padding: spacing[1], gap: spacing[1] },
     footer: { padding: spacing[1], gap: spacing[1], backgroundColor: theme.color.surface },
     marker: {

@@ -1,6 +1,7 @@
 import type { TokenStore } from "../../auth/token-store.ts";
-import type { ServerSettings } from "../../config/server-settings.ts";
-import { createMobileApiClient } from "../../api/create-api-client.ts";
+import type { CredentialStore } from "../../auth/credential-store.ts";
+import type { SessionRequests } from "../../auth/session-requests.ts";
+import { createScopedApiClient } from "../../api/create-scoped-api-client.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import { KvStore } from "../../db/kv-store.ts";
 import { androidNavigation } from "../../navigation/android-navigation.ts";
@@ -16,26 +17,33 @@ import { inspectMapFile } from "./inspect-map-file.ts";
 import { OutboxWorkOverlay } from "./local-work.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
-  readonly server: ServerSettings;
-  readonly tokens: TokenStore;
+  readonly tokens: TokenStore & Pick<CredentialStore, "getSnapshot">;
+  readonly requests: () => SessionRequests;
 }
 export function createDayBundle(deps: Dependencies): DayBundleService {
   return new DayBundleService({
     store: new DayStore(deps.db),
     now: () => new Date(),
+    getScopeKey: () => sessionScope(deps.tokens),
     transport: async (etag) => {
-      const baseUrl = deps.server.baseUrl();
-      const access = deps.tokens.getAccessToken();
-      if (baseUrl === null || access === undefined)
+      const baseUrl = deps.tokens.getOrigin();
+      const scope = sessionScope(deps.tokens);
+      if (baseUrl === null || scope === null)
         throw new Error("Bootstrap requires a server and session.");
       const result = await createBootstrapTransport(
-        createMobileApiClient({ baseUrl, tokens: deps.tokens }),
+        createScopedApiClient({ tokens: deps.tokens }),
+        deps.requests(),
       )(etag);
-      if (access !== deps.tokens.getAccessToken() || baseUrl !== deps.server.baseUrl())
-        throw new Error("Bootstrap session changed.");
+      if (scope !== sessionScope(deps.tokens)) throw new Error("Bootstrap session changed.");
       return result;
     },
   });
+}
+function sessionScope(tokens: Dependencies["tokens"]): string | null {
+  const current = tokens.getSnapshot();
+  return current.status === "active" && current.pair !== null
+    ? JSON.stringify([current.sessionId, current.origin])
+    : null;
 }
 async function hasOpenShift(db: SqlExecutor): Promise<boolean> {
   const rows =

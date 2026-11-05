@@ -23,4 +23,10 @@ export const errors = {
     "Hiciste muchas solicitudes seguidas. Espera un momento e inténtalo de nuevo.",
   "errors.api.serverError":
     "Algo falló de nuestro lado. Inténtalo en unos minutos; si sigue igual, avisa a soporte.",
+  "errors.api.motorcycleRevisionConflict":
+    "La motocicleta cambi?. Actualiza la información e intenta de nuevo.",
+  "errors.api.motorcycleFaultNotOpen":
+    "La falla ya no est? pendiente. Actualiza la información para continuar.",
+  "errors.api.motorcycleInspectionRequired":
+    "La motocicleta necesita una inspección autorizada. Pide apoyo a tu supervisor.",
 } as const satisfies AreaCatalog<"errors">;

@@ -105,7 +105,7 @@ async function applyAnswer(
 ): Promise<void> {
   const response = call.response;
   // A final upload grants no downloadable projections; acknowledge its results before revoking access.
-  if (call.isSessionRevoked !== true) await deps.applyProjectionChanges?.(response.changes);
+  if (canDownload(call)) await deps.applyProjectionChanges?.(response.changes);
   const sentIds = new Set(batch.map((event) => event.envelope.id));
   // The server also lists a review item for every event of this batch it rejected or put in
   // review; those are already in `results`. Only reviews of other events add information.
@@ -119,7 +119,10 @@ async function applyAnswer(
   );
   const answered = batch.map((event) => transitionFor(event, response, deps.now()));
   // One transaction: statuses, cursor and versions are saved together or not at all.
-  await deps.outbox.settle([...answered, ...pulled], bookkeeping(response, deps.now()));
+  const statements = canDownload(call)
+    ? bookkeeping(response, deps.now())
+    : [setStatement(KV_KEYS.lastSyncAt, deps.now().toISOString())];
+  await deps.outbox.settle([...answered, ...pulled], statements);
 }
 
 function eventsTo(
@@ -224,13 +227,35 @@ async function handleFailure(
   }
 }
 
-/** A successful final upload acknowledges evidence but grants no further download or upload access. */
-async function finishRevokedUpload({ deps }: PassContext): Promise<Step> {
+function canDownload(call: SyncCallResult): boolean {
+  return (
+    call.isSessionRevoked !== true &&
+    call.needsFinalUpload !== true &&
+    call.completeSession === undefined
+  );
+}
+/** Session completion belongs after durable batch settlement and downloaded-access cleanup. */
+async function finishSession({ deps }: PassContext, complete?: () => Promise<void>): Promise<Step> {
   if (deps.revokeProjections === undefined) await deps.kv.remove(KV_KEYS.syncCursor);
   else await deps.revokeProjections();
+  await complete?.();
   return stop({ kind: "blocked", reason: "needsLogin", code: "session_revoked" });
 }
-
+async function failedCall(
+  context: PassContext,
+  batch: readonly OutboxEvent[],
+  call: Extract<SyncCallResult, { readonly ok: false }>,
+): Promise<Step> {
+  const step = await handleFailure(context, batch, call.failure);
+  if (call.completeSession !== undefined) return finishSession(context, call.completeSession);
+  if (
+    call.needsFinalUpload === true &&
+    call.failure.kind === "http" &&
+    [401, 403].includes(call.failure.status)
+  )
+    return { next: "again", pull: true };
+  return step;
+}
 async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): Promise<Step> {
   const { deps } = context;
   const cursor = await deps.kv.get(KV_KEYS.syncCursor);
@@ -241,12 +266,13 @@ async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): P
     events: batch.map((event) => event.envelope),
   };
   const call = await deps.transport(request);
-  if (!call.ok) return handleFailure(context, batch, call.failure);
+  if (!call.ok) return failedCall(context, batch, call);
   await applyAnswer(context, batch, call);
-  if (call.isSessionRevoked === true) return finishRevokedUpload(context);
+  if (call.completeSession !== undefined || call.isSessionRevoked === true)
+    return finishSession(context, call.completeSession);
   const missing = missingResultOutcome(batch, call.response);
   if (missing !== null) return stop(missing);
-  return { next: "again", pull: call.response.changes.has_more };
+  return { next: "again", pull: call.response.changes.has_more || call.needsFinalUpload === true };
 }
 
 /**

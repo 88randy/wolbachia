@@ -6,6 +6,7 @@ from uuid import UUID
 from django.db.models import Max, QuerySet
 
 from organizations.models import Organization
+from shifts.extensions import ODOMETER_READERS
 from shifts.models import Motorcycle, Shift
 
 
@@ -48,6 +49,7 @@ def highest_recorded_km(motorcycle: Motorcycle) -> int | None:
         highest_open=Max("odometer_open_km"), highest_close=Max("odometer_close_km")
     )
     values = [value for value in readings.values() if value is not None]
+    values.extend(value for reader in ODOMETER_READERS if (value := reader(motorcycle)) is not None)
     return max(values) if values else None
 
 

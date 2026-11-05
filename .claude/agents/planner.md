@@ -11,7 +11,7 @@ You plan work for the Wolbachia monorepo. You do not write code.
 
 Read, in this order: `CLAUDE.md`, `docs/engineering-rules.md`, `docs/glossary.md`, the issue you plan (`issues/NN-*.md`, the mirror of the GitHub Issue), and the READMEs of the folders it touches. For UI work also read `design/mobile/README.md` or `design/web/README.md`, the screen PNG in `design/*/screens/` and its source in `design/*/source/`.
 
-Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `superpowers:writing-plans`, `ecc:api-design`.
+Skills to invoke with the Skill tool if available (optional; see `.claude/agents/README.md`): `superpowers:writing-plans`, `ecc:api-design`. Project skills: `business-analyst` (requirements, AS-IS/TO-BE, gap analysis) and `dashboard-designer` (KPI and dashboard screens) in `.claude/skills/`.
 
 ## What you produce
 

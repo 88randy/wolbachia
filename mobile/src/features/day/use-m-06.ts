@@ -1,72 +1,46 @@
-import type { LocationState } from "./location.ts";
-import { refreshDay } from "./refresh-day.ts";
-import type { MessageKey } from "@wolbachia/i18n";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { useServices } from "../../app/services-context.ts";
 import { buildDay } from "./domain.ts";
+import { DayViewController, dayViewPhase } from "./day-view-controller.ts";
 import type { AssignedTask } from "./types.ts";
-import type { DaySnapshot } from "./service.ts";
 import { useDayLocation } from "./use-day-location.ts";
 import { useDayRefresh } from "./use-day-refresh.ts";
-function useDaySnapshot() {
-  const { day, engine } = useServices();
-  const [state, setState] = useState<DaySnapshot | null>(null);
-  const sequence = useRef(0);
-  const [errorKey, setError] = useState<MessageKey | null>(null);
-  const read = useCallback(async () => {
-    const current = ++sequence.current;
-    try {
-      const snapshot = await day.read();
-      if (current === sequence.current) setState(snapshot);
-    } catch {
-      if (current === sequence.current) setError("mobile.storage.actionFailed");
-    }
-  }, [day]);
+
+function useDayView() {
+  const { day, engine, auth } = useServices();
+  const scope = useDayScope();
+  const controller = useMemo(() => {
+    const view = new DayViewController(day);
+    if (scope === null) view.stop();
+    return view;
+  }, [day, scope]);
+  const snapshot = useSyncExternalStore(controller.subscribe, controller.getSnapshot);
+  const session = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
   useEffect(() => {
-    void read();
-    const stop = engine.subscribe(() => {
-      void read();
-    });
-    return () => {
-      sequence.current += 1;
-      stop();
+    if (scope === null) return;
+    controller.start();
+    void controller.load();
+    const update = () => {
+      void controller.load();
     };
-  }, [engine, read]);
-  return { day, state, read, errorKey, setError };
+    const stopEngine = engine.subscribe(update);
+    const stopBundle = day.bundle.subscribe(update);
+    return () => {
+      controller.stop();
+      stopEngine();
+      stopBundle();
+    };
+  }, [controller, day, engine, scope]);
+  return { day, controller, snapshot, isUnlocked: session.phase === "unlocked" };
 }
-function useDayActions(snapshot: ReturnType<typeof useDaySnapshot>) {
-  const { day, read, setError } = snapshot;
-  const run = useCallback(
-    async (action: () => Promise<unknown>) => {
-      setError(null);
-      try {
-        await action();
-        await read();
-      } catch {
-        setError("mobile.storage.actionFailed");
-      }
-    },
-    [read, setError],
-  );
-  const refresh = useCallback(async () => {
-    setError(null);
-    try {
-      await refreshDay(day, read);
-    } catch {
-      setError("mobile.day.refreshFailed");
-    }
-  }, [day, read, setError]);
-  const select = (task: AssignedTask) => run(() => day.select(task.id));
-  const navigate = (task: AssignedTask) => run(() => day.navigate(task.id));
-  const clearSelection = () => run(() => day.clearSelection());
-  const retryMap = () => run(() => day.verifyMap(true));
-  return { refresh, select, navigate, retryMap, clearSelection };
+function useDayScope(): string | null {
+  const { tokens } = useServices();
+  const credentials = useSyncExternalStore(tokens.subscribe, tokens.getSnapshot);
+  return credentials.status === "active" && credentials.pair !== null
+    ? JSON.stringify([credentials.sessionId, credentials.origin])
+    : null;
 }
-/** Cached snapshot is published before bootstrap; network failures never block list/point selection. */
-export function useM06() {
-  const snapshot = useDaySnapshot();
-  const actions = useDayActions(snapshot);
-  const location = useDayLocation(snapshot.day.location, snapshot.state?.isShiftOpen ?? false);
+function useDisplayClock() {
   const [now, setNow] = useState(() => new Date());
   useEffect(() => {
     const timer = setInterval(() => {
@@ -76,15 +50,41 @@ export function useM06() {
       clearInterval(timer);
     };
   }, []);
-  useDayRefresh(actions.refresh, snapshot.state?.meta?.next_change_at ?? null);
-  const day = deriveDay(snapshot.state, location, now);
+  return now;
+}
 
-  return { ...snapshot, ...actions, ...day, now };
+type DayState = ReturnType<typeof useDayView>["snapshot"]["state"];
+function isShiftOpen(state: DayState): boolean {
+  return state?.isShiftOpen ?? false;
+}
+function nextChangeAt(state: DayState): string | null {
+  return state?.meta?.next_change_at ?? null;
+}
+function useDayProgress(state: DayState, location: ReturnType<typeof useDayLocation>, now: Date) {
+  const progress = buildDay({ tasks: state?.tasks ?? [], work: state?.work ?? [], location, now });
+  const selected = progress.tasks.find((row) => row.task.id === state?.navigation?.pointId) ?? null;
+  return { ...progress, selected };
+}
+
+/** Auth owns lock visibility; cached content survives refresh without claiming a successful read. */
+export function useM06() {
+  const { day, controller, snapshot, isUnlocked } = useDayView();
+  const now = useDisplayClock();
+  const location = useDayLocation(day.location, isUnlocked && isShiftOpen(snapshot.state));
+  useDayRefresh(controller.refresh, nextChangeAt(snapshot.state), isUnlocked);
+  const progress = useDayProgress(snapshot.state, location, now);
+  return {
+    ...snapshot,
+    ...progress,
+    now,
+    phase: dayViewPhase(snapshot),
+    refresh: controller.refresh,
+    read: controller.load,
+    retryMap: controller.retryMap,
+    retryAction: controller.retryAction,
+    select: (task: AssignedTask) => controller.run(() => day.select(task.id)),
+    navigate: (task: AssignedTask) => controller.run(() => day.navigate(task.id)),
+    clearSelection: () => controller.run(() => day.clearSelection()),
+  };
 }
 export type M06Model = ReturnType<typeof useM06>;
-
-function deriveDay(state: DaySnapshot | null, location: LocationState, now: Date) {
-  const day = buildDay({ tasks: state?.tasks ?? [], work: state?.work ?? [], location, now });
-  const selected = day.tasks.find((row) => row.task.id === state?.navigation?.pointId) ?? null;
-  return { ...day, selected };
-}
