@@ -220,3 +220,38 @@ void it("a transient secure-write rejection does not poison later sync; pending 
     assert.equal(credentials.getSnapshot().pair, null);
   }
 });
+
+void it("keeps the server-rotated pair when a concurrent call ends the session before the refresh answer lands", async () => {
+  const { credentials, secrets } = await makeCredentials();
+  const entered = deferred<undefined>();
+  const response = deferred<TokenPair>();
+  const rotated = { access: randomUUID(), refresh: randomUUID() };
+  const requests = new SessionRequests({
+    credentials,
+    isOnline: () => true,
+    endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
+    refresh: () => {
+      entered.resolve(undefined);
+      return response.promise;
+    },
+  });
+  const refreshing = requests.run(() => Promise.resolve(expired()));
+  await entered.promise;
+  await requests.run(() =>
+    Promise.resolve({
+      response: new Response(null, { status: 401 }),
+      error: { code: "session_revoked", detail: "" },
+    }),
+  );
+  assert.equal(credentials.getSnapshot().status, "ended");
+
+  response.resolve(rotated);
+  await refreshing.catch(() => undefined);
+
+  assert.equal(credentials.getSnapshot().status, "ended");
+  assert.deepEqual(credentials.getSnapshot().pair, rotated);
+  assert.equal(credentials.getSnapshot().pin, null);
+  const restarted = new CredentialStore(secrets);
+  await restarted.load();
+  assert.deepEqual(restarted.getSnapshot().pair, rotated);
+});

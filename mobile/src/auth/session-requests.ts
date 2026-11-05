@@ -191,8 +191,6 @@ export class SessionRequests {
   async #refreshAndPersist(pair: TokenPair): Promise<void> {
     if (this.#deps.credentials.getSnapshot().pair !== pair) return;
     const next = await this.#requestRefresh(pair);
-    await this.#deps.credentials.update((current) =>
-      current.pair === pair && current.status === "active" ? { ...current, pair: next } : current,
-    );
+    await this.#deps.credentials.replaceRotatedPair(pair, next);
   }
 }

@@ -198,6 +198,18 @@ export class CredentialStore {
     if (this.#pendingEnd === end) this.#pendingEnd = null;
   }
 
+  /**
+   * The server rotated `previous` into `next`: keep the successor even if the session ended
+   * meanwhile. A revoked session's final upload is accepted only for its current pair, and the old
+   * one stops working when the rotation grace window closes. Status and erased verifiers are kept.
+   */
+  replaceRotatedPair(previous: TokenPair, next: TokenPair): Promise<void> {
+    return this.runExclusive(async () => {
+      if (this.#credentials.pair !== previous) return;
+      await this.#write({ ...this.#credentials, pair: next }, true);
+    });
+  }
+
   update(change: (current: Credentials) => Credentials): Promise<void> {
     return this.runExclusive((transaction) => transaction.write(change(transaction.read())));
   }
