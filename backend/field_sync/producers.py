@@ -1,7 +1,7 @@
 """Bundle producer contracts. Register once from the owning AppConfig.ready()."""
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Literal
 
@@ -35,6 +35,7 @@ class ProducerContext:
     scope: EffectiveScope
     now: datetime
     permission: str
+    configuration_generation: dict[str, Any] = field(default_factory=dict)
 
     def includes(self, row: dict[str, Any]) -> bool:
         """Defense in depth before serialization: require ownership metadata on every row.

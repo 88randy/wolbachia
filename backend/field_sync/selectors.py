@@ -107,6 +107,7 @@ def membership_snapshots(organization: Organization) -> QuerySet[Membership]:
                 scope="scope",
                 permission_codes="permission_codes",
                 is_active="is_active",
+                revision="revision",
             )
         )
     )
@@ -128,6 +129,15 @@ def captured_scope(membership: Membership) -> EffectiveScope:
     return effective_scope(membership, profiles=profiles)
 
 
+def captured_generation(membership: Membership) -> dict[str, Any]:
+    """Monotonic revisions of the membership and its active profiles, from the same snapshot."""
+    snapshots: list[dict[str, Any]] = membership.scope_profiles  # type: ignore[attr-defined]
+    return {
+        "membership": membership.revision,
+        "profiles": {row["slug"]: row["revision"] for row in snapshots},
+    }
+
+
 def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
     """Compute paired grants exclusively from one captured configuration snapshot."""
     membership = membership_snapshots(batch.organization).filter(user=batch.user).first()
@@ -136,11 +146,23 @@ def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
     scope = captured_scope(membership)
     if not scope.allows(permission):
         raise PermissionDenied
-    return ProducerContext(batch.organization, batch.user, scope, batch.received_at, permission)
+    return ProducerContext(
+        batch.organization,
+        batch.user,
+        scope,
+        batch.received_at,
+        permission,
+        configuration_generation=captured_generation(membership),
+    )
 
 
 def scope_revision(ctx: ProducerContext) -> str:
-    """Canonical effective grants: action and both dimensions stay paired (SA02)."""
+    """Canonical effective grants (SA02) bound to the configuration generation and producers.
+
+    Restoring identical grants must not revalidate a cursor: rows published while the courier was
+    outside the scope have no CourierChange for it. Any membership/profile revision bump, and any
+    producer schema change (rows that were never delivered by changes), forces a re-bootstrap.
+    """
     relevant = {FIELD_BOOTSTRAP, FIELD_EVENT_SYNC}
     grants = [
         {"permissions": sorted(codes & relevant), "scope": scope}
@@ -148,7 +170,13 @@ def scope_revision(ctx: ProducerContext) -> str:
         if codes & relevant
     ]
     unique = {json.dumps(grant, sort_keys=True, separators=(",", ":")) for grant in grants}
-    return snapshot_hash({"grants": [json.loads(grant) for grant in sorted(unique)]})
+    return snapshot_hash(
+        {
+            "grants": [json.loads(grant) for grant in sorted(unique)],
+            "generation": ctx.configuration_generation,
+            "schema": bundle_schema_version(),
+        }
+    )
 
 
 def latest_change_sequence(batch: BatchContext | CourierContext) -> int:

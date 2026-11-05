@@ -10,7 +10,7 @@ from django.utils import timezone
 from drf_spectacular.generators import SchemaGenerator
 from rest_framework.exceptions import PermissionDenied
 
-from field_sync import producers, services
+from field_sync import producers, selectors, services
 from field_sync.cursor import decode_cursor
 from field_sync.models import CourierChange
 from field_sync.permissions import FIELD_BOOTSTRAP
@@ -275,6 +275,32 @@ def test_scope_revision_invalidates_cursor_and_bootstrap_replaces_downloaded_row
     after = phone.client.get(BOOTSTRAP).data
     assert [row["id"] for row in after["sampling_points"]] == [str(newly_visible.pk)]
     assert phone.sync([], cursor=after["cursor"]).status_code == 200
+
+
+@pytest.mark.django_db
+def test_restoring_identical_scope_still_invalidates_cursor(field):
+    """Rows published while the courier was out of scope have no change for it."""
+    phone = phone_for(field.batch)
+    cursor = phone.client.get(BOOTSTRAP).data["cursor"]
+    original = field.membership.scope
+    for scope in (
+        {"centers": {"mode": "none", "ids": []}, "quadrants": {"mode": "none", "ids": []}},
+        original,
+    ):
+        field.membership.scope = scope
+        field.membership.revision += 1
+        field.membership.save(update_fields=["scope", "revision"])
+    invalid = phone.sync([], cursor=cursor)
+    assert (invalid.status_code, invalid.data["code"]) == (400, "invalid_cursor")
+
+
+@pytest.mark.django_db
+def test_producer_schema_change_invalidates_cursor_issued_before_it(field, monkeypatch):
+    phone = phone_for(field.batch)
+    cursor = phone.client.get(BOOTSTRAP).data["cursor"]
+    monkeypatch.setattr(selectors, "bundle_schema_version", lambda: "new-producers")
+    invalid = phone.sync([], cursor=cursor)
+    assert (invalid.status_code, invalid.data["code"]) == (400, "invalid_cursor")
 
 
 @pytest.mark.django_db

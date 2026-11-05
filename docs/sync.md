@@ -417,6 +417,13 @@ keeping each action grant paired with both center and applicable quadrant scopes
 None/empty denies; all must be explicit. Grants from different profiles never
 cross-combine. Scope is computed, not stored on the courier.
 
+The hash also binds the monotonic `revision` of the membership and of each active assigned
+profile, and `bundle_schema_version` (#196): restoring identical grants after a revocation, or
+registering a new producer, invalidates every older cursor, because rows published while a courier
+was outside the scope, or before a producer existed, have no CourierChange for that courier. The
+phone recovers with `invalid_cursor` -> bootstrap. Unrelated profile edits cause one extra
+bootstrap (accepted cost; correctness over bandwidth).
+
 Missing c/r (v1), malformed, expired, foreign-owner or scope-mismatched tokens
 return 400 invalid_cursor before any events in that request are ingested.
 [ASSUMPTION] No production phone holds v1. Rollout requires regenerating clients
