@@ -2121,6 +2121,133 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/quadrant-assignments/:
+    get:
+      operationId: quadrant_assignments_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: courier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - code
+          - -code
+          - load
+          - -load
+          type: string
+          minLength: 1
+        description: |-
+          * `code` - code
+          * `-code` - -code
+          * `load` - load
+          * `-load` - -load
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - quadrant-assignments
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedAssignmentList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    put:
+      operationId: quadrant_assignments_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - quadrant-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AssignmentRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentResult'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/quadrants/:
     get:
       operationId: quadrants_list
@@ -2536,6 +2663,218 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedReviewItemList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/risk-categories/:
+    get:
+      operationId: risk_categories_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: block
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        required: true
+      tags:
+      - risk-categories
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRiskList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/risk-category-import-uploads/:
+    post:
+      operationId: risk_category_import_uploads_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - risk-category-import-uploads
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UploadRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/risk-category-imports/:
+    post:
+      operationId: risk_category_imports_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - risk-category-imports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PreviewRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Import'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/risk-category-imports/{id}/apply/:
+    post:
+      operationId: risk_category_imports_apply_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - risk-category-imports
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Application'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -3221,6 +3560,169 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/schedule/:
+    get:
+      operationId: schedule_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 80
+        description: 'Exact task code: point:action:YYYY-MM-DD.'
+      - in: query
+        name: courier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: day
+        schema:
+          type: string
+          format: date
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: week
+        schema:
+          type: string
+          format: date
+        required: true
+      tags:
+      - schedule
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SchedulePage'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/schedule/generate/:
+    post:
+      operationId: schedule_generate_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - schedule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WeekQueryRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GenerateResult'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/schedule/reassign-pending/:
+    post:
+      operationId: schedule_reassign_pending_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - schedule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReassignRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReassignResult'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/shifts/:
     get:
       operationId: shifts_list
@@ -3374,14 +3876,109 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
-    ActionEnum:
-      enum:
-      - upsert
-      - remove
-      type: string
-      description: |-
-        * `upsert` - upsert
-        * `remove` - remove
+    Application:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        risk_import:
+          type: string
+          format: uuid
+        applied_at:
+          type: string
+          format: date-time
+        applied_by:
+          type: string
+          format: uuid
+      required:
+      - applied_at
+      - applied_by
+      - id
+      - risk_import
+    Assignment:
+      type: object
+      properties:
+        quadrant:
+          type: string
+          format: uuid
+        code:
+          type: string
+        center_id:
+          type: string
+          format: uuid
+        courier:
+          type: string
+          format: uuid
+          nullable: true
+        revision:
+          type: integer
+        assignment_version:
+          type: string
+          format: uuid
+          nullable: true
+        load:
+          type: integer
+        target:
+          type: integer
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Blocker'
+      required:
+      - assignment_version
+      - blockers
+      - center_id
+      - code
+      - courier
+      - load
+      - quadrant
+      - revision
+      - target
+    AssignmentRequestRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        quadrant_id:
+          type: string
+          format: uuid
+        courier_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - courier_id
+      - expected_revision
+      - quadrant_id
+    AssignmentResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        quadrant:
+          type: string
+          format: uuid
+        courier:
+          type: string
+          format: uuid
+          nullable: true
+        revision:
+          type: integer
+        schedule_revision:
+          type: integer
+        valid_from:
+          type: string
+          format: date-time
+      required:
+      - courier
+      - id
+      - quadrant
+      - revision
+      - schedule_revision
+      - valid_from
     Bag:
       type: object
       description: |-
@@ -3699,6 +4296,13 @@ components:
         * `severe_check` - Severe Check
         * `service_overdue` - Service Overdue
         * `out_of_service` - Out Of Service
+    Blocker:
+      type: object
+      properties:
+        code:
+          type: string
+      required:
+      - code
     Bootstrap:
       type: object
       properties:
@@ -3908,6 +4512,16 @@ components:
       - catalogs
       - motorcycles
       - version
+    CategoryEnum:
+      enum:
+      - low
+      - medium
+      - high
+      type: string
+      description: |-
+        * `low` - low
+        * `medium` - medium
+        * `high` - high
     Center:
       type: object
       description: |-
@@ -4156,6 +4770,16 @@ components:
       - id
       - point
       - point_version
+    GenerateResult:
+      type: object
+      properties:
+        created:
+          type: integer
+        revision:
+          type: integer
+      required:
+      - created
+      - revision
     GeometryPublicationRequest:
       type: object
       properties:
@@ -4215,6 +4839,63 @@ components:
           type: string
       required:
       - status
+    Import:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        file_hash:
+          type: string
+          readOnly: true
+        preview_rows:
+          readOnly: true
+        errors:
+          readOnly: true
+        source:
+          allOf:
+          - $ref: '#/components/schemas/SourceEnum'
+          readOnly: true
+        week_start:
+          type: string
+          format: date
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        applied_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applied_at
+      - created_at
+      - created_by
+      - errors
+      - file_hash
+      - id
+      - preview_rows
+      - revision
+      - source
+      - week_start
     LanguagesEnum:
       enum:
       - es-MX
@@ -4223,6 +4904,18 @@ components:
       description: |-
         * `es-MX` - es-MX
         * `en` - en
+    Load:
+      type: object
+      properties:
+        courier:
+          type: string
+          format: uuid
+          nullable: true
+        load:
+          type: integer
+      required:
+      - courier
+      - load
     LoginRequest:
       type: object
       description: With `device_id` the login is a mobile one (tokens); without it,
@@ -4832,6 +5525,44 @@ components:
       enum:
       - active
       - voided
+    OwnershipResult:
+      type: object
+      properties:
+        task:
+          type: string
+          format: uuid
+        courier:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+      required:
+      - courier
+      - revision
+      - task
+    PaginatedAssignmentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Assignment'
     PaginatedBagList:
       type: object
       required:
@@ -5196,6 +5927,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/ReviewItem'
+    PaginatedRiskList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Risk'
     PaginatedRuleParameterList:
       type: object
       required:
@@ -5481,6 +6235,23 @@ components:
       required:
       - point
       - spacing_warnings
+    PreviewRequestRequest:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        week:
+          type: string
+          format: date
+          description: Local date in the organization's epi week; normalized to its
+            start.
+        source:
+          $ref: '#/components/schemas/SourceEnum'
+      required:
+      - source
+      - upload_id
+      - week
     ProducerChange:
       type: object
       properties:
@@ -5488,7 +6259,7 @@ components:
           type: integer
           minimum: 1
         action:
-          $ref: '#/components/schemas/ActionEnum'
+          $ref: '#/components/schemas/ProducerChangeActionEnum'
         resource_type:
           type: string
         resource_id:
@@ -5505,6 +6276,14 @@ components:
       - resource_type
       - resource_version
       - sequence
+    ProducerChangeActionEnum:
+      enum:
+      - upsert
+      - remove
+      type: string
+      description: |-
+        * `upsert` - upsert
+        * `remove` - remove
     Profile:
       type: object
       description: |-
@@ -5955,6 +6734,38 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    ReassignRequestRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        task_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 200
+          minItems: 1
+        courier:
+          type: string
+          format: uuid
+      required:
+      - courier
+      - expected_revision
+      - task_ids
+    ReassignResult:
+      type: object
+      properties:
+        revision:
+          type: integer
+        owners:
+          type: array
+          items:
+            $ref: '#/components/schemas/OwnershipResult'
+      required:
+      - owners
+      - revision
     RefreshRequest:
       type: object
       properties:
@@ -6066,6 +6877,14 @@ components:
       description: |-
         * `rejected` - Rejected
         * `in_review` - In Review
+    RevisionRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+      required:
+      - expected_revision
     RevokeRequestRequest:
       type: object
       description: 'Body of the two revoke actions. Everything is optional: an empty
@@ -6081,6 +6900,69 @@ components:
           type: integer
       required:
       - revoked_sessions
+    Risk:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        block:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        week_start:
+          type: string
+          format: date
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/CategoryEnum'
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+        origin:
+          type: string
+          format: uuid
+          readOnly: true
+        protocol:
+          type: string
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - block
+      - category
+      - code
+      - created_at
+      - created_by
+      - id
+      - origin
+      - protocol
+      - revision
+      - source
+      - week_start
     RuleParameter:
       type: object
       description: |-
@@ -6323,6 +7205,41 @@ components:
       - block
       - code
       - location
+    SchedulePage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Task'
+        revision:
+          type: integer
+        load:
+          type: array
+          items:
+            $ref: '#/components/schemas/Load'
+        target:
+          type: integer
+          description: Daily target on the selected day or week start; task targets
+            resolve their due dates.
+      required:
+      - count
+      - load
+      - next
+      - previous
+      - results
+      - revision
+      - target
     ScopeDimension:
       type: object
       properties:
@@ -6546,6 +7463,14 @@ components:
       - value
       - value_type
       - version_id
+    SourceEnum:
+      enum:
+      - official_import
+      - company_rule
+      type: string
+      description: |-
+        * `official_import` - official_import
+        * `company_rule` - company_rule
     SpacingWarning:
       type: object
       properties:
@@ -6672,6 +7597,90 @@ components:
       - changes
       - results
       - server_time
+    Task:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        point:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+          readOnly: true
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+        action:
+          $ref: '#/components/schemas/TaskActionEnum'
+        date:
+          type: string
+          format: date
+        courier:
+          type: string
+          format: uuid
+          nullable: true
+        revision:
+          type: integer
+          description: Task ownership revision; reassign uses the page's organization
+            schedule revision.
+        load:
+          type: integer
+        target:
+          type: integer
+        category:
+          type: string
+          nullable: true
+        source:
+          type: string
+          nullable: true
+        origin:
+          type: string
+          format: uuid
+          nullable: true
+        protocol:
+          type: string
+          nullable: true
+        is_completed:
+          type: boolean
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/Blocker'
+      required:
+      - action
+      - blockers
+      - category
+      - center_id
+      - code
+      - courier
+      - date
+      - id
+      - is_completed
+      - load
+      - organization_id
+      - origin
+      - point
+      - protocol
+      - quadrant_id
+      - revision
+      - source
+      - target
+    TaskActionEnum:
+      enum:
+      - place
+      - check
+      type: string
+      description: |-
+        * `place` - place
+        * `check` - check
     UnblockRequest:
       type: object
       description: Free-text reason of a fleet unblock; the service validates it with
@@ -6702,6 +7711,28 @@ components:
         * `week` - Weeks
         * `count` - Count
         * `km_l` - Kilometers Per Liter
+    UploadRequestRequest:
+      type: object
+      properties:
+        file:
+          type: string
+          format: binary
+      required:
+      - file
+    UploadResponse:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        sha256:
+          type: string
+        size:
+          type: integer
+      required:
+      - sha256
+      - size
+      - upload_id
     ValueTypeEnum:
       enum:
       - integer
@@ -6735,6 +7766,14 @@ components:
       required:
       - me
       - server_time
+    WeekQueryRequest:
+      type: object
+      properties:
+        week:
+          type: string
+          format: date
+      required:
+      - week
     FieldError:
       type: object
       description: 'One validation failure of a field: a machine code plus its parameters.'
