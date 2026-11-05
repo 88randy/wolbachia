@@ -7,6 +7,7 @@ export type { ColorValue, StatusColors, Theme, ThemeColors } from "./themes.ts";
 export {
   font,
   formatShadow,
+  mobileLayout,
   mobileTypeScale,
   mobileTypeScale130,
   radius,
