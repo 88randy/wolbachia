@@ -82,3 +82,13 @@ from package-lock.json; do not hand-edit src/generated/schema.ts. The orchestrat
 must run npm run api:generate with installed dependencies and verify a second run
 has no diff. The local Python runtime differs from the lock: Django 5.2.15, DRF
 3.17.1, drf-spectacular 0.29.0. Re-export using locked dependencies before integration.
+
+## Geography editor (#108)
+
+OpenAPI now includes scoped quadrants, append-only polygon/point versions,
+blocks/suggestions, excluded-point decisions, captured_at projections and spacing
+warnings. All endpoints retain the shared session/CSRF or pinned bearer contract.
+See docs/api-conventions.md and backend/geography/README.md. The schema is exported
+from the locked Python runtime; the owner must run npm run api:generate to regenerate
+src/generated/schema.ts and confirm a second run has no diff. Generated TypeScript
+is intentionally never edited by hand.

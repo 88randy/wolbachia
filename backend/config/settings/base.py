@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "field_sync",
     "reviews",
     "shifts",
+    "geography",
 ]
 
 MIDDLEWARE = [

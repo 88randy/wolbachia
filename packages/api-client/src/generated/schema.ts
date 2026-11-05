@@ -122,6 +122,76 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/blocks/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["blocks_list"];
+        put?: never;
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        post: operations["blocks_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/blocks/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["blocks_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/blocks/{id}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["blocks_versions_list"];
+        put?: never;
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        post: operations["blocks_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/blocks/suggestion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["blocks_suggestion_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/catalogs/": {
         parameters: {
             query?: never;
@@ -681,6 +751,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quadrants/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["quadrants_list"];
+        put?: never;
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        post: operations["quadrants_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quadrants/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["quadrants_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quadrants/{id}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["quadrants_versions_list"];
+        put?: never;
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        post: operations["quadrants_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/review-items/": {
         parameters: {
             query?: never;
@@ -885,6 +1008,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/sampling-points/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["sampling_points_list"];
+        put?: never;
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        post: operations["sampling_points_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sampling-points/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["sampling_points_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/sampling-points/{id}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["sampling_points_versions_list"];
+        put?: never;
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        post: operations["sampling_points_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/shifts/": {
         parameters: {
             query?: never;
@@ -952,6 +1128,81 @@ export interface components {
     schemas: {
         /** @enum {unknown} */
         BlankEnum: "";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Block: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: uuid */
+            readonly quadrant: string;
+            readonly current_version: components["schemas"]["BlockVersion"] | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        BlockCreateRequest: {
+            /** Format: uuid */
+            quadrant: string;
+            code: string;
+            geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+        };
+        BlockSuggestion: {
+            /** Format: uuid */
+            quadrant: string;
+            geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+            points: number[][];
+            requires_review: boolean;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        BlockVersion: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly block: string;
+            readonly geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+            readonly revision: number;
+            /** Format: date-time */
+            readonly effective_from: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         /**
          * @description * `severe_check` - Severe Check
          *     * `service_overdue` - Service Overdue
@@ -1035,6 +1286,13 @@ export interface components {
          * @enum {string}
          */
         CheckResultEnum: "ok" | "minor" | "severe";
+        /**
+         * @description * `keep` - keep
+         *     * `move` - move
+         *     * `remove` - remove
+         * @enum {string}
+         */
+        DecisionEnum: "keep" | "move" | "remove";
         /** @description Read-only view of a device for administrators (W67). */
         Device: {
             /** Format: uuid */
@@ -1081,6 +1339,36 @@ export interface components {
          * @enum {string}
          */
         EventStatusEnum: "accepted" | "rejected" | "in_review";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ExcludedPointResolution: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly point: string;
+            /** Format: uuid */
+            readonly point_version: string;
+            readonly decision: components["schemas"]["DecisionEnum"];
+            readonly evidence: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        GeometryPublicationRequest: {
+            expected_revision: number;
+            geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+        };
         GpsRequest: {
             /** Format: double */
             lat: number;
@@ -1276,6 +1564,36 @@ export interface components {
             readonly logo_url: string | null;
             revision: number;
         };
+        PaginatedBlockList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Block"][];
+        };
+        PaginatedBlockVersionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["BlockVersion"][];
+        };
         PaginatedCatalogItemList: {
             /** @example 123 */
             count: number;
@@ -1366,6 +1684,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Motorcycle"][];
         };
+        PaginatedPointVersionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["PointVersion"][];
+        };
         PaginatedProfileList: {
             /** @example 123 */
             count: number;
@@ -1380,6 +1713,36 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Profile"][];
+        };
+        PaginatedQuadrantList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Quadrant"][];
+        };
+        PaginatedQuadrantVersionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["QuadrantVersion"][];
         };
         PaginatedReviewItemList: {
             /**
@@ -1423,6 +1786,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["RuleParameterVersion"][];
+        };
+        PaginatedSamplingPointList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SamplingPoint"][];
         };
         PaginatedShiftList: {
             /** @example 123 */
@@ -1470,6 +1848,44 @@ export interface components {
             label_phone?: string;
             support_contact?: string;
         };
+        PointPublicationRequest: {
+            expected_revision: number;
+            location: number[];
+        };
+        PointResolutionRequest: {
+            /** Format: uuid */
+            point: string;
+            decision: components["schemas"]["DecisionEnum"];
+            evidence: string;
+            location?: number[];
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        PointVersion: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly point: string;
+            readonly location: number[];
+            readonly version: number;
+            /** Format: date-time */
+            readonly effective_from: string;
+            readonly is_retired: boolean;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PointWrite: {
+            point: components["schemas"]["SamplingPoint"];
+            spacing_warnings: components["schemas"]["SpacingWarning"][];
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -1493,6 +1909,84 @@ export interface components {
             permissions: string[];
             scope: components["schemas"]["MeScopeRequest"];
             expected_revision: number;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Quadrant: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: uuid */
+            readonly center: string;
+            readonly current_version: components["schemas"]["QuadrantVersion"] | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        QuadrantCreateRequest: {
+            /** Format: uuid */
+            center: string;
+            code: string;
+            geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+        };
+        QuadrantPublicationRequest: {
+            expected_revision: number;
+            geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+            point_resolutions?: components["schemas"]["PointResolutionRequest"][];
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        QuadrantVersion: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly quadrant: string;
+            readonly geometry: {
+                /** @enum {string} */
+                type: "Polygon";
+                coordinates: number[][][];
+            };
+            readonly revision: number;
+            /** Format: date-time */
+            readonly effective_from: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly point_resolutions: components["schemas"]["ExcludedPointResolution"][];
+        };
+        QuadrantWrite: {
+            version: components["schemas"]["QuadrantVersion"];
+            spacing_warnings: components["schemas"]["SpacingWarning"][];
         };
         RefreshRequest: {
             refresh: string;
@@ -1619,6 +2113,40 @@ export interface components {
             next_change_at: string | null;
             parameters: components["schemas"]["SnapshotParameter"][];
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        SamplingPoint: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: uuid */
+            readonly block: string;
+            readonly current_version: components["schemas"]["PointVersion"] | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        SamplingPointCreateRequest: {
+            /** Format: uuid */
+            block: string;
+            code: string;
+            location: number[];
+        };
         ScopeDimension: {
             mode: components["schemas"]["ModeEnum"];
             ids: string[];
@@ -1707,6 +2235,15 @@ export interface components {
             effective_from: string | null;
             /** Format: uuid */
             version_id: string | null;
+        };
+        SpacingWarning: {
+            code: string;
+            /** Format: uuid */
+            point: string;
+            /** Format: double */
+            distance_m: number;
+            /** Format: double */
+            minimum_m: number;
         };
         /**
          * @description * `scheduled` - scheduled
@@ -1800,6 +2337,11 @@ export interface components {
         /** @description Why a `409` action is blocked and who can unblock it. */
         BlockedBy: {
             reason: string;
+            /**
+             * Format: uuid
+             * @description Authorized geography point requiring a resolution, when applicable.
+             */
+            point?: string;
             unblocked_by_role: string;
             link: string;
         };
@@ -1990,6 +2532,231 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RefreshResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    blocks_list: {
+        parameters: {
+            query?: {
+                captured_at?: string;
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                quadrant?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBlockList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    blocks_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BlockCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Block"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    blocks_retrieve: {
+        parameters: {
+            query?: {
+                captured_at?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this block. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Block"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    blocks_versions_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this block. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedBlockVersionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    blocks_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this block. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GeometryPublicationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockVersion"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    blocks_suggestion_list: {
+        parameters: {
+            query: {
+                quadrant: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BlockSuggestion"][];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -3128,6 +3895,198 @@ export interface operations {
             };
         };
     };
+    quadrants_list: {
+        parameters: {
+            query?: {
+                captured_at?: string;
+                center?: string;
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedQuadrantList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    quadrants_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuadrantCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quadrant"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    quadrants_retrieve: {
+        parameters: {
+            query?: {
+                captured_at?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this quadrant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Quadrant"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    quadrants_versions_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this quadrant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedQuadrantVersionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    quadrants_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this quadrant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["QuadrantPublicationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuadrantWrite"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     review_items_list: {
         parameters: {
             query?: {
@@ -3490,6 +4449,199 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RuleParameterVersion"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    sampling_points_list: {
+        parameters: {
+            query?: {
+                block?: string;
+                captured_at?: string;
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                quadrant?: string;
+                /** @description A search term. */
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSamplingPointList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    sampling_points_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SamplingPointCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PointWrite"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    sampling_points_retrieve: {
+        parameters: {
+            query?: {
+                captured_at?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this sampling point. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SamplingPoint"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    sampling_points_versions_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this sampling point. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPointVersionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    sampling_points_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this sampling point. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PointPublicationRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PointWrite"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

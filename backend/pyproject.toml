@@ -15,6 +15,7 @@ dependencies = [
   "psycopg[binary]>=3.3.7,<3.4",
   "celery>=5.6.3,<5.7",
   "redis>=8.1.0,<8.2",
+  "shapely>=2.2.0,<2.3",
 ]
 
 [dependency-groups]
@@ -65,7 +66,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 # Explicit so import order is the same whether ruff runs from backend/ (CI) or the repo root (pre-commit).
-known-first-party = ["accounts", "catalogs", "config", "core", "field_sync", "organizations", "reviews", "rules", "shifts", "tests"]
+known-first-party = ["accounts", "catalogs", "config", "core", "field_sync", "geography", "organizations", "reviews", "rules", "shifts", "tests"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -97,7 +98,7 @@ django_settings_module = "config.settings.test"
 
 # Third-party packages without type information.
 [[tool.mypy.overrides]]
-module = ["celery.*", "environ.*", "factory.*"]
+module = ["celery.*", "environ.*", "factory.*", "shapely.*"]
 ignore_missing_imports = true
 
 # `strict = true` cannot be set per module, so the strict flags are listed one by one.
@@ -124,7 +125,7 @@ python_files = ["test_*.py"]
 addopts = "--strict-markers"
 
 [tool.coverage.run]
-source = ["accounts", "catalogs", "config", "core", "field_sync", "organizations", "reviews", "rules"]
+source = ["accounts", "catalogs", "config", "core", "field_sync", "geography", "organizations", "reviews", "rules"]
 omit = ["*/migrations/*", "config/wsgi.py", "config/asgi.py"]
 
 [tool.coverage.report]

@@ -19,10 +19,11 @@ delete. `GET /centers/` lists active assigned centers with id/code/name and exac
 `?code=`, search, ordering and page-number paging. Center creation is currently a
 platform ORM operation; #99 adds no center mutation endpoint.
 
-**Quadrant does not exist until #108.** Its scope ids are opaque UUID strings,
-validated only by UUID format. There is no current lookup proving quadrant existence
-or organization ownership. An id outside the actor's selected quadrant grant is
-still refused; future quadrant resources must use the same effective-scope service.
+Quadrants now exist in `geography` (#108). Selected ids in new configuration
+writes must resolve to that organization's real quadrants and, when centers are
+selected, to one of those centers. Existing opaque ids are not fabricated or
+auto-granted: unresolved old ids fail closed until an administrator replaces them.
+Geography uses the same paired effective grants for identities, relations and filters.
 
 `services.effective_scope` is the single authorization authority. Each active
 profile's scope intersects the membership's scope, and one such grant must cover
@@ -252,3 +253,11 @@ Round 1 local validation (base commit 1d03032; fixes uncommitted):
   unit run above avoids the unavailable database. Docker was not invoked.
 - manage.py check: passed. No dependencies, migrations, schema/client types,
   void-reason validation, commits or pushes were changed by this review round.
+
+## Geography permissions (#108)
+
+The existing grant-once seed adds quadrant.read, quadrant.publish and
+sampling_point.create to admin/coordinator; supervisor receives quadrant.read only.
+No other role receives geography authority. Revocations and ConfigurationRevision
+audits retain the #99 behavior. Geography writers lock Organization NO KEY UPDATE
+before Quadrant; waiting publishers re-check revisions after the winner commits.

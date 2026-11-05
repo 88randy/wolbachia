@@ -144,7 +144,10 @@ def filter_by_effective_scope(
         if queryset.model._meta.label_lower == "organizations.center"
         else ("center_id" if "center" in fields else None)
     )
-    quadrant_field = "quadrant_id" if "quadrant" in fields else None
+    center_field = getattr(queryset.model, "scope_center_lookup", center_field)
+    quadrant_field = getattr(
+        queryset.model, "scope_quadrant_lookup", "quadrant_id" if "quadrant" in fields else None
+    )
     allowed = Q(pk__in=[])
     lookups: tuple[tuple[Literal["centers", "quadrants"], str | None], ...] = (
         ("centers", center_field),

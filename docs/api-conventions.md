@@ -60,7 +60,7 @@ explicit per dimension: none denies, selected checks its UUID ids (empty denies)
 all requires an explicit grant. A new center never expands selected. Permissions,
 center and applicable quadrant must be covered by one effective profile grant
 intersected with the membership. Org-only configuration checks its action code.
-Quadrant ids remain format-validated opaque UUIDs until #108 supplies the model.
+Selected quadrant ids now resolve to real organization/center-owned geography rows (#108); unresolved legacy ids never grant new access.
 
 `GET/PATCH /organization/` reads or versions current name/timezone/languages/
 epi_week/label_phone/support_contact. PATCH requires expected_revision; there is no
@@ -100,3 +100,66 @@ OP03/OP04/MO02-MO04 bounds/defaults documented in rules/README.md. Fuel min must
 remain below max through scheduled transitions (400 fuel_bounds_conflict).
 R02/R03 retain organization-only rules, no backdating, historical evaluation and
 ETag/next_change_at refresh. No new sync events or result codes are added.
+
+
+## Geography editor (#108, B-11)
+
+All routes are under /api/v1. Organization is derived from membership, including
+pinned bearer device authentication; the web retains session cookie plus CSRF.
+No organization URL/body selector, risk color or permit authority is introduced.
+
+- GET/POST /quadrants/; GET /quadrants/{id}/. Creation takes {center,code,geometry}
+  and creates immutable identity plus revision 1. GET/POST /quadrants/{id}/versions/;
+  POST takes {geometry,expected_revision,point_resolutions?:[{point,decision,evidence,location?}]}.
+  Returns 201 {version,spacing_warnings}. The first publication of a platform-created
+  unversioned identity expects revision 0; HTTP-created identities start at 1.
+- GET/POST /blocks/; GET /blocks/{id}/. Creation takes {quadrant,code,geometry}.
+  GET/POST /blocks/{id}/versions/ append block polygons with {geometry,expected_revision}.
+  Blocks must initially fit the quadrant; a new block polygon cannot exclude active
+  points (409 unresolved_points). Existing block history survives a quadrant edit.
+- GET/POST /sampling-points/; GET /sampling-points/{id}/. Creation takes
+  {block,code,location:[lon,lat]}; GET/POST /sampling-points/{id}/versions/ relocates
+  with {expected_revision,location}. Writes return 201 {point,spacing_warnings}.
+  Point code and block never change; retired identities keep reserving their code.
+- GET /blocks/suggestion/?quadrant=<uuid> returns proposals with geometry, four
+  distinct interior points and requires_review=true; existing blocks are subtracted. Read-only; nothing is published.
+
+Lists/history use page-number paging; coded identities support exact scoped ?code=,
+search and ordering=code|created_at (descending with -). Quadrants filter center;
+blocks filter quadrant; sampling points filter quadrant/block. Foreign or ungranted
+filter references return 404, just like unknown references. Identity list/detail
+?captured_at=<ISO instant> projects the version active at capture (null before the
+first publication). The temporal selectors also resolve block and point history;
+latest current version is the highest revision, never an in-place overwrite.
+
+quadrant.read authorizes reads/suggestions; quadrant.publish creates quadrants,
+blocks and publishes polygons; sampling_point.create creates/relocates points.
+Admin/coordinator receive all three once; supervisor read only. Every applicable
+permission AND center AND quadrant must be covered by one existing effective
+profile/membership grant. Foreign organization/center/quadrant/block/point returns
+404 without disclosing existence; absent action codes default to 403. Scope creation
+requires an explicit quadrant all grant because a new UUID cannot be preselected.
+
+Polygon only, coordinates [lon,lat], finite WGS84 bounds, closed rings, valid holes;
+MultiPolygon/other types, self intersections and antimeridian-crossing polygons
+are 400 validation_error with fields.geometry/invalid_geometry. Boundary is inside.
+All outside active points need exactly one evidenced keep/move/remove decision.
+Move must enter the proposed quadrant; keep explicitly accepts an outside location;
+remove appends retirement, never deletes. Missing decisions return 409
+unresolved_points with safe blocked_by point ids from the authorized quadrant.
+Extra/duplicate decisions return 400 invalid_resolution_set; foreign points are 404.
+Every later polygon edit must resolve still-outside kept points again.
+
+Organization NO KEY UPDATE precedes Quadrant locks; authorization and revision are
+re-read inside that transaction. A stale expected_revision returns 409 stale_revision
+with safe blocked_by. Simultaneous valid publications serialize to one successor and
+one 409. Database lock timeout/deadlock is retryable 429 geography_in_progress with
+Retry-After: 1. No User/Device/Session/Token locks or external IO are taken below it.
+
+Spacing reads rules.selectors at check time: min_distance_same_block_m, default 50,
+bounds 10..200 metres. Distances strictly below it return spacing_below_minimum
+warnings ({point,distance_m,minimum_m}); equality after micrometre rounding is allowed. Haversine uses mean
+Earth radius 6371008.8 m, <=0.6% ellipsoid error. Keep/move publication also reports
+spacing warnings. No sync events/result codes change, so docs/sync.md and sync i18n
+remain unchanged. Error envelopes keep code/detail, fields only on 400 and safe
+blocked_by on 409. See geography/README.md for choices and acceptance mapping.
