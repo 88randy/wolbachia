@@ -261,3 +261,9 @@ sampling_point.create to admin/coordinator; supervisor receives quadrant.read on
 No other role receives geography authority. Revocations and ConfigurationRevision
 audits retain the #99 behavior. Geography writers lock Organization NO KEY UPDATE
 before Quadrant; waiting publishers re-check revisions after the winner commits.
+
+
+B-13 (#110) adds field.bootstrap to the seeded courier and admin bundles through
+the same once-only seed path as field_event.sync. Existing organizations upgrade
+with seed_organization_defaults --apply; later explicit revocations stay revoked.
+Admin carries the actual grant to preserve its explicit delegation ceiling.

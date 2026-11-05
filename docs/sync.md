@@ -295,3 +295,141 @@ Photos are not part of #5. The first epic that needs them (#9 relocation or #11 
 - **[PENDING client]** `clock_skew_review_seconds` value (a safety parameter, no seeded value).
 - Notifications of rejected or critical events: #49 (the review items already cover the supervisor's list).
 - `location.ping` frequency and retention: #8.
+
+
+## Bootstrap and projection recovery (B-13, #110)
+
+`GET /api/v1/field/bootstrap/` requires a live pinned device bearer token and
+`field.bootstrap`. Session cookies cannot authorize it. The organization comes
+from the authenticated membership/token, never URL/body. The once-only default
+permission seed adds the grant to existing seeded courier/admin profiles:
+`manage.py seed_organization_defaults --apply`; subsequent reruns preserve an
+administrator's later revocation. Admin includes it for explicit delegation.
+
+Response fields are `bundle_version`, `schema_version`, `generated_at`,
+`scope_revision`, `cursor`, `catalog_version`, `rules_version`, `next_change_at`,
+`map_manifest_ready`, followed by these fixed sections in order: `assignments`,
+`supplies`, `permits`, `eligibility`, `history`, `map_manifests`. Every section is
+present as a list, even when its dependency has no producer. Catalog/rules versions,
+due time, schema and map readiness are deliberate additions to the issue contract.
+`schema_version` is an opaque SHA-256 of the bundle contract version and registered
+producer key/schema versions: even an empty producer's schema change creates a
+new boundary. `bundle_version` is the canonical content SHA-256 excluding itself,
+`cursor` and `generated_at`; timestamps/signature renewals alone do not change it.
+
+The response uses `ETag: "<bundle_version>"`, `Cache-Control: private, no-cache`
+and `Vary: X-Organization`. `If-None-Match` yields 304 only after authentication
+and permission checks. Fetch at login, schema/bundle version changes and when
+`next_change_at` is due. Rules/catalogs use their existing snapshots; due rule
+transitions also change sync `changes.rules_version` and `changes.next_change_at`.
+Business evaluations use capture-time `get_values_in_force(device_time)` and keep
+their old values; receipt-time skew is the existing explicit exception (OP04).
+
+A phone MUST stage and atomically replace only server projections, deduplicating
+stable resource ids/versions. Drafts, recoverable unsent evidence and outbox are
+separate stores; a bundle receipt never owns, acknowledges or deletes pending
+events. On scope revocation, remove downloaded access but retain recoverable
+unsent evidence. After an invalid cursor, fetch bootstrap WITHOUT If-None-Match (a fresh cursor
+requires a 200 body), replace projections, then
+resend the same pending event ids with the new cursor. Ingest deduplicates them.
+[ASSUMPTION] Native atomic store integration is M-01; this backend exposes and
+tests the recovery contract, not actual phone storage.
+
+A revoked phone still has only its explicitly authorized one final sync upload:
+it gets empty reviews and all six typed arrays, null cursor/configuration versions
+and next_change_at, and false has_more. Bootstrap never consumes or grants that
+upload. No new operational effects are applied to in_review events here;
+authorized acceptance and applying effects once remain #22.
+
+## Cursor v2 and compatibility
+
+The signed payload is `{o, u, s, c, r}`: organization, courier, last delivered
+review sequence, last delivered CourierChange sequence, and scope revision hash.
+The revision hashes canonical EFFECTIVE membership/profile intersections with
+only the relevant permission codes (`field.bootstrap`, `field_event.sync`),
+keeping each action grant paired with both center and applicable quadrant scopes.
+None/empty denies; all must be explicit. Grants from different profiles never
+cross-combine. Scope is computed, not stored on the courier.
+
+Missing c/r (v1), malformed, expired, foreign-owner or scope-mismatched tokens
+return 400 invalid_cursor before any events in that request are ingested.
+[ASSUMPTION] No production phone holds v1. Rollout requires regenerating clients
+and supporting invalid_cursor -> bootstrap -> retry before deploying cursor v2.
+Existing stored events/review items are unchanged; the new feed starts empty.
+No token means an initial pull from both sequences zero. Bootstrap sets s=0 for
+review-id replay/deduplication and c=max at its locked snapshot boundary.
+
+Sync preserves its existing fields/result order and adds six typed arrays under
+`changes`, each entry `{sequence, action, resource_type, resource_id,
+resource_version, data}`. Action is upsert or remove; remove data is empty.
+It also adds nullable `changes.next_change_at`. field_event.sync gates upload and
+review pull; field.bootstrap governs downloadable domain projections in BOTH the
+snapshot and typed feed. A sync-only profile receives no typed projection rows.
+This shared projection scope is essential: c=max from bootstrap must never skip
+rows exposed only by a different action grant in sync. Both feeds independently page at
+API_CURSOR_PAGE_SIZE, advancing s/c only to the last delivered row in that feed.
+has_more is true if either feed has another visible row. Replaying an older cursor
+may repeat entries: clients deduplicate by resource/version and review id.
+
+## Bundle producer registry and EVERY change writer
+
+Owning apps register `BundleProducer(key, schema_version, build, serializer)` via
+`field_sync.producers.register()` in AppConfig.ready(). Allowed keys are exactly
+the six fixed sections; duplicate or unknown keys raise ImproperlyConfigured.
+`build(ctx)` returns a deterministic list of dictionaries, using ctx.organization,
+ctx.user, ctx.scope (paired EffectiveScope), ctx.now and ctx.permission. It MUST
+filter by organization, courier assignment and both applicable scope dimensions.
+Every raw row also carries `organization_id`, `center_id`, `quadrant_id` metadata
+(null dimension only when genuinely inapplicable). The infrastructure checks
+ownership/scope again BEFORE serializer projection. Metadata need not be exposed
+by the producer serializer. Missing ownership metadata fails closed. The serializer
+validates each emitted payload; invalid producer output is a configuration error.
+Future dependency PRs must publish concrete section schemas and bump producer
+schema_version whenever they change them. Current absent-domain sections are
+open object arrays in OpenAPI; no invented domain payload/handler is claimed.
+
+Map producers use MapManifestSerializer (or a subclass), with
+`{asset_id, version, sha256, size_bytes, quadrant_id, licensed}`. They must include every required assigned asset, including failures; omitting one
+while returning other complete assets would falsely imply readiness. Report
+failed/unavailable assets with incomplete metadata (empty sha256/version or zero
+size) or an empty section. Missing/incomplete/unlicensed assets keep
+map_manifest_ready=false. True means server metadata is complete, not that the
+phone has downloaded and verified it; native readiness also requires local
+licensed asset/hash verification. No network/storage/tile downloads run here.
+
+EVERY CourierChange writer must use this sequence, in one database transaction:
+
+1. Honor existing User -> Device -> DeviceSession -> TokenPair lock ordering.
+2. Call field_sync.services.lock_courier_batches(batch) before domain locks/writes.
+3. Write the domain projection and call append_courier_change(batch, ChangeInput(...))
+   before committing; kind must have a registered producer. The service validates
+   schema/scope/action and allocates max+1 for the organization/courier.
+4. Keep the lock through commit. Never allocate outside it, publish later from an
+   on_commit callback, use timestamp watermarks, or perform network/storage/mail
+   under the lock. Revocation appends remove, never UPDATE/DELETE.
+
+A transaction-local connection marker guards append and rolls back with savepoints;
+it cannot authorize a later transaction. CourierChange uses OrgScopedModel and
+ImmutableMixin, a positive unique organization/courier/sequence constraint and
+PostgreSQL insert-only trigger. Bootstrap reads max, builds every section and
+issues its cursor in ONE transaction under that same try-lock. Sync captures one effective context under the courier lock, validates scope,
+ingests and pulls with that SAME context/revision inside the transaction. It must
+not recompute r after ingest: a concurrent configuration commit must leave the
+issued old revision detectable on the next pull, requiring bootstrap to remove
+revoked projections. Thus no compliant writer can commit
+a sequence behind an already-issued cursor. Try-lock/lock-timeout contention maps
+to retryable 429 sync_in_progress with Retry-After; the request has no partial effect.
+
+## Bootstrap / cursor error table
+
+| HTTP | code | Recovery / effect |
+| --- | --- | --- |
+| 400 | invalid_cursor | No ingest. Bootstrap, preserve drafts/outbox, retry pending ids. Includes v1/expired/scope change. |
+| 401 | not_authenticated / invalid_token / token_expired | Obtain a live device session; session cookie alone is insufficient. |
+| 401 | session_revoked | No bootstrap; existing final-upload rules apply only to sync. |
+| 403 | permission_denied / no_active_membership | No entitlement; refresh membership permissions. A 304 never bypasses this. |
+| 429 | sync_in_progress | Retry after Retry-After; no partial writes or cursor advancement. |
+
+These are existing batch/auth codes, not new event result codes. Locale catalogs
+are unchanged. Foreign producer rows and changes are omitted without revealing
+object existence; this adds no admin list/void/dependent-correction workflow.

@@ -1,12 +1,27 @@
+import json
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any
 
+from django.conf import settings
+from django.db.models import Max, Q
+from rest_framework.exceptions import PermissionDenied
+
 from catalogs.selectors import build_catalog_snapshot
-from core.time import server_now
+from core.snapshots import snapshot_hash
 from field_sync.cursor import ChangesCursor, encode_cursor
 from field_sync.envelope import BatchContext
-from field_sync.models import FieldEvent
+from field_sync.models import CourierChange, FieldEvent
+from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
+from field_sync.producers import (
+    ProducerContext,
+    build_sections,
+    bundle_schema_version,
+    map_manifests_ready,
+)
+from organizations.models import Membership
+from organizations.scope import Dimension
+from organizations.services import effective_scope
 from reviews.models import ReviewItem
 from reviews.selectors import list_courier_reviews
 from rules.selectors import build_rules_snapshot
@@ -58,24 +73,141 @@ class Changes:
     catalog_version: str | None = None
     rules_version: str | None = None
     has_more: bool = False
+    next_change_at: str | None = None
+    assignments: list[dict[str, Any]] = field(default_factory=list)
+    supplies: list[dict[str, Any]] = field(default_factory=list)
+    permits: list[dict[str, Any]] = field(default_factory=list)
+    eligibility: list[dict[str, Any]] = field(default_factory=list)
+    history: list[dict[str, Any]] = field(default_factory=list)
+    map_manifests: list[dict[str, Any]] = field(default_factory=list)
 
 
-def build_changes(batch: BatchContext, cursor: ChangesCursor) -> Changes:
-    """What the phone has not seen yet: its review items after the cursor, and the versions of
-    the catalog and rules snapshots (the phone refreshes them when they changed).
-
-    Scoped to the batch's organization and user. At most one page (`API_CURSOR_PAGE_SIZE`);
-    `has_more` tells the phone to pull again. Call it inside the courier's batch lock (see
-    `field_sync.services.sync_batch`): that is what makes the strict cursor gap-free.
-    """
-    organization, user = batch.organization, batch.user
-    page = list_courier_reviews(organization, user, cursor.sequence)
-    if page.items:
-        cursor = ChangesCursor(page.items[-1].courier_sequence)
-    return Changes(
-        cursor=encode_cursor(organization.pk, user.pk, cursor),
-        reviews=page.items,
-        catalog_version=str(build_catalog_snapshot(organization)["version"]),
-        rules_version=str(build_rules_snapshot(organization, server_now())["version"]),
-        has_more=page.has_more,
+def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
+    """Compute paired grants from the current active membership, never a body selector."""
+    membership = (
+        Membership.objects.select_related("user", "organization")
+        .filter(organization=batch.organization, user=batch.user, is_active=True)
+        .first()
     )
+    if membership is None:
+        raise PermissionDenied
+    scope = effective_scope(membership)
+    if not scope.allows(permission):
+        raise PermissionDenied
+    return ProducerContext(batch.organization, batch.user, scope, batch.received_at, permission)
+
+
+def scope_revision(ctx: ProducerContext) -> str:
+    """Canonical effective grants: action and both dimensions stay paired (SA02)."""
+    relevant = {FIELD_BOOTSTRAP, FIELD_EVENT_SYNC}
+    grants = [
+        {"permissions": sorted(codes & relevant), "scope": scope}
+        for codes, scope in ctx.scope.grants
+        if codes & relevant
+    ]
+    unique = {json.dumps(grant, sort_keys=True, separators=(",", ":")) for grant in grants}
+    return snapshot_hash({"grants": [json.loads(grant) for grant in sorted(unique)]})
+
+
+def latest_change_sequence(batch: BatchContext) -> int:
+    value = (
+        CourierChange.objects.for_org(batch.organization)
+        .filter(courier=batch.user)
+        .aggregate(last=Max("sequence"))["last"]
+    )
+    return int(value or 0)
+
+
+def _change_scope_filter(ctx: ProducerContext) -> Q:
+    allowed = Q(pk__in=[])
+    for codes, scope in ctx.scope.grants:
+        if ctx.permission not in codes:
+            continue
+        grant = Q(pk__isnull=False)
+        bounds: tuple[tuple[Dimension, str], ...] = (
+            (scope["centers"], "center_id"),
+            (scope["quadrants"], "quadrant_id"),
+        )
+        for bound, key in bounds:
+            if bound["mode"] != "all":
+                ids = bound["ids"] if bound["mode"] == "selected" else []
+                grant &= Q(**{f"scope__{key}": None}) | Q(**{f"scope__{key}__in": ids})
+        allowed |= Q(scope__isnull=True) | grant
+    return allowed
+
+
+def list_courier_changes(ctx: ProducerContext, after: int) -> tuple[list[CourierChange], bool]:
+    rows = list(
+        CourierChange.objects.for_org(ctx.organization)
+        .filter(_change_scope_filter(ctx), courier=ctx.user, sequence__gt=after)
+        .order_by("sequence")[: settings.API_CURSOR_PAGE_SIZE + 1]
+    )
+    return rows[: settings.API_CURSOR_PAGE_SIZE], len(rows) > settings.API_CURSOR_PAGE_SIZE
+
+
+def _typed_changes(rows: list[CourierChange]) -> dict[str, list[dict[str, Any]]]:
+    from field_sync.producers import SECTION_KEYS
+
+    sections: dict[str, list[dict[str, Any]]] = {key: [] for key in SECTION_KEYS}
+    for row in rows:
+        sections[row.kind].append(
+            {
+                "sequence": row.sequence,
+                "action": row.action,
+                "resource_type": row.resource_type,
+                "resource_id": row.resource_id,
+                "resource_version": row.resource_version,
+                "data": row.payload,
+            }
+        )
+    return sections
+
+
+def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerContext) -> Changes:
+    """Read both streams under the courier lock; advance each only to its last delivered row."""
+    page = list_courier_reviews(batch.organization, batch.user, cursor.sequence)
+    rows, has_more = list_courier_changes(
+        replace(ctx, permission=FIELD_BOOTSTRAP), cursor.change_sequence
+    )
+    position = replace(
+        cursor,
+        sequence=page.items[-1].courier_sequence if page.items else cursor.sequence,
+        change_sequence=rows[-1].sequence if rows else cursor.change_sequence,
+        scope_revision=scope_revision(ctx),
+    )
+    rules = build_rules_snapshot(batch.organization, batch.received_at)
+    return Changes(
+        cursor=encode_cursor(batch.organization.pk, batch.user.pk, position),
+        reviews=page.items,
+        catalog_version=str(build_catalog_snapshot(batch.organization)["version"]),
+        rules_version=str(rules["version"]),
+        next_change_at=rules["next_change_at"],
+        has_more=page.has_more or has_more,
+        **_typed_changes(rows),
+    )
+
+
+def build_bootstrap(batch: BatchContext) -> dict[str, Any]:
+    """Materialize the entire bundle and cursor while holding the courier transaction lock."""
+    ctx = producer_context(batch, FIELD_BOOTSTRAP)
+    position = latest_change_sequence(batch)
+    sections = build_sections(ctx)
+    rules = build_rules_snapshot(batch.organization, batch.received_at)
+    revision = scope_revision(ctx)
+    payload = {
+        "schema_version": bundle_schema_version(),
+        "scope_revision": revision,
+        "catalog_version": build_catalog_snapshot(batch.organization)["version"],
+        "rules_version": rules["version"],
+        "next_change_at": rules["next_change_at"],
+        "map_manifest_ready": map_manifests_ready(sections["map_manifests"]),
+        **sections,
+    }
+    return {
+        "bundle_version": snapshot_hash(payload),
+        **payload,
+        "generated_at": batch.received_at,
+        "cursor": encode_cursor(
+            batch.organization.pk, batch.user.pk, ChangesCursor(0, position, revision)
+        ),
+    }
