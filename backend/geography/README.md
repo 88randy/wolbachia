@@ -1,0 +1,121 @@
+# geography
+
+B-11 (#108): scoped, versioned quadrants, blocks and sampling points. Read
+../README.md, ../organizations/README.md (scope, Center and lock order) and
+../../docs/api-conventions.md first. No web, fleet, sync effect or deployment work.
+
+## Geometry and decisions
+
+Owner decisions applied: no django.contrib.gis/GDAL/PostGIS. Store GeoJSON in
+JSONField and use the already locked Shapely 2.2.0/GEOS wheel. Polygon only,
+[longitude,latitude], finite WGS84 bounds, explicit closed rings, holes validated
+with is_valid/explain_validity. Boundary counts as inside; hole interiors do not.
+Refuse antimeridian-crossing polygons (longitude span >180 degrees); never silently
+reinterpret them. geometry.py is a small pure module with no Django/DB access.
+
+Distances use haversine on a mean-radius sphere (6371008.8 m). The documented
+approximation is <=0.6% relative to WGS84 ellipsoidal distance, including 10..200 m
+spacing comparisons (up to 1.2 m at 200 m). Conservative bound derived from
+NGA WGS84 a=6378137 m, 1/f=298.257223563: principal curvature radii lie in
+[6335439.327,6399593.626] m, so max(R/min_radius-1,1-R/max_radius)<0.00562.
+The same uniform metric bounds apply to shortest path lengths; round up to 0.6%.
+This bound is a derivation, not an assertion of surveyed field accuracy.
+Polygon containment/suggestions treat
+lon/lat segments as planar, appropriate for local blocks, not geodesic boundaries.
+Suggestions subtract existing blocks, then split the largest polygon pieces and take representative interior
+points: four distinct review candidates, no publication and no permit/risk fields.
+Shapely has no shipped stubs in this runtime; the sole mypy missing-import override
+is shapely.*. No additional dependency is added.
+
+Verified official APIs:
+- https://shapely.readthedocs.io/en/stable/manual.html (2.2.0, validity, covers,
+  representative_point and constructive geometry).
+- https://earth-info.nga.mil/index.php?action=wgs84&dir=wgs84 (WGS84 defining parameters).
+- https://shapely.readthedocs.io/en/stable/installation.html (binary wheels bundle GEOS).
+- https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update
+- https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-ROWS
+
+## Identity, authorization and writes
+
+Quadrant has an organization-unique code and Center FK; Block belongs to Quadrant;
+SamplingPoint has a fixed organization-unique code and block. All are immutable.
+QuadrantVersion/BlockVersion/PointVersion and ExcludedPointResolution append author,
+organization and timestamps. ORM immutability plus PostgreSQL UPDATE/DELETE triggers
+protect history and identities. No original FieldEvent status is touched.
+
+Reuse organizations.services.effective_scope and the shared queryset filter;
+model scope lookup paths retain the paired center AND quadrant grant. Both relation
+fields and service checks return 404 for foreign/ungranted ids. Configuration writes
+now validate real quadrant ids; no migration fabricates opaque legacy assignments.
+Permission catalog: quadrant.read, quadrant.publish, sampling_point.create. The
+existing grant-once ConfigurationRevision seed gives admin/coordinator all three,
+supervisor read only, preserves revocations and custom roles, and adds no bypass.
+
+Race invariant: all writes serialize on Organization FOR NO KEY UPDATE before
+Quadrant FOR UPDATE, then descendants; authorization is refreshed after locking.
+This retains #99's FK lock compatibility and privilege-removal serialization.
+Waiting publications compare expected_revision after the winner commits, yielding
+one successor and one 409. A database lock timeout/deadlock maps to retryable 429.
+No network/storage/mail or later authentication locks run in the transaction.
+
+A polygon publication atomically resolves ALL active points outside the new
+geometry. keep accepts the old location explicitly, move must enter the new
+quadrant, remove appends is_retired=true. Evidence is nonblank, <=1000 characters.
+Duplicate/extra decisions are rejected; missing decisions list safe authorized
+point blockers. Retired codes remain reserved. Later edits must resolve still-outside
+kept points again. Block revisions refuse excluded active points; relocate them
+before shrinking a block. All publish comparisons use the highest revision.
+
+Spacing uses rules.selectors.get_values_in_force at check time (default 50 m,
+10..200 bounds); distances rounded to micrometres strictly below the threshold warn, never prevent an otherwise valid publication.
+Current/temporal reads project by effective_from with revision/version tie-breaks;
+use quadrant_version_at(quadrant,captured_at) for retained visit geometry. Callers
+must first resolve the identity through the scoped selector. Effective instants
+are server receipt instants; no backdating API or client clock defines publication.
+
+## Acceptance and validation
+
+All new issue cases live in ../tests/test_geography_b_11.py:
+
+| Criterion | Test |
+| --- | --- |
+| 1: geometry, exhaustive decisions, retained history | test_geometry_refuses_invalid_or_unsupported_coordinates; test_outside_points_require_exhaustive_evidenced_decisions_and_keep_history; test_keep_is_explicit_and_move_must_enter_geometry; test_invalid_resolution_decisions_leave_publication_untouched |
+| 2: one concurrent successor | test_simultaneous_publications_create_one_successor_and_one_conflict (Postgres, two threads + barrier; commit-gated retry only on 429) |
+| 3: identity, spacing, suggestions | test_fixed_codes_are_unique_per_organization_across_blocks; test_spacing_reads_the_current_rule_at_check_time; test_suggestions_are_read_only_and_exclude_existing_blocks; test_geometry_holes_boundary_and_four_review_candidates; test_metric_distance_handles_dateline_and_spacing_boundary; test_spacing_checks_just_below_equal_and_above_each_configured_boundary (10/50/200 m) |
+| 4: wiring | test_endpoint_default_deny_and_foreign_org_center_quadrant_isolation; test_exported_geography_contract_matches_live_schema; schema validation/export command |
+
+The existing test_seed_defaults bundle contract includes the three new codes;
+the existing seed revocation behavior is reused. No duplicate framework tests.
+Run the PostgreSQL suite in the orchestrator's isolated compose project, never
+host 5432. This agent cannot run Docker/PostgreSQL. DB-free checks use the worktree
+.venv with DATABASE_URL pointing to unused 55499, DJANGO_READ_DOT_ENV_FILE=false.
+Run pytest tests/test_geography_b_11.py -m 'not django_db', ruff check/format,
+mypy and spectacular --validate --fail-on-warn. The orchestrator runs
+npm run api:generate and verifies a second run is clean; never hand-edit generated
+TypeScript. GitHub issue lookup returned HTTP 401; supplied full issue is the spec.
+
+## Local handoff (2026-11-05)
+
+- Branch feat/108-geography; no commit/push/PR/merge/deployment or applied migration.
+- Existing Shapely additions in pyproject.toml/uv.lock were preserved. No other dependency.
+- Locked worktree runtime: Django 5.2.19, DRF 3.18.3, spectacular 0.30.0, Shapely 2.2.0.
+- .venv/Scripts/python.exe -m mypy .: passed, 147 files.
+- pytest tests/test_geography_b_11.py tests/test_organizations_b_01.py
+  tests/test_rule_contract.py -m 'not django_db' -q: 27 passed, 38 deselected;
+  9 passing geography cases and 13 unexecuted geography PostgreSQL cases.
+- Geography plus seed tests collect: 74 cases. Added seed cases cover upgrades and
+  retained revocations for admin, coordinator and supervisor through existing seeds.
+- ruff 0.8.4 check backend: passed. Format check on the 18 changed Python modules:
+  passed. Full backend format check reports only existing tests/test_motorcycle_services.py
+  (outside this issue). uvx --offline ruff@0.17.3 --version failed because the sandbox
+  denies writing its interpreter cache; no cache relocation or other workaround attempted.
+  Run the pinned 0.17.3 linter/formatter in the orchestrator environment.
+- manage.py check: passed. makemigrations --check --dry-run: no model changes detected;
+  database migration-history consistency could not connect to isolated port 55499.
+  No host 5432 connection, Docker invocation or PostgreSQL test was performed.
+- spectacular --validate --fail-on-warn with dev settings: passed, zero warnings.
+  Committed OpenAPI matches the live geography paths/components in the unit check.
+  src/generated/schema.ts still requires the owner's npm run api:generate; it was not
+  hand-edited. No installed JavaScript tool or client build is claimed.
+- git diff --check: passed. GitHub issue lookup returned HTTP 401; the owner's full
+  supplied issue and decisions were used, not a claimed current GitHub inventory.

@@ -220,6 +220,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, MOTORCYCLE_READ}
     assert by_slug["supervisor"] == {
+        "quadrant.read",
         *reader,
         REVIEW_ITEM_READ,
         SHIFT_READ,
@@ -227,7 +228,16 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_UNBLOCK,
     }
     assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
+    assert by_slug["coordinator"] == {
+        *reader,
+        "quadrant.read",
+        "quadrant.publish",
+        "sampling_point.create",
+    }
     assert by_slug["admin"] == {
+        "quadrant.read",
+        "quadrant.publish",
+        "sampling_point.create",
         FIELD_EVENT_SYNC,
         "portal.read",
         "organization.read",
@@ -446,6 +456,9 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
         ("supervisor", MOTORCYCLE_UNBLOCK),
         ("admin", MOTORCYCLE_MANAGE),
         ("admin", MOTORCYCLE_UNBLOCK),
+        ("admin", "quadrant.publish"),
+        ("coordinator", "sampling_point.create"),
+        ("supervisor", "quadrant.read"),
     ],
 )
 def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_existed(
@@ -474,6 +487,9 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
         ("courier", MOTORCYCLE_READ),
         ("admin", MOTORCYCLE_MANAGE),
         ("admin", MOTORCYCLE_UNBLOCK),
+        ("admin", "quadrant.publish"),
+        ("coordinator", "sampling_point.create"),
+        ("supervisor", "quadrant.read"),
     ],
 )
 def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str) -> None:

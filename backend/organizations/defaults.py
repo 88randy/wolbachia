@@ -19,6 +19,7 @@ from catalogs.permissions import (
 )
 from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
 from field_sync.permissions import FIELD_EVENT_SYNC
+from geography.permissions import GEOGRAPHY_WRITE_CODES, QUADRANT_READ
 from organizations.models import Organization, Profile
 from reviews.permissions import REVIEW_ITEM_READ
 from rules.permissions import (
@@ -34,6 +35,7 @@ from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UN
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    *GEOGRAPHY_WRITE_CODES,
     FIELD_EVENT_SYNC,
     "portal.read",
     "organization.read",
@@ -60,6 +62,7 @@ ADMIN_CODES = (
 COURIER_CODES = (*READ_ONLY_CODES, FIELD_EVENT_SYNC, MOTORCYCLE_READ)  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    QUADRANT_READ,
     *READ_ONLY_CODES,
     REVIEW_ITEM_READ,
     SHIFT_READ,
@@ -73,7 +76,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "entomologist": READ_ONLY_CODES,
     "community_promoter": READ_ONLY_CODES,
     "admin": ADMIN_CODES,
-    "coordinator": READ_ONLY_CODES,
+    "coordinator": (*READ_ONLY_CODES, *GEOGRAPHY_WRITE_CODES),
     "warehouse": READ_ONLY_CODES,
     "regulatory": READ_ONLY_CODES,
     "government": ("portal.read",),

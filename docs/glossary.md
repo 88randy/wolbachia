@@ -15,10 +15,11 @@ Rules:
 | ovitrampa | ovitrap | `ovitrap` | Trap that holds the egg paddle. Models `Ovitrap`, `OvitrapReading`; sync events `ovitrap.place|check|replace|relocate|remove`. |
 | papeleta | egg paddle | `/egg-paddles/`, `paddle_present`, `paddle_type` | The courier only records presence and Yes/No eggs; never a count (decision 14). |
 | ¿tiene huevos? | has eggs | `has_eggs` (`bool`, `null` when there is no paddle) | Yes/No by the courier; the egg count is the entomologist's (web). |
-| folio | sampling point code | `/sampling-points/`, `code` on `sampling_point` [ASSUMPTION] | Fixed human code of a sampling point (e.g. OV-010). |
-| punto de muestreo | sampling point | `sampling_point` | Has a code (folio). |
-| manzana | block | `/blocks/`, `block` | City block that groups sampling points. |
-| cuadrante | quadrant | `/quadrants/`, `quadrant` | Work area assigned to a courier; versioned. |
+| folio | sampling point code | `/sampling-points/`, `code` on `SamplingPoint` | Fixed organization-unique sampling point code, retained across all location versions (e.g. OV-010). |
+| punto de muestreo | sampling point | `sampling_point` | Immutable identity (code/folio and block); PointVersion appends location and retirement history. |
+| manzana | block | `/blocks/`, `block` | Organization-coded child of a quadrant; BlockVersion appends polygon history. |
+| cuadrante | quadrant | `/quadrants/`, `quadrant` | Organization-coded work area belonging to a Center; QuadrantVersion is append-only. Current geometry is the highest revision; captured_at resolves past geometry. |
+| resoluci?n de punto excluido | excluded point resolution | `ExcludedPointResolution`, `point_resolutions` | Authored keep/move/remove decision with evidence for every point outside a proposed quadrant geometry; remove appends a retired PointVersion. |
 | jornada | shift | `/shifts/`, `shift` | Courier's work day, from start to closing. |
 | lectura desfasada | lagged reading | `is_lagged` | Reading outside the expected interval (rule from rule parameters). |
 | hallazgo | finding | `finding` | Result noted when checking an ovitrap. |

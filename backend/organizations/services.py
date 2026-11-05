@@ -247,9 +247,17 @@ def _actor_scope(actor: User, organization: Organization, permission: str) -> Ef
 
 
 def validate_scope_references(organization: Organization, scope: WorkScope) -> None:
-    """Quadrants are opaque UUIDs until #108; centers must exist in this organization."""
+    """Selected centers and real quadrants must belong to the active organization."""
+    from geography.models import Quadrant
+
     ids = scope["centers"]["ids"]
     if Center.objects.filter(organization=organization, pk__in=ids).count() != len(ids):
+        raise NotFound
+    quadrant_ids = scope["quadrants"]["ids"]
+    quadrants = Quadrant.objects.filter(organization=organization, pk__in=quadrant_ids)
+    if scope["centers"]["mode"] != "all":
+        quadrants = quadrants.filter(center_id__in=ids)
+    if quadrants.count() != len(quadrant_ids):
         raise NotFound
 
 

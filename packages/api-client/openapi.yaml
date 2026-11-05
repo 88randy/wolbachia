@@ -146,6 +146,266 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/blocks/:
+    get:
+      operationId: blocks_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - blocks
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBlockList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: blocks_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - blocks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BlockCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/blocks/{id}/:
+    get:
+      operationId: blocks_retrieve
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this block.
+        required: true
+      tags:
+      - blocks
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Block'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/blocks/{id}/versions/:
+    get:
+      operationId: blocks_versions_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this block.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - blocks
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBlockVersionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: blocks_versions_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this block.
+        required: true
+      tags:
+      - blocks
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GeometryPublicationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BlockVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/blocks/suggestion/:
+    get:
+      operationId: blocks_suggestion_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - blocks
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/BlockSuggestion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/catalogs/:
     get:
       operationId: catalogs_list
@@ -1543,6 +1803,229 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/quadrants/:
+    get:
+      operationId: quadrants_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - quadrants
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQuadrantList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: quadrants_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - quadrants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuadrantCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quadrant'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/quadrants/{id}/:
+    get:
+      operationId: quadrants_retrieve
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this quadrant.
+        required: true
+      tags:
+      - quadrants
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quadrant'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/quadrants/{id}/versions/:
+    get:
+      operationId: quadrants_versions_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this quadrant.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - quadrants
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedQuadrantVersionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: quadrants_versions_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this quadrant.
+        required: true
+      tags:
+      - quadrants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuadrantPublicationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuadrantWrite'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/review-items/:
     get:
       operationId: review_items_list
@@ -2035,6 +2518,234 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/sampling-points/:
+    get:
+      operationId: sampling_points_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: block
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - sampling-points
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSamplingPointList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: sampling_points_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - sampling-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SamplingPointCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointWrite'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/sampling-points/{id}/:
+    get:
+      operationId: sampling_points_retrieve
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: captured_at
+        schema:
+          type: string
+          format: date-time
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this sampling point.
+        required: true
+      tags:
+      - sampling-points
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SamplingPoint'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/sampling-points/{id}/versions/:
+    get:
+      operationId: sampling_points_versions_list
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this sampling point.
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - sampling-points
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPointVersionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: sampling_points_versions_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this sampling point.
+        required: true
+      tags:
+      - sampling-points
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PointPublicationRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PointWrite'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/shifts/:
     get:
       operationId: shifts_list
@@ -2191,6 +2902,201 @@ components:
     BlankEnum:
       enum:
       - ''
+    Block:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+        current_version:
+          allOf:
+          - $ref: '#/components/schemas/BlockVersion'
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - created_by
+      - current_version
+      - id
+      - quadrant
+    BlockCreateRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        quadrant:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+      required:
+      - code
+      - geometry
+      - quadrant
+    BlockSuggestion:
+      type: object
+      properties:
+        quadrant:
+          type: string
+          format: uuid
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+        points:
+          type: array
+          items:
+            type: array
+            items:
+              type: number
+            minItems: 2
+            maxItems: 2
+          maxItems: 4
+          minItems: 4
+        requires_review:
+          type: boolean
+      required:
+      - geometry
+      - points
+      - quadrant
+      - requires_review
+    BlockVersion:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        block:
+          type: string
+          format: uuid
+          readOnly: true
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - block
+      - created_at
+      - created_by
+      - effective_from
+      - geometry
+      - id
+      - revision
     BlockedReasonEnum:
       enum:
       - severe_check
@@ -2399,6 +3305,16 @@ components:
         * `ok` - Ok
         * `minor` - Minor
         * `severe` - Severe
+    DecisionEnum:
+      enum:
+      - keep
+      - move
+      - remove
+      type: string
+      description: |-
+        * `keep` - keep
+        * `move` - move
+        * `remove` - remove
     Device:
       type: object
       description: Read-only view of a device for administrators (W67).
@@ -2498,6 +3414,83 @@ components:
         * `accepted` - Accepted
         * `rejected` - Rejected
         * `in_review` - In Review
+    ExcludedPointResolution:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        point:
+          type: string
+          format: uuid
+          readOnly: true
+        point_version:
+          type: string
+          format: uuid
+          readOnly: true
+        decision:
+          allOf:
+          - $ref: '#/components/schemas/DecisionEnum'
+          readOnly: true
+        evidence:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - decision
+      - evidence
+      - id
+      - point
+      - point_version
+    GeometryPublicationRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+      required:
+      - expected_revision
+      - geometry
     GpsRequest:
       type: object
       properties:
@@ -2996,6 +3989,52 @@ components:
       - slug
       - support_contact
       - timezone
+    PaginatedBlockList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Block'
+    PaginatedBlockVersionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockVersion'
     PaginatedCatalogItemList:
       type: object
       required:
@@ -3134,6 +4173,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Motorcycle'
+    PaginatedPointVersionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PointVersion'
     PaginatedProfileList:
       type: object
       required:
@@ -3157,6 +4219,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Profile'
+    PaginatedQuadrantList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Quadrant'
+    PaginatedQuadrantVersionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuadrantVersion'
     PaginatedReviewItemList:
       type: object
       required:
@@ -3222,6 +4330,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/RuleParameterVersion'
+    PaginatedSamplingPointList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SamplingPoint'
     PaginatedShiftList:
       type: object
       required:
@@ -3336,6 +4467,108 @@ components:
         support_contact:
           type: string
           maxLength: 200
+    PointPublicationRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+        location:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+      required:
+      - expected_revision
+      - location
+    PointResolutionRequest:
+      type: object
+      properties:
+        point:
+          type: string
+          format: uuid
+        decision:
+          $ref: '#/components/schemas/DecisionEnum'
+        evidence:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        location:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+      required:
+      - decision
+      - evidence
+      - point
+    PointVersion:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        point:
+          type: string
+          format: uuid
+          readOnly: true
+        location:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+          readOnly: true
+        version:
+          type: integer
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+        is_retired:
+          type: boolean
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - effective_from
+      - id
+      - is_retired
+      - location
+      - point
+      - version
+    PointWrite:
+      type: object
+      properties:
+        point:
+          $ref: '#/components/schemas/SamplingPoint'
+        spacing_warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpacingWarning'
+      required:
+      - point
+      - spacing_warnings
     Profile:
       type: object
       description: |-
@@ -3402,6 +4635,209 @@ components:
       - expected_revision
       - permissions
       - scope
+    Quadrant:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+        current_version:
+          allOf:
+          - $ref: '#/components/schemas/QuadrantVersion'
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - center
+      - code
+      - created_at
+      - created_by
+      - current_version
+      - id
+    QuadrantCreateRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        center:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+      required:
+      - center
+      - code
+      - geometry
+    QuadrantPublicationRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+        point_resolutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/PointResolutionRequest'
+      required:
+      - expected_revision
+      - geometry
+    QuadrantVersion:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Polygon
+            coordinates:
+              type: array
+              items:
+                type: array
+                items:
+                  type: array
+                  items:
+                    type: number
+                  minItems: 2
+                  maxItems: 2
+                minItems: 4
+              minItems: 1
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        point_resolutions:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExcludedPointResolution'
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - effective_from
+      - geometry
+      - id
+      - point_resolutions
+      - quadrant
+      - revision
+    QuadrantWrite:
+      type: object
+      properties:
+        version:
+          $ref: '#/components/schemas/QuadrantVersion'
+        spacing_warnings:
+          type: array
+          items:
+            $ref: '#/components/schemas/SpacingWarning'
+      required:
+      - spacing_warnings
+      - version
     RefreshRequest:
       type: object
       properties:
@@ -3701,6 +5137,75 @@ components:
       - next_change_at
       - parameters
       - version
+    SamplingPoint:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        block:
+          type: string
+          format: uuid
+          readOnly: true
+        current_version:
+          allOf:
+          - $ref: '#/components/schemas/PointVersion'
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - block
+      - code
+      - created_at
+      - created_by
+      - current_version
+      - id
+    SamplingPointCreateRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        block:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        location:
+          type: array
+          items:
+            type: number
+          minItems: 2
+          maxItems: 2
+      required:
+      - block
+      - code
+      - location
     ScopeDimension:
       type: object
       properties:
@@ -3924,6 +5429,25 @@ components:
       - value
       - value_type
       - version_id
+    SpacingWarning:
+      type: object
+      properties:
+        code:
+          type: string
+        point:
+          type: string
+          format: uuid
+        distance_m:
+          type: number
+          format: double
+        minimum_m:
+          type: number
+          format: double
+      required:
+      - code
+      - distance_m
+      - minimum_m
+      - point
     StatusEnum:
       enum:
       - scheduled
@@ -4112,6 +5636,10 @@ components:
       properties:
         reason:
           type: string
+        point:
+          type: string
+          format: uuid
+          description: Authorized geography point requiring a resolution, when applicable.
         unblocked_by_role:
           type: string
         link:
