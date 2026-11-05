@@ -7,25 +7,27 @@ target's type registered an `on_void` hook, it runs in the same savepoint and ma
 
 from typing import Any
 
-from rest_framework import serializers
+from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AlreadyVoidedError
-from core.services import void_record
-from core.void_reason import VoidReasonField
+from core.services import void_validated_record
+from core.void_reason import VOID_REASON_CODE_UNKNOWN, VoidSerializer, resolve_void_reason
 from field_sync.codes import (
     ALREADY_VOIDED,
     INVALID_PAYLOAD,
     VOID_EVENT_TYPE,
+    VOID_REASON_CODE_DEACTIVATED,
     VOID_TARGET_NOT_FOUND,
     VOID_TARGET_NOT_OWNED,
 )
-from field_sync.exceptions import EventRejected
+from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import EventStatus, FieldEvent
 from field_sync.registry import EventContext, EventHandler, get_handler, register
+from field_sync.services import rejection_params
 
 
-class VoidPayloadSerializer(serializers.Serializer[Any]):
-    reason = VoidReasonField()
+class VoidPayloadSerializer(VoidSerializer):
+    """Schema version 1 uses the shared void body (issue #80)."""
 
 
 def find_void_target(ctx: EventContext) -> FieldEvent:
@@ -58,10 +60,24 @@ def apply_void(ctx: EventContext, data: dict[str, Any]) -> None:
     target = find_void_target(ctx)
     if target.voided_at is not None:
         raise EventRejected(ALREADY_VOIDED)
+    try:
+        choice = resolve_void_reason(
+            target.organization_id, data["reason"], data["reason_code"], allow_inactive=True
+        )
+    except ValidationError as error:
+        params = rejection_params(error)
+        code = (
+            VOID_REASON_CODE_UNKNOWN
+            if VOID_REASON_CODE_UNKNOWN in params["fields"].get("reason_code", [])
+            else INVALID_PAYLOAD
+        )
+        raise EventRejected(code, params) from None
+    if not choice.is_active:
+        raise EventNeedsReview(VOID_REASON_CODE_DEACTIVATED)
     if ctx.review_code is not None:
         return
     try:
-        voided = void_record(target, ctx.user, data["reason"])
+        voided = void_validated_record(target, ctx.user, choice)
     except AlreadyVoidedError:
         raise EventRejected(ALREADY_VOIDED) from None
     target_handler = get_handler(target.type, target.schema_version)
@@ -76,7 +92,13 @@ def register_void_handler() -> None:
             1,
             VoidPayloadSerializer,
             apply_void,
-            codes=(VOID_TARGET_NOT_FOUND, VOID_TARGET_NOT_OWNED, ALREADY_VOIDED),
+            codes=(
+                VOID_TARGET_NOT_FOUND,
+                VOID_TARGET_NOT_OWNED,
+                ALREADY_VOIDED,
+                VOID_REASON_CODE_UNKNOWN,
+                VOID_REASON_CODE_DEACTIVATED,
+            ),
             checks_shift=False,
         )
     )

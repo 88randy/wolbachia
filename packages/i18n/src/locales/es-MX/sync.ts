@@ -27,6 +27,10 @@ export const sync = {
     "El registro que querías anular no existe en el servidor. Avisa a tu supervisor.",
   "sync.result.voidTargetNotOwned":
     "Solo quien capturó un registro puede anularlo. Pídele a tu supervisor que lo corrija.",
+  "sync.result.voidReasonCodeUnknown":
+    "Este motivo ya no está disponible. Actualiza los catálogos y elige otro motivo.",
+  "sync.result.voidReasonCodeDeactivated":
+    "Este motivo cambió desde la última actualización. Un supervisor revisará la anulación; el registro original sigue intacto.",
   "sync.result.alreadyVoided": "Este registro ya estaba anulado. No tienes que hacer nada más.",
   "sync.result.clockSkew":
     "La hora de tu teléfono parece estar mal, así que un supervisor revisará este registro. Revisa la fecha y la hora del teléfono.",

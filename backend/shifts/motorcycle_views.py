@@ -11,7 +11,7 @@ from rest_framework.response import Response
 
 from accounts.models import User
 from core.views import OrgScopedViewSetMixin
-from core.void_reason import VoidSerializer
+from core.void_reason import UnblockSerializer, VoidSerializer
 from shifts.models import Motorcycle
 from shifts.motorcycle_serializers import (
     MotorcycleFilterSerializer,
@@ -108,14 +108,14 @@ class MotorcycleViewSet(
         payload = VoidSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         return self._response(
-            void_motorcycle(motorcycle, cast(User, request.user), payload.validated_data["reason"])
+            void_motorcycle(motorcycle, cast(User, request.user), **payload.validated_data)
         )
 
-    @extend_schema(request=VoidSerializer, responses={200: MotorcycleSerializer})
+    @extend_schema(request=UnblockSerializer, responses={200: MotorcycleSerializer})
     @action(detail=True, methods=["post"])
     def unblock(self, request: Request, *args: object, **kwargs: object) -> Response:
         motorcycle = self.get_object()
-        payload = VoidSerializer(data=request.data)
+        payload = UnblockSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         return self._response(
             unblock_motorcycle(

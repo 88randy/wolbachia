@@ -72,7 +72,9 @@ def test_create_organization_seeds_catalogs_and_parameters() -> None:
     organization = create_organization(SPEC)
 
     assert (
-        Catalog.objects.filter(organization=organization).count() == len(DEFAULT_CATALOG_SEEDS) == 9
+        Catalog.objects.filter(organization=organization).count()
+        == len(DEFAULT_CATALOG_SEEDS)
+        == 10
     )
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
@@ -158,12 +160,15 @@ def test_catalogs_follow_the_open_and_closed_defaults() -> None:
     assert closed == CLOSED_CATALOGS
 
 
-def test_every_open_catalog_has_exactly_the_other_item_and_closed_ones_have_none() -> None:
+def test_catalogs_have_the_expected_initial_items() -> None:
     organization = create_organization(SPEC)
 
     for catalog in Catalog.objects.filter(organization=organization):
         codes_in_catalog = [item.code for item in catalog.items.all()]
-        assert codes_in_catalog == (["other"] if catalog.is_open else [])
+        expected = ["other"] if catalog.is_open else []
+        if catalog.slug == "void-reason":
+            expected = ["data-entry-error", "duplicate-record", "wrong-location", "other"]
+        assert codes_in_catalog == expected
     other = CatalogItem.objects.filter(organization=organization, is_other=True).first()
     assert (other.label_es, other.label_en, other.is_active) == (
         "Otro (especificar)",
@@ -211,24 +216,29 @@ def test_seed_never_adds_a_second_version_to_a_parameter_an_admin_changed() -> N
 
 def test_seed_keeps_admin_edits_to_catalog_labels() -> None:
     organization = create_organization(SPEC)
-    Catalog.objects.filter(organization=organization, slug="removal-reason").update(
-        label_es="Editado"
+    Catalog.objects.filter(organization=organization, slug="void-reason").update(label_es="Editado")
+
+    item = CatalogItem.objects.get(
+        catalog__organization=organization, catalog__slug="void-reason", code="data-entry-error"
     )
+    item.label_es = "Edited"
+    item.is_active = False
+    item.save()
 
     seed_organization_defaults(organization)
 
-    assert (
-        Catalog.objects.get(organization=organization, slug="removal-reason").label_es == "Editado"
-    )
+    item.refresh_from_db()
+    assert (item.label_es, item.is_active) == ("Edited", False)
+    assert Catalog.objects.get(organization=organization, slug="void-reason").label_es == "Editado"
 
 
 def test_seed_does_not_cross_organizations() -> None:
     first = create_organization(SPEC)
     second = create_organization(OrganizationSpec("Beta", "beta", "MX", "America/Mexico_City"))
 
-    assert Catalog.objects.filter(organization=first).count() == 9
-    assert Catalog.objects.filter(organization=second).count() == 9
-    assert Catalog.objects.count() == 18
+    assert Catalog.objects.filter(organization=first).count() == 10
+    assert Catalog.objects.filter(organization=second).count() == 10
+    assert Catalog.objects.count() == 20
 
 
 def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
@@ -398,7 +408,7 @@ def test_command_apply_updates_an_existing_organization() -> None:
     output = run_command("--organization", organization.slug, "--apply")
 
     assert "Applied" in output
-    assert Catalog.objects.filter(organization=organization).count() == 9
+    assert Catalog.objects.filter(organization=organization).count() == 10
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
     )

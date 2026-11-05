@@ -18,6 +18,9 @@ from django.db.models import Q
 
 from core.exceptions import ImmutableRecordError, PhysicalDeleteForbiddenError
 
+# Shared reserved catalog code; core models never import catalogs.
+OTHER_ITEM_CODE = "other"
+
 DELETE_FORBIDDEN_MESSAGE = "Business records are never deleted; void them with a reason instead."
 
 
@@ -70,7 +73,7 @@ class OrgScopedModel(models.Model):
 
 
 class VoidableMixin(models.Model):
-    """A record is voided (never deleted): all three void fields are set together or not at all."""
+    """A record is voided (never deleted): the void fields are set together or not at all."""
 
     voided_at = models.DateTimeField(null=True, blank=True)
     voided_by = models.ForeignKey(
@@ -81,6 +84,7 @@ class VoidableMixin(models.Model):
         related_name="+",
     )
     void_reason = models.TextField(blank=True, default="")
+    void_reason_code = models.CharField(max_length=64, blank=True, default="")
 
     objects = VoidableQuerySet.as_manager()
 
@@ -89,8 +93,17 @@ class VoidableMixin(models.Model):
         constraints = [
             models.CheckConstraint(
                 condition=(
-                    Q(voided_at__isnull=True, voided_by__isnull=True, void_reason="")
-                    | (Q(voided_at__isnull=False, voided_by__isnull=False) & ~Q(void_reason=""))
+                    Q(
+                        voided_at__isnull=True,
+                        voided_by__isnull=True,
+                        void_reason="",
+                        void_reason_code="",
+                    )
+                    | (
+                        Q(voided_at__isnull=False, voided_by__isnull=False)
+                        & ~Q(void_reason_code="")
+                        & (~Q(void_reason="") | ~Q(void_reason_code=OTHER_ITEM_CODE))
+                    )
                 ),
                 name="%(app_label)s_%(class)s_void_fields_consistent",
             )

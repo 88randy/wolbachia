@@ -3,7 +3,7 @@ import { useApiClient } from "../api/ApiClientProvider";
 import { useSessionGuard } from "../session/use-session-guard";
 import { useFormatCalendarDate } from "../format/use-formatters";
 import { VoidDialog, submitVoid, useVoidLimits } from "../void";
-import type { VoidResult } from "../void";
+import type { VoidChoice, VoidResult } from "../void";
 import { useParameterLabels } from "./parameter-labels";
 import { invalidateRuleParameters } from "./rules-query";
 import type { RuleParameterVersion } from "./rules-query";
@@ -26,12 +26,17 @@ function useSubmitVoid(parameterKey: string, versionId: string) {
   const client = useApiClient();
   const queryClient = useQueryClient();
   const begin = useSessionGuard();
-  return async (reason: string): Promise<VoidResult> => {
+  return async ({ reasonCode, reason }: VoidChoice): Promise<VoidResult> => {
     const { signal, isStale: isOld } = begin();
     const send = () =>
       client.POST("/api/v1/rule-parameters/{parameter_key}/versions/{id}/void/", {
         params: { path: { parameter_key: parameterKey, id: versionId } },
-        body: { reason },
+        body: { reason_code: reasonCode, reason },
+        // The generated schema requires the defaulted reason; omit empty text on the wire.
+        bodySerializer: (body) =>
+          JSON.stringify(body, (key, value: unknown) =>
+            key === "reason" && value === "" ? undefined : value,
+          ),
         signal,
       });
     const result = await submitVoid(queryClient, send, isOld);

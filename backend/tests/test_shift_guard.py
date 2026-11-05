@@ -9,6 +9,7 @@ import pytest
 from django.core.exceptions import ImproperlyConfigured
 from django.utils import timezone
 
+from catalogs.seeds import seed_default_catalogs
 from field_sync import registry
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
@@ -116,9 +117,10 @@ def test_an_event_captured_after_the_shift_closed_is_applied_but_goes_to_review(
 def test_a_void_may_name_any_shift_because_it_corrects_an_old_event(phone: Phone) -> None:
     target = event()
     phone.sync([target])
+    seed_default_catalogs(phone.organization)
     void = event(
         type="record.void",
-        payload={"reason": "a typo in the value"},
+        payload={"reason_code": "other", "reason": "a typo in the value"},
         voids_event_id=target["id"],
         shift_id=str(uuid.uuid4()),
     )

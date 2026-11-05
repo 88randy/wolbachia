@@ -1,3 +1,10 @@
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ApiClientProvider } from "../api/ApiClientProvider";
+import { createWebApiClient } from "../api/create-web-api-client";
+import { createAppQueryClient } from "../api/query-client";
+import { apiError, createFakeApi, makeVoidReasonItems } from "../test/fake-api";
+import type { FakeApiRoutes } from "../test/fake-api";
+import type { VoidChoice } from "./use-void-form";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
@@ -12,7 +19,8 @@ const OK: VoidResult = { ok: true };
 const OPEN_BUTTON = "Anular OV-010";
 
 const failing = (failure: VoidFailure): VoidResult => ({ ok: false, failure });
-const submitStub = () => vi.fn<(reason: string) => Promise<VoidResult>>(() => Promise.resolve(OK));
+const submitStub = () =>
+  vi.fn<(choice: VoidChoice) => Promise<VoidResult>>(() => Promise.resolve(OK));
 
 /** What a screen reader reads after the name of the field: the text of its `aria-describedby`. */
 function descriptionOf(element: HTMLElement): string {
@@ -20,16 +28,43 @@ function descriptionOf(element: HTMLElement): string {
   return ids.map((id) => document.getElementById(id)?.textContent ?? "").join(" ");
 }
 
-async function openDialog(submit: (reason: string) => Promise<VoidResult>, language?: "en") {
+const CATALOG_ROUTE = "GET /api/v1/catalogs/void-reason/items/";
+
+async function openChoiceDialog(
+  submit: (choice: VoidChoice) => Promise<VoidResult>,
+  language?: "en",
+  reply?: FakeApiRoutes[string],
+) {
   const user = userEvent.setup();
-  await renderWithI18n(<VoidHarness submit={submit} />, language);
+  const api = createFakeApi({
+    [CATALOG_ROUTE]:
+      reply ??
+      Response.json({ count: 3, next: null, previous: null, results: makeVoidReasonItems() }),
+  });
+  const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
+  await renderWithI18n(
+    <QueryClientProvider client={createAppQueryClient({ retry: false })}>
+      <ApiClientProvider client={client}>
+        <VoidHarness submit={submit} />
+      </ApiClientProvider>
+    </QueryClientProvider>,
+    language,
+  );
   await user.click(
     screen.getByRole("button", { name: language === "en" ? "Void OV-010" : OPEN_BUTTON }),
   );
-  const reasonField = await screen.findByRole<HTMLTextAreaElement>("textbox", {
-    name: /motivo|reason/i,
+  const select = screen.getByRole<HTMLSelectElement>("combobox");
+  if (!reply) await screen.findByRole("option", { name: /Otro|Other/ });
+  return { user, select, api };
+}
+
+async function openDialog(submit: (choice: VoidChoice) => Promise<VoidResult>, language?: "en") {
+  const opened = await openChoiceDialog(submit, language);
+  await opened.user.selectOptions(opened.select, "other");
+  const reasonField = screen.getByRole<HTMLTextAreaElement>("textbox", {
+    name: /detalle|details/i,
   });
-  return { user, reasonField };
+  return { ...opened, reasonField };
 }
 
 async function pressVoid(user: ReturnType<typeof userEvent.setup>, name = "Anular") {
@@ -43,8 +78,18 @@ async function waitForClose() {
 }
 
 describe("VoidDialog", () => {
-  test("opens on the reason field, named and described, with the minimum shown", async () => {
-    const { reasonField } = await openDialog(submitStub());
+  test("opens on an empty select with active items in API order, Other last", async () => {
+    const { select, user } = await openChoiceDialog(submitStub());
+    expect(document.activeElement).toBe(select);
+    expect(select.value).toBe("");
+    expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
+      "Selecciona un motivo",
+      "Capturado dos veces",
+      "Otro (especificar)",
+    ]);
+    expect(screen.queryByRole("textbox")).toBeNull();
+    await user.selectOptions(select, "other");
+    const reasonField = screen.getByRole<HTMLTextAreaElement>("textbox");
 
     expect(screen.getByRole("dialog", { name: "Anular OV-010" })).toBeTruthy();
     expect(document.activeElement).toBe(reasonField);
@@ -107,7 +152,7 @@ describe("VoidDialog", () => {
     await pressVoid(user);
 
     await waitForClose();
-    expect(submit).toHaveBeenCalledExactlyOnceWith(GOOD_REASON);
+    expect(submit).toHaveBeenCalledExactlyOnceWith({ reasonCode: "other", reason: GOOD_REASON });
     expect(screen.getAllByText("Anulado")).toHaveLength(2); // the row just voided and the old one
   });
 
@@ -132,6 +177,107 @@ describe("VoidDialog", () => {
 
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(submit).not.toHaveBeenCalled();
+  });
+});
+
+describe("VoidDialog: catalog choices", () => {
+  test("requires a choice, then submits a regular reason without text", async () => {
+    const submit = submitStub();
+    const { user, select } = await openChoiceDialog(submit);
+    await pressVoid(user);
+    expect(select.getAttribute("aria-invalid")).toBe("true");
+    expect(descriptionOf(select)).toMatch(/Elige un motivo/);
+    expect(submit).not.toHaveBeenCalled();
+    await user.selectOptions(select, "other");
+    await user.type(screen.getByRole("textbox"), GOOD_REASON);
+    await user.selectOptions(select, "duplicate");
+    expect(screen.queryByRole("textbox")).toBeNull();
+    await pressVoid(user);
+    expect(submit).toHaveBeenCalledExactlyOnceWith({ reasonCode: "duplicate", reason: "" });
+  });
+
+  test.each([
+    apiError(500, "server_error"),
+    Response.json({ count: 0, next: null, previous: null, results: [] }),
+  ])("blocks submit when the catalog failed or has no active items, and retries", async (reply) => {
+    const submit = submitStub();
+    const { user, select, api } = await openChoiceDialog(submit, undefined, reply);
+    await screen.findByRole("alert");
+    expect(select.disabled).toBe(true);
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Anular" }).disabled).toBe(true);
+    api.setRoute(
+      CATALOG_ROUTE,
+      Response.json({ count: 3, next: null, previous: null, results: makeVoidReasonItems() }),
+    );
+    await user.click(screen.getByRole("button", { name: "Reintentar" }));
+    await screen.findByRole("option", { name: "Capturado dos veces" });
+    expect(select.disabled).toBe(false);
+    expect(submit).not.toHaveBeenCalled();
+  });
+
+  test("a pending catalog disables the first field and submit until the items arrive", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const { select } = await openChoiceDialog(submitStub(), undefined, () => pending);
+    expect(select.disabled).toBe(true);
+    expect(screen.getByRole("option").textContent).toBe("Cargando motivos\u2026");
+    expect(screen.getByRole<HTMLButtonElement>("button", { name: "Anular" }).disabled).toBe(true);
+    release(
+      Response.json({ count: 3, next: null, previous: null, results: makeVoidReasonItems() }),
+    );
+    await screen.findByRole("option", { name: "Otro (especificar)" });
+    expect(select.disabled).toBe(false);
+    expect(document.activeElement).toBe(select);
+  });
+
+  test("uses English labels and falls back to Spanish for a blank English label", async () => {
+    const items = makeVoidReasonItems().map((item) =>
+      item.code === "duplicate" ? { ...item, label_en: "" } : item,
+    );
+    await openChoiceDialog(
+      submitStub(),
+      "en",
+      Response.json({ count: items.length, next: null, previous: null, results: items }),
+    );
+    await screen.findByRole("option", { name: "Other (specify)" });
+    expect(screen.getByRole("option", { name: "Capturado dos veces" })).toBeTruthy();
+  });
+
+  test("a code_unknown answer resets the select and refreshes the available choices", async () => {
+    const { user, select, api } = await openChoiceDialog(() =>
+      Promise.resolve(failing({ kind: "codeUnknown" })),
+    );
+    await user.selectOptions(select, "duplicate");
+    api.setRoute(
+      CATALOG_ROUTE,
+      Response.json({
+        count: 1,
+        next: null,
+        previous: null,
+        results: makeVoidReasonItems().filter((item) => item.is_other),
+      }),
+    );
+    await pressVoid(user);
+    expect((await screen.findByRole("alert")).textContent).toMatch(/ya no est\u00e1 disponible/);
+    await waitFor(() => {
+      expect(screen.queryByRole("option", { name: "Capturado dos veces" })).toBeNull();
+    });
+    expect(select.value).toBe("");
+  });
+
+  test("required_for_other is described on the textarea", async () => {
+    const { user, reasonField } = await openDialog(() =>
+      Promise.resolve(failing({ kind: "requiredForOther" })),
+    );
+    await user.type(reasonField, GOOD_REASON);
+    await pressVoid(user);
+    await waitFor(() => {
+      expect(reasonField.getAttribute("aria-invalid")).toBe("true");
+    });
+    expect(descriptionOf(reasonField)).toMatch(/Escribe el motivo al elegir Otro/);
+    expect(document.activeElement).toBe(reasonField);
   });
 });
 
@@ -186,7 +332,7 @@ describe("VoidDialog: while the request runs", () => {
     fireEvent(dialog, new Event("close"));
 
     expect(dialog.hasAttribute("open")).toBe(true);
-    expect(document.activeElement).toBe(reasonField);
+    expect(document.activeElement).toBe(screen.getByRole("combobox"));
     finish(OK);
   });
 

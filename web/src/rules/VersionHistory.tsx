@@ -8,7 +8,7 @@ import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
 import { FormNotice } from "../forms/FormNotice";
 import { useFormatDateTime } from "../format/use-format-date-time";
-import { voidInfoOf } from "../void";
+import { useVoidReasonLabel, voidInfoOf } from "../void";
 import { versionsQueryOptions } from "./rules-query";
 import type { RuleParameter, RuleParameterVersion } from "./rules-query";
 import { VERSIONS_PAGE_SIZE, VERSIONS_TABLE } from "./rules-table";
@@ -57,6 +57,7 @@ function HistoryTable({ parameter, canVoid, onVoid }: HistoryTableProps) {
   const columns = useVersionColumns({ parameter, canVoid, onVoid, blockedNoteId: NOTE_ID });
   const authorName = useAuthorName();
   const formatDateTime = useFormatDateTime();
+  const reasonLabel = useVoidReasonLabel();
   const rows = pageTableData(query, controller.state.page, VERSIONS_PAGE_SIZE);
   return (
     <>
@@ -68,7 +69,10 @@ function HistoryTable({ parameter, canVoid, onVoid }: HistoryTableProps) {
         controller={controller}
         data={rows}
         voidOf={(version) =>
-          voidInfoOf(version, () => authorName(version.voided_by_username), formatDateTime)
+          voidInfoOf(version, () => authorName(version.voided_by_username), {
+            formatWhen: formatDateTime,
+            reasonLabel,
+          })
         }
       />
     </>

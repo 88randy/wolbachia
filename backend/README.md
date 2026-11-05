@@ -202,9 +202,27 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY` | `1000` | New stored rejections per device/organization-local day; env integer in 100..10000, fail fast (#56, SA09) |
 | `SYNC_REJECTION_ALERT_PERCENTS` | `80,100` | Nonempty env list of percentages in 1..100; warning once per crossing on commit (#56) |
 
-## Void reasons (#32)
+## Void reasons (#32, #80)
 
-Nothing is deleted: a correction is a void with a reason. `core/void_reason.py` is the only place that judges a reason: `validate_void_reason` normalizes it (NFC), trims it, refuses control and bidi characters, requires at least `VOID_REASON_MIN_LENGTH` visible characters (default 10, between 1 and 1000; zero-width, combining, space and filler characters do not count) and at most 1000, and `VoidReasonField` / `VoidSerializer` are what every body uses. It raises a DRF `ValidationError` whose `params` reach the response (`core.validation.params_message` / `flatten_error_details`) and the sync rejection (`params.field_params`). Void paths today: `VoidActionMixin` (`POST .../void/`), rule parameter versions, the phone's `record.void` event, and `core.services.void_record`, which validates again so no caller can store a shorter reason. A new void endpoint reuses `VoidSerializer` and `void_record`; it does not write its own check. Error: `400 validation_error`, `fields.reason: [{code: "void_reason_too_short", params: {min_length}}]` (contract in `docs/api-conventions.md`, decision 87). `GET /me/` exposes the limits (`limits`) for the web. Catalog items are deactivated, not voided, so they have no void path.
+Every void body is `{reason_code, reason?}`. `core/void_reason.py` resolves the code against the
+target's organization's `void-reason` catalog in one query, then normalizes and validates the
+text. Only `other` requires a note and the #32 visible-character minimum. Regular choices
+allow an empty or short note; the character restrictions and 1000-character maximum still
+apply. `VoidSerializer` is shared by the HTTP actions and sync payloads. `void_record` resolves
+and writes; rule versions and sync reuse `resolve_void_reason` and `void_validated_record` so
+the catalog is queried once. The item is read without a lock on purpose: a deactivation that
+commits between the read and the write is the same as the void committing just before it, and
+an item lock would add a lock edge against the sync batch's target locks (deadlock risk). All writers use this policy; inactive choices are refused by HTTP,
+while an old phone snapshot goes `in_review` without touching the target. See
+[`docs/api-conventions.md`](../docs/api-conventions.md) and [`docs/sync.md`](../docs/sync.md).
+Both `void_reason_code` and `void_reason` are stored and exposed read-only. Historical voids
+are backfilled as `other`, preserving their text; atomic migrations disable the guard only for
+the backfill and restore it (a failed migration rolls back the disable). Reverse migration
+uses a catalog-only void's code as its legacy note when there was no text. No dependencies added.
+Migration operations and historical-model handling follow the
+[Django 5.2 migration reference](https://docs.djangoproject.com/en/5.2/ref/migration-operations/).
+`GET /me/` still exposes the text limits for client validation. Catalog items themselves are
+deactivated, not voided.
 
 | Variable | Default | Meaning |
 | --- | --- | --- |

@@ -16,7 +16,12 @@ import { NewVersionForm } from "./NewVersionForm";
 import { ParameterSummary } from "./ParameterSummary";
 import { VersionHistory } from "./VersionHistory";
 import { useParameterLabels } from "./parameter-labels";
-import { RULE_VERSION_CREATE, RULE_VERSION_READ, RULE_VERSION_VOID } from "./permissions";
+import {
+  CATALOG_READ,
+  RULE_VERSION_CREATE,
+  RULE_VERSION_READ,
+  RULE_VERSION_VOID,
+} from "./permissions";
 import { parameterQueryOptions } from "./rules-query";
 import type { RuleParameter } from "./rules-query";
 import styles from "./rules.module.css";
@@ -46,6 +51,7 @@ function RefreshFailed({ onRetry }: { onRetry: () => void }) {
 function ParameterScreen({ parameter, notice }: { parameter: RuleParameter; notice: ReactNode }) {
   const { t } = useTranslation();
   const can = useCan();
+  const canVoid = can(RULE_VERSION_VOID) && can(CATALOG_READ);
   const name = useParameterLabels().name(parameter.key);
   useDocumentTitle(name);
   return (
@@ -64,9 +70,7 @@ function ParameterScreen({ parameter, notice }: { parameter: RuleParameter; noti
         {notice}
         <ParameterSummary parameter={parameter} />
         {can(RULE_VERSION_CREATE) && <NewVersionForm parameter={parameter} />}
-        {can(RULE_VERSION_READ) && (
-          <VersionHistory parameter={parameter} canVoid={can(RULE_VERSION_VOID)} />
-        )}
+        {can(RULE_VERSION_READ) && <VersionHistory parameter={parameter} canVoid={canVoid} />}
       </div>
     </section>
   );
