@@ -13,8 +13,9 @@ def void_record[VoidableT: VoidableMixin](  # noqa: PLR0913 -- explicit public v
     instance: VoidableT, user: User, reason: str, reason_code: str
 ) -> VoidableT:
     """Resolve the organization's catalog choice and void the record; never delete it."""
-    choice = resolve_void_reason(instance.organization_id, reason, reason_code)  # type: ignore[attr-defined]
-    return void_validated_record(instance, user, choice)
+    with transaction.atomic():
+        choice = resolve_void_reason(instance.organization_id, reason, reason_code)  # type: ignore[attr-defined]
+        return void_validated_record(instance, user, choice)
 
 
 def void_validated_record[VoidableT: VoidableMixin](
@@ -22,7 +23,8 @@ def void_validated_record[VoidableT: VoidableMixin](
 ) -> VoidableT:
     """Write a choice returned by the resolver without repeating its catalog query.
 
-    Callers must resolve against the target first. Inactive sync choices are for review only.
+    Callers must resolve against the target in the same transaction, before locking the target.
+    Inactive sync choices are for review only.
     The row lock arbitrates concurrent voids; all four fields are saved together.
     """
     if not choice.is_active or choice.organization_id != instance.organization_id:  # type: ignore[attr-defined]

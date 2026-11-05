@@ -1,5 +1,5 @@
 import type { Schemas } from "@wolbachia/api-client";
-import { makeVoidReasonItems } from "../../src/test/fake-api";
+import { makeVoidReasonFields, makeVoidReasonItems } from "../../src/test/fake-api";
 import type { Route } from "@playwright/test";
 
 export type ParameterFixture = Schemas["RuleParameter"];
@@ -189,8 +189,7 @@ export class FakeRules {
       voided_at: RULES_NOW,
       voided_by: this.signedIn.id,
       voided_by_username: this.signedIn.username,
-      void_reason_code: target.reasonCode,
-      void_reason: item.is_other ? target.reason : item.label_es,
+      ...makeVoidReasonFields(target.reasonCode, target.reason),
     };
     return json(route, 200, Object.assign(version, voided));
   }

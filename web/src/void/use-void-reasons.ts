@@ -6,7 +6,7 @@ import { VOID_REASONS_KEY, voidReasonsQueryOptions } from "./void-reasons-query"
 export function useVoidReasons() {
   const query = useQuery(voidReasonsQueryOptions(useApiClient()));
   const queryClient = useQueryClient();
-  const items = query.data ?? [];
+  const items = (query.data ?? []).filter((item) => item.is_active);
   return {
     items,
     isCatalogLoading: query.isPending,

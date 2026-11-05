@@ -4,13 +4,13 @@ import { createWebApiClient } from "../api/create-web-api-client";
 import { createFakeApi, makeVoidReasonItems } from "../test/fake-api";
 import { voidReasonsQueryOptions } from "./void-reasons-query";
 
-test("includes Other even when it is on a later catalog page", async () => {
-  const items = makeVoidReasonItems().filter((item) => item.is_active);
+test("keeps inactive reasons for history and Other from later catalog pages", async () => {
+  const items = makeVoidReasonItems();
   const api = createFakeApi({
     "GET /api/v1/catalogs/void-reason/items/": ({ path }) => {
       const isLastPage = new URL(path, "http://localhost").searchParams.get("page") === "2";
       return Response.json({
-        count: 2,
+        count: items.length,
         previous: null,
         next: isLastPage ? null : "/api/v1/catalogs/void-reason/items/?page=2",
         results: isLastPage ? items.slice(1) : items.slice(0, 1),
@@ -20,6 +20,6 @@ test("includes Other even when it is on a later catalog page", async () => {
   const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
   const queryClient = createAppQueryClient({ retry: false });
   const available = await queryClient.query(voidReasonsQueryOptions(client));
-  expect(available.map((item) => item.code)).toEqual(["duplicate", "other"]);
+  expect(available.map((item) => item.code)).toEqual(["duplicate", "inactive", "other"]);
   queryClient.clear();
 });

@@ -2,12 +2,13 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 import { acceptSession } from "../session/session-revision";
-import { apiError, makeMe } from "../test/fake-api";
+import { apiError, makeMe, makeVoidReasonFields, makeVoidReasonItems } from "../test/fake-api";
 import {
   ADMIN,
   PARAMETER_PATH,
   makeVersion,
   openParameterPage,
+  pageOf,
   requestsTo,
 } from "../test/rules-fixtures";
 
@@ -51,6 +52,7 @@ const VOIDED = makeVersion({
   voided_at: "2026-11-04T20:00:00Z",
   voided_by: OTHER_USER,
   voided_by_username: "luis.promotor",
+  void_reason_code: "other",
   void_reason: "Se capturó dos veces",
 });
 const HISTORY = [SCHEDULED, IN_FORCE, SUPERSEDED, VOIDED];
@@ -95,6 +97,60 @@ describe("version history", () => {
     expect(within(voided).getByText("Anulado")).toBeDefined();
     expect(screen.getByText("Mostrando 1 a 4 de 4")).toBeDefined();
     expect(requestsTo(api, "GET", VERSIONS_API).at(-1)?.path).toContain("include_voided=true");
+  });
+
+  test.each([
+    { code: "duplicate", note: "", language: "es-MX", label: "Capturado dos veces" },
+    {
+      code: "duplicate",
+      note: "Same date entered twice",
+      language: "en",
+      label: "Duplicate entry",
+    },
+    { code: "inactive", note: "", language: "en", label: "Inactivo" },
+    { code: "retired_code", note: "", language: "es-MX", label: "retired_code" },
+  ] as const)(
+    "shows the catalog reason $code in $language with its note separately",
+    async ({ code, note, language, label }) => {
+      const items = makeVoidReasonItems().map((item) =>
+        item.code === "inactive" ? { ...item, label_en: "" } : item,
+      );
+      await openParameterPage({
+        versions: [makeVersion({ ...VOIDED, ...makeVoidReasonFields(code, note) })],
+        path: `${PARAMETER_PATH}?include_voided=true`,
+        language,
+        routes: { "GET /api/v1/catalogs/void-reason/items/": pageOf(items) },
+      });
+
+      const row = await screen.findByRole("row", { name: /45/ });
+      const prefix = language === "en" ? "Reason" : "Motivo";
+      const reason = await within(row).findByText(`${prefix}: ${label}`);
+      if (note !== "") {
+        expect(within(row).getByText(note)).toBeDefined();
+        expect(reason.textContent).not.toContain(note);
+      }
+    },
+  );
+
+  test("keeps the history readable with a raw reason code while the catalog loads or fails", async () => {
+    let release: (response: Response) => void = () => undefined;
+    const pending = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const { app } = await openParameterPage({
+      versions: [makeVersion({ ...VOIDED, ...makeVoidReasonFields("duplicate") })],
+      path: `${PARAMETER_PATH}?include_voided=true`,
+      routes: { "GET /api/v1/catalogs/void-reason/items/": () => pending },
+    });
+
+    const row = await screen.findByRole("row", { name: /45 metros/ });
+    expect(within(row).getByText("Motivo: duplicate")).toBeDefined();
+    release(apiError(500, "server_error"));
+    await waitFor(() => {
+      expect(app.queryClient.getQueryState(["void-reasons"])?.status).toBe("error");
+    });
+    expect(within(row).getByText("Motivo: duplicate")).toBeDefined();
+    expect(within(row).getByText("Anuló: luis.promotor")).toBeDefined();
   });
 
   test("only a scheduled version has an enabled Void; the others say why they cannot be voided", async () => {

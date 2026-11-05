@@ -18,7 +18,7 @@ async function loadVoidReasons(client: ApiClient, signal: AbortSignal) {
         signal,
       }),
     );
-    items.push(...result.results.filter((item) => item.is_active));
+    items.push(...result.results);
     hasNext = result.next !== null;
     page += 1;
   }

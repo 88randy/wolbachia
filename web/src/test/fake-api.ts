@@ -132,6 +132,11 @@ export function makeMe(overrides: Partial<Me> = {}): Me {
   };
 }
 
+/** The backend stores the chosen code and optional note, never the catalog label as free text. */
+export function makeVoidReasonFields(reasonCode: string, reason = "") {
+  return { void_reason_code: reasonCode, void_reason: reason };
+}
+
 const VOID_REASON_BASE = {
   icon: "",
   sort: 0,

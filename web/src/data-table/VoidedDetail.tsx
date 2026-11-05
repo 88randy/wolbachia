@@ -16,7 +16,10 @@ export function VoidedDetail({ info }: { info: VoidInfo }) {
         <Ban className={styles.badgeIcon} aria-hidden="true" />
         {t("table.voided.badge")}
       </span>
-      <span>{t("table.voided.reason", { reason: info.reason })}</span>
+      <span className={styles.voidReason}>
+        <span>{t("table.voided.reason", { reason: info.reason })}</span>
+        {info.note !== undefined && <span>{info.note}</span>}
+      </span>
       <span>{t("table.voided.author", { author: info.author })}</span>
       {info.when !== undefined && <span>{t("table.voided.when", { when: info.when })}</span>}
     </div>

@@ -15,6 +15,7 @@ from typing import Any
 from uuid import UUID
 
 from django.conf import settings
+from django.db import connection
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ErrorDetail
@@ -109,19 +110,32 @@ class ResolvedVoidReason:
 def resolve_void_reason(  # noqa: PLR0913 -- the public void contract plus sync policy
     organization_id: UUID, reason: str, reason_code: str, *, allow_inactive: bool = False
 ) -> ResolvedVoidReason:
-    """Resolve in the target's organization with one query, then normalize the note.
+    """Lock the catalog item in the target's organization, then normalize the note.
+
+    Requires the caller's active transaction to span resolution and the target write. Lock
+    order everywhere: catalog item row, then target row. The item is locked with
+    select_for_update(no_key=True, of=("self",)) before any target row lock, so deactivation
+    cannot change is_active between resolution and writing. _set_item_active locks the item
+    but no targets, so there is no cycle. An atomic block only inside this resolver would
+    release the lock too early and reintroduce the snapshot race.
 
     Sync may inspect an inactive choice for review, but invalid text is always refused first.
     Unknown, foreign and missing catalogs share one error without echoing user input.
     """
+    if not connection.in_atomic_block:
+        raise RuntimeError("resolve_void_reason requires an active transaction spanning the void.")
     if not reason_code.strip():
         raise _refusal("required", {}, "reason_code")
-    item = CatalogItem.objects.filter(
-        organization_id=organization_id,
-        catalog__organization_id=organization_id,
-        catalog__slug=VOID_REASON_CATALOG_SLUG,
-        code=reason_code,
-    ).first()
+    item = (
+        CatalogItem.objects.filter(
+            organization_id=organization_id,
+            catalog__organization_id=organization_id,
+            catalog__slug=VOID_REASON_CATALOG_SLUG,
+            code=reason_code,
+        )
+        .select_for_update(no_key=True, of=("self",))
+        .first()
+    )
     if item is None or (not item.is_active and not allow_inactive):
         raise _refusal(VOID_REASON_CODE_UNKNOWN, {}, "reason_code")
     is_other = reason_code == OTHER_ITEM_CODE

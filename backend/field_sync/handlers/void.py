@@ -56,6 +56,9 @@ def apply_void(ctx: EventContext, data: dict[str, Any]) -> None:
     clock) the target is validated but **left intact**: the void event lands `in_review` and a
     supervisor applies it when they accept it (#22). A doubtful event must not change records
     (decision 73).
+
+    The pipeline transaction holds the resolver's catalog item lock through the target write.
+    find_void_target only reads: the catalog item is always locked before the target.
     """
     target = find_void_target(ctx)
     if target.voided_at is not None:

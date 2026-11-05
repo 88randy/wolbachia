@@ -121,8 +121,8 @@ def void_rule_version(  # noqa: PLR0913 -- explicit void contract
     be voided: `VersionNotScheduledError` (409). A voided version is excluded from the value
     in force and from the snapshots but stays in the history.
     """
-    choice = resolve_void_reason(version.organization_id, reason, reason_code)
     with transaction.atomic():
+        choice = resolve_void_reason(version.organization_id, reason, reason_code)
         locked = lock_record_for_update(version)
         if locked.effective_from <= timezone.now():
             raise VersionNotScheduledError
