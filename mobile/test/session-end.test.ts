@@ -6,6 +6,7 @@ import { loginNotice } from "../src/screens/auth/auth-notice-presentation.ts";
 import { createMobileApiClient } from "../src/api/create-api-client.ts";
 import { AuthController } from "../src/auth/auth-controller.ts";
 import { CredentialStore } from "../src/auth/credential-store.ts";
+import { readEndedSession } from "../src/auth/session-journal.ts";
 import { RemoteSessionEnded, SessionRequests } from "../src/auth/session-requests.ts";
 import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
 import { observeSyncSession } from "../src/sync/observe-sync-session.ts";
@@ -209,7 +210,7 @@ void it("a restart after persisted session end cannot unlock or refresh; only a 
   await auth.load();
   await auth.unlock(h.pinSecret, "pin");
   await auth.unlock(h.passwordSecret, "password");
-  auth.unlockBiometric(auth.biometricGate());
+  await auth.unlockBiometric(auth.biometricGate());
   assert.equal(auth.getSnapshot().phase, "login");
   assert.equal(auth.canUseBiometrics(), false);
   assert.equal(loginNotice(auth.getSnapshot(), null)?.key, "mobile.login.sessionEnded");
@@ -480,8 +481,9 @@ void it("an ended session with no configured server keeps its pair and waits wit
   assert.equal((await h.outbox.countByStatus()).pending, 1);
 });
 
-void it("the ended journal survives a crash before secure replacement without losing the retry pair", async () => {
+void it("the ended journal precedes interrupted-password exhaustion on restart and preserves the retry pair", async () => {
   const h = await harness();
+  await h.credentials.update((current) => ({ ...current, passwordAttempts: 5 }));
   const pair = h.credentials.getSnapshot().pair;
   await h.kv.set(
     "session_ended",
@@ -491,7 +493,7 @@ void it("the ended journal survives a crash before secure replacement without lo
     }),
   );
   const restarted = new CredentialStore(h.secrets);
-  await restarted.load();
+  await restarted.load((sessionId) => readEndedSession(h.kv, sessionId));
   const auth = controller(h, restarted);
   await auth.load();
   await auth.unlock(h.pinSecret, "pin");

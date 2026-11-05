@@ -23,7 +23,7 @@ export function useBiometricUnlock(action: ReturnType<typeof useAuthAction>) {
         t("mobile.unlock.biometricPrompt"),
         t("mobile.unlock.cancel"),
       );
-      if (isAccepted) auth.unlockBiometric(gate);
+      if (isAccepted) await auth.unlockBiometric(gate);
     });
   };
   return { biometric, canUseBiometrics: hasBiometrics && auth.canUseBiometrics() };

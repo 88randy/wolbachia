@@ -83,15 +83,15 @@ void it("cold starts locked; biometric success keeps PIN attempts and cannot byp
   );
   assert.equal(auth.getSnapshot().phase, "locked");
   await auth.unlock(randomUUID(), "pin");
-  auth.unlockBiometric(auth.biometricGate());
+  await auth.unlockBiometric(auth.biometricGate());
   assert.equal(auth.getSnapshot().phase, "unlocked");
   assert.equal(credentials.getSnapshot().pinAttempts, 1);
-  auth.lock();
+  await auth.lock();
   await auth.unlock(randomUUID(), "pin");
   await auth.unlock(randomUUID(), "pin");
   assert.equal(auth.getSnapshot().isPasswordRequired, true);
   assert.equal(auth.canUseBiometrics(), false);
-  auth.unlockBiometric(auth.biometricGate());
+  await auth.unlockBiometric(auth.biometricGate());
   assert.equal(auth.getSnapshot().phase, "locked");
   await auth.unlock(pinSecret, "pin");
   assert.equal(auth.getSnapshot().phase, "locked");
@@ -150,7 +150,7 @@ void it("accepts online login despite a failed rules fetch, creates a PIN, and u
   stop();
   assert.equal(auth.getSnapshot().rules.pinMaxAttempts, 3);
   assert.notEqual(credentials.getSnapshot().password, null);
-  auth.lock();
+  await auth.lock();
   auth.setOnline(false);
   await auth.unlock("2846", "pin");
   assert.equal(auth.getSnapshot().phase, "unlocked");

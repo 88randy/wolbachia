@@ -3,38 +3,24 @@ import type { Schemas } from "@wolbachia/api-client";
 import { toHex } from "../db/encrypted-database.ts";
 import type { KvStore } from "../db/kv-store.ts";
 import type { OutboxRepository } from "../outbox/outbox-repository.ts";
-import type { CredentialStore } from "./credential-store.ts";
+import { endedCredentials } from "./credential-store.ts";
+import type { CredentialStore, Credentials } from "./credential-store.ts";
 import { readAuthRules, hasClockSkew } from "./auth-rules.ts";
-import type { AuthRules } from "./auth-rules.ts";
+import { deriveAuthSnapshot } from "./auth-state.ts";
+import type { AuthContext, AuthProfile, AuthSnapshot } from "./auth-state.ts";
 import type { LoginResult } from "./auth-api.ts";
-import type { Verifier } from "./verifier.ts";
-import type { LoginNotice } from "./login-error.ts";
 import { canLoginAs } from "./login-policy.ts";
 import { LocalUnlock } from "./local-unlock.ts";
 import { isAllowedPin } from "./pin-rules.ts";
 import { isRulesSnapshot } from "./rules-snapshot.ts";
+import { SESSION_ENDED_KEY, readEndedSession } from "./session-journal.ts";
 import { createVerifier, PASSWORD_ITERATIONS, PIN_ITERATIONS } from "./verifier.ts";
+import type { Verifier } from "./verifier.ts";
 
+export type { AuthSnapshot } from "./auth-state.ts";
 const PROFILE_KEY = "session_profile";
 const RULES_KEY = "auth_rules_snapshot";
-const ENDED_KEY = "session_ended";
-type Profile = {
-  readonly username: string;
-  readonly firstName: string;
-  readonly organization: Schemas["Me"]["organization"];
-  readonly permissions: Schemas["Me"]["permissions"];
-};
-export interface AuthSnapshot {
-  readonly phase: "login" | "createPin" | "locked" | "unlocked";
-  readonly profile: Profile | null;
-  readonly rules: AuthRules;
-  readonly notice: LoginNotice | null;
-  readonly hasClockSkew: boolean;
-  readonly isOnline: boolean;
-  readonly isPasswordRequired: boolean;
-  readonly isPinSetupRequired: boolean;
-  readonly remainingAttempts: number;
-}
+
 interface AuthDeps {
   readonly credentials: CredentialStore;
   readonly kv: Pick<KvStore, "get" | "set">;
@@ -43,32 +29,40 @@ interface AuthDeps {
   readonly fetchRules: () => Promise<unknown>;
   readonly randomBytes: (length: number) => Uint8Array;
   readonly now: () => number;
+  readonly verify?: (secret: string, verifier: Verifier) => Promise<boolean>;
+}
+interface AcceptedLogin {
+  readonly credentials: Credentials;
+  readonly profile: AuthProfile;
+  readonly gate: number;
+  readonly time: { serverTime: string; phoneTime: number };
 }
 
-/** Local UI gate. Locking never unmounts navigation and never touches captured work. */
+/** One credential queue owns auth transitions; the UI is a projection, never another state machine. */
 export class AuthController {
   readonly #deps: AuthDeps;
   readonly #listeners = new Set<() => void>();
   readonly #unlock: LocalUnlock;
-  #gate = 0;
   #isBusy = false;
-  #snapshot: AuthSnapshot = {
-    phase: "login",
+  #context: AuthContext = {
     profile: null,
     rules: readAuthRules(null),
     notice: null,
     hasClockSkew: false,
     isOnline: false,
-    isPasswordRequired: false,
-    isPinSetupRequired: false,
-    remainingAttempts: readAuthRules(null).pinMaxAttempts,
   };
+  #snapshot: AuthSnapshot;
 
   constructor(deps: AuthDeps) {
     this.#deps = deps;
     this.#unlock = new LocalUnlock({
       credentials: deps.credentials,
-      getPinLimit: () => this.#snapshot.rules.pinMaxAttempts,
+      getPinLimit: () => this.#context.rules.pinMaxAttempts,
+      ...(deps.verify === undefined ? {} : { verify: deps.verify }),
+    });
+    this.#snapshot = this.#deriveSnapshot();
+    deps.credentials.subscribe(() => {
+      this.#refreshSnapshot();
     });
   }
 
@@ -80,47 +74,35 @@ export class AuthController {
     };
   };
 
-  async load(): Promise<void> {
-    const hasEnded = await this.#loadEndedSession();
-    const profile = await this.#deps.kv.get(PROFILE_KEY);
-    const rules = await this.#deps.kv.get(RULES_KEY);
-    const parsed: unknown = rules === null ? null : JSON.parse(rules);
-    this.#publish({
-      profile: profile === null ? null : (JSON.parse(profile) as Profile),
-      rules: readAuthRules(isRulesSnapshot(parsed) ? parsed : null),
-      phase: this.#deps.credentials.isSessionActive() ? "locked" : "login",
-      notice: hasEnded ? { key: "mobile.login.sessionEnded" } : null,
+  load(): Promise<void> {
+    return this.#deps.credentials.runExclusive(async (transaction) => {
+      const profile = await this.#deps.kv.get(PROFILE_KEY);
+      const rules = await this.#deps.kv.get(RULES_KEY);
+      const parsed: unknown = rules === null ? null : JSON.parse(rules);
+      const current = transaction.read();
+      if (current.status === "active" && (await readEndedSession(this.#deps.kv, current.sessionId)))
+        await transaction.write(endedCredentials(transaction.read()));
+      this.#publish({
+        profile: profile === null ? null : (JSON.parse(profile) as AuthProfile),
+        rules: readAuthRules(isRulesSnapshot(parsed) ? parsed : null),
+      });
     });
   }
 
-  async #loadEndedSession(): Promise<boolean> {
-    const marker = await this.#deps.kv.get(ENDED_KEY);
-    const current = this.#deps.credentials.getSnapshot();
-    const hasEnded = current.status === "ended" || readEndedMarker(marker, current.sessionId);
-    if (hasEnded && current.status === "active")
-      await this.#deps.credentials.markEnded(current.sessionId);
-    return hasEnded;
-  }
-
+  /** Connectivity is an external input; it cannot mutate credentials or the derived UI phase. */
   setOnline(isOnline: boolean): void {
     this.#publish({ isOnline });
   }
-  lock(): void {
-    this.#gate += 1;
-    if (this.#snapshot.phase === "unlocked" || this.#snapshot.phase === "createPin")
-      this.#publish({ phase: "locked", notice: null });
+  lock(): Promise<void> {
+    return this.#deps.credentials.lock();
   }
 
-  async endSession(): Promise<void> {
+  endSession(): Promise<void> {
     const sessionId = this.#deps.credentials.getSnapshot().sessionId;
-    this.#gate += 1;
-    // Hide the app immediately, even if Keystore fails. Do not let failed cleanup unlock it.
-    this.#publish({ phase: "login", notice: { key: "mobile.login.sessionEnded" } });
-    try {
-      await this.#deps.kv.set(ENDED_KEY, JSON.stringify({ sessionId, status: "ended" }));
-    } finally {
-      await this.#deps.credentials.markEnded(sessionId);
-    }
+    return this.#deps.credentials.markEnded(sessionId, () => {
+      this.#publish({ notice: null });
+      return this.#deps.kv.set(SESSION_ENDED_KEY, JSON.stringify({ sessionId, status: "ended" }));
+    });
   }
 
   canLogin(): boolean {
@@ -130,7 +112,7 @@ export class AuthController {
   async login(username: string, password: string): Promise<void> {
     if (this.#isBusy || !this.canLogin()) return;
     this.#isBusy = true;
-    const gate = this.#gate;
+    const gate = this.#deps.credentials.unlockGate();
     try {
       await this.#login(username.trim(), password, gate);
     } finally {
@@ -139,177 +121,170 @@ export class AuthController {
   }
 
   async #login(username: string, password: string, gate: number): Promise<void> {
-    if (!this.#snapshot.isOnline) {
-      this.#publish({ notice: { key: "mobile.login.noSignal" } });
-      return;
-    }
-    const counts = await this.#deps.outbox.countByStatus();
-    if (!canLoginAs(username, this.#snapshot.profile?.username ?? null, counts)) {
+    const refused = await this.#deps.credentials.runExclusive(async () => {
+      if (!this.#context.isOnline) {
+        this.#publish({ notice: { key: "mobile.login.noSignal" } });
+        return true;
+      }
+      const counts = await this.#deps.outbox.countByStatus();
+      if (canLoginAs(username, this.#context.profile?.username ?? null, counts)) return false;
       this.#publish({ notice: { key: "mobile.login.differentUser" } });
-      return;
-    }
+      return true;
+    });
+    if (refused) return;
     const answer = await this.#deps.login(username, password);
-    if (gate !== this.#gate) return;
     if (!answer.ok) {
-      this.#publish({ notice: answer.notice });
+      await this.#deps.credentials.runExclusive(() => {
+        this.#publish({ notice: answer.notice });
+      });
       return;
     }
-    await this.#acceptLogin(answer.login, password, { gate, phoneTime: this.#deps.now() });
+    const time = { serverTime: answer.login.server_time, phoneTime: this.#deps.now() };
+    await this.#acceptLogin(answer.login, password, { gate, time });
   }
 
   async #acceptLogin(
     login: Schemas["MobileLoginResponse"],
     password: string,
-    attempt: { gate: number; phoneTime: number },
+    attempt: { gate: number; time: AcceptedLogin["time"] },
   ): Promise<void> {
-    const { gate } = attempt;
     const verifier = await createVerifier(password, PASSWORD_ITERATIONS, this.#deps.randomBytes);
-    if (gate !== this.#gate) return;
-    const profile = await this.#persistLogin(login, verifier, gate);
-    if (profile === null) return;
-    this.#publish({
-      profile,
-      rules: readAuthRules(null),
-      notice: null,
-      phase: "createPin",
-      hasClockSkew: hasClockSkew(
-        login.server_time,
-        attempt.phoneTime,
-        readAuthRules(null).clockSkewReviewSeconds,
-      ),
-    });
-    // Optional policy I/O must never hold the login busy guard or block PIN creation.
-    void this.#finishLogin(
-      { serverTime: login.server_time, phoneTime: attempt.phoneTime },
-      profile,
-    );
+    const accepted: AcceptedLogin = {
+      ...attempt,
+      profile: profileOf(login.me),
+      credentials: {
+        status: "active",
+        sessionId: toHex(this.#deps.randomBytes(16)),
+        pair: { access: login.access, refresh: login.refresh },
+        password: verifier,
+        pin: null,
+        pinAttempts: 0,
+        passwordAttempts: 0,
+      },
+    };
+    await this.#persistLogin(accepted);
+    // Optional policy fetch never holds the queue or blocks PIN setup.
+    void this.#finishLogin(accepted);
   }
 
-  async #persistLogin(
-    login: Schemas["MobileLoginResponse"],
-    verifier: Verifier,
-    gate: number,
-  ): Promise<Profile | null> {
-    const profile = profileOf(login.me);
-    await this.#deps.kv.set(PROFILE_KEY, JSON.stringify(profile));
-    await this.#deps.kv.set(RULES_KEY, JSON.stringify(null));
-    await this.#deps.credentials.update((current) =>
-      gate !== this.#gate
-        ? current
-        : {
-            status: "active",
-            sessionId: toHex(this.#deps.randomBytes(16)),
-            pair: { access: login.access, refresh: login.refresh },
-            password: verifier,
-            pin: null,
-            pinAttempts: 0,
-            passwordAttempts: 0,
-          },
-    );
-    if (gate !== this.#gate) return null;
-    await this.#deps.kv.set(ENDED_KEY, "false");
-    return gate === this.#gate ? profile : null;
-  }
-
-  async #finishLogin(
-    time: { serverTime: string; phoneTime: number },
-    profile: Profile,
-  ): Promise<void> {
-    await this.#refreshRules(profile);
-    if (!this.#isCurrentProfile(profile)) return;
-    this.#publish({
-      hasClockSkew: hasClockSkew(
-        time.serverTime,
-        time.phoneTime,
-        this.#snapshot.rules.clockSkewReviewSeconds,
-      ),
+  #persistLogin(accepted: AcceptedLogin): Promise<void> {
+    return this.#deps.credentials.runExclusive(async (transaction) => {
+      await this.#deps.kv.set(PROFILE_KEY, JSON.stringify(accepted.profile));
+      await this.#deps.kv.set(RULES_KEY, JSON.stringify(null));
+      await this.#deps.kv.set(SESSION_ENDED_KEY, "false");
+      this.#publish({
+        profile: accepted.profile,
+        rules: readAuthRules(null),
+        notice: null,
+        hasClockSkew: hasClockSkew(
+          accepted.time.serverTime,
+          accepted.time.phoneTime,
+          readAuthRules(null).clockSkewReviewSeconds,
+        ),
+      });
+      await transaction.write(accepted.credentials);
+      // A lock only drops this grant. It never cancels the accepted persisted credentials.
+      transaction.grantUnlock(accepted.gate);
     });
   }
 
-  #isCurrentProfile(profile: Profile): boolean {
-    return this.#snapshot.profile === profile && this.#snapshot.phase !== "login";
-  }
-
-  async #refreshRules(profile: Profile): Promise<void> {
+  async #finishLogin(accepted: AcceptedLogin): Promise<void> {
     try {
       const snapshot = await this.#deps.fetchRules();
-      if (!isRulesSnapshot(snapshot) || !this.#isCurrentProfile(profile)) return;
-      await this.#deps.kv.set(RULES_KEY, JSON.stringify(snapshot));
-      if (this.#isCurrentProfile(profile)) this.#publish({ rules: readAuthRules(snapshot) });
+      if (!isRulesSnapshot(snapshot)) return;
+      await this.#deps.credentials.runExclusive(async (transaction) => {
+        if (!isCurrentSession(transaction.read(), accepted.credentials.sessionId)) return;
+        await this.#deps.kv.set(RULES_KEY, JSON.stringify(snapshot));
+        if (!isCurrentSession(transaction.read(), accepted.credentials.sessionId)) return;
+        const rules = readAuthRules(snapshot);
+        this.#publish({
+          rules,
+          hasClockSkew: hasClockSkew(
+            accepted.time.serverTime,
+            accepted.time.phoneTime,
+            rules.clockSkewReviewSeconds,
+          ),
+        });
+      });
     } catch {
-      // A failed optional snapshot never blocks login. Defaults remain in force.
-      if (this.#isCurrentProfile(profile)) this.#publish({ rules: readAuthRules(null) });
+      // Fetching optional policy failed: the accepted session keeps its already-published defaults.
+      await this.#deps.credentials.runExclusive(() => {
+        if (isCurrentSession(this.#deps.credentials.getSnapshot(), accepted.credentials.sessionId))
+          this.#refreshSnapshot();
+      });
     }
   }
 
   async createPin(pin: string): Promise<boolean> {
     if (this.#snapshot.phase !== "createPin" || !isAllowedPin(pin) || this.#isBusy) return false;
     this.#isBusy = true;
-    const gate = this.#gate;
+    const sessionId = this.#deps.credentials.getSnapshot().sessionId;
+    const gate = this.#deps.credentials.unlockGate();
     try {
       const verifier = await createVerifier(pin, PIN_ITERATIONS, this.#deps.randomBytes);
-      if (gate !== this.#gate) return false;
-      await this.#deps.credentials.update((current) =>
-        gate !== this.#gate ? current : { ...current, pin: verifier, pinAttempts: 0 },
-      );
-      if (gate !== this.#gate) return false;
-      this.#publish({ phase: "unlocked", notice: null });
-      return true;
+      return await this.#deps.credentials.runExclusive(async (transaction) => {
+        const current = transaction.read();
+        if (!isCurrentSession(current, sessionId) || current.pin !== null) return false;
+        await transaction.write({ ...current, pin: verifier, pinAttempts: 0 });
+        transaction.grantUnlock(gate);
+        this.#publish({ notice: null });
+        return true;
+      });
     } finally {
       this.#isBusy = false;
     }
   }
 
-  async unlock(secret: string, kind: "pin" | "password"): Promise<void> {
-    if (this.#snapshot.phase !== "locked") return;
-    const gate = this.#gate;
-    const isCorrect = await this.#unlock.attempt(secret, kind);
-    if (gate !== this.#gate) return;
-    if (this.#deps.credentials.getSnapshot().pair === null) {
-      this.#publish({ phase: "login", notice: { key: "mobile.login.onlineRequired" } });
-      return;
-    }
-    if (!isCorrect) {
-      this.#publish({ notice: { key: "mobile.unlock.wrongSecret" } });
-      return;
-    }
-    const hasPin = this.#deps.credentials.getSnapshot().pin !== null;
-    this.#publish({ phase: hasPin ? "unlocked" : "createPin", notice: null });
+  unlock(secret: string, kind: "pin" | "password"): Promise<void> {
+    if (this.#snapshot.phase !== "locked") return Promise.resolve();
+    const gate = this.#deps.credentials.unlockGate();
+    return this.#unlock
+      .attempt(secret, kind, (isAccepted, transaction) => {
+        const current = transaction.read();
+        if (current.status === "ended") return;
+        if (current.pair === null) {
+          this.#publish({ notice: { key: "mobile.login.onlineRequired" } });
+          return;
+        }
+        if (isAccepted) {
+          transaction.grantUnlock(gate);
+          this.#publish({ notice: null });
+        } else this.#publish({ notice: { key: "mobile.unlock.wrongSecret" } });
+      })
+      .then(() => undefined);
   }
 
   canUseBiometrics(): boolean {
     return this.#snapshot.phase === "locked" && this.#unlock.canUseBiometrics();
   }
   biometricGate(): number {
-    return this.#gate;
+    return this.#deps.credentials.unlockGate();
   }
-  unlockBiometric(gate: number): void {
-    if (gate !== this.#gate || !this.canUseBiometrics()) return;
-    // Biometrics do not prove knowledge of the PIN, so they never reset its counter.
-    this.#publish({ phase: "unlocked", notice: null });
+  unlockBiometric(gate: number): Promise<void> {
+    return this.#deps.credentials.runExclusive((transaction) => {
+      if (!this.canUseBiometrics()) return;
+      if (transaction.grantUnlock(gate)) this.#publish({ notice: null });
+    });
   }
 
-  #publish(patch: Partial<AuthSnapshot>): void {
-    const attempts = this.#deps.credentials.getSnapshot().pinAttempts;
-    this.#snapshot = {
-      ...this.#snapshot,
-      ...patch,
-      isPinSetupRequired:
-        this.#deps.credentials.getSnapshot().pair !== null &&
-        this.#deps.credentials.getSnapshot().pin === null,
-      isPasswordRequired:
-        this.#deps.credentials.getSnapshot().pin === null ||
-        attempts >= (patch.rules ?? this.#snapshot.rules).pinMaxAttempts,
-      remainingAttempts: Math.max(
-        0,
-        (patch.rules ?? this.#snapshot.rules).pinMaxAttempts - attempts,
-      ),
-    };
+  #deriveSnapshot(): AuthSnapshot {
+    return deriveAuthSnapshot({
+      credentials: this.#deps.credentials.getSnapshot(),
+      isUnlocked: this.#deps.credentials.isUnlocked(),
+      context: this.#context,
+    });
+  }
+  #publish(patch: Partial<AuthContext>): void {
+    this.#context = { ...this.#context, ...patch };
+    this.#refreshSnapshot();
+  }
+  #refreshSnapshot(): void {
+    this.#snapshot = this.#deriveSnapshot();
     for (const listener of this.#listeners) listener();
   }
 }
 
-function profileOf(me: Schemas["Me"]): Profile {
+function profileOf(me: Schemas["Me"]): AuthProfile {
   return {
     username: me.user.username,
     firstName: me.user.first_name,
@@ -317,17 +292,6 @@ function profileOf(me: Schemas["Me"]): Profile {
     permissions: me.permissions,
   };
 }
-
-/** The journal closes the crash window between kv and the atomic SecureStore replacement. */
-function readEndedMarker(marker: string | null, sessionId: string | null): boolean {
-  if (marker === "true") return true;
-  if (sessionId !== null && marker === sessionId) return true;
-  if (marker === null || !marker.startsWith("{")) return false;
-  return isEndedJournal(JSON.parse(marker), sessionId);
-}
-
-function isEndedJournal(value: unknown, sessionId: string | null): boolean {
-  if (typeof value !== "object" || value === null) return false;
-  const journal = value as Record<string, unknown>;
-  return journal.sessionId === sessionId && journal.status === "ended";
+function isCurrentSession(current: Credentials, sessionId: string | null): boolean {
+  return current.status === "active" && current.sessionId === sessionId && current.pair !== null;
 }

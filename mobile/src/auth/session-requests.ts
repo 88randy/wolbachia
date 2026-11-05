@@ -48,7 +48,6 @@ export class SessionRequests {
   readonly #deps: SessionRequestDeps;
   #inFlight: Promise<void> | null = null;
   #inFlightPair: TokenPair | null = null;
-  #endedSessionId: string | null = null;
   #ending: { sessionId: string | null; promise: Promise<void> } | null = null;
 
   constructor(deps: SessionRequestDeps) {
@@ -62,6 +61,7 @@ export class SessionRequests {
   async runSync<Answer extends ApiAnswer>(
     call: (access: string) => Promise<Answer>,
   ): Promise<SyncAnswer<Answer>> {
+    await this.#deps.credentials.whenSettled();
     if (this.#ending?.sessionId === this.#deps.credentials.getSnapshot().sessionId)
       await this.#ending.promise;
     const session = this.#deps.credentials.getSnapshot();
@@ -85,7 +85,7 @@ export class SessionRequests {
     isSync: boolean,
   ): Promise<Answer> {
     const session = this.#deps.credentials.getSnapshot();
-    this.#requireActive(session);
+    this.#requireActive();
     let answer = await call();
     if (!this.#belongsTo(session)) return answer;
     if (
@@ -108,6 +108,7 @@ export class SessionRequests {
     call: (access: string) => Promise<Answer>,
     session: Credentials,
   ): Promise<SyncAnswer<Answer>> {
+    await this.#deps.credentials.whenSettled();
     if (!this.#belongsTo(session) || !this.#deps.isOnline()) throw new RemoteSessionEnded();
     const current = this.#deps.credentials.getSnapshot();
     if (current.pair === null) throw new RemoteSessionEnded();
@@ -128,28 +129,22 @@ export class SessionRequests {
     return this.#deps.credentials.getSnapshot().sessionId === session.sessionId;
   }
 
-  #requireActive(session: Credentials): void {
-    if (!this.#deps.credentials.isSessionActive() || this.#endedSessionId === session.sessionId) {
+  #requireActive(): void {
+    if (!this.#deps.credentials.isSessionActive()) {
       throw new RemoteSessionEnded();
     }
   }
 
   #beginEnd(sessionId: string | null): Promise<void> {
     if (this.#deps.credentials.getSnapshot().sessionId !== sessionId) return Promise.resolve();
-    this.#endedSessionId = sessionId;
-    const previous =
-      this.#ending?.sessionId === sessionId ? this.#ending.promise : Promise.resolve();
-    const promise = previous.then(async () => {
-      if (this.#deps.credentials.getSnapshot().sessionId === sessionId)
-        await this.#deps.endSession();
-    });
+    if (this.#ending?.sessionId === sessionId) return this.#ending.promise;
+    const promise = this.#deps.endSession();
     this.#ending = { sessionId, promise };
     return promise;
   }
 
   refresh(pair: TokenPair): Promise<void> {
-    const current = this.#deps.credentials.getSnapshot();
-    if (!this.#deps.credentials.isSessionActive() || this.#endedSessionId === current.sessionId) {
+    if (!this.#deps.credentials.isSessionActive()) {
       return Promise.reject(new RemoteSessionEnded());
     }
     if (this.#deps.credentials.getSnapshot().pair !== pair) return Promise.resolve();

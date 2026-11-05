@@ -56,7 +56,7 @@ function useIdleLock(
         warn: setIsWarning,
         lock: () => {
           Keyboard.dismiss();
-          auth.lock();
+          void auth.lock();
         },
         schedule: (callback, delay) => {
           const handle = setTimeout(callback, delay);

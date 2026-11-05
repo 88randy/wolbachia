@@ -15,7 +15,7 @@ export function observeSyncSession(engine: SyncEngine, tokens: TokenStore): () =
     if (!hasEligibilityChanged && !hasAccessChanged) return;
     const phase = engine.getSnapshot().phase;
     if (!hasEligibilityChanged && (phase === "syncing" || phase === "waitingRetry")) return;
-    engine.notifyConditionsChanged();
+    void engine.requestSync();
   });
 }
 

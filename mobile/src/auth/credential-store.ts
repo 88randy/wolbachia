@@ -26,66 +26,121 @@ export const EMPTY_CREDENTIALS: Credentials = {
 };
 const ITEM = "session_credentials_v1";
 
+export interface CredentialTransaction {
+  readonly read: () => Credentials;
+  readonly write: (next: Credentials) => Promise<void>;
+  readonly grantUnlock: (expectedGate: number) => boolean;
+}
+
 /**
- * One serialized read-modify-write queue and ONE SecureStore item, including the token pair.
- * Publish only after persistence. Local counters, refresh and revoke cannot overwrite each other.
+ * One command queue owns credentials and the local unlock flag. Reducers change authoritative
+ * memory BEFORE I/O; persistence completion never assigns that memory from an older snapshot.
+ * Additions are exposed only after persistence. End/lock conservatively restrict immediately
+ * on submission, before their queued persistence; no pending command can undo that restriction.
  */
 export class CredentialStore {
   readonly #storage: SecretStorage;
   readonly #listeners = new Set<() => void>();
+  readonly #transaction: CredentialTransaction;
   #credentials: Credentials = EMPTY_CREDENTIALS;
-  #endingSessionId: string | null = null;
+  #persisted: Credentials = EMPTY_CREDENTIALS;
+  #isUnlocked = false;
+  #gate = 0;
   #tail: Promise<unknown> = Promise.resolve();
+  #lastOperation: Promise<unknown> = Promise.resolve();
 
   constructor(storage: SecretStorage) {
     this.#storage = storage;
+    this.#transaction = {
+      read: () => this.#credentials,
+      write: (next) => this.#write(next),
+      grantUnlock: (gate) => this.#grantUnlock(gate),
+    };
   }
 
-  async load(): Promise<void> {
-    const saved = await this.#storage.get(ITEM);
-    if (saved !== null) this.#credentials = decodeCredentials(saved);
-    // An interrupted final password attempt is conservatively a failure on restart.
-    if (this.#credentials.passwordAttempts >= PASSWORD_ATTEMPT_LIMIT) await this.clear();
+  load(
+    readEnd: (sessionId: string | null) => Promise<boolean> = () => Promise.resolve(false),
+  ): Promise<void> {
+    return this.runExclusive(async (transaction) => {
+      const saved = await this.#storage.get(ITEM);
+      this.#credentials = saved === null ? EMPTY_CREDENTIALS : decodeCredentials(saved);
+      this.#persisted = this.#credentials;
+      this.#isUnlocked = false;
+      if (await readEnd(this.#credentials.sessionId)) {
+        await transaction.write(endedCredentials(this.#credentials));
+      } else if (
+        this.#credentials.status === "active" &&
+        this.#credentials.passwordAttempts >= PASSWORD_ATTEMPT_LIMIT
+      ) {
+        await transaction.write(EMPTY_CREDENTIALS);
+      }
+      this.#emit();
+    });
   }
 
-  getSnapshot = (): Credentials => this.#credentials;
+  /** Durable additions, with immediate terminal/erasure restrictions layered over them. */
+  getSnapshot = (): Credentials =>
+    this.#credentials.status === "ended" || this.#credentials.pair === null
+      ? this.#credentials
+      : this.#persisted;
   getAccessToken = (): string | undefined =>
-    this.isSessionActive() ? this.#credentials.pair?.access : undefined;
-  hasSyncSession = (): boolean => this.#credentials.pair !== null;
+    this.isSessionActive() ? this.getSnapshot().pair?.access : undefined;
+  hasSyncSession = (): boolean => this.getSnapshot().pair !== null;
   isSessionActive(): boolean {
-    return (
-      this.#credentials.status === "active" &&
-      this.#credentials.pair !== null &&
-      this.#credentials.sessionId !== this.#endingSessionId
-    );
+    const current = this.getSnapshot();
+    return current.status === "active" && current.pair !== null;
+  }
+  isUnlocked(): boolean {
+    return this.#isUnlocked;
+  }
+  unlockGate(): number {
+    return this.#gate;
   }
 
-  /** Step 1 is monotonic and disables local secrets before any final upload. */
-  markEnded(sessionId: string | null): Promise<void> {
+  /** A lock revokes grants, never a pending persisted login or PIN creation. */
+  lock(): Promise<void> {
+    this.#gate += 1;
+    this.#isUnlocked = false;
+    const pending = this.runExclusive(() => {
+      this.#isUnlocked = false;
+      this.#emit();
+    });
+    this.#emit();
+    return pending;
+  }
+
+  /** End is visible synchronously, even while another native write/journal is suspended. */
+  markEnded(sessionId: string | null, journal?: () => Promise<void>): Promise<void> {
     if (this.#credentials.sessionId !== sessionId) return Promise.resolve();
-    this.#endingSessionId = sessionId;
-    return this.update((current) =>
-      current.sessionId !== sessionId
-        ? current
-        : {
-            ...current,
-            pin: null,
-            password: null,
-            pinAttempts: 0,
-            passwordAttempts: 0,
-            status: "ended",
-          },
-    );
+    if (this.#credentials.status !== "ended") {
+      this.#credentials = endedCredentials(this.#credentials);
+      this.#gate += 1;
+      this.#isUnlocked = false;
+    }
+    const pending = this.runExclusive(async (transaction) => {
+      try {
+        await journal?.();
+      } finally {
+        const current = transaction.read();
+        if (current.sessionId === sessionId && current.status === "ended")
+          await transaction.write(current);
+      }
+    });
+    // Register persistence before notifying sync; its first POST must await this command.
+    this.#emit();
+    return pending;
   }
 
-  /** Step 2 follows sync's durable settlement and cannot clear a replacement login. */
+  /** Definitive sync settlement cannot erase a replacement login. */
   finishEndedSession(sessionId: string | null): Promise<void> {
-    return this.update((current) =>
-      current.sessionId !== sessionId || current.status === "active" || current.pair === null
-        ? current
-        : { ...EMPTY_CREDENTIALS, sessionId, status: "ended" },
-    );
+    return this.runExclusive(async (transaction) => {
+      const current = transaction.read();
+      if (current.sessionId !== sessionId || current.status !== "ended" || current.pair === null)
+        return;
+      await this.#write({ ...EMPTY_CREDENTIALS, sessionId, status: "ended" }, true);
+    });
   }
+
   subscribe = (listener: () => void): (() => void) => {
     this.#listeners.add(listener);
     return () => {
@@ -93,29 +148,81 @@ export class CredentialStore {
     };
   };
 
-  update(change: (current: Credentials) => Credentials): Promise<void> {
-    const operation = this.#tail.then(async () => {
-      const next = change(this.#credentials);
-      if (next === this.#credentials) return;
-      await this.#storage.set(ITEM, JSON.stringify(next));
-      this.#credentials = next;
-      for (const listener of this.#listeners) listener();
-    });
-    this.#tail = operation.catch(() => {
-      // A failed write is reported to its caller; later writes may still recover.
-    });
-    return operation;
+  runExclusive<Result>(
+    operation: (transaction: CredentialTransaction) => Result | Promise<Result>,
+  ): Promise<Result> {
+    const pending = this.#tail.then(() => operation(this.#transaction));
+    this.#lastOperation = pending;
+    // The caller receives errors. One failed command must not poison future cleanup commands.
+    this.#tail = pending.then(
+      () => undefined,
+      () => undefined,
+    );
+    return pending;
   }
 
-  async clear(): Promise<void> {
+  whenSettled(): Promise<void> {
+    return this.#lastOperation.then(() => undefined);
+  }
+
+  update(change: (current: Credentials) => Credentials): Promise<void> {
+    return this.runExclusive((transaction) => transaction.write(change(transaction.read())));
+  }
+
+  clear(): Promise<void> {
+    return this.update(() => EMPTY_CREDENTIALS);
+  }
+
+  async #write(next: Credentials, canClearEnded = false): Promise<void> {
+    // End dominates every ordinary reducer, including a stale password-exhaustion clear.
+    const target = this.#retainedEnd(next, canClearEnded);
+    if (target === this.#credentials && target === this.#persisted) return;
+    if (target.pair === null && this.#credentials.pair !== null) {
+      this.#gate += 1;
+      this.#isUnlocked = false;
+    }
+    this.#credentials = target;
+    this.#emit();
     try {
-      await this.update(() => EMPTY_CREDENTIALS);
+      await this.#storage.set(ITEM, JSON.stringify(target));
     } catch (error) {
-      this.#credentials = EMPTY_CREDENTIALS;
-      for (const listener of this.#listeners) listener();
+      // Restore failed additions only; never undo a concurrent end or an erasure restriction.
+      if (this.#credentials === target && target.status === "active" && target.pair !== null) {
+        this.#credentials = this.#persisted;
+      }
+      this.#emit();
       throw error;
     }
+    this.#persisted = target;
+    this.#emit();
   }
+
+  #retainedEnd(next: Credentials, canClearEnded: boolean): Credentials {
+    const current = this.#credentials;
+    return !canClearEnded && current.status === "ended" && current.pair !== null ? current : next;
+  }
+
+  #grantUnlock(expectedGate: number): boolean {
+    if (expectedGate !== this.#gate || !this.isSessionActive()) return false;
+    this.#isUnlocked = true;
+    this.#emit();
+    return true;
+  }
+
+  #emit(): void {
+    for (const listener of this.#listeners) listener();
+  }
+}
+
+export function endedCredentials(current: Credentials): Credentials {
+  return {
+    ...current,
+    status: "ended",
+    pin: null,
+    password: null,
+    pinAttempts: 0,
+    passwordAttempts: 0,
+  };
 }
 
 function decodeCredentials(saved: string): Credentials {

@@ -11,6 +11,7 @@ import { loginOnline, refreshOnline } from "./auth-api.ts";
 import { CredentialStore } from "./credential-store.ts";
 import { nativeSecrets } from "./native-secrets.ts";
 import { SessionRequests } from "./session-requests.ts";
+import { readEndedSession } from "./session-journal.ts";
 
 interface CreateAuthDeps {
   readonly kv: KvStore;
@@ -23,7 +24,7 @@ interface CreateAuthDeps {
 /** Native composition only; policy and persistence are independently testable. */
 export async function createAuth(deps: CreateAuthDeps) {
   const credentials = new CredentialStore(nativeSecrets);
-  await credentials.load();
+  await credentials.load((sessionId) => readEndedSession(deps.kv, sessionId));
   const client = () =>
     createMobileApiClient({ baseUrl: deps.server.baseUrl() ?? "", tokens: credentials });
   const anonymous = () => createMobileApiClient({ baseUrl: deps.server.baseUrl() ?? "" });
