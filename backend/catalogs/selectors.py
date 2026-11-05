@@ -5,6 +5,7 @@ from django.db.models import Prefetch, QuerySet
 from catalogs.models import Catalog, CatalogItem
 from core.snapshots import with_version
 from organizations.models import Organization
+from shifts.selectors import list_snapshot_motorcycles
 
 
 def list_catalogs(organization: Organization) -> QuerySet[Catalog]:
@@ -40,4 +41,6 @@ def build_catalog_snapshot(organization: Organization) -> dict[str, Any]:
         }
         for catalog in list_catalogs(organization).prefetch_related(active_items)
     ]
-    return with_version({"catalogs": catalogs})
+    return with_version(
+        {"catalogs": catalogs, "motorcycles": list_snapshot_motorcycles(organization)}
+    )

@@ -4,6 +4,7 @@ from rest_framework import serializers
 
 from catalogs.models import Catalog, CatalogItem
 from core.serializers import OrgScopedModelSerializer
+from shifts.motorcycle_serializers import SnapshotMotorcycleSerializer
 
 
 class CatalogSerializer(OrgScopedModelSerializer):
@@ -76,3 +77,4 @@ class CatalogSnapshotSerializer(serializers.Serializer[Any]):
 
     version = serializers.CharField()
     catalogs = SnapshotCatalogSerializer(many=True)
+    motorcycles = SnapshotMotorcycleSerializer(many=True)
