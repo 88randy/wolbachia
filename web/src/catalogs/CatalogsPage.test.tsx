@@ -52,7 +52,7 @@ test.each(["none", "create", "update", "deactivate", "activate"])(
     const controls = [
       { name: "Agregar elemento", permission: "create" },
       { name: "Editar", permission: "update" },
-      { name: "Mover Rociado arriba", permission: "update" },
+      { name: "Mover arriba: Rociado", permission: "update" },
       { name: "Desactivar", permission: "deactivate" },
       { name: "Reactivar", permission: "activate" },
     ];
@@ -65,13 +65,13 @@ test.each(["none", "create", "update", "deactivate", "activate"])(
 );
 test("permitted moves are disabled at the ends and fixed Other has no actions", async () => {
   await open();
-  expect(screen.getByRole("button", { name: "Mover Rociado arriba" }).getAttribute("title")).toBe(
+  expect(screen.getByRole("button", { name: "Mover arriba: Rociado" }).getAttribute("title")).toBe(
     "Ya es el primer elemento activo.",
   );
   const other = screen.getByRole("row", { name: /Otro \(especificar\)/ });
   expect(within(other).queryByRole("button")).toBeNull();
   expect(
-    screen.getByRole("button", { name: "Mover Nebulización abajo" }).getAttribute("title"),
+    screen.getByRole("button", { name: "Mover abajo: Nebulización" }).getAttribute("title"),
   ).toBe("Ya es el último elemento activo.");
 });
 
@@ -179,7 +179,7 @@ test("a partial reorder failure refetches the server order and shows an alert", 
     },
   });
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "Mover Nebulización arriba" }));
+  await user.click(screen.getByRole("button", { name: "Mover arriba: Nebulización" }));
   expect(await screen.findByRole("alert")).toHaveProperty(
     "textContent",
     "No se pudo completar el cambio de orden. Se recargó la lista; revísala antes de reintentar.",
@@ -325,7 +325,7 @@ test("a session change between reorder PATCHes stops remaining writes and invali
   });
   const { api } = await open({ routes: { [`PATCH ${ITEMS_PATH}item-b/`]: () => answer } });
   const user = userEvent.setup();
-  const move = screen.getByRole("button", { name: "Mover Nebulización arriba" });
+  const move = screen.getByRole("button", { name: "Mover arriba: Nebulización" });
   await user.click(move);
   await waitFor(() => {
     expect(api.requests.some((request) => request.method === "PATCH")).toBe(true);

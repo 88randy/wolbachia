@@ -21,11 +21,11 @@ test("W63: add, edit, keyboard reorder, confirm deactivation and reactivate", as
   await page.getByLabel("Etiqueta en español (obligatoria)", { exact: true }).fill("Actualizada");
   await page.getByRole("button", { name: "Guardar", exact: true }).click();
   added = page.getByRole("row", { name: /Actualizada/ });
-  const up = added.getByRole("button", { name: "Mover Actualizada arriba" });
+  const up = added.getByRole("button", { name: "Mover arriba: Actualizada" });
   await up.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Se movió Actualizada arriba.", { exact: true })).toBeVisible();
-  const down = added.getByRole("button", { name: "Mover Actualizada abajo" });
+  const down = added.getByRole("button", { name: "Mover abajo: Actualizada" });
   await down.focus();
   await page.keyboard.press("Space");
   await expect(page.getByText("Se movió Actualizada abajo.", { exact: true })).toBeVisible();
