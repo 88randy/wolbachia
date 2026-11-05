@@ -1,7 +1,8 @@
 """Default catalogs of a new organization. Safe to run twice; it never overwrites admin edits.
 
 [PENDING #35] The launch list of catalogs and which are open or closed is not confirmed by the
-client. Open catalogs start with the fixed "Other (specify)" item only: admins add the real items.
+client. The void-reason item list is [PENDING] client/entomologist confirmation.
+Other open catalogs start with the fixed "Other (specify)" item only: admins add the real items.
 """
 
 from dataclasses import dataclass
@@ -30,6 +31,7 @@ DEFAULT_CATALOG_SEEDS = (
     CatalogSeed(
         "community-activity-type", "Tipo de actividad comunitaria", "Community activity type"
     ),
+    CatalogSeed("void-reason", "Motivo de anulación", "Void reason"),
     CatalogSeed("removal-reason", "Motivo de retiro", "Removal reason"),
     CatalogSeed("replacement-reason", "Motivo de reposición", "Replacement reason"),
     CatalogSeed("damage-reason", "Motivo de daño", "Damage reason"),
@@ -59,6 +61,8 @@ def seed_default_catalogs(organization: Organization) -> list[Catalog]:
         )
         if catalog.is_open:
             _ensure_other_item(catalog)
+        if catalog.slug == "void-reason":
+            _seed_void_reason_items(catalog)
         catalogs.append(catalog)
     return catalogs
 
@@ -66,11 +70,33 @@ def seed_default_catalogs(organization: Organization) -> list[Catalog]:
 def _ensure_other_item(catalog: Catalog) -> None:
     CatalogItem.objects.get_or_create(
         catalog=catalog,
-        is_other=True,
+        code=OTHER_ITEM_CODE,
         defaults={
+            "is_other": True,
             "organization_id": catalog.organization_id,
-            "code": OTHER_ITEM_CODE,
             "label_es": OTHER_ITEM_LABEL_ES,
             "label_en": OTHER_ITEM_LABEL_EN,
         },
     )
+
+
+# [PENDING] The client/entomologist will confirm the final list; never overwrite admin edits.
+VOID_REASON_ITEMS = (
+    ("data-entry-error", "Error de captura", "Data entry error", 10),
+    ("duplicate-record", "Registro duplicado", "Duplicate record", 20),
+    ("wrong-location", "Ubicación incorrecta", "Wrong location", 30),
+)
+
+
+def _seed_void_reason_items(catalog: Catalog) -> None:
+    for code, label_es, label_en, sort in VOID_REASON_ITEMS:
+        CatalogItem.objects.get_or_create(
+            catalog=catalog,
+            code=code,
+            defaults={
+                "organization_id": catalog.organization_id,
+                "label_es": label_es,
+                "label_en": label_en,
+                "sort": sort,
+            },
+        )

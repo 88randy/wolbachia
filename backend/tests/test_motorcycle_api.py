@@ -7,7 +7,7 @@ import pytest
 from shifts.models import Motorcycle, MotorcycleBlockEvent
 from tests.factories import MotorcycleFactory
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("void_catalog")]
 URL = "/api/v1/motorcycles/"
 SNAPSHOT_URL = "/api/v1/field/catalog/"
 CODES = ["motorcycle.read", "motorcycle.manage", "motorcycle.unblock", "catalog.read"]
@@ -31,6 +31,7 @@ def voided_motorcycle(org_a, fleet_actor):
         voided_at=datetime(2026, 11, 4, 12, tzinfo=UTC),
         voided_by=fleet_actor,
         void_reason="Duplicate vehicle record",
+        void_reason_code="other",
     )
 
 
@@ -81,7 +82,9 @@ def test_void_records_the_actor_and_normalized_reason(fleet_client, org_a, fleet
     motorcycle = MotorcycleFactory(organization=org_a)
 
     response = fleet_client.post(
-        f"{URL}{motorcycle.pk}/void/", {"reason": "  Duplicate vehicle record  "}, format="json"
+        f"{URL}{motorcycle.pk}/void/",
+        {"reason_code": "other", "reason": "  Duplicate vehicle record  "},
+        format="json",
     )
 
     assert response.status_code == 200
@@ -112,7 +115,9 @@ def test_voided_motorcycle_remains_retrievable(fleet_client, voided_motorcycle):
 def test_reason_actions_use_shared_validator_before_state(fleet_client, org_a, action):
     motorcycle = MotorcycleFactory(organization=org_a)
     response = fleet_client.post(
-        f"{URL}{motorcycle.pk}/{action}/", {"reason": "\u200b"}, format="json"
+        f"{URL}{motorcycle.pk}/{action}/",
+        {"reason": "\u200b", **({"reason_code": "other"} if action == "void" else {})},
+        format="json",
     )
     assert response.status_code == 400
     assert response.data["fields"]["reason"] == [
@@ -142,7 +147,12 @@ def test_foreign_motorcycle_is_not_addressable(fleet_client, org_b, action):
         ("motorcycle.manage", "get", "", {}),
         ("motorcycle.read", "post", "", {"code": "M-04"}),
         ("motorcycle.read", "patch", "detail", {"plate": "TEST"}),
-        ("motorcycle.read", "post", "void", {"reason": "Duplicate vehicle record"}),
+        (
+            "motorcycle.read",
+            "post",
+            "void",
+            {"reason_code": "other", "reason": "Duplicate vehicle record"},
+        ),
         ("motorcycle.manage", "post", "unblock", {"reason": "Vehicle repaired now"}),
     ],
 )
@@ -229,7 +239,9 @@ def test_snapshot_includes_blocked_excludes_foreign_and_voided_and_revalidates(
     assert unblocked.status_code == 200
     assert unblocked.data["motorcycles"][0]["is_blocked"] is False
     fleet_client.post(
-        f"{URL}{motorcycle.pk}/void/", {"reason": "Duplicate vehicle record"}, format="json"
+        f"{URL}{motorcycle.pk}/void/",
+        {"reason_code": "other", "reason": "Duplicate vehicle record"},
+        format="json",
     )
     voided = fleet_client.get(SNAPSHOT_URL, headers={"If-None-Match": unblocked["ETag"]})
     assert voided.status_code == 200

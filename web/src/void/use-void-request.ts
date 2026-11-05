@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import type { VoidChoice } from "./use-void-form";
 import type { VoidResult } from "./submit-void";
 import type { VoidFailure } from "./void-failure";
 
@@ -15,7 +17,8 @@ export interface VoidRequest {
   serverMin: number | undefined;
   markTooShort: () => void;
   markFailed: (failure: VoidFailure) => void;
-  send: (reason: string) => Promise<void>;
+  reset: () => void;
+  send: (choice: VoidChoice) => Promise<void>;
 }
 
 function useIsMounted() {
@@ -37,33 +40,39 @@ function statusAfter(result: VoidResult): VoidStatus {
 
 /** The request of the void dialog and what its answer means for the form. */
 export function useVoidRequest(
-  submit: (reason: string) => Promise<VoidResult>,
+  submit: (choice: VoidChoice) => Promise<VoidResult>,
   onVoided: () => void,
+  onCodeUnknown: () => void,
 ): VoidRequest {
   const [status, setStatus] = useState<VoidStatus>({ kind: "editing" });
   const [serverMin, setServerMin] = useState<number>();
   const mounted = useIsMounted();
 
-  async function send(reason: string) {
+  async function send(choice: VoidChoice) {
     setStatus({ kind: "busy" });
-    const result = await submit(reason);
+    const result = await submit(choice);
     if (!mounted.current) return;
     setStatus(statusAfter(result));
-    if (!result.ok && !("isStale" in result) && result.failure.kind === "reasonTooShort") {
-      setServerMin(result.failure.minLength);
+    if (!result.ok && !("isStale" in result)) {
+      if (result.failure.kind === "reasonTooShort") setServerMin(result.failure.minLength);
+      if (result.failure.kind === "codeUnknown") onCodeUnknown();
     }
     if (result.ok) onVoided();
   }
 
+  return { status, serverMin, send, ...statusActions(setStatus) };
+}
+
+function statusActions(setStatus: Dispatch<SetStateAction<VoidStatus>>) {
   return {
-    status,
-    serverMin,
+    reset: () => {
+      setStatus({ kind: "editing" });
+    },
     markTooShort: () => {
       setStatus({ kind: "tooShort" });
     },
-    markFailed: (failure) => {
+    markFailed: (failure: VoidFailure) => {
       setStatus({ kind: "failed", failure });
     },
-    send,
   };
 }

@@ -287,7 +287,7 @@ class EventProcessor:
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError as error:
-            raise EventRejected(INVALID_PAYLOAD, _rejection_params(error)) from None
+            raise EventRejected(INVALID_PAYLOAD, rejection_params(error)) from None
         shift_signal = (
             run_envelope_checks(organization, self.batch.user, envelope)
             if handler.checks_shift
@@ -466,7 +466,7 @@ class EventProcessor:
         return self._replay(envelope, stored)
 
 
-def _rejection_params(error: ValidationError) -> dict[str, Any]:
+def rejection_params(error: ValidationError) -> dict[str, Any]:
     """`{"fields": {name: [code]}}`, plus `field_params: {name: {code: params}}` when a code
     carries params (the phone needs `min_length` of `void_reason_too_short`)."""
     flat = flatten_error_details(error.get_full_details())

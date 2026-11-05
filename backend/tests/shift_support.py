@@ -3,7 +3,7 @@
 import uuid
 from typing import Any
 
-from catalogs.models import CatalogItem
+from catalogs.models import Catalog, CatalogItem
 from organizations.models import Organization
 from shifts.codes import MOTORCYCLE_CHECK_CATALOG_SLUG
 from tests.factories import CatalogFactory, CatalogItemFactory
@@ -14,7 +14,10 @@ CHECK_ITEM_CODES = ("tires", "brakes", "lights")
 
 def make_check_items(organization: Organization) -> dict[str, CatalogItem]:
     """The closed catalog `motorcycle-check-item` with three active items, by code."""
-    catalog = CatalogFactory(
+    # The default seed may already have created the (empty) closed catalog.
+    catalog = Catalog.objects.filter(
+        organization=organization, slug=MOTORCYCLE_CHECK_CATALOG_SLUG
+    ).first() or CatalogFactory(
         organization=organization, slug=MOTORCYCLE_CHECK_CATALOG_SLUG, is_open=False
     )
     return {

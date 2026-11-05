@@ -18,7 +18,7 @@ React Native (Android) app for the courier. Offline-first: the phone is the loca
 
 ```
 App.tsx, index.ts      entry (SafeAreaProvider, then AppRoot)
-metro.config.js        pins React to this app's copy (see decision 93)
+metro.config.js        pins React to this app's copy (see decision 94)
 plugins/               Expo config plugin: plain http in debug builds only
 src/app/               boot (fonts, database, saved settings), providers, shell
 src/config/            API address rule and settings, build-time variables

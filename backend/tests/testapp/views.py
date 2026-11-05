@@ -36,8 +36,16 @@ class WidgetSerializer(OrgScopedModelSerializer):
             "voided_at",
             "voided_by",
             "void_reason",
+            "void_reason_code",
         ]
-        read_only_fields = ["id", "created_at", "voided_at", "voided_by", "void_reason"]
+        read_only_fields = [
+            "id",
+            "created_at",
+            "voided_at",
+            "voided_by",
+            "void_reason",
+            "void_reason_code",
+        ]
 
 
 class StreamWidgetSerializer(WidgetSerializer):

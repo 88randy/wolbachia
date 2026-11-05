@@ -118,6 +118,8 @@ export interface RowSelectionConfig<Row> {
 
 export interface VoidInfo {
   reason: string;
+  /** Optional free text for a catalog reason, displayed separately from its label. */
+  note?: string;
   /** Already formatted for display (a name, never an id). */
   author: string;
   /** Already formatted in the organization's time zone; shown only when present. */

@@ -7,15 +7,15 @@ import type { VoidForm } from "./use-void-form";
 
 type FieldState = Pick<
   VoidForm,
-  "reason" | "setReason" | "count" | "minLength" | "maxLength" | "hasTooShortError"
+  "reason" | "setReason" | "count" | "minLength" | "maxLength" | "reasonError"
 >;
 
-/** Puts focus on the returned ref's element when `condition` becomes true. */
-function useFocusWhen(condition: boolean) {
+/** Focus the conditional textarea when it appears or receives a field error. */
+function useReasonFocus(error: string | undefined) {
   const ref = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
-    if (condition) ref.current?.focus();
-  }, [condition]);
+    ref.current?.focus();
+  }, [error]);
   return ref;
 }
 
@@ -42,7 +42,7 @@ function ReasonLabel({ htmlFor }: { htmlFor: string }) {
   const { t } = useTranslation();
   return (
     <label htmlFor={htmlFor} className={styles.label}>
-      {t("common.fields.voidReason")}{" "}
+      {t("voiding.dialog.details")}{" "}
       <span className={styles.required}>({t("voiding.dialog.required")})</span>
     </label>
   );
@@ -54,24 +54,24 @@ function ReasonLabel({ htmlFor }: { htmlFor: string }) {
  * reason puts focus back here, so the error is read together with the field.
  */
 export function VoidReasonField(props: FieldState) {
-  const { reason, setReason, count, minLength, maxLength, hasTooShortError } = props;
+  const { reason, setReason, count, minLength, maxLength, reasonError } = props;
   const { t } = useTranslation();
   const id = useId();
-  const input = useFocusWhen(hasTooShortError);
-  const error = hasTooShortError ? t("voiding.error.tooShort", { min: minLength }) : undefined;
+  const input = useReasonFocus(reasonError);
+  const error = useReasonError(reasonError, minLength);
   return (
     <div className={styles.field}>
       <ReasonLabel htmlFor={id} />
       <textarea
         ref={input}
         id={id}
-        className={classNames(styles.textarea, hasTooShortError && styles.invalid)}
+        className={classNames(styles.textarea, reasonError !== undefined && styles.invalid)}
         value={reason}
         rows={4}
         maxLength={maxLength}
         required
-        aria-invalid={hasTooShortError ? true : undefined}
-        aria-describedby={describedBy(id, hasTooShortError)}
+        aria-invalid={reasonError ? true : undefined}
+        aria-describedby={describedBy(id, reasonError !== undefined)}
         onChange={(event) => {
           setReason(event.target.value);
         }}
@@ -80,4 +80,12 @@ export function VoidReasonField(props: FieldState) {
       <Counter id={id} count={count} min={minLength} max={maxLength} />
     </div>
   );
+}
+
+function useReasonError(error: FieldState["reasonError"], min: number) {
+  const { t } = useTranslation();
+  if (error === undefined) return undefined;
+  return t(error === "tooShort" ? "voiding.error.tooShort" : "voiding.error.requiredForOther", {
+    min,
+  });
 }

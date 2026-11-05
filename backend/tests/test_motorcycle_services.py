@@ -15,13 +15,13 @@ from shifts.services import (
 from tests.factories import MotorcycleFactory, ShiftFactory, UserFactory
 from tests.sync_support import run_in_threads
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("void_catalog")]
 
 
 def test_voided_motorcycle_codes_stay_reserved_against_reuse(org_a):
     user = UserFactory()
     motorcycle = MotorcycleFactory(organization=org_a, code="M-03")
-    void_motorcycle(motorcycle, user, "Incorrect motorcycle code")
+    void_motorcycle(motorcycle, user, "Incorrect motorcycle code", "other")
 
     with pytest.raises(FieldValidationError) as error:
         create_motorcycle(org_a, {"code": "M-03"}, user)
@@ -33,10 +33,10 @@ def test_voided_motorcycle_codes_stay_reserved_against_reuse(org_a):
 def test_voided_motorcycles_cannot_change_through_stale_instances(org_a, operation):
     user = UserFactory()
     motorcycle = MotorcycleFactory(organization=org_a)
-    void_motorcycle(motorcycle, user, "Duplicate vehicle record")
+    void_motorcycle(motorcycle, user, "Duplicate vehicle record", "other")
     operations = {
         "update": lambda: update_motorcycle(motorcycle, {"plate": "TEST"}),
-        "void": lambda: void_motorcycle(motorcycle, user, "Duplicate vehicle record"),
+        "void": lambda: void_motorcycle(motorcycle, user, "Duplicate vehicle record", "other"),
         "unblock": lambda: unblock_motorcycle(motorcycle, user, "Vehicle repaired now"),
     }
     with pytest.raises(AlreadyVoidedError):
@@ -46,7 +46,7 @@ def test_voided_motorcycles_cannot_change_through_stale_instances(org_a, operati
 def test_void_refuses_a_motorcycle_in_an_open_shift(org_a):
     shift = ShiftFactory(organization=org_a)
     with pytest.raises(MotorcycleInUseError):
-        void_motorcycle(shift.motorcycle, shift.courier, "Vehicle removed from fleet")
+        void_motorcycle(shift.motorcycle, shift.courier, "Vehicle removed from fleet", "other")
     shift.motorcycle.refresh_from_db()
     assert shift.motorcycle.voided_at is None
 
@@ -106,7 +106,7 @@ def test_void_and_shift_open_cannot_leave_an_open_shift_on_a_voided_motorcycle(o
     phone = make_phone(make_member, org_a)
     opened, voided = run_in_threads(
         lambda: phone.sync([open_event("M-03")]),
-        lambda: void_motorcycle(motorcycle, phone.user, "Vehicle removed from fleet"),
+        lambda: void_motorcycle(motorcycle, phone.user, "Vehicle removed from fleet", "other"),
     )
     assert not isinstance(opened, Exception), opened
     assert opened.status_code == 200

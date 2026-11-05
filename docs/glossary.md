@@ -86,7 +86,7 @@ Rules:
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
-| anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason` | Nothing is deleted; a void references the original (decision 3). |
+| anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason`, `void_reason_code` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 
 ## Sync

@@ -867,6 +867,7 @@ export interface components {
             /** Format: uuid */
             readonly voided_by: string | null;
             readonly void_reason: string;
+            readonly void_reason_code: string;
         };
         /** @description One checklist line; `item_code` is the code of the catalog item. */
         MotorcycleCheck: {
@@ -1135,6 +1136,7 @@ export interface components {
             readonly voided_by: string | null;
             readonly voided_by_username: string | null;
             readonly void_reason: string;
+            readonly void_reason_code: string;
         };
         /** @description `effective_from` is a local calendar date (`YYYY-MM-DD`): the server resolves the instant. */
         RuleParameterVersionCreateRequest: {
@@ -1284,6 +1286,10 @@ export interface components {
             results: components["schemas"]["EventResult"][];
             changes: components["schemas"]["Changes"];
         };
+        /** @description Free-text reason of a fleet unblock; the service validates it with `validate_void_reason`. */
+        UnblockRequest: {
+            reason: string;
+        };
         /**
          * @description * `m` - Meters
          *     * `km_h` - Kilometers Per Hour
@@ -1302,8 +1308,10 @@ export interface components {
          * @enum {string}
          */
         ValueTypeEnum: "integer" | "decimal";
-        /** @description Body of `POST .../void/`. */
+        /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
         VoidRequest: {
+            reason_code: string;
+            /** @default  */
             reason: string;
         };
         WebLoginResponse: {
@@ -2228,7 +2236,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["VoidRequest"];
+                "application/json": components["schemas"]["UnblockRequest"];
             };
         };
         responses: {

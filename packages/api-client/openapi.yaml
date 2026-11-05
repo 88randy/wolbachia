@@ -987,7 +987,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/VoidRequest'
+              $ref: '#/components/schemas/UnblockRequest'
         required: true
       security:
       - cookieAuth: []
@@ -2076,6 +2076,9 @@ components:
         void_reason:
           type: string
           readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
       required:
       - blocked_reason
       - code
@@ -2085,6 +2088,7 @@ components:
       - is_blocked
       - plate
       - void_reason
+      - void_reason_code
       - voided_at
       - voided_by
     MotorcycleCheck:
@@ -2621,6 +2625,9 @@ components:
         void_reason:
           type: string
           readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
       required:
       - created_at
       - created_by
@@ -2632,6 +2639,7 @@ components:
       - status
       - value
       - void_reason
+      - void_reason_code
       - voided_at
       - voided_by
       - voided_by_username
@@ -2979,6 +2987,16 @@ components:
       - changes
       - results
       - server_time
+    UnblockRequest:
+      type: object
+      description: Free-text reason of a fleet unblock; the service validates it with
+        `validate_void_reason`.
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+      required:
+      - reason
     UnitEnum:
       enum:
       - m
@@ -3009,13 +3027,18 @@ components:
         * `decimal` - Decimal
     VoidRequest:
       type: object
-      description: Body of `POST .../void/`.
+      description: Shared HTTP and sync body. The target-aware resolver validates
+        the choice and text.
       properties:
+        reason_code:
+          type: string
+          maxLength: 64
         reason:
           type: string
           maxLength: 1000
+          default: ''
       required:
-      - reason
+      - reason_code
     WebLoginResponse:
       type: object
       properties:

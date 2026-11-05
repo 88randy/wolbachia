@@ -7,6 +7,9 @@ export { useVoidLimits } from "./use-void-limits";
 export { voidFailureKey, voidFailureOf } from "./void-failure";
 export type { VoidFailure } from "./void-failure";
 export { voidInfoOf } from "./void-info";
+export { useVoidReasonLabel } from "./use-void-reason-label";
 export type { VoidFields, VoidInfo } from "./void-info";
 export { DEFAULT_VOID_LIMITS } from "./void-limits";
 export type { VoidLimits } from "./void-limits";
+
+export type { VoidChoice } from "./use-void-form";

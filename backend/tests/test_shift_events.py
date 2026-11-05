@@ -9,6 +9,7 @@ import pytest
 from django.utils import timezone
 
 from catalogs.models import CatalogItem
+from catalogs.seeds import seed_default_catalogs
 from field_sync.models import FieldEvent
 from organizations.models import Organization
 from shifts.models import (
@@ -479,8 +480,11 @@ def test_a_shift_event_cannot_be_voided_by_its_author(
     if kind == "close":
         phone.sync([open_event("M-03", shift_id)])
     phone.sync([target])
+    seed_default_catalogs(phone.organization)
     void = event(
-        type="record.void", payload={"reason": "mistake in the shift"}, voids_event_id=target["id"]
+        type="record.void",
+        payload={"reason_code": "other", "reason": "mistake in the shift"},
+        voids_event_id=target["id"],
     )
 
     result = only_result(phone.sync([void]))
@@ -613,10 +617,10 @@ def test_two_shifts_of_one_batch_with_inverted_ids_still_set_the_highest_referen
     assert later["params"] == {"previous_km": 400, "odometer_km": 350}
 
 
-def test_voided_motorcycle_cannot_open_a_shift(phone, motorcycle, check_items):
+def test_voided_motorcycle_cannot_open_a_shift(phone, motorcycle, check_items, void_catalog):
     from shifts.services import void_motorcycle
 
-    void_motorcycle(motorcycle, phone.user, "Vehicle removed from fleet")
+    void_motorcycle(motorcycle, phone.user, "Vehicle removed from fleet", "other")
     result = only_result(phone.sync([open_event("M-03")]))
     assert status_and_code(result) == ("rejected", "motorcycle_unknown")
     assert not Shift.objects.exists()

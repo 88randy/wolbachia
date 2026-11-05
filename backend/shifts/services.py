@@ -23,8 +23,8 @@ from django.db import IntegrityError, transaction
 from accounts.models import User
 from catalogs.models import CatalogItem
 from core.exceptions import FieldValidationError
-from core.services import lock_record_for_update, void_record
-from core.void_reason import validate_void_reason
+from core.services import lock_record_for_update, void_validated_record
+from core.void_reason import resolve_void_reason, validate_void_reason
 from field_sync.codes import INVALID_PAYLOAD
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.registry import EventContext
@@ -324,19 +324,21 @@ def update_motorcycle(motorcycle: Motorcycle, changes: Mapping[str, object]) -> 
     return locked
 
 
-def void_motorcycle(motorcycle: Motorcycle, user: User, reason: str) -> Motorcycle:
+def void_motorcycle(  # noqa: PLR0913 -- explicit void contract
+    motorcycle: Motorcycle, user: User, reason: str, reason_code: str
+) -> Motorcycle:
     """Void fleet configuration while retaining all shifts/checks. Refuse an open shift.
 
     Lock rule: acquire Motorcycle first, as shift.open does. Once locked, either the opening
     committed and void refuses, or void commits first and the opening cannot find a live row.
     No Shift lock is acquired, so shift.close cannot form a lock cycle.
     """
-    cleaned = validate_void_reason(reason, "reason")
     with transaction.atomic():
+        choice = resolve_void_reason(motorcycle.organization_id, reason, reason_code)
         locked = lock_record_for_update(motorcycle)
         if Shift.objects.filter(motorcycle=locked, status=ShiftStatus.OPEN).exists():
             raise MotorcycleInUseError
-        return void_record(locked, user, cleaned)
+        return void_validated_record(locked, user, choice)
 
 
 def unblock_motorcycle(motorcycle: Motorcycle, user: User, reason: str) -> Motorcycle:

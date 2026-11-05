@@ -27,6 +27,7 @@ class MotorcycleSerializer(OrgScopedModelSerializer):
             "voided_at",
             "voided_by",
             "void_reason",
+            "void_reason_code",
         ]
         read_only_fields = fields
 

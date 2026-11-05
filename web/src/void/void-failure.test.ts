@@ -52,6 +52,25 @@ describe("voidFailureOf", () => {
       envelope("validation_error", { reason: [{ code: "blank", params: {} }] }),
       { kind: "invalid" },
     ],
+    [
+      400,
+      envelope("validation_error", {
+        reason_code: [{ code: "void_reason_code_unknown", params: {} }],
+      }),
+      { kind: "codeUnknown" },
+    ],
+    [
+      400,
+      envelope("validation_error", {
+        reason: [{ code: "void_reason_required_for_other", params: {} }],
+      }),
+      { kind: "requiredForOther" },
+    ],
+    [
+      400,
+      envelope("validation_error", { reason: [{ code: "max_length", params: {} }] }),
+      { kind: "invalid" },
+    ],
     [400, undefined, { kind: "invalid" }],
     [403, envelope("permission_denied"), { kind: "permissionDenied" }],
     [404, envelope("not_found"), { kind: "notFound" }],
@@ -71,6 +90,8 @@ describe("voidFailureKey", () => {
   test("every failure has a key that exists in both catalogs", () => {
     const failures: VoidFailure[] = [
       { kind: "reasonTooShort", minLength: 10 },
+      { kind: "codeUnknown" },
+      { kind: "requiredForOther" },
       { kind: "invalid" },
       { kind: "invalidCharacters" },
       { kind: "permissionDenied" },

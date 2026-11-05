@@ -94,6 +94,7 @@ class RuleParameterVersionSerializer(OrgScopedModelSerializer):
             "voided_by",
             "voided_by_username",
             "void_reason",
+            "void_reason_code",
         ]
         read_only_fields = fields
 
