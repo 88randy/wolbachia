@@ -3,6 +3,8 @@ import { FormAlert } from "../forms/FormAlert";
 import { useFocusAlert } from "../forms/use-focus-alert";
 import styles from "./void-dialog.module.css";
 import { VoidDialogActions } from "./VoidDialogActions";
+import { VoidCatalogAlert } from "./VoidCatalogAlert";
+import { VoidReasonSelect } from "./VoidReasonSelect";
 import { VoidReasonField } from "./VoidReasonField";
 import type { VoidForm } from "./use-void-form";
 import { voidFailureKey } from "./void-failure";
@@ -19,7 +21,11 @@ export function VoidDialogForm({ form, alertId, onCancel }: VoidDialogFormProps)
   const alertRef = useFocusAlert(form.failure);
   return (
     <form className={styles.form} onSubmit={form.handleSubmit} noValidate>
-      <VoidReasonField {...form} />
+      <VoidReasonSelect form={form} />
+      <div aria-live="polite">{form.isOther && <VoidReasonField {...form} />}</div>
+      {form.isCatalogBlocked && !form.isCatalogLoading && (
+        <VoidCatalogAlert onRetry={form.retryCatalog} />
+      )}
       {form.failure !== undefined && (
         <FormAlert
           id={alertId}
@@ -28,7 +34,11 @@ export function VoidDialogForm({ form, alertId, onCancel }: VoidDialogFormProps)
           text={t(voidFailureKey(form.failure))}
         />
       )}
-      <VoidDialogActions isBusy={form.isBusy} onCancel={onCancel} />
+      <VoidDialogActions
+        isBusy={form.isBusy}
+        isBlocked={form.isCatalogBlocked}
+        onCancel={onCancel}
+      />
     </form>
   );
 }

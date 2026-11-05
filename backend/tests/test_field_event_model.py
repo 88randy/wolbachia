@@ -4,6 +4,7 @@ import pytest
 from django.db import DatabaseError, IntegrityError, connection, transaction
 from django.utils import timezone
 
+from catalogs.seeds import seed_default_catalogs
 from core.exceptions import ImmutableRecordError, PhysicalDeleteForbiddenError
 from core.services import void_record
 from field_sync.models import FieldEvent
@@ -56,11 +57,17 @@ def test_an_event_cannot_be_deleted() -> None:
 def test_only_the_void_fields_are_mutable() -> None:
     event = FieldEventFactory()
 
-    voided = void_record(event, UserFactory(), "typed in the wrong place")
+    seed_default_catalogs(event.organization)
+    voided = void_record(event, UserFactory(), "typed in the wrong place", "other")
 
     assert voided.voided_at is not None
     assert FieldEvent.objects.not_voided().filter(pk=event.pk).count() == 0
-    assert FieldEvent.mutable_fields == {"voided_at", "voided_by", "void_reason"}
+    assert FieldEvent.mutable_fields == {
+        "voided_at",
+        "voided_by",
+        "void_reason",
+        "void_reason_code",
+    }
 
 
 def test_the_database_rejects_raw_updates_of_an_event() -> None:
@@ -83,7 +90,7 @@ def test_the_database_lets_an_event_be_voided_once_and_no_more() -> None:
     event = FieldEventFactory()
     user = UserFactory()
     sql = (
-        "UPDATE field_sync_fieldevent SET voided_at = %s, voided_by_id = %s, void_reason = %s"
+        "UPDATE field_sync_fieldevent SET voided_at = %s, voided_by_id = %s, void_reason = %s, void_reason_code = 'other'"
         " WHERE id = %s"
     )
     run_sql(sql, [timezone.now(), user.pk, "first", event.pk])

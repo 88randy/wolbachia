@@ -3,6 +3,7 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { ME_QUERY_KEY } from "./me-query";
 import { isSignedOutSession } from "./session-revision";
+import { leaveKnown } from "./session-transition";
 
 /**
  * Things that happen to a session while the user is working, reported by the query and mutation
@@ -79,8 +80,12 @@ export function reportSessionError(
   if (!(error instanceof ApiError)) return;
   if (queryClient.getQueryData(ME_QUERY_KEY) === undefined) return;
   if (error.status === HTTP_UNAUTHORIZED) {
-    // After a confirmed sign-out a late 401 belongs to the closed session: nothing to renew.
-    if (!isSignedOutSession()) markSessionExpired();
+    // After a confirmed sign-out a late 401 belongs to the closed session: nothing to renew. Any
+    // other 401 (`/me/`, a resource query, a mutation) leaves `known` through the one transition
+    // BEFORE the session is marked expired, so a late answer sent with another cookie is dropped.
+    if (isSignedOutSession() || isExpired) return;
+    void leaveKnown(queryClient);
+    markSessionExpired();
   } else if (error.status === HTTP_FORBIDDEN && error.code === NO_ACTIVE_MEMBERSHIP) {
     if (!isMeQuery(queryKey)) notify(membershipListeners);
   }

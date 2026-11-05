@@ -68,7 +68,9 @@ def test_void_widget_of_another_organization_is_not_found_and_not_voided(
 ) -> None:
     foreign = WidgetFactory(organization=org_b)
 
-    response = client_a.post(detail_url(foreign, "void/"), {"reason": "x"}, format="json")
+    response = client_a.post(
+        detail_url(foreign, "void/"), {"reason_code": "other", "reason": "x"}, format="json"
+    )
 
     foreign.refresh_from_db()
     assert response.status_code == 404

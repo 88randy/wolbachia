@@ -1,0 +1,25 @@
+import type { QueryClient } from "@tanstack/react-query";
+import { removeOrganizationQueries } from "./organization-cache";
+import { changeIdentity, markSessionUnknown } from "./session-revision";
+
+/**
+ * THE one transition out of `known` (#82). Whatever the reason (a failed verification, a 401 of
+ * `/me/`, of a resource query or of a mutation), in this order and synchronously:
+ *
+ * 1. the session revision changes, so every answer of a request already sent is dropped on
+ *    arrival;
+ * 2. pending queries are cancelled (their signal aborts);
+ * 3. org-scoped data and placeholders are removed, so returning to `known` always starts from an
+ *    empty org cache and nothing sent with the old cookie can be shown or stored;
+ * 4. the state becomes `unknown` (org-scoped queries and mutations refuse to start).
+ *
+ * Callers mark the session expired (401) or show the retry (failed check) AFTER this. Returns the
+ * cancellation, which the caller may await.
+ */
+export function leaveKnown(queryClient: QueryClient): Promise<void> {
+  changeIdentity();
+  const cancelled = queryClient.cancelQueries();
+  removeOrganizationQueries(queryClient);
+  markSessionUnknown();
+  return cancelled;
+}

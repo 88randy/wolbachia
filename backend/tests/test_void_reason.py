@@ -88,35 +88,42 @@ def test_line_feeds_are_allowed_but_never_count_toward_the_minimum(reason: str) 
 
 
 @pytest.mark.django_db
-def test_void_endpoint_answers_a_blank_reason_with_too_short(
-    client_a: APIClient, org_a: Organization
-) -> None:
+@pytest.mark.usefixtures("void_catalog")
+def test_void_endpoint_requires_text_for_other(client_a: APIClient, org_a: Organization) -> None:
     """Blank text reaches the validator (`allow_blank=True`) instead of DRF's own `blank`."""
     widget = WidgetFactory(organization=org_a)
 
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": "   "}, format="json")
+    response = client_a.post(
+        f"{WIDGETS}{widget.pk}/void/", {"reason_code": "other", "reason": "   "}, format="json"
+    )
 
-    assert response.data["fields"] == {"reason": [TOO_SHORT]}
+    assert response.data["fields"] == {
+        "reason": [{"code": "void_reason_required_for_other", "params": {}}]
+    }
 
 
 @pytest.mark.django_db
-def test_void_endpoint_answers_a_missing_reason_with_required(
-    client_a: APIClient, org_a: Organization
-) -> None:
+@pytest.mark.usefixtures("void_catalog")
+def test_void_endpoint_requires_a_reason_code(client_a: APIClient, org_a: Organization) -> None:
     widget = WidgetFactory(organization=org_a)
 
     response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {}, format="json")
 
-    assert response.data["fields"]["reason"][0]["code"] == "required"
+    assert response.data["fields"]["reason_code"][0]["code"] == "required"
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("void_catalog")
 def test_void_endpoint_stores_the_normalized_reason(
     client_a: APIClient, org_a: Organization
 ) -> None:
     widget = WidgetFactory(organization=org_a)
 
-    response = client_a.post(f"{WIDGETS}{widget.pk}/void/", {"reason": f"  {TEN}  "}, format="json")
+    response = client_a.post(
+        f"{WIDGETS}{widget.pk}/void/",
+        {"reason_code": "other", "reason": f"  {TEN}  "},
+        format="json",
+    )
 
     widget.refresh_from_db()
     assert response.status_code == 200
@@ -124,13 +131,14 @@ def test_void_endpoint_stores_the_normalized_reason(
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("void_catalog")
 def test_void_record_validates_for_callers_that_skip_the_serializer(
     org_a: Organization, member_a: User
 ) -> None:
     widget = WidgetFactory(organization=org_a)
 
     with pytest.raises(ValidationError) as raised:
-        void_record(widget, member_a, "\u200b" * 10)
+        void_record(widget, member_a, "\u200b" * 10, "other")
 
     assert flatten_error_details(raised.value.get_full_details()) == {"reason": [TOO_SHORT]}
     assert Widget.objects.get(pk=widget.pk).voided_at is None
@@ -161,12 +169,15 @@ def rule_void_url(version: Any) -> str:  # noqa: ANN401
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("void_catalog")
 def test_rule_version_void_refuses_a_short_reason(
     rule_admin: APIClient, org_a: Organization
 ) -> None:
     version = scheduled_version(org_a)
 
-    response = rule_admin.post(rule_void_url(version), {"reason": NINE}, format="json")
+    response = rule_admin.post(
+        rule_void_url(version), {"reason_code": "other", "reason": NINE}, format="json"
+    )
 
     version.refresh_from_db()
     assert response.status_code == 400
@@ -175,6 +186,7 @@ def test_rule_version_void_refuses_a_short_reason(
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("void_catalog")
 def test_rule_version_void_checks_the_reason_before_the_state(
     rule_admin: APIClient, org_a: Organization
 ) -> None:
@@ -184,7 +196,9 @@ def test_rule_version_void_checks_the_reason_before_the_state(
         effective_from=timezone.now() - timedelta(days=1),
     )
 
-    response = rule_admin.post(rule_void_url(in_force), {"reason": NINE}, format="json")
+    response = rule_admin.post(
+        rule_void_url(in_force), {"reason_code": "other", "reason": NINE}, format="json"
+    )
 
     assert response.status_code == 400
 
@@ -198,10 +212,15 @@ def phone(org_a: Organization, make_member: MemberFactory) -> Phone:
 
 
 def void_event(target_id: Any, reason: str) -> dict[str, Any]:  # noqa: ANN401
-    return event(type="record.void", payload={"reason": reason}, voids_event_id=str(target_id))
+    return event(
+        type="record.void",
+        payload={"reason_code": "other", "reason": reason},
+        voids_event_id=str(target_id),
+    )
 
 
 @pytest.mark.django_db
+@pytest.mark.usefixtures("void_catalog")
 def test_a_short_void_event_is_rejected_and_leaves_the_target_intact(phone: Phone) -> None:
     original = event()
     phone.sync([original])
@@ -218,13 +237,18 @@ def test_a_short_void_event_is_rejected_and_leaves_the_target_intact(phone: Phon
 
 
 @pytest.mark.django_db
-def test_a_void_event_with_a_blank_reason_is_too_short(phone: Phone) -> None:
+@pytest.mark.usefixtures("void_catalog")
+def test_a_void_event_with_other_requires_text(phone: Phone) -> None:
     original = event()
     phone.sync([original])
 
-    response = phone.sync([void_event(original["id"], "   ")])
+    voiding = void_event(original["id"], "")
+    del voiding["payload"]["reason"]
+    response = phone.sync([voiding])
 
-    assert response.data["results"][0]["params"]["fields"] == {"reason": ["void_reason_too_short"]}
+    assert response.data["results"][0]["params"]["fields"] == {
+        "reason": ["void_reason_required_for_other"]
+    }
 
 
 # --- /me/ limits ---------------------------------------------------------------------------

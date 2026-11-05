@@ -83,7 +83,7 @@ class RuleParameterVersion(ImmutableMixin, VoidableMixin, OrgScopedModel):
     and forbids deleting. `created_by` is null only for seed data.
     """
 
-    mutable_fields = frozenset({"voided_at", "voided_by", "void_reason"})
+    mutable_fields = frozenset({"voided_at", "voided_by", "void_reason", "void_reason_code"})
 
     parameter = models.ForeignKey(RuleParameter, on_delete=models.PROTECT, related_name="versions")
     value = models.DecimalField(max_digits=VALUE_MAX_DIGITS, decimal_places=VALUE_DECIMAL_PLACES)

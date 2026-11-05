@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { VoidedDetail } from "../src/data-table/VoidedDetail";
+import type { VoidChoice } from "../src/void/use-void-form";
 import type { VoidResult } from "../src/void/submit-void";
 import { VoidDialog } from "../src/void/VoidDialog";
 import { DEFAULT_VOID_LIMITS } from "../src/void/void-limits";
@@ -8,8 +9,8 @@ import type { VoidLimits } from "../src/void/void-limits";
 import type { VoidInfo } from "../src/void/void-info";
 
 interface HarnessProps {
-  /** What the pretend server answers; receives the trimmed reason. */
-  submit: (reason: string) => Promise<VoidResult>;
+  /** What the pretend server answers; receives the selected reason and optional normalized text. */
+  submit: (choice: VoidChoice) => Promise<VoidResult>;
   limits?: VoidLimits;
 }
 

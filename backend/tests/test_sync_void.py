@@ -9,9 +9,11 @@ from django.utils import timezone
 
 from accounts.models import RevokeReason
 from accounts.revocation import Revocation, revoke_session
+from catalogs.models import CatalogItem
 from field_sync.models import FieldEvent
 from organizations.models import Organization
 from tests.conftest import MemberFactory
+from tests.factories import CatalogFactory, CatalogItemFactory
 from tests.sync_support import (
     Phone,
     configure_clock_skew,
@@ -22,7 +24,7 @@ from tests.sync_support import (
 )
 from tests.testapp.models import Widget
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("void_catalog")]
 
 
 @pytest.fixture
@@ -33,7 +35,11 @@ def phone(org_a: Organization, make_member: MemberFactory) -> Phone:
 def void_event(
     target_id: str | uuid.UUID, reason: str = "typed in the wrong place"
 ) -> dict[str, Any]:
-    return event(type="record.void", payload={"reason": reason}, voids_event_id=str(target_id))
+    return event(
+        type="record.void",
+        payload={"reason_code": "other", "reason": reason},
+        voids_event_id=str(target_id),
+    )
 
 
 def one_result(response: Any) -> dict[str, Any]:  # noqa: ANN401
@@ -52,6 +58,7 @@ def test_a_void_event_voids_the_original_and_references_it(phone: Phone) -> None
     target = FieldEvent.objects.get(pk=original["id"])
     assert (target.voided_by, target.void_reason) == (phone.user, "typed in the wrong place")
     assert target.voided_at is not None
+    assert target.void_reason_code == "other"
     stored_void = FieldEvent.objects.get(pk=voiding["id"])
     assert (stored_void.voids_event_id, stored_void.type) == (target.pk, "record.void")
     assert FieldEvent.objects.not_voided().filter(pk=original["id"]).count() == 0
@@ -129,9 +136,12 @@ def test_voiding_twice_is_refused_the_second_time(phone: Phone) -> None:
     ("overrides", "fields"),
     [
         ({"voids_event_id": None}, {"voids_event_id": ["required"]}),
-        ({"payload": {"reason": "   "}}, {"reason": ["void_reason_too_short"]}),
-        ({"payload": {}}, {"reason": ["required"]}),
-        ({"payload": {"reason": "x" * 1001}}, {"reason": ["max_length"]}),
+        (
+            {"payload": {"reason_code": "other", "reason": "   "}},
+            {"reason": ["void_reason_required_for_other"]},
+        ),
+        ({"payload": {}}, {"reason_code": ["required"]}),
+        ({"payload": {"reason_code": "other", "reason": "x" * 1001}}, {"reason": ["max_length"]}),
     ],
 )
 def test_a_void_needs_a_target_and_a_reason(
@@ -269,3 +279,47 @@ def test_two_concurrent_voids_of_one_event_from_two_phones_void_it_once(
     assert set(answers) <= {"accepted", "already_voided"}
     assert all(o.status_code in (200, 429) for o in outcomes)
     assert FieldEvent.objects.get(pk=original["id"]).voided_at is not None
+
+
+@pytest.mark.parametrize("origin", ["unknown", "another-organization"])
+def test_unknown_void_code_is_rejected_without_leaking_another_org(phone, org_b, origin):
+    code = "unknown"
+    if origin == "another-organization":
+        catalog = CatalogFactory(organization=org_b, slug="void-reason")
+        code = CatalogItemFactory(catalog=catalog).code
+    original = event()
+    phone.sync([original])
+    voiding = void_event(original["id"])
+    voiding["payload"] = {"reason_code": code}
+
+    result = one_result(phone.sync([voiding]))
+
+    assert (result["status"], result["code"]) == ("rejected", "void_reason_code_unknown")
+    assert FieldEvent.objects.get(pk=original["id"]).voided_at is None
+
+
+@pytest.mark.parametrize("note", ["", "invalid\u202e"])
+def test_deactivated_void_code_waits_for_review_only_after_text_is_valid(phone, note):
+    CatalogItem.objects.filter(
+        organization=phone.organization, catalog__slug="void-reason", code="duplicate-record"
+    ).update(is_active=False)
+    original = event()
+    phone.sync([original])
+    voiding = void_event(original["id"])
+    voiding["payload"] = {"reason_code": "duplicate-record", "reason": note}
+
+    result = one_result(phone.sync([voiding]))
+
+    expected = (
+        ("rejected", "invalid_payload") if note else ("in_review", "void_reason_code_deactivated")
+    )
+    assert (result["status"], result["code"]) == expected
+    target = FieldEvent.objects.get(pk=original["id"])
+    assert (target.voided_at, target.voided_by_id, target.void_reason, target.void_reason_code) == (
+        None,
+        None,
+        "",
+        "",
+    )
+    if not note:
+        assert FieldEvent.objects.get(pk=voiding["id"]).voids_event_id == target.pk

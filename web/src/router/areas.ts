@@ -20,7 +20,7 @@ export const AREAS = [
   { id: "releases", path: "/releases", group: "operation", requiredPermissions: PENDING },
   { id: "community", path: "/community", group: "operation", requiredPermissions: PENDING },
   { id: "inventory", path: "/inventory", group: "resources", requiredPermissions: PENDING },
-  { id: "fleet", path: "/fleet", group: "resources", requiredPermissions: PENDING },
+  { id: "fleet", path: "/fleet", group: "resources", requiredPermissions: ["motorcycle.read"] },
   { id: "lab", path: "/lab", group: "resources", requiredPermissions: PENDING },
   { id: "people", path: "/people", group: "resources", requiredPermissions: PENDING },
   { id: "dashboards", path: "/dashboards", group: "analysis", requiredPermissions: PENDING },

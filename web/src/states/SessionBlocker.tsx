@@ -11,13 +11,21 @@ const INITIAL_FOCUS = "[data-initial-focus]";
  * the top layer: a content dialog that was open (the void dialog, for instance) is covered and
  * inert, and the retry is always reachable. `reconciling`: `/me/` is being checked. `unknown`: the
  * check failed, with a retry. The screens stay mounted underneath, inert, so drafts are kept.
- * (When the session expired, the re-authentication dialog is the way out and shows instead.)
+ * Escape does not close it. (When the session expired, the re-authentication dialog is the way out and shows instead.)
  */
 export function SessionBlocker({ state }: { state: Exclude<SessionState, "known"> }) {
   const { t } = useTranslation();
   const ref = useModalDialog(INITIAL_FOCUS);
   return (
-    <dialog ref={ref} className={styles.dialog} aria-label={t("states.sessionCheck.checking")}>
+    <dialog
+      ref={ref}
+      className={styles.dialog}
+      aria-label={t("states.sessionCheck.checking")}
+      onCancel={(event) => {
+        // Escape must not close it: the retry would become unreachable.
+        event.preventDefault();
+      }}
+    >
       {state === "unknown" ? (
         <SessionCheckFailed />
       ) : (

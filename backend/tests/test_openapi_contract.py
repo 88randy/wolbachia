@@ -133,3 +133,16 @@ def test_the_hook_refuses_to_overwrite_existing_error_components() -> None:
 
     with pytest.raises(ImproperlyConfigured, match="FieldError"):
         add_error_envelope(result)
+
+
+def test_void_contract_requires_code_and_exposes_stored_code_read_only(schema):
+    components = schema["components"]["schemas"]
+    action = schema["paths"]["/api/v1/widgets/{id}/void/"]["post"]
+    reference = action["requestBody"]["content"]["application/json"]["schema"]["$ref"]
+    body = components[reference.rsplit("/", 1)[-1]]
+
+    assert body["required"] == ["reason_code"]
+    assert body["properties"]["reason_code"]["maxLength"] == 64
+    assert body["properties"]["reason"]["maxLength"] == 1000
+    for component in ("Widget", "RuleParameterVersion"):
+        assert components[component]["properties"]["void_reason_code"]["readOnly"] is True

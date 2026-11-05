@@ -6,6 +6,7 @@ import styles from "./void-dialog.module.css";
 
 interface VoidDialogActionsProps {
   isBusy: boolean;
+  isBlocked: boolean;
   onCancel: () => void;
 }
 
@@ -14,7 +15,7 @@ interface VoidDialogActionsProps {
  * `disabled`, so keyboard focus is not lost, a second press sends nothing and the dialog cannot
  * be left while the server may still void the record.
  */
-export function VoidDialogActions({ isBusy, onCancel }: VoidDialogActionsProps) {
+export function VoidDialogActions({ isBusy, isBlocked, onCancel }: VoidDialogActionsProps) {
   const { t } = useTranslation();
   function ignoreWhileBusy(event: MouseEvent) {
     if (isBusy) event.preventDefault();
@@ -34,6 +35,7 @@ export function VoidDialogActions({ isBusy, onCancel }: VoidDialogActionsProps) 
       </button>
       <button
         type="submit"
+        disabled={isBlocked}
         className={classNames(buttons.button, styles.danger)}
         aria-disabled={isBusy}
         onClick={ignoreWhileBusy}

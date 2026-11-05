@@ -1,6 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
+import { makeMe } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
 
 // Keys of the preferences the app stores in the browser (see src/storage/safe-storage.ts).
@@ -79,6 +80,8 @@ test.describe("startup", () => {
     });
     page.on("pageerror", (error) => problems.push(error.message));
 
+    // The Fleet area needs `motorcycle.read` (#156); the default mocked user has no permissions.
+    await mockApi(page, { me: makeMe({ permissions: ["motorcycle.read"] }) });
     await openShell(page);
     await page.getByRole("link", { name: "Flota" }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Flota" })).toBeVisible();

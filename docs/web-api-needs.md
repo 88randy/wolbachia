@@ -6,7 +6,7 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 
 - **Base path and naming:** base is `/api/v1/`. Resources are plural kebab-case English nouns, and actions are `POST /<resource>/{id}/<verb>/`.
 - **Organization:** taken from the authenticated user. Any `organization_id` sent by the client is ignored. Objects from another organization return `404`, not `403`, so their existence is not leaked.
-- **No `DELETE` on business data.** Corrections use `POST …/void/` with `{ "reason": string }`. Voided objects return `voided_at`, `voided_by` and `void_reason`. Lists exclude them unless `?include_voided=true`.
+- **No `DELETE` on business data.** Corrections use `POST …/void/` with `{ "reason_code": string, "reason"?: string }` (#80). Voided objects return `voided_at`, `voided_by`, `void_reason_code` and `void_reason`. Lists exclude them unless `?include_voided=true`.
 - **Lists** support filters, `ordering`, and paging. Paging style per `docs/api-conventions.md` (page number for admin tables, cursor for streams).
   - Every list endpoint that backs a dashboard figure must accept the same filters the dashboard uses, so every number links to its records.
 - **Exports:** `GET …/export/?format=csv|pdf`, applied server-side. Columns with personal data come out empty unless a valid data-transfer authorization exists (W59). Every export is logged in the access log (W60).

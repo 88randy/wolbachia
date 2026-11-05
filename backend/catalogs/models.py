@@ -5,6 +5,7 @@ from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 
+from core.models import OTHER_ITEM_CODE as OTHER_ITEM_CODE
 from core.models import OrgScopedModel
 
 CODE_MAX_LENGTH = 64
@@ -12,8 +13,6 @@ LABEL_MAX_LENGTH = 200
 ICON_MAX_LENGTH = 64
 # The sort of an item is bounded so `max + 1` can never overflow the column.
 MAX_SORT = 10_000
-# The fixed "Other (specify)" item: only the seed creates it, so admins cannot take its code.
-OTHER_ITEM_CODE = "other"
 
 validate_item_code = RegexValidator(
     r"^[a-z0-9][a-z0-9_-]*$", "Use lowercase letters, digits, hyphens and underscores."

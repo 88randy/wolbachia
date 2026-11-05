@@ -48,7 +48,7 @@ def test_read_code_allows_list_and_retrieve_only(
         ("post", "", {"name": "x"}),
         ("patch", "{pk}/", {"name": "x"}),
         ("put", "{pk}/", {"name": "x"}),
-        ("post", "{pk}/void/", {"reason": "a valid reason"}),
+        ("post", "{pk}/void/", {"reason_code": "other", "reason": "a valid reason"}),
     ],
     ids=["create", "patch", "put", "void"],
 )
@@ -99,6 +99,7 @@ def test_update_code_allows_patch_and_put_only(
     assert client.get(detail).status_code == 403
 
 
+@pytest.mark.usefixtures("void_catalog")
 def test_void_code_allows_void_only(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory
 ) -> None:
@@ -107,7 +108,9 @@ def test_void_code_allows_void_only(
     detail = f"{WIDGETS}{widget.pk}/"
 
     assert (
-        client.post(f"{detail}void/", {"reason": "a valid reason"}, format="json").status_code
+        client.post(
+            f"{detail}void/", {"reason_code": "other", "reason": "a valid reason"}, format="json"
+        ).status_code
         == 200
     )
     assert client.patch(detail, {"name": "x"}, format="json").status_code == 403

@@ -4,9 +4,9 @@ The courier's shift ("jornada", issue #68): the day that frames all field work. 
 
 | Module | What lives there |
 | --- | --- |
-| `models.py` | `Motorcycle` (fleet configuration), `Shift` and `MotorcycleCheck` (insert-only; a shift changes once, on close) |
+| `models.py` | `Motorcycle` (voidable fleet configuration), `MotorcycleBlockEvent` (insert-only audit), `Shift` and `MotorcycleCheck` (insert-only; a shift changes once, on close) |
 | `payloads.py` | Payload serializers of `shift.open` and `shift.close` |
-| `services.py` | `open_shift` and `close_shift`: the apply functions (rules, writes, `EventRejected` / `EventNeedsReview`) |
+| `services.py` | Fleet create/update/void/unblock services; `open_shift` and `close_shift`: the apply functions (rules, writes, `EventRejected` / `EventNeedsReview`) |
 | `handlers.py` | Registers both handlers from `AppConfig.ready()` (`checks_shift=False`: they are the shift) |
 | `guard.py` | `check_event_shift`: what the pipeline does with the `shift_id` of any other event |
 | `selectors.py` | `list_shifts` (filters), `highest_recorded_km` |
@@ -20,6 +20,12 @@ Rules for code here:
 - A handler validates its own rules and raises `EventRejected` / `EventNeedsReview`; the partial unique indexes `shift_one_open_per_courier` and `shift_one_open_per_motorcycle` are only the backstop (and a reused shift id that loses a primary key race is caught in its own savepoint) (an `IntegrityError` would be a `500` for the whole batch).
 - Row locks, in order: `Motorcycle` (open), `Shift` (close). Both come after the account locks of [`accounts/README.md`](../accounts/README.md).
 - A new result code needs a row in `docs/sync.md` and `sync.result.*` keys in both languages of `packages/i18n` (a test checks it).
-- The `Motorcycle` table has no API or admin yet (a seed or a later issue creates them); the clearing of a motorcycle blocked by a severe check is also a later issue.
+- Fleet management (#72) lives in `motorcycle_views.py` and `motorcycle_serializers.py`: `GET/POST /motorcycles/`, `GET/PATCH /motorcycles/{id}/`, `POST .../void/`, `POST .../unblock/`. No delete. Contract and defaults: [API conventions](../../docs/api-conventions.md).
+- Fleet writes lock Motorcycle, the same row as `shift.open`, before examining state; void refuses an open shift. Unblock writes the state and an insert-only `MotorcycleBlockEvent` atomically. Unblocking an unblocked motorcycle is `409 motorcycle_not_blocked` without another event. Severe-check blocks record their source field event. The database also refuses audit UPDATE/DELETE.
+- Unique codes remain reserved after void. PostgreSQL arbitrates concurrent creates; only that constraint is mapped to `duplicate_code`. Creation accepts code/plate; PATCH accepts plate only; void/block metadata cannot be written through CRUD.
+- `GET /field/catalog/` includes a compact `motorcycles` list (`list_snapshot_motorcycles`): blocked motorcycles/reasons remain visible, voided ones do not. Fleet content participates in the existing ETag and sync `catalog_version`. The snapshot keeps its `catalog.read` permission for organization configuration; `/motorcycles/` uses `motorcycle.read`.
+- Admin gets manage/unblock/read, supervisor gets read/unblock, courier gets read. Existing permission seed bookkeeping preserves revocations and custom profiles.
+- Motorcycle codes are immutable after creation: schema-1 offline events identify motorcycles only by code. PATCH rejects any supplied `code` (even unchanged) with `400 validation_error`, `fields.code: [{code: immutable_code, params: {}}]`; `update_motorcycle` rejects it too. No aliases. To correct a wrong code, void the motorcycle and create a new one with the correct code. The original code remains reserved, including after void, so a pending event cannot bind to a different motorcycle.
+- [ASSUMPTION] Admin can also unblock, and void refuses an open-shift motorcycle. No new dependencies or seed fleet records.
 
-Tests: `backend/tests/test_shift_*.py` (events, guard, API, concurrency).
+Tests: `backend/tests/test_shift_*.py` (events, guard, API, concurrency), `test_motorcycle_*.py` (fleet contract, audit, isolation and races) and `test_seed_defaults.py` (default grants and preserved revocations).

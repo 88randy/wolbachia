@@ -9,9 +9,17 @@ import pytest
 from django.utils import timezone
 
 from catalogs.models import CatalogItem
+from catalogs.seeds import seed_default_catalogs
 from field_sync.models import FieldEvent
 from organizations.models import Organization
-from shifts.models import CheckResult, Motorcycle, MotorcycleCheck, Shift, ShiftStatus
+from shifts.models import (
+    CheckResult,
+    Motorcycle,
+    MotorcycleBlockEvent,
+    MotorcycleCheck,
+    Shift,
+    ShiftStatus,
+)
 from tests.conftest import MemberFactory
 from tests.factories import MotorcycleFactory, ShiftFactory
 from tests.shift_support import all_ok_checks, close_event, make_check_items, open_event
@@ -266,12 +274,22 @@ def test_a_severe_check_opens_the_shift_blocks_the_motorcycle_and_goes_to_review
 ) -> None:
     checks = [*all_ok_checks()[:2], {"item": "lights", "result": "severe"}]
 
-    result = only_result(phone.sync([open_event("M-03", payload_checks=checks)]))
+    sent = open_event("M-03", payload_checks=checks)
+    result = only_result(phone.sync([sent]))
 
     motorcycle.refresh_from_db()
     assert status_and_code(result) == ("in_review", "severe_check")
     assert result["params"] == {"motorcycle_code": "M-03"}
     assert (motorcycle.is_blocked, motorcycle.blocked_reason) == (True, "severe_check")
+    audit = MotorcycleBlockEvent.objects.get(motorcycle=motorcycle)
+    assert (audit.action, audit.blocked_reason, audit.reason) == (
+        "block",
+        "severe_check",
+        "severe_check",
+    )
+    assert audit.field_event_id == uuid.UUID(sent["id"])
+    assert audit.created_by == phone.user
+    assert audit.organization == phone.organization
     assert MotorcycleCheck.objects.filter(result=CheckResult.SEVERE).count() == 1
     assert Shift.objects.count() == 1
 
@@ -462,8 +480,11 @@ def test_a_shift_event_cannot_be_voided_by_its_author(
     if kind == "close":
         phone.sync([open_event("M-03", shift_id)])
     phone.sync([target])
+    seed_default_catalogs(phone.organization)
     void = event(
-        type="record.void", payload={"reason": "mistake in the shift"}, voids_event_id=target["id"]
+        type="record.void",
+        payload={"reason_code": "other", "reason": "mistake in the shift"},
+        voids_event_id=target["id"],
     )
 
     result = only_result(phone.sync([void]))
@@ -594,3 +615,12 @@ def test_two_shifts_of_one_batch_with_inverted_ids_still_set_the_highest_referen
 
     assert status_and_code(later) == ("in_review", "odometer_decreased")
     assert later["params"] == {"previous_km": 400, "odometer_km": 350}
+
+
+def test_voided_motorcycle_cannot_open_a_shift(phone, motorcycle, check_items, void_catalog):
+    from shifts.services import void_motorcycle
+
+    void_motorcycle(motorcycle, phone.user, "Vehicle removed from fleet", "other")
+    result = only_result(phone.sync([open_event("M-03")]))
+    assert status_and_code(result) == ("rejected", "motorcycle_unknown")
+    assert not Shift.objects.exists()

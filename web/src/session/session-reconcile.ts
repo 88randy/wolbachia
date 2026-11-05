@@ -2,14 +2,13 @@ import type { ApiClient } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import { fetchMe, ME_QUERY_KEY } from "./me-query";
 import { removeOrganizationQueries } from "./organization-cache";
+import { leaveKnown } from "./session-transition";
 import { endSessionExpiry } from "./session-events";
 import {
   beginExternalChange,
   beginVerification,
-  changeIdentity,
   clearSessionUnknown,
   endExternalChange,
-  markSessionUnknown,
 } from "./session-revision";
 
 /** `full`: another tab or this one changed the session. `verify`: only checking (focus). */
@@ -66,14 +65,8 @@ async function run(queryClient: QueryClient, client: ApiClient, mode: ReconcileM
     return true;
   } catch {
     // A 401 or a lost membership is also reported by the caches (like any request). Whatever the
-    // failure, the identity is UNKNOWN: never fall back to the one held before. Leaving `known`
-    // for any reason first bumps the revision, cancels pending org-scoped queries and removes
-    // org-scoped data, so a late answer of the old cookie is dropped and returning to `known`
-    // always starts from an empty org cache.
-    changeIdentity();
-    await queryClient.cancelQueries();
-    removeOrganizationQueries(queryClient);
-    markSessionUnknown();
+    // failure, the identity is UNKNOWN: never fall back to the one held before.
+    await leaveKnown(queryClient);
     return false;
   } finally {
     endExternalChange();

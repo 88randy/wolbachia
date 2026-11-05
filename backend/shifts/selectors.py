@@ -5,6 +5,7 @@ from uuid import UUID
 
 from django.db.models import Max, QuerySet
 
+from organizations.models import Organization
 from shifts.models import Motorcycle, Shift
 
 
@@ -48,3 +49,19 @@ def highest_recorded_km(motorcycle: Motorcycle) -> int | None:
     )
     values = [value for value in readings.values() if value is not None]
     return max(values) if values else None
+
+
+def list_snapshot_motorcycles(organization: Organization) -> list[dict[str, Any]]:
+    """Live fleet, including blocked motorcycles and their reason, in stable code order."""
+    return [
+        {
+            "id": str(motorcycle.pk),
+            "code": motorcycle.code,
+            "plate": motorcycle.plate,
+            "is_blocked": motorcycle.is_blocked,
+            "blocked_reason": motorcycle.blocked_reason,
+        }
+        for motorcycle in Motorcycle.objects.for_org(organization)
+        .not_voided()
+        .order_by("code", "id")
+    ]

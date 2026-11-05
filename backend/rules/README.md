@@ -30,3 +30,7 @@ Values of the design brief (NOM-032-SSA2-2014 / CENAPRECE guide as cited by the 
 ## Snapshot
 
 `GET /api/v1/field/rules/` returns the values in force, omits future versions, exposes `next_change_at` and carries a `version` hash that is also the `ETag`. The hash is a consistency token; to know what applied at a past instant use the version history.
+
+The version void action takes `{reason_code, reason?}` (#80). The organization's `void-reason`
+catalog is resolved before state checks; only `other` requires the #32 text minimum. The
+read-only history exposes both `void_reason_code` and `void_reason`.

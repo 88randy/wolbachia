@@ -114,6 +114,23 @@ describe("rule parameter page: permissions of its parts", () => {
   });
 });
 
+describe("void action needs the reasons catalog", () => {
+  test("without catalog.read there is no Void action even with rule_parameter_version.void", async () => {
+    await openParameterPage({
+      me: makeMe({
+        permissions: [
+          "rule_parameter.read",
+          "rule_parameter_version.read",
+          "rule_parameter_version.void",
+        ],
+      }),
+    });
+    await screen.findByRole("heading", { name: "Historial de versiones" });
+
+    expect(screen.queryByRole("button", { name: /Anular/ })).toBeNull();
+  });
+});
+
 describe("new version form: before and after", () => {
   test("shows what applies today against the new value once the value is valid", async () => {
     const user = userEvent.setup();

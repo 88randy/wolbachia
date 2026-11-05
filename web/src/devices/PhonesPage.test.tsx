@@ -1,4 +1,5 @@
 import { screen, waitFor, within } from "@testing-library/react";
+import { ApiError } from "@wolbachia/api-client";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test, vi } from "vitest";
@@ -328,6 +329,62 @@ describe("phones list (W67)", () => {
     expect(showModal.mock.contexts.at(-1)).toBe(blocker);
     showModal.mockRestore();
     content.remove();
+  });
+
+  test("a resource 401 leaves known through the one transition: the late answer of the other cookie is dropped and a same-identity re-auth shows no B data (#82)", async () => {
+    const user = userEvent.setup();
+    document.cookie = "csrftoken=test-csrf; path=/";
+    const deferred = () => {
+      let release: (response: Response) => void = () => undefined;
+      const promise = new Promise<Response>((resolve) => {
+        release = resolve;
+      });
+      return { promise, release };
+    };
+    const late = deferred();
+    const refetch = deferred();
+    let call = 0;
+    const { api, app } = await open(() => {
+      call += 1;
+      if (call === 1) return late.promise;
+      return call === 2 ? refetch.promise : pageOf([phone({ label: "Teléfono de A" })]);
+    });
+    await screen.findByText("Cargando resultados");
+
+    // Another resource answers 401 (B signed out): no /me/ check, no focus, only the 401.
+    await app.queryClient
+      .query({ queryKey: ["probe"], queryFn: () => Promise.reject(new ApiError(401)) })
+      .catch(() => undefined);
+    await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+    late.release(pageOf([phone({ label: "Teléfono de B" })]));
+    await new Promise<void>((resolve) => {
+      const hop = new MessageChannel();
+      hop.port1.onmessage = () => {
+        resolve();
+      };
+      hop.port2.postMessage(0);
+    });
+    const stored = app.queryClient
+      .getQueryCache()
+      .findAll({ predicate: (query) => query.queryKey[0] === "org" })
+      .filter((query) => query.state.data !== undefined);
+    expect(stored).toEqual([]);
+
+    api.setRoute("GET /api/v1/auth/csrf/", new Response(null, { status: 204 }));
+    api.setRoute(
+      "POST /api/v1/auth/login/",
+      Response.json({ me: ALLOWED, server_time: "2026-11-04T12:00:00Z" }),
+    );
+    await user.type(screen.getByLabelText("Contraseña"), fakePassword());
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+    await waitFor(() => {
+      expect(call).toBe(2);
+    });
+    expect(screen.queryByText("Teléfono de B")).toBeNull();
+    refetch.release(pageOf([phone({ label: "Teléfono de A" })]));
+
+    expect(await screen.findByRole("row", { name: /Teléfono de A/ })).toBeDefined();
+    expect(screen.queryByText("Teléfono de B")).toBeNull();
   });
 
   test("another tab signs in as someone else while this tab pages: no old rows, and the late answer is dropped (#82)", async () => {

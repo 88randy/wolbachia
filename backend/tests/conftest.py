@@ -5,6 +5,7 @@ from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from accounts.models import User
+from catalogs.seeds import seed_default_catalogs
 from organizations.models import Membership, Organization
 from tests.factories import MembershipFactory, OrganizationFactory, ProfileFactory, UserFactory
 
@@ -61,3 +62,9 @@ def member_a(org_a: Organization, make_member: MemberFactory) -> User:
 def client_a(api_client: APIClient, member_a: User) -> APIClient:
     api_client.force_authenticate(member_a)
     return api_client
+
+
+@pytest.fixture
+def void_catalog(org_a: Organization) -> None:
+    """The void paths exercise the same catalog configured for a real organization."""
+    seed_default_catalogs(org_a)

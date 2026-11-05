@@ -1,4 +1,4 @@
-import { createFakeApi, makeMe } from "./fake-api";
+import { createFakeApi, makeMe, makeVoidReasonItems } from "./fake-api";
 import type { FakeApi, FakeApiRoutes } from "./fake-api";
 import { renderApp } from "./render-app";
 import type { Me } from "../session/me";
@@ -14,6 +14,7 @@ export const CREATE_ROUTE = `POST /api/v1/rule-parameters/${PARAMETER_KEY}/versi
 /** Every permission of W62: what an administrator holds. */
 export const ADMIN = makeMe({
   permissions: [
+    "catalog.read",
     "rule_parameter.read",
     "rule_parameter_version.read",
     "rule_parameter_version.create",
@@ -52,6 +53,7 @@ export function makeVersion(overrides: Partial<RuleParameterVersion> = {}): Rule
     voided_at: null,
     voided_by: null,
     voided_by_username: null,
+    void_reason_code: "",
     void_reason: "",
     ...overrides,
   };
@@ -77,6 +79,7 @@ export async function openParameterPage(options: OpenOptions = {}) {
   const { me = ADMIN, parameter = makeParameter(), versions = [makeVersion()] } = options;
   const api: FakeApi = createFakeApi({
     [ME]: Response.json(me),
+    "GET /api/v1/catalogs/void-reason/items/": pageOf(makeVoidReasonItems()),
     [PARAMETER_ROUTE]: () => Response.json(parameter),
     [VERSIONS_ROUTE]: ({ path }) => {
       const includeVoided = new URL(path, "http://localhost").searchParams.get("include_voided");
