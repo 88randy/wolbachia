@@ -21,6 +21,7 @@ test.each([
   ["other_item_cannot_be_deactivated", "catalogs.error.other"],
   ["other_item_protected", "catalogs.error.other"],
   ["catalog_item_limit_reached", "catalogs.error.limit"],
+  ["catalog_version_conflict", "catalogs.error.versionConflict"],
 ])("maps conflict %s", (code, key) => {
   expect(catalogFailure(409, { code, detail: "Never show me" })).toMatchObject({
     kind: "failed",
