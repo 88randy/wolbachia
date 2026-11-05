@@ -222,8 +222,10 @@ def test_the_link_is_built_from_the_web_settings() -> None:
     assert build_reset_url(user).startswith("https://app.example.test/reset#")
 
 
-def expected_uid_and_token(user: User) -> tuple[str, str]:
-    return urlsafe_base64_encode(force_bytes(user.pk)), default_token_generator.make_token(user)
+def assert_reset_pair_of(user: User, uid: str, token: str) -> None:
+    # Tokens embed the current second, so compare validity, not equality (no clock dependence).
+    assert uid == urlsafe_base64_encode(force_bytes(user.pk))
+    assert default_token_generator.check_token(user, token)
 
 
 def test_the_link_carries_uid_and_token_only_in_the_fragment() -> None:
@@ -232,8 +234,9 @@ def test_the_link_carries_uid_and_token_only_in_the_fragment() -> None:
     parts = urlsplit(build_reset_url(user))
 
     assert (parts.path, parts.query) == ("/reset-password", "")
-    uid, token = expected_uid_and_token(user)
-    assert parts.fragment == f"uid={uid}&token={token}"
+    fragment = dict(pair.split("=", 1) for pair in parts.fragment.split("&"))
+    assert sorted(fragment) == ["token", "uid"]
+    assert_reset_pair_of(user, fragment["uid"], fragment["token"])
 
 
 def test_the_emailed_link_has_an_empty_query_and_the_fragment_of_that_user() -> None:
@@ -244,7 +247,7 @@ def test_the_emailed_link_has_an_empty_query_and_the_fragment_of_that_user() -> 
     url = next(line for line in mail.outbox[0].body.splitlines() if line.startswith("http"))
     parts = urlsplit(url)
     assert parts.query == ""
-    assert parse_reset_url(url) == expected_uid_and_token(user)
+    assert_reset_pair_of(user, *parse_reset_url(url))
 
 
 def test_users_created_without_a_password_can_set_their_first_one() -> None:

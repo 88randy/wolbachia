@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
-import { acceptSession } from "../session/session-revision";
+import { simulateLogin } from "../test/simulate-session";
 import { apiError, makeMe, makeVoidReasonFields, makeVoidReasonItems } from "../test/fake-api";
 import {
   ADMIN,
@@ -147,7 +147,11 @@ describe("version history", () => {
     expect(within(row).getByText("Motivo: duplicate")).toBeDefined();
     release(apiError(500, "server_error"));
     await waitFor(() => {
-      expect(app.queryClient.getQueryState(["void-reasons"])?.status).toBe("error");
+      expect(
+        app.queryClient
+          .getQueryCache()
+          .findAll({ predicate: (query) => query.queryKey[3] === "void-reasons" })[0]?.state.status,
+      ).toBe("error");
     });
     expect(within(row).getByText("Motivo: duplicate")).toBeDefined();
     expect(within(row).getByText("Anuló: luis.promotor")).toBeDefined();
@@ -269,7 +273,7 @@ describe("voiding a scheduled version", () => {
     await user.click(screen.getByRole("button", { name: "Anular" }));
     await screen.findByRole("button", { name: "Anulando…" });
 
-    acceptSession();
+    simulateLogin();
     release(Response.json({ ...SCHEDULED, status: "voided" }));
 
     await waitFor(() => {
@@ -278,7 +282,8 @@ describe("voiding a scheduled version", () => {
     expect(screen.getByRole("dialog")).toBeDefined();
     expect(screen.queryByRole("alert")).toBeNull();
     expect(screen.queryByText("Versión anulada. Sigue en el historial, tachada.")).toBeNull();
-    expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(1);
+    // The initial load plus the restart the revision change caused; the stale void answer adds none.
+    expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(2);
   });
 
   test("a version that took effect meanwhile is answered in the dialog and the history is refreshed", async () => {

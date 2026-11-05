@@ -57,6 +57,7 @@ from accounts.throttling import (
 )
 from accounts.token_pairs import rotate_refresh_token
 from core.authentication import ApiSessionAuthentication
+from core.session_identity import remember_active_organization
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
 from organizations.exceptions import NoActiveMembershipError, OrganizationHeaderRequiredError
@@ -177,6 +178,8 @@ class LoginView(APIView):
         me = get_me_context(state.user, state.organization_slug)
         login(request._request, state.user)
         organization = me.organization
+        # The login answer attests the same identity `/me/` and every resource will carry.
+        remember_active_organization(request, organization.pk if organization else None)
         log_auth_event(
             AuthEvent.LOGIN_SUCCEEDED,
             replace(state.audit, organization_id=organization.pk if organization else None),

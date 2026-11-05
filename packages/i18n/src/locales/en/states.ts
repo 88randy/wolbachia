@@ -18,6 +18,10 @@ export const states: Record<keyof typeof source, string> = {
   "states.config.title": "The app is not ready",
   "states.config.missingApiUrl":
     "The server address is not configured or is not valid. Tell technical support so they can fix it.",
+  "states.sessionCheck.title": "We could not check your session",
+  "states.sessionCheck.body":
+    "Another tab changed the session and we could not confirm who you are. No organization data is shown until we know. Check your connection and try again.",
+  "states.sessionCheck.checking": "Checking your session…",
   "states.offline.banner":
     "No connection. What you see may be out of date; it will refresh when the network is back.",
 };

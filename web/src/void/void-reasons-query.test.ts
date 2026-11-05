@@ -1,8 +1,17 @@
 import { expect, test } from "vitest";
 import { createAppQueryClient } from "../api/query-client";
 import { createWebApiClient } from "../api/create-web-api-client";
-import { createFakeApi, makeVoidReasonItems } from "../test/fake-api";
+import { signInForTest } from "../test/sign-in-for-test";
+import { createFakeApi, makeMe, makeVoidReasonItems } from "../test/fake-api";
 import { voidReasonsQueryOptions } from "./void-reasons-query";
+
+const ME = makeMe();
+const IDENTITY = {
+  userId: ME.user.id,
+  organizationSlug: ME.organization?.slug ?? "",
+  revision: 0,
+  isSettled: true,
+};
 
 test("keeps inactive reasons for history and Other from later catalog pages", async () => {
   const items = makeVoidReasonItems();
@@ -19,7 +28,8 @@ test("keeps inactive reasons for history and Other from later catalog pages", as
   });
   const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
   const queryClient = createAppQueryClient({ retry: false });
-  const available = await queryClient.query(voidReasonsQueryOptions(client));
+  signInForTest(queryClient, ME); // only a verified identity may run org-scoped queries
+  const available = await queryClient.query(voidReasonsQueryOptions(client, IDENTITY));
   expect(available.map((item) => item.code)).toEqual(["duplicate", "inactive", "other"]);
   queryClient.clear();
 });

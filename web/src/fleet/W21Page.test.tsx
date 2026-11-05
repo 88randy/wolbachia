@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test } from "vitest";
 import { apiError } from "../test/fake-api";
-import { GET, LIST, motorcycle, openFleet, pageOf } from "./fleet-test-helpers";
+import { GET, LIST, motorcycle, openFleet, otherReasonField, pageOf } from "./fleet-test-helpers";
 const RECORD = `${LIST}/M-03`;
 const UNBLOCK = `POST /api/v1/motorcycles/${motorcycle().id}/unblock/`;
 const VOID = `POST /api/v1/motorcycles/${motorcycle().id}/void/`;
@@ -64,8 +64,10 @@ describe("W21 motorcycle record", () => {
     const opener = await screen.findByRole("button", { name: "Desbloquear" });
     opener.focus();
     await userEvent.keyboard("{Enter}");
-    const reason = screen.getByRole("textbox");
-    expect(document.activeElement).toBe(reason);
+    expect(document.activeElement).toBe(
+      within(await screen.findByRole("dialog")).getByRole("combobox"),
+    );
+    const reason = await otherReasonField();
     await userEvent.type(reason, `  ${REASON}  `);
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
@@ -89,7 +91,7 @@ describe("W21 motorcycle record", () => {
       },
     });
     await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
-    await userEvent.type(screen.getByRole("textbox"), REASON);
+    await userEvent.type(await otherReasonField(), REASON);
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
     );
@@ -115,7 +117,7 @@ describe("W21 motorcycle record", () => {
       },
     });
     await userEvent.click(await screen.findByRole("button", { name: "Anular" }));
-    await userEvent.type(screen.getByRole("textbox"), REASON);
+    await userEvent.type(await otherReasonField(), REASON);
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Anular" }),
     );

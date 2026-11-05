@@ -18,6 +18,7 @@ from accounts.request_context import requested_organization_slug
 from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
 from core.permissions import HasPermissionCode
 from core.services import lock_record_for_update, void_record
+from core.session_identity import remember_active_organization
 from core.void_reason import VoidSerializer
 from organizations.selectors import resolve_active_membership
 
@@ -65,6 +66,7 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
             )
             request.membership = membership  # type: ignore[attr-defined]
             request.organization = membership.organization  # type: ignore[attr-defined]
+            remember_active_organization(request, membership.organization_id)
         super().initial(request, *args, **kwargs)
 
     def get_queryset(self) -> QuerySet[Any]:

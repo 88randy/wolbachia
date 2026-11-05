@@ -23,6 +23,7 @@ import { NotFoundState } from "../states/NotFoundState";
 import { PendingState } from "../states/PendingState";
 import { RouteErrorState } from "../states/RouteErrorState";
 import { AREAS } from "./areas";
+import { installSessionSync } from "../session/install-session-sync";
 import { parseFlatSearch, stringifyFlatSearch } from "./flat-search";
 import {
   requireAreaAccess,
@@ -191,7 +192,7 @@ interface AppRouterOptions extends RouterContext {
 }
 
 export function createAppRouter({ client, queryClient, history }: AppRouterOptions) {
-  return createRouter({
+  const router = createRouter({
     routeTree,
     context: { client, queryClient },
     parseSearch: parseFlatSearch,
@@ -201,6 +202,10 @@ export function createAppRouter({ client, queryClient, history }: AppRouterOptio
     defaultErrorComponent: RouteErrorState,
     defaultPendingComponent: PendingState,
   });
+  // At the root, before the first guard runs: a login in another tab during the initial `/me/`
+  // must not be missed (#82).
+  installSessionSync({ queryClient, client, invalidateRoutes: () => router.invalidate() });
+  return router;
 }
 
 declare module "@tanstack/react-router" {

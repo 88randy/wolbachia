@@ -1,5 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { ME_QUERY_KEY } from "./me-query";
+import { ME_QUERY_KEY } from "./me-key";
 
 /**
  * Drops every cached answer except `/me/` (which stays so mounted screens keep their observer):

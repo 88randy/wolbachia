@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures/test";
 import type { Schemas } from "@wolbachia/api-client";
-import { makeMe } from "../src/test/fake-api";
+import { makeMe, makeVoidReasonItems } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
 import {
   LANGUAGES,
@@ -20,6 +20,7 @@ const RECORD: Schemas["Motorcycle"] = {
   created_by: null,
   voided_at: null,
   voided_by: null,
+  void_reason_code: "",
   void_reason: "",
 };
 const VIEWPORT = { width: 320, height: 700 };
@@ -31,6 +32,12 @@ for (const language of LANGUAGES) {
       await mockApi(page, {
         me: makeMe({ permissions: ["motorcycle.read", "motorcycle.manage", "motorcycle.unblock"] }),
       });
+      // The shared void dialog (#80) loads the catalog of reasons and asks for one first.
+      await page.route("**/api/v1/catalogs/void-reason/items/**", (route) =>
+        route.fulfill({
+          json: { count: 3, next: null, previous: null, results: makeVoidReasonItems() },
+        }),
+      );
       let motorcycle = { ...RECORD };
       await page.route("**/api/v1/motorcycles/**", async (route) => {
         if (route.request().method() === "POST") {
@@ -63,7 +70,8 @@ for (const language of LANGUAGES) {
       await unblock.focus();
       await page.keyboard.press("Enter");
       const dialog = page.getByRole("dialog");
-      await expect(dialog.getByRole("textbox")).toBeFocused();
+      await expect(dialog.getByRole("combobox")).toBeFocused();
+      await dialog.getByRole("combobox").selectOption("other");
       await expectNoAxeViolations(page);
       await dialog.getByRole("textbox").fill("Repair checked and documented");
       await dialog

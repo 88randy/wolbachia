@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures/test";
 import type { Page } from "@playwright/test";
 import { makeMe } from "../src/test/fake-api";
 import { makePhone, makePhones } from "./fixtures/devices-mock";
@@ -223,5 +223,30 @@ test.describe("phones list (W67)", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Phones" })).toBeVisible();
     await expect(page.getByRole("row", { name: /Teléfono de Luis/ })).toContainText("Nov 3, 2026");
     await expect(page.getByText("Showing 1 to 1 of 1")).toBeVisible();
+  });
+
+  test("a content dialog that was open is covered by the session blocker, so Retry is reachable", async ({
+    page,
+  }) => {
+    const api = await mockApi(page, { me: ADMIN, devices: [LUIS] });
+    await page.goto(PHONES);
+    await expect(page.getByRole("row", { name: /Teléfono de Luis/ })).toBeVisible();
+    await page.evaluate(() => {
+      const dialog = document.createElement("dialog");
+      dialog.textContent = "contenido";
+      document.body.append(dialog);
+      dialog.showModal();
+    });
+    api.setMeFailing(true);
+
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+
+    await expect(page.getByText("No pudimos verificar tu sesión")).toBeVisible();
+    api.setMeFailing(false);
+    // Playwright only clicks what receives the pointer: a covered button would time out.
+    await page.getByRole("button", { name: "Reintentar" }).click();
+    await expect(page.getByText("No pudimos verificar tu sesión")).toHaveCount(0);
   });
 });

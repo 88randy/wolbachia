@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
-import { useMe } from "../session/use-me";
+import { useSessionIdentity } from "../session/use-session-identity";
 import { NotFoundState } from "../states/NotFoundState";
 import page from "../styles/page.module.css";
 import { fleetRecordOptions } from "./fleet-query";
@@ -9,7 +9,9 @@ import { FleetLoadError } from "./FleetLoadError";
 import { MotorcycleScreen } from "./MotorcycleScreen";
 export function MotorcycleRecord({ code }: { code: string }) {
   const { t } = useTranslation();
-  const query = useQuery(fleetRecordOptions(useApiClient(), useMe(), code));
+  const client = useApiClient();
+  const identity = useSessionIdentity();
+  const query = useQuery(fleetRecordOptions({ client, identity }, code));
   const retry = () => {
     void query.refetch();
   };
