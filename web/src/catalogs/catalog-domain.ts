@@ -3,6 +3,7 @@ import type { CatalogItem } from "./catalogs-query";
 export type Direction = "up" | "down";
 export const ACTIVE_LIMIT = 200;
 const SORT_STEP = 10;
+const MAX_SORT = 10000;
 
 /** Labels are API data, never message keys. */
 export function displayLabel(row: { label_es: string; label_en: string }, language: Locale) {
@@ -30,4 +31,13 @@ export function planMove(items: readonly CatalogItem[], id: string, direction: D
     { id: current.id, sort: neighbor.sort },
     { id: neighbor.id, sort: current.sort },
   ];
+}
+
+/** Avoid the backend's automatic order, which includes inactive items and can be exhausted. */
+export function nextItemSort(items: readonly CatalogItem[]): number {
+  const highest = items.reduce(
+    (maximum, item) => (item.is_active && !item.is_other ? Math.max(maximum, item.sort) : maximum),
+    0,
+  );
+  return Math.min(highest + SORT_STEP, MAX_SORT);
 }

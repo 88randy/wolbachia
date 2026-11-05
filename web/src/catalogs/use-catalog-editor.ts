@@ -20,7 +20,7 @@ export function useCatalogEditor(slug: string, items: readonly CatalogItem[]) {
   const [error, setError] = useState<MessageKey | null>(null);
   const [announcement, setAnnouncement] = useState("");
   const path = (id: string) => ({ catalog_slug: slug, id });
-  const save = useCatalogSave(slug, write);
+  const save = useCatalogSave(slug, write, items);
   const state = {
     dialog,
     setDialog,

@@ -1,3 +1,4 @@
+import { CatalogRefreshNotice } from "./CatalogRefreshNotice";
 import { useQuery } from "@tanstack/react-query";
 import { Navigate, useParams } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -18,7 +19,7 @@ export function CatalogsPage() {
   const { slug } = useParams({ strict: false });
   const query = useQuery(catalogsQueryOptions(client));
   useDocumentTitle(t("catalogs.page.title"));
-  if (query.error) throw query.error;
+  if (query.error && query.data === undefined) throw query.error;
   if (!query.data) return <p role="status">{t("catalogs.page.loading")}</p>;
   const first = query.data[0];
   if (!first)
@@ -26,6 +27,7 @@ export function CatalogsPage() {
       <section className={page.page}>
         <h1>{t("catalogs.page.title")}</h1>
         <p>{t("catalogs.page.empty")}</p>
+        <CatalogRefreshNotice error={query.error} onRetry={query.refetch} />
       </section>
     );
   if (!slug)
@@ -35,6 +37,7 @@ export function CatalogsPage() {
   return (
     <section className={page.page}>
       <h1 className={page.title}>{t("catalogs.page.title")}</h1>
+      <CatalogRefreshNotice error={query.error} onRetry={query.refetch} />
       <CatalogTabs catalogs={query.data} slug={slug} />
       <CatalogItems key={slug} catalog={catalog} />
     </section>

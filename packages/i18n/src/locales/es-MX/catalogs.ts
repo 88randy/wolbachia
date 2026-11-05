@@ -2,6 +2,8 @@ import type { AreaCatalog } from "../area.ts";
 export const catalogs = {
   "catalogs.page.title": "Catálogos",
   "catalogs.page.empty": "Todavía no hay catálogos disponibles.",
+  "catalogs.page.refreshFailed":
+    "No pudimos actualizar los catálogos. Conservamos la información anterior. Reintenta.",
   "catalogs.page.tabs": "Catálogos disponibles",
   "catalogs.page.loading": "Cargando catálogos…",
   "catalogs.page.open":

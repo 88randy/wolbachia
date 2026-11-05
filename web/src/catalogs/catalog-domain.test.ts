@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { displayLabel, planMove } from "./catalog-domain";
+import { displayLabel, nextItemSort, planMove } from "./catalog-domain";
 import type { CatalogItem } from "./catalogs-query";
 
 const item = (id: string, sort: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
@@ -49,5 +49,24 @@ describe("catalog ordering invariants", () => {
       isMissingEnglish: false,
     });
     expect(displayLabel(item("Rociado", 10), "es-MX").isMissingEnglish).toBe(false);
+  });
+});
+
+describe("new item sort", () => {
+  test.each([
+    { name: "empty list", rows: [], expected: 10 },
+    {
+      name: "active items exclude fixed Other",
+      rows: [item("a", 10), item("b", 20), item("other", 10000, { is_other: true })],
+      expected: 30,
+    },
+    { name: "cap", rows: [item("a", 10000)], expected: 10000 },
+    {
+      name: "inactive maximum ignored",
+      rows: [item("a", 10), item("old", 10000, { is_active: false })],
+      expected: 20,
+    },
+  ])("$name", ({ rows, expected }) => {
+    expect(nextItemSort(rows)).toBe(expected);
   });
 });

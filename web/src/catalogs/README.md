@@ -3,6 +3,7 @@
 Routes: `/settings/catalogs` redirects to the first API catalog (or an empty state);
 `/settings/catalogs/<slug>` edits that catalog. Both require `catalog.read`.
 Tabs are links with `aria-current`; names and item labels are API data.
+A failed refresh keeps cached catalogs, the editor and any dialog draft mounted; a notice offers retry.
 
 All query keys live in `catalogs-query.ts`. Read every catalog/item page with
 `page_size=200`, retain server order, and present items without table pagination.
@@ -23,6 +24,8 @@ and abort on unmount. Dialog drafts are scoped to the catalog slug.
 
 Labels validate against the existing backend's 64-character code and 200-character label
 limits. English may be blank and falls back to Spanish, with warnings.
+Create sends max(active non-Other sort) + 10, capped at 10000, instead of relying on
+the backend automatic order (which includes inactive items). The sort_exhausted mapping remains a fallback.
 No icon/requires_photo fields are sent. Error codes map to localized keys; never server detail.
 
 The API lacks in-use counts and authors; the editor does not invent either.

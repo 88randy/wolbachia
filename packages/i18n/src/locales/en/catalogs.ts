@@ -2,6 +2,8 @@ import type { catalogs as spanish } from "../es-MX/catalogs.ts";
 export const catalogs: Record<keyof typeof spanish, string> = {
   "catalogs.page.title": "Catalogs",
   "catalogs.page.empty": "No catalogs are available yet.",
+  "catalogs.page.refreshFailed":
+    "Could not refresh the catalogs. Previous information is still shown. Try again.",
   "catalogs.page.tabs": "Available catalogs",
   "catalogs.page.loading": "Loading catalogs…",
   "catalogs.page.open":

@@ -1,4 +1,5 @@
-import { screen, within, waitFor } from "@testing-library/react";
+import { invalidateCatalogs } from "./catalogs-query";
+import { act, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, test } from "vitest";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
@@ -284,6 +285,7 @@ test("create and edit send only contract fields and preserve immutable codes", a
   await screen.findByRole("row", { name: /Actualizada/ });
   expect(api.requests.find((request) => request.method === "POST")?.body).toEqual({
     code: "new",
+    sort: 30,
     label_es: "Nueva",
     label_en: "",
   });
@@ -337,4 +339,90 @@ test("a session change between reorder PATCHes stops remaining writes and invali
   expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(1);
   expect(api.requests.filter((request) => request.method === "GET")).toHaveLength(reads);
   expect(screen.queryByText("Se movió Nebulización arriba.")).toBeNull();
+});
+
+test("an add draft survives a failed catalog refetch and the notice can retry", async () => {
+  let resolveRefetch!: (answer: Response) => void;
+  const pendingRefetch = new Promise<Response>((resolve) => {
+    resolveRefetch = resolve;
+  });
+  const { api, app } = await open();
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Agregar elemento" }));
+  const dialog = screen.getByRole("dialog");
+  await user.type(within(dialog).getByLabelText("Código"), "draft-code");
+  await user.type(within(dialog).getByLabelText("Etiqueta en español (obligatoria)"), "Borrador");
+  api.setRoute("GET /api/v1/catalogs/", () => pendingRefetch);
+  const reads = api.requests.filter((request) =>
+    request.path.startsWith("/api/v1/catalogs/?"),
+  ).length;
+  let refresh!: Promise<void>;
+  act(() => {
+    refresh = invalidateCatalogs(app.queryClient);
+  });
+  await waitFor(() => {
+    expect(
+      api.requests.filter((request) => request.path.startsWith("/api/v1/catalogs/?")),
+    ).toHaveLength(reads + 1);
+  });
+  await act(async () => {
+    resolveRefetch(apiError(503, "server_error"));
+    await refresh;
+  });
+  const notice = await screen.findByText(
+    "No pudimos actualizar los catálogos. Conservamos la información anterior. Reintenta.",
+  );
+  expect(screen.getByRole("dialog")).toBe(dialog);
+  expect(within(dialog).getByLabelText<HTMLInputElement>("Código").value).toBe("draft-code");
+  expect(
+    within(dialog).getByLabelText<HTMLInputElement>("Etiqueta en español (obligatoria)").value,
+  ).toBe("Borrador");
+  await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+  api.setRoute("GET /api/v1/catalogs/", () => pageOf([CATALOG]));
+  await user.click(screen.getByRole("button", { name: "Reintentar" }));
+  await waitFor(() => {
+    expect(notice.isConnected).toBe(false);
+  });
+  expect(screen.getByRole("row", { name: /spraying/ })).toBeDefined();
+});
+
+test("create sends an explicit sort despite an inactive item at the backend maximum", async () => {
+  let resolveCreate!: (answer: Response) => void;
+  const pendingCreate = new Promise<Response>((resolve) => {
+    resolveCreate = resolve;
+  });
+  let rows = catalogRows().map((item) => (item.is_active ? item : { ...item, sort: 10000 }));
+  const created = makeCatalogItem({
+    id: "created",
+    code: "new",
+    label_es: "Nueva",
+    label_en: "",
+    sort: 30,
+  });
+  const { api } = await open({
+    routes: {
+      [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
+      [`POST ${ITEMS_PATH}`]: () => pendingCreate,
+    },
+  });
+  const user = userEvent.setup();
+  await user.click(screen.getByRole("button", { name: "Agregar elemento" }));
+  await user.type(screen.getByLabelText("Código"), "new");
+  await user.type(screen.getByLabelText("Etiqueta en español (obligatoria)"), "Nueva");
+  await user.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() => {
+    expect(api.requests.some((request) => request.method === "POST")).toBe(true);
+  });
+  await act(async () => {
+    rows = [...rows, created];
+    resolveCreate(Response.json(created, { status: 201 }));
+    await pendingCreate;
+  });
+  await screen.findByRole("row", { name: /Nueva/ });
+  expect(api.requests.find((request) => request.method === "POST")?.body).toEqual({
+    code: "new",
+    label_es: "Nueva",
+    label_en: "",
+    sort: 30,
+  });
 });

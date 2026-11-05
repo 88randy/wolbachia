@@ -1,9 +1,14 @@
+import { nextItemSort } from "./catalog-domain";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { CatalogItem } from "./catalogs-query";
 import type { CatalogValues } from "./catalog-schema";
 import type { useCatalogWrite } from "./use-catalog-write";
-/** Create sends code and labels; edit sends only labels, leaving immutable/default fields alone. */
-export function useCatalogSave(slug: string, write: ReturnType<typeof useCatalogWrite>) {
+/** Create sends code, labels and active-item sort; edit sends only labels, leaving immutable/default fields alone. */
+export function useCatalogSave(
+  slug: string,
+  write: ReturnType<typeof useCatalogWrite>,
+  items: readonly CatalogItem[],
+) {
   const client = useApiClient();
   return (values: CatalogValues, item?: CatalogItem) =>
     write.run((guard) =>
@@ -17,7 +22,7 @@ export function useCatalogSave(slug: string, write: ReturnType<typeof useCatalog
               })
             : client.POST("/api/v1/catalogs/{catalog_slug}/items/", {
                 params: { path: { catalog_slug: slug } },
-                body: values,
+                body: { ...values, sort: nextItemSort(items) },
                 signal: guard.signal,
               }),
         guard,
