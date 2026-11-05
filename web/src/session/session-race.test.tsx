@@ -6,9 +6,17 @@ import { apiError, createFakeApi, makeMe, makeOrganization, noContent } from "..
 import type { FakeApiRoutes } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
+import { createWebApiClient } from "../api/create-web-api-client";
 import type { Me } from "./me";
+import { reconcileSession } from "./session-reconcile";
 import { clearOrganizationSlug } from "./organization-slug";
 import { endSessionExpiry } from "./session-events";
+import {
+  isSessionKnown,
+  setSessionState,
+  sessionState,
+  subscribeToRevision,
+} from "./session-revision";
 
 const ME = "GET /api/v1/me/";
 const LOGIN = "POST /api/v1/auth/login/";
@@ -60,6 +68,23 @@ async function openExpired(routes: FakeApiRoutes = {}, path = "/", me: Me = make
   return { api, app };
 }
 
+/** What another tab does when it signs in: it announces the change on the shared channel. */
+function announce(): void {
+  const otherTab = new BroadcastChannel("wolbachia.session");
+  otherTab.postMessage("changed");
+  otherTab.close();
+}
+
+function hop(): Promise<void> {
+  return new Promise<void>((resolve) => {
+    const channel = new MessageChannel();
+    channel.port1.onmessage = () => {
+      resolve();
+    };
+    channel.port2.postMessage(0);
+  });
+}
+
 function logoutRequests(api: { requests: { path: string }[] }) {
   return api.requests.filter((request) => request.path === "/api/v1/auth/logout/");
 }
@@ -99,11 +124,12 @@ describe("re-authentication and sign-out are queued, not rejected", () => {
 
   test("a failed sign-out is reported inside the dialog", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    await openExpired({
+    const { api } = await openExpired({
       [LOGOUT]: () => {
         throw new TypeError("Failed to fetch");
       },
     });
+    api.setRoute(ME, apiError(401, "not_authenticated")); // the session really is gone
 
     await userEvent.click(screen.getByRole("button", { name: "Cerrar sesión" }));
 
@@ -355,5 +381,276 @@ describe("the dialog cannot be closed from the keyboard", () => {
 
     expect(dialog.open).toBe(true);
     expect(document.activeElement).toBe(screen.getByLabelText("Contraseña"));
+  });
+});
+
+describe("the cookie is the truth (#82)", () => {
+  test("/me/ is accepted only for the revision that asked for it: a superseded reconcile never stores B and the state ends unknown", async () => {
+    const login = deferred();
+    const meOfB = deferred();
+    const userA = makeMe();
+    const userB = {
+      ...makeMe({ user: { ...userA.user, id: "7a7a7a7a-0000-4000-8000-000000000003" } }),
+      organization: null,
+    };
+    let meCalls = 0;
+    const { api, app } = await openExpired({ [LOGIN]: () => login.promise });
+    const seen: string[] = [];
+    app.queryClient.getQueryCache().subscribe(() => {
+      const id = app.queryClient.getQueryData<Me>(["me"])?.user.id;
+      if (id !== undefined) seen.push(id);
+    });
+    api.setRoute(ME, () => {
+      meCalls += 1;
+      return meCalls === 1 ? meOfB.promise : Promise.resolve(apiError(503, "server_error"));
+    });
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    announce(); // another tab signed in as B: this tab's reconcile asks /me/ (pending)
+    await waitFor(() => {
+      expect(meCalls).toBe(1);
+    });
+
+    // A's login completes: it supersedes B's reconcile, whose /me/ then fails to be A's follow-up.
+    login.release(Response.json({ me: userA, server_time: "2026-11-04T12:00:00Z" }));
+    await waitFor(() => {
+      expect(meCalls).toBe(2);
+    });
+    meOfB.release(Response.json(userB));
+    await hop();
+    await waitFor(() => {
+      expect(sessionState()).toBe("unknown");
+    });
+
+    expect(seen).not.toContain(userB.user.id);
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userA.user.id);
+    expect(app.router.state.location.pathname).not.toBe("/select-organization");
+  });
+
+  test("a 401 during a verify with /me/ pending ends unknown and is never known without an accepted /me/ (#82)", async () => {
+    const meLater = deferred();
+    const api = createFakeApi({ [ME]: Response.json(makeMe()) });
+    const app = await renderApp({ path: "/", fetch: api.fetch });
+    await screen.findByRole("main");
+    api.setRoute(ME, () => meLater.promise);
+    const states: string[] = [];
+    const stop = subscribeToRevision(() => states.push(sessionState()));
+
+    window.dispatchEvent(new Event("focus")); // verify: /me/ is pending
+    await waitFor(() => {
+      expect(sessionState()).toBe("reconciling");
+    });
+    await app.queryClient
+      .query({ queryKey: ["probe"], queryFn: () => Promise.reject(new ApiError(401)) })
+      .catch(() => undefined);
+    meLater.release(Response.json(makeMe())); // the cancelled /me/ is reverted to the old value
+    await hop();
+
+    await waitFor(() => {
+      expect(sessionState()).toBe("unknown");
+    });
+    expect(states).not.toContain("known");
+    stop();
+  });
+
+  test("B signs in from another tab while A's initial /me/ is pending: A is never stored or shown (#82)", async () => {
+    const meOfA = deferred();
+    const userA = makeMe({ user: { ...makeMe().user, first_name: "Ana", last_name: "UsuariaA" } });
+    const userB = makeMe({
+      user: {
+        ...makeMe().user,
+        id: "b0b0b0b0-0000-4000-8000-000000000009",
+        first_name: "Beto",
+        last_name: "UsuarioB",
+      },
+    });
+    let calls = 0;
+    const api = createFakeApi({
+      [ME]: () => {
+        calls += 1;
+        return calls === 1 ? meOfA.promise : Promise.resolve(Response.json(userB));
+      },
+    });
+    const starting = renderApp({ path: "/", fetch: api.fetch });
+    await waitFor(() => {
+      expect(calls).toBe(1);
+    });
+
+    announce(); // the listener is installed at the root, before any guard runs
+    meOfA.release(Response.json(userA)); // A's answer arrives after the change
+    const app = await starting;
+    await screen.findByRole("main");
+
+    await waitFor(() => {
+      expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    });
+    expect(screen.queryByText(/UsuariaA/)).toBeNull();
+  });
+
+  test("a late login body is not published with a stale token: B, not A, ends known (#82)", async () => {
+    const login = deferred();
+    const userA = makeMe();
+    const userB = makeMe({ user: { ...userA.user, id: "b0b0b0b0-0000-4000-8000-000000000007" } });
+    const api = createFakeApi({
+      [CSRF]: noContent(204),
+      [LOGIN]: () => login.promise,
+      [ME]: () => Response.json(userB), // the cookie, after the other tab, is B's
+    });
+    const app = await renderApp({ path: "/login", fetch: api.fetch });
+    const seen: string[] = [];
+    app.queryClient.getQueryCache().subscribe(() => {
+      const id = app.queryClient.getQueryData<Me>(["me"])?.user.id;
+      if (id !== undefined) seen.push(id);
+    });
+    await userEvent.type(await screen.findByLabelText("Usuario"), "ana.supervisora");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => {
+      expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(true);
+    });
+
+    announce(); // another tab moved the session to B while A's login is in flight
+    await waitFor(() => {
+      expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    });
+    login.release(Response.json({ me: userA, server_time: "2026-11-04T12:00:00Z" }));
+    await hop();
+    await hop();
+
+    expect(seen).not.toContain(userA.user.id);
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    expect(sessionState()).toBe("known");
+  });
+
+  test("a login abandoned after its headers arrived reconciles with /me/: A's data never returns under B's cookie (#82)", async () => {
+    const userA = makeMe();
+    const userB = makeMe({ user: { ...userA.user, id: "b0b0b0b0-0000-4000-8000-000000000007" } });
+    const api = createFakeApi({
+      [ME]: Response.json(userA),
+      [CSRF]: noContent(204),
+      // The server already set B's cookie; the body is still pending and dies with the abort.
+      [LOGIN]: (request) =>
+        new Promise<Response>((_resolve, reject) => {
+          request.signal.addEventListener("abort", () => {
+            reject(new DOMException("aborted", "AbortError"));
+          });
+        }),
+    });
+    const app = await renderApp({ path: "/", fetch: api.fetch });
+    await screen.findByRole("main");
+    const orgKey = ["org", userA.user.id, userA.organization?.slug, "rows"];
+    app.queryClient.setQueryData(orgKey, ["A's row"]);
+    await app.router.navigate({ to: "/login" });
+    await userEvent.type(await screen.findByLabelText("Usuario"), "ana.supervisora");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => {
+      expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(true);
+    });
+    expect(app.queryClient.getQueryData(orgKey)).toBeUndefined(); // left `known` BEFORE sending
+    api.setRoute(ME, Response.json(userB)); // the cookie is B's now
+
+    await app.router.navigate({ to: "/" }); // Forward: the form unmounts and aborts the read
+
+    await waitFor(() => {
+      expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    });
+    expect(app.queryClient.getQueryData(orgKey)).toBeUndefined();
+    expect(sessionState()).toBe("known");
+    expect(api.requests.filter((request) => request.path === "/api/v1/me/").length).toBeGreaterThan(
+      1,
+    );
+  });
+
+  test("a verify that confirms B between a login's cookie and its late body: B stays, A is never stored (#82)", async () => {
+    const login = deferred();
+    const userA = makeMe();
+    const userB = makeMe({ user: { ...userA.user, id: "b0b0b0b0-0000-4000-8000-000000000007" } });
+    const api = createFakeApi({
+      [CSRF]: noContent(204),
+      [LOGIN]: () => login.promise, // A's cookie was applied; the body is still pending
+      [ME]: () => Response.json(userB), // another tab moved the cookie to B
+    });
+    const app = await renderApp({ path: "/login", fetch: api.fetch });
+    const seen: string[] = [];
+    app.queryClient.getQueryCache().subscribe(() => {
+      const id = app.queryClient.getQueryData<Me>(["me"])?.user.id;
+      if (id !== undefined) seen.push(id);
+    });
+    await userEvent.type(await screen.findByLabelText("Usuario"), "ana.supervisora");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
+    await waitFor(() => {
+      expect(api.requests.some((request) => request.path === "/api/v1/auth/login/")).toBe(true);
+    });
+
+    await reconcileSession(
+      app.queryClient,
+      createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch }),
+      "verify",
+    );
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    login.release(Response.json({ me: userA, server_time: "2026-11-04T12:00:00Z" }));
+    await hop();
+    await hop();
+
+    expect(seen).not.toContain(userA.user.id);
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    expect(sessionState()).toBe("known");
+  });
+
+  test("a re-authentication from the unknown state makes the identity known again", async () => {
+    const { app } = await openExpired();
+    setSessionState("unknown"); // the expiry dialog is the way out, so the blocker stays hidden
+    expect(isSessionKnown()).toBe(false);
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await waitFor(() => {
+      expect(isSessionKnown()).toBe(true);
+    });
+    expect(screen.queryByText("No pudimos verificar tu sesión")).toBeNull();
+    expect(app.queryClient.getQueryData<Me>(["me"])).toBeDefined();
+  });
+
+  test("a login the server accepted is not published with a stale token: it reconciles with /me/ and ends with the cookie's identity", async () => {
+    const login = deferred();
+    const userA = makeMe();
+    const userB = makeMe({ user: { ...userA.user, id: "7a7a7a7a-0000-4000-8000-000000000002" } });
+    const { api, app } = await openExpired({ [LOGIN]: () => login.promise });
+    const otherTab = new BroadcastChannel("wolbachia.session");
+    let announcements = 0;
+    otherTab.onmessage = () => {
+      announcements += 1;
+    };
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    // Another tab signed in as B: this tab reconciles and its /me/ answers B while A's login is
+    // still in flight.
+    api.setRoute(ME, Response.json(userB));
+    otherTab.postMessage("changed");
+    await waitFor(() => {
+      expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    });
+
+    // The server accepted A's login last, so the cookie is A's.
+    api.setRoute(ME, Response.json(userA));
+    login.release(Response.json({ me: userA, server_time: "2026-11-04T12:00:00Z" }));
+
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userA.user.id);
+    // The server-confirmed login was announced exactly once (the reconcile does not echo it).
+    await new Promise<void>((resolve) => {
+      const hop = new MessageChannel();
+      hop.port1.onmessage = () => {
+        resolve();
+      };
+      hop.port2.postMessage(0);
+    });
+    expect(announcements).toBe(1);
+    otherTab.close();
   });
 });

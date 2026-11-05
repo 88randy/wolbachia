@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: bootstrap (issue #6). The shell, tokens, i18n, the local outbox, the sync worker and the sync inbox (P28) exist. P1/P2 login and local unlock are implemented in #7; the feature screens are the epics #8 to #11. Decisions: [`docs/decisions.md`](../docs/decisions.md) 91 to 95.
+> Status: bootstrap (issue #6). The shell, tokens, i18n, the local outbox, the sync worker and the sync inbox (P28) exist. P1/P2 login and local unlock are implemented in #7; the feature screens are the epics #8 to #11. Decisions: [`docs/decisions.md`](../docs/decisions.md) 93 to 96.
 
 ## Rules
 
@@ -18,7 +18,7 @@ React Native (Android) app for the courier. Offline-first: the phone is the loca
 
 ```
 App.tsx, index.ts      entry (SafeAreaProvider, then AppRoot)
-metro.config.js        pins React to this app's copy (see decision 94)
+metro.config.js        pins React to this app's copy (see decision 95)
 plugins/               Expo config plugin: plain http in debug builds only
 src/app/               boot (fonts, database, saved settings), providers, shell
 src/auth/              secure credentials, local unlock, rules, refresh and idle policy

@@ -19,6 +19,8 @@ import { FilterBar } from "../data-table/FilterBar";
 import type { TableQueryConfig } from "../data-table/table-types";
 import { useTableUrlState } from "../data-table/use-table-url-state";
 import { setupI18n } from "../i18n/setup-i18n";
+import { setExpectedAttestation } from "../session/attestation";
+import { FAKE_IDENTITY } from "./fake-api";
 import { parseFlatSearch, stringifyFlatSearch } from "../router/flat-search";
 
 /** A row of the tables under test. */
@@ -96,6 +98,7 @@ export async function renderTable(initial: TableTestProps, options: RenderTableO
   const router = createTestRouter(Screen, options.path ?? "/");
   const fetchOption = options.fetch === undefined ? {} : { fetch: options.fetch };
   const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, fetchOption);
+  setExpectedAttestation(FAKE_IDENTITY); // as after an accepted /me/
   const i18n = await setupI18n("es-MX");
   const queryClient = createAppQueryClient({ retry: false });
   await router.load();

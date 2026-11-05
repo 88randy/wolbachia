@@ -1,4 +1,8 @@
 import { Outlet } from "@tanstack/react-router";
+import { useSyncExternalStore } from "react";
+import { useSessionExpired } from "../session/use-session-expired";
+import { sessionState, subscribeToRevision } from "../session/session-revision";
+import { SessionBlocker } from "../states/SessionBlocker";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
 import { useSessionChanges } from "../session/use-session-changes";
 import styles from "./AppShell.module.css";
@@ -18,6 +22,8 @@ export function AppShell() {
   const collapsed = isCompact || preferCollapsed;
   useFocusMainOnNavigation();
   useSessionChanges();
+  const state = useSyncExternalStore(subscribeToRevision, sessionState);
+  const isExpired = useSessionExpired();
   return (
     <div className={styles.shell}>
       <SkipLink />
@@ -26,9 +32,11 @@ export function AppShell() {
         <Sidebar collapsed={collapsed} onToggle={toggle} canToggle={!isCompact} />
         <div className={styles.column}>
           <TopBar />
-          <main id={MAIN_ID} className={styles.main} tabIndex={-1}>
+          {/* Org-scoped content only in `known`: the screens stay mounted (drafts are kept) but inert. */}
+          <main id={MAIN_ID} className={styles.main} tabIndex={-1} inert={state !== "known"}>
             <Outlet />
           </main>
+          {state !== "known" && !isExpired && <SessionBlocker key={state} state={state} />}
         </div>
       </div>
       <SessionExpiredDialog />

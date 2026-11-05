@@ -126,9 +126,10 @@ describe("session expiry: re-authentication over the current page", () => {
   });
 
   test("a wrong password is explained and the dialog stays", async () => {
-    const { app } = await openShell({ [LOGIN]: apiError(401, "invalid_credentials") });
+    const { api, app } = await openShell({ [LOGIN]: apiError(401, "invalid_credentials") });
     await failQuery(app, new ApiError(401));
     await screen.findByRole("dialog");
+    api.setRoute(ME, apiError(401, "not_authenticated")); // the session really is gone
 
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
     await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
