@@ -7,7 +7,7 @@ Per-organization option lists (incident reasons, removal reasons, the motorcycle
 - Catalogs and items are configuration, not records: nothing is deleted. An item is **deactivated** (old records keep showing it) and can be **reactivated**.
 - Every catalog that is open ends with the fixed "Other (specify)" item (`is_other`). The database guarantees one per catalog and that it stays active (`CheckConstraint`); the service answers `409 other_item_cannot_be_deactivated`. Its labels/icon/order/photo flag are protected too (`409 other_item_protected`). It is always listed last, whatever its `sort`.
 - Catalogs are created by the seed (`catalogs/seeds.py`), so there is no `POST /catalogs/`. OP01 confirms the nine launch catalogs; the additional #80 void-reason catalog is retained under decision 91.
-- `code` identifies an item and never changes (lowercase; `other` is reserved for the seed). Reordering is `PATCH {sort}`; `sort` is 0 to 10000 and an exhausted automatic order answers `sort_exhausted`.
+- `code` identifies an item and never changes (lowercase; `other` is reserved for the seed). Reordering uses conditional `POST /catalogs/{slug}/items/reorder/`; individual `PATCH {sort}` remains supported; `sort` is 0 to 10000 and an exhausted automatic order answers `sort_exhausted`.
 - Limits: 200 active items per catalog (`409 catalog_item_limit_reached`, also when reactivating); `icon` is a token `^[a-z0-9-]+$`.
 - `label_en` may be blank: clients fall back to `label_es`. Labels are data, the only user-facing text the API returns.
 
@@ -37,8 +37,14 @@ keeps the immutable item code rather than a foreign key; deactivation never rewr
 
 ## Launch metadata (#99)
 
-Admin item projections expose `protected` (fixed Other) and `in_use` (a stored
-MotorcycleCheck FK or a recorded void-code reference). Inactive items remain
+Admin item projections expose `protected` (fixed Other), integer `usage_count` and
+compatible `in_use = usage_count > 0`. Correlated Subquery counts (Coalesce to zero)
+sum MotorcycleCheck FKs and, for void-reason, every organization-scoped model with
+void_reason_code. Historical references count even after item deactivation; no
+per-item queries or join multiplication. Lists select_related both authors.
+Reads include created_by/created_by_username and nullable deactivated_at,
+deactivated_by/deactivated_by_username. Seed authors are null. Deactivation records
+the request actor and time; activation clears both. Repeated state actions are no-ops. Inactive items remain
 readable in admin lists/details; deactivation never rewrites their labels or
 history. Field snapshots continue to omit inactive choices and retain Other last.
 

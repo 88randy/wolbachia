@@ -251,7 +251,7 @@ P14 advances finding -> paddle present -> eggs Yes/No -> conditions/bag/reinstat
 -> confirmation. Closed-house/absent/missing/destroyed skip paddle/eggs/bag.
 There is no egg-count input, draft field or event payload field.
 
-### Decisions applied (ADR 113)
+### Decisions applied (ADR 116)
 
 - `domain.ts` contains strict ASCII `wbf:1:<kind>:<hyphenated UUID>` parsing,
   conditional boolean eggs and shared route transitions. Kinds are lot, ovitrap,
@@ -388,6 +388,10 @@ The full accessibility matrix must run separately on the Galaxy S24 Ultra SM-S92
 Android 16 reference and the arm64/4 GB/64 GB/Android 13+ low-resource profile.
 Neither profile is qualified by Node tests. Authentication/phone lock integration
 remains the shell/M-01 dependency; capture does not add a parallel auth/session path.
+
+### UI/UX standards (`.claude/skills/ui-ux-standards`): status of M-08
+
+Already met: no `Alert.alert` and no spinners, 56 dp targets, truthful phone-saved / server-received / reviewed states, no text truncation. Left for #203: skeleton loading states, bottom sheets for choices, snackbar with Undo for reversible actions, light haptics on save/scan success, and the contrast audit for outdoor use.
 
 Official references checked for reused APIs: [React Native accessibility](https://reactnative.dev/docs/accessibility),
 [React Native text](https://reactnative.dev/docs/text).

@@ -28,6 +28,8 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["catalogs.confirm.title", ["name"]],
   ["errors.api.blocked", ["role"]],
   ["fleet.unblock.title", ["record"]],
+  ["geography.retire.author", ["author"]],
+  ["geography.retire.dialogTitle", ["record"]],
   ["mobile.chip.noSignal", ["count"]],
   ["mobile.chip.toUpload", ["count"]],
   ["mobile.inbox.groupTitle", ["count", "label"]],

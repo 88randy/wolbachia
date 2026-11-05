@@ -90,11 +90,9 @@ test.describe("startup", () => {
   });
 
   test("serves the app on a deep link (single-page fallback)", async ({ page }) => {
-    await page.goto("/quadrants");
+    await page.goto("/releases");
 
-    await expect(
-      page.getByRole("heading", { level: 1, name: "Cuadrantes y muestreo" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Liberaciones" })).toBeVisible();
   });
 });
 

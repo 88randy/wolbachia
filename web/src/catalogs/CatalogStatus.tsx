@@ -1,11 +1,13 @@
-import { Ban, Check, Link, LockKeyhole } from "lucide-react";
+import { Ban, Check, LockKeyhole } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { useFormatDate } from "../format/use-formatters";
 import type { CatalogItem } from "./catalogs-query";
 import styles from "./catalogs.module.css";
 
 /** Icon and localized text carry status without depending on color. */
 export function CatalogStatus({ item }: { item: CatalogItem }) {
   const { t } = useTranslation();
+  const formatDate = useFormatDate();
   const Icon = item.is_other ? LockKeyhole : item.is_active ? Check : Ban;
   const key = item.is_other
     ? "catalogs.status.fixed"
@@ -18,10 +20,10 @@ export function CatalogStatus({ item }: { item: CatalogItem }) {
         <Icon className={styles.icon} aria-hidden="true" />
         {t(key)}
       </span>
-      {item.in_use && (
-        <span className={styles.badge} aria-description={t("catalogs.status.inUseDescription")}>
-          <Link className={styles.icon} aria-hidden="true" />
-          {t("catalogs.status.inUse")}
+      {!item.is_active && item.deactivated_at && (
+        <span>
+          {formatDate(item.deactivated_at)} ·{" "}
+          {item.deactivated_by_username ?? t("catalogs.table.unknownAuthor")}
         </span>
       )}
     </div>
