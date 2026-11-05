@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: bootstrap (issue #6). The shell, tokens, i18n, the local outbox, the sync worker and the sync inbox (P28) exist. P1/P2 login and local unlock are implemented in #7; the feature screens are the epics #8 to #11. Decisions: [`docs/decisions.md`](../docs/decisions.md) 93 to 95 and 98.
+> Status: bootstrap (issue #6). The shell, tokens, i18n, the local outbox, the sync worker and the sync inbox (P28) exist. P1/P2 login and local unlock are implemented in #7; the feature screens are the epics #8 to #11. Decisions: [`docs/decisions.md`](../docs/decisions.md) 93 to 95 and 99.
 
 ## Rules
 
