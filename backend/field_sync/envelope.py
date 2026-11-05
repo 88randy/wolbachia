@@ -26,7 +26,7 @@ NULL_CHARACTER_REPLACEMENT = "�"
 class GpsFix:
     lat: float
     lng: float
-    accuracy_m: float
+    accuracy_m: float | None
 
 
 @dataclass(frozen=True)

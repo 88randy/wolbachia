@@ -120,3 +120,14 @@ Rules:
 - "worker", "field worker", "field user", "delivery worker" → `courier`; profile slug `courier` (#2, #9, #13, #14, decision 4).
 - "egg paper" → `egg paddle` (#21). "epidemiological week" → `epi week` (#38, CLAUDE.md).
 - `/mobile-releases/` → `/app-versions/` (`docs/web-api-needs.md`).
+
+
+## Ovitrap provenance (#111)
+
+| Term | English code | Meaning |
+| --- | --- | --- |
+| Placement attempt | PlacementAttempt | Immutable applied placement plus opaque supply/evidence UUID refs; doubtful attempts remain only in FieldEvent/ReviewItem. |
+| Ovitrap reading | OvitrapReading | Event-unique visit, conditional eggs and retained point/rule/catalog provenance. |
+| Ovitrap void lifecycle | OvitrapVoid | New authored lifecycle record linking a record.void event to its target; no original row is deleted. |
+| Index exclusion | is_index_excluded | Derived lagged exclusion provenance; does not remove lab countability. |
+| Archived catalog | CatalogSnapshot | Exact immutable delivered catalog content resolved by organization and submitted version hash. |

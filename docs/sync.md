@@ -295,3 +295,61 @@ Photos are not part of #5. The first epic that needs them (#9 relocation or #11 
 - **[PENDING client]** `clock_skew_review_seconds` value (a safety parameter, no seeded value).
 - Notifications of rejected or critical events: #49 (the review items already cover the supervisor's list).
 - `location.ping` frequency and retention: #8.
+
+
+## Ovitrap placement/check (#111, B-14)
+
+Schema 1 handlers are registered by ovitraps following the registry template.
+`ovitrap.place`: `{sampling_point_id: UUID, ovitrap_id: UUID, supply_refs: UUID[],
+evidence_ids: UUID[]}` (max 100 each, opaque/unverified; no inventory consumption).
+`ovitrap.check`: `{ovitrap_id: UUID, finding: catalog code, paddle_present: bool,
+has_eggs: bool|null, temperature_c: number|null, humidity_pct: number|null,
+paddle_type: catalog code|null, is_lagged: bool, bag_code: human code|null,
+other_text?: string}`. Every unknown key, including any numeric egg-count key,
+is invalid_payload. No paddle means null eggs/type/bag; present means boolean
+eggs, type and bag. Closed-house/absent/missing/destroyed findings skip eggs.
+Other requires text, regular choices forbid it. Negative paddles still have bags
+and remain lab-countable. Lagged readings remain countable with exclusion provenance.
+
+Ownership is effective sync scope over center AND quadrant. Rules/PointVersion
+resolve at device_time, with applied rule version ids retained. Missing/null/zero
+GPS accuracy or accuracy above max_gps_accuracy_m reviews. The envelope accepts
+omitted/null accuracy_m so evidence reaches the handler. Historical distance is
+max_distance_to_point_m (default 50 m, bounds 10..200). Speed compares with the
+previous accepted ovitrap capture, using historical speed_lock_kmh.
+All review outcomes create only FieldEvent/ReviewItem, no operational effects,
+including final upload, clock and shift review. Accepting review is #22.
+
+catalog_version resolves the exact archived delivered catalog. Missing archive
+reviews; unknown item within it rejects; a retained now-inactive choice reviews.
+Historical labels/flags remain in the archive. Pre-archive downloads cannot be
+reconstructed and review. Repeat active ovitrap/week requires void first, and
+bag codes remain reserved after void. record.void rechecks scope and appends
+OvitrapVoid with normalized 10..1000 text. A bag shares its reading lifecycle;
+existing readings block placement void. No nonexistent lab/incident dependencies
+are invented. Sync conflicts remain per-event results under HTTP 200, with safe
+params.blocked_by when applicable. Read-only HTTP resources add no correction route.
+Original ingest status remains. QR parsing requires ASCII wbf:1:<kind>:<UUID>;
+manual_capture is the explicit fallback. Kinds: lot, ovitrap, bag, release-device,
+sample. Full decisions and assumptions: backend/ovitraps/README.md and ADR 98.
+
+| Result code | Outcome |
+| --- | --- |
+| `ovitrap_point_inaccessible` | rejected, no operational effects |
+| `ovitrap_inaccessible` | rejected, no operational effects |
+| `ovitrap_identity_used` | rejected, no operational effects |
+| `ovitrap_point_occupied` | rejected, no operational effects |
+| `ovitrap_reading_exists` | rejected, no operational effects |
+| `ovitrap_bag_code_used` | rejected, no operational effects |
+| `ovitrap_catalog_item_unknown` | rejected, no operational effects |
+| `ovitrap_catalog_item_deactivated` | in_review, no operational effects |
+| `ovitrap_catalog_version_unavailable` | in_review, no operational effects |
+| `ovitrap_gps_unusable` | in_review, no operational effects |
+| `ovitrap_rules_unavailable` | in_review, no operational effects |
+| `ovitrap_point_version_unavailable` | in_review, no operational effects |
+| `ovitrap_too_far` | in_review, no operational effects |
+| `ovitrap_speed_anomaly` | in_review, no operational effects |
+| `ovitrap_void_blocked` | rejected, no operational effects |
+
+Every code maps to sync.result.<camelCase> in es-MX/en. Lock contention retains
+retryable 429 sync_in_progress with Retry-After.
