@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: bootstrap (issue #6). The shell, tokens, i18n, the local outbox, the sync worker and the sync inbox (P28) exist. Login is #7, the feature screens are the epics #8 to #11. Decisions: [`docs/decisions.md`](../docs/decisions.md) 91 to 93.
+> Status: bootstrap (issue #6). The shell, tokens, i18n, the local outbox, the sync worker and the sync inbox (P28) exist. P1/P2 login and local unlock are implemented in #7; the feature screens are the epics #8 to #11. Decisions: [`docs/decisions.md`](../docs/decisions.md) 91 to 95.
 
 ## Rules
 
@@ -21,6 +21,7 @@ App.tsx, index.ts      entry (SafeAreaProvider, then AppRoot)
 metro.config.js        pins React to this app's copy (see decision 94)
 plugins/               Expo config plugin: plain http in debug builds only
 src/app/               boot (fonts, database, saved settings), providers, shell
+src/auth/              secure credentials, local unlock, rules, refresh and idle policy
 src/config/            API address rule and settings, build-time variables
 src/db/                SqlExecutor, migrations, key-value store, op-sqlite adapter
 src/outbox/            event envelope, state machine, outbox repository
@@ -48,18 +49,10 @@ Pure logic (state machine, failure table, backoff, chip, inbox model, URL rule) 
 You need the backend reachable from the phone ([#92](https://github.com/88randy/wolbachia/issues/92) covers the opt-in LAN exposure; until it lands, the compose API listens on `127.0.0.1` only) and a debug APK (see below).
 
 1. Install the debug APK from the pull request (artifact `wolbachia-debug-apk-<sha>`).
-2. Open **Ajustes** (gear on the home top bar), field **Servidor**, type `http://<PC LAN IP>:8000` and press **Guardar dirección**. In debug builds, plain http is accepted only for `localhost` and private addresses (`10.x`, `172.16` to `172.31`, `192.168.x`); release builds and any other server need https. A dispatch run of the `mobile-apk` workflow can also bake the address into the APK (input `api_base_url`), and a local bundle reads `EXPO_PUBLIC_API_BASE_URL`.
-3. Until login exists (#7), the debug build shows **Pruebas** at the bottom of Ajustes: this phone's id, a field for an access token (kept in memory only) and **Agregar registro de prueba**. Sign in with the phone's id so the session is bound to it (the server answers `device_mismatch` otherwise):
-
-   ```bash
-   curl -X POST http://<PC LAN IP>:8000/api/v1/auth/login/ \
-     -H "Content-Type: application/json" \
-     -d '{"username": "<user>", "password": "<password>", "device_id": "<id shown in the app>"}'
-   ```
-
-   Paste the `access` value into the app and press **Usar token**. Then press **Agregar registro de prueba**: it voids a record that does not exist, so a real server answers `rejected` / `void_target_not_found` and the inbox shows it under "Con problema". The access token expires; refresh is #7.
-4. Tap the chip in the top bar to open the inbox. Turn on airplane mode to see "Sin señal".
-
+2. On P1 open **Configurar servidor**, enter the API address and save. Debug builds allow private LAN http; release builds require https. Server settings also remain available in Ajustes.
+3. Sign in with signal, then create and confirm a nontrivial four-digit PIN. Login sends the generated device_id and the version in mobile/package.json.
+4. Open Ajustes to inspect the device id and add a test event. These tools use the authenticated session; there is no pasted-token field. The test void references a nonexistent record, so the inbox shows void_target_not_found.
+5. Tap the sync chip for the inbox. Background the app or wait for idle locking, then unlock offline.
 The test tools exist only when the build sets `EXPO_PUBLIC_DEV_TOOLS=1` (the CI debug APK does). Release builds must not.
 
 ## Lint, format, type-check and tests
@@ -137,3 +130,50 @@ When React Native or Expo is upgraded, re-read `node_modules/react-native/gradle
 - Android backups are disabled and overlay/external-storage permissions are blocked by Expo config. CI checks the generated main manifest for allowBackup=false and no cleartext; debug must explicitly allow LAN cleartext.
 - Local write failures from enqueue/retry are announced on screen; Notice uses a polite live region. Inbox timestamps include a localized date outside today.
 - No new dependencies. Configuration references: [Expo Android config](https://docs.expo.dev/versions/latest/config/app/), [Expo blocked permissions](https://docs.expo.dev/guides/permissions/), [React Native AbortSignal source](https://github.com/facebook/react-native/blob/v0.88.1/src/private/webapis/dom/abort-api/AbortSignal.js).
+
+## P1/P2 authentication and lock (#7)
+
+Authentication logic and native boundaries live in src/auth/; screens are in src/screens/auth/ and the mounted-shell overlay in src/app/AuthGate.tsx. All API calls use generated packages/api-client methods. Login and refresh clients never attach an access bearer; refresh authenticates with its body token, including when access is expired. P1 includes password visibility, wrong credentials, no signal on first login, remote session end, the supervisor-only password-help sheet, device deactivation and Retry-After rate limiting. Unknown connectivity keeps login disabled until NetInfo reports connectivity. Server setup is reachable from P1 so builds without a configured address can sign in. No raw server code is shown.
+
+Credentials (token pair, PIN/password verifiers and write-ahead counters) occupy ONE SecureStore JSON item. A serialized read/modify/write queue prevents refresh, attempts and revoke from overwriting one another; readers see additions only after persistence. No secret enters SQLite, AsyncStorage or logs. Encrypted kv keeps the profile subset (username, first name, organization, permissions), owner binding, session-ended marker and versioned rules snapshot. A confirmed remote end persists that non-secret marker before clearing credentials; startup retries cleanup and fails closed if it cannot complete.
+
+PINs are four digits, excluding identical digits and ascending/descending runs. PBKDF2-HMAC-SHA256 uses pbkdf2Async, independent random 16-byte salts, a versioned cost record and constant-time comparison. The password verifier is created only after successful online login. PINs never leave the phone; only online login sends a password. PIN creation requires confirmation.
+
+Attempts are saved BEFORE checking a secret. The PIN limit disables PIN and biometrics and requires the full local password. Five wrong local passwords erase both verifiers and tokens, requiring online login. An interrupted fifth password attempt clears credentials on restart too. Outbox events, drafts and the database are never erased. Successful PIN/password verification resets counters. Successful biometrics leave the PIN counter unchanged: they do not demonstrate PIN knowledge. Failed/canceled biometrics change no counter.
+
+The reader consumes only pin_max_attempts (default 3, 1..10), session_idle_minutes (default 5, 1..30), and clock_skew_review_seconds (default 300, 30..3600). A minimal rules fetch runs after login with immediate defaults; it never delays PIN creation. The cached snapshot includes its version. Ended/replaced-session responses are ignored. There is no general configuration sync. The generated rules endpoint describes a collection; the runtime validates the documented single Schemas["RulesSnapshot"] object without changing the client. **Lead follow-up:** pin_max_attempts is not seeded today; default 3 applies pending client confirmation.
+
+The opaque lock overlay preserves the MOUNTED shell, navigation and half-filled forms, hiding covered content from touch and accessibility. Android back cannot pop covered screens. Sync continues. Cold sessions start locked; backgrounding locks immediately. Any touch resets injectable idle deadlines; the one-minute warning includes a keep-working action. With a one-minute idle limit the warning is immediate. A background/revoke gate invalidates late local and biometric completions. A persisted local session identity stays stable across token refresh: a valid PIN can finish during sync refresh, while a replaced/revoked session cannot be unlocked by an old result. Interrupted PIN setup requires the cached full password before setup resumes.
+
+Authenticated calls (currently sync and rules) use SessionRequests.run. A 401 token_expired refreshes online once and retries once. Callers share one in-flight refresh. A late old-access 401 uses the persisted replacement without consuming another refresh. The new pair is stored BEFORE retrying. Successful refresh stays inside the sync pass, avoiding a needsLogin block. Session-ended codes clear credentials, retain owner binding and show P1. A different username with pending/sending/error events is refused BEFORE any server call; unknown ownership with unsent work is refused too. Normal successful final uploads with X-Session-Revoked are applied normally; this header never interrupts a pass.
+
+Clock skew compares server_time with phone time at login-response arrival. The non-blocking banner uses defaults immediately and updates after the optional snapshot.
+
+## SQLCipher storage (#7)
+
+mobile/package.json sets "op-sqlite": {"sqlcipher": true}. The installed Android build.gradle reads mobile/package.json in this layout. The NEW file is wolbachia_field_encrypted_v1.db. The unreleased #6 debug plaintext file wolbachia_field.db stays untouched: no import, deletion or replacement.
+
+The key is 32 Expo random bytes encoded as hex and held in Keystore-backed SecureStore without user-auth binding so sync runs while locked. When missing, generate a candidate IN MEMORY. Open with name/encryptionKey, require nonempty PRAGMA cipher_version, then actually read SELECT count(*) FROM sqlite_master. Only then save the fresh key; only after saving run durability pragmas/migrations. An existing encrypted file with another key fails the real read; its candidate is never saved and nothing is deleted. SecureStore save failure stops boot before migrations/writes. No file-system dependency or plaintext fallback.
+
+Biometrics are a UI gate, NOT a key unwrap. The database key and credentials are Keystore-bound but not user-auth-bound. Hardware, enrollment and strong Class 3 enrollment are required. Native authentication requests strong biometrics and disables device-credential fallback.
+## Verification and assumptions (#7)
+
+| Criterion / invariant | Lowest-layer evidence |
+| --- | --- |
+| PIN format/trivial-PIN rejection; salted verifier round trip and wrong secret | test/local-unlock.test.ts |
+| Persist before verification; restarted attempts; password-required limit | test/local-unlock.test.ts |
+| Cold start locked, offline unlock, biometrics retain PIN attempts and cannot bypass the limit | test/auth-controller.test.ts |
+| Remote end or five password failures retain real outbox/draft/owner binding | test/auth-controller.test.ts with Node SQLite |
+| Concurrent refresh, late 401, persist before use, offline handling, stale-session responses | test/session-requests.test.ts with deferred promises |
+| Refresh inside sync succeeds without needsLogin blocking | test/auth-sync.test.ts |
+| Anonymous device/version-bound auth payloads and refresh-expiry/revoke classification | test/auth-api.test.ts |
+| P1 error mapping and Retry-After; rules clamps/defaults; owner policy; clock skew | test/auth-policy.test.ts plus one controller wiring test before the network boundary |
+| Warning at T-1, lock at T, touch reset, background lock | test/idle-lock.test.ts with a fake clock |
+| Fail closed without cipher or on wrong-key read; key persistence before migrations | test/encrypted-database.test.ts |
+| Locale parity and explicit interpolation placeholders | packages/i18n/test/messages.test.ts |
+
+**[ASSUMPTION]** PBKDF2 costs (1000 PIN / 10000 password; pure JS, measured 4.5 s for 20000 iterations under `node --jitless`) need S24 Ultra calibration. The local-password limit of 5 is a lead-selected assumption. Native SQLCipher read failures, Keystore durability/atomic replacement, strong-enrollment reporting, cancel behavior, safe areas, TalkBack and 130% text need APK/device checks. No Android build or Docker run was performed.
+
+Design additions without supplied artwork: PIN enter/confirm creation, P1 server setup, throttling/device-deactivation/generic errors and the keep-working action. The S01 logo stays a placeholder. Password reset only shows the supervisor instruction sheet; there is no logout UI.
+
+Verified API references: [OP-SQLite installation](https://op-engineering.github.io/op-sqlite/docs/installation/), [OP-SQLite open/encryption](https://op-engineering.github.io/op-sqlite/docs/api/), [Expo SecureStore SDK 58](https://docs.expo.dev/versions/v58.0.0/sdk/securestore/), [Expo biometrics](https://docs.expo.dev/versions/latest/sdk/local-authentication/), [noble PBKDF2](https://github.com/paulmillr/noble-hashes). Installed sources also verify Gradle's configuration path and native/TypeScript signatures. Documentation checks do not replace pending Android runtime checks.

@@ -9,7 +9,7 @@ import type { SyncSnapshot } from "./sync-snapshot.ts";
 
 export interface SyncEngineDeps {
   readonly pass: SyncPassDeps;
-  /** True while a session token exists (login is #7). Without one nothing is sent. */
+  /** True while a securely stored session exists. Without one nothing is sent. */
   readonly hasSession: () => boolean;
   /** True while a server address is configured. Without one nothing is sent. */
   readonly hasServer: () => boolean;

@@ -1,7 +1,10 @@
 import { randomUUID } from "expo-crypto";
 
 import { createMobileApiClient } from "../api/create-api-client.ts";
-import { createMemoryTokenStore } from "../auth/token-store.ts";
+import { createAuth } from "../auth/create-auth.ts";
+import type { AuthController } from "../auth/auth-controller.ts";
+import type { SessionRequests } from "../auth/session-requests.ts";
+import appManifest from "../../package.json";
 import type { TokenStore } from "../auth/token-store.ts";
 import { BUILD_API_BASE_URL } from "../config/build-config.ts";
 import { ServerSettings } from "../config/server-settings.ts";
@@ -15,6 +18,7 @@ import type { SyncTransport } from "../sync/sync-transport.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly auth: AuthController;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -24,11 +28,15 @@ export interface AppServices {
 }
 
 // The address can change in Settings, so the client is built per request (cheap) from the current one.
-function lazyTransport(server: ServerSettings, tokens: TokenStore): SyncTransport {
+function lazyTransport(
+  server: ServerSettings,
+  tokens: TokenStore,
+  session: SessionRequests,
+): SyncTransport {
   return async (request) => {
     const baseUrl = server.baseUrl();
     if (baseUrl === null) return { ok: false, failure: { kind: "network" } };
-    return createSyncTransport(createMobileApiClient({ baseUrl, tokens }))(request);
+    return createSyncTransport(createMobileApiClient({ baseUrl, tokens }), session)(request);
   };
 }
 
@@ -43,11 +51,35 @@ export async function createServices(): Promise<AppServices> {
   const kv = new KvStore(db);
   const server = new ServerSettings(kv, BUILD_API_BASE_URL, __DEV__);
   await server.load();
-  const tokens = createMemoryTokenStore();
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);
   const outbox = new OutboxRepository(db, () => new Date());
-  const engine = new SyncEngine({
-    pass: { outbox, kv, deviceId, now: () => new Date(), transport: lazyTransport(server, tokens) },
+  const {
+    auth,
+    credentials: tokens,
+    requests,
+  } = await createAuth({
+    kv,
+    outbox,
+    server,
+    deviceId,
+    appVersion: appManifest.version,
+  });
+  const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
+  return { kv, outbox, engine, tokens, server, deviceId, auth };
+}
+
+function createEngine(
+  deps: Omit<AppServices, "engine" | "auth"> & { requests: SessionRequests },
+): SyncEngine {
+  const { kv, outbox, server, deviceId, tokens, requests } = deps;
+  return new SyncEngine({
+    pass: {
+      outbox,
+      kv,
+      deviceId,
+      now: () => new Date(),
+      transport: lazyTransport(server, tokens, requests),
+    },
     hasSession: () => tokens.getAccessToken() !== undefined,
     hasServer: () => server.baseUrl() !== null,
     random: Math.random,
@@ -59,5 +91,4 @@ export async function createServices(): Promise<AppServices> {
     },
     report: logEngineError,
   });
-  return { kv, outbox, engine, tokens, server, deviceId };
 }

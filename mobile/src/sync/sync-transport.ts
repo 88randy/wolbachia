@@ -1,6 +1,8 @@
 import { isErrorEnvelope, UNKNOWN_ERROR_CODE } from "@wolbachia/api-client";
 import type { ApiClient, ErrorEnvelope, Schemas } from "@wolbachia/api-client";
 
+import type { SessionRequests } from "../auth/session-requests.ts";
+
 import { isSyncResponse } from "./sync-response.ts";
 
 import type { SyncFailure } from "./sync-failure.ts";
@@ -30,13 +32,15 @@ function parseRetryAfter(header: string | null): number | null {
 }
 
 /** `POST /api/v1/field/sync/` through the api-client. */
-export function createSyncTransport(client: ApiClient): SyncTransport {
+export function createSyncTransport(client: ApiClient, session?: SessionRequests): SyncTransport {
   return async (request) => {
     try {
-      const result = await client.POST("/api/v1/field/sync/", {
-        body: request,
-        signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS),
-      });
+      const call = () =>
+        client.POST("/api/v1/field/sync/", {
+          body: request,
+          signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS),
+        });
+      const result = await (session === undefined ? call() : session.run(call));
       if (result.response.ok && isSyncResponse(result.data)) {
         return { ok: true, response: result.data };
       }

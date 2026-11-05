@@ -1,10 +1,12 @@
 import { open } from "@op-engineering/op-sqlite";
 import type { DB, SQLBatchTuple } from "@op-engineering/op-sqlite";
 
+import { getRandomBytes } from "expo-crypto";
+
+import { nativeSecrets } from "../auth/native-secrets.ts";
+import { openEncryptedDatabase } from "./encrypted-database.ts";
 import { migrate } from "./migrations.ts";
 import type { SqlExecutor, SqlRow, SqlStatement, SqlValue } from "./sql.ts";
-
-const DATABASE_NAME = "wolbachia_field.db";
 
 // WAL keeps readers (the UI) from waiting on a writer (the sync pass); FULL syncs every commit so a
 // captured event survives a battery pull or a crash. Same settings the #1 spike measured.
@@ -37,7 +39,11 @@ class OpSqliteExecutor implements SqlExecutor {
 
 /** Opens the app database, applies the durability settings and the migrations. */
 export async function openDatabase(): Promise<SqlExecutor> {
-  const executor = new OpSqliteExecutor(open({ name: DATABASE_NAME }));
+  const executor = await openEncryptedDatabase({
+    secrets: nativeSecrets,
+    randomBytes: getRandomBytes,
+    open: (options) => new OpSqliteExecutor(open(options)),
+  });
   for (const pragma of DURABILITY_PRAGMAS) await executor.query(pragma);
   await migrate(executor);
   return executor;

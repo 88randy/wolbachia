@@ -9,6 +9,6 @@ const rawApiBaseUrl: unknown = process.env.EXPO_PUBLIC_API_BASE_URL;
 export const BUILD_API_BASE_URL: string | undefined =
   typeof rawApiBaseUrl === "string" ? rawApiBaseUrl : undefined;
 
-/** Shows the test tools in Settings (device id, test token, test record). Set only in development builds. */
+/** Shows the test tools in Settings (device id, test record). Set only in development builds. */
 const rawDevTools: unknown = process.env.EXPO_PUBLIC_DEV_TOOLS;
 export const DEV_TOOLS_ENABLED: boolean = rawDevTools === "1";
