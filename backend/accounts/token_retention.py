@@ -28,7 +28,10 @@ class PruneResult:
 
 def _eligible_sessions(cutoff: datetime) -> QuerySet[DeviceSession]:
     """Both maxima must precede cutoff; NULL (an empty family) is never eligible."""
-    revoked = Q(revoked_at__lt=cutoff) & (
+    # A password reset clears final_upload_deadline (cancel_final_uploads), losing the original
+    # window: keep the family at least as long as the configured window after the revocation.
+    window = timedelta(hours=settings.AUTH_REVOKED_FINAL_UPLOAD_HOURS)
+    revoked = Q(revoked_at__lt=cutoff - window) & (
         Q(final_upload_deadline__isnull=True) | Q(final_upload_deadline__lt=cutoff)
     )
     expired = Q(revoked_at__isnull=True, last_refresh__lt=cutoff, last_access__lt=cutoff)

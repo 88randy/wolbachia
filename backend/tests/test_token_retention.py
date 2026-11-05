@@ -21,7 +21,7 @@ from tests.testapp.models import Widget
 
 NOW = datetime(2026, 11, 4, 12, tzinfo=UTC)
 CUTOFF = NOW - timedelta(days=90)
-OLD = CUTOFF - timedelta(days=1)
+OLD = CUTOFF - timedelta(days=10)
 
 
 @pytest.fixture
@@ -88,6 +88,23 @@ def test_revocation_at_or_inside_cutoff_keeps_family(retention_clock, offset, de
     token_retention.prune_ended_token_pairs()
 
     assert TokenPair.objects.filter(pk=pair.pk).exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    ("revoked_at", "kept"),
+    [(CUTOFF - timedelta(hours=72), True), (CUTOFF - timedelta(hours=72, seconds=1), False)],
+)
+def test_cancelled_final_upload_window_still_delays_retention(retention_clock, revoked_at, kept):
+    """A password reset clears the deadline; the family keeps the configured window after revoke."""
+    session = DeviceSessionFactory(
+        revoked_at=revoked_at, revoke_reason=RevokeReason.ADMIN_REVOKE, final_upload_deadline=None
+    )
+    pair = expired_pair(session=session)
+
+    token_retention.prune_ended_token_pairs()
+
+    assert TokenPair.objects.filter(pk=pair.pk).exists() == kept
 
 
 @pytest.mark.django_db
