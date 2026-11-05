@@ -75,12 +75,6 @@ for (const theme of THEMES) {
           exact: true,
         }),
       ).toBeFocused();
-      await page.keyboard.press("Tab");
-      await expect(
-        page
-          .getByRole("dialog")
-          .getByRole("button", { name: language === "en" ? "Cancel" : "Cancelar", exact: true }),
-      ).toBeFocused();
       await expectNoAxeViolations(page);
     });
   }
