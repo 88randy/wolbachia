@@ -169,6 +169,36 @@ remain unchanged. Error envelopes keep code/detail, fields only on 400 and safe
 blocked_by on 409. See geography/README.md for choices and acceptance mapping.
 
 
+### Fleet operations (#103)
+
+Motorcycles keep their existing viewset and immutable code. Nullable `center`
+references organizations.Center; only explicit all-center grants see unassigned
+motorcycles. Reads require motorcycle.read, writes motorcycle.manage and named
+inspection clearance motorcycle.service_clear. Effective action/center grants
+intersect as usual; no motorcycle quadrant relation is invented. Foreign or
+out-of-scope parent/center/courier references return 404. GET /motorcycles/ adds
+?center=; responses add center, revision and read-only metrics (last_service,
+next_service_due_km/date, latest_odometer, latest_efficiency, efficiency_status,
+due_metric_provenance). Null intervals mean unconfigured service thresholds.
+
+GET/POST nested /motorcycles/{id}/services/ and /responsibility-letters/ append
+immutable authored history; POST .../{record_id}/void/ resolves the shared catalog
+and preserves original content/dependents. GET /fuel-loads/ is page-number paged
+with motorcycle/courier/efficiency_status/date_from/date_before filters and server
+ordering. GET /incidents/ lists severe-check block audits plus is_cleared and
+cleared_at inspection state, with page-number paging/server ordering.
+
+POST /motorcycles/{id}/clear-fault/ accepts
+{fault_id,evidence_ids,reason,expected_revision}. Evidence is a nonempty UUID list;
+[ASSUMPTION] references are opaque until uploads exist. Reason uses shared normalized
+10-visible-character minimum/1000 maximum validation. It appends a named clearance
+and unblock audit atomically, preserving all other blockers and open allocations.
+409 motorcycle_revision_conflict, motorcycle_fault_not_open or
+motorcycle_inspection_required carry safe blocked_by without fields. Legacy
+unblock cannot bypass an open audited severe fault. Contention is existing retryable
+429 sync_in_progress. Service schedules and fuel rule/baseline provenance are
+immutable; in-review fuel is provisional, excluded from metrics pending #22.
+See fleet/README.md and sync.md for fuel schema 1 identity/Decimal semantics.
 ## Ovitrap provenance (#111, B-14)
 
 Read-only GET /ovitraps/, /readings/, /bags/ and /{uuid}/ details under /api/v1.

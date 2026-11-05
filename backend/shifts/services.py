@@ -41,6 +41,7 @@ from shifts.codes import (
     SHIFT_NOT_OPEN,
 )
 from shifts.exceptions import MotorcycleInUseError, MotorcycleNotBlockedError
+from shifts.extensions import UNBLOCK_GUARDS
 from shifts.models import (
     BlockedReason,
     CheckResult,
@@ -57,7 +58,7 @@ from shifts.selectors import highest_recorded_km
 # limit of the instrument, not a business threshold, so it is not a rule parameter.
 MAX_ODOMETER_KM = 999_999
 SHIFT_PRIMARY_KEY_CONSTRAINT = "shifts_shift_pkey"
-EDITABLE_MOTORCYCLE_FIELDS = ("plate",)
+EDITABLE_MOTORCYCLE_FIELDS = ("plate", "center")
 MOTORCYCLE_CODE_CONSTRAINT = "motorcycle_unique_code_per_organization"
 
 
@@ -265,7 +266,8 @@ def _insert_checks(
 def _block_motorcycle(motorcycle: Motorcycle, ctx: EventContext) -> None:
     motorcycle.is_blocked = True
     motorcycle.blocked_reason = BlockedReason.SEVERE_CHECK
-    motorcycle.save(update_fields=["is_blocked", "blocked_reason"])
+    motorcycle.revision += 1
+    motorcycle.save(update_fields=["is_blocked", "blocked_reason", "revision"])
     MotorcycleBlockEvent.objects.create(
         organization_id=motorcycle.organization_id,
         created_by=ctx.user,
@@ -294,7 +296,7 @@ def _motorcycle_code_conflict() -> Iterator[None]:
 
 
 def create_motorcycle(
-    organization: Organization, values: Mapping[str, str], user: User
+    organization: Organization, values: Mapping[str, Any], user: User
 ) -> Motorcycle:
     """Insert fleet configuration; block/void metadata cannot be supplied by a caller."""
     with _motorcycle_code_conflict():
@@ -303,6 +305,7 @@ def create_motorcycle(
             created_by=user,
             code=values["code"],
             plate=values.get("plate", ""),
+            center=values.get("center"),
         )
 
 
@@ -320,7 +323,8 @@ def update_motorcycle(motorcycle: Motorcycle, changes: Mapping[str, object]) -> 
         for name in fields:
             setattr(locked, name, changes[name])
         if fields:
-            locked.save(update_fields=fields)
+            locked.revision += 1
+            locked.save(update_fields=[*fields, "revision"])
     return locked
 
 
@@ -352,6 +356,8 @@ def unblock_motorcycle(motorcycle: Motorcycle, user: User, reason: str) -> Motor
         locked = lock_record_for_update(motorcycle)
         if not locked.is_blocked:
             raise MotorcycleNotBlockedError
+        for guard in UNBLOCK_GUARDS:
+            guard(locked)
         MotorcycleBlockEvent.objects.create(
             organization_id=locked.organization_id,
             created_by=user,
@@ -362,5 +368,6 @@ def unblock_motorcycle(motorcycle: Motorcycle, user: User, reason: str) -> Motor
         )
         locked.is_blocked = False
         locked.blocked_reason = ""
-        locked.save(update_fields=["is_blocked", "blocked_reason"])
+        locked.revision += 1
+        locked.save(update_fields=["is_blocked", "blocked_reason", "revision"])
     return locked
