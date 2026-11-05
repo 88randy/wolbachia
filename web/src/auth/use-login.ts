@@ -6,25 +6,13 @@ import type { RegisteredRouter } from "@tanstack/react-router";
 import { useApiClient } from "../api/ApiClientProvider";
 import { safeRedirect } from "../router/safe-redirect";
 import { runAuthOperation, useAbandonOnUnmount } from "../session/auth-operation";
-import { forgetIdentity, recordIdentity } from "../session/identity";
 import type { Me } from "../session/me";
-import { ME_QUERY_KEY } from "../session/me-query";
-import { endSessionExpiry } from "../session/session-events";
-import { acceptSession } from "../session/session-revision";
+import { begin, commitKnown, noteStaleLogin } from "../session/session-controller";
+import type { Token } from "../session/session-controller";
+import { reconcileAndRevalidate } from "../session/session-reconcile";
 import type { LoginFailure } from "./login-failure";
 import { requestLogin } from "./request-login";
-import type { Credentials } from "./request-login";
-
-/** The server accepted the credentials: replace whatever a previous user left (synchronous). */
-function replaceSession(me: Me, queryClient: QueryClient, commit: () => void): void {
-  commit();
-  queryClient.clear();
-  forgetIdentity(queryClient);
-  recordIdentity(queryClient, me);
-  queryClient.setQueryData(ME_QUERY_KEY, me);
-  endSessionExpiry();
-  acceptSession();
-}
+import type { Credentials, LoginSuccess } from "./request-login";
 
 /** Where the user goes after signing in. Runs outside the auth queue (navigation can wait). */
 async function continueAfterLogin(
@@ -55,17 +43,47 @@ export function useLogin(requestedTarget: string | undefined) {
   const router = useRouter();
   const track = useAbandonOnUnmount();
   return async (credentials: Credentials): Promise<LoginFailure | undefined> => {
+    const state = { started: false, published: false };
     const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
+      // The request can change the cookie: the tab leaves `known` BEFORE it is sent (and the token
+      // is taken when the queued task STARTS: a sign-out queued before it has finished).
+      const token = begin(queryClient, "leave");
+      state.started = true;
       const outcome = await requestLogin(client, credentials, signal);
       if (!isCurrent()) return undefined;
-      if (outcome.ok) replaceSession(outcome.me, queryClient, commit);
+      if (outcome.ok) {
+        commit();
+        state.published = publishLogin(outcome, queryClient, token);
+      }
       return outcome;
     });
     track(run);
     const outcome = await run.result;
+    // Abandoned, aborted, failed or superseded: the tab left `known` before sending and does not
+    // know what the request did to the cookie, so `/me/` says who the session belongs to.
+    if (state.started && !state.published)
+      await reconcileAndRevalidate(queryClient, client, router);
     if (outcome === undefined) return undefined;
     if (!outcome.ok) return outcome.failure;
-    if (run.isCurrent()) await continueAfterLogin(outcome.me, requestedTarget, router);
+    if (state.published && run.isCurrent()) {
+      await continueAfterLogin(outcome.me, requestedTarget, router);
+    }
     return undefined;
   };
+}
+
+/**
+ * The server accepted the credentials: the body is a candidate, published only while the token is
+ * still the epoch (it replaces whatever a previous user left and tells the other tabs). A stale
+ * body is dropped, but the confirmed login still changed the cookie. Returns whether it was published.
+ */
+function publishLogin(
+  { me, attestation }: LoginSuccess,
+  queryClient: QueryClient,
+  token: Token,
+): boolean {
+  const options = { replace: true, announce: true, bumpEpoch: true };
+  if (commitKnown(queryClient, token, { me, attestation, ...options })) return true;
+  noteStaleLogin();
+  return false;
 }

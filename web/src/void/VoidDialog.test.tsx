@@ -2,7 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ApiClientProvider } from "../api/ApiClientProvider";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { createAppQueryClient } from "../api/query-client";
-import { apiError, createFakeApi, makeVoidReasonItems } from "../test/fake-api";
+import { apiError, createFakeApi, makeMe, makeVoidReasonItems } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import type { VoidChoice } from "./use-void-form";
 import { fireEvent, screen, waitFor } from "@testing-library/react";
@@ -10,6 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test, vi } from "vitest";
 import { renderWithI18n } from "../test/render-with-i18n";
+import { signInForTest } from "../test/sign-in-for-test";
 import { VoidHarness } from "../../harness/VoidHarness";
 import type { VoidResult } from "./submit-void";
 import type { VoidFailure } from "./void-failure";
@@ -42,8 +43,11 @@ async function openChoiceDialog(
       Response.json({ count: 3, next: null, previous: null, results: makeVoidReasonItems() }),
   });
   const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
+  const queryClient = createAppQueryClient({ retry: false });
+  const me = makeMe(); // the signed-in user: queries are org-scoped
+  signInForTest(queryClient, me);
   await renderWithI18n(
-    <QueryClientProvider client={createAppQueryClient({ retry: false })}>
+    <QueryClientProvider client={queryClient}>
       <ApiClientProvider client={client}>
         <VoidHarness submit={submit} />
       </ApiClientProvider>

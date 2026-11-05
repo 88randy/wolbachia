@@ -2,7 +2,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 import { apiError, makeMe } from "../test/fake-api";
-import { GET, LIST, motorcycle, openFleet, pageOf } from "./fleet-test-helpers";
+import { GET, LIST, motorcycle, openFleet, otherReasonField, pageOf } from "./fleet-test-helpers";
 const VOID = `POST /api/v1/motorcycles/${motorcycle().id}/void/`;
 const REASON = "Wrong registration confirmed";
 
@@ -49,7 +49,7 @@ describe("fleet action boundaries", () => {
         },
       });
       await userEvent.click(await screen.findByRole("button", { name: "Anular" }));
-      await userEvent.type(screen.getByRole("textbox"), REASON);
+      await userEvent.type(await otherReasonField(), REASON);
       await userEvent.click(
         within(screen.getByRole("dialog")).getByRole("button", { name: "Anular" }),
       );

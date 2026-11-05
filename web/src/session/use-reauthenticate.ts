@@ -5,29 +5,20 @@ import { useRouter } from "@tanstack/react-router";
 import type { RegisteredRouter } from "@tanstack/react-router";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
+import type { ApiClient } from "@wolbachia/api-client";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { LoginFailure } from "../auth/login-failure";
 import { requestLogin } from "../auth/request-login";
 import type { LoginOutcome } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
 import { runAuthOperation, useAbandonOnUnmount } from "./auth-operation";
-import { recordIdentity } from "./identity";
 import type { Me } from "./me";
-import { ME_QUERY_KEY } from "./me-query";
 import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
-import { endSessionExpiry } from "./session-events";
-import { acceptSession, currentRevision } from "./session-revision";
+import { begin, commitKnown, isLatest, noteStaleLogin } from "./session-controller";
+import { reconcileAndRevalidate } from "./session-reconcile";
+import { currentRevision } from "./session-revision";
 import { useMe } from "./use-me";
-
-/** The session is back: store `/me/` and drop another user's or organization's cache (synchronous). */
-function restoreSession(me: Me, queryClient: QueryClient, commit: () => void): void {
-  commit(); // the dialog unmounting because of this very update must not abandon it
-  recordIdentity(queryClient, me);
-  queryClient.setQueryData(ME_QUERY_KEY, me);
-  endSessionExpiry();
-  acceptSession();
-}
 
 /** After the queue: navigating can wait on the network, so it comes last. */
 async function goToChooserIfNeeded(me: Me, router: RegisteredRouter): Promise<void> {
@@ -53,6 +44,44 @@ async function settleReauth(
   await goToChooserIfNeeded(outcome.me, router);
 }
 
+interface ReauthRequest {
+  client: ApiClient;
+  queryClient: QueryClient;
+  username: string;
+  password: string;
+}
+
+/**
+ * Queues the login. The token is the epoch of the session this form was shown for: if a sign-out
+ * or another login changes it while this waits in the queue, nothing is sent. Once SENT, a login
+ * the server accepted is never dropped: its body is a candidate for `commitKnown`; if the token
+ * went stale the body is not published, the confirmed login is announced and the tab reconciles
+ * with `/me/` (`state.diverged`): the cookie is the truth (#82).
+ */
+function startReauth({ client, queryClient, username, password }: ReauthRequest) {
+  const shownFor = currentRevision();
+  const state = { started: false, published: false };
+  const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
+    if (shownFor !== currentRevision() || !isCurrent()) return undefined;
+    // The request can change the cookie: leave `known` BEFORE it is sent.
+    const token = begin(queryClient, "leave");
+    state.started = true;
+    const outcome = await requestLogin(client, { username, password }, signal);
+    const isStale = !isLatest(token) || !isCurrent();
+    if (outcome.ok) {
+      commit(); // the dialog unmounting because of the commit must not abandon it
+      const { me, attestation } = outcome;
+      const isPublished = commitKnown(queryClient, token, { me, attestation, ...PUBLISH_LOGIN });
+      if (!isPublished) noteStaleLogin();
+      state.published = isPublished;
+    }
+    return outcome.ok || !isStale ? outcome : undefined;
+  });
+  return { run, state };
+}
+
+const PUBLISH_LOGIN = { announce: true, bumpEpoch: true };
+
 /**
  * Signs the same user in again without leaving the page: the screens stay mounted, so nothing
  * typed is lost. Afterwards every active query is refetched; the request that failed with the
@@ -76,20 +105,17 @@ export function useReauthenticate() {
   });
   const submit = form.handleSubmit(async ({ password }) => {
     setFailure(undefined);
-    // The session this form was shown for. If a sign-out or another login changes it while this
-    // waits in the queue or in flight, nothing is sent or stored.
-    const revision = currentRevision();
-    const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
-      if (revision !== currentRevision() || !isCurrent()) return undefined;
-      const outcome = await requestLogin(client, { username: user.username, password }, signal);
-      if (revision !== currentRevision() || !isCurrent()) return undefined;
-      if (outcome.ok) restoreSession(outcome.me, queryClient, commit);
-      return outcome;
-    });
+    const { run, state } = startReauth({ client, queryClient, username: user.username, password });
     track(run);
     const outcome = await run.result;
-    if (outcome === undefined || !run.isCurrent()) return;
-    await settleReauth(outcome, { queryClient, router, setFailure });
+    if (!state.published) {
+      // Not published (wrong password, abandoned, superseded, stale body): if the request went
+      // out the tab had left `known`, so it asks `/me/`; the cookie is the truth.
+      if (outcome?.ok === false && run.isCurrent()) setFailure(outcome.failure);
+      if (state.started) await reconcileAndRevalidate(queryClient, client, router);
+    } else if (outcome !== undefined && run.isCurrent()) {
+      await settleReauth(outcome, { queryClient, router, setFailure });
+    }
   });
   return { form, username: user.username, failure, alertRef, submit };
 }

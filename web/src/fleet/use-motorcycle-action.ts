@@ -1,9 +1,8 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useSessionGuard } from "../session/use-session-guard";
-import { useMe } from "../session/use-me";
 import { submitVoid } from "../void";
-import type { VoidResult } from "../void";
+import type { VoidChoice, VoidResult } from "../void";
 import { invalidateFleet } from "./fleet-query";
 export type MotorcycleAction = "void" | "unblock";
 /** One explicit attempt. The revision guard precedes session reports and invalidation;
@@ -11,23 +10,24 @@ export type MotorcycleAction = "void" | "unblock";
 export function useMotorcycleAction(id: string, action: MotorcycleAction) {
   const client = useApiClient();
   const queryClient = useQueryClient();
-  const me = useMe();
   const begin = useSessionGuard();
-  return async (reason: string): Promise<VoidResult> => {
+  return async ({ reasonCode, reason }: VoidChoice): Promise<VoidResult> => {
     const { signal, isStale } = begin();
-    const path =
-      action === "void" ? "/api/v1/motorcycles/{id}/void/" : "/api/v1/motorcycles/{id}/unblock/";
-    const result = await submitVoid(
-      queryClient,
-      () =>
-        client.POST(path, {
-          params: { path: { id } },
-          body: { reason },
-          signal,
-        }),
-      isStale,
-    );
-    if (!isStale() && shouldRefresh(result)) void invalidateFleet(queryClient, me);
+    // A void carries the catalog code (#80); unblocking has no catalog, only the written reason.
+    const send = () =>
+      action === "void"
+        ? client.POST("/api/v1/motorcycles/{id}/void/", {
+            params: { path: { id } },
+            body: { reason_code: reasonCode, reason },
+            signal,
+          })
+        : client.POST("/api/v1/motorcycles/{id}/unblock/", {
+            params: { path: { id } },
+            body: { reason },
+            signal,
+          });
+    const result = await submitVoid(queryClient, send, isStale);
+    if (!isStale() && shouldRefresh(result)) void invalidateFleet(queryClient);
     return isStale() ? { ok: false, isStale: true } : result;
   };
 }

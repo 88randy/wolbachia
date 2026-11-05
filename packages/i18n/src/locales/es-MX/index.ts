@@ -6,6 +6,7 @@ import { fleet } from "./fleet.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
+import { mobile } from "./mobile.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
 import { rules } from "./rules.ts";
@@ -18,6 +19,7 @@ export const esMX = {
   ...fleet,
   ...common,
   ...errors,
+  ...mobile,
   ...shell,
   ...states,
   ...auth,

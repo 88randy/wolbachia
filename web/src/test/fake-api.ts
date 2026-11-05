@@ -1,4 +1,5 @@
 import type { Schemas } from "@wolbachia/api-client";
+import { IDENTITY_HEADER } from "../session/attestation";
 import type { Me } from "../session/me";
 
 /** One request the app made, as a test wants to inspect it. */
@@ -55,9 +56,19 @@ export function createFakeApi(initial: FakeApiRoutes = {}): FakeApi {
       const key = `${recorded.method} ${recorded.path.split("?")[0] ?? ""}`;
       const reply = routes.get(key);
       if (reply === undefined) throw new Error(`No fake route for ${key}`);
-      return typeof reply === "function" ? reply(recorded) : reply.clone();
+      const answer = typeof reply === "function" ? await reply(recorded) : reply.clone();
+      return attested(answer);
     },
   };
+}
+
+/** The identity every answer of the fake server is attested for, unless a test sets its own. */
+export const FAKE_IDENTITY = "fake-session-identity";
+
+/** The fake network plays the server: every answer carries `X-Session-Identity` (#82). */
+function attested(response: Response): Response {
+  if (!response.headers.has(IDENTITY_HEADER)) response.headers.set(IDENTITY_HEADER, FAKE_IDENTITY);
+  return response;
 }
 
 /** An API error answer: `{code, detail, fields?}` with the status and headers of the real API. */

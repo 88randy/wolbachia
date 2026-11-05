@@ -1,43 +1,45 @@
 import type { ApiClient } from "@wolbachia/api-client";
+import { CancelledError } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
-import { fetchMe, ME_QUERY_KEY } from "./me-query";
-import { removeOrganizationQueries } from "./organization-cache";
-import {
-  clearOrganizationSlug,
-  getOrganizationSlug,
-  setOrganizationSlug,
-} from "./organization-slug";
-
-function restoreSlug(previous: string | undefined): void {
-  if (previous === undefined) clearOrganizationSlug();
-  else setOrganizationSlug(previous);
-}
+import { ME_QUERY_KEY } from "./me-key";
+import { fetchMeCommitted } from "./me-query";
+import { begin, failIfCurrent } from "./session-controller";
 
 /**
- * Makes `slug` the active organization: stores it (it travels as `X-Organization` from now on),
- * drops every cached answer of the previous organization and asks `/me/` again, which is the
- * server's answer about what the user can do there. A `/me/` still in flight for the previous
- * organization is cancelled first (the cache would otherwise hand its answer to this call). If
- * the new `/me/` fails, the previous slug is restored. Rejects with the error of `/me/`.
+ * Makes `slug` the active organization. Switching is a LEAVE-KNOWN operation (#82): it `begin`s
+ * first, synchronously, so the tab is `reconciling`, the epoch changed and the organization data
+ * of the previous organization is gone before anything else; nothing org-scoped can fetch or store
+ * (not even after a Back to a screen of the old organization) until the new identity is verified.
+ * Then `/me/` is asked AS that organization (the slug travels with the call; it is stored only by
+ * the commit of the answer, together with the identity and the attestation) and the other tabs are
+ * told. Nothing is ever restored: if the `/me/` fails, a current switch makes the tab `unknown`
+ * (it reconciles) and a superseded one does nothing. Rejects with the error of `/me/`.
  */
 export async function switchOrganization(
   queryClient: QueryClient,
   client: ApiClient,
   slug: string,
 ): Promise<Me> {
-  const previous = getOrganizationSlug();
-  await queryClient.cancelQueries({ queryKey: ME_QUERY_KEY });
-  setOrganizationSlug(slug);
-  removeOrganizationQueries(queryClient);
+  const token = begin(queryClient, "leave");
+  let committed: Me | undefined;
   try {
-    return await queryClient.query({
+    await queryClient.query({
       queryKey: ME_QUERY_KEY,
-      queryFn: ({ signal }) => fetchMe(client, signal),
+      queryFn: async ({ signal, client: cache }) => {
+        committed = await fetchMeCommitted(
+          { client, queryClient: cache, signal },
+          { token, slug, announce: true },
+        );
+        return committed;
+      },
       staleTime: 0,
     });
+    // `committed` comes from the answer itself, never from reading the cache afterwards.
+    if (committed === undefined) throw new CancelledError();
+    return committed;
   } catch (error) {
-    restoreSlug(previous);
+    await failIfCurrent(queryClient, token);
     throw error;
   }
 }

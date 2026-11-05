@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import { currentRevision } from "./session-revision";
+import { currentRevision, isSessionKnown } from "./session-revision";
 
 /** One request that must not outlive the session that started it. */
 export interface SessionGuard {
@@ -30,6 +30,8 @@ export function useSessionGuard(): () => SessionGuard {
   }, []);
   return useCallback(() => {
     const controller = new AbortController();
+    // Only in the `known` state: otherwise the request is born aborted (never sent) and stale.
+    if (!isSessionKnown()) controller.abort();
     inFlight.current.add(controller);
     const revision = currentRevision();
     return {

@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures/test";
 import { makeMe } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
 import { makeRuleParameter, makeRuleVersion } from "./fixtures/rules-mock";
