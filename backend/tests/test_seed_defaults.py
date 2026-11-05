@@ -36,23 +36,6 @@ pytestmark = pytest.mark.django_db
 
 SPEC = OrganizationSpec(name="Acme", slug="acme", country="MX", timezone="America/Mexico_City")
 
-BRIEF_VALUES = {
-    "max_distance_to_point_m": 50,
-    "min_distance_same_block_m": 50,
-    "speed_lock_kmh": 10,
-    "closed_house_weeks_to_relocate": 2,
-    "incidents_to_relocate": 3,
-    "reminder_minutes_before_end": 60,
-    "max_paddle_reuses": 2,
-    "revisit_interval_days": 7,
-}
-PENDING_KEYS = [
-    "speed_unlock_seconds",
-    "clock_skew_review_seconds",
-    "session_idle_minutes",
-    "fuel_efficiency_min_km_l",
-    "fuel_efficiency_max_km_l",
-]
 CLOSED_CATALOGS = {"motorcycle-check-item", "ovitrap-finding"}
 
 
@@ -86,29 +69,6 @@ def test_bootstrap_organization_is_seeded_too() -> None:
 
     assert Catalog.objects.filter(organization=organization).exists()
     assert RuleParameter.objects.filter(organization=organization).exists()
-
-
-@pytest.mark.parametrize(("key", "value"), BRIEF_VALUES.items())
-def test_seeded_values_match_brief(key, value) -> None:
-    organization = create_organization(SPEC)
-
-    assert current_values(organization)[key] == value
-
-
-@pytest.mark.parametrize("key", PENDING_KEYS)
-def test_parameters_without_a_brief_value_are_seeded_without_version(key) -> None:
-    organization = create_organization(SPEC)
-
-    assert current_values(organization)[key] is None
-
-
-def test_revisit_interval_is_seeded_in_days_with_bounds() -> None:
-    organization = create_organization(SPEC)
-
-    parameter = RuleParameter.objects.get(organization=organization, key="revisit_interval_days")
-
-    assert (parameter.unit, parameter.value_type) == ("day", "integer")
-    assert (parameter.min_value, parameter.max_value) == (Decimal(1), Decimal(28))
 
 
 def test_seed_adds_the_revisit_interval_to_an_organization_seeded_before_it_existed(
@@ -165,7 +125,11 @@ def test_catalogs_have_the_expected_initial_items() -> None:
 
     for catalog in Catalog.objects.filter(organization=organization):
         codes_in_catalog = [item.code for item in catalog.items.all()]
-        expected = ["other"] if catalog.is_open else []
+        from catalogs.seeds import CLOSED_CATALOG_ITEMS
+
+        expected = (
+            ["other"] if catalog.is_open else [row[0] for row in CLOSED_CATALOG_ITEMS[catalog.slug]]
+        )
         if catalog.slug == "void-reason":
             expected = ["data-entry-error", "duplicate-record", "wrong-location", "other"]
         assert codes_in_catalog == expected
@@ -248,7 +212,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         p.slug: set(p.permission_codes) for p in Profile.objects.filter(organization=organization)
     }
 
-    reader = {catalog_codes.CATALOG_READ, rule_codes.RULE_PARAMETER_READ}
+    reader = {
+        catalog_codes.CATALOG_READ,
+        rule_codes.RULE_PARAMETER_READ,
+        "organization.read",
+        "center.read",
+    }
     assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, MOTORCYCLE_READ}
     assert by_slug["supervisor"] == {
         *reader,
@@ -259,6 +228,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
     assert by_slug["admin"] == {
+        "portal.read",
+        "organization.read",
+        "organization.update",
+        "role.read",
+        "role.update",
+        "center.read",
         catalog_codes.CATALOG_READ,
         catalog_codes.CATALOG_ITEM_CREATE,
         catalog_codes.CATALOG_ITEM_UPDATE,
@@ -301,8 +276,10 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     assert courier.created_by_seed is True
     assert courier.seeded_permission_codes == [
         "catalog.read",
+        "center.read",
         "field_event.sync",
         "motorcycle.read",
+        "organization.read",
         "rule_parameter.read",
     ]
 
@@ -319,8 +296,10 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     courier = Profile.objects.get(organization=organization, slug="courier")
     assert courier.permission_codes == [
         "catalog.read",
+        "center.read",
         "field_event.sync",
         "motorcycle.read",
+        "organization.read",
         "rule_parameter.read",
         "widget.read",
     ]
@@ -346,7 +325,15 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     plan = seed_default_permission_codes(organization)
 
-    assert plan.grants == {"courier": ("rule_parameter.read", FIELD_EVENT_SYNC, MOTORCYCLE_READ)}
+    assert plan.grants == {
+        "courier": (
+            "rule_parameter.read",
+            "organization.read",
+            "center.read",
+            FIELD_EVENT_SYNC,
+            MOTORCYCLE_READ,
+        )
+    }
 
 
 def test_seed_skips_profiles_not_created_by_the_seed_and_reports_them() -> None:

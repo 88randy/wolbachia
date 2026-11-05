@@ -19,7 +19,7 @@ from core.models import OrgScopedQuerySet, VoidableMixin, VoidableQuerySet
 from core.permissions import HasPermissionCode
 from core.services import lock_record_for_update, void_record
 from core.void_reason import VoidSerializer
-from organizations.selectors import resolve_active_membership
+from organizations.selectors import filter_by_effective_scope, resolve_active_membership
 
 INCLUDE_VOIDED_PARAM = "include_voided"
 
@@ -69,9 +69,12 @@ class OrgScopedViewSetMixin(GenericAPIView[Any]):
 
     def get_queryset(self) -> QuerySet[Any]:
         scoped = cast("OrgScopedQuerySet", super().get_queryset())
-        queryset = scoped.for_org(self.request.organization)  # type: ignore[attr-defined]
+        queryset: QuerySet[Any] = scoped.for_org(self.request.organization)  # type: ignore[attr-defined]
         if self._should_hide_voided(queryset):
             queryset = cast("VoidableQuerySet", queryset).not_voided()
+        required = getattr(self, "required_permissions", {}).get(getattr(self, "action", ""))
+        if required:
+            queryset = filter_by_effective_scope(queryset, self.request.membership, required)  # type: ignore[attr-defined]
         return queryset
 
     def _should_hide_voided(self, queryset: QuerySet[Any]) -> bool:

@@ -1,0 +1,185 @@
+# organizations
+
+Organization configuration, centers, permission bundles and shared-user memberships (#99).
+Read the root backend README and `docs/api-conventions.md` before changing this app.
+
+## Scope and authorization
+
+`Membership.scope` and `Profile.scope` have exactly two dimensions:
+
+```json
+{"centers": {"mode": "selected", "ids": ["00000000-0000-0000-0000-000000000001"]}, "quadrants": {"mode": "none", "ids": []}}
+```
+
+Modes are `none`, `selected`, `all`. None and empty selected deny an applicable
+object dimension. Only selected carries ids; all is an explicit grant, never an
+empty-array shortcut. New centers never expand a selected grant. Centers are
+organization-scoped UUIDs with a unique organization/code pair; deactivate, never
+delete. `GET /centers/` lists active assigned centers with id/code/name and exact
+`?code=`, search, ordering and page-number paging. Center creation is currently a
+platform ORM operation; #99 adds no center mutation endpoint.
+
+**Quadrant does not exist until #108.** Its scope ids are opaque UUID strings,
+validated only by UUID format. There is no current lookup proving quadrant existence
+or organization ownership. An id outside the actor's selected quadrant grant is
+still refused; future quadrant resources must use the same effective-scope service.
+
+`services.effective_scope` is the single authorization authority. Each active
+profile's scope intersects the membership's scope, and one such grant must cover
+the action AND center AND applicable quadrant. Grants are never cross-combined.
+Org-only configuration has no applicable center/quadrant dimension; action codes
+still default-deny. The common viewset filters lists/details and checks objects
+through this service; an undisclosed or out-of-scope object answers 404. The
+`GET /me/` scope is a display projection of the effective grants; action/object
+checks retain the original paired grants. `web/src/session/can.ts` consumes only
+permission codes, so its implementation does not change. API/web fixtures move to
+the new shape together with the schema; generated TypeScript must be regenerated.
+
+Migration 0005 converts legacy nonempty arrays to selected and empty arrays to
+none. Legacy profiles receive explicit all as the prior unrestricted profile
+ceiling; this never widens the membership. Invalid persisted scopes fail closed.
+The reverse conversion represents all as an empty legacy array (deny), not a
+broader grant. No center rows are fabricated from legacy ids.
+
+## Administration and audit
+
+- `GET/PATCH /organization/`: current settings, revision and `expected_revision`.
+  Settings include name, timezone, languages, epi_week, label_phone and work
+  support_contact. Slug, country and organization identity are not tenant selectors.
+- `GET /roles/`; `PUT /roles/{id}/permissions/` takes permissions, scope,
+  expected_revision. `GET/POST /memberships/`; `POST /memberships/{id}/change-scope/`
+  takes scope, expected_revision and optional profiles/is_active. List filters and
+  ordering run on the server; the membership filters are user, profiles, is_active.
+- Reads require organization.read, role.read or center.read; settings writes need
+  organization.update and role/membership writes need role.update. Action maps
+  default-deny. The active organization always comes from the authenticated membership.
+  A membership create references an existing shared User by UUID and exposes only
+  that UUID, not an unrelated personnel profile. It never creates a user or tenant.
+- A change revalidates the actor under an organization row lock, then locks the
+  target. All privilege removals, including the platform assign_profiles helper,
+  use that serialization point. No User/Device/DeviceSession/TokenPair locks are
+  acquired below it, and no network/storage/mail runs inside it. Contention on
+  administration's try-lock is retryable 429 administration_in_progress, Retry-After 1.
+- An administrator is an active membership of an active user holding both
+  organization.update and role.update, regardless of profile name. Removing the
+  last such member or role capability rolls back with 409 last_administrator.
+  A stale revision rolls back with 409 stale_revision; both expose safe blocked_by.
+- ConfigurationRevision appends full organization, ProfilePermission or Membership
+  snapshots, author and receipt timestamp. Prior snapshots are never rewritten.
+  Existing rows get a baseline before their first edit. Logo history stores a hash,
+  not an uploaded path or binary copy. An ORM guard and PostgreSQL trigger reject
+  audit UPDATE/DELETE. Seeds record their author as null (platform action).
+- Nine seeded bundles: courier, supervisor, entomologist, community_promoter, admin,
+  coordinator, warehouse, regulatory, government. New internal bundles read current
+  configuration; domain-specific inventory/permit permissions belong to their future
+  issues. Government is fixed to portal.read and cannot be mixed with internal
+  profiles. The effective service clamps even corrupted mixed assignments to the
+  government grant; #99 adds no portal endpoint. Seed reruns retain revoked grants.
+- Organizations are created only by bootstrap_organization, a platform command.
+  There is no organization-creation HTTP endpoint.
+
+## Raster logo
+
+`POST /organization/logo/` is an authorized multipart upload (logo,
+expected_revision); `GET` on the same path is authorized same-origin image/png.
+Only validated bytes stored in the database are served. Legacy FileField paths
+are never exposed; without a validated asset, logo_url is null and clients use
+initials. Media responses are private/no-store and nosniff. Web writes retain
+session-cookie/CSRF protection; field bearer tokens retain their pinned organization.
+Multiple memberships need the same X-Organization header as other API calls;
+a client can fetch authorized bytes and display a data URI under the existing CSP.
+
+**[ASSUMPTION]** No sanitizer is present in declared dependencies. The permitted
+fallback accepts only image/png, a PNG signature, <=1 MiB, <=1024x1024 pixels,
+noninterlaced 8-bit RGB/RGBA, valid chunk CRCs, exact bounded decompression and
+valid row-filter tags. It removes optional metadata and rebuilds only IHDR/IDAT/IEND.
+It refuses SVG, HTML, MIME mismatches, trailing payloads and decompression excess.
+This restricted validator is not a general image-decoder/sanitizer integration.
+No new third-party dependency is added. **[ASSUMPTION]** Epi week defaults to iso;
+mmwr is configurable. Supported language edits are es-MX/en.
+
+## Launch rollout and decisions
+
+Run migrations, then `manage.py seed_organization_defaults --organization <slug> --apply`
+for existing organizations. This adds the four new profiles, missing launch items
+and unset version defaults, preserves revocations and versions, and applies the
+reviewed safety-bound definitions. Existing out-of-bound historical versions remain
+history; new versions must satisfy the accepted bounds.
+
+Applied: SA01/SA02, OP01-OP04/OP17, MO02-MO04, WE15/WE18, R02/R03.
+OP15 is superseded by decision 91: #80's void-reason catalog and validator are
+unchanged. OP16's dependent-correction policy remains in existing domain services;
+#99 changes no void-reason validation or FieldEvent status/effect. #88 already supplies
+revisit_interval_days and the day unit, author projection and history filter.
+No sync event/result code is introduced, so sync translations do not change.
+
+Verified APIs: [Django row locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update),
+[historical-model data migrations](https://docs.djangoproject.com/en/5.2/ref/migration-operations/#runpython),
+[bounded zlib decompression](https://docs.python.org/3.13/library/zlib.html#zlib.Decompress.decompress),
+[boolean/Exists query projections](https://docs.djangoproject.com/en/5.2/ref/models/expressions/).
+
+## Acceptance evidence
+
+All new acceptance cases are in tests/test_organizations_b_01.py:
+
+| Criterion | Evidence |
+| --- | --- |
+| 1: effective scopes | test_effective_scope_intersects_permissions_and_both_dimensions (eight cases); test_scope_data_migration_preserves_selected_ids_and_denies_empty_arrays; newly created unassigned center in the HTTP wiring test |
+| 2: last administrator and seed | test_concurrent_last_admin_removals_retain_one_administrator (two threads, a barrier and commit-gated contention retry; no sleeps; PostgreSQL required); test_seed_rerun_preserves_revoked_grants_and_government_boundary; role removal/atomic audit test |
+| 3: launch contract | test_launch_contract_has_thirteen_bounded_versioned_defaults_and_closed_items; test_catalog_metadata_preserves_protected_other_and_used_deactivated_labels; test_fuel_bounds_preserve_order_across_scheduled_transitions; test_seed_plan_reports_missing_items_and_versions_in_existing_launch_definitions |
+| 4: wiring | test_center_endpoint_wires_default_deny_and_organization_and_dimension_isolation; spectacular --validate --fail-on-warn; api:generate requires installed openapi-typescript |
+| Additional issue edges | test_logo_strips_metadata_and_refuses_mime_magic_and_decompression_mismatches; test_settings_and_role_revisions_reject_stale_or_last_admin_changes_atomically |
+
+PostgreSQL integration/concurrency tests must run in the orchestrator's isolated
+compose project. Docker is unavailable in this worktree's agent environment.
+
+
+## Worktree validation and handoff (2026-11-05)
+
+- Branch: feat/99-org-config. No commit, push, PR, migration application or deployment.
+- ruff check backend: passed. Changed Python modules' format check: passed.
+- mypy --follow-imports=silent on organizations, catalogs, changed core modules and
+  rules/services.py + seeds.py: passed, 33 source files. Full mypy still reports
+  rules/selectors.py:72 (Any return) and accounts/views.py:14 (missing kombu stubs),
+  both outside the changed files, using this machine's installed runtime.
+- pytest tests/test_organizations_b_01.py tests/test_rule_contract.py with selection
+  effective_scope/ logo_strips/ schema: 17 passed (11 issue unit cases plus 6 existing
+  schema cases). Nine new PostgreSQL cases and the existing DB contract case were
+  deselected; none of those integration/concurrency tests has run here.
+- manage.py check: passed. makemigrations --check --dry-run: no changes detected;
+  applied migration-history consistency could not be checked (no server at the
+  isolated placeholder port 55499). No connection was made to host port 5432.
+- spectacular --validate --fail-on-warn using dev settings: passed, zero warnings;
+  repeated LF-normalized export has identical SHA-256
+  ce67959addeb02ffdfc1e043611bf1e98e8cffc333b9a8af8d6c47653ad380ae.
+  Both catalog in-use query projections compile without connecting to a database;
+  SQL execution still needs PostgreSQL.
+- TypeScript regeneration and web/client tests remain pending: package directories
+  are present as placeholders but the openapi-typescript CLI and installed JS
+  executables are absent. No npm ci or dependency installation was attempted.
+  Run npm run api:generate with locked dependencies, then client/web checks.
+  The exported Python schema used Django 5.2.15, DRF 3.17.1 and spectacular 0.29.0,
+  not the versions declared by the project lock; re-export in the locked runtime.
+- gh issue view 99 returned HTTP 401. Implementation uses the owner's supplied
+  complete issue and decisions, not an asserted fresh GitHub inventory.
+- Concurrent changes to backend/compose.yaml and .github/workflows/backend.yml
+  (PostGIS image) were observed and preserved. They are not #99 implementation edits.
+
+Changed implementation files (relative to repository root):
+
+- organizations: backend/organizations/models.py, scope.py, logo.py, services.py,
+  selectors.py, serializers.py, views.py, urls.py, defaults.py, exceptions.py,
+  README.md, management/commands/seed_organization_defaults.py,
+  migrations/0004_membership_revision_organization_epi_week_and_more.py,
+  migrations/0005_explicit_scope_and_revision_guard.py.
+- Shared wiring: backend/core/permissions.py, views.py, exception_handler.py;
+  backend/config/urls.py.
+- Catalogs: backend/catalogs/seeds.py, selectors.py, serializers.py, services.py,
+  exceptions.py, views.py, README.md. Rules: backend/rules/seeds.py, services.py,
+  README.md. #88 models/author/filter implementation is reused.
+- Tests: backend/tests/test_organizations_b_01.py, test_me.py,
+  test_organizations.py, test_seed_defaults.py. Redundant legacy default-value
+  cases were consolidated into the integrated 13-rule launch acceptance case.
+- Contract/docs: docs/api-conventions.md, glossary.md, decisions.md (92);
+  packages/api-client/openapi.yaml, README.md, test/helpers.ts;
+  web/src/test/fake-api.ts. src/generated/schema.ts awaits the installed generator.

@@ -4,7 +4,7 @@ Versioned rule parameters per organization: the thresholds the app shows but nev
 
 ## Rules of this app
 
-- No threshold is hard-coded anywhere else: code reads it from here. [PENDING #5] sync resolves the values that applied at an event's `device_time` from the version history.
+- No threshold is hard-coded anywhere else: code reads it from here. Sync handlers can resolve values at an event's `device_time` from the existing historical selector; receipt-time clock-skew evaluation is the explicit exception (R03). This does not claim every future handler already uses it.
 - A `RuleParameter` is the definition (key, `integer` or `decimal`, unit, optional `min_value`/`max_value`). It is created by the seed only.
 - Editing adds a `RuleParameterVersion`; versions are **insert-only** (`core.models.ImmutableMixin`): `save()` of a stored row, queryset `update()`, bulk upserts and the base manager raise `ImmutableRecordError`, and a PostgreSQL trigger (migration `0002`) rejects raw `UPDATE` and `DELETE`. Only the void fields can be written, once. There is no PUT/PATCH/DELETE route.
 - A wrong version that has not taken effect yet is voided (`POST .../versions/{id}/void/`, `409 version_not_scheduled` otherwise); it stays in the history, leaves the value in force and the snapshots, and frees its date.
@@ -25,7 +25,35 @@ Versioned rule parameters per organization: the thresholds the app shows but nev
 
 ## Seed
 
-Values of the design brief (NOM-032-SSA2-2014 / CENAPRECE guide as cited by the client; validate with the program entomologist): `max_distance_to_point_m` 50, `min_distance_same_block_m` 50, `speed_lock_kmh` 10, `closed_house_weeks_to_relocate` 2, `incidents_to_relocate` 3, `reminder_minutes_before_end` 60, `max_paddle_reuses` 2. [PENDING client] `speed_unlock_seconds`, `clock_skew_review_seconds`, `session_idle_minutes`, `fuel_efficiency_min_km_l`, `fuel_efficiency_max_km_l` have no version. [ASSUMPTION] every parameter has `min_value` 0.
+The 13 launch definitions reuse #88's revisit/day contract. OP03/OP04 and
+MO02-MO04 supply reviewed inclusive safety bounds and all missing defaults:
+
+| Key | Default | Unit | Inclusive min | Inclusive max |
+| --- | --- | --- | --- | --- |
+| max_distance_to_point_m | 50 | m | 10 | 200 |
+| min_distance_same_block_m | 50 | m | 10 | 200 |
+| speed_lock_kmh | 10 | km_h | 5 | 15 |
+| speed_unlock_seconds | 5 | s | 3 | 30 |
+| clock_skew_review_seconds | 300 | s | 30 | 3600 |
+| closed_house_weeks_to_relocate | 2 | week | 1 | 8 |
+| incidents_to_relocate | 3 | count | 1 | 10 |
+| fuel_efficiency_min_km_l | 15 | km_l | 5 | 100 |
+| fuel_efficiency_max_km_l | 60 | km_l | 5 | 100 |
+| session_idle_minutes | 5 | min | 1 | 30 |
+| reminder_minutes_before_end | 60 | min | 5 | 180 |
+| max_paddle_reuses | 2 | count | 0 | 2 |
+| revisit_interval_days | 7 | day | 1 | 28 |
+
+Seed reruns add versions only when none exist and preserve all existing versions,
+including deactivated/voided history. Bounds are reviewed definitions and are
+updated to the accepted ranges on seed rerun. Historical out-of-bound values are
+not rewritten. Fuel min/max edits serialize on the organization before parameter
+locks and must remain ordered (min < max) at every scheduled transition; voiding
+a scheduled bound cannot invalidate another bound. Conflict is a value field
+error fuel_bounds_conflict. Reuse `seed_organization_defaults --apply` for existing
+organizations. The idle rule is the mobile local PIN/biometric lock, not web/token
+expiry. Fuel anomalies mark review, not a capture/shift-close ban.
+
 
 ## Snapshot
 

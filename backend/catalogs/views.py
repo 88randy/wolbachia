@@ -16,7 +16,7 @@ from catalogs.permissions import (
     CATALOG_ITEM_UPDATE,
     CATALOG_READ,
 )
-from catalogs.selectors import build_catalog_snapshot, list_catalogs
+from catalogs.selectors import build_catalog_snapshot, list_catalogs, with_item_usage
 from catalogs.serializers import (
     CatalogItemCreateSerializer,
     CatalogItemSerializer,
@@ -94,7 +94,9 @@ class CatalogItemViewSet(
         return self._catalog  # type: ignore[no-any-return]
 
     def get_queryset(self) -> QuerySet[Any]:
-        return super().get_queryset().filter(catalog=self.get_catalog())
+        catalog = self.get_catalog()
+        queryset = super().get_queryset().filter(catalog=catalog)
+        return with_item_usage(queryset, catalog)
 
     def get_serializer_class(self) -> type[serializers.BaseSerializer[Any]]:
         by_action = {

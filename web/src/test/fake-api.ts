@@ -100,6 +100,9 @@ export function makeOrganization(slug: string, name: string): NonNullable<Me["or
     country: "MX",
     timezone: "America/Mexico_City",
     languages: ["es-MX", "en"],
+    epi_week: "iso",
+    label_phone: "",
+    support_contact: "",
     logo_url: null,
   };
 }
@@ -121,11 +124,14 @@ export function makeMe(overrides: Partial<Me> = {}): Me {
       country: "MX",
       timezone: "America/Mexico_City",
       languages: ["es-MX", "en"],
+      epi_week: "iso",
+      label_phone: "",
+      support_contact: "",
       logo_url: null,
     },
     profiles: [{ slug: "supervisor", label_es: "Supervisora", label_en: "Supervisor" }],
     permissions: ["catalog.read", "rule_parameter.read"],
-    scope: { centers: [], quadrants: [] },
+    scope: { centers: { mode: "none", ids: [] }, quadrants: { mode: "none", ids: [] } },
     organizations: [{ slug: "norte", name: "Región Norte" }],
     limits: { void_reason_min_length: 10, void_reason_max_length: 1000 },
     ...overrides,
@@ -142,6 +148,8 @@ const VOID_REASON_BASE = {
   sort: 0,
   is_active: true,
   is_other: false,
+  protected: false,
+  in_use: false,
   requires_photo: false,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
@@ -172,6 +180,7 @@ export function makeVoidReasonItems(): Schemas["CatalogItem"][] {
       label_es: "Otro (especificar)",
       label_en: "Other (specify)",
       is_other: true,
+      protected: true,
     },
   ];
 }

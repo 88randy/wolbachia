@@ -58,3 +58,27 @@ node scripts/typecheck.mjs packages        # also checks the type-level tests (t
 ```
 
 `openapi-typescript` declares a peer range of TypeScript `^5`, while the repo uses 6; npm therefore installs a private TypeScript 5 inside this workspace for the generator, which also pins the generated formatting. That is why the package has no `typecheck` script of its own: `npm run typecheck` in this folder would pick that private `tsc`. Use the root script.
+
+
+## Organization configuration migration (#99)
+
+The schema replaces /me/ scope arrays with explicit per-dimension mode/ids, adds
+epi_week, label_phone and support_contact, and documents centers, organization
+settings/logo, roles and memberships. API/web fixtures are migrated together.
+This is a breaking scope contract: regenerate TypeScript before client builds.
+`web/src/session/can.ts` checks only permission codes and does not consume scope.
+
+The implementation environment has no installed node_modules executables and must not run npm ci.
+OpenAPI can be exported and validated with an already installed Python runtime:
+
+```bash
+cd backend
+python manage.py spectacular --validate --fail-on-warn --file ../packages/api-client/openapi.yaml
+```
+
+Set the documented schema-export settings/environment first (see the generator
+script). Type generation still requires the locked openapi-typescript package
+from package-lock.json; do not hand-edit src/generated/schema.ts. The orchestrator
+must run npm run api:generate with installed dependencies and verify a second run
+has no diff. The local Python runtime differs from the lock: Django 5.2.15, DRF
+3.17.1, drf-spectacular 0.29.0. Re-export using locked dependencies before integration.

@@ -1,7 +1,7 @@
 """Defaults of a new organization: permission codes, catalogs and rule parameters.
 
-Orchestration only (the data lives in `catalogs.seeds` and `rules.seeds`). It sits here, and not
-in `organizations.services`, so the seeds never import the services that call them.
+Catalog and rule definitions live in their seed modules. Runtime profile orchestration
+uses local audit-service imports to avoid a module-initialization cycle.
 """
 
 from collections.abc import Mapping
@@ -32,8 +32,14 @@ from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UN
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
-READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ)
+READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    "portal.read",
+    "organization.read",
+    "organization.update",
+    "role.read",
+    "role.update",
+    "center.read",
     CATALOG_READ,
     CATALOG_ITEM_CREATE,
     CATALOG_ITEM_UPDATE,
@@ -66,6 +72,10 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "entomologist": READ_ONLY_CODES,
     "community_promoter": READ_ONLY_CODES,
     "admin": ADMIN_CODES,
+    "coordinator": READ_ONLY_CODES,
+    "warehouse": READ_ONLY_CODES,
+    "regulatory": READ_ONLY_CODES,
+    "government": ("portal.read",),
 }
 
 
@@ -86,6 +96,7 @@ class DefaultsPlan:
     permissions: PermissionSeedPlan
     missing_catalogs: tuple[str, ...]
     missing_parameters: tuple[str, ...]
+    missing_profiles: tuple[str, ...] = ()
 
 
 def _seedable_profiles(organization: Organization) -> list[Profile]:
@@ -127,6 +138,7 @@ def seed_default_permission_codes(organization: Organization) -> PermissionSeedP
     grants: dict[str, tuple[str, ...]] = {}
     skipped = []
     with transaction.atomic():
+        Organization.objects.select_for_update().get(pk=organization.pk)
         locked = (
             Profile.objects.select_for_update()
             .filter(organization=organization, slug__in=DEFAULT_PROFILE_PERMISSIONS)
@@ -136,9 +148,20 @@ def seed_default_permission_codes(organization: Organization) -> PermissionSeedP
             if not profile.created_by_seed:
                 skipped.append(profile.slug)
             elif codes := _new_codes(profile):
+                from organizations.services import (
+                    _append_revision,
+                    _ensure_original_revision,
+                    _profile_snapshot,
+                )
+
+                _ensure_original_revision(profile, "role", _profile_snapshot(profile))
                 profile.permission_codes = sorted({*profile.permission_codes, *codes})
                 profile.seeded_permission_codes = sorted({*profile.seeded_permission_codes, *codes})
-                profile.save(update_fields=["permission_codes", "seeded_permission_codes"])
+                profile.revision += 1
+                profile.save(
+                    update_fields=["permission_codes", "seeded_permission_codes", "revision"]
+                )
+                _append_revision(profile, "role", _profile_snapshot(profile), None)
                 grants[profile.slug] = codes
     return PermissionSeedPlan(grants=grants, skipped=tuple(skipped))
 
@@ -149,7 +172,13 @@ def plan_organization_defaults(organization: Organization) -> DefaultsPlan:
         permissions=plan_default_permission_codes(organization),
         missing_catalogs=tuple(missing_catalog_slugs(organization)),
         missing_parameters=tuple(missing_parameter_keys(organization)),
+        missing_profiles=_missing_profile_slugs(organization),
     )
+
+
+def _missing_profile_slugs(organization: Organization) -> tuple[str, ...]:
+    existing = set(Profile.objects.filter(organization=organization).values_list("slug", flat=True))
+    return tuple(slug for slug in DEFAULT_PROFILE_PERMISSIONS if slug not in existing)
 
 
 def seed_organization_defaults(organization: Organization) -> DefaultsPlan:
@@ -158,10 +187,15 @@ def seed_organization_defaults(organization: Organization) -> DefaultsPlan:
     Returns the plan it applied. Also the way to bring an organization created before these
     defaults existed up to date (`manage.py seed_organization_defaults --apply`).
     """
+    from organizations.services import seed_default_profiles
+
     with transaction.atomic():
+        Organization.objects.select_for_update().get(pk=organization.pk)
+        missing_profiles = _missing_profile_slugs(organization)
+        seed_default_profiles(organization)
         missing_catalogs = tuple(missing_catalog_slugs(organization))
         missing_parameters = tuple(missing_parameter_keys(organization))
         permissions = seed_default_permission_codes(organization)
         seed_default_catalogs(organization)
         seed_default_rule_parameters(organization)
-    return DefaultsPlan(permissions, missing_catalogs, missing_parameters)
+    return DefaultsPlan(permissions, missing_catalogs, missing_parameters, missing_profiles)

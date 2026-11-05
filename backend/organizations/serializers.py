@@ -1,10 +1,12 @@
-"""Read-only serializers for `GET /me/` (plain `Serializer`s: the payload is not a model)."""
+"""Organization configuration and explicit scope API contracts."""
 
 from typing import Any
 
 from rest_framework import serializers
 
-from organizations.models import Organization
+from core.serializers import OrgScopedModelSerializer
+from organizations.models import Center, Membership, Organization, Profile
+from organizations.validators import validate_permission_code, validate_timezone
 
 
 class MeUserSerializer(serializers.Serializer[Any]):
@@ -22,10 +24,13 @@ class MeOrganizationSerializer(serializers.Serializer[Any]):
     country = serializers.CharField()
     timezone = serializers.CharField()
     languages = serializers.ListField(child=serializers.CharField())
+    epi_week = serializers.ChoiceField(choices=["iso", "mmwr"])
+    label_phone = serializers.CharField(allow_blank=True)
+    support_contact = serializers.CharField(allow_blank=True)
     logo_url = serializers.SerializerMethodField()
 
     def get_logo_url(self, organization: Organization) -> str | None:
-        return organization.logo.url if organization.logo else None
+        return "/api/v1/organization/logo/" if organization.logo_content else None
 
 
 class MeOrganizationChoiceSerializer(serializers.Serializer[Any]):
@@ -39,9 +44,22 @@ class MeProfileSerializer(serializers.Serializer[Any]):
     label_en = serializers.CharField()
 
 
+class ScopeDimensionSerializer(serializers.Serializer[Any]):
+    mode = serializers.ChoiceField(choices=["none", "selected", "all"])
+    ids = serializers.ListField(child=serializers.CharField(), allow_empty=True)
+
+
 class MeScopeSerializer(serializers.Serializer[Any]):
-    centers = serializers.ListField(child=serializers.CharField())
-    quadrants = serializers.ListField(child=serializers.CharField())
+    centers = ScopeDimensionSerializer()
+    quadrants = ScopeDimensionSerializer()
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        from organizations.scope import normalize_scope
+
+        try:
+            return dict(normalize_scope(attrs))
+        except ValueError as error:
+            raise serializers.ValidationError("Invalid scope.", code="invalid_scope") from error
 
 
 class MeLimitsSerializer(serializers.Serializer[Any]):
@@ -59,3 +77,91 @@ class MeSerializer(serializers.Serializer[Any]):
     scope = MeScopeSerializer()
     organizations = MeOrganizationChoiceSerializer(many=True)
     limits = MeLimitsSerializer()
+
+
+class CenterSerializer(OrgScopedModelSerializer):
+    class Meta:
+        model = Center
+        fields = ["id", "code", "name"]
+        read_only_fields = fields
+
+
+class OrganizationSettingsSerializer(MeOrganizationSerializer):
+    revision = serializers.IntegerField()
+
+
+class OrganizationUpdateSerializer(serializers.Serializer[Any]):
+    expected_revision = serializers.IntegerField(min_value=1)
+    name = serializers.CharField(max_length=200, required=False)
+    timezone = serializers.CharField(max_length=64, validators=[validate_timezone], required=False)
+    languages = serializers.ListField(
+        child=serializers.ChoiceField(choices=["es-MX", "en"]), allow_empty=False, required=False
+    )
+    epi_week = serializers.ChoiceField(choices=["iso", "mmwr"], required=False)
+    label_phone = serializers.CharField(max_length=40, allow_blank=True, required=False)
+    support_contact = serializers.CharField(max_length=200, allow_blank=True, required=False)
+
+
+class ProfileSerializer(OrgScopedModelSerializer):
+    permissions = serializers.ListField(
+        source="permission_codes", child=serializers.CharField(), read_only=True
+    )
+    scope = MeScopeSerializer(read_only=True)
+
+    class Meta:
+        model = Profile
+        fields = [
+            "id",
+            "slug",
+            "label_es",
+            "label_en",
+            "permissions",
+            "scope",
+            "is_active",
+            "revision",
+        ]
+        read_only_fields = fields
+
+
+class ProfilePermissionSerializer(serializers.Serializer[Any]):
+    permissions = serializers.ListField(
+        child=serializers.CharField(max_length=100, validators=[validate_permission_code])
+    )
+    scope = MeScopeSerializer()
+    expected_revision = serializers.IntegerField(min_value=1)
+
+
+class MembershipSerializer(OrgScopedModelSerializer):
+    scope = MeScopeSerializer(read_only=True)
+
+    class Meta:
+        model = Membership
+        fields = [
+            "id",
+            "user",
+            "profiles",
+            "scope",
+            "is_active",
+            "revision",
+            "created_at",
+            "created_by",
+        ]
+        read_only_fields = fields
+
+
+class MembershipChangeSerializer(serializers.Serializer[Any]):
+    expected_revision = serializers.IntegerField(min_value=1)
+    scope = MeScopeSerializer()
+    profiles = serializers.ListField(child=serializers.UUIDField(), required=False)
+    is_active = serializers.BooleanField(required=False)
+
+
+class MembershipCreateSerializer(serializers.Serializer[Any]):
+    user = serializers.UUIDField()
+    profiles = serializers.ListField(child=serializers.UUIDField())
+    scope = MeScopeSerializer()
+
+
+class LogoUploadSerializer(serializers.Serializer[Any]):
+    expected_revision = serializers.IntegerField(min_value=1)
+    logo = serializers.FileField(max_length=100)

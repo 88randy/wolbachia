@@ -76,6 +76,8 @@ def api_exception_handler(exc: Exception, context: dict[str, Any]) -> Response:
     if isinstance(exc, DomainError):
         set_rollback()
         body: dict[str, Any] = {"code": exc.code, "detail": exc.detail}
+        if blocked_by := getattr(exc, "blocked_by", None):
+            body["blocked_by"] = blocked_by
         if exc.fields:
             body["fields"] = exc.fields
         return Response(body, status=exc.status_code, headers=_domain_error_headers(exc))

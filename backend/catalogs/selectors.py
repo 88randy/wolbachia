@@ -44,3 +44,41 @@ def build_catalog_snapshot(organization: Organization) -> dict[str, Any]:
     return with_version(
         {"catalogs": catalogs, "motorcycles": list_snapshot_motorcycles(organization)}
     )
+
+
+def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QuerySet[CatalogItem]:
+    """Project actual historical references in the list query, avoiding per-item lookups."""
+    from django.apps import apps
+    from django.db.models import Exists, OuterRef, Q
+
+    from shifts.models import MotorcycleCheck
+
+    usage = Q(
+        Exists(
+            MotorcycleCheck.objects.filter(
+                organization_id=catalog.organization_id, item_id=OuterRef("pk")
+            )
+        )
+    )
+    if catalog.slug == "void-reason":
+        for model in apps.get_models():
+            fields = {field.name for field in model._meta.fields}
+            if {"organization", "void_reason_code"} <= fields:
+                usage |= Q(
+                    Exists(
+                        model._default_manager.filter(
+                            organization_id=catalog.organization_id,
+                            void_reason_code=OuterRef("code"),
+                        )
+                    )
+                )
+    return queryset.select_related("catalog").annotate(is_in_use=usage)
+
+
+def catalog_item_is_in_use(item: CatalogItem) -> bool:
+    """Use the list projection or resolve a standalone item's actual committed references."""
+    if hasattr(item, "is_in_use"):
+        return bool(item.is_in_use)
+    queryset = CatalogItem.objects.filter(pk=item.pk, organization_id=item.organization_id)
+    annotated = with_item_usage(queryset, item.catalog).get()
+    return bool(getattr(annotated, "is_in_use", False))
