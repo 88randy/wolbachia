@@ -624,6 +624,10 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description One ingestion verdict. rejection_quota_exceeded is not stored: retain and retry the event
+         *     after params.retry_after_seconds (also the 200 response's Retry-After header).
+         */
         EventResult: {
             /** Format: uuid */
             id: string;
@@ -1794,6 +1798,8 @@ export interface operations {
         responses: {
             200: {
                 headers: {
+                    /** @description Present only when a result has code rejection_quota_exceeded. Seconds until the next organization-local midnight (minimum 1). Keep those events in the outbox/quarantine and resend after this delay; they were not stored. Other results remain final. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
