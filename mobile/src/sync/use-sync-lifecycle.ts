@@ -3,6 +3,7 @@ import { useEffect } from "react";
 import { AppState } from "react-native";
 
 import { observeSyncSession } from "./observe-sync-session.ts";
+import { observeConnectivity } from "./connectivity.ts";
 
 import { useServices } from "../app/services-context.ts";
 
@@ -14,21 +15,18 @@ import { useServices } from "../app/services-context.ts";
  * background task (WorkManager through `expo-background-task`); that is not part of #6.
  */
 export function useSyncLifecycle(): void {
-  const { engine, tokens } = useServices();
+  const { auth, engine, tokens } = useServices();
   useEffect(() => {
+    const stopTokens = observeSyncSession(engine, tokens);
+    const stopNet = observeConnectivity(NetInfo.addEventListener, { auth, engine });
     void engine.start();
-    // `isConnected` is null until the first reading: unknown counts as online.
-    const stopNet = NetInfo.addEventListener((state) => {
-      engine.setOnline(state.isConnected !== false);
-    });
     const appState = AppState.addEventListener("change", (next) => {
       if (next === "active") void engine.requestSync();
     });
-    const stopTokens = observeSyncSession(engine, tokens);
     return () => {
       stopNet();
       appState.remove();
       stopTokens();
     };
-  }, [engine, tokens]);
+  }, [auth, engine, tokens]);
 }

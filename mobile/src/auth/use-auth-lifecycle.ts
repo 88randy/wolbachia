@@ -1,4 +1,3 @@
-import NetInfo from "@react-native-community/netinfo";
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { AppState, Keyboard } from "react-native";
 
@@ -10,7 +9,7 @@ export function useAuthLifecycle() {
   const snapshot = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
   const [isWarning, setIsWarning] = useState(false);
   const idle = useIdleLock(auth, setIsWarning);
-  useAuthSignals(auth, idle);
+  useAuthSignals(idle);
   useEffect(() => {
     if (snapshot.phase === "unlocked") idle.start(snapshot.rules.sessionIdleMinutes);
     else {
@@ -31,19 +30,15 @@ export function useAuthLifecycle() {
   };
 }
 
-function useAuthSignals(auth: ReturnType<typeof useServices>["auth"], idle: IdleLock): void {
+function useAuthSignals(idle: IdleLock): void {
   useEffect(() => {
-    const stop = NetInfo.addEventListener((state) => {
-      auth.setOnline(state.isConnected === true && state.isInternetReachable !== false);
-    });
     const app = AppState.addEventListener("change", (state) => {
       if (state === "background") idle.background();
     });
     return () => {
-      stop();
       app.remove();
     };
-  }, [auth, idle]);
+  }, [idle]);
 }
 
 function useIdleLock(

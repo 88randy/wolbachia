@@ -1,5 +1,7 @@
 import { isErrorEnvelope } from "@wolbachia/api-client";
 
+import { ConnectivityUnavailable } from "../sync/connectivity.ts";
+
 import type { CredentialStore, Credentials, TokenPair } from "./credential-store.ts";
 
 export interface ApiAnswer {
@@ -67,6 +69,7 @@ export class SessionRequests {
     const session = this.#deps.credentials.getSnapshot();
     const pair = session.pair;
     if (pair === null) throw new RemoteSessionEnded();
+    this.#requireOnline();
     if (session.status !== "active") return this.#runFinal(call, session);
     let sent = session;
     const send = () => {
@@ -88,6 +91,7 @@ export class SessionRequests {
   ): Promise<Answer> {
     const session = this.#deps.credentials.getSnapshot();
     this.#requireActive();
+    this.#requireOnline();
     let answer = await call();
     if (!this.#belongsTo(session)) return answer;
     if (
@@ -95,7 +99,7 @@ export class SessionRequests {
       errorCode(answer) === "token_expired" &&
       session.pair !== null
     ) {
-      if (!this.#deps.isOnline()) return answer;
+      this.#requireOnline();
       await this.refresh(session.pair);
       if (!this.#belongsTo(session) || !this.#deps.credentials.isSessionActive()) return answer;
       answer = await call();
@@ -111,7 +115,8 @@ export class SessionRequests {
     session: Credentials,
   ): Promise<SyncAnswer<Answer>> {
     await this.#deps.credentials.whenSettled();
-    if (!this.#belongsTo(session) || !this.#deps.isOnline()) throw new RemoteSessionEnded();
+    if (!this.#belongsTo(session)) throw new RemoteSessionEnded();
+    this.#requireOnline();
     const current = this.#deps.credentials.getSnapshot();
     if (current.pair === null) throw new RemoteSessionEnded();
     return this.#syncAnswer(await call(current.pair.access), current);
@@ -134,6 +139,10 @@ export class SessionRequests {
     return this.#deps.credentials.getSnapshot().sessionId === session.sessionId;
   }
 
+  #requireOnline(): void {
+    if (!this.#deps.isOnline()) throw new ConnectivityUnavailable();
+  }
+
   #requireActive(): void {
     if (!this.#deps.credentials.isSessionActive()) {
       throw new RemoteSessionEnded();
@@ -154,6 +163,7 @@ export class SessionRequests {
     if (!this.#deps.credentials.isSessionActive()) {
       return Promise.reject(new RemoteSessionEnded());
     }
+    if (!this.#deps.isOnline()) return Promise.reject(new ConnectivityUnavailable());
     if (this.#deps.credentials.getSnapshot().pair !== pair) return Promise.resolve();
     if (this.#inFlight !== null && this.#inFlightPair === pair) return this.#inFlight;
     const shared = this.#refreshAndPersist(pair).finally(() => {

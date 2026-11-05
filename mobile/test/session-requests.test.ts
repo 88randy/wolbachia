@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { it } from "node:test";
 
 import { CredentialStore } from "../src/auth/credential-store.ts";
+import { ConnectivityUnavailable } from "../src/sync/connectivity.ts";
 import { RemoteSessionEnded, SessionRequests } from "../src/auth/session-requests.ts";
 import type { TokenPair } from "../src/auth/credential-store.ts";
 import { deferred, makeCredentials } from "./support/auth-fakes.ts";
@@ -108,7 +109,10 @@ void it("does not refresh offline; refresh expiry and bearer revoke end the sess
       throw new RemoteSessionEnded();
     },
   });
-  await requests.run(() => Promise.resolve(expired()));
+  await assert.rejects(
+    requests.run(() => Promise.resolve(expired())),
+    ConnectivityUnavailable,
+  );
   assert.equal(refreshes, 0);
   assert.notEqual(credentials.getAccessToken(), undefined);
   const online = new SessionRequests({
