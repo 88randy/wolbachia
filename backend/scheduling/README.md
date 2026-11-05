@@ -5,7 +5,7 @@ planning. The owner's supplied full issue and lead decisions define this work;
 GitHub inventory remains unverified (401 reported by the lead). No route
 optimization, screens, deployment or review acceptance is added.
 
-## Lead decisions (ADR 116)
+## Lead decisions (ADR 117)
 
 1. CSV only: UTF-8 with optional BOM, comma delimiter, double-quoted fields,
    header required, max 1 MiB and 5000 data rows. Required columns are exactly

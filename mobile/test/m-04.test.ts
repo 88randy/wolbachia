@@ -54,6 +54,7 @@ function engineFor(
   return new SyncEngine({
     pass: { ...stores, deviceId: FIXED_DEVICE_ID, now: () => FIXED_NOW, transport },
     hasSession: () => hasSession,
+    hasPendingFinalUpload: () => Promise.resolve(false),
     hasServer: () => true,
     random: () => 0,
     schedule: () => () => undefined,

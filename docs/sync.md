@@ -428,7 +428,7 @@ pending task until the next bootstrap/full resync refreshes projections. Capture
 is revalidated server-side; duplicate physical-ovitrap/local-week readings are
 rejected and completed tasks cannot be reassigned. Producer v2 changes the bundle
 schema_version and requires replacing the prior projection through bootstrap.
-See [ADR 116 lead decisions](../backend/scheduling/README.md).
+See [ADR 117 lead decisions](../backend/scheduling/README.md).
 
 ## Bootstrap and projection recovery (B-13, #110)
 

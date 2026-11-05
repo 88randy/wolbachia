@@ -307,7 +307,7 @@ locks occur inside. Existing User -> Device -> DeviceSession -> TokenPair order
 is preserved. No void/delete endpoints, new sync events or result codes are added;
 #22 owns review acceptance. Scheduling registers the assignments v2 bundle producer
 and atomically emits scoped allocation/task deltas through #110 delivery APIs.
-See scheduling/README.md and ADR 116 for lead decisions and lock ordering.
+See scheduling/README.md and ADR 117 for lead decisions and lock ordering.
 
 Planning input dates use the same technical 2020-01-01..2100-01-01 window as
 field sync; out-of-range week/day returns 400 out_of_range, never date overflow.

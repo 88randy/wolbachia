@@ -1,9 +1,16 @@
+import { getRandomBytes, randomUUID } from "expo-crypto";
+
 import { createShiftOpen } from "../features/shift-open/create-shift-open.ts";
 import type { ShiftOpenService } from "../features/shift-open/service.ts";
-import { randomUUID } from "expo-crypto";
 
 import { createMobileApiClient } from "../api/create-api-client.ts";
-import { createMemoryTokenStore } from "../auth/token-store.ts";
+import { createAuth } from "../auth/create-auth.ts";
+import { CredentialStore } from "../auth/credential-store.ts";
+import { nativeSecrets } from "../auth/native-secrets.ts";
+import { readEndedSession } from "../auth/session-journal.ts";
+import type { AuthController } from "../auth/auth-controller.ts";
+import type { SessionRequests } from "../auth/session-requests.ts";
+import appManifest from "../../package.json";
 import type { TokenStore } from "../auth/token-store.ts";
 import { BUILD_API_BASE_URL, LAN_HTTP_FLAG, allowsPrivateLanHttp } from "../config/build-config.ts";
 import { ServerSettings } from "../config/server-settings.ts";
@@ -17,6 +24,7 @@ import type { SyncTransport } from "../sync/sync-transport.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly auth: AuthController;
   readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
@@ -26,12 +34,12 @@ export interface AppServices {
   readonly deviceId: string;
 }
 
-// The address can change in Settings, so the client is built per request (cheap) from the current one.
-function lazyTransport(server: ServerSettings, tokens: TokenStore): SyncTransport {
+// Initial provisioning selects the identity-bound address before authenticated work begins.
+function lazyTransport(tokens: TokenStore, session: SessionRequests): SyncTransport {
   return async (request) => {
-    const baseUrl = server.baseUrl();
+    const baseUrl = tokens.getOrigin();
     if (baseUrl === null) return { ok: false, failure: { kind: "network" } };
-    return createSyncTransport(createMobileApiClient({ baseUrl, tokens }))(request);
+    return createSyncTransport(createMobileApiClient({ baseUrl, tokens }), session)(request);
   };
 }
 
@@ -44,19 +52,55 @@ function logEngineError(error: unknown): void {
 export async function createServices(): Promise<AppServices> {
   const db = await openDatabase();
   const kv = new KvStore(db);
-  const server = new ServerSettings(
-    kv,
-    BUILD_API_BASE_URL,
-    allowsPrivateLanHttp(__DEV__, LAN_HTTP_FLAG),
-  );
-  await server.load();
-  const tokens = createMemoryTokenStore();
-  const deviceId = await getOrCreateDeviceId(kv, randomUUID);
   const outbox = new OutboxRepository(db, () => new Date());
-  const engine = new SyncEngine({
-    pass: { outbox, kv, deviceId, now: () => new Date(), transport: lazyTransport(server, tokens) },
-    hasSession: () => tokens.getAccessToken() !== undefined,
-    hasServer: () => server.baseUrl() !== null,
+  const { server, credentials } = await loadIdentity(kv, outbox);
+  const deviceId = await getOrCreateDeviceId(kv, randomUUID);
+  const {
+    auth,
+    credentials: tokens,
+    requests,
+  } = await createAuth({
+    randomBytes: getRandomBytes,
+    now: Date.now,
+    credentials,
+    kv,
+    db,
+    server,
+    deviceId,
+    appVersion: appManifest.version,
+  });
+  const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
+  const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
+  return { kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
+}
+
+async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
+  const credentials = new CredentialStore(nativeSecrets);
+  const server = new ServerSettings(kv, BUILD_API_BASE_URL, {
+    credentials,
+    outbox,
+    allowCleartext: allowsPrivateLanHttp(__DEV__, LAN_HTTP_FLAG),
+  });
+  await server.load();
+  await credentials.load((sessionId) => readEndedSession(kv, sessionId), server.baseUrl());
+  return { credentials, server };
+}
+
+function createEngine(
+  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen"> & { requests: SessionRequests },
+): SyncEngine {
+  const { kv, outbox, server, deviceId, tokens, requests } = deps;
+  return new SyncEngine({
+    pass: {
+      outbox,
+      kv,
+      deviceId,
+      now: () => new Date(),
+      transport: lazyTransport(tokens, requests),
+    },
+    hasSession: () => tokens.hasSyncSession(),
+    hasPendingFinalUpload: tokens.hasPendingFinalUpload,
+    hasServer: () => (tokens.hasSyncSession() ? tokens.getOrigin() : server.baseUrl()) !== null,
     random: Math.random,
     schedule: (callback, delayMs) => {
       const handle = setTimeout(callback, delayMs);
@@ -66,6 +110,4 @@ export async function createServices(): Promise<AppServices> {
     },
     report: logEngineError,
   });
-  const shiftOpen = createShiftOpen({ db, engine, server, tokens });
-  return { kv, outbox, engine, tokens, server, deviceId, shiftOpen };
 }
