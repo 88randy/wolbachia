@@ -23,23 +23,24 @@ export function useServerForm(): ServerForm {
     if (result.ok) engine.notifyConditionsChanged();
   };
   const reset = async () => {
-    await server.clear();
+    const result = await server.clear();
+    if (!result.ok) {
+      setFeedback(result.problem);
+      return;
+    }
     setText("");
     setFeedback("saved");
     engine.notifyConditionsChanged();
   };
 
+  const reportStorageFailure = () => {
+    setFeedback("storageFailed");
+  };
   return {
     text,
     setText,
     feedback,
-    save: () =>
-      void save().catch(() => {
-        setFeedback("storageFailed");
-      }),
-    reset: () =>
-      void reset().catch(() => {
-        setFeedback("storageFailed");
-      }),
+    save: () => void save().catch(reportStorageFailure),
+    reset: () => void reset().catch(reportStorageFailure),
   };
 }

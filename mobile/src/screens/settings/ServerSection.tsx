@@ -11,8 +11,8 @@ import { useServerForm } from "./use-server-form.ts";
 const styles = StyleSheet.create({ section: { gap: spacing[1] } });
 
 /**
- * The API address. A person can point the phone at another server (for example a developer's PC on
- * the same Wi-Fi) without a new build. Only a valid address is saved.
+ * Initial provisioning only. A bound phone refuses address changes through the domain guard;
+ * Settings keeps the localized reason available for someone who needs their supervisor.
  */
 export function ServerSection() {
   const t = useT();

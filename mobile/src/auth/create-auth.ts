@@ -8,12 +8,11 @@ import type { KvStore } from "../db/kv-store.ts";
 import type { OutboxRepository } from "../outbox/outbox-repository.ts";
 import { AuthController } from "./auth-controller.ts";
 import { loginOnline, refreshOnline } from "./auth-api.ts";
-import { CredentialStore } from "./credential-store.ts";
-import { nativeSecrets } from "./native-secrets.ts";
+import type { CredentialStore } from "./credential-store.ts";
 import { SessionRequests } from "./session-requests.ts";
-import { readEndedSession } from "./session-journal.ts";
 
 interface CreateAuthDeps {
+  readonly credentials: CredentialStore;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly server: ServerSettings;
@@ -23,8 +22,7 @@ interface CreateAuthDeps {
 
 /** Native composition only; policy and persistence are independently testable. */
 export async function createAuth(deps: CreateAuthDeps) {
-  const credentials = new CredentialStore(nativeSecrets);
-  await credentials.load((sessionId) => readEndedSession(deps.kv, sessionId));
+  const { credentials } = deps;
   const client = () =>
     createMobileApiClient({ baseUrl: deps.server.baseUrl() ?? "", tokens: credentials });
   const anonymous = () => createMobileApiClient({ baseUrl: deps.server.baseUrl() ?? "" });

@@ -2,6 +2,9 @@ import { randomUUID } from "expo-crypto";
 
 import { createMobileApiClient } from "../api/create-api-client.ts";
 import { createAuth } from "../auth/create-auth.ts";
+import { CredentialStore } from "../auth/credential-store.ts";
+import { nativeSecrets } from "../auth/native-secrets.ts";
+import { readEndedSession } from "../auth/session-journal.ts";
 import type { AuthController } from "../auth/auth-controller.ts";
 import type { SessionRequests } from "../auth/session-requests.ts";
 import appManifest from "../../package.json";
@@ -27,7 +30,7 @@ export interface AppServices {
   readonly deviceId: string;
 }
 
-// The address can change in Settings, so the client is built per request (cheap) from the current one.
+// Initial provisioning selects the identity-bound address before authenticated work begins.
 function lazyTransport(
   server: ServerSettings,
   tokens: TokenStore,
@@ -49,15 +52,15 @@ function logEngineError(error: unknown): void {
 export async function createServices(): Promise<AppServices> {
   const db = await openDatabase();
   const kv = new KvStore(db);
-  const server = new ServerSettings(kv, BUILD_API_BASE_URL, __DEV__);
-  await server.load();
-  const deviceId = await getOrCreateDeviceId(kv, randomUUID);
   const outbox = new OutboxRepository(db, () => new Date());
+  const { server, credentials } = await loadIdentity(kv, outbox);
+  const deviceId = await getOrCreateDeviceId(kv, randomUUID);
   const {
     auth,
     credentials: tokens,
     requests,
   } = await createAuth({
+    credentials,
     kv,
     outbox,
     server,
@@ -66,6 +69,18 @@ export async function createServices(): Promise<AppServices> {
   });
   const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
   return { kv, outbox, engine, tokens, server, deviceId, auth };
+}
+
+async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
+  const credentials = new CredentialStore(nativeSecrets);
+  await credentials.load((sessionId) => readEndedSession(kv, sessionId));
+  const server = new ServerSettings(kv, BUILD_API_BASE_URL, {
+    credentials,
+    outbox,
+    allowCleartext: __DEV__,
+  });
+  await server.load();
+  return { credentials, server };
 }
 
 function createEngine(

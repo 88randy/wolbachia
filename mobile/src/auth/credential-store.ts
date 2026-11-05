@@ -47,7 +47,8 @@ export class CredentialStore {
   #isUnlocked = false;
   #gate = 0;
   #tail: Promise<unknown> = Promise.resolve();
-  #lastOperation: Promise<unknown> = Promise.resolve();
+  #pendingEnd: { sessionId: string | null; journal: (() => Promise<void>) | undefined } | null =
+    null;
 
   constructor(storage: SecretStorage) {
     this.#storage = storage;
@@ -117,15 +118,8 @@ export class CredentialStore {
       this.#gate += 1;
       this.#isUnlocked = false;
     }
-    const pending = this.runExclusive(async (transaction) => {
-      try {
-        await journal?.();
-      } finally {
-        const current = transaction.read();
-        if (current.sessionId === sessionId && current.status === "ended")
-          await transaction.write(current);
-      }
-    });
+    this.#pendingEnd = { sessionId, journal: journal ?? this.#pendingEnd?.journal };
+    const pending = this.runExclusive(() => this.#persistEnd());
     // Register persistence before notifying sync; its first POST must await this command.
     this.#emit();
     return pending;
@@ -152,7 +146,6 @@ export class CredentialStore {
     operation: (transaction: CredentialTransaction) => Result | Promise<Result>,
   ): Promise<Result> {
     const pending = this.#tail.then(() => operation(this.#transaction));
-    this.#lastOperation = pending;
     // The caller receives errors. One failed command must not poison future cleanup commands.
     this.#tail = pending.then(
       () => undefined,
@@ -161,8 +154,22 @@ export class CredentialStore {
     return pending;
   }
 
-  whenSettled(): Promise<void> {
-    return this.#lastOperation.then(() => undefined);
+  async whenSettled(): Promise<void> {
+    // This barrier always settles successfully; individual commands still reject to their caller.
+    await this.#tail;
+    if (this.#pendingEnd !== null) await this.runExclusive(() => this.#persistEnd());
+  }
+
+  async #persistEnd(): Promise<void> {
+    const end = this.#pendingEnd;
+    if (end === null) return;
+    try {
+      await end.journal?.();
+    } finally {
+      if (this.#credentials.sessionId === end.sessionId && this.#credentials.status === "ended")
+        await this.#write(this.#credentials);
+    }
+    if (this.#pendingEnd === end) this.#pendingEnd = null;
   }
 
   update(change: (current: Credentials) => Credentials): Promise<void> {

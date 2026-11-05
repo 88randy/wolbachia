@@ -97,6 +97,8 @@ export const mobile = {
   "mobile.settings.serverHint": "Dirección de la API, por ejemplo https://api.ejemplo.com",
   "mobile.settings.serverSave": "Guardar dirección",
   "mobile.settings.serverReset": "Usar la del build",
+  "mobile.settings.serverIdentityBound":
+    "El servidor forma parte de la identidad de este tel\u00e9fono y no se puede cambiar aqu\u00ed. Llama a tu supervisor.",
   "mobile.settings.serverSaved": "Dirección guardada",
   "mobile.settings.serverInvalid":
     "La dirección no es válida. Escríbela completa, sin ruta, por ejemplo https://api.ejemplo.com",

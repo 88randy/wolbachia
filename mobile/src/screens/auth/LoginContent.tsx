@@ -7,7 +7,7 @@ import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Button } from "../../ui/Button.tsx";
-import { ServerSection } from "../settings/ServerSection.tsx";
+import { LoginServerSetup } from "./LoginServerSetup.tsx";
 import { loginNotice } from "./auth-notice-presentation.ts";
 import { AuthNotice } from "./AuthNotice.tsx";
 import { LoginFields } from "./LoginFields.tsx";
@@ -33,8 +33,7 @@ export function LoginContent({ snapshot, form }: LoginContentProps) {
         hasError={snapshot.notice?.key === "mobile.login.wrongCredentials"}
       />
       <Button variant="text" label={t("mobile.login.forgotPassword")} onPress={form.openForgot} />
-      <Button variant="text" label={t("mobile.login.serverSettings")} onPress={form.toggleServer} />
-      {form.isServerOpen ? <ServerSection /> : null}
+      <LoginServerSetup form={form} />
       <View style={styles.spacer} />
       <AppText variant="caption" style={styles.centered}>
         {t("mobile.login.version", { version: appManifest.version })}

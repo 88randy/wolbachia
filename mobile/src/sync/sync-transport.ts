@@ -15,6 +15,7 @@ export type SyncBatchRequest = Schemas["SyncBatchRequest"];
 export type SyncResponse = Schemas["SyncResponse"];
 
 interface SyncCompletion {
+  readonly needsFinalUpload?: boolean;
   readonly completeSession?: () => Promise<void>;
 }
 
@@ -79,8 +80,12 @@ function classifySyncAnswer(
   wrapped: SyncAnswer<Awaited<ReturnType<typeof postSync>>>,
 ): SyncCallResult {
   const result = wrapped.answer;
-  const completion =
-    wrapped.completeSession === undefined ? {} : { completeSession: wrapped.completeSession };
+  const completion = {
+    ...(wrapped.completeSession === undefined ? {} : { completeSession: wrapped.completeSession }),
+    ...(wrapped.needsFinalUpload === undefined
+      ? {}
+      : { needsFinalUpload: wrapped.needsFinalUpload }),
+  };
   if (result.response.ok && isSyncResponse(result.data)) {
     return { ok: true, response: result.data, ...completion };
   }

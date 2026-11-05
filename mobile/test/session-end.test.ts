@@ -504,3 +504,65 @@ void it("the ended journal precedes interrupted-password exhaustion on restart a
   assert.deepEqual(restarted.getSnapshot().pair, pair);
   assert.equal((await h.outbox.countByStatus()).pending, 1);
 });
+
+void it("an active POST's late 200 cannot consume final-upload provenance after rules revoke the session", async () => {
+  for (const batchSize of [1, 2]) {
+    const h = await harness();
+    const second = makeEnvelope();
+    await h.outbox.enqueue(second);
+    const entered = deferred<undefined>();
+    const delayed = deferred<Response>();
+    const requests: Request[] = [];
+    const session = new SessionRequests({
+      credentials: h.credentials,
+      isOnline: () => true,
+      endSession: () => h.auth.endSession(),
+      refresh: () => {
+        throw new Error("Revoked sessions never refresh.");
+      },
+    });
+    const client = createMobileApiClient({
+      baseUrl: "https://example.invalid",
+      tokens: h.credentials,
+      fetch: (request) => {
+        requests.push(request);
+        if (requests.length === 1) {
+          entered.resolve(undefined);
+          return delayed.promise;
+        }
+        const result = answer(batchSize === 1 ? [accepted(second.id)] : []);
+        assert.ok(result.ok);
+        return Promise.resolve(jsonResponse(result.response, 200, true));
+      },
+    });
+    const running = runSyncPass(
+      {
+        ...h,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+        transport: createSyncTransport(client, session),
+      },
+      { batchSize },
+    );
+    await entered.promise;
+    await session.run(() =>
+      Promise.resolve({
+        response: jsonResponse({ code: "session_revoked", detail: "" }, 401),
+        error: { code: "session_revoked", detail: "" },
+      }),
+    );
+    assert.equal(h.credentials.getSnapshot().status, "ended");
+    const firstResult = answer(
+      batchSize === 1 ? [accepted(h.event.id)] : [accepted(h.event.id), accepted(second.id)],
+    );
+    assert.ok(firstResult.ok);
+    delayed.resolve(jsonResponse(firstResult.response));
+    await running;
+    assert.equal(requests.length, 2);
+    const finalBody: unknown = await requests[1]?.clone().json();
+    assert.ok(typeof finalBody === "object" && finalBody !== null && "events" in finalBody);
+    assert.deepEqual(finalBody.events, batchSize === 1 ? [second] : []);
+    assert.equal((await h.outbox.countByStatus()).sent, 2);
+    assert.equal(h.credentials.getSnapshot().pair, null);
+  }
+});

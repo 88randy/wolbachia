@@ -159,3 +159,60 @@ void it("handles a session-ended error on the retry, but ignores a stale respons
   await pending;
   assert.equal(credentials.getAccessToken(), replacement.access);
 });
+
+void it("a transient secure-write rejection does not poison later sync; pending end is persisted before the POST", async () => {
+  for (const transition of ["ordinary", "end"]) {
+    const h = await makeCredentials();
+    let shouldFail = true;
+    const credentials = new CredentialStore({
+      ...h.secrets,
+      set: async (key, value) => {
+        if (shouldFail) {
+          shouldFail = false;
+          throw new Error("Transient secure-write failure.");
+        }
+        await h.secrets.set(key, value);
+      },
+    });
+    await credentials.load();
+    const session = new SessionRequests({
+      credentials,
+      isOnline: () => true,
+      endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
+      refresh: () => {
+        throw new Error("No refresh in this regression.");
+      },
+    });
+    if (transition === "ordinary")
+      await assert.rejects(credentials.update((current) => ({ ...current, pinAttempts: 1 })));
+    else {
+      await assert.rejects(
+        session.run(() =>
+          Promise.resolve({
+            response: new Response(null, { status: 401 }),
+            error: { code: "session_revoked", detail: "" },
+          }),
+        ),
+      );
+      assert.equal(credentials.getSnapshot().status, "ended");
+    }
+    let posts = 0;
+    const result = await session.runSync(async (access) => {
+      posts += 1;
+      assert.equal(access, h.credentials.getSnapshot().pair?.access);
+      if (transition === "end") {
+        const restarted = new CredentialStore(h.secrets);
+        await restarted.load();
+        assert.equal(restarted.getSnapshot().status, "ended");
+        assert.equal(restarted.getAccessToken(), undefined);
+      }
+      return {
+        response: new Response(null, { status: 200, headers: { "X-Session-Revoked": "true" } }),
+      };
+    });
+    assert.equal(posts, 1);
+    assert.ok(result.completeSession);
+    await result.completeSession();
+    assert.equal(credentials.getSnapshot().pair, null);
+  }
+});

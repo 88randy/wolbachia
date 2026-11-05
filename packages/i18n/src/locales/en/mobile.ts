@@ -95,6 +95,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.settings.serverHint": "API address, for example https://api.example.com",
   "mobile.settings.serverSave": "Save address",
   "mobile.settings.serverReset": "Use the build's",
+  "mobile.settings.serverIdentityBound":
+    "The server is part of this phone's identity and cannot be changed here. Call your supervisor.",
   "mobile.settings.serverSaved": "Address saved",
   "mobile.settings.serverInvalid":
     "The address is not valid. Write it in full, without a path, for example https://api.example.com",

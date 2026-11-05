@@ -16,6 +16,8 @@ export interface SyncAnswer<Answer> {
   readonly answer: Answer;
   /** Sync owns this callback: apply/settle its batch durably BEFORE calling it. */
   readonly completeSession?: () => Promise<void>;
+  /** An active POST completed after end: apply it normally, then make an actual final POST. */
+  readonly needsFinalUpload?: boolean;
 }
 
 export class RemoteSessionEnded extends Error {}
@@ -62,18 +64,18 @@ export class SessionRequests {
     call: (access: string) => Promise<Answer>,
   ): Promise<SyncAnswer<Answer>> {
     await this.#deps.credentials.whenSettled();
-    if (this.#ending?.sessionId === this.#deps.credentials.getSnapshot().sessionId)
-      await this.#ending.promise;
     const session = this.#deps.credentials.getSnapshot();
     const pair = session.pair;
     if (pair === null) throw new RemoteSessionEnded();
     if (session.status !== "active") return this.#runFinal(call, session);
+    let sent = session;
+    const send = () => {
+      sent = this.#deps.credentials.getSnapshot();
+      return call(sent.pair?.access ?? pair.access);
+    };
     try {
-      const answer = await this.#runActive(
-        () => call(this.#deps.credentials.getAccessToken() ?? pair.access),
-        true,
-      );
-      return this.#syncAnswer(answer, session);
+      const answer = await this.#runActive(send, true);
+      return this.#syncAnswer(answer, sent);
     } catch (error) {
       if (!(error instanceof RemoteSessionEnded) || !this.#belongsTo(session)) throw error;
       return this.#runFinal(call, session);
@@ -112,13 +114,16 @@ export class SessionRequests {
     if (!this.#belongsTo(session) || !this.#deps.isOnline()) throw new RemoteSessionEnded();
     const current = this.#deps.credentials.getSnapshot();
     if (current.pair === null) throw new RemoteSessionEnded();
-    return this.#syncAnswer(await call(current.pair.access), session);
+    return this.#syncAnswer(await call(current.pair.access), current);
   }
 
   #syncAnswer<Answer extends ApiAnswer>(answer: Answer, session: Credentials): SyncAnswer<Answer> {
     const current = this.#deps.credentials.getSnapshot();
     if (!this.#belongsTo(session) || current.status !== "ended" || !isDefinitiveSyncAnswer(answer))
       return { answer };
+    // Provenance belongs to this POST, never to the state at response time.
+    if (session.status !== "ended" && !isFinalUpload(answer))
+      return { answer, needsFinalUpload: true };
     return {
       answer,
       completeSession: () => this.#deps.credentials.finishEndedSession(session.sessionId),
@@ -138,7 +143,9 @@ export class SessionRequests {
   #beginEnd(sessionId: string | null): Promise<void> {
     if (this.#deps.credentials.getSnapshot().sessionId !== sessionId) return Promise.resolve();
     if (this.#ending?.sessionId === sessionId) return this.#ending.promise;
-    const promise = this.#deps.endSession();
+    const promise = this.#deps.endSession().finally(() => {
+      if (this.#ending?.promise === promise) this.#ending = null;
+    });
     this.#ending = { sessionId, promise };
     return promise;
   }

@@ -2,12 +2,14 @@ import { useState, useSyncExternalStore } from "react";
 
 import { useServices } from "../app/services-context.ts";
 import { useAuthAction } from "./use-auth-action.ts";
+import { useServerProvisioning } from "./use-server-provisioning.ts";
 
 export function useLoginForm() {
   const { auth, tokens } = useServices();
   const isFinalUploadPending = useSyncExternalStore(tokens.subscribe, tokens.hasSyncSession);
   const fields = useLoginFields(auth.getSnapshot().profile?.username ?? "");
   const panels = useLoginPanels();
+  const canConfigureServer = useServerProvisioning();
   const action = useAuthAction();
   const submit = () => {
     action.run(async () => {
@@ -18,7 +20,14 @@ export function useLoginForm() {
       }
     });
   };
-  return { ...fields, ...panels, ...action, isBusy: action.isBusy || isFinalUploadPending, submit };
+  return {
+    ...fields,
+    ...panels,
+    ...action,
+    canConfigureServer,
+    isBusy: action.isBusy || isFinalUploadPending,
+    submit,
+  };
 }
 
 function useLoginFields(initialUsername: string) {

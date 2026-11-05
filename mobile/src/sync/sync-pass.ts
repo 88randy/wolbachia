@@ -213,13 +213,20 @@ async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): P
   const call = await deps.transport(request);
   if (!call.ok) {
     const step = await handleFailure(context, batch, call.failure);
-    return call.completeSession === undefined ? step : finishSession(call.completeSession);
+    if (call.completeSession !== undefined) return finishSession(call.completeSession);
+    if (
+      call.needsFinalUpload === true &&
+      call.failure.kind === "http" &&
+      [401, 403].includes(call.failure.status)
+    )
+      return CONTINUE;
+    return step;
   }
   await applyAnswer(context, batch, call.response);
   if (call.completeSession !== undefined) return finishSession(call.completeSession);
   const missing = missingResultOutcome(batch, call.response);
   if (missing !== null) return stop(missing);
-  return { next: "again", pull: call.response.changes.has_more };
+  return { next: "again", pull: call.response.changes.has_more || call.needsFinalUpload === true };
 }
 
 async function finishSession(complete: () => Promise<void>): Promise<Step> {
