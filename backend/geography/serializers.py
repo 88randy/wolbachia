@@ -157,6 +157,8 @@ class QuadrantSerializer(OrgScopedModelSerializer):
 
     @extend_schema_field(QuadrantVersionSerializer(allow_null=True))
     def get_current_version(self, quadrant: Quadrant) -> dict[str, Any] | None:
+        if written_version := self.context.get("written_version"):
+            return dict(QuadrantVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
         version = (
             quadrant_version_at(quadrant, captured_at)
@@ -176,6 +178,8 @@ class BlockSerializer(OrgScopedModelSerializer):
 
     @extend_schema_field(BlockVersionSerializer(allow_null=True))
     def get_current_version(self, block: Block) -> dict[str, Any] | None:
+        if written_version := self.context.get("written_version"):
+            return dict(BlockVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
         version = (
             block_version_at(block, captured_at)
@@ -195,6 +199,8 @@ class SamplingPointSerializer(OrgScopedModelSerializer):
 
     @extend_schema_field(PointVersionSerializer(allow_null=True))
     def get_current_version(self, point: SamplingPoint) -> dict[str, Any] | None:
+        if written_version := self.context.get("written_version"):
+            return dict(PointVersionSerializer(written_version).data)
         captured_at = self.context.get("captured_at")
         version = (
             point_version_at(point, captured_at)

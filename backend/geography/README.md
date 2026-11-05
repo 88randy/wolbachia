@@ -119,3 +119,40 @@ TypeScript. GitHub issue lookup returned HTTP 401; supplied full issue is the sp
   hand-edited. No installed JavaScript tool or client build is claimed.
 - git diff --check: passed. GitHub issue lookup returned HTTP 401; the owner's full
   supplied issue and decisions were used, not a claimed current GitHub inventory.
+
+## Adversarial round 1: write response snapshots
+
+A successful write returns its own immutable version and warnings, even when a
+newer publication commits before response serialization. Creation services now
+return (identity, initial_version), or (point, initial_version, spacing_warnings).
+Write views pass that exact version through serializer context; read views retain
+current/temporal resolution. Point publication uses the returned PointVersion and
+its own warnings instead of fetching the latest version after releasing locks.
+
+Audit: point publish, point create, block create and quadrant create needed this
+pinning. Quadrant version publish and block version publish already serialize the
+returned immutable row (quadrant resolutions are tied to that version's id) and
+retain their existing behavior. No database schema, endpoint shape, authorization,
+lock order or dependency change accompanies this correction.
+
+Criterion 2/4 and the reported regression map to:
+- test_point_publish_response_retains_its_version_and_warnings_after_interleaving:
+  DB-free; observed returning version 3 instead of 2 before the fix, then passing.
+- test_create_response_retains_initial_version_after_interleaving: three DB-free
+  cases, one each for quadrant/block/point creation, with a newer version present
+  before serialization and the initial response still pinned to version 1.
+- test_point_publish_http_response_stays_on_its_commit_after_another_publication:
+  PostgreSQL wiring with actual commits; the second publication runs deterministically
+  between the first service's commit and its view serialization, without sleeps.
+  It checks that the original response keeps version 2 and its warning while version 3
+  has a different location and no warning. transaction=True keeps this regression
+  out of pytest-django's outer transaction so the first publication releases its locks.
+
+The PostgreSQL regression is prepared for the orchestrator; it has not run here.
+
+Round 1 local checks: ruff 0.8.4 check backend and format --check on the four changed
+Python files passed; mypy . passed (147 files). The DB-free geography/#99/rule-contract
+selection passed 31 cases, with 39 database cases deselected. Geography alone has
+13 passing DB-free cases and 14 PostgreSQL cases pending; all 27 collect. The live
+schema comparison still passes, so the public schema/client shape is unchanged.
+No new assumptions, dependencies, commits or pushes are part of this round.

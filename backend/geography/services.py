@@ -162,8 +162,8 @@ def _code(value: str) -> str:
     return code
 
 
-def create_quadrant(center: Center, change: QuadrantCreation) -> Quadrant:
-    """Create a fixed identity and initial geometry in one transaction."""
+def create_quadrant(center: Center, change: QuadrantCreation) -> tuple[Quadrant, QuadrantVersion]:
+    """Create and return the fixed identity and its exact initial geometry version."""
     geometry = _geometry(change.geometry)
     with _organization_write(change.membership) as member:
         grant = effective_scope(member)
@@ -185,7 +185,7 @@ def create_quadrant(center: Center, change: QuadrantCreation) -> Quadrant:
         if Quadrant.objects.filter(organization=member.organization, code=quadrant.code).exists():
             raise FieldValidationError("code", "duplicate_code")
         quadrant.save()
-        QuadrantVersion.objects.create(
+        version = QuadrantVersion.objects.create(
             organization=member.organization,
             quadrant=quadrant,
             revision=1,
@@ -193,7 +193,7 @@ def create_quadrant(center: Center, change: QuadrantCreation) -> Quadrant:
             effective_from=timezone.now(),
             created_by=member.user,
         )
-        return quadrant
+        return quadrant, version
 
 
 def _validate_resolutions(
@@ -302,8 +302,8 @@ def _check_block_geometry(quadrant: Quadrant, geometry: dict[str, Any]) -> None:
         raise FieldValidationError("geometry", "block_outside_quadrant")
 
 
-def create_block(quadrant: Quadrant, change: BlockCreation) -> Block:
-    """Create a block and its first published polygon under quadrant serialization."""
+def create_block(quadrant: Quadrant, change: BlockCreation) -> tuple[Block, BlockVersion]:
+    """Create and return the block and its exact first published polygon."""
     geometry = _geometry(change.geometry)
     with _quadrant_write(quadrant, change.membership, QUADRANT_PUBLISH) as (locked, member):
         _check_block_geometry(locked, geometry)
@@ -313,7 +313,7 @@ def create_block(quadrant: Quadrant, change: BlockCreation) -> Block:
         block = Block.objects.create(
             organization=member.organization, quadrant=locked, code=code, created_by=member.user
         )
-        BlockVersion.objects.create(
+        version = BlockVersion.objects.create(
             organization=member.organization,
             block=block,
             geometry=geometry,
@@ -321,7 +321,7 @@ def create_block(quadrant: Quadrant, change: BlockCreation) -> Block:
             effective_from=timezone.now(),
             created_by=member.user,
         )
-        return block
+        return block, version
 
 
 def publish_block(block: Block, change: BlockPublication) -> BlockVersion:
@@ -393,8 +393,8 @@ def spacing_warnings(
 
 def create_sampling_point(
     block: Block, change: PointCreation
-) -> tuple[SamplingPoint, list[dict[str, Any]]]:
-    """Reserve the fixed organization/code forever and append its initial location."""
+) -> tuple[SamplingPoint, PointVersion, list[dict[str, Any]]]:
+    """Reserve the fixed code; return identity, initial version and its spacing warnings."""
     location = _location(change.location)
     with _quadrant_write(block.quadrant, change.membership, SAMPLING_POINT_CREATE) as (
         _quadrant,
@@ -410,7 +410,7 @@ def create_sampling_point(
         point = SamplingPoint.objects.create(
             organization=member.organization, block=block, code=code, created_by=member.user
         )
-        PointVersion.objects.create(
+        version = PointVersion.objects.create(
             organization=member.organization,
             point=point,
             location=location,
@@ -418,7 +418,7 @@ def create_sampling_point(
             effective_from=timezone.now(),
             created_by=member.user,
         )
-        return point, warnings
+        return point, version, warnings
 
 
 def publish_point(

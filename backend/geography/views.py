@@ -131,11 +131,13 @@ class QuadrantViewSet(GeographyViewSet):
         payload = QuadrantCreateSerializer(data=request.data, context=self.get_serializer_context())
         payload.is_valid(raise_exception=True)
         fields = payload.validated_data
-        quadrant = create_quadrant(
+        quadrant, version = create_quadrant(
             fields["center"],
             QuadrantCreation(self.membership, fields["code"], fields["geometry"]),
         )
-        return Response(QuadrantSerializer(quadrant).data, status=201)
+        return Response(
+            QuadrantSerializer(quadrant, context={"written_version": version}).data, status=201
+        )
 
     @extend_schema(responses=QuadrantVersionSerializer(many=True), filters=False)
     @action(detail=True, methods=["get"])
@@ -195,11 +197,13 @@ class BlockViewSet(GeographyViewSet):
         payload = BlockCreateSerializer(data=request.data, context=self.get_serializer_context())
         payload.is_valid(raise_exception=True)
         fields = payload.validated_data
-        block = create_block(
+        block, version = create_block(
             fields["quadrant"],
             BlockCreation(self.membership, fields["code"], fields["geometry"]),
         )
-        return Response(BlockSerializer(block).data, status=201)
+        return Response(
+            BlockSerializer(block, context={"written_version": version}).data, status=201
+        )
 
     @extend_schema(responses=BlockVersionSerializer(many=True), filters=False)
     @action(detail=True, methods=["get"])
@@ -271,11 +275,14 @@ class SamplingPointViewSet(GeographyViewSet):
         )
         payload.is_valid(raise_exception=True)
         fields = payload.validated_data
-        point, warnings = create_sampling_point(
+        point, version, warnings = create_sampling_point(
             fields["block"], PointCreation(self.membership, fields["code"], fields["location"])
         )
         return Response(
-            PointWriteSerializer({"point": point, "spacing_warnings": warnings}).data, status=201
+            PointWriteSerializer(
+                {"point": point, "spacing_warnings": warnings}, context={"written_version": version}
+            ).data,
+            status=201,
         )
 
     @extend_schema(responses=PointVersionSerializer(many=True), filters=False)
@@ -292,9 +299,13 @@ class SamplingPointViewSet(GeographyViewSet):
         payload = PointPublicationSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         fields = payload.validated_data
-        _version, warnings = publish_point(
+        version, warnings = publish_point(
             point, PointChange(self.membership, fields["expected_revision"], fields["location"])
         )
         return Response(
-            PointWriteSerializer({"point": point, "spacing_warnings": warnings}).data, status=201
+            PointWriteSerializer(
+                {"point": version.point, "spacing_warnings": warnings},
+                context={"written_version": version},
+            ).data,
+            status=201,
         )

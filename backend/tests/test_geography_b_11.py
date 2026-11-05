@@ -103,8 +103,8 @@ def populated_geography():
 
     membership, quadrant = geography_setup()
     initial = publish(quadrant, membership, polygon())
-    block = create_block(quadrant, BlockCreation(membership, "B-108", polygon()))
-    point, _warnings = create_sampling_point(
+    block, _block_version = create_block(quadrant, BlockCreation(membership, "B-108", polygon()))
+    point, _point_version, _warnings = create_sampling_point(
         block, PointCreation(membership, "P-108", [-99.991, 20.005])
     )
     return membership, quadrant, initial, block, point
@@ -118,7 +118,7 @@ def test_outside_points_require_exhaustive_evidenced_decisions_and_keep_history(
     from geography.services import PointCreation, PointResolution, create_sampling_point
 
     membership, quadrant, initial, block, point = populated_geography()
-    second, _warnings = create_sampling_point(
+    second, _point_version, _warnings = create_sampling_point(
         block, PointCreation(membership, "P-109", [-99.992, 20.005])
     )
     reduced = polygon(east=-99.995)
@@ -211,16 +211,18 @@ def test_fixed_codes_are_unique_per_organization_across_blocks():
     from geography.services import BlockCreation, PointCreation, create_block, create_sampling_point
 
     membership, quadrant, _initial, _block, point = populated_geography()
-    second_block = create_block(quadrant, BlockCreation(membership, "B-other", polygon()))
+    second_block, _block_version = create_block(
+        quadrant, BlockCreation(membership, "B-other", polygon())
+    )
     with pytest.raises(FieldValidationError):
         create_sampling_point(
             second_block, PointCreation(membership, point.code, [-99.999, 20.001])
         )
     other_member, other_quadrant, _version, other_block, _other_point = populated_geography()
-    independent, _warnings = create_sampling_point(
+    independent, _point_version, _warnings = create_sampling_point(
         other_block, PointCreation(other_member, "P-shared", [-99.999, 20.001])
     )
-    local, _warnings = create_sampling_point(
+    local, _point_version, _warnings = create_sampling_point(
         second_block, PointCreation(membership, independent.code, [-99.999, 20.001])
     )
     assert local.organization_id != independent.organization_id
@@ -237,7 +239,9 @@ def test_spacing_reads_the_current_rule_at_check_time():
     membership, _quadrant, _initial, block, _point = populated_geography()
     seed_default_rule_parameters(membership.organization)
     close = [-99.991, 20.005 + degrees(30 / EARTH_RADIUS_M)]
-    other, warnings = create_sampling_point(block, PointCreation(membership, "P-close", close))
+    other, _point_version, warnings = create_sampling_point(
+        block, PointCreation(membership, "P-close", close)
+    )
     assert warnings[0]["minimum_m"] == 50
     parameter = RuleParameter.objects.get(
         organization=membership.organization, key="min_distance_same_block_m"
@@ -419,7 +423,7 @@ def test_spacing_checks_just_below_equal_and_above_each_configured_boundary(mini
     from rules.models import RuleParameter, RuleParameterVersion, Unit, ValueType
 
     membership, quadrant, initial, block, _point = populated_geography()
-    reference, _warnings = create_sampling_point(
+    reference, _point_version, _warnings = create_sampling_point(
         block, PointCreation(membership, "P-boundary", [-99.999, 20.001])
     )
     parameter = RuleParameter.objects.create(
@@ -462,10 +466,208 @@ def test_invalid_resolution_decisions_leave_publication_untouched(invalid_case):
     elif invalid_case == "duplicate":
         resolutions.append(decision)
     else:
-        inside, _warnings = create_sampling_point(
+        inside, _point_version, _warnings = create_sampling_point(
             block, PointCreation(membership, "P-inside", [-99.999, 20.001])
         )
         resolutions.append(PointResolution(inside.pk, "keep", "Unrelated point evidence"))
     with pytest.raises(FieldValidationError):
         publish(quadrant, membership, polygon(east=-99.995), 1, resolutions)
     assert QuadrantVersion.objects.filter(quadrant=quadrant).count() == 1
+
+
+def test_point_publish_response_retains_its_version_and_warnings_after_interleaving(monkeypatch):
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from geography.models import PointVersion, SamplingPoint
+    from geography.views import SamplingPointViewSet
+
+    instant = datetime(2026, 11, 5, tzinfo=UTC)
+    point = SamplingPoint(
+        organization_id=uuid4(), block_id=uuid4(), code="P-race", created_at=instant
+    )
+    versions = [
+        PointVersion(
+            point=point,
+            organization_id=point.organization_id,
+            version=1,
+            location=[-99.999, 20.001],
+            effective_from=instant,
+            created_at=instant,
+        )
+    ]
+    monkeypatch.setattr(
+        SamplingPoint,
+        "versions",
+        SimpleNamespace(order_by=lambda *fields: SimpleNamespace(first=lambda: versions[-1])),
+    )
+    own_warnings = [
+        {"code": "spacing_below_minimum", "point": uuid4(), "distance_m": 30, "minimum_m": 50}
+    ]
+
+    def publish_then_interleave(target, change):
+        own = PointVersion(
+            point=target,
+            organization_id=target.organization_id,
+            version=2,
+            location=change.location,
+            effective_from=instant,
+            created_at=instant,
+        )
+        versions.append(own)
+        # Simulate a second writer after the first transaction, before serialization.
+        # The latest relation now resolves version 3.
+        versions.append(
+            PointVersion(
+                point=target,
+                organization_id=target.organization_id,
+                version=3,
+                location=[-99.997, 20.003],
+                effective_from=instant,
+                created_at=instant,
+            )
+        )
+        return own, own_warnings
+
+    monkeypatch.setattr("geography.views.publish_point", publish_then_interleave)
+    view = SamplingPointViewSet()
+    view.request = SimpleNamespace(membership=object())
+    monkeypatch.setattr(view, "get_object", lambda: point)
+    response = view.publish_version(
+        SimpleNamespace(data={"expected_revision": 1, "location": [-99.998, 20.002]})
+    )
+
+    assert response.data["point"]["current_version"]["version"] == 2
+    assert response.data["point"]["current_version"]["location"] == [-99.998, 20.002]
+    assert response.data["spacing_warnings"][0]["distance_m"] == 30
+    assert versions[-1].version == 3
+
+
+@pytest.mark.parametrize("resource", ["quadrant", "block", "point"])
+def test_create_response_retains_initial_version_after_interleaving(monkeypatch, resource):
+    from datetime import UTC, datetime
+    from types import SimpleNamespace
+
+    from geography.models import (
+        Block,
+        BlockVersion,
+        PointVersion,
+        Quadrant,
+        QuadrantVersion,
+        SamplingPoint,
+    )
+    from geography.serializers import GeographyRelatedField
+    from geography.views import BlockViewSet, QuadrantViewSet, SamplingPointViewSet
+    from organizations.models import Center
+
+    instant = datetime(2026, 11, 5, tzinfo=UTC)
+    organization_id = uuid4()
+    center = Center(organization_id=organization_id, code="C-race")
+    quadrant = Quadrant(
+        organization_id=organization_id, center=center, code="Q-race", created_at=instant
+    )
+    block = Block(
+        organization_id=organization_id, quadrant=quadrant, code="B-race", created_at=instant
+    )
+    point = SamplingPoint(
+        organization_id=organization_id, block=block, code="P-race", created_at=instant
+    )
+    identity, parent, version_class, view_class = {
+        "quadrant": (quadrant, center, QuadrantVersion, QuadrantViewSet),
+        "block": (block, quadrant, BlockVersion, BlockViewSet),
+        "point": (point, block, PointVersion, SamplingPointViewSet),
+    }[resource]
+    location_or_geometry = "location" if resource == "point" else "geometry"
+    counter = "version" if resource == "point" else "revision"
+    own_geometry = [-99.998, 20.002] if resource == "point" else polygon()
+    later_geometry = [-99.997, 20.003] if resource == "point" else polygon(east=-99.989)
+    own = version_class(
+        organization_id=organization_id,
+        effective_from=instant,
+        created_at=instant,
+        **{resource: identity, counter: 1, location_or_geometry: own_geometry},
+    )
+    newer = version_class(
+        organization_id=organization_id,
+        effective_from=instant,
+        created_at=instant,
+        **{resource: identity, counter: 2, location_or_geometry: later_geometry},
+    )
+    latest = [own]
+    monkeypatch.setattr(
+        type(identity),
+        "versions",
+        SimpleNamespace(order_by=lambda *fields: SimpleNamespace(first=lambda: latest[-1])),
+    )
+    monkeypatch.setattr(QuadrantVersion, "point_resolutions", [])
+    monkeypatch.setattr(
+        GeographyRelatedField, "to_internal_value", lambda field, identifier: parent
+    )
+
+    def create_then_interleave(_parent, _change):
+        latest.append(newer)
+        return (identity, own, []) if resource == "point" else (identity, own)
+
+    service_name = "create_sampling_point" if resource == "point" else f"create_{resource}"
+    monkeypatch.setattr(f"geography.views.{service_name}", create_then_interleave)
+    parent_field = {"quadrant": "center", "block": "quadrant", "point": "block"}[resource]
+    request = SimpleNamespace(
+        data={
+            parent_field: str(parent.pk),
+            "code": identity.code,
+            location_or_geometry: own_geometry,
+        },
+        membership=object(),
+        query_params={},
+    )
+    view = view_class()
+    view.request = request
+    view.format_kwarg = None
+    response = view.create(request)
+
+    projection = response.data["point"] if resource == "point" else response.data
+    assert projection["current_version"]["id"] == str(own.pk)
+    assert projection["current_version"][location_or_geometry] == own_geometry
+    assert getattr(latest[-1], counter) == 2
+
+
+@pytest.mark.django_db(transaction=True)
+def test_point_publish_http_response_stays_on_its_commit_after_another_publication(
+    api_client, monkeypatch
+):
+    from geography.services import PointChange, PointCreation, create_sampling_point, publish_point
+
+    member, _quadrant, _initial, block, point = populated_geography()
+    neighbor, _neighbor_version, _warnings = create_sampling_point(
+        block, PointCreation(member, "P-neighbor", [-99.991, 20.005 + degrees(30 / EARTH_RADIUS_M)])
+    )
+    own_location = [-99.991, 20.005 + degrees(20 / EARTH_RADIUS_M)]
+    later_location = [-99.997, 20.005]
+    publications = []
+
+    def publish_then_interleave(target, change):
+        own = publish_point(target, change)
+        # Real commits are necessary: the newer writer runs after the first releases its locks.
+        assert not connection.in_atomic_block
+        publications.append(own)
+        publications.append(
+            publish_point(target, PointChange(member, own[0].version, later_location))
+        )
+        return own
+
+    monkeypatch.setattr("geography.views.publish_point", publish_then_interleave)
+    api_client.force_authenticate(member.user)
+    response = api_client.post(
+        f"/api/v1/sampling-points/{point.pk}/versions/",
+        {"expected_revision": 1, "location": own_location},
+        format="json",
+    )
+
+    own, newer = publications
+    assert response.status_code == 201
+    assert response.data["point"]["current_version"]["id"] == str(own[0].pk)
+    assert response.data["point"]["current_version"]["location"] == own_location
+    assert response.data["spacing_warnings"] == own[1]
+    assert own[1][0]["point"] == str(neighbor.pk)
+    assert newer[1] == []
+    assert point.versions.latest("version").pk == newer[0].pk
