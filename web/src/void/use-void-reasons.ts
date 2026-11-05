@@ -1,10 +1,14 @@
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useApiClient } from "../api/ApiClientProvider";
-import { VOID_REASONS_KEY, voidReasonsQueryOptions } from "./void-reasons-query";
+import { invalidateOrgScoped } from "../session/org-scoped-query";
+import { useSessionIdentity } from "../session/use-session-identity";
+import { VOID_REASONS_RESOURCE, voidReasonsQueryOptions } from "./void-reasons-query";
 
 /** The picker cannot submit unless an available catalog was loaded successfully. */
 export function useVoidReasons() {
-  const query = useQuery(voidReasonsQueryOptions(useApiClient()));
+  const client = useApiClient();
+  const identity = useSessionIdentity();
+  const query = useQuery(voidReasonsQueryOptions(client, identity));
   const queryClient = useQueryClient();
   const items = (query.data ?? []).filter((item) => item.is_active);
   return {
@@ -15,7 +19,7 @@ export function useVoidReasons() {
       void query.refetch();
     },
     refreshCatalog: () => {
-      void queryClient.invalidateQueries({ queryKey: VOID_REASONS_KEY });
+      void invalidateOrgScoped(queryClient, VOID_REASONS_RESOURCE);
     },
   };
 }

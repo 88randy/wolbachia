@@ -1,3 +1,5 @@
 # False positives reviewed by a person. One fingerprint per line (commit:file:rule:line).
 # issues/03: rule-parameter seed keys like max_distance_to_point_m=50, not a secret.
 686363b4e2199a1423b8eb30cf6215946eda0f51:issues/03-backend-catalog-rules.md:generic-api-key:19
+# backend/rules/seeds.py: ORM filter 'parameter__key__in=fuel_keys' (a lookup on rule-parameter keys), not a secret.
+8ec8d3f101e5c0250dfb90f96bdbd753b39ca563:backend/rules/seeds.py:generic-api-key:186

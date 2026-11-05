@@ -17,6 +17,7 @@ from rest_framework.views import APIView
 from accounts.models import User
 from accounts.request_context import requested_organization_slug
 from core.filters import CodeLookupFilter
+from core.session_identity import remember_active_organization
 from core.views import OrgScopedViewSetMixin
 from organizations.logo import validate_logo
 from organizations.models import Center, Membership, Organization, Profile
@@ -56,6 +57,8 @@ class MeView(APIView):
     @extend_schema(responses=MeSerializer)
     def get(self, request: Request) -> Response:
         context = get_me_context(cast(User, request.user), requested_organization_slug(request))  # type: ignore[arg-type]
+        organization = context.organization
+        remember_active_organization(request, organization.pk if organization else None)
         return Response(MeSerializer(context).data)
 
 

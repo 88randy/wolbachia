@@ -33,7 +33,7 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 - `events` may be empty: that is a pure pull.
 - `payload` is a JSON object, at most 32 levels deep, without `\u0000` characters, lone surrogates or non-finite numbers (`1e400`). Its content belongs to the event type's handler.
 - `sent_at` must fall between 2020-01-01 and 2100-01-01 (UTC), else `400 validation_error` on `sent_at` (`out_of_range`). An event's `device_time` outside the same range rejects only that event (`invalid_payload`, `device_time: out_of_range`). Version tokens and the cursor cannot contain lone surrogates.
-- The envelope is validated as a whole (`400 validation_error`, `fields` like `events.3.type`): a batch with a malformed envelope is refused and nothing in it is stored. [ASSUMPTION] A phone that keeps sending a malformed envelope would retry forever; the app must build envelopes from typed code, and the field test (#13) will tell if poison events need a quarantine.
+- The envelope is validated as a whole (`400 validation_error`, `fields` like `events.3.type`): a batch with a malformed envelope is refused and nothing in it is stored. The phone parks the identified events as local error when a fields key names events.N or events.N.field, releasing the rest because none were ingested. If no valid event index is provided, the whole batch is parked. A sent_at error pauses sending until the clock is fixed.
 
 ## Response `200`
 
@@ -57,6 +57,7 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 - `changes.reviews` are the courier's own review items (rejected or in-review events) after `cursor`. Send the returned `cursor` in the next request. `has_more: true` means "pull again now" (a long backlog is paged, `API_CURSOR_PAGE_SIZE`, default 100). **Deviation from the issue contract:** `has_more` was added; without it the phone cannot tell a full page from the end.
 - `changes.catalog_version` and `changes.rules_version` are the `version` hashes of `/field/catalog/` and `/field/rules/`. When one differs from the phone's, it downloads that snapshot (`If-None-Match`).
 - `changes.assignments` does not exist yet (#8, #9); adding a field later is not a breaking change.
+- The phone validates the 200 shape before applying it. A malformed response retries with backoff; missing per-event results become transient failures, while valid results and cursor bookkeeping commit atomically.
 - A **final upload** (below) answers with `X-Session-Revoked: true` and an empty `changes` (`cursor`, versions `null`).
 
 ## Batch errors (error envelope)

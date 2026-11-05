@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./fixtures/test";
 import { E2E_PASSWORD, mockApi } from "./fixtures/mock-api";
 import { expireWhileWorking } from "./fixtures/scenarios";
 

@@ -1,10 +1,11 @@
-import { keepPreviousData, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 import { DataTable } from "../data-table/DataTable";
 import { FilterBar } from "../data-table/FilterBar";
 import { pageTableData } from "../data-table/table-data";
 import { useTableUrlState } from "../data-table/use-table-url-state";
+import { useSessionIdentity } from "../session/use-session-identity";
 import { useDocumentTitle } from "../shell/use-document-title";
 import page from "../styles/page.module.css";
 import { phonesQueryOptions } from "./phones-query";
@@ -26,10 +27,8 @@ export function PhonesPage() {
   const client = useApiClient();
   const controller = useTableUrlState(PHONES_TABLE);
   const columns = usePhoneColumns();
-  const query = useQuery({
-    ...phonesQueryOptions(client, controller.state),
-    placeholderData: keepPreviousData,
-  });
+  const identity = useSessionIdentity();
+  const query = useQuery(phonesQueryOptions(client, identity, controller.state));
   return (
     <section className={page.page}>
       <h1 className={page.title}>{t("phones.page.title")}</h1>

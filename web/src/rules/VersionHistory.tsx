@@ -1,7 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
 import { useCallback, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { useApiClient } from "../api/ApiClientProvider";
 import { DataTable } from "../data-table/DataTable";
 import { FilterBar } from "../data-table/FilterBar";
 import { pageTableData } from "../data-table/table-data";
@@ -9,7 +7,7 @@ import { useTableUrlState } from "../data-table/use-table-url-state";
 import { FormNotice } from "../forms/FormNotice";
 import { useFormatDateTime } from "../format/use-format-date-time";
 import { useVoidReasonLabel, voidInfoOf } from "../void";
-import { versionsQueryOptions } from "./rules-query";
+import { useVersionsQuery } from "./use-versions-query";
 import type { RuleParameter, RuleParameterVersion } from "./rules-query";
 import { VERSIONS_PAGE_SIZE, VERSIONS_TABLE } from "./rules-table";
 import styles from "./rules.module.css";
@@ -51,9 +49,8 @@ interface HistoryTableProps extends VersionHistoryProps {
 /** Filter bar ("Include voided") and table of the versions of the page in view (voided ones only when asked, by the server). */
 function HistoryTable({ parameter, canVoid, onVoid }: HistoryTableProps) {
   const { t } = useTranslation();
-  const client = useApiClient();
   const controller = useTableUrlState(VERSIONS_TABLE);
-  const query = useQuery(versionsQueryOptions(client, parameter.key, controller.state));
+  const query = useVersionsQuery(parameter.key, controller.state);
   const columns = useVersionColumns({ parameter, canVoid, onVoid, blockedNoteId: NOTE_ID });
   const authorName = useAuthorName();
   const formatDateTime = useFormatDateTime();

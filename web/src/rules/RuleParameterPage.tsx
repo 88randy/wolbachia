@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { ApiError } from "@wolbachia/api-client";
 import { useQuery } from "@tanstack/react-query";
+import { useSessionIdentity } from "../session/use-session-identity";
 import { Link, useParams } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -97,7 +98,8 @@ function LoadFailed({ error, onRetry }: { error: unknown; onRetry: () => void })
 function ParameterLoader({ parameterKey }: { parameterKey: string }) {
   const { t } = useTranslation();
   const client = useApiClient();
-  const query = useQuery(parameterQueryOptions(client, parameterKey));
+  const identity = useSessionIdentity();
+  const query = useQuery(parameterQueryOptions(client, identity, parameterKey));
   const { error } = query;
   const retry = () => void query.refetch();
   // A failed refresh keeps what is on screen (the form holds a draft): only a first load fails.
