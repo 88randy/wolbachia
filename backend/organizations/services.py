@@ -204,11 +204,12 @@ def effective_scope(
     grants = []
     if profiles is None:
         profiles = list_active_profiles(membership)
-    profiles = [
-        profile
-        for profile in profiles
-        if profile.is_active and profile.organization_id == membership.organization_id
-    ]
+    else:
+        profiles = [
+            profile
+            for profile in profiles
+            if profile.is_active and profile.organization_id == membership.organization_id
+        ]
     if any(getattr(profile, "slug", "") == "government" for profile in profiles):
         profiles = [profile for profile in profiles if profile.slug == "government"]
     for profile in profiles:
