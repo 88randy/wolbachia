@@ -185,3 +185,11 @@ class BatchContext:
     sent_at: datetime
     received_at: datetime
     is_final_upload: bool = False
+
+
+@dataclass(frozen=True)
+class CourierContext:
+    """Feed ownership and locking need no fabricated device for web-origin writes."""
+
+    organization: Organization
+    user: User

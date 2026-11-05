@@ -1,6 +1,6 @@
 """Immutable field effects and append-only corrections; all business rows are org-scoped."""
 
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from django.db import models
 
@@ -17,6 +17,13 @@ class OvitrapRecord(ImmutableMixin, OrgScopedModel):
 
 
 class Ovitrap(OvitrapRecord):
+    # Query annotations / pending-event projection state, never database columns.
+    sampling_point_version: int | None
+    reading_revision: int | None
+    void_revision: int | None
+    latest_check: dict[str, Any] | None
+    latest_void: dict[str, Any] | None
+
     client_uuid = models.UUIDField(editable=False)
     sampling_point = models.ForeignKey(
         "geography.SamplingPoint", on_delete=models.PROTECT, related_name="ovitraps"

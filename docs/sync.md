@@ -442,7 +442,8 @@ administrator's later revocation. Admin includes it for explicit delegation.
 Response fields are `bundle_version`, `schema_version`, `generated_at`,
 `scope_revision`, `cursor`, `catalog_version`, `rules_version`, `next_change_at`,
 `map_manifest_ready`, followed by these fixed sections in order: `assignments`,
-`supplies`, `permits`, `eligibility`, `history`, `map_manifests`. Every section is
+`supplies`, `permits`, `eligibility`, `history`, `map_manifests`, `quadrants`,
+`sampling_points`, `ovitraps`. Every section is
 present as a list, even when its dependency has no producer. Catalog/rules versions,
 due time, schema and map readiness are deliberate additions to the issue contract.
 `schema_version` is an opaque SHA-256 of the bundle contract version and registered
@@ -469,7 +470,7 @@ resend the same pending event ids with the new cursor. Ingest deduplicates them.
 tests the recovery contract, not actual phone storage.
 
 A revoked phone still has only its explicitly authorized one final sync upload:
-it gets empty reviews and all six typed arrays, null cursor/configuration versions
+it gets empty reviews and all nine typed arrays, null cursor/configuration versions
 and next_change_at, and false has_more. Bootstrap never consumes or grants that
 upload. No new operational effects are applied to in_review events here;
 authorized acceptance and applying effects once remain #22.
@@ -484,6 +485,13 @@ keeping each action grant paired with both center and applicable quadrant scopes
 None/empty denies; all must be explicit. Grants from different profiles never
 cross-combine. Scope is computed, not stored on the courier.
 
+The hash also binds the monotonic `revision` of the membership and of each active assigned
+profile, and `bundle_schema_version` (#196): restoring identical grants after a revocation, or
+registering a new producer, invalidates every older cursor, because rows published while a courier
+was outside the scope, or before a producer existed, have no CourierChange for that courier. The
+phone recovers with `invalid_cursor` -> bootstrap. Unrelated profile edits cause one extra
+bootstrap (accepted cost; correctness over bandwidth).
+
 Missing c/r (v1), malformed, expired, foreign-owner or scope-mismatched tokens
 return 400 invalid_cursor before any events in that request are ingested.
 [ASSUMPTION] No production phone holds v1. Rollout requires regenerating clients
@@ -492,7 +500,7 @@ Existing stored events/review items are unchanged; the new feed starts empty.
 No token means an initial pull from both sequences zero. Bootstrap sets s=0 for
 review-id replay/deduplication and c=max at its locked snapshot boundary.
 
-Sync preserves its existing fields/result order and adds six typed arrays under
+Sync preserves its existing fields/result order and adds nine typed arrays under
 `changes`, each entry `{sequence, action, resource_type, resource_id,
 resource_version, data}`. Action is upsert or remove; remove data is empty.
 It also adds nullable `changes.next_change_at`. field_event.sync gates upload and
@@ -508,7 +516,7 @@ may repeat entries: clients deduplicate by resource/version and review id.
 
 Owning apps register `BundleProducer(key, schema_version, build, serializer)` via
 `field_sync.producers.register()` in AppConfig.ready(). Allowed keys are exactly
-the six fixed sections; duplicate or unknown keys raise ImproperlyConfigured.
+the nine fixed sections; duplicate or unknown keys raise ImproperlyConfigured.
 `build(ctx)` returns a deterministic list of dictionaries, using ctx.organization,
 ctx.user, ctx.scope (paired EffectiveScope), ctx.now and ctx.permission. It MUST
 filter by organization, courier assignment and both applicable scope dimensions.
@@ -533,13 +541,16 @@ licensed asset/hash verification. No network/storage/tile downloads run here.
 EVERY CourierChange writer must use this sequence, in one database transaction:
 
 1. Honor existing User -> Device -> DeviceSession -> TokenPair lock ordering.
-2. Call field_sync.services.lock_courier_batches(batch) before domain locks/writes.
+2. Hold the actor's `lock_courier_batches(batch)` for sync. Geography web writers
+   serialize Organization first and use `fanout_courier_changes` to take every
+   affected courier lock before writing. See the shared fan-out rule below.
 3. Write the domain projection and call append_courier_change(batch, ChangeInput(...))
    before committing; kind must have a registered producer. The service validates
    schema/scope/action and allocates max+1 for the organization/courier.
 4. Keep the lock through commit. Never allocate outside it, publish later from an
    on_commit callback, use timestamp watermarks, or perform network/storage/mail
-   under the lock. Revocation appends remove, never UPDATE/DELETE.
+   under the lock. Scope loss invalidates the cursor; voids are upsert tombstones,
+   never UPDATE/DELETE or remove. Future remove writers must send empty data.
 
 A transaction-local connection marker guards append and rolls back with savepoints;
 it cannot authorize a later transaction. CourierChange uses OrgScopedModel and
@@ -577,3 +588,143 @@ to retryable 429 sync_in_progress with Retry-After; the request has no partial e
 These are existing batch/auth codes, not new event result codes. Locale catalogs
 are unchanged. Foreign producer rows and changes are omitted without revealing
 object existence; this adds no admin list/void/dependent-correction workflow.
+
+
+## Geography and ovitrap producers (#196)
+
+The three appended sections have concrete snapshot AND change payload schemas.
+The entry envelope remains `{sequence, action, resource_type, resource_id,
+resource_version, data}`; all writers in #196 emit `upsert` only. The prior six
+section keys retain their order and contracts, including empty absent-domain sections.
+All producers start at schema_version 1. Registration in geography/ovitraps
+AppConfig.ready changes the existing bundle_schema_version hash without changing
+cursor v2. Revoked final upload returns nine empty arrays.
+
+| Section / registration owner | resource_type | Snapshot / upsert data |
+| --- | --- | --- |
+| quadrants / geography | quadrant or block | id, code, center_id, quadrant_id, revision (highest published revision); quadrant_id is the quadrant itself for quadrant rows |
+| sampling_points / geography | sampling_point | id, code, block_id, quadrant_id, location [longitude, latitude], is_retired, version (highest PointVersion) |
+| ovitraps / ovitraps | ovitrap | id = client_uuid, client_uuid, code, sampling_point_id, point_version (immutable placement PointVersion UUID), sampling_point_version (current numeric revision), version, placed_at, reading_id, finding_code, paddle_present, has_eggs, checked_at, is_lagged, placement_voided, voided, voided_resource_type, voided_event_id, void_reason_code, voided_at |
+
+No polygon is needed to place a point: the phone receives its WGS84 location;
+server capture gates retain historical geometry/location authority. References
+therefore carry revision numbers, not geometry. No other courier's identity,
+name, device, GPS trail, bag/lab data or numeric egg count is exposed.
+`has_eggs` is Yes/No, or null when no egg paddle/check exists. Latest state is the
+latest NON-voided reading ordered by `(device_time, event_id)` descending; it is
+not receipt order. Missing check fields are null, including paddle_present and
+is_lagged. A pending check is compared using the same order before its FieldEvent
+is inserted by the pipeline. Older offline checks cannot overwrite newer state.
+
+`resource_version` is the decimal point version or quadrant/block revision.
+For ovitraps it equals data.version: SHA-256 of placement event UUID,
+placement-void state, append-only reading/void lifecycle revision counts and the
+current point version. These are internal domain revision counters, never egg
+counts. Every applied check (including a backdated one), correction or point
+revision changes the token; pulls and bootstrap compute the same token, independent
+of wall clocks and refresh times. Immutable placement point_version is retained.
+
+### Tombstones and immutable scope (D4, D7b)
+
+Voiding placement or reading emits an ovitrap upsert and retains the identity in
+bootstrap. `placement_voided` says whether the placement itself is voided.
+`voided` indicates a retained correction marker; `voided_resource_type` identifies
+placement/reading, and `voided_event_id` identifies the SOURCE FieldEvent that was
+voided (distinct from reading_id, an OvitrapReading UUID). void_reason_code and
+voided_at are explicit; no author's identity or free-text reason is downloaded.
+The latest correction marker stays in bootstrap even after a replacement check.
+A reading tombstone carries the recomputed latest unvoided state, or nulls when
+none remains. placement_voided=false means such a reading correction does not
+void the whole ovitrap. Existing readings still block placement void (#111). Voiding a reviewed event
+with no operational placement/reading preserves OvitrapVoid history and emits no
+projection: there is no downloaded row to correct.
+
+SamplingPoint.block and Block.quadrant are immutable: a point never transfers
+between quadrants or centers. Quadrant republish upserts its revision plus each
+point changed by keep/move/remove resolutions and its ovitraps. Here move relocates
+inside the same block identity; remove retires the point (`is_retired=true`),
+without deleting it. Unchanged points produce no redundant changes. Block and
+point creation/publication also emit their exact written versions. No move writer
+or scope-remove fan-out is added. Loss of an effective grant is handled by the
+existing scope revision r -> invalid_cursor -> bootstrap replacement (#110),
+which removes inaccessible projections while preserving independent drafts/outbox.
+
+### Shared transactional fan-out (D6)
+
+`field_sync.services.fanout_courier_changes(FanoutScope(...))` is the only fan-out
+helper. Domains call it inside their domain write transaction; field_sync imports
+no domain producer/writer. All organization writers serialize configuration with
+Organization FOR NO KEY UPDATE. The helper captures active memberships, active
+user/organization and same-organization active assigned profiles using the same
+single-statement scope snapshots as bootstrap. It reuses effective_scope (including
+government restrictions) and requires one paired field.bootstrap grant covering
+BOTH the current center and quadrant. Sync permission alone never downloads rows.
+No live membership means no recipient, even if an old session remains.
+
+[ASSUMPTION] SYNC_MAX_FANOUT_COURIERS defaults to 1000, must be positive and is
+configurable by environment. To bound work before scope evaluation it caps active
+candidate memberships with an active assigned field.bootstrap profile in the
+organization, not only those passing the final center/quadrant intersection.
+The query fetches at most cap + 1. Exceeding the cap fails closed with HTTP 503
+fanout_limit_exceeded, before domain writes, with no partial feed. Operators must
+size the cap for the pilot organization; there is no background delivery fallback.
+
+Account locks retain User -> Device -> DeviceSession -> TokenPair. Sync already
+holds the actor's courier advisory lock, then takes Organization and the existing
+point/ovitrap/void-target locks. The helper takes remaining recipient try-locks in
+ascending `(advisory_key, user_id)` order, skipping transaction-local markers for
+ALL already-held locks (including actor, earlier events and savepoint-safe locks).
+Geography takes Organization -> all recipient try-locks -> Quadrant -> descendants.
+These additional locks NEVER wait; they cannot create a wait cycle across the
+different domain entry paths. No later account locks are taken. Any failed try-lock
+raises the existing retryable 429 sync_in_progress/Retry-After and rolls back the
+whole write; event-savepoint rejection also rolls back every feed append.
+
+Only after ALL recipients are locked does the caller insert domain effects and
+append one CourierChange per row/recipient with a per-courier CourierContext.
+That context carries organization/user, without fabricating a web device.
+The generic void pipeline has already marked its source FieldEvent inside the
+same savepoint before invoking on_void; contention rolls that marker back too.
+Lock markers survive only their transaction and roll back with savepoints. Locks
+remain held through commit. No on_commit delivery, network, Celery or timestamp
+watermark is involved. A bootstrap under the same courier lock either includes
+the committed row with c >= its change, or receives that change on a subsequent
+pull. Replayed event IDs short-circuit the handler and append nothing; subsequent
+pulls using the returned cursor do not repeat delivered changes.
+
+Selectors apply organization and both paired dimensions in SQL before reading
+rows; raw rows also carry organization_id/center_id/quadrant_id for ctx.includes.
+Joined identities and correlated latest-state subqueries keep the three producer
+builds to at most four SELECTs regardless of row count (two reference queries,
+one point query, one ovitrap query). This bound excludes existing catalog/rules,
+permission capture and cursor queries. The regression grows points and readings.
+
+### Existing catalog and rule snapshots (D2)
+
+No fourth producer is added. build_catalog_snapshot includes every catalog with
+active items: seeded ovitrap-finding, paddle-type and void-reason are covered.
+build_rules_snapshot includes every RuleParameter and its value in force, including
+max_distance_to_point_m, max_gps_accuracy_m and speed_lock_kmh required by ovitrap
+capture, and min_distance_same_block_m for geography. Unconfigured values remain
+null, as before. These snapshots are delivered by /field/catalog/ and /field/rules/;
+changes.catalog_version/rules_version/next_change_at signal refresh. Capture still
+uses archived catalogs and historical rules. No missing required snapshot key was
+found in the selectors/seeds; this is not a claim that every organization has
+configured values for every key.
+
+### Migration and verification boundary
+
+field_sync migration 0006 adds the expanded kind CHECK as NOT VALID, validates it
+in a separate operation, then swaps names; existing history is never rewritten.
+The migration is non-atomic so the validation scan does not retain the initial
+ACCESS EXCLUSIVE add-constraint lock. Reverse restores the old CHECK transactionally
+and then drops the temporary expanded CHECK. It refuses incompatible new-kind
+history instead of deleting or transforming it; downgrade before producing those
+rows, or retain the expanded schema. Actual application/reversal and advisory-lock
+behavior require PostgreSQL verification by the lead.
+
+API generation remains `npm run api:generate` (scripts/generate-api-client.mjs):
+validate/export OpenAPI via spectacular, then generate packages/api-client types.
+This backend-only work does not hand-edit generated files. The lead must regenerate
+both artifacts before integration; its script's database placeholder must not be
+used to connect to host 5432 in this worktree.
