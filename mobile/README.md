@@ -187,6 +187,17 @@ availability is invented when B-05/bootstrap data is absent.
   photo refs and local-shift projection in one SQLite transaction. Only after commit
   can the UI show phone-saved; a failed transaction retains the draft. A later
   sync refresh failure cannot turn a successful commit into `OutboxWriteError`.
+- A server-rejected opening offers **Correct and try again** on Home and P7.
+  This explicit action creates a blank motorcycle-step draft with fresh shift/event
+  UUIDs. The rejected outbox envelope/result stays unchanged and is never resent.
+  Pending/sending/error, accepted and in-review openings cannot be replaced.
+  Schema migration **4** permits only a rejected slot to yield to a new draft;
+  the outbox immutability triggers remain in force. A guarded update compares the
+  original rejected event id, preventing competing corrections from replacing a
+  newer attempt. Ordinary start/resume never resets a rejected attempt.
+- Snapshot refreshes publish only the latest requested read at the same edit
+  revision. Unmount invalidates in-flight reads, so a delayed pending snapshot
+  cannot hide a newer rejection or overwrite courier input.
 - Envelope: `shift.open`, schema 1, draft `shift_id`, original event id, actual
   capture `device_time`, saved catalog/rules versions, `gps: null`,
   `manual_capture: true`. Pending/sending/error never imply server receipt;
@@ -217,6 +228,8 @@ follows the sync worker's timeout assumption. No new dependency was added.
 | No-shift to durable open / one UUID | AC flow: actual SQLite file close/reopen, step recovery, commit before return, concurrent second open |
 | Safety | AC safety, severe, blocked, odometer, map, catalog, evidence: nonempty required checklist, Other/severe notes, server motorcycle rejections, size/hash/coverage, retained decrease |
 | Offline/restart / truthful storage | AC offline, storage, recovery, map recovery: original UUID once, pending/error labels, rollback after insert, failed input retained, durable progress/retry |
+| Rejection correction | Regression: new shift/event UUIDs, retained rejected envelope, only the new event uploads; non-rejected states cannot be replaced |
+| Refresh ordering | Regression: deferred reads completed in reverse retain rejection; edit/unmount invalidation blocks stale publication |
 | Accessibility matrix | Native implementation present; TalkBack, 130% text, light/dark and both locales on qualified devices remain UNVERIFIED |
 
 Ordinary tests use the in-memory SQLite support. One durability test closes and

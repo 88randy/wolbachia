@@ -83,21 +83,32 @@ export class ShiftOpenService {
   start(): Promise<ShiftSnapshot> {
     return this.#write(async () => {
       const state = await this.#deps.store.read();
-      const catalog = await this.#deps.store.catalog();
-      if (state.draft === null)
-        await this.#deps.store.createDraft({
-          clientShiftId: this.#deps.uuid(),
-          openingEventId: this.#deps.uuid(),
-          catalogVersion: catalog?.version ?? "",
-          motorcycle_code: "",
-          checks: [],
-          odometer_km: "",
-          photoRefs: [],
-          note: "",
-          step: "motorcycle",
-        });
+      if (state.draft === null) await this.#deps.store.createDraft(await this.#newDraft());
       return this.read();
     });
+  }
+  /** Only an explicit correction of a server rejection may replace the current slot. */
+  restartRejected(): Promise<ShiftSnapshot> {
+    return this.#write(async () => {
+      const { opening } = await this.#deps.store.read();
+      if (opening?.status !== "rejected") return this.read();
+      await this.#deps.store.replaceRejectedDraft(await this.#newDraft(), opening.envelope.id);
+      return this.read();
+    });
+  }
+  async #newDraft(): Promise<OpenShiftDraft> {
+    const catalog = await this.#deps.store.catalog();
+    return {
+      clientShiftId: this.#deps.uuid(),
+      openingEventId: this.#deps.uuid(),
+      catalogVersion: catalog?.version ?? "",
+      motorcycle_code: "",
+      checks: [],
+      odometer_km: "",
+      photoRefs: [],
+      note: "",
+      step: "motorcycle",
+    };
   }
   update(
     patch: Partial<

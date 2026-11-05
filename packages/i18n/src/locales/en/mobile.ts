@@ -71,6 +71,7 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftOpen.phoneSaved": "Saved on phone · Awaiting server receipt",
   "mobile.shiftOpen.serverReceived": "Received by server · Check the outcome",
   "mobile.shiftOpen.reviewPending": "Subsequent review: no confirmed resolution in this build.",
+  "mobile.shiftOpen.correctAndRetry": "Correct and try again",
   "mobile.shiftOpen.retrySave": "Retry saving input",
 
   // Boot

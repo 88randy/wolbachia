@@ -1,3 +1,6 @@
+import { ShiftSnapshotReader } from "../src/features/shift-open/use-m-04.ts";
+import type { ShiftSnapshot } from "../src/features/shift-open/service.ts";
+import { toOutboxEvent } from "../src/outbox/outbox-event.ts";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
@@ -390,4 +393,155 @@ void test("AC storage: a failed count refresh after commit cannot report the ope
   assert.ok(saved.opening);
   assert.equal(deliveryKey(saved.opening), "mobile.shiftOpen.phoneSaved");
   assert.equal((await outbox.countByStatus()).pending, 1);
+});
+
+void test("Regression: explicit correction after rejection creates new UUIDs and preserves the rejected envelope", async () => {
+  const local = await harness();
+  await prepare(local.service);
+  await local.service.update({ motorcycle_code: "M-typo" });
+  await local.service.update({ checks: [{ item: "brakes", result: "ok" }] });
+  const original = await local.service.open();
+  assert.ok(original.opening);
+  const oldEnvelope = structuredClone(original.opening.envelope);
+  await local.engine.requestSync();
+  await local.outbox.claimPending(1);
+  await local.outbox.settle([
+    { id: oldEnvelope.id, action: "reject", result: { code: "motorcycle_unknown", params: {} } },
+  ]);
+  let nextUuid = 2;
+  const restarted = await harness(local, {
+    uuid: () => `11111111-1111-4111-8111-${String(++nextUuid).padStart(12, "0")}`,
+  });
+  assert.equal((await restarted.service.start()).opening?.status, "rejected");
+  await restarted.service.update({ motorcycle_code: "M-07" });
+  assert.equal((await restarted.service.read()).draft?.motorcycle_code, "M-typo");
+  const attempt = await restarted.service.restartRejected();
+  assert.ok(attempt.draft);
+  assert.equal(attempt.opening, null);
+  assert.notEqual(attempt.draft.clientShiftId, oldEnvelope.shift_id);
+  assert.notEqual(attempt.draft.openingEventId, oldEnvelope.id);
+  assert.equal(attempt.draft.step, "motorcycle");
+  assert.equal(attempt.draft.motorcycle_code, "");
+  assert.deepEqual(attempt.draft.checks, []);
+  assert.deepEqual((await local.service.start()).draft, attempt.draft);
+  await prepare(restarted.service);
+  const corrected = await restarted.service.open();
+  assert.equal(corrected.opening?.envelope.payload.motorcycle_code, "M-03");
+  assert.equal(corrected.opening.envelope.id, attempt.draft.openingEventId);
+  const script = scriptedTransport([answer([accepted(attempt.draft.openingEventId)]), answer([])]);
+  const engine = engineFor(local, script.transport, true);
+  await engine.start();
+  await engine.requestSync();
+  assert.deepEqual(
+    script.requests.flatMap((request) => request.events.map((event) => event.id)),
+    [attempt.draft.openingEventId],
+  );
+  const [rejected] = await local.db.query("SELECT * FROM outbox_event WHERE id = ?", [
+    oldEnvelope.id,
+  ]);
+  assert.ok(rejected);
+  const retained = toOutboxEvent(rejected);
+  assert.equal(retained.status, "rejected");
+  assert.deepEqual(retained.envelope, oldEnvelope);
+});
+
+void test("Regression: correction cannot replace an opening without a server rejection", async () => {
+  for (const outcome of ["pending", "sending", "sent", "in_review", "error"] as const) {
+    const local = await harness();
+    await prepare(local.service);
+    const original = await local.service.open();
+    assert.ok(original.opening);
+    await local.engine.requestSync();
+    if (outcome !== "pending") await local.outbox.claimPending(1);
+    if (outcome === "sent" || outcome === "in_review")
+      await local.outbox.settle([
+        {
+          id: original.opening.envelope.id,
+          action: outcome === "sent" ? "accept" : "review",
+          result: { code: outcome === "sent" ? "accepted" : "clock_skew", params: {} },
+        },
+      ]);
+    if (outcome === "error")
+      await local.outbox.settle([
+        { id: original.opening.envelope.id, action: "failPermanent", lastError: "invalid_payload" },
+      ]);
+    const before = await local.service.read();
+    assert.equal(before.opening?.status, outcome);
+    await assert.rejects(
+      local.db.runAtomically([
+        { sql: "UPDATE shift_open_state SET opening_event_id = NULL WHERE slot = 1" },
+      ]),
+      /captured shift is immutable/,
+    );
+    assert.deepEqual(await local.service.restartRejected(), before);
+  }
+});
+
+function deferred<T>() {
+  let resolve: (value: T) => void = () => undefined;
+  const promise = new Promise<T>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+void test("Regression: reversed refresh completion retains the newer server rejection", async () => {
+  const local = await harness();
+  await prepare(local.service);
+  const pending = await local.service.open();
+  assert.ok(pending.opening);
+  const staleRead = deferred<ShiftSnapshot>();
+  const latestRead = deferred<ShiftSnapshot>();
+  const reads = [staleRead, latestRead];
+  const service = {
+    read: () => {
+      const next = reads.shift();
+      assert.ok(next);
+      return next.promise;
+    },
+  };
+  const reader = new ShiftSnapshotReader(new DraftBuffer());
+  const published: ShiftSnapshot[] = [];
+  const publish = (snapshot: ShiftSnapshot) => {
+    published.push(snapshot);
+  };
+  const stale = reader.refresh(service, publish);
+  await local.engine.requestSync();
+  await local.outbox.claimPending(1);
+  await local.outbox.settle([
+    {
+      id: pending.opening.envelope.id,
+      action: "reject",
+      result: { code: "motorcycle_unknown", params: {} },
+    },
+  ]);
+  const latest = reader.refresh(service, publish);
+  latestRead.resolve(await local.service.read());
+  await latest;
+  staleRead.resolve(pending);
+  await stale;
+  assert.equal(published.at(-1)?.opening?.status, "rejected");
+  assert.equal(published.at(-1)?.opening?.result?.code, "motorcycle_unknown");
+  assert.equal(published.at(-1)?.canDepart, false);
+  assert.equal(published.length, 1);
+});
+
+void test("Regression: refresh cannot publish after an edit or unmount invalidation", async () => {
+  const local = await harness();
+  await prepare(local.service);
+  const snapshot = await local.service.read();
+  for (const guard of ["edit", "unmount"] as const) {
+    const buffer = new DraftBuffer();
+    const reader = new ShiftSnapshotReader(buffer);
+    const pending = deferred<ShiftSnapshot>();
+    const published: ShiftSnapshot[] = [];
+    const refresh = reader.refresh({ read: () => pending.promise }, (saved) => {
+      published.push(saved);
+    });
+    if (guard === "edit") buffer.edit({ odometer_km: "12500" });
+    else reader.invalidate();
+    pending.resolve(snapshot);
+    await refresh;
+    assert.equal(published.length, 0, guard);
+  }
 });

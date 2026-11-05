@@ -74,6 +74,7 @@ export const mobile = {
   "mobile.shiftOpen.serverReceived": "Recibido por el servidor · Consulta el resultado",
   "mobile.shiftOpen.reviewPending":
     "Revisión posterior: sin confirmación de resolución en esta versión.",
+  "mobile.shiftOpen.correctAndRetry": "Corregir e intentar de nuevo",
   "mobile.shiftOpen.retrySave": "Reintentar guardar los datos",
 
   // Boot

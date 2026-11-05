@@ -1,3 +1,4 @@
+import { HomeShiftAction } from "./HomeShiftAction.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { DepartureActions } from "./DepartureActions.tsx";
@@ -12,7 +13,14 @@ export function P7Screen({ model }: { readonly model: M04Model }) {
     <>
       <AppText variant="button">{t("mobile.shiftOpen.mapsTitle")}</AppText>
       <MapStatus map={state.map} />
-      {state.opening ? <ShiftStatus state={state} /> : <DepartureActions model={model} />}
+      {state.opening ? (
+        <>
+          <ShiftStatus state={state} />
+          <HomeShiftAction model={model} />
+        </>
+      ) : (
+        <DepartureActions model={model} />
+      )}
     </>
   );
 }

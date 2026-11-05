@@ -11,7 +11,7 @@ export interface StoredShift {
   readonly draft: OpenShiftDraft | null;
   readonly opening: OutboxEvent | null;
 }
-/** One durable slot owns both the draft and its eventual local shift. Nothing clears it in M-04. */
+/** One durable slot owns both the draft and its eventual local shift. A rejected opening can yield to a new draft; its outbox evidence remains. */
 export class ShiftOpenStore {
   readonly #db: SqlExecutor;
   readonly #kv: KvStore;
@@ -35,6 +35,17 @@ export class ShiftOpenStore {
       {
         sql: "INSERT OR IGNORE INTO shift_open_state(slot, draft) VALUES (1, ?)",
         params: [JSON.stringify(draft)],
+      },
+    ]);
+  }
+  /** Compare the original event and its terminal rejection atomically, including across service instances. */
+  async replaceRejectedDraft(draft: OpenShiftDraft, rejectedEventId: string): Promise<void> {
+    await this.#db.runAtomically([
+      {
+        sql: `UPDATE shift_open_state SET draft = ?, opening_event_id = NULL
+          WHERE slot = 1 AND opening_event_id = ? AND EXISTS
+          (SELECT 1 FROM outbox_event WHERE id = ? AND local_status = 'rejected')`,
+        params: [JSON.stringify(draft), rejectedEventId, rejectedEventId],
       },
     ]);
   }

@@ -58,6 +58,14 @@ const MIGRATIONS: readonly (readonly string[])[] = [
     `CREATE TRIGGER shift_open_no_delete BEFORE DELETE ON shift_open_state
       BEGIN SELECT RAISE(ABORT, 'shift evidence is never deleted'); END`,
   ],
+  [
+    "DROP TRIGGER shift_open_captured_immutable",
+    `CREATE TRIGGER shift_open_captured_immutable BEFORE UPDATE ON shift_open_state
+      WHEN OLD.opening_event_id IS NOT NULL AND (
+        NEW.opening_event_id IS NOT NULL OR NOT EXISTS
+        (SELECT 1 FROM outbox_event WHERE id = OLD.opening_event_id AND local_status = 'rejected'))
+      BEGIN SELECT RAISE(ABORT, 'a captured shift is immutable unless rejected'); END`,
+  ],
 ];
 
 /** Highest schema version this build knows. */

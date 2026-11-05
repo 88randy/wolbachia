@@ -4,19 +4,40 @@ import { useServices } from "../../app/services-context.ts";
 import { OutboxWriteError } from "../../outbox/outbox-repository.ts";
 import { DraftBuffer } from "./draft-buffer.ts";
 import type { DraftPatch } from "./draft-buffer.ts";
-import type { ShiftSnapshot } from "./service.ts";
+import type { ShiftOpenService, ShiftSnapshot } from "./service.ts";
 
-function useShiftSnapshot(buffer: DraftBuffer, setError: (key: MessageKey | null) => void) {
-  const { shiftOpen, engine } = useServices();
-  const [state, setState] = useState<ShiftSnapshot | null>(null);
-  const refresh = useCallback(async () => {
-    const token = buffer.revision;
-    const saved = await shiftOpen.read();
-    if (token === buffer.revision) {
-      setState(buffer.merge(saved));
-      setError(null);
+/** A monotonic request sequence prevents stale reads from publishing after refresh or unmount. */
+export class ShiftSnapshotReader {
+  readonly #buffer: DraftBuffer;
+  #requestSequence = 0;
+  constructor(buffer: DraftBuffer) {
+    this.#buffer = buffer;
+  }
+  invalidate(): void {
+    this.#requestSequence += 1;
+  }
+  async refresh(
+    service: Pick<ShiftOpenService, "read">,
+    publish: (snapshot: ShiftSnapshot) => void,
+  ): Promise<void> {
+    const request = ++this.#requestSequence;
+    const token = this.#buffer.revision;
+    try {
+      const saved = await service.read();
+      if (request === this.#requestSequence && token === this.#buffer.revision)
+        publish(this.#buffer.merge(saved));
+    } catch (error) {
+      if (request === this.#requestSequence && token === this.#buffer.revision) throw error;
     }
-  }, [buffer, shiftOpen, setError]);
+  }
+}
+
+function useShiftSubscription(
+  reader: ShiftSnapshotReader,
+  refresh: () => Promise<void>,
+  setError: (key: MessageKey | null) => void,
+) {
+  const { shiftOpen, engine } = useServices();
   useEffect(() => {
     let isActive = true;
     const update = () => {
@@ -30,10 +51,25 @@ function useShiftSnapshot(buffer: DraftBuffer, setError: (key: MessageKey | null
     const unsubFeature = shiftOpen.subscribe(update);
     return () => {
       isActive = false;
+      reader.invalidate();
       unsubEngine();
       unsubFeature();
     };
-  }, [engine, refresh, setError, shiftOpen]);
+  }, [engine, reader, refresh, setError, shiftOpen]);
+}
+function useShiftSnapshot(buffer: DraftBuffer, setError: (key: MessageKey | null) => void) {
+  const { shiftOpen } = useServices();
+  const [state, setState] = useState<ShiftSnapshot | null>(null);
+  const reader = useRef(new ShiftSnapshotReader(buffer)).current;
+  const refresh = useCallback(
+    () =>
+      reader.refresh(shiftOpen, (saved) => {
+        setState(saved);
+        setError(null);
+      }),
+    [reader, shiftOpen, setError],
+  );
+  useShiftSubscription(reader, refresh, setError);
   return { state, setState, refresh };
 }
 function useShiftActions(buffer: DraftBuffer, refresh: () => Promise<void>) {
