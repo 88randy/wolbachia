@@ -331,7 +331,7 @@ are invented. Sync conflicts remain per-event results under HTTP 200, with safe
 params.blocked_by when applicable. Read-only HTTP resources add no correction route.
 Original ingest status remains. QR parsing requires ASCII wbf:1:<kind>:<UUID>;
 manual_capture is the explicit fallback. Kinds: lot, ovitrap, bag, release-device,
-sample. Full decisions and assumptions: backend/ovitraps/README.md and ADR 98.
+sample. Full decisions and assumptions: backend/ovitraps/README.md and ADR 99.
 
 | Result code | Outcome |
 | --- | --- |

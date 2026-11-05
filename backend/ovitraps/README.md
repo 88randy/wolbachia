@@ -3,7 +3,7 @@
 B-14 / #111. Read ../field_sync/README.md, ../../docs/sync.md, ../accounts/README.md
 and ../../docs/engineering-rules.md before changing these handlers.
 
-## Lead decisions (ADR 98)
+## Lead decisions (ADR 99)
 
 1. Inventory B-10, attachments B-04 and incidents B-06 are absent from the supplied
    baseline. supply_refs/evidence_ids are lists of at most 100 UUID strings retained

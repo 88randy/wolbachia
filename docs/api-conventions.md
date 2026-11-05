@@ -194,7 +194,7 @@ and protected Other; paddle-type adds standard/Other. max_gps_accuracy_m is vers
 (default 50, inclusive 1..200 m, assumption pending pilot confirmation). No
 index-exclusion rule exists: is_index_excluded=is_lagged is an explicit assumption.
 Sync event schemas/codes and no-effects review policy: sync.md. Full lead decisions,
-lock order and acceptance map: ../backend/ovitraps/README.md, ADR 98.
+lock order and acceptance map: ../backend/ovitraps/README.md, ADR 99.
 
 
 Ovitrap identity isolation (#111 adversarial correction): the physical phone UUID
