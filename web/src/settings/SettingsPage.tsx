@@ -29,6 +29,11 @@ export function SettingsPage() {
             <Link to="/settings/rule-parameters">{t("rules.page.title")}</Link>
           </li>
         )}
+        {can("catalog.read") && (
+          <li>
+            <Link to="/settings/catalogs">{t("catalogs.page.title")}</Link>
+          </li>
+        )}
       </ul>
     </section>
   );
