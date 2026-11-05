@@ -118,6 +118,35 @@ void describe("outbox repository", () => {
     assert.equal((await outbox.countByStatus()).rejected, 1);
   });
 
+  void it("groups what is on the phone by type with the span of its times, and lists problems separately", async () => {
+    const { outbox } = await createStores();
+    const [early, late, other, parked] = [
+      makeEnvelope({ type: "ovitrap.check", device_time: "2026-01-15T09:02:00.000Z" }),
+      makeEnvelope({ type: "ovitrap.check", device_time: "2026-01-15T11:20:00.000Z" }),
+      makeEnvelope({ type: "fuel.load", device_time: "2026-01-15T10:00:00.000Z" }),
+      makeEnvelope({ type: "incident.report" }),
+    ];
+    for (const event of [early, late, other, parked]) await outbox.enqueue(event);
+    await outbox.settle([{ id: parked.id, action: "claim" }]);
+    await outbox.settle([
+      { id: parked.id, action: "failPermanent", lastError: "validation_error" },
+    ]);
+
+    const groups = await outbox.groupByType(["pending", "sending"]);
+    const problems = await outbox.listProblems(10);
+
+    const checks = groups.find((group) => group.type === "ovitrap.check");
+    assert.equal(groups.length, 2);
+    assert.ok(checks);
+    assert.equal(checks.total, 2);
+    assert.equal(checks.firstDeviceTime, "2026-01-15T09:02:00.000Z");
+    assert.equal(checks.lastDeviceTime, "2026-01-15T11:20:00.000Z");
+    assert.deepEqual(
+      problems.map((item) => [item.id, item.status, item.lastError]),
+      [[parked.id, "error", "validation_error"]],
+    );
+  });
+
   void it("reports a failed write as OutboxWriteError and saves nothing", async () => {
     const { outbox } = await createStores();
     const envelope = makeEnvelope();
