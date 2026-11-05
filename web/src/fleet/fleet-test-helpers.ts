@@ -15,6 +15,8 @@ export function motorcycle(overrides: Partial<Schemas["Motorcycle"]> = {}): Sche
     id: "00000000-0000-4000-8000-000000000001",
     code: "M-03",
     plate: "TEST-03",
+    center: null,
+    revision: 0,
     is_blocked: true,
     blocked_reason: "severe_check",
     created_at: "2026-10-01T15:00:00Z",

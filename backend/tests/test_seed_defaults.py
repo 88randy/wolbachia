@@ -11,6 +11,7 @@ from catalogs import permissions as catalog_codes
 from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
+from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from organizations.defaults import (
     DEFAULT_PROFILE_PERMISSIONS,
     seed_default_permission_codes,
@@ -242,6 +243,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         SHIFT_READ,
         MOTORCYCLE_READ,
         MOTORCYCLE_UNBLOCK,
+        MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
         *reader,
@@ -290,6 +292,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_READ,
         MOTORCYCLE_MANAGE,
         MOTORCYCLE_UNBLOCK,
+        MOTORCYCLE_SERVICE_CLEAR,
     }
 
 

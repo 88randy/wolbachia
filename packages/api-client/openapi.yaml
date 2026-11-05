@@ -859,6 +859,48 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/catalogs/{catalog_slug}/items/reorder/:
+    post:
+      operationId: catalogs_items_reorder_create
+      description: 'Items of `/catalogs/{catalog_slug}/items/`. No PUT and no DELETE:
+        items are deactivated.'
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: catalog_slug
+        schema:
+          type: string
+          pattern: ^[\w-]+$
+        required: true
+      tags:
+      - catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogReorderRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CatalogReorderResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/centers/:
     get:
       operationId: centers_list
@@ -1267,6 +1309,94 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/fuel-loads/:
+    get:
+      operationId: fuel_loads_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: courier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: efficiency_status
+        schema:
+          enum:
+          - unavailable
+          - ok
+          - review
+          type: string
+          minLength: 1
+        description: |-
+          * `unavailable` - Unavailable
+          * `ok` - Ok
+          * `review` - Review
+      - in: query
+        name: motorcycle
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - fuel-loads
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedFuelLoadList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/health/:
     get:
       operationId: health_retrieve
@@ -1279,6 +1409,61 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Health'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/:
+    get:
+      operationId: incidents_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - incidents
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentList'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -1543,6 +1728,11 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
       - name: code
         required: false
         in: query
@@ -1560,6 +1750,12 @@ paths:
         name: is_blocked
         schema:
           type: boolean
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -1632,6 +1828,334 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{motorcycle_id}/responsibility-letters/:
+    get:
+      operationId: motorcycles_responsibility_letters_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: motorcycle_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - motorcycles
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResponsibilityLetterList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: motorcycles_responsibility_letters_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: motorcycle_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LetterWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsibilityLetter'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{motorcycle_id}/responsibility-letters/{id}/void/:
+    post:
+      operationId: motorcycles_responsibility_letters_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: motorcycle_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResponsibilityLetter'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{motorcycle_id}/services/:
+    get:
+      operationId: motorcycles_services_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: motorcycle_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - motorcycles
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedServiceRecordList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: motorcycles_services_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: motorcycle_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRecord'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{motorcycle_id}/services/{id}/void/:
+    post:
+      operationId: motorcycles_services_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      - in: path
+        name: motorcycle_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceRecord'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/motorcycles/{id}/:
     get:
       operationId: motorcycles_retrieve
@@ -1668,7 +2192,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Motorcycle'
+                $ref: '#/components/schemas/MotorcycleDetail'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -1678,9 +2202,9 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
     patch:
       operationId: motorcycles_partial_update
-      description: Update the plate only. Supplying code (even unchanged) returns
-        400 validation_error with fields.code immutable_code. To correct a code, void
-        the motorcycle and create a new one; the voided code remains reserved.
+      description: Update the plate and scoped center. Supplying code (even unchanged)
+        returns 400 validation_error with fields.code immutable_code. To correct a
+        code, void the motorcycle and create a new one; the voided code remains reserved.
       parameters:
       - in: header
         name: X-Organization
@@ -1702,6 +2226,55 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/PatchedMotorcycleUpdateRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{id}/clear-fault/:
+    post:
+      operationId: motorcycles_clear_fault_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClearanceRequest'
+        required: true
       security:
       - cookieAuth: []
       - bearerAuth: []
@@ -4395,11 +4968,15 @@ components:
         is_open:
           type: boolean
           readOnly: true
+        version:
+          type: integer
+          readOnly: true
       required:
       - is_open
       - label_en
       - label_es
       - slug
+      - version
     CatalogItem:
       type: object
       description: Read shape of an item. `is_active` and `is_other` change only through
@@ -4411,6 +4988,35 @@ components:
         in_use:
           type: boolean
           readOnly: true
+        usage_count:
+          type: integer
+          readOnly: true
+        catalog_version:
+          type: integer
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+          nullable: true
+        deactivated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        deactivated_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        deactivated_by_username:
+          type: string
+          readOnly: true
+          nullable: true
         id:
           type: string
           format: uuid
@@ -4448,8 +5054,14 @@ components:
           format: date-time
           readOnly: true
       required:
+      - catalog_version
       - code
       - created_at
+      - created_by
+      - created_by_username
+      - deactivated_at
+      - deactivated_by
+      - deactivated_by_username
       - icon
       - id
       - in_use
@@ -4461,6 +5073,7 @@ components:
       - requires_photo
       - sort
       - updated_at
+      - usage_count
     CatalogItemCreateRequest:
       type: object
       description: '`sort` is optional: an omitted value appends the item at the end
@@ -4494,6 +5107,35 @@ components:
       required:
       - code
       - label_es
+    CatalogReorderRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 0
+        ordered_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 200
+      required:
+      - ordered_ids
+      - version
+    CatalogReorderResponse:
+      type: object
+      properties:
+        version:
+          type: integer
+          readOnly: true
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CatalogItem'
+          readOnly: true
+      required:
+      - items
+      - version
     CatalogSnapshot:
       type: object
       description: Every catalog with its active items. `version` is also the `ETag`.
@@ -4615,6 +5257,29 @@ components:
         * `ok` - Ok
         * `minor` - Minor
         * `severe` - Severe
+    ClearanceRequest:
+      type: object
+      properties:
+        fault_id:
+          type: string
+          format: uuid
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 50
+        reason:
+          type: string
+          maxLength: 1000
+        expected_revision:
+          type: integer
+          minimum: 0
+      required:
+      - evidence_ids
+      - expected_revision
+      - fault_id
+      - reason
     DecisionEnum:
       enum:
       - keep
@@ -4685,6 +5350,16 @@ components:
       - revoked_at
       - revoked_by
       - serial
+    EfficiencyStatusEnum:
+      enum:
+      - unavailable
+      - ok
+      - review
+      type: string
+      description: |-
+        * `unavailable` - Unavailable
+        * `ok` - Ok
+        * `review` - Review
     EpiWeekEnum:
       enum:
       - iso
@@ -4770,6 +5445,144 @@ components:
       - id
       - point
       - point_version
+    FuelLoad:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        event:
+          type: string
+          format: uuid
+          readOnly: true
+        shift:
+          type: string
+          format: uuid
+          readOnly: true
+        motorcycle:
+          type: string
+          format: uuid
+          readOnly: true
+        courier:
+          type: string
+          format: uuid
+          readOnly: true
+        litres:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,2})?$
+          readOnly: true
+        currency:
+          type: string
+          readOnly: true
+        odometer_km:
+          type: integer
+          readOnly: true
+        receipt_upload_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        receipt_pending:
+          type: boolean
+          readOnly: true
+        is_full_refill:
+          type: boolean
+          readOnly: true
+        efficiency_km_l:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        efficiency_status:
+          allOf:
+          - $ref: '#/components/schemas/EfficiencyStatusEnum'
+          readOnly: true
+        threshold_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        threshold_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,9}(?:\.\d{0,3})?$
+          readOnly: true
+          nullable: true
+        rule_provenance:
+          readOnly: true
+        baseline:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        provisional:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        rules_version:
+          type: string
+          readOnly: true
+        catalog_version:
+          type: string
+          readOnly: true
+      required:
+      - amount
+      - baseline
+      - catalog_version
+      - courier
+      - created_at
+      - created_by
+      - currency
+      - device_time
+      - efficiency_km_l
+      - efficiency_status
+      - event
+      - id
+      - is_full_refill
+      - litres
+      - motorcycle
+      - odometer_km
+      - provisional
+      - receipt_pending
+      - receipt_upload_id
+      - rule_provenance
+      - rules_version
+      - server_received_at
+      - shift
+      - threshold_max
+      - threshold_min
     GenerateResult:
       type: object
       properties:
@@ -4896,6 +5709,59 @@ components:
       - revision
       - source
       - week_start
+    Incident:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        motorcycle:
+          type: string
+          format: uuid
+          readOnly: true
+        field_event:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        blocked_reason:
+          allOf:
+          - $ref: '#/components/schemas/BlockedReasonEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        is_cleared:
+          type: boolean
+          readOnly: true
+        cleared_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+      required:
+      - blocked_reason
+      - cleared_at
+      - created_at
+      - created_by
+      - field_event
+      - id
+      - is_cleared
+      - motorcycle
     LanguagesEnum:
       enum:
       - es-MX
@@ -4904,6 +5770,32 @@ components:
       description: |-
         * `es-MX` - es-MX
         * `en` - en
+    LetterWriteRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        courier:
+          type: string
+          format: uuid
+        issued_at:
+          type: string
+          format: date
+        document_reference:
+          type: string
+          format: uuid
+          nullable: true
+        notes:
+          type: string
+          maxLength: 1000
+      required:
+      - courier
+      - issued_at
     Load:
       type: object
       properties:
@@ -5269,6 +6161,14 @@ components:
         plate:
           type: string
           readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        revision:
+          type: integer
+          readOnly: true
         is_blocked:
           type: boolean
           readOnly: true
@@ -5304,12 +6204,14 @@ components:
           readOnly: true
       required:
       - blocked_reason
+      - center
       - code
       - created_at
       - created_by
       - id
       - is_blocked
       - plate
+      - revision
       - void_reason
       - void_reason_code
       - voided_at
@@ -5342,6 +6244,119 @@ components:
       - item_code
       - note
       - result
+    MotorcycleDetail:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        plate:
+          type: string
+          readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        revision:
+          type: integer
+          readOnly: true
+        is_blocked:
+          type: boolean
+          readOnly: true
+        blocked_reason:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/BlockedReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        voided_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
+        metrics:
+          allOf:
+          - $ref: '#/components/schemas/MotorcycleMetrics'
+          readOnly: true
+      required:
+      - blocked_reason
+      - center
+      - code
+      - created_at
+      - created_by
+      - id
+      - is_blocked
+      - metrics
+      - plate
+      - revision
+      - void_reason
+      - void_reason_code
+      - voided_at
+      - voided_by
+    MotorcycleMetrics:
+      type: object
+      properties:
+        last_service:
+          type: string
+          format: uuid
+          nullable: true
+        next_service_due_km:
+          type: integer
+          nullable: true
+        next_service_due_date:
+          type: string
+          format: date
+          nullable: true
+        latest_odometer:
+          type: integer
+          nullable: true
+        latest_efficiency:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+          nullable: true
+        efficiency_status:
+          type: string
+        due_metric_provenance: {}
+      required:
+      - due_metric_provenance
+      - efficiency_status
+      - last_service
+      - latest_efficiency
+      - latest_odometer
+      - next_service_due_date
+      - next_service_due_km
     MotorcycleWriteRequest:
       type: object
       description: |-
@@ -5359,6 +6374,10 @@ components:
         plate:
           type: string
           maxLength: 20
+        center:
+          type: string
+          format: uuid
+          nullable: true
       required:
       - code
     OrganizationSettings:
@@ -5724,6 +6743,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Device'
+    PaginatedFuelLoadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FuelLoad'
+    PaginatedIncidentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Incident'
     PaginatedMembershipList:
       type: object
       required:
@@ -5908,6 +6973,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Reading'
+    PaginatedResponsibilityLetterList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ResponsibilityLetter'
     PaginatedReviewItemList:
       type: object
       required:
@@ -6019,6 +7107,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SamplingPoint'
+    PaginatedServiceRecordList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceRecord'
     PaginatedShiftList:
       type: object
       required:
@@ -6101,12 +7212,16 @@ components:
           type: boolean
     PatchedMotorcycleUpdateRequest:
       type: object
-      description: Only the plate can change; code identifies pending schema-1 offline
+      description: Plate and center can change; code identifies pending schema-1 offline
         events forever.
       properties:
         plate:
           type: string
           maxLength: 20
+        center:
+          type: string
+          format: uuid
+          nullable: true
     PatchedOrganizationUpdateRequest:
       type: object
       properties:
@@ -6793,6 +7908,78 @@ components:
       - access
       - refresh
       - server_time
+    ResponsibilityLetter:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        motorcycle:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        voided_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
+        courier:
+          type: string
+          format: uuid
+          readOnly: true
+        issued_at:
+          type: string
+          format: date
+          readOnly: true
+        document_reference:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        notes:
+          type: string
+          readOnly: true
+      required:
+      - courier
+      - created_at
+      - created_by
+      - document_reference
+      - id
+      - issued_at
+      - motorcycle
+      - notes
+      - void_reason
+      - void_reason_code
+      - voided_at
+      - voided_by
     ReviewChange:
       type: object
       description: A review item as the phone's inbox sees it (the courier's own events
@@ -7265,6 +8452,135 @@ components:
       required:
       - ids
       - mode
+    ServiceKindEnum:
+      enum:
+      - routine
+      - repair
+      - inspection
+      type: string
+      description: |-
+        * `routine` - Routine
+        * `repair` - Repair
+        * `inspection` - Inspection
+    ServiceRecord:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        motorcycle:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        voided_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/ServiceKindEnum'
+          readOnly: true
+        performed_at:
+          type: string
+          format: date
+          readOnly: true
+        odometer_km:
+          type: integer
+          readOnly: true
+        notes:
+          type: string
+          readOnly: true
+        service_interval_km:
+          type: integer
+          readOnly: true
+          nullable: true
+        service_interval_days:
+          type: integer
+          readOnly: true
+          nullable: true
+        due_metric_provenance:
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - due_metric_provenance
+      - id
+      - kind
+      - motorcycle
+      - notes
+      - odometer_km
+      - performed_at
+      - service_interval_days
+      - service_interval_km
+      - void_reason
+      - void_reason_code
+      - voided_at
+      - voided_by
+    ServiceWriteRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        kind:
+          $ref: '#/components/schemas/ServiceKindEnum'
+        performed_at:
+          type: string
+          format: date
+        odometer_km:
+          type: integer
+          maximum: 999999
+          minimum: 0
+        notes:
+          type: string
+          maxLength: 1000
+        service_interval_km:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+        service_interval_days:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+          nullable: true
+      required:
+      - kind
+      - odometer_km
+      - performed_at
     Shift:
       type: object
       description: |-

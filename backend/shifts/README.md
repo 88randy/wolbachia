@@ -24,8 +24,21 @@ Rules for code here:
 - Fleet writes lock Motorcycle, the same row as `shift.open`, before examining state; void refuses an open shift. Unblock writes the state and an insert-only `MotorcycleBlockEvent` atomically. Unblocking an unblocked motorcycle is `409 motorcycle_not_blocked` without another event. Severe-check blocks record their source field event. The database also refuses audit UPDATE/DELETE.
 - Unique codes remain reserved after void. PostgreSQL arbitrates concurrent creates; only that constraint is mapped to `duplicate_code`. Creation accepts code/plate; PATCH accepts plate only; void/block metadata cannot be written through CRUD.
 - `GET /field/catalog/` includes a compact `motorcycles` list (`list_snapshot_motorcycles`): blocked motorcycles/reasons remain visible, voided ones do not. Fleet content participates in the existing ETag and sync `catalog_version`. The snapshot keeps its `catalog.read` permission for organization configuration; `/motorcycles/` uses `motorcycle.read`.
-- Admin gets manage/unblock/read, supervisor gets read/unblock, courier gets read. Existing permission seed bookkeeping preserves revocations and custom profiles.
+- Admin gets manage/unblock/read/service_clear, supervisor gets read/unblock/service_clear, courier gets read. The service_clear grant authorizes inspection clearance of a named fault (#103). Existing permission seed bookkeeping preserves revocations and custom profiles.
 - Motorcycle codes are immutable after creation: schema-1 offline events identify motorcycles only by code. PATCH rejects any supplied `code` (even unchanged) with `400 validation_error`, `fields.code: [{code: immutable_code, params: {}}]`; `update_motorcycle` rejects it too. No aliases. To correct a wrong code, void the motorcycle and create a new one with the correct code. The original code remains reserved, including after void, so a pending event cannot bind to a different motorcycle.
 - [ASSUMPTION] Admin can also unblock, and void refuses an open-shift motorcycle. No new dependencies or seed fleet records.
 
 Tests: `backend/tests/test_shift_*.py` (events, guard, API, concurrency), `test_motorcycle_*.py` (fleet contract, audit, isolation and races) and `test_seed_defaults.py` (default grants and preserved revocations).
+
+
+## Fleet B-05 (#103)
+
+Motorcycle now carries nullable organizations.Center and revision. Management
+accepts/filters center within actor scope; unassigned motorcycles require an
+explicit all-center grant. Read-only metrics are supplied by fleet through
+extensions.py hooks, as are additional accepted odometers and legacy-unblock
+inspection guards. No fleet module is imported by shifts at module level. Code
+and field-catalog snapshot stay unchanged; PATCH now accepts plate and center.
+Severe blocks, PATCH and unblock advance revision. fleet handles nested history,
+fuel and named clear-fault routes; see ../fleet/README.md. A named clearance locks
+the same Motorcycle as shift.open and never removes another active blocker.

@@ -1,3 +1,4 @@
+import { mapSecurityPlugin } from "./map-security.config.ts";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
@@ -7,7 +8,7 @@ const DEV_SERVER_PORT = 5173;
 const DEFAULT_API_PROXY_TARGET = "http://localhost:8000";
 
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), mapSecurityPlugin()],
   server: {
     port: DEV_SERVER_PORT,
     proxy: {

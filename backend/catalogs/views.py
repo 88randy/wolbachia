@@ -22,6 +22,8 @@ from catalogs.serializers import (
     CatalogItemCreateSerializer,
     CatalogItemSerializer,
     CatalogItemUpdateSerializer,
+    CatalogReorderResponseSerializer,
+    CatalogReorderSerializer,
     CatalogSerializer,
     CatalogSnapshotSerializer,
 )
@@ -30,6 +32,7 @@ from catalogs.services import (
     activate_catalog_item,
     create_catalog_item,
     deactivate_catalog_item,
+    reorder_catalog_items,
     update_catalog_item,
 )
 from core.snapshots import IF_NONE_MATCH_PARAMETER, snapshot_response
@@ -86,6 +89,7 @@ class CatalogItemViewSet(
         "partial_update": CATALOG_ITEM_UPDATE,
         "deactivate": CATALOG_ITEM_DEACTIVATE,
         "activate": CATALOG_ITEM_ACTIVATE,
+        "reorder": CATALOG_ITEM_UPDATE,
     }
 
     def get_catalog(self) -> Catalog:
@@ -101,9 +105,10 @@ class CatalogItemViewSet(
         return with_item_usage(queryset, catalog)
 
     def get_serializer_class(self) -> type[serializers.BaseSerializer[Any]]:
-        by_action = {
+        by_action: dict[str, type[serializers.BaseSerializer[Any]]] = {
             "create": CatalogItemCreateSerializer,
             "partial_update": CatalogItemUpdateSerializer,
+            "reorder": CatalogReorderSerializer,
         }
         return by_action.get(self.action, CatalogItemSerializer)
 
@@ -125,12 +130,33 @@ class CatalogItemViewSet(
     @extend_schema(request=None, responses={200: CatalogItemSerializer})
     @action(detail=True, methods=["post"])
     def deactivate(self, request: Request, *args: object, **kwargs: object) -> Response:
-        return Response(self._read(deactivate_catalog_item(self.get_object())))
+        return Response(self._read(deactivate_catalog_item(self.get_object(), request.user)))  # type: ignore[arg-type]
 
     @extend_schema(request=None, responses={200: CatalogItemSerializer})
     @action(detail=True, methods=["post"])
     def activate(self, request: Request, *args: object, **kwargs: object) -> Response:
         return Response(self._read(activate_catalog_item(self.get_object())))
+
+    @extend_schema(
+        request=CatalogReorderSerializer, responses={200: CatalogReorderResponseSerializer}
+    )
+    @action(detail=False, methods=["post"])
+    def reorder(self, request: Request, *args: object, **kwargs: object) -> Response:
+        payload = self.get_serializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        version, items = reorder_catalog_items(
+            self.get_catalog(),
+            **payload.validated_data,
+            user=request.user,  # type: ignore[arg-type]
+        )
+        return Response(
+            {
+                "version": version,
+                "items": CatalogItemSerializer(
+                    items, many=True, context=self.get_serializer_context()
+                ).data,
+            }
+        )
 
     def _read(self, item: CatalogItem) -> Any:  # noqa: ANN401
         return CatalogItemSerializer(item, context=self.get_serializer_context()).data

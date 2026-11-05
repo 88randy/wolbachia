@@ -1,14 +1,22 @@
 import { useMemo } from "react";
+import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../data-table/table-types";
 import { useFormatDate } from "../format/use-formatters";
 import type { CatalogItem } from "./catalogs-query";
 import { CatalogActions } from "./CatalogActions";
 import { CatalogLabel } from "./CatalogLabel";
+import { CatalogUsage } from "./CatalogUsage";
 import { CatalogStatus } from "./CatalogStatus";
 import styles from "./catalogs.module.css";
 type Column = DataTableColumn<CatalogItem>;
 const IDENTITY_COLUMNS: Column[] = [
   { id: "item", headerKey: "catalogs.table.item", cell: (item) => <CatalogLabel item={item} /> },
+  {
+    id: "usage",
+    headerKey: "catalogs.table.usage",
+    align: "end",
+    cell: (item) => <CatalogUsage item={item} />,
+  },
   {
     id: "code",
     headerKey: "catalogs.table.code",
@@ -32,6 +40,7 @@ const ACTION_COLUMNS: Column[] = [
 /** Stable cell renderers preserve keyboard focus across dialog and mutation state changes. */
 export function useCatalogColumns(): Column[] {
   const formatDate = useFormatDate();
+  const { t } = useTranslation();
   return useMemo(
     () => [
       ...IDENTITY_COLUMNS,
@@ -40,12 +49,13 @@ export function useCatalogColumns(): Column[] {
         headerKey: "catalogs.table.created",
         cell: (item) => (
           <span className={item.is_active ? undefined : styles.struck}>
-            {formatDate(item.created_at)}
+            {formatDate(item.created_at)} ·{" "}
+            {item.created_by_username ?? t("catalogs.table.unknownAuthor")}
           </span>
         ),
       },
       ...ACTION_COLUMNS,
     ],
-    [formatDate],
+    [formatDate, t],
   );
 }

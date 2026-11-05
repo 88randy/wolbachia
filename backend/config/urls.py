@@ -20,6 +20,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("rules.urls")),
     path("", include("field_sync.urls")),
     path("", include("reviews.urls")),
+    path("", include("fleet.urls")),
     path("", include("shifts.urls")),
     path("", include("geography.urls")),
     path("", include("ovitraps.urls")),
