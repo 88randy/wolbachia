@@ -22,6 +22,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("reviews.urls")),
     path("", include("shifts.urls")),
     path("", include("geography.urls")),
+    path("", include("ovitraps.urls")),
 ]
 
 urlpatterns = [path("api/v1/", include(api_v1_patterns))]

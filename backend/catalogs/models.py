@@ -6,7 +6,7 @@ from django.db import models
 from django.db.models import Q
 
 from core.models import OTHER_ITEM_CODE as OTHER_ITEM_CODE
-from core.models import OrgScopedModel
+from core.models import ImmutableMixin, OrgScopedModel
 
 CODE_MAX_LENGTH = 64
 LABEL_MAX_LENGTH = 200
@@ -76,3 +76,17 @@ class CatalogItem(OrgScopedModel):
 
     def __str__(self) -> str:
         return f"{self.catalog_id}:{self.code}"
+
+
+class CatalogSnapshot(ImmutableMixin, OrgScopedModel):
+    """Exact configuration delivered to a phone, retained by organization/hash for offline ingest."""
+
+    version = models.CharField(max_length=64)
+    content = models.JSONField()
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "version"], name="catalog_snapshot_org_version"
+            )
+        ]
