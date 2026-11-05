@@ -14,7 +14,7 @@ export const ME = {
   organization: null,
   profiles: [],
   permissions: [],
-  scope: { centers: [], quadrants: [] },
+  scope: { centers: { mode: "none", ids: [] }, quadrants: { mode: "none", ids: [] } },
   organizations: [{ slug: "acme", name: "Acme" }],
 };
 

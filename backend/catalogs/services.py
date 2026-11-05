@@ -5,7 +5,7 @@ from django.db import transaction
 from django.db.models import Max
 
 from accounts.models import User
-from catalogs.exceptions import CatalogItemLimitError, OtherItemLockedError
+from catalogs.exceptions import CatalogItemLimitError, OtherItemLockedError, ProtectedOtherItemError
 from catalogs.models import MAX_SORT, OTHER_ITEM_CODE, Catalog, CatalogItem
 from core.exceptions import FieldValidationError
 from core.services import lock_record_for_update
@@ -84,6 +84,8 @@ def update_catalog_item(item: CatalogItem, changes: Mapping[str, object]) -> Cat
     fields = [name for name in EDITABLE_ITEM_FIELDS if name in changes]
     with transaction.atomic():
         locked = lock_record_for_update(item)
+        if locked.is_other and fields:
+            raise ProtectedOtherItemError
         for name in fields:
             setattr(locked, name, changes[name])
         if fields:

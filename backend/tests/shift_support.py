@@ -13,15 +13,17 @@ CHECK_ITEM_CODES = ("tires", "brakes", "lights")
 
 
 def make_check_items(organization: Organization) -> dict[str, CatalogItem]:
-    """The closed catalog `motorcycle-check-item` with three active items, by code."""
+    """The closed catalog `motorcycle-check-item` with the three items used by the tests, by code."""
     # The default seed may already have created the (empty) closed catalog.
     catalog = Catalog.objects.filter(
         organization=organization, slug=MOTORCYCLE_CHECK_CATALOG_SLUG
     ).first() or CatalogFactory(
         organization=organization, slug=MOTORCYCLE_CHECK_CATALOG_SLUG, is_open=False
     )
+    # The launch seed already provides these coded items; reuse them instead of duplicating.
     return {
-        code: CatalogItemFactory(catalog=catalog, organization=organization, code=code)
+        code: CatalogItem.objects.filter(catalog=catalog, code=code).first()
+        or CatalogItemFactory(catalog=catalog, organization=organization, code=code)
         for code in CHECK_ITEM_CODES
     }
 

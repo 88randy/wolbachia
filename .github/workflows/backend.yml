@@ -34,7 +34,7 @@ jobs:
     services:
       postgres:
         # Keep the major version equal to the DigitalOcean managed cluster [PENDING: #18].
-        image: postgres:18-alpine
+        image: postgis/postgis:18-3.6-alpine
         env:
           POSTGRES_USER: wolbachia
           POSTGRES_PASSWORD: wolbachia
