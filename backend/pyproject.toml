@@ -66,7 +66,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 # Explicit so import order is the same whether ruff runs from backend/ (CI) or the repo root (pre-commit).
-known-first-party = ["accounts", "catalogs", "config", "core", "field_sync", "geography", "ovitraps", "organizations", "reviews", "rules", "shifts", "tests"]
+known-first-party = ["accounts", "catalogs", "config", "core", "field_sync", "fleet", "geography", "ovitraps", "organizations", "reviews", "rules", "shifts", "tests"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -103,7 +103,7 @@ ignore_missing_imports = true
 
 # `strict = true` cannot be set per module, so the strict flags are listed one by one.
 [[tool.mypy.overrides]]
-module = ["services", "*.services", "selectors", "*.selectors", "accounts.token_retention"]
+module = ["services", "*.services", "selectors", "*.selectors", "accounts.token_retention", "fleet.fuel_services", "shifts.access"]
 disallow_any_generics = true
 disallow_subclassing_any = true
 disallow_untyped_calls = true
@@ -125,7 +125,7 @@ python_files = ["test_*.py"]
 addopts = "--strict-markers"
 
 [tool.coverage.run]
-source = ["accounts", "catalogs", "config", "core", "field_sync", "geography", "ovitraps", "organizations", "reviews", "rules"]
+source = ["accounts", "catalogs", "config", "core", "field_sync", "fleet", "geography", "ovitraps", "organizations", "reviews", "rules"]
 omit = ["*/migrations/*", "config/wsgi.py", "config/asgi.py"]
 
 [tool.coverage.report]
