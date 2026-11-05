@@ -49,7 +49,7 @@ def validate_plausible_time(value: Any) -> None:  # noqa: ANN401
 class GpsSerializer(serializers.Serializer[Any]):
     lat = serializers.FloatField(min_value=-MAX_LATITUDE, max_value=MAX_LATITUDE)
     lng = serializers.FloatField(min_value=-MAX_LONGITUDE, max_value=MAX_LONGITUDE)
-    accuracy_m = serializers.FloatField(min_value=0)
+    accuracy_m = serializers.FloatField(min_value=0, required=False, allow_null=True, default=None)
 
 
 class SyncEventSerializer(serializers.Serializer[Any]):

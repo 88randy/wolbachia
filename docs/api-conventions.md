@@ -165,6 +165,45 @@ remain unchanged. Error envelopes keep code/detail, fields only on 400 and safe
 blocked_by on 409. See geography/README.md for choices and acceptance mapping.
 
 
+## Ovitrap provenance (#111, B-14)
+
+Read-only GET /ovitraps/, /readings/, /bags/ and /{uuid}/ details under /api/v1.
+Page-number paging; stable ordering by -created_at,id (bags also support code
+ordering/search). Filters: code (UUID for ovitrap/reading, human code for bag),
+status=active|voided|all, point=<sampling point UUID>, week=YYYY-Www (local epi week).
+Lists default active; details include voided history. ?code= is exact and scoped.
+Foreign point filters, foreign-org/center/quadrant detail references return 404.
+ovitrap.read authorizes identities; reading.read authorizes readings/bags; actions
+default-deny. Organization is resolved from membership/pinned bearer session.
+Session cookie + CSRF remains the web contract. No HTTP mutation/DELETE is added.
+
+Responses expose event_id, device_time, server_received_at, GPS, manual_capture,
+rules_version/catalog_version (phone tokens), evaluated_rules/rule_version_ids,
+author/timestamps, status and void metadata. Ovitrap includes historical point
+version and opaque supply/evidence refs. Reading includes finding identity/code/
+historical labels, conditional boolean eggs, conditions, paddle type, epi week,
+lagged/index exclusion provenance, is_countable and bag link. Bag includes unique
+org code, reading, collector and original field flags. Lagged paddles remain
+countable. Voids/corrections retain original records and event ingest status.
+
+GET /field/catalog/ archives delivered snapshots immutably by organization/hash;
+its wire format/ETag is unchanged. Ovitrap handlers resolve submitted catalog_version
+against that archive. Missing pre-archive versions review, unknown snapshot choices
+reject, known now-inactive choices review. Findings add closed-house/absent/destroyed
+and protected Other; paddle-type adds standard/Other. max_gps_accuracy_m is versioned
+(default 50, inclusive 1..200 m, assumption pending pilot confirmation). No
+index-exclusion rule exists: is_index_excluded=is_lagged is an explicit assumption.
+Sync event schemas/codes and no-effects review policy: sync.md. Full lead decisions,
+lock order and acceptance map: ../backend/ovitraps/README.md, ADR 99.
+
+
+Ovitrap identity isolation (#111 adversarial correction): the physical phone UUID
+is stored as client_uuid, unique per organization. A separate server-generated PK
+is used only for internal relations. Ovitrap responses retain physical UUID as
+id/code, /ovitraps/{id}/ and ?code= resolve that UUID inside organization/scope, and
+reading.ovitrap returns the same physical UUID. Identical phone UUIDs can coexist
+in different organizations without changing either organization's outcome or
+exposing the other row. No public response/type shape or sync result code changes.
 ## Offline bundle additions (#110 / B-13)
 
 | Contract | Rule |

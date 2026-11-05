@@ -84,3 +84,14 @@ agent environment.
 References: [Django row locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update),
 [PostgreSQL blocking-session inspection](https://www.postgresql.org/docs/18/functions-info.html#FUNCTIONS-INFO-SESSION).
 No new dependency, API/schema shape, migration or void-reason validation change.
+
+## Offline finding history (#111)
+
+CatalogSnapshot archives exact delivered content by organization/version hash,
+with author/timestamp, ORM immutability and SQL UPDATE/DELETE guard. The selector
+build_catalog_snapshot stays pure; history.remember_catalog_snapshot is called
+by GET /field/catalog/ before its response, including 304. Ovitrap handlers resolve
+choices/labels/Other flags from that submitted version. Pre-archive hashes review
+without effects. Retained deactivated choices review, never bind to a new identity.
+Seeds add closed-house/absent/destroyed and protected Other to ovitrap-finding, plus
+paddle-type (standard + Other), preserving administrator labels and deactivations.

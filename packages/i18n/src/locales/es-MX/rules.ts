@@ -114,4 +114,5 @@ export const rules = {
   "rules.status.inForce": "Vigente",
   "rules.status.superseded": "Anterior",
   "rules.status.voided": "Anulada",
+  "rules.param.maxGpsAccuracyM": "Precisión GPS máxima (m)",
 } as const satisfies AreaCatalog<"rules">;

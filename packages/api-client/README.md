@@ -93,6 +93,18 @@ from the locked Python runtime; the owner must run npm run api:generate to regen
 src/generated/schema.ts and confirm a second run has no diff. Generated TypeScript
 is intentionally never edited by hand.
 
+## Ovitrap provenance (#111)
+
+Schema adds scoped read-only ovitraps/readings/bags with capture and lifecycle
+provenance, code/status/point/week filters, plus optional/nullable GPS accuracy
+in sync envelopes. Regenerate using api:generate; never edit generated types.
+
+
+#111 local status: OpenAPI validation/export passed with Django 5.2.19. The wrapper
+api:generate failed on sandbox-denied uv interpreter-cache persistence; no cache
+relocation or permission change was attempted. openapi-typescript is not installed;
+the no-install command attempted package resolution and was cancelled. schema.ts
+remains stale and untouched; the orchestrator must regenerate with locked tools.
 
 ## Offline bundle contract (#110 / B-13)
 
