@@ -25,25 +25,22 @@ export function useServerForm(): ServerForm {
     if (result.ok) engine.notifyConditionsChanged();
   };
   const reset = async () => {
-    await server.clear();
+    const result = await server.clear();
+    setFeedback(result.ok ? "saved" : result.problem);
+    if (!result.ok) return;
     setText("");
-    setFeedback("saved");
     engine.notifyConditionsChanged();
   };
 
+  const reportStorageFailure = () => {
+    setFeedback("storageFailed");
+  };
   return {
     text,
     setText,
     feedback,
-    // Read on every render: save/clear update the override before the feedback re-renders the form.
-    hasSavedAddress: server.savedOverride() !== "",
-    save: () =>
-      void save().catch(() => {
-        setFeedback("storageFailed");
-      }),
-    reset: () =>
-      void reset().catch(() => {
-        setFeedback("storageFailed");
-      }),
+    hasSavedAddress: server.savedOverride() !== "", // read per render: save/clear update it first
+    save: () => void save().catch(reportStorageFailure),
+    reset: () => void reset().catch(reportStorageFailure),
   };
 }

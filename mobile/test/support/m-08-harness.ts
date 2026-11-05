@@ -19,6 +19,7 @@ export function engineFor(
     },
     hasSession: () => hasSession,
     hasServer: () => true,
+    hasPendingFinalUpload: () => Promise.resolve(false),
     random: () => 0,
     schedule: () => () => undefined,
     report: () => undefined,

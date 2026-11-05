@@ -200,7 +200,7 @@ export const mobile = {
     "No se pudo guardar en el teléfono. Libera espacio e inténtalo de nuevo; nada se envió.",
 
   "mobile.storage.actionFailed":
-    "No se pudo actualizar el almacenamiento del tel?fono. Libera espacio e int?ntalo de nuevo; tus registros siguen guardados.",
+    "No se pudo actualizar el almacenamiento del teléfono. Libera espacio e inténtalo de nuevo; tus registros siguen guardados.",
 
   // Navigation
   "mobile.nav.back": "Atrás",
@@ -287,6 +287,8 @@ export const mobile = {
   "mobile.settings.serverHint": "Dirección de la API, por ejemplo https://api.ejemplo.com",
   "mobile.settings.serverSave": "Guardar dirección",
   "mobile.settings.serverReset": "Usar la del build",
+  "mobile.settings.serverIdentityBound":
+    "El servidor forma parte de la identidad de este tel\u00e9fono y no se puede cambiar aqu\u00ed. Llama a tu supervisor.",
   "mobile.settings.serverSaved": "Dirección guardada",
   "mobile.settings.serverInvalid":
     "La dirección no es válida. Escríbela completa, sin ruta, por ejemplo https://api.ejemplo.com",
@@ -296,7 +298,56 @@ export const mobile = {
   // Test tools (development builds only)
   "mobile.dev.title": "Pruebas (solo builds de desarrollo)",
   "mobile.dev.deviceId": "ID de este teléfono",
-  "mobile.dev.tokenLabel": "Token de acceso de prueba",
-  "mobile.dev.tokenUse": "Usar token",
   "mobile.dev.addEvent": "Agregar registro de prueba",
+  // P1/P2 authentication and local unlock
+  "mobile.login.logo": "[Logo Codequim]",
+  "mobile.login.title": "Entra a tu cuenta",
+  "mobile.login.username": "Usuario",
+  "mobile.login.password": "Contraseña",
+  "mobile.login.showPassword": "Mostrar",
+  "mobile.login.hidePassword": "Ocultar",
+  "mobile.login.forgotPassword": "¿Olvidaste tu contraseña?",
+  "mobile.login.callSupervisor": "Llama a tu supervisor. Él puede cambiarla desde la oficina.",
+  "mobile.login.understood": "Entendido",
+  "mobile.login.enter": "Entrar",
+  "mobile.login.waitingSignal": "Entrar · esperando señal",
+  "mobile.login.noSignal": "Necesitas señal la primera vez. Después podrás entrar sin señal.",
+  "mobile.login.wrongCredentials": "Usuario o contraseña no coinciden. Revisa y vuelve a intentar.",
+  "mobile.login.sessionEnded": "Tu sesión se cerró por seguridad. Entra de nuevo.",
+  "mobile.login.deviceRevoked": "Este teléfono fue dado de baja. Llama a tu supervisor.",
+  "mobile.login.genericError":
+    "No pudimos iniciar sesión. Inténtalo de nuevo o llama a tu supervisor.",
+  "mobile.login.throttled": "Demasiados intentos. Espera {minutes} min y vuelve a intentar.",
+  "mobile.login.throttledUnknown": "Demasiados intentos. Espera un momento y vuelve a intentar.",
+  "mobile.login.clockSkew": "La hora del teléfono no coincide.",
+  "mobile.login.differentUser":
+    "Este teléfono tiene registros de otra cuenta. Llama a tu supervisor antes de cambiar de usuario.",
+  "mobile.login.onlineRequired":
+    "Por seguridad necesitas entrar de nuevo con señal. Lo que capturaste sigue guardado en el teléfono.",
+  "mobile.login.serverMissing":
+    "Falta configurar el servidor. Abre la configuración del servidor o llama a tu supervisor.",
+  "mobile.login.serverSettings": "Configurar servidor",
+  "mobile.login.version": "Versión {version}",
+  "mobile.unlock.greeting": "Hola, {name}",
+  "mobile.unlock.enterPin": "Escribe tu PIN",
+  "mobile.unlock.wrongPin": "PIN incorrecto. Te quedan {count} intentos.",
+  "mobile.unlock.passwordTitle": "Escribe tu contraseña",
+  "mobile.unlock.passwordRequired":
+    "Se alcanzó el límite de {count} intentos de PIN. Por seguridad, entra con tu contraseña completa.",
+  "mobile.unlock.savedWork": "Lo que capturaste sigue guardado en el teléfono.",
+  "mobile.unlock.wrongSecret": "No coincide. Revisa y vuelve a intentar.",
+  "mobile.unlock.biometric": "Usar huella",
+  "mobile.unlock.biometricPrompt": "Desbloquea con tu huella",
+  "mobile.unlock.cancel": "Cancelar",
+  "mobile.unlock.erase": "Borrar",
+  "mobile.unlock.createTitle": "Crea tu PIN",
+  "mobile.unlock.createPin": "Escribe un PIN de 4 dígitos.",
+  "mobile.unlock.confirmPin": "Confirma tu PIN.",
+  "mobile.unlock.trivialPin": "Elige 4 dígitos que no sean iguales ni consecutivos.",
+  "mobile.unlock.pinMismatch": "Los PIN no coinciden. Crea tu PIN de nuevo.",
+  "mobile.unlock.pinProgress": "Dígitos capturados: {count} de 4.",
+  "mobile.unlock.idleWarning": "Se bloqueará en 1 minuto.",
+  "mobile.unlock.keepWorking": "Seguir trabajando",
+  "mobile.unlock.resumeSetup": "Para terminar de crear tu PIN, escribe tu contraseña.",
+  "mobile.unlock.wrongPinLast": "PIN incorrecto. Te queda 1 intento.",
 } as const satisfies AreaCatalog<"mobile">;
