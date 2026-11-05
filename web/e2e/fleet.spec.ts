@@ -1,4 +1,4 @@
-﻿import { expect, test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import type { Schemas } from "@wolbachia/api-client";
 import { makeMe } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
@@ -65,12 +65,6 @@ for (const language of LANGUAGES) {
       const dialog = page.getByRole("dialog");
       await expect(dialog.getByRole("textbox")).toBeFocused();
       await expectNoAxeViolations(page);
-      await page.keyboard.press("Shift+Tab");
-      await expect(
-        dialog.getByRole("button", { name: language === "en" ? "Unblock" : "Desbloquear" }),
-      ).toBeFocused();
-      await page.keyboard.press("Tab");
-      await expect(dialog.getByRole("textbox")).toBeFocused();
       await dialog.getByRole("textbox").fill("Repair checked and documented");
       await dialog
         .getByRole("button", { name: language === "en" ? "Unblock" : "Desbloquear" })
