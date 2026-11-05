@@ -33,7 +33,9 @@ describe("landmarks", () => {
 
 describe("sidebar navigation", () => {
   test("lists every area as a link inside lists", async () => {
-    await renderApp({ me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
+    await renderApp({
+      me: makeMe({ permissions: ["catalog.read", "motorcycle.read", "quadrant.read"] }),
+    });
     const nav = screen.getByRole("navigation", { name: "Navegación principal" });
 
     const links = within(nav).getAllByRole("link");
@@ -53,7 +55,8 @@ describe("sidebar navigation", () => {
     expect(hrefs).toContain("/");
     expect(hrefs).not.toContain("/settings");
     expect(hrefs).not.toContain("/fleet");
-    expect(hrefs).toHaveLength(AREAS.length - 2);
+    expect(hrefs).not.toContain("/quadrants");
+    expect(hrefs).toHaveLength(AREAS.length - 3);
   });
 
   test("groups the areas under headings", async () => {
@@ -101,7 +104,9 @@ describe("keyboard", () => {
   });
 
   test("tab order is skip link, sidebar links, collapse button, search, bell, language", async () => {
-    await renderApp({ me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
+    await renderApp({
+      me: makeMe({ permissions: ["catalog.read", "motorcycle.read", "quadrant.read"] }),
+    });
     const names: string[] = [];
 
     for (let step = 0; step < AREAS.length + 5; step += 1) {

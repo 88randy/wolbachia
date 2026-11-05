@@ -8,9 +8,9 @@ function idsOf(me: Parameters<typeof visibleNavGroups>[0]): string[] {
 
 describe("visibleNavGroups", () => {
   test("a user with Settings and fleet permissions sees every area", () => {
-    expect(idsOf(makeMe({ permissions: ["rule_parameter.read", "motorcycle.read"] }))).toHaveLength(
-      13,
-    );
+    expect(
+      idsOf(makeMe({ permissions: ["rule_parameter.read", "motorcycle.read", "quadrant.read"] })),
+    ).toHaveLength(13);
   });
 
   test("a user with no permissions sees Home and the areas still pending, not Settings", () => {
