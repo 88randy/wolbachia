@@ -3,6 +3,7 @@ import type { ApiClient } from "@wolbachia/api-client";
 import { withAuthTimeout } from "../api/auth-timeout";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { ensureCsrfCookie, fetchCsrfCookie } from "../api/csrf";
+import { IDENTITY_HEADER } from "../session/attestation";
 import type { Me } from "../session/me";
 import { clearOrganizationSlug, getOrganizationSlug } from "../session/organization-slug";
 import { classifyLoginFailure } from "./login-failure";
@@ -13,7 +14,13 @@ export interface Credentials {
   password: string;
 }
 
-export type LoginOutcome = { ok: true; me: Me } | { ok: false; failure: LoginFailure };
+/** A login the server accepted: who, and the attestation of the new session. */
+export interface LoginSuccess {
+  me: Me;
+  attestation: string | undefined;
+}
+
+export type LoginOutcome = ({ ok: true } & LoginSuccess) | { ok: false; failure: LoginFailure };
 
 interface RawResult {
   data?: unknown;
@@ -60,7 +67,9 @@ function webMeOf(data: unknown): Me | undefined {
 
 function outcomeOf(result: RawResult): LoginOutcome {
   const me = result.response.ok ? webMeOf(result.data) : undefined;
-  if (me !== undefined) return { ok: true, me };
+  if (me !== undefined) {
+    return { ok: true, me, attestation: result.response.headers.get(IDENTITY_HEADER) ?? undefined };
+  }
   const failure = result.response.ok
     ? ({ kind: "generic" } as const)
     : classifyLoginFailure({

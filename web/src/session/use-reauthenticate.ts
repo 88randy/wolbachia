@@ -9,9 +9,10 @@ import type { ApiClient } from "@wolbachia/api-client";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { LoginFailure } from "../auth/login-failure";
 import { requestLogin } from "../auth/request-login";
-import type { LoginOutcome } from "../auth/request-login";
+import type { LoginOutcome, LoginSuccess } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
 import { runAuthOperation, useAbandonOnUnmount } from "./auth-operation";
+import { setExpectedAttestation } from "./attestation";
 import { recordIdentity } from "./identity";
 import type { Me } from "./me";
 import { ME_QUERY_KEY } from "./me-query";
@@ -23,8 +24,13 @@ import { acceptSession, clearSessionUnknown, currentRevision } from "./session-r
 import { useMe } from "./use-me";
 
 /** The session is back: store `/me/` and drop another user's or organization's cache (synchronous). */
-function restoreSession(me: Me, queryClient: QueryClient, commit: () => void): void {
+function restoreSession(
+  { me, attestation }: LoginSuccess,
+  queryClient: QueryClient,
+  commit: () => void,
+): void {
   commit(); // the dialog unmounting because of this very update must not abandon it
+  setExpectedAttestation(attestation);
   recordIdentity(queryClient, me);
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
@@ -82,7 +88,7 @@ function startReauth({ client, queryClient, username, password }: ReauthRequest)
       commit();
       acceptSession();
       state.diverged = true;
-    } else if (outcome.ok) restoreSession(outcome.me, queryClient, commit);
+    } else if (outcome.ok) restoreSession(outcome, queryClient, commit);
     return outcome.ok || !isStale ? outcome : undefined;
   });
   return { run, state };

@@ -4,10 +4,14 @@ import { CancelledError, queryOptions } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
+import { IDENTITY_HEADER, setExpectedAttestation } from "./attestation";
 import { currentRevision, recoverSession } from "./session-revision";
 import { clearOrganizationSlug, getOrganizationSlug } from "./organization-slug";
 
 export const ME_QUERY_KEY = ["me"] as const;
+
+/** How many times a route guard asks `/me/` again after the session changed under it. */
+const MAX_REVISION_RETRIES = 3;
 
 /**
  * How long `/me/` counts as fresh. After that, a window focus or a remount refetches it, so a
@@ -41,15 +45,23 @@ export async function fetchMeForRevision(
   revision: number,
   signal?: AbortSignal,
 ): Promise<Me> {
-  const me = await requestMe(client, signal);
+  const { me, attestation } = await requestMe(client, signal);
   if (revision !== currentRevision() || signal?.aborted === true) {
     throw new CancelledError({ revert: true });
   }
+  // Accepted: this is the identity the server attests for the session from now on.
+  setExpectedAttestation(attestation);
   recoverSession();
   return me;
 }
 
-async function requestMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
+interface AskedMe {
+  me: Me;
+  /** `X-Session-Identity` of the answer: what later responses must carry. */
+  attestation: string | null;
+}
+
+async function requestMe(client: ApiClient, signal?: AbortSignal): Promise<AskedMe> {
   const options = signal ? { signal } : {};
   const slug = getOrganizationSlug();
   const first = await client.GET("/api/v1/me/", options);
@@ -59,21 +71,39 @@ async function requestMe(client: ApiClient, signal?: AbortSignal): Promise<Me> {
     first.error.code === NO_ACTIVE_MEMBERSHIP;
   // Only recover from the slug THIS request was sent with: if the user chose another one while it
   // was in flight, a late refusal is about the old organization and must not touch the new slug.
-  if (!isRefused || slug === undefined || getOrganizationSlug() !== slug) return unwrap(first);
+  if (!isRefused || slug === undefined || getOrganizationSlug() !== slug) return askedFrom(first);
   clearOrganizationSlug();
-  return unwrap(await client.GET("/api/v1/me/", options));
+  return askedFrom(await client.GET("/api/v1/me/", options));
+}
+
+function askedFrom(result: { data?: Me; error?: unknown; response: Response }): AskedMe {
+  const me = unwrap(result);
+  return { me, attestation: result.response.headers.get(IDENTITY_HEADER) };
 }
 
 /**
  * `/me/` for a route guard: the cached answer while it is fresh, otherwise a new request (so a
  * navigation after a minute also refreshes the permissions). Rejects with the `ApiError`.
  */
-export function loadMe(queryClient: QueryClient, client: ApiClient): Promise<Me> {
-  return queryClient.query({
-    queryKey: ME_QUERY_KEY,
-    queryFn: ({ signal }) => fetchMe(client, signal),
-    staleTime: ME_STALE_TIME_MS,
-  });
+export async function loadMe(queryClient: QueryClient, client: ApiClient): Promise<Me> {
+  let attempt = 1;
+  for (;;) {
+    const started = currentRevision();
+    const result = await queryClient
+      .query({
+        queryKey: ME_QUERY_KEY,
+        queryFn: ({ signal }) => fetchMe(client, signal),
+        staleTime: ME_STALE_TIME_MS,
+      })
+      .catch((error: unknown) => ({ error }));
+    if (!("error" in result)) return result;
+    // The session REVISION changed while this asked (another tab signed in): that answer was
+    // discarded (`fetchMeForRevision`). Ask again for the new revision instead of failing the
+    // route. A cancel without a revision change (an organization switch) is not retried.
+    const isStale = result.error instanceof CancelledError && currentRevision() !== started;
+    if (!isStale || attempt >= MAX_REVISION_RETRIES) throw result.error;
+    attempt += 1;
+  }
 }
 
 export function meQueryOptions(client: ApiClient) {

@@ -1,4 +1,5 @@
 import type { QueryClient } from "@tanstack/react-query";
+import { clearExpectedAttestation } from "./attestation";
 import { forgetIdentity } from "./identity";
 import { ME_QUERY_KEY } from "./me-query";
 import { removeOrganizationQueries } from "./organization-cache";
@@ -28,6 +29,7 @@ export function leaveKnown(queryClient: QueryClient): Promise<void> {
   // recorded identity is forgotten and the entry is stale until a verified `/me/` replaces it. It
   // is not removed: the shell and the re-authentication dialog still read the user from it.
   forgetIdentity(queryClient);
+  clearExpectedAttestation();
   void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY, refetchType: "none" });
   markSessionUnknown();
   return cancelled;

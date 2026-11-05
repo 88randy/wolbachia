@@ -36,15 +36,15 @@ export function recordIdentity(queryClient: QueryClient, me: Me): void {
 
 /**
  * Whether `userId` and `organizationSlug` are the identity the cache currently holds (the last
- * `/me/` recorded). Unknown to the client (nothing recorded yet) counts as a match.
+ * `/me/` recorded). Nothing recorded (forgotten when the session was left, or never learned)
+ * does NOT match: only a verified `/me/` makes an identity usable.
  */
 export function isRecordedIdentity(
   queryClient: QueryClient,
   userId: string,
   organizationSlug: string,
 ): boolean {
-  const recorded = known.get(queryClient);
-  return recorded === undefined || recorded === `${userId}|${organizationSlug}`;
+  return known.get(queryClient) === `${userId}|${organizationSlug}`;
 }
 
 /** Nobody is signed in any more (the cache was cleared). */

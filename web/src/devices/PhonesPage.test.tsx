@@ -4,7 +4,7 @@ import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test, vi } from "vitest";
 import { ME_QUERY_KEY } from "../session/me-query";
-import { acceptSession } from "../session/session-revision";
+import { acceptSession, sessionState, subscribeToRevision } from "../session/session-revision";
 import { apiError, createFakeApi, makeMe, makeOrganization } from "../test/fake-api";
 import type { RecordedRequest } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
@@ -385,6 +385,51 @@ describe("phones list (W67)", () => {
 
     expect(await screen.findByRole("row", { name: /Teléfono de A/ })).toBeDefined();
     expect(screen.queryByText("Teléfono de B")).toBeNull();
+  });
+
+  test("a response attested for another identity is discarded, leaves known and the tab reconciles (#82)", async () => {
+    const attested = (id: string) => ({ headers: { "X-Session-Identity": id } });
+    let devices = 0;
+    let meCalls = 0;
+    const api = createFakeApi({
+      [ME]: () => {
+        meCalls += 1;
+        return Response.json(ALLOWED, attested("identity-A"));
+      },
+      [DEVICES]: () => {
+        devices += 1;
+        // The first answer was produced for another session (another tab signed in as B).
+        return devices === 1
+          ? Response.json(
+              {
+                count: 1,
+                next: null,
+                previous: null,
+                results: [phone({ label: "Teléfono de B" })],
+              },
+              attested("identity-B"),
+            )
+          : Response.json(
+              {
+                count: 1,
+                next: null,
+                previous: null,
+                results: [phone({ label: "Teléfono de A" })],
+              },
+              attested("identity-A"),
+            );
+      },
+    });
+    const states: string[] = [];
+    const stop = subscribeToRevision(() => states.push(sessionState()));
+
+    await renderApp({ path: PHONES, fetch: api.fetch, me: ALLOWED });
+
+    expect(await screen.findByRole("row", { name: /Teléfono de A/ })).toBeDefined();
+    expect(screen.queryByText("Teléfono de B")).toBeNull();
+    expect(meCalls).toBeGreaterThan(1); // it reconciled: /me/ was asked again
+    expect(states).toContain("unknown"); // and it left `known` through the one transition
+    stop();
   });
 
   test("another tab signs in as someone else while this tab pages: no old rows, and the late answer is dropped (#82)", async () => {

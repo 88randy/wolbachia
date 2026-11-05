@@ -4,7 +4,6 @@ import { useSessionExpired } from "../session/use-session-expired";
 import { sessionState, subscribeToRevision } from "../session/session-revision";
 import { SessionBlocker } from "../states/SessionBlocker";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
-import { useCrossTabSession } from "../session/use-cross-tab-session";
 import { useSessionChanges } from "../session/use-session-changes";
 import styles from "./AppShell.module.css";
 import { MAIN_ID } from "./ids";
@@ -23,7 +22,6 @@ export function AppShell() {
   const collapsed = isCompact || preferCollapsed;
   useFocusMainOnNavigation();
   useSessionChanges();
-  useCrossTabSession();
   const state = useSyncExternalStore(subscribeToRevision, sessionState);
   const isExpired = useSessionExpired();
   return (

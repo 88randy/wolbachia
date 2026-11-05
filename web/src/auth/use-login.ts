@@ -8,18 +8,24 @@ import { safeRedirect } from "../router/safe-redirect";
 import { runAuthOperation, useAbandonOnUnmount } from "../session/auth-operation";
 import { forgetIdentity, recordIdentity } from "../session/identity";
 import type { Me } from "../session/me";
+import { setExpectedAttestation } from "../session/attestation";
 import { ME_QUERY_KEY } from "../session/me-query";
 import { endSessionExpiry } from "../session/session-events";
 import { acceptSession, clearSessionUnknown } from "../session/session-revision";
 import type { LoginFailure } from "./login-failure";
 import { requestLogin } from "./request-login";
-import type { Credentials } from "./request-login";
+import type { Credentials, LoginSuccess } from "./request-login";
 
 /** The server accepted the credentials: replace whatever a previous user left (synchronous). */
-function replaceSession(me: Me, queryClient: QueryClient, commit: () => void): void {
+function replaceSession(
+  { me, attestation }: LoginSuccess,
+  queryClient: QueryClient,
+  commit: () => void,
+): void {
   commit();
   queryClient.clear();
   forgetIdentity(queryClient);
+  setExpectedAttestation(attestation);
   recordIdentity(queryClient, me);
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
@@ -59,7 +65,7 @@ export function useLogin(requestedTarget: string | undefined) {
     const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
       const outcome = await requestLogin(client, credentials, signal);
       if (!isCurrent()) return undefined;
-      if (outcome.ok) replaceSession(outcome.me, queryClient, commit);
+      if (outcome.ok) replaceSession(outcome, queryClient, commit);
       return outcome;
     });
     track(run);

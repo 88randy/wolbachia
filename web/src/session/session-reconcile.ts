@@ -1,6 +1,7 @@
 import type { ApiClient } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import { CancelledError } from "@tanstack/react-query";
+import { clearExpectedAttestation } from "./attestation";
 import { fetchMeForRevision, ME_QUERY_KEY } from "./me-query";
 import { removeOrganizationQueries } from "./organization-cache";
 import { leaveKnown } from "./session-transition";
@@ -54,26 +55,46 @@ export function reconcileSession(
 
 let inFlight: Promise<boolean> | undefined;
 
-async function askMe(queryClient: QueryClient, client: ApiClient, run: AbortController) {
+/**
+ * Asks `/me/` and says whether THIS run got an accepted answer: real network data for the current
+ * revision (`fetchMeForRevision`). A cancelled query is reverted by TanStack to the value it had
+ * before and `query()` then resolves with that old data; that must never count as success.
+ */
+async function askMe(
+  queryClient: QueryClient,
+  client: ApiClient,
+  run: AbortController,
+): Promise<boolean> {
+  let isAccepted = false;
   await queryClient.cancelQueries({ queryKey: ME_QUERY_KEY }); // never share an older run's request
   await queryClient.query({
     queryKey: ME_QUERY_KEY,
-    queryFn: ({ signal }) =>
-      fetchMeForRevision(client, currentRevision(), AbortSignal.any([signal, run.signal])),
+    queryFn: async ({ signal }) => {
+      const me = await fetchMeForRevision(
+        client,
+        currentRevision(),
+        AbortSignal.any([signal, run.signal]),
+      );
+      isAccepted = true;
+      return me;
+    },
     staleTime: 0,
   });
+  return isAccepted;
 }
 
 async function run(queryClient: QueryClient, client: ApiClient, mode: ReconcileMode) {
   if (mode === "full") {
     beginExternalChange();
+    clearExpectedAttestation(); // the new identity is learned from this run's `/me/`
     await queryClient.cancelQueries();
     removeOrganizationQueries(queryClient);
   } else beginVerification();
   const mine = startReconcileRun();
   try {
-    await askMe(queryClient, client, mine);
-    if (mine.signal.aborted) return false; // superseded: it never changes the state
+    const isAccepted = await askMe(queryClient, client, mine);
+    // Superseded, or the answer was cancelled/reverted: never a success, never a state change.
+    if (mine.signal.aborted || !isAccepted) return false;
     endSessionExpiry();
     clearSessionUnknown();
     return true;

@@ -1,6 +1,7 @@
 import type { ApiClient } from "@wolbachia/api-client";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
+import { clearExpectedAttestation } from "./attestation";
 import { fetchMe, ME_QUERY_KEY } from "./me-query";
 import { broadcastSessionChanged } from "./session-sync";
 import { removeOrganizationQueries } from "./organization-cache";
@@ -30,6 +31,7 @@ export async function switchOrganization(
   const previous = getOrganizationSlug();
   await queryClient.cancelQueries({ queryKey: ME_QUERY_KEY });
   setOrganizationSlug(slug);
+  clearExpectedAttestation(); // the new organization has its own attestation: re-learn it from /me/
   removeOrganizationQueries(queryClient);
   try {
     const me = await queryClient.query({

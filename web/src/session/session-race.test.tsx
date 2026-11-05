@@ -9,7 +9,12 @@ import { renderApp } from "../test/render-app";
 import type { Me } from "./me";
 import { clearOrganizationSlug } from "./organization-slug";
 import { endSessionExpiry } from "./session-events";
-import { isSessionKnown, markSessionUnknown, sessionState } from "./session-revision";
+import {
+  isSessionKnown,
+  markSessionUnknown,
+  sessionState,
+  subscribeToRevision,
+} from "./session-revision";
 
 const ME = "GET /api/v1/me/";
 const LOGIN = "POST /api/v1/auth/login/";
@@ -417,6 +422,66 @@ describe("the cookie is the truth (#82)", () => {
     expect(seen).not.toContain(userB.user.id);
     expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userA.user.id);
     expect(app.router.state.location.pathname).not.toBe("/select-organization");
+  });
+
+  test("a 401 during a verify with /me/ pending ends unknown and is never known without an accepted /me/ (#82)", async () => {
+    const meLater = deferred();
+    const api = createFakeApi({ [ME]: Response.json(makeMe()) });
+    const app = await renderApp({ path: "/", fetch: api.fetch });
+    await screen.findByRole("main");
+    api.setRoute(ME, () => meLater.promise);
+    const states: string[] = [];
+    const stop = subscribeToRevision(() => states.push(sessionState()));
+
+    window.dispatchEvent(new Event("focus")); // verify: /me/ is pending
+    await waitFor(() => {
+      expect(sessionState()).toBe("reconciling");
+    });
+    await app.queryClient
+      .query({ queryKey: ["probe"], queryFn: () => Promise.reject(new ApiError(401)) })
+      .catch(() => undefined);
+    meLater.release(Response.json(makeMe())); // the cancelled /me/ is reverted to the old value
+    await hop();
+
+    await waitFor(() => {
+      expect(sessionState()).toBe("unknown");
+    });
+    expect(states).not.toContain("known");
+    stop();
+  });
+
+  test("B signs in from another tab while A's initial /me/ is pending: A is never stored or shown (#82)", async () => {
+    const meOfA = deferred();
+    const userA = makeMe({ user: { ...makeMe().user, first_name: "Ana", last_name: "UsuariaA" } });
+    const userB = makeMe({
+      user: {
+        ...makeMe().user,
+        id: "b0b0b0b0-0000-4000-8000-000000000009",
+        first_name: "Beto",
+        last_name: "UsuarioB",
+      },
+    });
+    let calls = 0;
+    const api = createFakeApi({
+      [ME]: () => {
+        calls += 1;
+        return calls === 1 ? meOfA.promise : Promise.resolve(Response.json(userB));
+      },
+    });
+    const starting = renderApp({ path: "/", fetch: api.fetch });
+    await waitFor(() => {
+      expect(calls).toBe(1);
+    });
+
+    announce(); // the listener is installed at the root, before any guard runs
+    meOfA.release(Response.json(userA)); // A's answer arrives after the change
+    const app = await starting;
+    await screen.findByRole("main");
+
+    await waitFor(() => {
+      expect(app.queryClient.getQueryData<Me>(["me"])?.user.id).toBe(userB.user.id);
+    });
+    expect(screen.queryByText(/UsuariaA/)).toBeNull();
   });
 
   test("a re-authentication from the unknown state makes the identity known again", async () => {
