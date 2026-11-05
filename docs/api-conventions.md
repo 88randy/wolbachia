@@ -271,7 +271,20 @@ NO KEY UPDATE locking precedes point locks; no network/storage/mail or account
 locks occur inside. Existing User -> Device -> DeviceSession -> TokenPair order
 is preserved. No void/delete endpoints, new sync events or result codes are added;
 #22 owns review acceptance and #110 owns delivery of offline assignment/task deltas.
-See scheduling/README.md and ADR 100 for lead decisions and the integration seam.
+See scheduling/README.md and ADR 113 for lead decisions and the integration seam.
 
 Planning input dates use the same technical 2020-01-01..2100-01-01 window as
 field sync; out-of-range week/day returns 400 out_of_range, never date overflow.
+## Offline bundle additions (#110 / B-13)
+
+| Contract | Rule |
+| --- | --- |
+| GET /api/v1/field/bootstrap/ | Live pinned bearer device token, field.bootstrap, token/membership organization only; no final-upload entitlement. One courier try-locked transaction builds fixed assignments/supplies/permits/eligibility/history/map_manifests lists and cursor. |
+| Bootstrap metadata | bundle_version (content hash/ETag), schema_version (opaque registered-schema hash), generated_at, scope_revision, cursor, catalog_version, rules_version, next_change_at, map_manifest_ready. Private no-cache, Vary X-Organization; conditional 304 only after auth/permission. |
+| Sync producer arrays | Six typed changes arrays with sequence/action/resource_type/resource_id/resource_version/data, plus nullable next_change_at. Independent sequence pages; has_more if either stream remains. Existing event order and final-upload restriction are preserved. |
+| Cursor v2 | Signed o/u/s/c/r, bound to effective paired scope and field.bootstrap/field_event.sync codes; v1, expired or changed scope returns 400 invalid_cursor before ingest. Recover with bootstrap and retain unsent phone events. |
+| Producer isolation | Registered schemas from AppConfig.ready(); producer filters organization/courier and applicable center/quadrant; defense-in-depth metadata check precedes serialization. Foreign rows remain undisclosed. Every change writer holds courier lock through domain write, append and commit. |
+| Maps | Licensed PMTiles manifests only; incomplete/unavailable/unlicensed assets keep readiness false. Native asset download/hash verification is separate (M-01). |
+
+See [sync.md](sync.md#bootstrap-and-projection-recovery-b-13-110) for version
+compatibility, producer registration, recovery and the existing error-code table.

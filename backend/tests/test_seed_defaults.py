@@ -10,7 +10,7 @@ from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from catalogs import permissions as catalog_codes
 from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
-from field_sync.permissions import FIELD_EVENT_SYNC
+from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from organizations.defaults import (
     DEFAULT_PROFILE_PERMISSIONS,
     seed_default_permission_codes,
@@ -230,7 +230,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "organization.read",
         "center.read",
     }
-    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, MOTORCYCLE_READ}
+    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, FIELD_BOOTSTRAP, MOTORCYCLE_READ}
     assert by_slug["supervisor"] == {
         "schedule.read",
         "schedule.manage",
@@ -268,6 +268,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "quadrant.publish",
         "sampling_point.create",
         FIELD_EVENT_SYNC,
+        FIELD_BOOTSTRAP,
         "portal.read",
         "organization.read",
         "organization.update",
@@ -317,6 +318,7 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     assert courier.seeded_permission_codes == [
         "catalog.read",
         "center.read",
+        "field.bootstrap",
         "field_event.sync",
         "motorcycle.read",
         "organization.read",
@@ -337,6 +339,7 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     assert courier.permission_codes == [
         "catalog.read",
         "center.read",
+        "field.bootstrap",
         "field_event.sync",
         "motorcycle.read",
         "organization.read",
@@ -371,6 +374,7 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
             "organization.read",
             "center.read",
             FIELD_EVENT_SYNC,
+            FIELD_BOOTSTRAP,
             MOTORCYCLE_READ,
         )
     }

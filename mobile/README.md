@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: bootstrap (issue #6). The shell, tokens, i18n, the local outbox, the sync worker and the sync inbox (P28) exist. Login is #7, the feature screens are the epics #8 to #11. Decisions: [`docs/decisions.md`](../docs/decisions.md) 91 to 93.
+> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Login remains #7; supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
 
 ## Rules
 
@@ -26,7 +26,8 @@ src/db/                SqlExecutor, migrations, key-value store, op-sqlite adapt
 src/outbox/            event envelope, state machine, outbox repository
 src/sync/              sync pass, failure table, backoff, engine, chip and inbox models
 src/navigation/        typed stack and the screen router
-src/screens/           Home (placeholder), Inbox (P28), Settings (partial P31)
+src/screens/           Home shell, Inbox (P28), Settings (partial P31)
+src/features/shift-open/ P3-P7, durable draft/local shift, catalog/map/photo ports
 src/ui/, src/theme/    components and Codequim theme (tokens from packages/tokens)
 src/i18n/              `t(key, params)` over packages/i18n (area `mobile`)
 test/                  Node tests; support/ has the in-memory SQLite and a scripted transport
@@ -137,3 +138,103 @@ When React Native or Expo is upgraded, re-read `node_modules/react-native/gradle
 - Android backups are disabled and overlay/external-storage permissions are blocked by Expo config. CI checks the generated main manifest for allowBackup=false and no cleartext; debug must explicitly allow LAN cleartext.
 - Local write failures from enqueue/retry are announced on screen; Notice uses a polite live region. Inbox timestamps include a localized date outside today.
 - No new dependencies. Configuration references: [Expo Android config](https://docs.expo.dev/versions/latest/config/app/), [Expo blocked permissions](https://docs.expo.dev/guides/permissions/), [React Native AbortSignal source](https://github.com/facebook/react-native/blob/v0.88.1/src/private/webapis/dom/abort-api/AbortSignal.js).
+
+
+## M-04: home and open shift (#133)
+
+Design mapping: `S02-Inicio` = P3 home / P4 motorcycle; `S03-Moto` = P5 safety
+checklist / P6 odometer / P7 maps; `S04-Insumos` = P8 supply reception (#134,
+excluded). The route `openShift` restores its internal step. Home shows the real
+local shift and its upload outcome; the day view P9 remains #8. Four preparation
+steps replace the board's five because P8 is excluded. No assignment or motorcycle
+availability is invented when B-05/bootstrap data is absent.
+
+- The courier types/confirms the motorcycle code. The server can subsequently
+  reject it as unknown, blocked or in use; receipt and rejection are shown
+  separately. A known block from the saved catalog also prevents opening.
+- Every ACTIVE `motorcycle-check-item` from `/field/catalog/` is required. The
+  endpoint returns active items only. Missing/empty is unconfigured and blocked.
+  **Update safety catalog** explicitly downloads it through `packages/api-client`
+  and stores its version/items in SQLite `kv`. Rules snapshot content/version is
+  also saved. A changed catalog requires explicit reconfirmation; retired captured
+  checks are retained and require supervisor help, never silently filtered away.
+- `MapPreparationSource` supplies manifest/version, explicit coverage, licensed
+  PMTiles assets and verification results (local file ref, size/hash), and persists
+  progress/error before publishing. Ready requires nonempty coverage and verified
+  files matching every manifest size/hash when supplied. Retry receives the saved
+  preparation; download/network/GPS errors never imply readiness. Production returns
+  `unavailable`: **normal production opening stays gated until B-13 provides the
+  manifest [ASSUMPTION, owner to confirm]**. No public OSM tile download is added.
+- A severe result still records/enqueues `shift.open`, as #68 requires, but never
+  permits departure, even without maps. UI asks the supervisor to arrange fleet
+  clearance (`motorcycle.unblock` belongs to supervisor/admin in api-conventions).
+  It never claims an incident was created or a supervisor was notified offline.
+- Odometer input is integer km and is retained verbatim through edits/restart.
+  A decrease from the maximum locally known opening/closing reading warns but
+  permits capture; the server owns the true reference. Changing motorcycles clears
+  safety answers/photo references and requires a new checklist; the raw odometer
+  remains visible for the courier to confirm again.
+- Photo references are durable local file refs in `OpenShiftDraft` and remain with
+  the immutable captured shift. `PhotoCapturePort` adds no native dependency;
+  production says **not available in this build**. Odometer photo is optional
+  **[ASSUMPTION]** (P6 does not mark it required). Catalog-required photos and the
+  board's minor-fault photo gate departure. Severe evidence capture remains possible
+  under decision 3 above. Photo upload/native camera qualification is not claimed.
+- Schema migration **3** adds one durable draft/local-shift slot. The draft owns
+  both client shift UUID and opening event UUID from creation. One service queue,
+  the singleton SQLite slot and unique outbox event id prevent duplicate opening.
+  `engine.enqueue(event, projectionStatements)` commits the immutable envelope,
+  photo refs and local-shift projection in one SQLite transaction. Only after commit
+  can the UI show phone-saved; a failed transaction retains the draft. A later
+  sync refresh failure cannot turn a successful commit into `OutboxWriteError`.
+- A server-rejected opening offers **Correct and try again** on Home and P7.
+  This explicit action creates a blank motorcycle-step draft with fresh shift/event
+  UUIDs. The rejected outbox envelope/result stays unchanged and is never resent.
+  Pending/sending/error, accepted and in-review openings cannot be replaced.
+  Schema migration **4** permits only a rejected slot to yield to a new draft;
+  the outbox immutability triggers remain in force. A guarded update compares the
+  original rejected event id, preventing competing corrections from replacing a
+  newer attempt. Ordinary start/resume never resets a rejected attempt.
+- Snapshot refreshes publish only the latest requested read at the same edit
+  revision. Unmount invalidates in-flight reads, so a delayed pending snapshot
+  cannot hide a newer rejection or overwrite courier input.
+- Envelope: `shift.open`, schema 1, draft `shift_id`, original event id, actual
+  capture `device_time`, saved catalog/rules versions, `gps: null`,
+  `manual_capture: true`. Pending/sending/error never imply server receipt;
+  accepted/in_review/rejected are distinct server outcomes. Review resolution is
+  explicitly unconfirmed; #22 decisions are not available through this sync shape.
+  A future close must capture its own timestamp and reuse the shift UUID.
+- Severe notes are mandatory, other notes optional **[ASSUMPTION]**; every Other
+  needs text. No signature/new incident payload is invented beyond #68's contract.
+- New actions have 56 dp minimum targets and explicit labels/states; fields have
+  native textbox roles/labels; notices/progress use live regions. `AppText`, theme
+  tokens, wrapping layouts and shared es-MX/en copy cover all new UI. Login, token
+  refresh, identity/database scope ownership and local lock remain #7; this feature
+  uses the current pinned bearer client without choosing organization routes.
+
+Runtime compatibility note: the generated client's two field snapshot responses
+are annotated as arrays, while `CatalogSnapshotViewSet.list` and the rules endpoint
+return the documented object. M-04 validates the response as `unknown` at its boundary
+and rejects malformed snapshots; generated files are untouched. Reconcile that
+annotation when regenerating the contract. The existing 30 s snapshot request limit
+follows the sync worker's timeout assumption. No new dependency was added.
+
+### Acceptance evidence
+
+`test/m-04.test.ts` maps to #133 as follows:
+
+| Criterion | Tests |
+|---|---|
+| No-shift to durable open / one UUID | AC flow: actual SQLite file close/reopen, step recovery, commit before return, concurrent second open |
+| Safety | AC safety, severe, blocked, odometer, map, catalog, evidence: nonempty required checklist, Other/severe notes, server motorcycle rejections, size/hash/coverage, retained decrease |
+| Offline/restart / truthful storage | AC offline, storage, recovery, map recovery: original UUID once, pending/error labels, rollback after insert, failed input retained, durable progress/retry |
+| Rejection correction | Regression: new shift/event UUIDs, retained rejected envelope, only the new event uploads; non-rejected states cannot be replaced |
+| Refresh ordering | Regression: deferred reads completed in reverse retain rejection; edit/unmount invalidation blocks stale publication |
+| Accessibility matrix | Native implementation present; TalkBack, 130% text, light/dark and both locales on qualified devices remain UNVERIFIED |
+
+Ordinary tests use the in-memory SQLite support. One durability test closes and
+reopens a temporary SQLite file; this is real database reopen evidence, not an
+Android force-stop/device certification claim. There is no mobile e2e harness, so
+`mobile/e2e/m-04.spec.ts` is intentionally not added. APK CI, real API/device flows,
+native SQLite, Galaxy S24 Ultra SM-S928B/Android 16 and the arm64/4 GB/64 GB/Android
+13+ profile must be qualified by the orchestrator. Docker is blocked in this task.

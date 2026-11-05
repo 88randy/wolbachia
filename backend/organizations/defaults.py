@@ -18,7 +18,7 @@ from catalogs.permissions import (
     CATALOG_READ,
 )
 from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
-from field_sync.permissions import FIELD_EVENT_SYNC
+from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from geography.permissions import GEOGRAPHY_WRITE_CODES, QUADRANT_READ
 from organizations.models import Organization, Profile
 from ovitraps.permissions import READ_CODES, READING_READ
@@ -43,6 +43,7 @@ ADMIN_CODES = (
     *READ_CODES,
     *GEOGRAPHY_WRITE_CODES,
     FIELD_EVENT_SYNC,
+    FIELD_BOOTSTRAP,
     "portal.read",
     "organization.read",
     "organization.update",
@@ -65,7 +66,12 @@ ADMIN_CODES = (
     MOTORCYCLE_MANAGE,
     MOTORCYCLE_UNBLOCK,
 )
-COURIER_CODES = (*READ_ONLY_CODES, FIELD_EVENT_SYNC, MOTORCYCLE_READ)  # the phone syncs (#5)
+COURIER_CODES = (
+    *READ_ONLY_CODES,
+    FIELD_EVENT_SYNC,
+    FIELD_BOOTSTRAP,
+    MOTORCYCLE_READ,
+)  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
     SCHEDULE_READ,

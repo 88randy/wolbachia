@@ -43,3 +43,48 @@ after `params.retry_after_seconds` (also the response's conditional `Retry-After
 Other events in the batch proceed. The retry-only control code is separate from final,
 translated rejection codes; mobile recovery/localization is outside this backend issue.
 Full contract and concurrency rule: [`docs/sync.md`](../../docs/sync.md#rejection-quota-56-sa09).
+
+
+## Assigned bootstrap and change producers (#110 / B-13)
+
+`GET /field/bootstrap/` requires live DeviceBearerAuthentication and
+field.bootstrap; it never uses FinalUploadMixin. `producers.py` defines the fixed
+six-section BundleProducer registry (registered once from owning AppConfig.ready),
+ProducerContext, schema boundary and licensed PMTiles manifest contract. Until
+dependency apps register their producer, each section is an empty list.
+
+`CourierChange` is an immutable organization/courier sequence log. The new schema
+migration adds its table, constraints and raw UPDATE/DELETE guard only. The
+once-only organization default seed grants field.bootstrap to existing seeded
+courier/admin profiles and preserves later revocation; run
+`seed_organization_defaults --apply` when upgrading an existing organization.
+
+Every writer must hold lock_courier_batches in the same transaction as the domain
+write AND append_courier_change through commit. Append verifies a transaction-local
+lock marker, validates the registered producer payload, then allocates max+1.
+Never write the feed in an on_commit callback. Bootstrap and both sync feed pages
+share that lock. Try-lock contention is retryable 429; no network/storage/mail runs
+inside it. See docs/sync.md for producer metadata/scope requirements and lock order.
+
+Cursor v2 binds both sequences and a canonical paired effective-scope revision.
+V1/expired/changed-scope cursors fail before ingest; recover through bootstrap,
+atomically replace only downloaded projections and retain the independent outbox.
+Native storage integration belongs to M-01. Bundle schema_version hashes the
+registered producer schemas, including empty ones; bundle_version/ETag hashes
+content except generated_at and cursor. Existing rules/catalog snapshots provide
+next_change_at refresh while capture-time evaluation retains historical versions.
+No operational in_review effects or acceptance handler are added (#22).
+
+Acceptance tests: tests/test_field_sync_b_13.py. No new event result codes/locales.
+
+
+Scope capture uses ONE membership SELECT with an ArraySubquery of active assigned
+same-organization profiles, including current user/organization activity. Both
+bootstrap and initial/cursor sync compute effective grants from that statement's
+snapshot; the shared algebra never performs a later profile read on this path.
+A transaction at READ COMMITTED alone cannot prevent mixing old membership scope
+with new profile scope. Capture takes no configuration row lock after the courier
+lock; existing lock order is preserved. Regression:
+`test_producer_scope_capture_never_mixes_membership_and_profile_revisions` pauses
+after the membership statement while an organization-locked admin transaction
+commits both scope changes. CI runs this PostgreSQL test; it uses no sleeps.
