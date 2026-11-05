@@ -22,6 +22,6 @@ export function allowsPrivateLanHttp(isDevBundle: boolean, flag: unknown): boole
 const rawAllowLanHttp: unknown = process.env.EXPO_PUBLIC_ALLOW_LAN_HTTP;
 export const LAN_HTTP_FLAG: unknown = rawAllowLanHttp;
 
-/** Shows the test tools in Settings (device id, test token, test record). Set only in development builds. */
+/** Shows the test tools in Settings (device id, test record). Set only in development builds. */
 const rawDevTools: unknown = process.env.EXPO_PUBLIC_DEV_TOOLS;
 export const DEV_TOOLS_ENABLED: boolean = rawDevTools === "1";

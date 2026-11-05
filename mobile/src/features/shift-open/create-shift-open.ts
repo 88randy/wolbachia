@@ -1,8 +1,8 @@
 import { unwrap } from "@wolbachia/api-client";
-import { randomUUID } from "expo-crypto";
 import { createMobileApiClient } from "../../api/create-api-client.ts";
 import type { TokenStore } from "../../auth/token-store.ts";
-import type { ServerSettings } from "../../config/server-settings.ts";
+import type { CredentialStore, Credentials } from "../../auth/credential-store.ts";
+import type { SessionRequests } from "../../auth/session-requests.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import type { SyncEngine } from "../../sync/sync-engine.ts";
 import { readCatalogSnapshot, readRulesSnapshot } from "./catalog-snapshot.ts";
@@ -13,26 +13,42 @@ import { ShiftOpenStore } from "./store.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly engine: SyncEngine;
-  readonly server: ServerSettings;
-  readonly tokens: TokenStore;
+  readonly tokens: TokenStore & Pick<CredentialStore, "getSnapshot">;
+  readonly requests: SessionRequests;
+  readonly uuid: () => string;
+  readonly fetch?: (request: Request) => Promise<Response>;
 }
 async function downloadCatalog(deps: Dependencies, store: ShiftOpenStore): Promise<void> {
-  const baseUrl = deps.server.baseUrl();
+  const baseUrl = deps.tokens.getOrigin();
+  const session = deps.tokens.getSnapshot();
   if (baseUrl === null || deps.tokens.getAccessToken() === undefined)
     throw new Error("Catalog unavailable without a server and session.");
-  const client = createMobileApiClient({ baseUrl, tokens: deps.tokens });
-  const access = deps.tokens.getAccessToken();
+  const client = createMobileApiClient({
+    baseUrl,
+    tokens: deps.tokens,
+    ...(deps.fetch === undefined ? {} : { fetch: deps.fetch }),
+  });
   const signal = AbortSignal.timeout(30_000);
   const catalog = readCatalogSnapshot(
-    unwrap(await client.GET("/api/v1/field/catalog/", { signal })),
+    unwrap(await deps.requests.run(() => client.GET("/api/v1/field/catalog/", { signal }))),
   );
-  if (access !== deps.tokens.getAccessToken() || baseUrl !== deps.server.baseUrl())
-    throw new Error("Catalog session changed.");
+  requireSession(deps.tokens, session);
   await store.saveCatalog(catalog);
-  const rules = readRulesSnapshot(unwrap(await client.GET("/api/v1/field/rules/", { signal })));
-  if (access !== deps.tokens.getAccessToken() || baseUrl !== deps.server.baseUrl())
-    throw new Error("Rules session changed.");
+  requireSession(deps.tokens, session);
+  const rules = readRulesSnapshot(
+    unwrap(await deps.requests.run(() => client.GET("/api/v1/field/rules/", { signal }))),
+  );
+  requireSession(deps.tokens, session);
   await store.saveRules(rules);
+}
+function requireSession(tokens: Dependencies["tokens"], session: Credentials): void {
+  const current = tokens.getSnapshot();
+  if (
+    current.status !== "active" ||
+    current.sessionId !== session.sessionId ||
+    current.origin !== session.origin
+  )
+    throw new Error("Catalog session changed.");
 }
 /** One feature wiring point; B-13 and native camera support deliberately remain truthful unavailable ports. */
 export function createShiftOpen(deps: Dependencies): ShiftOpenService {
@@ -41,7 +57,7 @@ export function createShiftOpen(deps: Dependencies): ShiftOpenService {
     store,
     engine: deps.engine,
     now: () => new Date(),
-    uuid: randomUUID,
+    uuid: deps.uuid,
     maps: { prepare: () => Promise.resolve(UNAVAILABLE_MAP) },
     photos: { capture: () => Promise.resolve({ status: "unavailable" }) },
     refreshCatalog: () => downloadCatalog(deps, store),

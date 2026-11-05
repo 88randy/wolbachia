@@ -2,6 +2,8 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useReducer 
 import type { ReactNode } from "react";
 import { BackHandler } from "react-native";
 
+import { useServices } from "../app/services-context.ts";
+
 import { currentRoute, INITIAL_STACK, navigationReducer } from "./routes.ts";
 import type { Route } from "./routes.ts";
 
@@ -15,6 +17,7 @@ interface NavigationValue {
 const NavigationContext = createContext<NavigationValue | null>(null);
 
 export function NavigationProvider({ children }: { readonly children: ReactNode }) {
+  const { auth } = useServices();
   const [stack, dispatch] = useReducer(navigationReducer, INITIAL_STACK);
   const push = useCallback((route: Route) => {
     dispatch({ type: "push", route });
@@ -27,13 +30,14 @@ export function NavigationProvider({ children }: { readonly children: ReactNode 
   // The Android back button pops a screen; on the first screen the system handles it.
   useEffect(() => {
     const subscription = BackHandler.addEventListener("hardwareBackPress", () => {
+      if (auth.getSnapshot().phase !== "unlocked") return true;
       if (canGoBack) goBack();
       return canGoBack;
     });
     return () => {
       subscription.remove();
     };
-  }, [canGoBack, goBack]);
+  }, [auth, canGoBack, goBack]);
 
   const value = useMemo(
     () => ({ route: currentRoute(stack), canGoBack, push, goBack }),

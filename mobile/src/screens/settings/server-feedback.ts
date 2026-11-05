@@ -2,10 +2,11 @@ import type { MessageKey } from "@wolbachia/i18n";
 
 import type { ApiBaseUrlProblem } from "../../config/api-base-url.ts";
 
-export type ServerFeedback = "saved" | "storageFailed" | ApiBaseUrlProblem;
+export type ServerFeedback = "saved" | "storageFailed" | "identityBound" | ApiBaseUrlProblem;
 
 const KEYS: Readonly<Record<ServerFeedback, MessageKey>> = {
   saved: "mobile.settings.serverSaved",
+  identityBound: "mobile.settings.serverIdentityBound",
   storageFailed: "mobile.storage.actionFailed",
   empty: "mobile.settings.serverInvalid",
   invalid: "mobile.settings.serverInvalid",

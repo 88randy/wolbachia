@@ -1,3 +1,4 @@
+import { hasLocalRecords } from "../../src/db/owner-data.ts";
 import { KvStore } from "../../src/db/kv-store.ts";
 import type { SqlExecutor } from "../../src/db/sql.ts";
 import type { FieldEventEnvelope } from "../../src/outbox/outbox-event.ts";
@@ -35,9 +36,16 @@ export interface TestStores {
 }
 
 /** An empty, migrated database with its stores. The clock is fixed: no test depends on the date. */
-export async function createStores(): Promise<TestStores> {
+export async function createStores(): Promise<
+  TestStores & { readonly hasLocalRecords: () => Promise<boolean> }
+> {
   const db = await createTestDatabase();
-  return { db, kv: new KvStore(db), outbox: new OutboxRepository(db, () => FIXED_NOW) };
+  return {
+    db,
+    kv: new KvStore(db),
+    outbox: new OutboxRepository(db, () => FIXED_NOW),
+    hasLocalRecords: () => hasLocalRecords(db),
+  };
 }
 
 export const FIXED_DEVICE_ID = "11111111-1111-4111-8111-111111111111";
