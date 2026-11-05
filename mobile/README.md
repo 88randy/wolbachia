@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Login remains #7; supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 99 below.
+> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Login remains #7; supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
 
 ## Rules
 
