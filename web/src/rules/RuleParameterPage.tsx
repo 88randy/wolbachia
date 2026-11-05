@@ -16,7 +16,12 @@ import { NewVersionForm } from "./NewVersionForm";
 import { ParameterSummary } from "./ParameterSummary";
 import { VersionHistory } from "./VersionHistory";
 import { useParameterLabels } from "./parameter-labels";
-import { RULE_VERSION_CREATE, RULE_VERSION_READ, RULE_VERSION_VOID } from "./permissions";
+import {
+  CATALOG_READ,
+  RULE_VERSION_CREATE,
+  RULE_VERSION_READ,
+  RULE_VERSION_VOID,
+} from "./permissions";
 import { parameterQueryOptions } from "./rules-query";
 import type { RuleParameter } from "./rules-query";
 import styles from "./rules.module.css";
@@ -65,7 +70,10 @@ function ParameterScreen({ parameter, notice }: { parameter: RuleParameter; noti
         <ParameterSummary parameter={parameter} />
         {can(RULE_VERSION_CREATE) && <NewVersionForm parameter={parameter} />}
         {can(RULE_VERSION_READ) && (
-          <VersionHistory parameter={parameter} canVoid={can(RULE_VERSION_VOID)} />
+          <VersionHistory
+            parameter={parameter}
+            canVoid={can(RULE_VERSION_VOID) && can(CATALOG_READ)}
+          />
         )}
       </div>
     </section>
