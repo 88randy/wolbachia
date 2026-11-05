@@ -5,6 +5,7 @@ import { readAuthRules, hasClockSkew } from "../src/auth/auth-rules.ts";
 import { loginError } from "../src/auth/login-error.ts";
 import { canLoginAs } from "../src/auth/login-policy.ts";
 import type { Schemas } from "@wolbachia/api-client";
+import { createStores, makeEnvelope } from "./support/factories.ts";
 
 function snapshot(values: Record<string, number | null>): Schemas["RulesSnapshot"] {
   return {
@@ -77,11 +78,23 @@ void it("maps first-login failures to localized P1 states and respects Retry-Aft
 });
 
 void it("allows same-user relogin but blocks a different user while any local record exists", () => {
-  const counts = { pending: 0, sending: 0, error: 0, sent: 0, rejected: 0, in_review: 0 };
-  assert.equal(canLoginAs("next", "previous", counts), true);
-  for (const status of ["pending", "sending", "error", "sent", "rejected", "in_review"] as const) {
-    const unsent = { ...counts, [status]: 1 };
-    assert.equal(canLoginAs("next", "previous", unsent), false);
-    assert.equal(canLoginAs("previous", "previous", unsent), true);
+  assert.equal(canLoginAs("next", "previous", false), true);
+  assert.equal(canLoginAs("next", "previous", true), false);
+  assert.equal(canLoginAs("previous", "previous", true), true);
+});
+
+void it("owner data includes outbox history in every status", async () => {
+  const stores = await createStores();
+  assert.equal(await stores.hasLocalRecords(), false);
+  const event = makeEnvelope();
+  await stores.outbox.enqueue(event);
+  for (const status of ["pending", "sending", "error", "sent", "rejected", "in_review"]) {
+    await stores.db.runAtomically([
+      {
+        sql: "UPDATE outbox_event SET local_status = ? WHERE id = ?",
+        params: [status, event.id],
+      },
+    ]);
+    assert.equal(await stores.hasLocalRecords(), true, status);
   }
 });

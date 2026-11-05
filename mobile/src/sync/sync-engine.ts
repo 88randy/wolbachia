@@ -36,8 +36,8 @@ type Listener = () => void;
  * together with durable pending work and retry/offline waits. Only a pass moves events through `sending`, so
  * no two writers ever touch the same event (see `runSyncPass`). Pending recovery must finish
  * inside this loop before any pass can select a batch. Final upload is level-triggered: each
- * completed pass checks durable credentials before the loop closes; hints never override a
- * scheduled retry or an offline wait.
+ * idle pass checks durable credentials before the loop closes; hints never override a
+ * blocked pass, a scheduled retry or an offline wait.
  */
 export class SyncEngine {
   readonly #deps: SyncEngineDeps;
@@ -117,13 +117,13 @@ export class SyncEngine {
     return this.#start();
   }
 
-  /** A session hint: like `requestSync`, but it never cuts a scheduled retry short. */
+  /** A session hint can wake idle work, but never resumes a blocked pass or cuts a retry short. */
   hint(): Promise<void> {
     if (this.#running !== null) {
       this.#hinted = true;
       return this.#running;
     }
-    if (this.#cancelRetry !== null) return Promise.resolve();
+    if (this.#cancelRetry !== null || this.#snapshot.phase !== "idle") return Promise.resolve();
     return this.#start();
   }
 
@@ -142,7 +142,9 @@ export class SyncEngine {
         await this.#recoverPending();
         await this.#runOnce();
         const hasFinalUpload =
-          this.#cancelRetry === null && (await this.#deps.hasPendingFinalUpload());
+          this.#snapshot.phase === "idle" &&
+          this.#cancelRetry === null &&
+          (await this.#deps.hasPendingFinalUpload());
         shouldRun = this.#shouldRunAgain(hasFinalUpload);
       }
     } catch (error) {
@@ -169,7 +171,7 @@ export class SyncEngine {
   // Read hints/readiness AFTER the durable-level await, with no further await before loop exit.
   // An explicit request made during the pass (enqueue, connectivity, foreground) repeats it at once,
   // replacing a scheduled retry, as in #6. A session hint and the durable final-upload level
-  // respect a scheduled retry and the offline wait.
+  // only repeat after an idle pass, respecting blocked, retry and offline waits.
   #shouldRunAgain(hasFinalUpload: boolean): boolean {
     if (this.#again) {
       this.#cancelRetry?.();
@@ -177,6 +179,7 @@ export class SyncEngine {
       return true;
     }
     return (
+      this.#snapshot.phase === "idle" &&
       this.#cancelRetry === null &&
       (this.#snapshot.isOnline || this.#forceOffline) &&
       this.#missingCondition() === null &&

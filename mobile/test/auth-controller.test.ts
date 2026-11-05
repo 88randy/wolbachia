@@ -5,6 +5,7 @@ import type { Schemas } from "@wolbachia/api-client";
 
 import { AuthController } from "../src/auth/auth-controller.ts";
 import type { LoginResult } from "../src/auth/auth-api.ts";
+import { ShiftOpenStore } from "../src/features/shift-open/store.ts";
 import { createStores, makeEnvelope, FIXED_NOW } from "./support/factories.ts";
 import { makeCredentials, deferred } from "./support/auth-fakes.ts";
 
@@ -75,6 +76,38 @@ void it("enforces offline first-login and owner binding before any server call, 
   assert.equal(auth.getSnapshot().notice?.key, "mobile.login.differentUser");
   await auth.login("courier-test", randomUUID());
   assert.equal(loginCalls, 1);
+});
+
+void it("a durable shift draft without outbox events refuses a different owner before login and permits its owner", async () => {
+  let loginCalls = 0;
+  const h = await harness(() => {
+    loginCalls += 1;
+    return Promise.resolve({ ok: true, origin: "https://example.invalid", login: loginResponse() });
+  });
+  const store = new ShiftOpenStore(h.db);
+  const draft = {
+    clientShiftId: randomUUID(),
+    openingEventId: randomUUID(),
+    catalogVersion: "",
+    motorcycle_code: "M-03",
+    checks: [],
+    odometer_km: "12",
+    photoRefs: [],
+    note: "unfinished",
+    step: "motorcycle" as const,
+  };
+  await store.createDraft(draft);
+  await h.auth.endSession();
+  await h.credentials.finishEndedSession(h.credentials.getSnapshot().sessionId);
+  assert.ok(Object.values(await h.outbox.countByStatus()).every((count) => count === 0));
+  h.auth.setOnline(true);
+  await h.auth.login("other-courier", randomUUID());
+  assert.equal(loginCalls, 0);
+  assert.equal(h.auth.getSnapshot().notice?.key, "mobile.login.differentUser");
+  await h.auth.login("courier-test", randomUUID());
+  assert.equal(loginCalls, 1);
+  assert.equal(h.auth.getSnapshot().phase, "createPin");
+  assert.deepEqual((await store.read()).draft, draft);
 });
 
 void it("cold starts locked; biometric success keeps PIN attempts and cannot bypass the password-required state", async () => {

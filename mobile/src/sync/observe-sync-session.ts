@@ -13,6 +13,8 @@ export function observeSyncSession(engine: SyncEngine, tokens: TokenStore): () =
     const hasAccessChanged = previous.access !== current.access;
     previous = current;
     if (!hasEligibilityChanged && !hasAccessChanged) return;
+    // A new sign-in is an external fix for a worker blocked on needsLogin; everything else is a hint.
+    if (hasEligibilityChanged && current.canSync) engine.notifyConditionsChanged();
     void engine.hint();
   });
 }

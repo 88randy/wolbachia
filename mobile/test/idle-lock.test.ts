@@ -6,7 +6,6 @@ import { IdleLock } from "../src/auth/idle-lock.ts";
 import { shouldRunIdleTimer } from "../src/auth/idle-policy.ts";
 import { AuthController } from "../src/auth/auth-controller.ts";
 import { CredentialStore } from "../src/auth/credential-store.ts";
-import { EMPTY_COUNTS } from "../src/sync/sync-snapshot.ts";
 import { loginResponse, memorySecrets } from "./support/auth-fakes.ts";
 
 function fakeClock() {
@@ -81,7 +80,7 @@ void it("PIN setup warns then locks on idle expiry, touch resets the deadline, a
         return Promise.resolve();
       },
     },
-    outbox: { countByStatus: () => Promise.resolve(EMPTY_COUNTS) },
+    hasLocalRecords: () => Promise.resolve(false),
     login: () =>
       Promise.resolve({ ok: true, origin: "https://example.invalid", login: loginResponse() }),
     fetchRules: () => Promise.resolve(null),

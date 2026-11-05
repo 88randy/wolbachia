@@ -1,5 +1,3 @@
-import type { OutboxCounts } from "../outbox/outbox-repository.ts";
-
 /**
  * The phone belongs to one courier while it holds any of their records. A different user may sign
  * in only on a phone with no local history: unsent work would be attributed to them, and sent,
@@ -9,8 +7,8 @@ import type { OutboxCounts } from "../outbox/outbox-repository.ts";
 export function canLoginAs(
   username: string,
   previousUsername: string | null,
-  counts: OutboxCounts,
+  hasLocalRecords: boolean,
 ): boolean {
   if (username === previousUsername) return true;
-  return Object.values(counts).every((count) => count === 0);
+  return !hasLocalRecords;
 }

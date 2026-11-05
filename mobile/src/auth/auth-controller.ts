@@ -2,7 +2,6 @@ import type { Schemas } from "@wolbachia/api-client";
 
 import { toHex } from "../db/encrypted-database.ts";
 import type { KvStore } from "../db/kv-store.ts";
-import type { OutboxRepository } from "../outbox/outbox-repository.ts";
 import { endedCredentials } from "./credential-store.ts";
 import type { CredentialStore, Credentials } from "./credential-store.ts";
 import { readAuthRules, hasClockSkew } from "./auth-rules.ts";
@@ -24,7 +23,7 @@ const RULES_KEY = "auth_rules_snapshot";
 interface AuthDeps {
   readonly credentials: CredentialStore;
   readonly kv: Pick<KvStore, "get" | "set">;
-  readonly outbox: Pick<OutboxRepository, "countByStatus">;
+  readonly hasLocalRecords: () => Promise<boolean>;
   readonly login: (username: string, password: string) => Promise<LoginResult>;
   readonly fetchRules: () => Promise<unknown>;
   readonly randomBytes: (length: number) => Uint8Array;
@@ -132,8 +131,8 @@ export class AuthController {
         this.#publish({ notice: { key: "mobile.login.noSignal" } });
         return true;
       }
-      const counts = await this.#deps.outbox.countByStatus();
-      if (canLoginAs(username, this.#context.profile?.username ?? null, counts)) return false;
+      const hasRecords = await this.#deps.hasLocalRecords();
+      if (canLoginAs(username, this.#context.profile?.username ?? null, hasRecords)) return false;
       this.#publish({ notice: { key: "mobile.login.differentUser" } });
       return true;
     });

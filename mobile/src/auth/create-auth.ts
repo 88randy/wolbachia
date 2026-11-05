@@ -3,7 +3,8 @@ import type { ApiClient } from "@wolbachia/api-client";
 import { createMobileApiClient } from "../api/create-api-client.ts";
 import type { ServerSettings } from "../config/server-settings.ts";
 import type { KvStore } from "../db/kv-store.ts";
-import type { OutboxRepository } from "../outbox/outbox-repository.ts";
+import { hasLocalRecords } from "../db/owner-data.ts";
+import type { SqlExecutor } from "../db/sql.ts";
 import { AuthController } from "./auth-controller.ts";
 import { loginOnline, refreshOnline } from "./auth-api.ts";
 import type { CredentialStore } from "./credential-store.ts";
@@ -15,7 +16,7 @@ interface CreateAuthDeps {
   readonly fetch?: (request: Request) => Promise<Response>;
   readonly credentials: CredentialStore;
   readonly kv: KvStore;
-  readonly outbox: OutboxRepository;
+  readonly db: SqlExecutor;
   readonly server: ServerSettings;
   readonly deviceId: string;
   readonly appVersion: string;
@@ -29,7 +30,7 @@ export async function createAuth(deps: CreateAuthDeps) {
   const auth: AuthController = new AuthController({
     credentials,
     kv: deps.kv,
-    outbox: deps.outbox,
+    hasLocalRecords: () => hasLocalRecords(deps.db),
     randomBytes: deps.randomBytes,
     now: deps.now,
     login: (username, password) => loginConfigured(deps, { username, password }),

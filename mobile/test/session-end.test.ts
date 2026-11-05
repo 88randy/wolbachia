@@ -410,6 +410,81 @@ void it("retryable 5xx, 429, 400 and 413 responses preserve the ended pair and f
   }
 });
 
+void it("a clock-wrong final POST blocks once with the pair retained; hints wait until conditions change", async () => {
+  const h = await harness();
+  await h.auth.endSession();
+  const pair = h.credentials.getSnapshot().pair;
+  const timers: number[] = [];
+  let posts = 0;
+  const session = new SessionRequests({
+    credentials: h.credentials,
+    isOnline: () => true,
+    endSession: () => h.auth.endSession(),
+    refresh: () => {
+      throw new Error("An ended session never refreshes.");
+    },
+  });
+  const client = createMobileApiClient({
+    baseUrl: h.credentials.getOrigin() ?? "",
+    tokens: h.credentials,
+    fetch: () => {
+      posts += 1;
+      void engine.hint();
+      // Bound a broken immediate-repeat loop without a time-based wait.
+      if (posts > 2) return Promise.reject(new TypeError("Unexpected immediate repeat."));
+      return Promise.resolve(
+        jsonResponse(
+          {
+            code: "validation_error",
+            detail: "",
+            fields: { sent_at: [{ code: "out_of_range", params: {} }] },
+          },
+          400,
+        ),
+      );
+    },
+  });
+  const engine = new SyncEngine({
+    pass: {
+      ...h,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: createSyncTransport(client, session),
+    },
+    hasSession: () => h.credentials.hasSyncSession(),
+    hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
+    hasServer: () => true,
+    random: () => 0,
+    schedule: (_callback, delay) => {
+      timers.push(delay);
+      return () => undefined;
+    },
+    report: (error) => {
+      throw error;
+    },
+  });
+  await engine.start();
+  assert.equal(posts, 1);
+  assert.equal(engine.getSnapshot().phase, "blocked");
+  assert.equal(engine.getSnapshot().blockReason, "clockWrong");
+  assert.equal(h.credentials.getSnapshot().pair, pair);
+  assert.equal((await h.outbox.countByStatus()).pending, 1);
+  await engine.hint();
+  assert.equal(posts, 1);
+  const blockedAgain = deferred<undefined>();
+  const stop = engine.subscribe(() => {
+    if (engine.getSnapshot().phase === "blocked" && posts === 2) blockedAgain.resolve(undefined);
+  });
+  engine.notifyConditionsChanged();
+  await blockedAgain.promise;
+  await engine.hint();
+  stop();
+  assert.equal(posts, 2);
+  assert.equal(engine.getSnapshot().phase, "blocked");
+  assert.equal(h.credentials.getSnapshot().pair, pair);
+  assert.deepEqual(timers, []);
+});
+
 void it("a definitive final 401/403 erases the pair without deleting unsent work", async () => {
   for (const status of [401, 403]) {
     const h = await harness();

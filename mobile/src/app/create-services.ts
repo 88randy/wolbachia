@@ -64,13 +64,13 @@ export async function createServices(): Promise<AppServices> {
     now: Date.now,
     credentials,
     kv,
-    outbox,
+    db,
     server,
     deviceId,
     appVersion: appManifest.version,
   });
   const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
-  const shiftOpen = createShiftOpen({ db, engine, server, tokens });
+  const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
   return { kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
 }
 
