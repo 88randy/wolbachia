@@ -30,12 +30,16 @@ from rules.permissions import (
     RULE_PARAMETER_VERSION_VOID,
 )
 from rules.seeds import missing_parameter_keys, seed_default_rule_parameters
+from scheduling.permissions import RISK_IMPORT_APPLY, SCHEDULE_MANAGE, SCHEDULE_READ
 from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    SCHEDULE_READ,
+    SCHEDULE_MANAGE,
+    RISK_IMPORT_APPLY,
     *READ_CODES,
     *GEOGRAPHY_WRITE_CODES,
     FIELD_EVENT_SYNC,
@@ -64,6 +68,8 @@ ADMIN_CODES = (
 COURIER_CODES = (*READ_ONLY_CODES, FIELD_EVENT_SYNC, MOTORCYCLE_READ)  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    SCHEDULE_READ,
+    SCHEDULE_MANAGE,
     *READ_CODES,
     QUADRANT_READ,
     *READ_ONLY_CODES,
@@ -76,7 +82,7 @@ SUPERVISOR_CODES = (
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,
     "supervisor": SUPERVISOR_CODES,
-    "entomologist": (*READ_ONLY_CODES, READING_READ),
+    "entomologist": (*READ_ONLY_CODES, READING_READ, SCHEDULE_READ, RISK_IMPORT_APPLY),
     "community_promoter": READ_ONLY_CODES,
     "admin": ADMIN_CODES,
     "coordinator": (*READ_ONLY_CODES, *GEOGRAPHY_WRITE_CODES, *READ_CODES),

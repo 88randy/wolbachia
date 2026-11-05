@@ -362,3 +362,19 @@ collisions apply only to (organization, client_uuid); a foreign existing UUID an
 an unused one follow the same validation/gates (including identical code/params
 for missing GPS). Check/void use the same scoped client UUID resolution. Own-org
 reuse still returns ovitrap_identity_used; no new sync code is added.
+
+
+## Scheduling integration boundary (#109, B-12)
+
+Scheduling adds no field events or sync result codes, and does not change ingest
+status, capture/receipt timestamps or review acceptance (#22). Its retained
+assignment_at selector resolves ownership at capture time after later allocation
+changes. courier_current_rows exposes plain current assignment/task rows with
+organization_id, center_id and quadrant_id for the B-13 producer.
+
+The offline bundle producer is #110 / PR #194 and is absent from this baseline.
+Whichever PR lands second must register that selector and wrap the scheduling
+writers with lock_courier_batches + append_courier_change. No phone deltas are
+claimed before that wiring. Scheduling does not import or duplicate those APIs;
+account lock order remains User -> Device -> DeviceSession -> TokenPair before
+courier/domain locks. See [scheduling lead decisions](../backend/scheduling/README.md).

@@ -1,11 +1,11 @@
 """Historical safety gates. All review signals happen BEFORE any operational write."""
 
 from dataclasses import dataclass
-from datetime import date, timedelta
 from math import isfinite
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from core.time import epi_week_label
 from field_sync.exceptions import EventNeedsReview
 from field_sync.models import FieldEvent
 from field_sync.registry import EventContext
@@ -106,20 +106,6 @@ def _check_speed(ctx: EventContext, rules: dict[str, Any]) -> None:
 
 
 def epi_week(ctx: EventContext) -> str:
-    """Organization-local ISO/MMWR week, with at least four days in week one."""
+    """Organization-local label shared with scheduling; preserve the capture-time contract."""
     captured = ctx.envelope.device_time.astimezone(ZoneInfo(ctx.organization.timezone)).date()
-    if ctx.organization.epi_week == "iso":
-        year, week, _day = captured.isocalendar()
-        return f"{year:04d}-W{week:02d}"
-    year = captured.year
-    if captured < _mmwr_start(year):
-        year -= 1
-    elif captured >= _mmwr_start(year + 1):
-        year += 1
-    week = (captured - _mmwr_start(year)).days // 7 + 1
-    return f"{year:04d}-W{week:02d}"
-
-
-def _mmwr_start(year: int) -> date:
-    fourth = date(year, 1, 4)
-    return fourth - timedelta(days=(fourth.weekday() + 1) % 7)
+    return epi_week_label(captured, ctx.organization.epi_week)

@@ -20,7 +20,7 @@ Versioned rule parameters per organization: the thresholds the app shows but nev
 | `services.py` | `create_rule_version` (locks the parameter, validates value and date), `void_rule_version`, `resolve_effective_from` |
 | `permissions.py` | Permission codes of this app (`rule_parameter_version.read` is the history, admin only by default) |
 | `selectors.py` | `get_version_in_force`, `list_versions` (status `scheduled`/`in_force`/`superseded`/`voided`), `list_parameters_with_current` (one query), `get_next_change_at`, `build_rules_snapshot` |
-| `seeds.py` | `seed_default_rule_parameters`: the thirteen parameters and the brief's values |
+| `seeds.py` | `seed_default_rule_parameters`: the fifteen parameters and the brief's values |
 | `views.py`, `serializers.py`, `urls.py` | Thin DRF layer; nested routes by regex prefix |
 
 ## Seed
@@ -78,3 +78,11 @@ confirmation. Existing values/versions remain untouched. Ovitrap safety gates us
 the registry historical lookup at device_time and retain applied version ids.
 Missing/unusable rules/accuracy review without operational effects. There are now
 14 seeded definitions; no existing index-exclusion rule was found.
+
+
+## Scheduling target (#109)
+
+daily_task_target is a versioned integer count, default 40, inclusive bounds 1..200
+**[ASSUMPTION]** until client confirmation. This operational target never caps
+captures, task generation or reassignment. Scheduling resolves it at each local
+planned date. There are now 15 seeded definitions; reruns retain existing values.
