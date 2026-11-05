@@ -67,13 +67,18 @@ export function sharedVariables(): CssVariables {
     ...flattenToCssVariables(radius, "--radius"),
     ...flattenToCssVariables(spacing, "--space"),
     "--font-family": font.cssStack,
+    "--font-family-mono": font.mono.cssStack,
     "--font-variant-numeric": font.tabularFigures,
     "--shadow-level-1": formatShadow(shadow.level1),
+    "--shadow-card": formatShadow(shadow.card),
+    "--shadow-overlay": formatShadow(shadow.overlay),
     ...flattenToCssVariables(web.control, "--web-control"),
     ...flattenToCssVariables(web.icon, "--web-icon"),
     ...flattenToCssVariables(web.layout, "--web-layout"),
     ...flattenToCssVariables(web.focus, "--web-focus"),
     ...flattenToCssVariables(web.typography, "--web-type"),
+    ...flattenToCssVariables(web.motion, "--web-motion"),
+    ...flattenToCssVariables(web.chartGeometry, "--web-chart-geometry"),
   };
 }
 

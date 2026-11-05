@@ -1,31 +1,27 @@
-import type { MouseEvent } from "react";
-import buttons from "../styles/button.module.css";
-import { classNames } from "../styles/class-names";
+import { useId } from "react";
+import { Button } from "../ui/Button";
 import styles from "./form.module.css";
-
 interface SubmitButtonProps {
   label: string;
-  /** Text while the request is in flight. */
   busyLabel: string;
   isBusy: boolean;
 }
-
-/**
- * Full-width primary submit button. While busy it is `aria-disabled` instead of `disabled`, so a
- * keyboard user does not lose focus, and a second press does not send the form again.
- */
+/** A pending submission preserves width and focus, and refuses duplicate presses. */
 export function SubmitButton({ label, busyLabel, isBusy }: SubmitButtonProps) {
-  function ignoreWhileBusy(event: MouseEvent) {
-    if (isBusy) event.preventDefault();
-  }
+  const statusId = useId();
   return (
-    <button
-      type="submit"
-      className={classNames(buttons.button, buttons.primary, styles.submit)}
-      aria-disabled={isBusy}
-      onClick={ignoreWhileBusy}
-    >
-      {isBusy ? busyLabel : label}
-    </button>
+    <>
+      <Button
+        type="submit"
+        loading={isBusy}
+        className={styles.submit}
+        aria-describedby={isBusy ? statusId : undefined}
+      >
+        {label}
+      </Button>
+      <span id={statusId} role="status" className={styles.srOnly}>
+        {isBusy ? busyLabel : ""}
+      </span>
+    </>
   );
 }

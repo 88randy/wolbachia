@@ -1,20 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useSignOut } from "../session/use-sign-out";
 import styles from "./UserMenu.module.css";
 import { UserMenuButton } from "./UserMenuButton";
 import { UserMenuPanel } from "./UserMenuPanel";
 import { useDismiss } from "./use-dismiss";
 
-const PANEL_ID = "user-menu-panel";
+interface UserMenuProps {
+  placement?: "topbar" | "sidebar";
+  collapsed?: boolean;
+}
 
-/**
- * The signed-in user in the top bar. A disclosure (not an ARIA menu): the button reports
- * `aria-expanded`, Escape closes it and returns focus to the button, and so do an outside press
- * and moving focus out of it. The sign-out state lives here, not in the panel: signing out blocks
- * the page while the server answers (focus moves to the blocker and closes the panel), and a
- * failure must still be shown, so the menu opens again for it.
- */
-export function UserMenu() {
+/** Keep disclosure focus and sign-out failure recovery independent of its placement. */
+function useUserMenuDisclosure() {
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -28,17 +25,30 @@ export function UserMenu() {
   useEffect(() => {
     if (hasFailed) setIsOpen(true);
   }, [hasFailed]);
+  return { isOpen, setIsOpen, containerRef, buttonRef, signOut };
+}
+
+/** User disclosure anchored above the sidebar footer or below a top-bar trigger. */
+export function UserMenu({ placement = "topbar", collapsed = false }: UserMenuProps = {}) {
+  const panelId = useId();
+  const { isOpen, setIsOpen, containerRef, buttonRef, signOut } = useUserMenuDisclosure();
   return (
-    <div ref={containerRef} className={styles.menu}>
+    <div
+      ref={containerRef}
+      className={styles.menu}
+      data-placement={placement}
+      data-collapsed={collapsed}
+    >
       <UserMenuButton
         ref={buttonRef}
         isOpen={isOpen}
-        panelId={PANEL_ID}
+        panelId={panelId}
+        collapsed={collapsed}
         onToggle={() => {
           setIsOpen((open) => !open);
         }}
       />
-      {isOpen && <UserMenuPanel id={PANEL_ID} signOut={signOut} />}
+      {isOpen && <UserMenuPanel id={panelId} signOut={signOut} />}
     </div>
   );
 }

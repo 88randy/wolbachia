@@ -1,3 +1,6 @@
+import { ui } from "./ui.ts";
+import { analytics } from "./analytics.ts";
+import { refresh } from "./refresh.ts";
 import { catalogs } from "./catalogs.ts";
 /**
  * Mexican Spanish catalog: the SOURCE of the key list. `MessageKey` is derived from it and
@@ -17,6 +20,9 @@ import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const esMX = {
+  ...ui,
+  ...analytics,
+  ...refresh,
   ...catalogs,
   ...fleet,
   ...common,

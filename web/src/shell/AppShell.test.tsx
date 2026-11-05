@@ -100,42 +100,45 @@ describe("keyboard", () => {
     expect(document.activeElement).toBe(screen.getByRole("main"));
   });
 
-  test("tab order is skip link, sidebar links, collapse button, search, bell, language", async () => {
+  test("footer and shell tools remain keyboard reachable after navigation", async () => {
     await renderApp({ me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
-    const names: string[] = [];
-
-    for (let step = 0; step < AREAS.length + 5; step += 1) {
+    const nav = screen.getByRole("navigation", { name: "Navegación principal" });
+    within(nav).getAllByRole("link").at(-1)?.focus();
+    const targets = [
+      screen.getByRole("button", { name: "Colapsar menú" }),
+      screen.getByRole("button", { name: "Claro" }),
+      screen.getByRole("button", { name: "Oscuro" }),
+      screen.getByRole("button", { name: /Menú de usuario/ }),
+      screen.getByRole("separator"),
+      screen.getByRole("searchbox", { name: "Buscar" }),
+      screen.getByRole("button", { name: "Notificaciones" }),
+      screen.getByRole("button", { name: "ES: cambiar idioma a inglés" }),
+      screen.getByRole("combobox", { name: "Tema" }),
+    ];
+    for (const target of targets) {
       await userEvent.tab();
-      names.push(
-        document.activeElement?.getAttribute("aria-label") ??
-          document.activeElement?.textContent ??
-          "",
-      );
+      expect(document.activeElement).toBe(target);
     }
-
-    expect(names.slice(0, 2)).toEqual(["Saltar al contenido", "Inicio"]);
-    expect(names.slice(AREAS.length + 1)).toEqual([
-      "Colapsar menú",
-      "Buscar",
-      "Notificaciones",
-      "ES: cambiar idioma a inglés",
-    ]);
   });
 
-  test("Ctrl+K focuses the search", async () => {
+  test("Ctrl+K opens the command palette and focuses its input", async () => {
     await renderApp();
 
     await userEvent.keyboard("{Control>}k{/Control}");
 
-    expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Buscar" }));
+    expect(document.activeElement).toBe(
+      within(screen.getByRole("dialog")).getByRole("combobox", { name: "Buscar" }),
+    );
   });
 
-  test("Cmd+K focuses the search", async () => {
+  test("Cmd+K opens the command palette and focuses its input", async () => {
     await renderApp();
 
     await userEvent.keyboard("{Meta>}k{/Meta}");
 
-    expect(document.activeElement).toBe(screen.getByRole("searchbox", { name: "Buscar" }));
+    expect(document.activeElement).toBe(
+      within(screen.getByRole("dialog")).getByRole("combobox", { name: "Buscar" }),
+    );
   });
 
   test("single-character keys are not shortcuts (WCAG 2.1.4)", async () => {
@@ -242,30 +245,37 @@ describe("compact viewport focus", () => {
     vi.unstubAllGlobals();
   });
 
-  test("focus moves to main when the focused toggle disappears", async () => {
-    const listeners = new Set<() => void>();
-    let matches = false;
-    vi.stubGlobal("matchMedia", (query: string) => ({
-      get matches() {
-        return matches;
-      },
-      media: query,
-      addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
-      removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
-    }));
-    await renderApp();
-    screen.getByRole("button", { name: "Colapsar menú" }).focus();
+  test.each(["toggle", "separator"] as const)(
+    "focus moves to main when the focused %s disappears",
+    async (control) => {
+      const listeners = new Set<() => void>();
+      let matches = false;
+      vi.stubGlobal("matchMedia", (query: string) => ({
+        get matches() {
+          return matches;
+        },
+        media: query,
+        addEventListener: (_type: string, listener: () => void) => listeners.add(listener),
+        removeEventListener: (_type: string, listener: () => void) => listeners.delete(listener),
+      }));
+      await renderApp();
+      const focused =
+        control === "separator"
+          ? screen.getByRole("separator")
+          : screen.getByRole("button", { name: "Colapsar menú" });
+      focused.focus();
 
-    matches = true;
-    act(() => {
-      listeners.forEach((listener) => {
-        listener();
+      matches = true;
+      act(() => {
+        listeners.forEach((listener) => {
+          listener();
+        });
       });
-    });
 
-    expect(screen.queryByRole("button", { name: "Colapsar menú" })).toBeNull();
-    expect(document.activeElement).toBe(screen.getByRole("main"));
-  });
+      expect(screen.queryByRole("button", { name: "Colapsar menú" })).toBeNull();
+      expect(document.activeElement).toBe(screen.getByRole("main"));
+    },
+  );
 });
 
 describe("top bar", () => {

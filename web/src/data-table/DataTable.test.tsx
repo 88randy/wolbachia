@@ -456,6 +456,7 @@ describe("states", () => {
 
     expect(screen.getByText("Cargando resultados")).toBeDefined();
     expect(screen.getByRole("cell", { name: "Alfa" })).toBeDefined();
+    expect(screen.getByRole("progressbar")).toBeDefined();
   });
 
   test("no records and no filters says so", async () => {
@@ -582,4 +583,24 @@ describe("paging", () => {
       expect(search(app)).toEqual({});
     });
   });
+});
+
+test("expanding a grouped row exposes its controlled detail and collapses it again", async () => {
+  await renderTable(
+    propsOf({
+      groupOf: () => ({ id: "today", label: "Hoy" }),
+      renderDetail: (item) => <p>{item.code} detalle</p>,
+    }),
+  );
+  const button = screen.getAllByRole("button", { name: "Mostrar detalles" })[0];
+  if (!button) throw new Error("Missing disclosure");
+  expect(button.getAttribute("aria-expanded")).toBe("false");
+  await userEvent.click(button);
+  expect(button.getAttribute("aria-expanded")).toBe("true");
+  const detail = document.getElementById(button.getAttribute("aria-controls") ?? "");
+  expect(detail?.textContent).toContain("B-4471 detalle");
+  expect(screen.getAllByRole("rowheader", { name: "Hoy" })).toHaveLength(1);
+  await userEvent.click(button);
+  expect(button.getAttribute("aria-expanded")).toBe("false");
+  expect(detail?.hidden).toBe(true);
 });

@@ -136,3 +136,12 @@ export interface DataTableColumn<Row> {
   /** Wraps the cell in a link (row link, or the filtered list behind a number). */
   link?: (row: Row) => LinkProps | undefined;
 }
+
+/** Optional presentation only: these never sort/filter server-owned rows. */
+export interface TablePresentation<Row> {
+  groupOf?: (row: Row) => { id: string; label: string };
+  renderDetail?: (row: Row) => ReactNode;
+  rowActions?: (row: Row) => ReactNode;
+  density?: "comfortable" | "compact";
+  onDensityChange?: (density: "comfortable" | "compact") => void;
+}

@@ -1,3 +1,6 @@
+import { ui } from "./ui.ts";
+import { analytics } from "./analytics.ts";
+import { refresh } from "./refresh.ts";
 import { catalogs } from "./catalogs.ts";
 /** English catalog: exactly the keys of `../es-MX`, composed from one file per area. */
 import type { MessageKey } from "../es-MX/index.ts";
@@ -15,6 +18,9 @@ import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const en: Record<MessageKey, string> = {
+  ...ui,
+  ...analytics,
+  ...refresh,
   ...catalogs,
   ...fleet,
   ...common,

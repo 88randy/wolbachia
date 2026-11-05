@@ -12,9 +12,17 @@ interface DataTableCellProps {
   /** Extra content under the cell's own (the void detail). */
   after: ReactNode;
   children: ReactNode;
+  before?: ReactNode;
 }
 
-export function DataTableCell({ align, link, isStruck, after, children }: DataTableCellProps) {
+export function DataTableCell({
+  align,
+  link,
+  isStruck,
+  after,
+  children,
+  before,
+}: DataTableCellProps) {
   const content =
     link === undefined ? (
       children
@@ -25,6 +33,7 @@ export function DataTableCell({ align, link, isStruck, after, children }: DataTa
     );
   return (
     <td className={classNames(styles.cell, align === "end" && styles.end)}>
+      {before}
       <span className={classNames(isStruck && styles.struck)}>{content}</span>
       {after}
     </td>

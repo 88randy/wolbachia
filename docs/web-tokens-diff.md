@@ -47,3 +47,93 @@ Typography: Inter with tabular figures in both.
 2. Aliases: one semantic token per role (`strong` and `info` share a value but stay separate roles). Accepted.
 3. Chart colors c2 / c4: **[PENDING]** client approval; provisional until then.
 4. Radius and spacing snapping above: proposal, applied in #17 unless the client objects.
+
+## Visual refresh #202
+
+Issue #202 and the owner-approved preview are the visual source of truth (decision
+115). **Preview approval is pending**: this delivery implements step 1 only;
+screen rollout and visual/e2e updates remain step 2. Sections 1–5 above record the
+historical comparison. `design/mobile/source/codequim.css` and
+`design/web/source/web.css` stay unchanged as history. The design-CSS test retains
+complete variable-name-to-token coverage, not equality with historical values.
+
+### Palette and contrast
+
+`background` is the cool canvas; a separate `canvas` alias would duplicate its
+role. `surface` is the main card, `surfaceMuted` a quiet widget body, and
+`surfaceRaised` the nested card. Web navigation sits on `background`; `chrome`
+remains unchanged for the mobile top bar. Hairlines separate related content;
+input borders use `border.default`, not the decorative `border.soft`.
+
+| Role | Previous light / dark | New light / dark |
+|---|---|---|
+| `background` | #F4F6FA / #0B1630 | #EEF0F2 / #181B20 |
+| `surface` | #FFFFFF / #13244A | #FFFFFF / #22262D |
+| `surfaceMuted` | — | #F1F3F5 / #2B3038 |
+| `surfaceRaised` | — | #FFFFFF / #303640 |
+| `text.primary` | #0A1A3F / #F2F5FB | #20252D / #F1F3F5 |
+| `text.secondary` | #3A4664 / #B7C1D6 | #4B5563 / #CBD1D8 |
+| `text.tertiary` | #586380 / #A3AFC8 | #596470 / #AFB8C3 |
+| `border.default` | #C9D0DE / #2E4170 | #7A8490 / #7E8997 |
+| `border.strong` | #7C869E / #8391B2 | #737D88 / #929DAA |
+| `border.soft` | #E4E8EF / #1F3260 | #DDE2E7 / #3B424D |
+| Sidebar text | #C9D3EA / #C9D3EA | #4B5563 / #CBD1D8 |
+| Sidebar active bg / text | historical translucent navy chrome | #FFFFFF / #20252D (light), #303640 / #F1F3F5 (dark) |
+| Chart series 1 | #1A5DFF / #7FA4FF | unchanged, references `action` directly |
+| Chart series 2 | #D9620B / #FFA25C | #B85C25 / #E9A56F |
+| Chart context series 3 | #0B6B35 / #5FD08F | #6D7885 / #AFB8C3 |
+| Positive delta | — | #147044 / #79D5A0 |
+| Negative delta | — | #AD3D2F / #FFAC9E |
+| Scrollbar track | — | #EEF0F2 / #181B20 |
+| Scrollbar thumb / hover | — | #BCC3CB / #6D7885 (light), #58636F / #929DAA (dark) |
+
+The Codequim blue `action` stays the single primary accent (D2). The owner may
+change it at preview time: edit the semantic theme role once; chart series 1
+references it. Warm orange is chart series 2 and warning emphasis. Series 2 and 4
+remain **PROVISIONAL**, pending client palette approval (#17). Map and index band
+colors retain their domain meaning.
+
+WCAG relative-luminance ratios (unrounded values are asserted in
+`packages/tokens/test/contrast.test.ts`):
+
+| Foreground / background | Light | Dark |
+|---|---:|---:|
+| Primary / surface | 15.40:1 | 13.65:1 |
+| Secondary / surface | 7.56:1 | 9.87:1 |
+| Tertiary / surface | 6.03:1 | 7.57:1 |
+| Weakest text across background, surface, muted and raised | 5.28:1 | 6.06:1 |
+| Action link / weakest shared surface | 4.53:1 | 5.01:1 |
+| Status success fg / bg | 5.84:1 | 6.55:1 |
+| Status warning fg / bg | 6.09:1 | 7.88:1 |
+| Status critical fg / bg | 5.90:1 | 6.33:1 |
+| Status info fg / bg | 6.25:1 | 6.47:1 |
+| Status neutral fg / bg | 8.22:1 | 7.90:1 |
+| Positive / negative delta on surface | 6.12 / 6.03:1 | 8.56 / 8.42:1 |
+| Sidebar active text / active background | 15.40:1 | 10.93:1 |
+| Strong border / surface | 4.18:1 | 5.51:1 |
+| Input border / surface | 3.80:1 | 4.27:1 |
+| Scrollbar thumb hover / track | 3.93:1 | 6.27:1 |
+| Scrollbar thumb hover / surface | 4.49:1 | 5.51:1 |
+
+### Scales and interaction decisions
+
+- D1: Inter remains the UI font. Self-hosted JetBrains Mono latin 400/500 supplies
+  numbers, dates, codes, headers and pills through `font.mono` and
+  `--font-family-mono`; neither font uses a CDN.
+- Radius: existing scale retained; `card=20`, `inner=14`, `full=9999`. Shadows:
+  `level1` keeps its React Native shape; `card` is `0 8px 32px rgba(20,30,40,.04)`;
+  `overlay` is `0 16px 48px rgba(12,20,32,.14)`. In dark mode these diffuse shadows
+  are nearly invisible; semantic borders carry the edges.
+- KPI type is 28/34; mono labels and captions are 12 px with `0.06em` header
+  spacing. No minimum type size changed. Base spacing remains the 8 px grid.
+- D3: Radix unstyled primitives and cmdk share accessible overlay behavior.
+  Existing native-dialog screen logic is outside this step.
+- D4: in-house pixel splitter: default 248, min 200, max 360, collapsed 64, keyboard
+  step 16 px. Compact breakpoint remains 768; wide rail breakpoint is 1280.
+- D5: one token-driven 6 px scrollbar, standard thin scrollbar plus Safari
+  fallback; hover/focus uses the tested stronger thumb.
+- Motion: 150 ms fast, 200 ms normal, ease-out entry and ease-in exit; consumers
+  animate opacity/transform only and disable animation for reduced motion.
+- D6: no native alert/confirm/prompt; ESLint `no-alert` is an error for web.
+- D7: dev-only `/harness/style-preview.html`, with `?theme=dark` and `?lang=en`;
+  no production route. Owner approval is required before step 2.

@@ -212,3 +212,54 @@ Inactive items are hidden unless `include_deactivated=true`; configuration is de
 after confirmation and can be reactivated, rather than voided. The boolean `in_use` is
 shown with an accessible icon/text badge. The usage count, authorship and atomic reorder
 remain follow-up #182. Other free-text validation belongs to consumer screens and mobile.
+
+## Visual refresh #202: shared components and approval preview
+
+Source of truth: issue #202 plus the owner's approved preview (approval pending).
+Historical design CSS is retained. Step 1 changes shared tokens and components,
+without rolling out new screen layouts.
+
+Run npm run dev -w @wolbachia/web, then open /harness/style-preview.html.
+Use ?theme=dark, ?lang=en, or both. This separate dev-only Vite entry uses the
+real shell, in-memory history and a fake API with domain demo records. It is
+neither a production route nor a production build entry. Preview query themes
+do not overwrite the saved theme preference. Review both themes at 1440x900,
+390px and 320px before step 2.
+
+Shared components:
+- src/ui/: buttons, cards/menus, folder tabs, status pills, notices/banner,
+  tooltips, Radix dialog/sheet/irreversible confirmation, queued actionable
+  toasts, delayed skeletons, empty/error/refreshing states.
+- src/analytics/: linked KPI cells with spoken signed deltas, relative time
+  in the organization time zone, SVG trend/mini-bar charts and equivalent tables.
+- src/forms/: labeled text/select/search and blur-first validation.
+- src/shell/: permission-filtered command palette (Ctrl/Cmd+K), help (?),
+  canvas sidebar with segmented theme controls, user menu and persistent width.
+- DataTable retains its previous API. Optional groupOf, renderDetail, rowActions,
+  density and onDensityChange add grouped headings, accessible expansion,
+  focus-visible row actions and controlled comfortable/compact density.
+  These options never sort, filter or aggregate server-owned records.
+
+The sidebar separator supports ArrowLeft/ArrowRight (16px), Home/End (200/360px),
+Enter (collapse) and double-click (reset 248px). Compact mode changes appearance
+without overwriting desktop preferences. Width storage is validated and clamped.
+System remains reachable in the top theme selector. Global scrollbars and existing
+native-dialog surfaces use the same tokens; native dialog logic is unchanged.
+
+Primitives: [Radix Dialog](https://www.radix-ui.com/primitives/docs/components/dialog),
+[Tabs](https://www.radix-ui.com/primitives/docs/components/tabs) and
+[cmdk](https://github.com/dip/cmdk), using the exact already-installed versions.
+Fonts are self-hosted Inter and latin 400/500 JetBrains Mono. Codequim blue remains
+the action/focus accent; chart orange remains provisional until owner approval.
+The preview demonstrates skeleton, empty/no-results, scoped error with details,
+partial, refreshing and Undo states. Native alert/confirm/prompt is forbidden.
+
+Focused verification (one worker; no Playwright on this host):
+npx vitest run --maxWorkers=1 src/shell src/data-table src/styles src/ui src/forms src/analytics src/theme.
+If host memory cannot sustain multiple forks, run the same test files individually.
+
+On this low-memory Windows host, npm/fork startup can fail before tests start.
+From web/, the installed CLI can run without the npm wrapper:
+node ../node_modules/vitest/vitest.mjs run --maxWorkers=1 --pool=threads TEST_FILE.
+This still runs Vitest with one worker; no packages or project settings change.
+Pool behavior: https://vitest.dev/config/pool.

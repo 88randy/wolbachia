@@ -35,3 +35,70 @@ body {
   outline-offset: var(--web-focus-ring-offset);
   box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
 }
+
+/* One scroll treatment for every vertical and horizontal scroll container. */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--web-scrollbar-thumb) var(--web-scrollbar-track);
+}
+*:hover,
+*:focus-within {
+  scrollbar-color: var(--web-scrollbar-thumb-hover) var(--web-scrollbar-track);
+}
+@supports not (scrollbar-color: auto) {
+  ::-webkit-scrollbar {
+    width: var(--web-layout-scrollbar-size);
+    height: var(--web-layout-scrollbar-size);
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--web-scrollbar-track);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--web-scrollbar-thumb);
+    border-radius: var(--radius-full);
+  }
+  ::-webkit-scrollbar-thumb:hover,
+  ::-webkit-scrollbar-thumb:active {
+    background: var(--web-scrollbar-thumb-hover);
+  }
+}
+code,
+kbd,
+time {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: var(--font-variant-numeric);
+}
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-family);
+}
+svg {
+  flex-shrink: 0;
+}
+/* Existing native dialog logic is unchanged; this shared surface also covers future dialogs. */
+dialog[open] {
+  max-height: calc(100dvh - var(--space-6));
+  overflow: auto;
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-raised);
+  color: var(--color-text-primary);
+  box-shadow: var(--shadow-overlay);
+}
+dialog[open]::backdrop {
+  background: var(--web-overlay-backdrop);
+  opacity: 1;
+}
+@media (prefers-reduced-motion: no-preference) {
+  button,
+  a {
+    transition:
+      opacity var(--web-motion-fast) var(--web-motion-easing),
+      transform var(--web-motion-fast) var(--web-motion-easing);
+  }
+  button:active:not(:disabled) {
+    transform: translateY(calc(var(--space-0-5) / 4));
+  }
+}

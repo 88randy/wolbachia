@@ -160,6 +160,7 @@ export default defineConfig([
     languageOptions: { globals: { ...globals.browser } },
     rules: {
       "no-restricted-imports": restrictedImports(NO_CROSS_APP_IMPORT("web", "mobile")),
+      "no-alert": "error",
     },
   },
   {

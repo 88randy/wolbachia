@@ -1,33 +1,26 @@
 import { useTranslation } from "react-i18next";
-import buttons from "../styles/button.module.css";
-import { classNames } from "../styles/class-names";
+import { Inbox } from "lucide-react";
+import { EmptyState } from "../ui/EmptyState";
 import styles from "./data-table.module.css";
-
 interface TableEmptyProps {
-  /** Filters are on: the empty answer may just mean "nothing matches". */
   hasActiveFilters: boolean;
   onClearFilters: () => void;
 }
-
 export function TableEmpty({ hasActiveFilters, onClearFilters }: TableEmptyProps) {
   const { t } = useTranslation();
+  if (hasActiveFilters)
+    return (
+      <EmptyState
+        kind="noResults"
+        message={t("table.empty.filteredTitle")}
+        actionLabel={t("table.filters.clear")}
+        onAction={onClearFilters}
+      />
+    );
   return (
     <div className={styles.state}>
-      <p className={styles.stateTitle}>
-        {t(hasActiveFilters ? "table.empty.filteredTitle" : "table.empty.title")}
-      </p>
-      {hasActiveFilters && (
-        <>
-          <p className={styles.stateBody}>{t("table.empty.filteredBody")}</p>
-          <button
-            type="button"
-            className={classNames(buttons.button, buttons.secondary)}
-            onClick={onClearFilters}
-          >
-            {t("table.filters.clear")}
-          </button>
-        </>
-      )}
+      <Inbox strokeWidth={1.5} aria-hidden="true" />
+      <p className={styles.stateTitle}>{t("table.empty.title")}</p>
     </div>
   );
 }

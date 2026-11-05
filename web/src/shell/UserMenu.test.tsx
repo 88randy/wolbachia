@@ -49,7 +49,7 @@ describe("user menu", () => {
 
     expect(button.textContent).toContain("Ana Pérez");
     expect(button.getAttribute("aria-expanded")).toBe("false");
-    expect(button.getAttribute("aria-controls")).toBe("user-menu-panel");
+    expect(button.getAttribute("aria-controls")).toBeTruthy();
     expect(screen.queryByText("Cerrar sesión")).toBeNull();
   });
 
@@ -65,7 +65,9 @@ describe("user menu", () => {
 
     await userEvent.click(menuButton());
 
-    const panel = document.getElementById("user-menu-panel") as HTMLElement;
+    const panel = document.getElementById(
+      menuButton().getAttribute("aria-controls") ?? "",
+    ) as HTMLElement;
     expect(menuButton().getAttribute("aria-expanded")).toBe("true");
     expect(within(panel).getByText("Ana Pérez")).toBeDefined();
     expect(within(panel).getByText("Supervisora, Entomóloga")).toBeDefined();

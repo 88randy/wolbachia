@@ -1,0 +1,33 @@
+import { CloudOff } from "lucide-react";
+import { useTranslation } from "react-i18next";
+import { Button } from "./Button";
+import styles from "./ui.module.css";
+interface ErrorStateProps {
+  message?: string;
+  code?: string;
+  requestId?: string;
+  onRetry: () => void;
+}
+export function ErrorState({ message, code, requestId, onRetry }: ErrorStateProps) {
+  const { t } = useTranslation();
+  return (
+    <div className={styles.state} role="alert">
+      <CloudOff aria-hidden="true" strokeWidth={1.5} className={styles.stateIcon} />
+      <p>{message ?? t("ui.states.loadError")}</p>
+      <Button variant="secondary" onClick={onRetry}>
+        {t("common.actions.retry")}
+      </Button>
+      {(code !== undefined || requestId !== undefined) && (
+        <details className={styles.details}>
+          <summary>{t("ui.actions.details")}</summary>
+          <dl>
+            <dt>{t("ui.details.code")}</dt>
+            <dd>{code}</dd>
+            <dt>{t("ui.details.requestId")}</dt>
+            <dd>{requestId}</dd>
+          </dl>
+        </details>
+      )}
+    </div>
+  );
+}
