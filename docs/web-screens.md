@@ -129,3 +129,5 @@ These apply to every screen. Designed once on the global-states board; they are 
 2. **Parameters per organization.** W62 is designed "per region". The decision is per organization. **[PENDING]** Is there a regional override inside an organization?
 3. **"Other (specify)".** It is guaranteed in incident types (W64). It must also be checked in every open list (relocation reasons, write-off reasons, intervention types, ARCO types, etc.).
 4. **Small text.** Some badges and chart labels use 10–11px. Raise them to at least 12px.
+
+W22-W24 implementation (#157): [geography workflow](../web/src/quadrants/README.md). W24 is a section of /quadrants/<code>/versions.

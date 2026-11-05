@@ -16,7 +16,12 @@ export const AREAS = [
   { id: "home", path: "/", group: "main", requiredPermissions: [] },
   { id: "incidents", path: "/incidents", group: "main", requiredPermissions: PENDING },
   { id: "operations", path: "/operations", group: "operation", requiredPermissions: PENDING },
-  { id: "quadrants", path: "/quadrants", group: "operation", requiredPermissions: PENDING },
+  {
+    id: "quadrants",
+    path: "/quadrants",
+    group: "operation",
+    requiredPermissions: ["quadrant.read"],
+  },
   { id: "releases", path: "/releases", group: "operation", requiredPermissions: PENDING },
   { id: "community", path: "/community", group: "operation", requiredPermissions: PENDING },
   { id: "inventory", path: "/inventory", group: "resources", requiredPermissions: PENDING },
