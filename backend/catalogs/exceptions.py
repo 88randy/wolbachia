@@ -21,3 +21,9 @@ class ProtectedOtherItemError(OtherItemLockedError):
     blocked_by = [
         {"reason": "protected_other_item", "unblocked_by_role": "admin", "link": "/catalogs/"}
     ]
+
+
+class CatalogVersionConflictError(DomainError):
+    code = "catalog_version_conflict"
+    status_code = HTTPStatus.CONFLICT
+    default_detail = "The catalog changed since this reorder was planned."

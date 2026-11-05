@@ -297,6 +297,42 @@ Photos are not part of #5. The first epic that needs them (#9 relocation or #11 
 - `location.ping` frequency and retention: #8.
 
 
+## Fleet fuel loads (#103 / B-05)
+
+`fuel.load` schema 1 payload:
+
+```json
+{"motorcycle_id":"M-03","litres":"1.000","amount":"25.00","currency":"MXN","odometer_km":12000,"receipt_upload_id":null,"is_full_refill":true}
+```
+
+Despite the field name, motorcycle_id identifies the immutable motorcycle **code**,
+like shift.open schema 1. Requires the pipeline's field_event.sync permission and
+the courier's open shift on the matching motorcycle, without motorcycle.manage.
+Unknown/foreign motorcycles return motorcycle_unknown without disclosing existence.
+Existing shift_not_open, odometer_decreased and invalid_payload codes also apply.
+[ASSUMPTION] Center scope/default-deny apply to the admin REST API. Field capture
+retains #68 shift ownership semantics: a courier restricted to center A can still
+open a center B motorcycle and capture fuel in that shift. Scoping field capture
+requires a follow-up issue; shift.open/close semantics are unchanged here.
+
+| Code | Status | Meaning |
+| --- | --- | --- |
+| `fuel_motorcycle_mismatch` | rejected | Payload motorcycle is not the courier's open-shift motorcycle. |
+| `fuel_efficiency_review` | in_review | Comparable efficiency outside event-time configured inclusive bounds. Params preserve threshold_min/max, rule_provenance (version ids/effective dates), baseline_id and efficiency_km_l. |
+| `fuel_event_not_voidable` | rejected | Fuel correction must preserve dependent intervals; supervisor decision workflow is #22. |
+
+Positive finite fuel values and odometer 0..999999 are required; null receipt stays
+receipt_pending. Only adjacent accepted full refills form a baseline; partial,
+unknown, late or equal-time intervals are unavailable. Efficiency = delta km /
+current litres; seeded 15/60 are inclusive, 14.99/60.01 request review, never
+blocking capture or close. Decreases retain the values in review.
+
+The pipeline's idempotency plus FuelLoad.event uniqueness apply once. Any new
+in_review fuel (including clock/final-upload review) stays provisional and is
+excluded from metrics and baselines. [ASSUMPTION] Acceptance is deferred to #22;
+no original event status/timestamps/snapshot provenance is rewritten. Opaque UUID
+receipt ids remain [ASSUMPTION] until uploads exist. Lock order stays unchanged;
+Motorcycle try-lock contention is retryable 429 sync_in_progress, with Retry-After.
 ## Ovitrap placement/check (#111, B-14)
 
 Schema 1 handlers are registered by ovitraps following the registry template.

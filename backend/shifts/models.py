@@ -46,6 +46,14 @@ class Motorcycle(VoidableMixin, OrgScopedModel):
     organization. A blocked motorcycle cannot open a shift until an authorized supervisor clears it
     through an audited unblock."""
 
+    center = models.ForeignKey(
+        "organizations.Center",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="motorcycles",
+    )
+    revision = models.PositiveIntegerField(default=0)
     code = models.CharField(max_length=CODE_MAX_LENGTH)
     plate = models.CharField(max_length=PLATE_MAX_LENGTH, blank=True)
     is_blocked = models.BooleanField(default=False)

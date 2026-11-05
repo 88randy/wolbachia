@@ -10,7 +10,7 @@ import { useCatalogWrite } from "./use-catalog-write";
 
 export type DialogState = { kind: "create" } | { kind: "edit" | "deactivate"; item: CatalogItem };
 
-/** Non-atomic PATCH swaps may partially succeed. Refetch after any failure; never fake rollback. */
+/** Preserve drafts across refreshes while catalog revisions guard conditional reorders. */
 export function useCatalogEditor(slug: string, items: readonly CatalogItem[]) {
   const client = useApiClient();
   const write = useCatalogWrite();
@@ -21,7 +21,7 @@ export function useCatalogEditor(slug: string, items: readonly CatalogItem[]) {
   const [announcement, setAnnouncement] = useState("");
   const path = (id: string) => ({ catalog_slug: slug, id });
   const save = useCatalogSave(slug, write, items);
-  const state = {
+  return {
     dialog,
     setDialog,
     error,
@@ -33,8 +33,10 @@ export function useCatalogEditor(slug: string, items: readonly CatalogItem[]) {
     path,
     t,
     language,
+    save,
+    items,
+    slug,
   };
-  return { ...state, save, items, slug };
 }
 
 /** A fixed item has no controls; permitted state changes use the action endpoints with no body. */

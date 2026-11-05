@@ -1,6 +1,7 @@
 """Configurable option lists per organization (decision 5). They are configuration, not records:
 items are deactivated instead of deleted, and `OrgScopedModel` already forbids `delete()`."""
 
+from django.conf import settings
 from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
@@ -30,6 +31,7 @@ class Catalog(OrgScopedModel):
     label_es = models.CharField(max_length=LABEL_MAX_LENGTH)
     label_en = models.CharField(max_length=LABEL_MAX_LENGTH)
     is_open = models.BooleanField(default=True)
+    revision = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [
@@ -55,6 +57,10 @@ class CatalogItem(OrgScopedModel):
     is_other = models.BooleanField(default=False)
     requires_photo = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    deactivated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
 
     class Meta:
         # "Other (specify)" is always last, whatever its `sort`.

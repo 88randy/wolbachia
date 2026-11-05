@@ -14,6 +14,13 @@ CODES = ["motorcycle.read", "motorcycle.manage", "motorcycle.unblock", "catalog.
 
 
 @pytest.fixture
+def make_member(make_member):
+    from tests.fleet_support import grant_fleet_scope
+
+    return lambda *args, **kwargs: grant_fleet_scope(make_member(*args, **kwargs))
+
+
+@pytest.fixture
 def fleet_actor(org_a, make_member):
     return make_member(org_a, CODES)[0]
 

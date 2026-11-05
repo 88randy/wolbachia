@@ -1,0 +1,157 @@
+.page,
+.content,
+.card,
+.mapPanel,
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.page {
+  padding: var(--space-2);
+}
+.page h1,
+.card h2,
+.card h3 {
+  margin: 0;
+}
+.card,
+.mapPanel {
+  padding: var(--space-2);
+  background: var(--color-surface);
+  border: var(--web-focus-ring-width) solid var(--color-border-default);
+  border-radius: var(--radius-md);
+}
+.workspace {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-6) * 8)), 1fr));
+  gap: var(--space-2);
+  align-items: start;
+  min-width: 0;
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+.page button,
+.dialog button {
+  min-height: var(--web-control-lg);
+  height: auto;
+  white-space: normal;
+  padding: var(--space-1);
+  border: var(--web-focus-ring-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-action-strong);
+  font: inherit;
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.page button:disabled,
+.dialog button:disabled {
+  cursor: not-allowed;
+  background: var(--color-disabled-background);
+  color: var(--color-text-secondary);
+}
+.page select,
+.dialog select,
+.page textarea,
+.dialog textarea {
+  max-width: 100%;
+  width: 100%;
+  min-width: 0;
+  min-height: var(--web-control-lg);
+  padding: var(--space-1);
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: var(--web-focus-ring-width) solid var(--color-border-strong);
+  border-radius: var(--radius-sm);
+  font: inherit;
+}
+.fieldset {
+  border: 0;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.page fieldset,
+.dialog fieldset {
+  min-width: 0;
+  max-width: 100%;
+}
+.page form,
+.dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.page pre,
+.dialog pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+.dialog {
+  max-width: min(calc(var(--space-6) * 15), calc(100% - var(--space-2)));
+  max-height: calc(100% - var(--space-2));
+  overflow: auto;
+  color: var(--color-text-primary);
+  background: var(--color-surface);
+  border: var(--web-focus-ring-width) solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  padding: var(--space-2);
+}
+.warning {
+  padding: var(--space-2);
+  color: var(--color-status-warning-fg);
+  background: var(--color-status-warning-bg);
+  border-radius: var(--radius-sm);
+  overflow-wrap: anywhere;
+}
+.canvas {
+  width: 100%;
+  height: calc(var(--space-6) * 9);
+  position: relative;
+  min-width: 0;
+}
+.attribution {
+  color: var(--color-action-strong);
+  background: var(--color-surface);
+}
+
+.solid,
+.dashed {
+  display: inline-block;
+  width: var(--space-3);
+  margin-inline-end: var(--space-1);
+  border-top: var(--web-focus-ring-width) solid var(--color-action);
+}
+.dashed {
+  border-top-style: dashed;
+  border-top-color: var(--color-status-warning-fg);
+}
+
+.canvas :global(canvas:focus-visible) {
+  outline: var(--web-focus-ring-width) solid var(--color-action);
+  outline-offset: var(--web-focus-ring-offset);
+}
+.page fieldset,
+.dialog fieldset {
+  margin: 0;
+  padding: var(--space-1);
+  border: var(--web-focus-ring-width) solid var(--color-border-default);
+  border-radius: var(--radius-sm);
+}
+.page .fieldset,
+.dialog .fieldset {
+  border: 0;
+  padding: 0;
+}
