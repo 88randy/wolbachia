@@ -14,7 +14,12 @@ export function ScannerForm({ code, setCode, isBusy, enter }: Props) {
   return (
     <View>
       <Notice tone="info" icon="phone" message={t("mobile.ovitrap.manualHint")} />
-      <ShiftField label={t("mobile.ovitrap.code")} value={code} onChange={setCode} />
+      <ShiftField
+        disabled={isBusy}
+        label={t("mobile.ovitrap.code")}
+        value={code}
+        onChange={setCode}
+      />
       <ShiftAction
         label={t("mobile.ovitrap.lookup")}
         disabled={isBusy || !code.trim()}

@@ -1,3 +1,4 @@
+import { ShiftBlockedError } from "./shift-authorization.ts";
 import { availability } from "./availability.ts";
 import { correctionDraft } from "./correction.ts";
 import { assertSameTarget, normalizeGps, bagIdentity, CatalogChangedError } from "./ports.ts";
@@ -24,6 +25,7 @@ interface Dependencies {
 export interface Snapshot extends StoredCapture {
   readonly catalogChanged: boolean;
   readonly isScopeBlocked: boolean;
+  readonly isShiftBlocked: boolean;
   readonly repeat: OutboxEvent | null;
   readonly reuse: readonly Reuse[];
   readonly isBagReserved: boolean;
@@ -36,7 +38,10 @@ export class OvitrapService {
     this.#deps = deps;
   }
   #write<T>(action: () => Promise<T>): Promise<T> {
-    const next = this.#tail.then(action);
+    const next = this.#tail.then(async () => {
+      if (!(await this.#deps.shiftId())) throw new ShiftBlockedError();
+      return action();
+    });
     this.#tail = next.catch(() => undefined); // Caller owns the rejection; future writes remain possible.
     return next;
   }
@@ -44,6 +49,7 @@ export class OvitrapService {
     const state = await this.#deps.store.read();
     return {
       ...state,
+      isShiftBlocked: await this.#isShiftBlocked(state.draft),
       ...availability(state.draft, await this.#deps.store.snapshots()),
       reuse: state.draft ? await this.#deps.store.reuse(state.draft) : [],
       isBagReserved: Boolean(
@@ -53,6 +59,10 @@ export class OvitrapService {
       ),
       repeat: state.draft && !state.event ? await this.#deps.store.repeat(state.draft) : null,
     };
+  }
+  async #isShiftBlocked(draft: Draft | null): Promise<boolean> {
+    const id = await this.#deps.shiftId();
+    return !id || Boolean(draft && draft.shiftId !== id);
   }
   refresh(): Promise<void> {
     return this.#deps.refresh?.() ?? Promise.resolve();
@@ -72,6 +82,8 @@ export class OvitrapService {
   }
   async #start(mode: Draft["mode"], ovitrapId?: string, isManual = false): Promise<Snapshot> {
     const current = await this.#deps.store.read();
+    if (await this.#isShiftBlocked(current.event ? null : current.draft))
+      throw new ShiftBlockedError();
     if (current.draft && !current.event) {
       assertSameTarget(current.draft, mode, ovitrapId);
       return this.read();
@@ -104,13 +116,17 @@ export class OvitrapService {
       manualCapture: isManual,
     };
   }
-  update(patch: DraftPatch): Promise<Snapshot> {
+  update(patch: DraftPatch): Promise<Snapshot & { readonly isUpdateApplied: boolean }> {
     return this.#write(async () => {
-      const { draft, event } = await this.read();
-      if (!draft || event) return this.read();
+      const state = await this.read();
+      const { draft, event } = state;
+      if (!draft || event) return { ...state, isUpdateApplied: false };
+      if (state.isShiftBlocked) throw new ShiftBlockedError();
       const manual = patch.bagCode !== undefined ? { manualCapture: true, bagUuid: null } : {};
-      await this.#deps.store.update(normalizePaddle({ ...draft, ...patch, ...manual }));
-      return this.read();
+      const isUpdateApplied = await this.#deps.store.update(
+        normalizePaddle({ ...draft, ...patch, ...manual }),
+      );
+      return { ...(await this.read()), isUpdateApplied };
     });
   }
   scan(target: "bag" | "ovitrap"): Promise<string> {
@@ -222,6 +238,7 @@ export class OvitrapService {
     });
   }
   async #commit(draft: Draft): Promise<void> {
+    if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();
     const event = captureEvent(draft);
     const statements = this.#deps.store.commitStatements(draft);
     if (!draft.replacesEventId) return this.#deps.engine.enqueue(event, statements);

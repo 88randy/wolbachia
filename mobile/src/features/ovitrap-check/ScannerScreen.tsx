@@ -16,6 +16,8 @@ export function ScannerScreen({ target }: { readonly target: "ovitrap" | "bag" }
   const t = useT();
   const styles = useStyles(createShiftStyles);
   const actions = useScannerActions({ model, target, code });
+  const canCapture = model.state?.isShiftBlocked === false;
+  const isBusy = model.isBusy || !canCapture;
   return (
     <View style={styles.root}>
       <ScreenHeader
@@ -24,13 +26,9 @@ export function ScannerScreen({ target }: { readonly target: "ovitrap" | "bag" }
       />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {model.errorKey ? <Notice tone="warning" icon="alert" message={t(model.errorKey)} /> : null}
-        <ShiftAction
-          label={t("mobile.ovitrap.scan")}
-          disabled={model.isBusy}
-          onPress={actions.scan}
-        />
-        <ScannerForm code={code} setCode={setCode} isBusy={model.isBusy} enter={actions.enter} />
-        <OvitrapEntry labelKey="mobile.ovitrap.resume" />
+        <ShiftAction label={t("mobile.ovitrap.scan")} disabled={isBusy} onPress={actions.scan} />
+        <ScannerForm code={code} setCode={setCode} isBusy={isBusy} enter={actions.enter} />
+        <OvitrapEntry isAllowed={canCapture} labelKey="mobile.ovitrap.resume" />
       </ScrollView>
     </View>
   );

@@ -1,3 +1,4 @@
+import { captureShiftId } from "../ovitrap-check/shift-authorization.ts";
 import { OvitrapEntry } from "../ovitrap-check/OvitrapEntry.tsx";
 import { HomeShiftAction } from "./HomeShiftAction.tsx";
 import { ScrollView } from "react-native";
@@ -20,7 +21,7 @@ export function P3Screen() {
       <SaveFeedback model={model} />
       <HomeShiftCard state={model.state} />
       <HomeShiftAction model={model} />
-      <OvitrapEntry />
+      <OvitrapEntry isAllowed={Boolean(captureShiftId(model.state))} />
       <ShiftAction
         label={t("mobile.shiftOpen.inbox")}
         onPress={() => {

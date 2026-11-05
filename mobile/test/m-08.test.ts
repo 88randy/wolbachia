@@ -9,6 +9,7 @@ import {
   validReason,
 } from "../src/features/ovitrap-check/domain.ts";
 import { makeDraft } from "./support/m-08-fixtures.ts";
+import { captureEvent, voidEvent } from "../src/features/ovitrap-check/events.ts";
 
 void test("AC1: conditional Yes/No never generates numeric egg fields", () => {
   for (const hasEggs of [true, false]) {
@@ -434,4 +435,279 @@ void test("AC3: a revoked downloaded assignment blocks capture without losing it
   assert.equal((await h.service.read()).isScopeBlocked, true);
   await assert.rejects(h.service.save());
   assert.equal((await h.service.read()).draft?.bagCode, "B-TEST");
+});
+
+import { correctionDraft } from "../src/features/ovitrap-check/correction.ts";
+import { OvitrapDraftBuffer } from "../src/features/ovitrap-check/draft-buffer.ts";
+import type { FieldEventEnvelope } from "../src/outbox/outbox-event.ts";
+
+function barrier() {
+  let resolve!: () => void;
+  const promise = new Promise<void>((done) => {
+    resolve = done;
+  });
+  return { promise, resolve };
+}
+
+// The server sorts each batch independently of outbox insertion order.
+function applyCorrection(events: readonly FieldEventEnvelope[], shouldFailReplacement = false) {
+  let active: string | null = "11111111-1111-4111-8111-111111111111";
+  const results = new Map<string, string>();
+  const sorted = [...events].sort(
+    (left, right) =>
+      Date.parse(left.device_time) - Date.parse(right.device_time) ||
+      left.id.localeCompare(right.id),
+  );
+  for (const event of sorted) {
+    if (event.type === "record.void") {
+      assert.equal(event.voids_event_id, active);
+      active = null;
+      results.set(event.id, "accepted");
+      continue;
+    }
+    const code = active ? "reading_exists" : shouldFailReplacement ? "bag_code_used" : "accepted";
+    results.set(event.id, code);
+    if (code === "accepted") active = event.id;
+  }
+  return { active, results };
+}
+
+void test("regression: correction server order ignores UUID order and preserves a later failure", () => {
+  const low = "22222222-2222-4222-8222-222222222222";
+  const high = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+  for (const [replacementId, voidId] of [
+    [low, high],
+    [high, low],
+  ] as const) {
+    const source = makeDraft();
+    const draft = correctionDraft(makeDraft({ eventId: replacementId }), source, voidId);
+    const replacement = captureEvent(draft);
+    const annulment = voidEvent(draft);
+    assert.ok(Date.parse(annulment.device_time) > Date.parse(source.deviceTime));
+    assert.ok(Date.parse(replacement.device_time) > Date.parse(annulment.device_time));
+    assert.equal(replacement.device_time, draft.deviceTime);
+    const applied = applyCorrection([replacement, annulment]);
+    assert.equal(applied.active, replacementId);
+    assert.equal(applied.results.get(replacementId), "accepted");
+    const failed = applyCorrection([replacement, annulment], true);
+    assert.equal(failed.active, null);
+    assert.equal(failed.results.get(voidId), "accepted");
+    assert.equal(failed.results.get(replacementId), "bag_code_used");
+  }
+});
+
+void test("regression: a blocked shift prevents entry and saving an existing draft", async () => {
+  let isAuthorized = false;
+  const h = await harness(undefined, {
+    shiftId: () => Promise.resolve(isAuthorized ? "55555555-5555-4555-8555-555555555555" : ""),
+  });
+  const target = "44444444-4444-4444-8444-444444444444";
+  await assert.rejects(h.service.startCheck(target, true), /ShiftBlockedError/);
+  await assert.rejects(h.service.startPlace(), /ShiftBlockedError/);
+  assert.equal((await h.service.read()).draft, null);
+  isAuthorized = true;
+  await h.service.startCheck(target, true);
+  await prepareCheck(h.service);
+  const draft = (await h.service.read()).draft;
+  isAuthorized = false;
+  await assert.rejects(h.service.startCheck(target, true), /ShiftBlockedError/);
+  await assert.rejects(h.service.save(), /ShiftBlockedError/);
+  assert.deepEqual((await h.service.read()).draft, draft);
+  assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
+  isAuthorized = true;
+  assert.ok((await h.service.save()).event);
+  await h.engine.requestSync();
+});
+
+void test("regression: November 5 and 12 under the W45 package are different capture weeks", async () => {
+  let now = new Date("2026-11-05T15:00:00Z");
+  const h = await harness(undefined, { now: () => now });
+  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await prepareCheck(h.service);
+  await h.service.save();
+  now = new Date("2026-11-12T15:00:00Z");
+  const second = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  assert.equal(second.draft?.assignment?.epiWeek, "2026-W45");
+  assert.equal(second.repeat, null);
+  await prepareCheck(h.service);
+  await h.service.update({ bagCode: "B-NEXT-WEEK" });
+  await h.service.save();
+  assert.deepEqual(
+    (await h.db.query("SELECT epi_week FROM ovitrap_capture ORDER BY rowid")).map(
+      (row) => row.epi_week,
+    ),
+    ["2026-W45", "2026-W46"],
+  );
+  assert.ok((await h.service.startCheck("44444444-4444-4444-8444-444444444444", true)).repeat);
+  await h.engine.requestSync();
+});
+
+void test("regression: missing organization week configuration blocks explicitly without guessing W45", async () => {
+  const h = await harness();
+  await h.store.saveSnapshots({
+    catalog: CATALOG,
+    rules: RULES,
+    assignment: { ...ASSIGNMENT, organization: undefined },
+  });
+  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await prepareCheck(h.service);
+  await assert.rejects(h.service.save(), /weekContext/);
+  assert.equal((await h.service.read()).draft?.bagCode, "B-TEST");
+  assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
+});
+
+void test("regression: an edit queued behind deferred enqueue is rejected and remains buffered", async () => {
+  const entered = barrier();
+  const release = barrier();
+  const h = await harness();
+  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await prepareCheck(h.service);
+  const enqueue = h.engine.enqueue.bind(h.engine);
+  h.engine.enqueue = async (...args) => {
+    entered.resolve();
+    await release.promise;
+    await enqueue(...args);
+  };
+  const saving = h.service.save();
+  await entered.promise;
+  const buffer = new OvitrapDraftBuffer();
+  buffer.edit({ otherText: "Late finding text", reason: "Late correction reason" });
+  const revision = buffer.revision;
+  const editing = assert.rejects(buffer.persist(h.service), /ImmutableCaptureError/);
+  release.resolve();
+  const saved = await saving;
+  await editing;
+  assert.equal(buffer.revision, revision);
+  const pending = buffer.merge({ ...saved, event: null });
+  assert.equal(pending.draft?.otherText, "Late finding text");
+  assert.equal(pending.draft.reason, "Late correction reason");
+  assert.equal((await h.service.read()).draft?.otherText, "");
+  await assert.rejects(buffer.persist(h.service), /ImmutableCaptureError/);
+  await h.engine.requestSync();
+});
+
+import { captureWeek } from "../src/features/ovitrap-check/capture-week.ts";
+import { captureShiftId } from "../src/features/ovitrap-check/shift-authorization.ts";
+import { ShiftOpenService } from "../src/features/shift-open/service.ts";
+import { ShiftOpenStore } from "../src/features/shift-open/store.ts";
+import { UNAVAILABLE_MAP } from "../src/features/shift-open/domain.ts";
+import { actionErrorKey } from "../src/features/ovitrap-check/action-error-key.ts";
+import { ImmutableCaptureError } from "../src/features/ovitrap-check/draft-buffer.ts";
+
+void test("regression: real departure authorization blocks severe_check in_review at entry and save", async () => {
+  const h = await harness();
+  const store = new ShiftOpenStore(h.db);
+  const item = CATALOG.findings[0];
+  assert.ok(item);
+  await store.saveCatalog({ version: "motorcycle-v1", items: [item] });
+  await store.saveMap({
+    ...UNAVAILABLE_MAP,
+    status: "ready",
+    version: "maps-v1",
+    coverage: ["Q-1"],
+    requiredCoverage: ["Q-1"],
+    assets: [{ id: "Q-1.pmtiles", license: "licensed", size: 10 }],
+    verifiedAssets: [
+      { id: "Q-1.pmtiles", fileRef: "file:///Q-1.pmtiles", size: 10, sha256: "test-hash" },
+    ],
+    progress: 100,
+  });
+  let sequence = 0;
+  const shift = new ShiftOpenService({
+    store,
+    engine: h.engine,
+    now: () => FIXED_NOW,
+    uuid: () => `77777777-7777-4777-8777-${String(++sequence).padStart(12, "0")}`,
+    maps: { prepare: () => Promise.resolve(UNAVAILABLE_MAP) },
+    photos: { capture: () => Promise.resolve({ status: "unavailable" }) },
+  });
+  await shift.start();
+  await shift.update({ motorcycle_code: "M-TEST" });
+  await shift.update({ odometer_km: "100", checks: [{ item: item.code, result: "ok" }] });
+  const opened = await shift.open();
+  assert.equal(opened.canDepart, true);
+  assert.ok(opened.opening);
+  const capture = await harness(h, { shiftId: async () => captureShiftId(await shift.read()) });
+  const target = "44444444-4444-4444-8444-444444444444";
+  await capture.service.startCheck(target, true);
+  await prepareCheck(capture.service);
+  const draft = (await capture.service.read()).draft;
+  await h.outbox.claimPending(10);
+  await h.outbox.settle([
+    {
+      id: opened.opening.envelope.id,
+      action: "review",
+      result: { code: "severe_check", params: {} },
+    },
+  ]);
+  const blocked = await shift.read();
+  assert.equal(blocked.canDepart, false);
+  assert.equal(blocked.gate, "severe");
+  assert.equal(captureShiftId(blocked), ""); // Same decision used by P3 and the production factory.
+  assert.equal((await capture.service.read()).isShiftBlocked, true);
+  await assert.rejects(capture.service.startCheck(target, true), /ShiftBlockedError/);
+  await assert.rejects(capture.service.startPlace(), /ShiftBlockedError/);
+  await assert.rejects(capture.service.save(), /ShiftBlockedError/);
+  assert.deepEqual((await capture.service.read()).draft, draft);
+  assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
+  await capture.engine.requestSync();
+  await h.engine.requestSync();
+});
+
+void test("regression: capture week matches organization-local ISO/MMWR year and Sunday boundaries", () => {
+  for (const [deviceTime, system, expected] of [
+    ["2026-01-04T18:00:00Z", "iso", "2026-W01"],
+    ["2026-01-04T18:00:00Z", "mmwr", "2026-W01"],
+    ["2026-01-03T18:00:00Z", "mmwr", "2025-W53"],
+    ["2021-01-01T18:00:00Z", "iso", "2020-W53"],
+    ["2025-12-29T18:00:00Z", "iso", "2026-W01"],
+    ["2026-11-08T18:00:00Z", "iso", "2026-W45"],
+    ["2026-11-08T18:00:00Z", "mmwr", "2026-W45"],
+    ["2026-11-09T02:00:00Z", "iso", "2026-W45"],
+    ["2026-11-09T06:00:00Z", "iso", "2026-W46"],
+  ] as const) {
+    const draft = makeDraft({
+      deviceTime,
+      assignment: {
+        ...ASSIGNMENT,
+        organization: { timezone: "America/Mexico_City", epi_week: system },
+      },
+    });
+    assert.equal(captureWeek(draft), expected, `${deviceTime} ${system}`);
+  }
+  assert.equal(
+    captureWeek(
+      makeDraft({
+        assignment: { ...ASSIGNMENT, organization: { timezone: "invalid-zone", epi_week: "iso" } },
+      }),
+    ),
+    null,
+  );
+});
+
+void test("regression: SQL skipped updates cannot clear buffered text after another writer commits", async () => {
+  const entered = barrier();
+  const release = barrier();
+  const h = await harness();
+  await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  await prepareCheck(h.service);
+  const update = h.store.update.bind(h.store);
+  h.store.update = async (draft) => {
+    entered.resolve();
+    await release.promise;
+    return update(draft);
+  };
+  const buffer = new OvitrapDraftBuffer();
+  buffer.edit({ reason: "Pending correction text" });
+  const revision = buffer.revision;
+  const persisting = assert.rejects(buffer.persist(h.service), ImmutableCaptureError);
+  await entered.promise;
+  const other = await harness(h);
+  await other.service.save();
+  release.resolve();
+  await persisting;
+  assert.equal(buffer.revision, revision);
+  assert.equal(actionErrorKey(new ImmutableCaptureError()), "mobile.ovitrap.immutableEdit");
+  await h.engine.requestSync();
+  await other.engine.requestSync();
 });

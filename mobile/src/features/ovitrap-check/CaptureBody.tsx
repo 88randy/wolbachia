@@ -20,6 +20,7 @@ export function CaptureBody(props: CaptureProps) {
           {needsOther(draft) ? (
             <ShiftField
               label={t("mobile.ovitrap.other")}
+              disabled={model.isBusy}
               value={draft.otherText}
               onChange={(otherText) => {
                 model.edit({ otherText });

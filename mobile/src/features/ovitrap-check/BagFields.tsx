@@ -14,6 +14,7 @@ export function BagFields({ model, draft }: CaptureProps) {
       <AppText>{t("mobile.ovitrap.bagHint")}</AppText>
       <ShiftField
         label={t("mobile.ovitrap.bag")}
+        disabled={model.isBusy}
         value={draft.bagCode}
         onChange={(bagCode) => {
           model.edit({ bagCode });

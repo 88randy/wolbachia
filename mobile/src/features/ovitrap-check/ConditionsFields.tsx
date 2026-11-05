@@ -11,6 +11,7 @@ export function ConditionsFields({ model, draft }: CaptureProps) {
         {t("mobile.ovitrap.conditions")}
       </AppText>
       <ConditionField
+        disabled={model.isBusy}
         label={t("mobile.ovitrap.temperature")}
         value={draft.temperature}
         onChange={(temperature) => {
@@ -18,6 +19,7 @@ export function ConditionsFields({ model, draft }: CaptureProps) {
         }}
       />
       <ConditionField
+        disabled={model.isBusy}
         label={t("mobile.ovitrap.humidity")}
         value={draft.humidity}
         onChange={(humidity) => {

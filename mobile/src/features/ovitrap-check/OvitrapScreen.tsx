@@ -25,7 +25,7 @@ export function OvitrapScreen() {
         <SnapshotNotices model={model} />
         {model.state?.event ? (
           <CaptureOutcome event={model.state.event} />
-        ) : draft ? (
+        ) : draft && !model.state?.isShiftBlocked ? (
           <CaptureBody model={model} draft={draft} />
         ) : null}
       </ScrollView>

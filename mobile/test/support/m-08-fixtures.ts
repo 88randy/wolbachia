@@ -33,6 +33,7 @@ export const RULES: Rules = {
 export const ASSIGNMENT: Assignment = {
   version: "assignment-v1",
   epiWeek: "2026-W45",
+  organization: { timezone: "America/Mexico_City", epi_week: "iso" },
   points: [POINT],
   ovitraps: [],
   bags: [{ id: "33333333-3333-4333-8333-333333333333", code: "B-QR" }],

@@ -70,6 +70,6 @@ export async function createServices(): Promise<AppServices> {
     report: logEngineError,
   });
   const shiftOpen = createShiftOpen({ db, engine, server, tokens });
-  const ovitrapCheck = createOvitrapCheck({ db, engine, server, tokens });
+  const ovitrapCheck = createOvitrapCheck({ db, engine, server, tokens, shiftOpen });
   return { ovitrapCheck, kv, outbox, engine, tokens, server, deviceId, shiftOpen };
 }

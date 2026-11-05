@@ -1,3 +1,4 @@
+import { captureWeek } from "./capture-week.ts";
 import type { Draft } from "./types.ts";
 import {
   canReuse,
@@ -11,6 +12,7 @@ import {
 import { reviewReasons } from "./review-policy.ts";
 export { reviewReasons } from "./review-policy.ts";
 export type Gate =
+  | "weekContext"
   | "shift"
   | "assignment"
   | "catalog"
@@ -118,6 +120,7 @@ export function saveGate(draft: Draft, now: Date): Gate | null {
   return (
     contextGate(draft) ??
     scopeGate(draft) ??
+    (captureWeek(draft) ? null : "weekContext") ??
     evidenceGate(draft) ??
     captureGate(draft) ??
     preparationGate(draft) ??

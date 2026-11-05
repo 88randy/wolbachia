@@ -9,7 +9,14 @@ Implementation plan for #137 (owner-supplied specification; no GitHub access):
 - Add localized accessible controls, acceptance map and decision 113; run requested root checks.
 
 One serialized service writer owns draft edits and commits. Database constraints arbitrate
-across instances. Correction enqueues void first and replacement plus all projection/evidence
+across instances. Correction uses source < void < replacement timestamps, independent of UUID order,
+and enqueues void first and replacement plus all projection/evidence
 statements in the same existing outbox transaction. No new transport or queue.
 
 See `mobile/README.md`, M-08, for decisions and verification boundaries.
+
+Departure authorization is read live through ShiftOpenService before starting/resuming
+and saving. Capture-week identity derives from deviceTime plus downloaded organization
+ISO/MMWR and timezone settings, never the assignment package week label. Missing
+settings block explicitly. Conditional SQL updates report application; the draft buffer
+retains and surfaces edits skipped because another writer made the capture immutable.

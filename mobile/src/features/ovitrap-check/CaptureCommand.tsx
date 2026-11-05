@@ -20,7 +20,9 @@ export function CaptureCommand({ model, command, disabled = false }: Props) {
   return (
     <ShiftAction
       label={t(LABELS[command])}
-      disabled={model.isBusy || disabled}
+      disabled={
+        model.isBusy || disabled || (command !== "refresh" && model.state?.isShiftBlocked !== false)
+      }
       onPress={() => {
         void model.run(async () => {
           const result = await model.service[command]();

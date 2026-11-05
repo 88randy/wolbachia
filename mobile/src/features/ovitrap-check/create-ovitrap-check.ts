@@ -5,13 +5,15 @@ import type { TokenStore } from "../../auth/token-store.ts";
 import type { ServerSettings } from "../../config/server-settings.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import type { SyncEngine } from "../../sync/sync-engine.ts";
-import { ShiftOpenStore } from "../shift-open/store.ts";
+import type { ShiftOpenService } from "../shift-open/service.ts";
+import { captureShiftId } from "./shift-authorization.ts";
 import { OvitrapService } from "./service.ts";
 import { readCatalog, readRules } from "./snapshots.ts";
 import { OvitrapStore } from "./store.ts";
 import type { Assignment, EvidencePort, GpsPort, ScannerPort } from "./types.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
+  readonly shiftOpen: Pick<ShiftOpenService, "read">;
   readonly engine: SyncEngine;
   readonly server: ServerSettings;
   readonly tokens: TokenStore;
@@ -37,7 +39,6 @@ async function download(deps: Dependencies, store: OvitrapStore): Promise<void> 
 /** No native additions: unsupported scanner/GPS/evidence remain explicit unavailable ports. */
 export function createOvitrapCheck(deps: Dependencies): OvitrapService {
   const store = new OvitrapStore(deps.db);
-  const shifts = new ShiftOpenStore(deps.db);
   return new OvitrapService({
     store,
     engine: deps.engine,
@@ -46,12 +47,7 @@ export function createOvitrapCheck(deps: Dependencies): OvitrapService {
     gps: deps.gps ?? { locate: () => Promise.resolve(null) },
     scanner: deps.scanner ?? { scan: () => Promise.resolve({ status: "unavailable" }) },
     evidence: deps.evidence ?? { capture: () => Promise.resolve(null) },
-    shiftId: async () => {
-      const shift = await shifts.read();
-      return shift.opening && shift.opening.status !== "rejected"
-        ? (shift.draft?.clientShiftId ?? "")
-        : "";
-    },
+    shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
     refresh: () => download(deps, store),
   });
 }

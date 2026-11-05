@@ -6,6 +6,9 @@ export function SnapshotNotices({ model }: { readonly model: M08Model }) {
   const t = useT();
   return (
     <View>
+      {model.state?.isShiftBlocked ? (
+        <Notice tone="warning" icon="alert" message={t("mobile.ovitrap.shiftBlocked")} />
+      ) : null}
       {model.state?.catalogChanged ? (
         <Notice tone="warning" icon="alert" message={t("mobile.ovitrap.catalogChanged")} />
       ) : null}

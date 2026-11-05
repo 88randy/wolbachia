@@ -1,3 +1,4 @@
+import { captureWeek } from "./capture-week.ts";
 import { KvStore } from "../../db/kv-store.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readText } from "../../db/sql.ts";
@@ -50,13 +51,12 @@ export class OvitrapStore {
       },
     ]);
   }
-  async update(draft: Draft): Promise<void> {
-    await this.#db.runAtomically([
-      {
-        sql: "UPDATE ovitrap_draft SET draft = ? WHERE slot = 1 AND event_id IS NULL AND json_extract(draft, '$.eventId') = ?",
-        params: [JSON.stringify(draft), draft.eventId],
-      },
-    ]);
+  async update(draft: Draft): Promise<boolean> {
+    const rows = await this.#db.query(
+      "UPDATE ovitrap_draft SET draft = ? WHERE slot = 1 AND event_id IS NULL AND json_extract(draft, '$.eventId') = ? RETURNING slot",
+      [JSON.stringify(draft), draft.eventId],
+    );
+    return rows.length === 1;
   }
   async capturedDraft(id: string): Promise<Draft | null> {
     const [row] = await this.#db.query("SELECT draft FROM ovitrap_capture WHERE event_id = ?", [
@@ -72,10 +72,12 @@ export class OvitrapStore {
     return row ? (JSON.parse(readText(row, "draft")) as Draft) : null;
   }
   async repeat(draft: Draft): Promise<OutboxEvent | null> {
+    const week = captureWeek(draft);
+    if (!week) return null;
     const [row] = await this.#db.query(
       `SELECT c.event_id FROM ovitrap_capture c WHERE c.ovitrap_id = ? AND c.epi_week = ? AND c.mode = 'check'
       AND NOT EXISTS (SELECT 1 FROM ovitrap_lineage l WHERE l.target_event_id = c.event_id) LIMIT 1`,
-      [draft.ovitrapId, draft.assignment?.epiWeek ?? ""],
+      [draft.ovitrapId, week],
     );
     return row ? this.event(readText(row, "event_id")) : null;
   }
@@ -97,17 +99,13 @@ export class OvitrapStore {
     return rows.length > 0;
   }
   commitStatements(draft: Draft): readonly SqlStatement[] {
+    const week = captureWeek(draft);
+    if (!week) throw new Error("Capture blocked: weekContext");
     return [
       ...this.#lineage(draft),
       {
         sql: "INSERT INTO ovitrap_capture(event_id, ovitrap_id, mode, epi_week, draft) VALUES (?, ?, ?, ?, ?)",
-        params: [
-          draft.eventId,
-          draft.ovitrapId,
-          draft.mode,
-          draft.assignment?.epiWeek ?? "",
-          JSON.stringify(draft),
-        ],
+        params: [draft.eventId, draft.ovitrapId, draft.mode, week, JSON.stringify(draft)],
       },
       ...Array.from(
         new Map(

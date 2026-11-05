@@ -83,6 +83,12 @@ export const mobile: Record<keyof typeof source, string> = {
     "This ovitrap point is unknown on the phone. The server will review location and scope; compliance is not confirmed.",
   "mobile.ovitrap.acknowledge": "I understand this capture needs server review",
   "mobile.ovitrap.retryGps": "Retry GPS",
+  "mobile.ovitrap.shiftBlocked":
+    "This shift does not allow capture or saving. Review the opening with your supervisor; the draft is retained.",
+  "mobile.ovitrap.staleWeekContext":
+    "Current organization week and time zone settings are missing. Update the context before saving; the draft is retained.",
+  "mobile.ovitrap.immutableEdit":
+    "The record is already saved and cannot be edited. Your pending text is retained; review the record and use a correction.",
   "mobile.ovitrap.gateShift": "Open a shift before saving. The draft is retained.",
   "mobile.ovitrap.gateAssignment":
     "An assignment with explicit scope and epi week is missing. Download it before saving.",

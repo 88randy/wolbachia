@@ -23,6 +23,7 @@ export function CorrectionFields({ model, draft }: CaptureProps) {
       ))}
       <ShiftField
         label={t("mobile.ovitrap.reason")}
+        disabled={model.isBusy}
         value={draft.reason}
         onChange={(reason) => {
           model.edit({ reason });

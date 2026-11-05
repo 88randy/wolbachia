@@ -24,6 +24,7 @@ export function voidEvent(draft: Draft): FieldEventEnvelope {
     ...captureEvent(draft),
     id: draft.voidEventId,
     type: "record.void",
+    device_time: new Date(Date.parse(draft.deviceTime) - 1).toISOString(),
     voids_event_id: draft.replacesEventId,
     payload: {
       reason_code: draft.reasonCode,

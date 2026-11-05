@@ -1,3 +1,4 @@
+import type { Schemas } from "@wolbachia/api-client";
 import type { FieldEventEnvelope } from "../../outbox/outbox-event.ts";
 import type { ChecklistItem } from "../shift-open/domain.ts";
 export type QrKind = "lot" | "ovitrap" | "bag" | "release-device" | "sample";
@@ -33,6 +34,7 @@ export interface Rules {
 export interface Assignment {
   readonly version: string;
   readonly epiWeek: string;
+  readonly organization?: Pick<Schemas["MeOrganization"], "timezone" | "epi_week">;
   readonly points: readonly Point[];
   readonly ovitraps: readonly { id: string; point: Point }[];
   readonly bags: readonly { id: string; code: string }[];

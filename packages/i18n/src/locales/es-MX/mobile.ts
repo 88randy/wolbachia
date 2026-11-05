@@ -84,6 +84,12 @@ export const mobile = {
     "No conocemos el punto de esta ovitrampa en el teléfono. El servidor revisará ubicación y alcance; no confirmamos cumplimiento.",
   "mobile.ovitrap.acknowledge": "Entiendo que la captura requiere revisión del servidor",
   "mobile.ovitrap.retryGps": "Intentar GPS de nuevo",
+  "mobile.ovitrap.shiftBlocked":
+    "La jornada no permite capturar ni guardar. Revisa la apertura con tu supervisor; el borrador se conserva.",
+  "mobile.ovitrap.staleWeekContext":
+    "Falta la configuraci?n vigente de semana y zona horaria de la organizaci?n. Actualiza el contexto antes de guardar; el borrador se conserva.",
+  "mobile.ovitrap.immutableEdit":
+    "El registro ya est? guardado y no admite cambios. Tu texto pendiente se conserva; revisa el registro y usa una correcci?n.",
   "mobile.ovitrap.gateShift": "Abre una jornada antes de guardar. El borrador se conserva.",
   "mobile.ovitrap.gateAssignment":
     "Falta la asignación con alcance explícito y semana epidemiológica. Descárgala antes de guardar.",

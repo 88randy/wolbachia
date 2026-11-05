@@ -1,6 +1,7 @@
 import type { MessageKey } from "@wolbachia/i18n";
 import type { Gate } from "./validation.ts";
 export const GATE_KEYS: Readonly<Record<Gate, MessageKey>> = {
+  weekContext: "mobile.ovitrap.staleWeekContext",
   shift: "mobile.ovitrap.gateShift",
   assignment: "mobile.ovitrap.gateAssignment",
   catalog: "mobile.ovitrap.gateCatalog",

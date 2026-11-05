@@ -271,7 +271,7 @@ There is no egg-count input, draft field or event payload field.
   Missing assignment/version/epi week blocks saving; an explicitly lost or narrowed
   downloaded assignment blocks new capture while retaining drafts/outbox.
 - Catalog/rules download uses `packages/api-client` and saves snapshots atomically.
-  Drafts pin catalog labels, hashes, assignment version/epi week, GPS including
+  Drafts pin catalog labels, hashes, assignment version/week configuration, GPS including
   accuracy, shift and capture time. New catalogs warn without clearing old answers.
   Explicit adoption refuses to discard a retired captured choice's historical label.
   Catalog photo requirements apply to current evidence; an old placement photo is
@@ -280,7 +280,13 @@ There is no egg-count input, draft field or event payload field.
   The factory accepts an assignment port and caches its explicit context; it never
   invents an endpoint, scope, point or week. Production stays gated when that context
   is absent, like M-04's unavailable map port. Bootstrap integration must provide
-  assignment points, local epi week, optional ovitrap/bag mappings and reuse eligibility.
+  assignment points, organization `timezone` and `epi_week` settings from the downloaded
+  organization context, optional ovitrap/bag mappings and reuse eligibility. The local
+  port accepts `Assignment.organization` typed from generated `MeOrganization`; this
+  does not add a backend field or endpoint. Repeat lookup and SQLite persistence use
+  one capture-time ISO/MMWR calculation matching `backend/ovitraps/capture.py`. A cached
+  package week label never determines capture uniqueness. Missing/invalid week settings
+  block saving with an explicit stale-week-context notice; no default is inferred.
 - OP03: max paddle reuses defaults to 2; absent bootstrap eligibility offers only a
   new paddle. Durable local uses are added across assignment versions, including
   voided/review captures because physical reuse cannot be undone. Without a server
@@ -297,6 +303,12 @@ There is no egg-count input, draft field or event payload field.
   normalization. Original rows/evidence remain. A new bag code is required because
   B-14 reserves prior codes even after void. Corrections retain current GPS, manual
   flag, shift and snapshots; prior answers never replace current provenance.
+  Correction times satisfy source < void < replacement even with a stationary/backward
+  clock: reserve 1 ms before the replacement and floor it at source + 2 ms. The
+  replacement keeps the draft capture time shown in confirmation. Server ordering
+  `(device_time, id)` therefore ignores random UUID order. Server processing remains
+  per event: a later replacement rejection leaves the accepted void in effect and
+  must be resolved; local atomic enqueue does not imply atomic backend acceptance.
 - Lagged paddles remain bagged and lab-countable; the UI explains that index exclusion
   belongs to the server. Reinstatement/preparation and reused paddle provenance remain
   local: they are not extra keys in the strict B-14 payload. Supply/evidence refs are
@@ -315,6 +327,30 @@ There is no egg-count input, draft field or event payload field.
   styles, color literals, user copy or text truncation is added. All copy is in the
   `mobile` i18n area (es-MX/en). Strings go through the existing `translate.ts` over
   `packages/i18n` (no second i18n runtime). No dependency was added.
+
+### Adversarial review regressions (#137)
+
+- Entry from P3 and the capture factory use the real `ShiftOpenService.read()`
+  departure authorization (`canDepart`, gate and current shift UUID). Every serialized
+  capture mutation checks authorization, and save checks again immediately before
+  enqueue, including restored drafts. Blocked shifts keep drafts and show an es-MX/en
+  notice; the capture form and actions remain unavailable until authorization returns.
+- Other/reason and the remaining capture text inputs are disabled during a save.
+  `update` reports whether its conditional SQLite write applied. A queued edit after
+  commit throws `ImmutableCaptureError` in the buffer, retains pending text/revision,
+  and displays a localized notice instead of silently acknowledging the edit.
+- `test/m-08.test.ts` covers both UUID orders and later replacement failure with the
+  backend ordering model, real `severe_check` / `in_review` departure authorization,
+  blocked entry/save with a retained draft, November 5/12 under a W45 package,
+  unavailable week context, ISO/MMWR local/year boundaries, deferred enqueue, and a
+  second writer committing before a conditional update. No timer waits are used.
+
+APIs verified against [React Native TextInput](https://reactnative.dev/docs/textinput#editable)
+[ECMA-402 DateTimeFormat](https://tc39.es/ecma402/#sec-intl-datetimeformat-prototype-formattoparts),
+and [SQLite RETURNING](https://www.sqlite.org/lang_returning.html) (the installed
+op-sqlite headers bundle SQLite 3.53.4; native execution remains unverified).
+No dependency or sync payload field was added. Native interaction, TalkBack and real
+backend acceptance remain outside these Node checks.
 
 ### Acceptance map and verification boundary
 
@@ -359,11 +395,10 @@ Run from the repository root on Windows (`npx.cmd`/`npm.cmd`):
 | `npx eslint mobile packages/i18n` | Passed |
 | `npx prettier --check mobile packages docs` | Passed; Markdown and generated artifacts follow the repository ignore rules |
 | `node scripts/typecheck.mjs mobile` | Passed |
-| `npm test --workspace=mobile -- --test-concurrency=1` | 105 passed, including 15 M-08 cases |
-| `npm test --workspace=packages/i18n` | 13 passed |
+| `npm test --workspace=mobile -- --test-concurrency=1` | 113 passed, including 23 M-08 cases |
 | `git diff --check` | Passed |
 
-Code and security reviewers reproduced their findings, then confirmed the fixes;
-no remaining blocker was identified in the reviewed local scope. No commit/push/PR,
+This adversarial-fix follow-up was verified locally with the commands above.
+GitHub issue access returned HTTP 401; no remote review/CI result is claimed. No commit/push/PR,
 Docker, Playwright, emulator or device qualification was performed. No generated
 stackdump/test-results artifacts were retained.

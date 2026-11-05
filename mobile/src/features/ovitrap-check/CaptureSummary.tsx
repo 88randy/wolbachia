@@ -3,6 +3,18 @@ import { View } from "react-native";
 import { useT, useLocale } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import type { Draft } from "./types.ts";
+function captureTime(draft: Draft, locale: string): string {
+  try {
+    return new Intl.DateTimeFormat(locale, {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: draft.assignment?.organization?.timezone,
+    }).format(new Date(draft.deviceTime));
+  } catch (error) {
+    if (error instanceof RangeError) return draft.deviceTime;
+    throw error;
+  }
+}
 export function CaptureSummary({ draft }: { readonly draft: Draft }) {
   const t = useT();
   const locale = useLocale();
@@ -13,6 +25,7 @@ export function CaptureSummary({ draft }: { readonly draft: Draft }) {
         {t("mobile.ovitrap.confirm")}
       </AppText>
       <AppText>{draft.point?.code ?? draft.ovitrapId}</AppText>
+      <AppText>{captureTime(draft, locale)}</AppText>
       {finding ? <AppText>{catalogLabel(finding, locale)}</AppText> : null}
       {draft.paddlePresent && draft.hasEggs !== null ? (
         <AppText>
