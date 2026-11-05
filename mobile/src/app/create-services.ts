@@ -94,6 +94,7 @@ function createEngine(
       transport: lazyTransport(tokens, requests),
     },
     hasSession: () => tokens.hasSyncSession(),
+    hasPendingFinalUpload: tokens.hasPendingFinalUpload,
     hasServer: () => (tokens.hasSyncSession() ? tokens.getOrigin() : server.baseUrl()) !== null,
     random: Math.random,
     schedule: (callback, delayMs) => {

@@ -248,6 +248,7 @@ void it("a restart after persisted session end cannot unlock or refresh; only a 
       transport: createSyncTransport(client, session),
     },
     hasSession: () => restarted.hasSyncSession(),
+    hasPendingFinalUpload: restarted.hasPendingFinalUpload,
     hasServer: () => true,
     random: () => 0,
     schedule: () => {
@@ -311,6 +312,7 @@ void it("network failure or timeout keeps the ended pair; normal backoff retries
         transport: createSyncTransport(client, session),
       },
       hasSession: () => h.credentials.hasSyncSession(),
+      hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
       hasServer: () => true,
       random: () => 0,
       schedule: (callback, delay) => {
@@ -462,6 +464,7 @@ void it("an ended session with no configured server keeps its pair and waits wit
       },
     },
     hasSession: () => h.credentials.hasSyncSession(),
+    hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
     hasServer: () => false,
     random: () => 0,
     schedule: () => {
@@ -601,6 +604,7 @@ void it("an empty active POST revoked with 401 continues to a real final POST th
       transport: createSyncTransport(client, session),
     },
     hasSession: h.credentials.hasSyncSession,
+    hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
     hasServer: () => true,
     random: () => 0,
     schedule: () => {
@@ -616,4 +620,124 @@ void it("an empty active POST revoked with 401 continues to a real final POST th
   assert.equal(posts, 2);
   assert.equal(h.credentials.getSnapshot().pair, null);
   assert.equal(engine.getSnapshot().phase, "blocked");
+});
+
+void it("level-triggered final upload survives revoke during active result settlement, without observer delivery, and waits after 5xx/Retry-After", async () => {
+  const cases = [true, false].flatMap((useObserver) =>
+    [200, 500, 429].map((finalStatus) => ({ useObserver, finalStatus })),
+  );
+  for (const { useObserver, finalStatus } of cases) {
+    const h = await harness();
+    const commitEntered = deferred<undefined>();
+    const commit = deferred<undefined>();
+    const unexpectedPost = deferred<undefined>();
+    const never = deferred<Response>();
+    let hasPaused = false;
+    const db: SqlExecutor = {
+      ...h.db,
+      runAtomically: async (statements) => {
+        if (!hasPaused && statements.some((statement) => statement.params?.[0] === "sent")) {
+          hasPaused = true;
+          commitEntered.resolve(undefined);
+          await commit.promise;
+        }
+        await h.db.runAtomically(statements);
+      },
+    };
+    const outbox = new OutboxRepository(db, () => FIXED_NOW);
+    const session = new SessionRequests({
+      credentials: h.credentials,
+      isOnline: () => true,
+      endSession: () => h.auth.endSession(),
+      refresh: () => {
+        throw new Error("An ended pair never refreshes.");
+      },
+    });
+    let posts = 0;
+    const access = h.credentials.getSnapshot().pair?.access;
+    const client = createMobileApiClient({
+      baseUrl: h.credentials.getOrigin() ?? "",
+      tokens: h.credentials,
+      fetch: (request) => {
+        if (request.url.endsWith("/rules/"))
+          return Promise.resolve(jsonResponse({ code: "session_revoked", detail: "" }, 401));
+        posts += 1;
+        if (posts > 2) {
+          unexpectedPost.resolve(undefined);
+          return never.promise;
+        }
+        assert.equal(request.headers.get("Authorization"), `Bearer ${String(access)}`);
+        if (posts === 1 || finalStatus === 200) {
+          const result = answer(posts === 1 ? [accepted(h.event.id)] : []);
+          assert.ok(result.ok);
+          return Promise.resolve(jsonResponse(result.response, 200, posts === 2));
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              code: finalStatus === 429 ? "throttled" : "server_error",
+              detail: "",
+            }),
+            {
+              status: finalStatus,
+              headers: { "Content-Type": "application/json", "Retry-After": "7" },
+            },
+          ),
+        );
+      },
+    });
+    const timers: { delay: number; isActive: boolean }[] = [];
+    const engine = new SyncEngine({
+      pass: {
+        ...h,
+        outbox,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+        transport: createSyncTransport(client, session),
+      },
+      hasSession: h.credentials.hasSyncSession,
+      hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
+      hasServer: () => true,
+      random: () => 0,
+      schedule: (_callback, delay) => {
+        const timer = { delay, isActive: true };
+        timers.push(timer);
+        return () => {
+          timer.isActive = false;
+        };
+      },
+      report: (error) => {
+        throw error;
+      },
+    });
+    const stop = useObserver ? observeSyncSession(engine, h.credentials) : () => undefined;
+    const running = engine.start();
+    await commitEntered.promise;
+    await session.run(() => client.GET("/api/v1/field/rules/"));
+    assert.equal(h.credentials.getSnapshot().status, "ended");
+    assert.equal((await h.outbox.countByStatus()).sent, 0);
+    assert.equal(posts, 1, "A final POST cannot preempt unsettled active results.");
+    commit.resolve(undefined);
+    await Promise.race([
+      running,
+      unexpectedPost.promise.then(() => {
+        throw new Error("Final upload must respect its retry deadline.");
+      }),
+    ]);
+    assert.equal(posts, 2, `One active POST and one final POST (observer=${String(useObserver)}).`);
+    assert.equal((await h.outbox.countByStatus()).sent, 1);
+    assert.equal(await h.kv.get("test_draft"), "half-filled form");
+    if (finalStatus === 200) {
+      assert.equal(h.credentials.getSnapshot().pair, null);
+      assert.equal(timers.length, 0);
+    } else {
+      assert.notEqual(h.credentials.getSnapshot().pair, null);
+      assert.equal(engine.getSnapshot().phase, "waitingRetry");
+      assert.deepEqual(timers, [{ delay: finalStatus === 429 ? 7000 : 1000, isActive: true }]);
+      await engine.hint();
+      assert.equal(posts, 2, "Observer hints cannot bypass the retry deadline.");
+      assert.equal(timers[0]?.isActive, true);
+    }
+    stop();
+  }
 });

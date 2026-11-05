@@ -105,6 +105,11 @@ export class CredentialStore {
     this.isSessionActive() ? this.getSnapshot().pair?.access : undefined;
   getOrigin = (): string | null => this.getSnapshot().origin;
   hasSyncSession = (): boolean => this.getSnapshot().pair !== null;
+  /** Level source for the worker: reconcile queued end writes, then read only durable state. */
+  hasPendingFinalUpload = async (): Promise<boolean> => {
+    await this.whenSettled();
+    return this.#persisted.status === "ended" && this.#persisted.pair !== null;
+  };
   isLoginInFlight(): boolean {
     return this.#isLoginInFlight;
   }

@@ -102,6 +102,9 @@ void it("a restarted ended session waits offline, then connectivity alone sends 
       },
     });
     let retryCount = 0;
+    let retry: () => void = () => {
+      throw new Error("No retry scheduled.");
+    };
     const engine = new SyncEngine({
       pass: {
         ...stores,
@@ -110,9 +113,11 @@ void it("a restarted ended session waits offline, then connectivity alone sends 
         transport: createSyncTransport(client, session),
       },
       hasSession: credentials.hasSyncSession,
+      hasPendingFinalUpload: credentials.hasPendingFinalUpload,
       hasServer: () => true,
       random: () => 0,
-      schedule: () => {
+      schedule: (callback) => {
+        retry = callback;
         retryCount += 1;
         return () => undefined;
       },
@@ -157,6 +162,8 @@ void it("a restarted ended session waits offline, then connectivity alone sends 
       assert.equal(posts, 0);
       assert.notEqual(credentials.getSnapshot().pair, null);
       emit({ isConnected: true });
+      assert.equal(posts, 0, "Connectivity hints honor an already scheduled retry deadline.");
+      retry();
     }
     await finished.promise;
     stopNet();

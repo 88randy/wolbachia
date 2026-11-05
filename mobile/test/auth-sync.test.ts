@@ -53,6 +53,7 @@ void it("an expired access refreshes and retries inside the sync pass, leaving i
       transport: createSyncTransport(client, requests),
     },
     hasSession: () => credentials.getAccessToken() !== undefined,
+    hasPendingFinalUpload: credentials.hasPendingFinalUpload,
     hasServer: () => true,
     random: () => 0,
     schedule: () => {

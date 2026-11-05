@@ -4,6 +4,8 @@ export interface TokenStore {
   readonly getOrigin: () => string | null;
   /** Includes the retryable final-upload pair retained by an ended session. */
   readonly hasSyncSession: () => boolean;
+  /** Reads durable ended + retained-pair state after pending persistence settles. */
+  readonly hasPendingFinalUpload: () => Promise<boolean>;
   /** Ordinary requests can never read an ended session's access token. */
   readonly getAccessToken: () => string | undefined;
   readonly subscribe: (listener: () => void) => () => void;

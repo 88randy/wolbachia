@@ -178,6 +178,7 @@ void it("a session end while sync is idle wakes a real final POST without a manu
       transport: createSyncTransport(client, session),
     },
     hasSession: () => h.credentials.hasSyncSession(),
+    hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
     hasServer: () => true,
     random: () => 0,
     schedule: () => {
@@ -190,13 +191,13 @@ void it("a session end while sync is idle wakes a real final POST without a manu
   let isArmed = false;
   let hasWoken = false;
   const woke = deferred<undefined>();
-  const requestSync = engine.requestSync.bind(engine);
-  engine.requestSync = () => {
+  const hint = engine.hint.bind(engine);
+  engine.hint = () => {
     if (isArmed) {
       hasWoken = true;
       woke.resolve(undefined);
     }
-    return requestSync();
+    return hint();
   };
   const stop = observeSyncSession(engine, h.credentials);
   await engine.start();
