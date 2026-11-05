@@ -1,69 +1,45 @@
 import type { ApiClient } from "@wolbachia/api-client";
+import { CancelledError } from "@tanstack/react-query";
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
-import { CancelledError } from "@tanstack/react-query";
-import { clearExpectedAttestation } from "./attestation";
-import { ME_QUERY_KEY } from "./me-query";
-import { removeOrganizationQueries } from "./organization-cache";
-import { endSessionExpiry } from "./session-events";
-import { askMe } from "./session-reconcile";
-import {
-  beginExternalChange,
-  clearSessionUnknown,
-  endExternalChange,
-  startReconcileRun,
-} from "./session-revision";
-import { broadcastSessionChanged } from "./session-sync";
-import { leaveKnown } from "./session-transition";
-import {
-  clearOrganizationSlug,
-  getOrganizationSlug,
-  setOrganizationSlug,
-} from "./organization-slug";
-
-function restoreSlug(previous: string | undefined): void {
-  if (previous === undefined) clearOrganizationSlug();
-  else setOrganizationSlug(previous);
-}
+import { ME_QUERY_KEY } from "./me-key";
+import { fetchMeCommitted } from "./me-query";
+import { begin, failIfCurrent } from "./session-controller";
 
 /**
- * Makes `slug` the active organization. Switching is a LEAVE-KNOWN transition (#82): first,
- * synchronously and BEFORE the slug or the expected attestation change, the tab becomes
- * `reconciling`, the revision changes, requests in flight are cancelled and the organization data
- * of the previous organization is removed; so nothing can fetch or store org-scoped data (not even
- * after a Back to a screen of the old organization) until the new identity is verified. Then the
- * slug is stored (it travels as `X-Organization`) and `/me/` is asked: the server's answer about
- * who the user is and what they can do there. The tab is `known` again only after that `/me/` is
- * accepted for this run. If it fails the previous slug is restored and the tab stays `unknown`
- * (blocking retry). Rejects with the error of `/me/`.
+ * Makes `slug` the active organization. Switching is a LEAVE-KNOWN operation (#82): it `begin`s
+ * first, synchronously, so the tab is `reconciling`, the epoch changed and the organization data
+ * of the previous organization is gone before anything else; nothing org-scoped can fetch or store
+ * (not even after a Back to a screen of the old organization) until the new identity is verified.
+ * Then `/me/` is asked AS that organization (the slug travels with the call; it is stored only by
+ * the commit of the answer, together with the identity and the attestation) and the other tabs are
+ * told. Nothing is ever restored: if the `/me/` fails, a current switch makes the tab `unknown`
+ * (it reconciles) and a superseded one does nothing. Rejects with the error of `/me/`.
  */
 export async function switchOrganization(
   queryClient: QueryClient,
   client: ApiClient,
   slug: string,
 ): Promise<Me> {
-  const previous = getOrganizationSlug();
-  beginExternalChange();
-  clearExpectedAttestation();
-  const cancelled = queryClient.cancelQueries();
-  removeOrganizationQueries(queryClient);
-  const mine = startReconcileRun();
-  setOrganizationSlug(slug);
+  const token = begin(queryClient, "leave");
+  let committed: Me | undefined;
   try {
-    await cancelled;
-    const isAccepted = await askMe(queryClient, client, mine);
-    const me = queryClient.getQueryData<Me>(ME_QUERY_KEY);
-    // A newer run or login superseded this switch, or the answer was cancelled and reverted.
-    if (mine.signal.aborted || !isAccepted || me === undefined) throw new CancelledError();
-    endSessionExpiry();
-    clearSessionUnknown();
-    broadcastSessionChanged();
-    return me;
+    await queryClient.query({
+      queryKey: ME_QUERY_KEY,
+      queryFn: async ({ signal, client: cache }) => {
+        committed = await fetchMeCommitted(
+          { client, queryClient: cache, signal },
+          { token, slug, announce: true },
+        );
+        return committed;
+      },
+      staleTime: 0,
+    });
+    // `committed` comes from the answer itself, never from reading the cache afterwards.
+    if (committed === undefined) throw new CancelledError();
+    return committed;
   } catch (error) {
-    restoreSlug(previous);
-    if (!mine.signal.aborted) await leaveKnown(queryClient);
+    await failIfCurrent(queryClient, token);
     throw error;
-  } finally {
-    endExternalChange();
   }
 }

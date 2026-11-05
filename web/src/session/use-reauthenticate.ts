@@ -9,34 +9,16 @@ import type { ApiClient } from "@wolbachia/api-client";
 import { useApiClient } from "../api/ApiClientProvider";
 import type { LoginFailure } from "../auth/login-failure";
 import { requestLogin } from "../auth/request-login";
-import type { LoginOutcome, LoginSuccess } from "../auth/request-login";
+import type { LoginOutcome } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
 import { runAuthOperation, useAbandonOnUnmount } from "./auth-operation";
-import { setExpectedAttestation } from "./attestation";
-import { recordIdentity } from "./identity";
 import type { Me } from "./me";
-import { ME_QUERY_KEY } from "./me-query";
 import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
-import { endSessionExpiry } from "./session-events";
+import { begin, commitKnown, noteStaleLogin } from "./session-controller";
 import { reconcileSession } from "./session-reconcile";
-import { acceptSession, clearSessionUnknown, currentRevision } from "./session-revision";
+import { currentRevision } from "./session-revision";
 import { useMe } from "./use-me";
-
-/** The session is back: store `/me/` and drop another user's or organization's cache (synchronous). */
-function restoreSession(
-  { me, attestation }: LoginSuccess,
-  queryClient: QueryClient,
-  commit: () => void,
-): void {
-  commit(); // the dialog unmounting because of this very update must not abandon it
-  setExpectedAttestation(attestation);
-  recordIdentity(queryClient, me);
-  queryClient.setQueryData(ME_QUERY_KEY, me);
-  endSessionExpiry();
-  acceptSession();
-  clearSessionUnknown(); // a verified identity is stored: the tab knows who it is
-}
 
 /** After the queue: navigating can wait on the network, so it comes last. */
 async function goToChooserIfNeeded(me: Me, router: RegisteredRouter): Promise<void> {
@@ -70,29 +52,32 @@ interface ReauthRequest {
 }
 
 /**
- * Queues the login. The session this form was shown for is captured now: if a sign-out or another
- * login changes it while this waits in the queue, nothing is sent. Once SENT, a login the server
- * accepted is never dropped: the cookie is the truth, so if the tab's session moved meanwhile it
- * must reconcile with `/me/` (`state.diverged`) instead of storing this answer (#82).
+ * Queues the login. The token is the epoch of the session this form was shown for: if a sign-out
+ * or another login changes it while this waits in the queue, nothing is sent. Once SENT, a login
+ * the server accepted is never dropped: its body is a candidate for `commitKnown`; if the token
+ * went stale the body is not published, the confirmed login is announced and the tab reconciles
+ * with `/me/` (`state.diverged`): the cookie is the truth (#82).
  */
 function startReauth({ client, queryClient, username, password }: ReauthRequest) {
-  const revision = currentRevision();
+  const token = begin(queryClient, "passive");
   const state = { diverged: false };
   const run = runAuthOperation("login", async ({ signal, isCurrent, commit }) => {
-    if (revision !== currentRevision() || !isCurrent()) return undefined;
+    if (token !== currentRevision() || !isCurrent()) return undefined;
     const outcome = await requestLogin(client, { username, password }, signal);
-    const isStale = revision !== currentRevision() || !isCurrent();
-    if (outcome.ok && isStale) {
-      // Confirmed by the server: it counts as a login (revision bump and ONE broadcast) before
-      // this tab reconciles with `/me/`.
-      commit();
-      acceptSession();
-      state.diverged = true;
-    } else if (outcome.ok) restoreSession(outcome, queryClient, commit);
+    const isStale = token !== currentRevision() || !isCurrent();
+    if (outcome.ok) {
+      commit(); // the dialog unmounting because of the commit must not abandon it
+      const { me, attestation } = outcome;
+      const isPublished = commitKnown(queryClient, token, { me, attestation, ...PUBLISH_LOGIN });
+      if (!isPublished) noteStaleLogin();
+      state.diverged = !isPublished;
+    }
     return outcome.ok || !isStale ? outcome : undefined;
   });
   return { run, state };
 }
+
+const PUBLISH_LOGIN = { announce: true, bumpEpoch: true };
 
 /**
  * Signs the same user in again without leaving the page: the screens stay mounted, so nothing

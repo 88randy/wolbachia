@@ -3,7 +3,7 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test } from "vitest";
-import { acceptSession, confirmSignOut } from "../session/session-revision";
+import { simulateLogin, simulateSignOut } from "../test/simulate-session";
 import { isSessionExpired } from "../session/session-events";
 import { apiError, makeMe } from "../test/fake-api";
 import {
@@ -337,8 +337,8 @@ describe("rule parameter page: regressions found in review", () => {
     await save(user);
     await screen.findByRole("button", { name: "Guardando…" });
 
-    confirmSignOut();
-    acceptSession();
+    simulateSignOut();
+    simulateLogin();
     release(apiError(401, "not_authenticated"));
 
     await waitFor(() => {

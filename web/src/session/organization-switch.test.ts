@@ -9,6 +9,8 @@ import {
   setOrganizationSlug,
 } from "./organization-slug";
 import { switchOrganization } from "./organization-switch";
+import { begin, commitKnown } from "./session-controller";
+import { sessionState } from "./session-revision";
 
 const ME = "GET /api/v1/me/";
 
@@ -103,5 +105,35 @@ describe("switchOrganization", () => {
     ).rejects.toThrow();
 
     expect(getOrganizationSlug()).toBeUndefined();
+  });
+});
+
+describe("failure paths never restore anything (#82)", () => {
+  test("a switch that fails after another operation took over leaves that operation's slug and state alone", async () => {
+    setOrganizationSlug("norte");
+    let release: (response: Response) => void = () => undefined;
+    const held = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    const api = createFakeApi({ [ME]: () => held });
+    const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
+    const queryClient = createAppQueryClient({ retry: false });
+    const switching = switchOrganization(queryClient, client, "sur").catch(
+      (error: unknown) => error,
+    );
+
+    // A login for another organization takes over with its own, current token.
+    const token = begin(queryClient, "passive");
+    commitKnown(queryClient, token, {
+      me: meOf("este"),
+      attestation: undefined,
+      slug: "este",
+      bumpEpoch: true, // a login invalidates every token before it
+    });
+    release(apiError(503, "server_error"));
+    await switching;
+
+    expect(getOrganizationSlug()).toBe("este"); // the old code restored "norte" here
+    expect(sessionState()).toBe("known");
   });
 });

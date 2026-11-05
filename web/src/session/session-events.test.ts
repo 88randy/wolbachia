@@ -2,7 +2,7 @@ import { ApiError } from "@wolbachia/api-client";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { createAppQueryClient } from "../api/query-client";
 import { makeMe } from "../test/fake-api";
-import { acceptSession, confirmSignOut } from "./session-revision";
+import { simulateLogin, simulateSignOut } from "../test/simulate-session";
 import { ME_QUERY_KEY } from "./me-query";
 import {
   endSessionExpiry,
@@ -37,12 +37,12 @@ describe("reportSessionError", () => {
   });
 
   test("a late 401 after a confirmed sign-out is not an expiry, until the next accepted login", () => {
-    confirmSignOut();
+    simulateSignOut();
 
     reportSessionError(new ApiError(401), signedInClient());
     expect(isSessionExpired()).toBe(false);
 
-    acceptSession();
+    simulateLogin();
     reportSessionError(new ApiError(401), signedInClient());
     expect(isSessionExpired()).toBe(true);
   });

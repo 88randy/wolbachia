@@ -1,8 +1,5 @@
 import { ApiError } from "@wolbachia/api-client";
 import { MutationCache, QueryCache, QueryClient } from "@tanstack/react-query";
-import { recordIdentity } from "../session/identity";
-import type { Me } from "../session/me";
-import { ME_QUERY_KEY } from "../session/me-query";
 import { reportSessionError } from "../session/session-events";
 
 /** Retries of a failed query that is worth retrying (network or 5xx). */
@@ -32,9 +29,6 @@ export function createAppQueryClient(options: AppQueryClientOptions = {}): Query
     queryCache: new QueryCache({
       onError: (error, query) => {
         reportSessionError(error, client, query.queryKey);
-      },
-      onSuccess: (data, query) => {
-        if (query.queryKey[0] === ME_QUERY_KEY[0]) recordIdentity(client, data as Me);
       },
     }),
     mutationCache: new MutationCache({

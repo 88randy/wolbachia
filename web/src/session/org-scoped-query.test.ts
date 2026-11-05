@@ -5,12 +5,7 @@ import { describe, expect, test } from "vitest";
 import { findUnscopedQueries } from "../test/find-unscoped-queries";
 import { orgScopedQueryOptions } from "./org-scoped-query";
 import type { SessionIdentity } from "./org-scoped-query";
-import {
-  beginExternalChange,
-  changeIdentity,
-  endExternalChange,
-  markSessionUnknown,
-} from "./session-revision";
+import { bumpEpoch, setSessionState } from "./session-revision";
 
 const NORTE: SessionIdentity = {
   userId: "u1",
@@ -64,7 +59,7 @@ describe("orgScopedQueryOptions", () => {
     if (typeof queryFn !== "function") throw new TypeError("expected a function");
     const request = queryFn({ queryKey: [], signal: new AbortController().signal } as never);
 
-    changeIdentity();
+    bumpEpoch();
     answer(5);
 
     await expect(request).rejects.toBeInstanceOf(CancelledError);
@@ -82,10 +77,9 @@ describe("orgScopedQueryOptions", () => {
     if (typeof queryFn !== "function") throw new TypeError("expected a function");
     const context = { client: new QueryClient(), queryKey: [] } as never;
 
-    beginExternalChange();
+    setSessionState("reconciling");
     await expect(queryFn(context)).rejects.toBeInstanceOf(CancelledError);
-    endExternalChange();
-    markSessionUnknown();
+    setSessionState("unknown");
     await expect(queryFn(context)).rejects.toBeInstanceOf(CancelledError);
 
     expect(calls).toBe(0);

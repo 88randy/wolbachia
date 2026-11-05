@@ -1,9 +1,9 @@
 import { ApiError } from "@wolbachia/api-client";
 import type { QueryClient, QueryKey } from "@tanstack/react-query";
 import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
-import { ME_QUERY_KEY } from "./me-query";
+import { ME_QUERY_KEY } from "./me-key";
 import { isSignedOutSession } from "./session-revision";
-import { leaveKnown } from "./session-transition";
+import { leaveKnown } from "./session-controller";
 
 /**
  * Things that happen to a session while the user is working, reported by the query and mutation

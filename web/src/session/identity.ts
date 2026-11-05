@@ -1,16 +1,17 @@
 import type { QueryClient } from "@tanstack/react-query";
 import type { Me } from "./me";
-import { removeOrganizationQueries } from "./organization-cache";
-import { changeIdentity } from "./session-revision";
 
 /**
  * Who (user) and where (organization) the cached data belongs to. When a new `/me/` names another
  * user or organization (re-authentication landing elsewhere, another tab, a revoked membership)
- * the cache of the old one is dropped and the shell is told to run the route guards again.
+ * the cache of the old one is dropped and the shell is told to run the route guards again (all by the controller).
  */
 type Listener = () => void;
 
+/** The identity usable now. Forgotten (moved to `lastVerified`) whenever the session is left. */
 const known = new WeakMap<QueryClient, string>();
+/** The last identity that was verified, kept after leaving `known` to tell "same user again" from "another". */
+const lastVerified = new WeakMap<QueryClient, string>();
 const listeners = new Set<Listener>();
 
 function identityOf(me: Me): string {
@@ -18,17 +19,20 @@ function identityOf(me: Me): string {
 }
 
 /**
- * Remembers the identity of a fresh `/me/`. SIDE EFFECTS when it differs from the last one: it
- * bumps the session revision (so in-flight requests of the old identity are stale at once), removes every cached query except `/me/` and notifies the listeners (the shell re-runs the
- * route guards).
+ * Remembers the identity of a fresh `/me/` (the controller calls it when it commits). Returns
+ * whether it names ANOTHER identity than the one recorded: then the controller changes the epoch,
+ * removes the org-scoped data and calls `notifyIdentityChange` (the shell re-runs the route guards).
  */
-export function recordIdentity(queryClient: QueryClient, me: Me): void {
+export function recordIdentity(queryClient: QueryClient, me: Me): boolean {
   const next = identityOf(me);
-  const previous = known.get(queryClient);
+  const previous = known.get(queryClient) ?? lastVerified.get(queryClient);
   known.set(queryClient, next);
-  if (previous === undefined || previous === next) return;
-  changeIdentity();
-  removeOrganizationQueries(queryClient);
+  lastVerified.delete(queryClient);
+  return previous !== undefined && previous !== next;
+}
+
+/** Tells the shell that the identity changed (it runs the route guards again). */
+export function notifyIdentityChange(): void {
   listeners.forEach((listener) => {
     listener();
   });
@@ -47,8 +51,10 @@ export function isRecordedIdentity(
   return known.get(queryClient) === `${userId}|${organizationSlug}`;
 }
 
-/** Nobody is signed in any more (the cache was cleared). */
+/** The session was left: no identity is usable until a verified `/me/` records one. */
 export function forgetIdentity(queryClient: QueryClient): void {
+  const current = known.get(queryClient);
+  if (current !== undefined) lastVerified.set(queryClient, current);
   known.delete(queryClient);
 }
 

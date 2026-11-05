@@ -5,7 +5,8 @@ import { NO_ACTIVE_MEMBERSHIP } from "../api/error-codes";
 import { ensureCsrfCookie, fetchCsrfCookie } from "../api/csrf";
 import { IDENTITY_HEADER } from "../session/attestation";
 import type { Me } from "../session/me";
-import { clearOrganizationSlug, getOrganizationSlug } from "../session/organization-slug";
+import { getOrganizationSlug } from "../session/organization-slug";
+import { forgetRefusedSlug } from "../session/session-controller";
 import { classifyLoginFailure } from "./login-failure";
 import type { LoginFailure } from "./login-failure";
 
@@ -91,8 +92,9 @@ async function attemptLogin(
     await fetchCsrfCookie(client, signal);
     result = await postLogin(client, credentials, signal);
   }
-  if (isStaleSlugRefusal(result)) {
-    clearOrganizationSlug();
+  const refusedSlug = getOrganizationSlug();
+  if (refusedSlug !== undefined && isStaleSlugRefusal(result)) {
+    forgetRefusedSlug(refusedSlug);
     result = await postLogin(client, credentials, signal);
   }
   return result;

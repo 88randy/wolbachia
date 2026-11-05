@@ -1,26 +1,25 @@
-import { broadcastSessionChanged } from "./session-sync";
-
 /**
- * Which session the page is in, as a counter instead of clocks. The revision changes ONLY when a
- * login is accepted (login page or re-authentication), when a sign-out is confirmed by the
- * server, when `/me/` names another identity (`changeIdentity`) and when another tab announces
- * that it changed the shared session (#82). It is the ONLY staleness signal: never compare
- * against React-rendered state, which lags behind. Anything that began before a change can ask
- * "is this still my session?" by comparing
- * revisions, with no dependence on timing.
+ * The epoch and the state of the session (#82), as plain primitives. `session-controller.ts` is
+ * the ONLY code that calls the mutators below (a test fails otherwise); everything else reads.
+ *
+ * - The EPOCH is a counter, never a clock. It changes whenever the tab leaves `known` (a login, a
+ *   sign-out, another identity, a failed check, a 401, another tab's announcement). An operation
+ *   captures it when it starts (its token) and may publish a result only while it still equals the
+ *   epoch, so anything that began before a change is dead on arrival.
+ * - The STATE is `known` | `reconciling` | `unknown`. Org-scoped queries and mutations run only in
+ *   `known`.
  *
  * After a confirmed sign-out the page is "signed out" until the next accepted login or a valid
  * `/me/` that started after it: a late 401 from a request of the closed session is then not an
  * expiry (nothing to re-authenticate).
  */
 type Listener = () => void;
+export type SessionState = "known" | "reconciling" | "unknown";
 
-let revision = 0;
+let epoch = 0;
+let state: SessionState = "known";
 let isSignedOut = false;
-let reconciling = 0;
-let isUnknown = false;
 const listeners = new Set<Listener>();
-let reconcileRun: AbortController | undefined;
 
 function emit(): void {
   listeners.forEach((listener) => {
@@ -28,27 +27,7 @@ function emit(): void {
   });
 }
 
-function bump(): void {
-  revision += 1;
-  emit();
-}
-
-/**
- * Latest wins: starting a reconcile run aborts the one in flight, and a login or a confirmed
- * sign-out aborts it too (it is about to be stale). A stale run never changes the session state.
- */
-export function startReconcileRun(): AbortController {
-  reconcileRun?.abort();
-  reconcileRun = new AbortController();
-  return reconcileRun;
-}
-
-function abortReconcileRun(): void {
-  reconcileRun?.abort();
-  reconcileRun = undefined;
-}
-
-/** Calls `listener` when the revision or the reconciling state changes (React: `useSyncExternalStore`). */
+/** Calls `listener` when the epoch or the state changes (React: `useSyncExternalStore`). */
 export function subscribeToRevision(listener: Listener): () => void {
   listeners.add(listener);
   return () => {
@@ -56,107 +35,18 @@ export function subscribeToRevision(listener: Listener): () => void {
   };
 }
 
+/** The current epoch: what an operation captures as its token when it starts. */
 export function currentRevision(): number {
-  return revision;
+  return epoch;
 }
 
-/** A login was accepted (its `/me/` is being stored). */
-export function acceptSession(): void {
-  abortReconcileRun();
-  bump();
-  isSignedOut = false;
-  broadcastSessionChanged();
+export function sessionState(): SessionState {
+  return state;
 }
-
-/**
- * A valid `/me/` that started after the sign-out proves a session exists again (another tab
- * signed in, cookies are shared). Leaves the signed-out state WITHOUT changing the revision:
- * this tab did not log in.
- */
-export function recoverSession(): void {
-  isSignedOut = false;
-}
-
-/**
- * `/me/` named another user or organization than the cache holds (`recordIdentity`). Bumps the
- * revision SYNCHRONOUSLY, in the same call that swaps the identity, so a request that began under
- * the old one is stale from that instant, before React or TanStack notify anybody.
- */
-export function changeIdentity(): void {
-  bump();
-}
-
-/** The server confirmed the sign-out. Returns the new revision. */
-export function confirmSignOut(): number {
-  abortReconcileRun();
-  bump();
-  isSignedOut = true;
-  broadcastSessionChanged();
-  return revision;
-}
-
-/**
- * ANOTHER tab changed the session (shared cookie): what this tab holds may belong to a different
- * identity. The revision changes, so everything that began before is discarded, and the tab is
- * "reconciling" (org-scoped queries wait) until `/me/` says who it is now.
- */
-export function beginExternalChange(): void {
-  reconciling += 1;
-  bump();
-}
-
-/** `/me/` answered (or failed) after an external change: org-scoped queries may run again. */
-export function endExternalChange(): void {
-  reconciling = Math.max(0, reconciling - 1);
-  emit();
-}
-
-/** True while at least one external change is waiting for `/me/`. */
-export function isReconcilingSession(): boolean {
-  return reconciling > 0;
-}
-
-/**
- * The session check failed (`/me/` unreachable while reconciling): the tab does not know who it
- * is. State rule (#82): identity is known(user, org, revision) | reconciling | unknown, and
- * org-scoped queries and mutations run ONLY in `known`. The tab never falls back to the identity
- * it had before: it blocks and asks the user to retry.
- */
-export function markSessionUnknown(): void {
-  isUnknown = true;
-  emit();
-}
-
-/**
- * A verification of `/me/` started WITHOUT a change of session (window focus, tab visible): the
- * tab is `reconciling` until it answers, but the revision stays (nothing changed yet) and the
- * cache is kept if `/me/` names the same identity.
- */
-export function beginVerification(): void {
-  reconciling += 1;
-  emit();
-}
-
-/** `/me/` answered: the identity is known again. */
-export function clearSessionUnknown(): void {
-  isUnknown = false;
-  emit();
-}
-
-export function isSessionUnknown(): boolean {
-  return isUnknown;
-}
-
-export type SessionState = "known" | "reconciling" | "unknown";
 
 /** The one place that says whether org-scoped work may run: only in `known`. */
-export function sessionState(): SessionState {
-  if (isUnknown) return "unknown";
-  return reconciling > 0 ? "reconciling" : "known";
-}
-
 export function isSessionKnown(): boolean {
-  return sessionState() === "known";
+  return state === "known";
 }
 
 /** True between a confirmed sign-out and the next accepted login. */
@@ -164,11 +54,26 @@ export function isSignedOutSession(): boolean {
   return isSignedOut;
 }
 
+/** Controller only: the epoch changes, so every token in flight is stale from this instant. */
+export function bumpEpoch(): void {
+  epoch += 1;
+  emit();
+}
+
+/** Controller only. */
+export function setSessionState(next: SessionState): void {
+  state = next;
+  emit();
+}
+
+/** Controller only. */
+export function setSignedOut(next: boolean): void {
+  isSignedOut = next;
+}
+
 /** Tests only: module state must not leak between them. */
 export function resetSessionRevision(): void {
-  revision = 0;
+  epoch = 0;
+  state = "known";
   isSignedOut = false;
-  reconciling = 0;
-  isUnknown = false;
-  reconcileRun = undefined;
 }

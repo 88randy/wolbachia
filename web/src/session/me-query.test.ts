@@ -4,13 +4,9 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { apiError, createFakeApi, makeMe } from "../test/fake-api";
 import { createAppQueryClient } from "../api/query-client";
-import { fetchMe, fetchMeForRevision, ME_QUERY_KEY } from "./me-query";
-import {
-  changeIdentity,
-  confirmSignOut,
-  currentRevision,
-  isSignedOutSession,
-} from "./session-revision";
+import { fetchMeCommitted, ME_QUERY_KEY } from "./me-query";
+import { bumpEpoch, currentRevision, isSignedOutSession } from "./session-revision";
+import { simulateSignOut } from "../test/simulate-session";
 import { endSessionExpiry, isSessionExpired, reportSessionError } from "./session-events";
 import {
   clearOrganizationSlug,
@@ -26,13 +22,19 @@ beforeEach(() => {
   window.localStorage.clear();
 });
 
+/** `/me/` as a candidate of an operation that began now (or with `token`), on a fresh cache. */
+function fetchMe(client: ReturnType<typeof clientFor>, token?: number) {
+  const queryClient = createAppQueryClient({ retry: false });
+  return fetchMeCommitted({ client, queryClient }, token === undefined ? {} : { token });
+}
+
 function clientFor(api: ReturnType<typeof createFakeApi>) {
   return createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: api.fetch });
 }
 
 describe("fetchMe and the signed-out state", () => {
   test("a /me/ that started after a sign-out leaves the signed-out state; a real 401 then counts", async () => {
-    confirmSignOut();
+    simulateSignOut();
     const api = createFakeApi({ [ME_PATH]: Response.json(makeMe()) });
 
     await fetchMe(clientFor(api));
@@ -55,7 +57,7 @@ describe("fetchMe and the signed-out state", () => {
       expect(api.requests).toHaveLength(1);
     });
 
-    confirmSignOut();
+    simulateSignOut();
     release(Response.json(makeMe()));
     // The answer belongs to a revision that is gone: it is discarded, never stored (#82).
     await expect(pending).rejects.toBeInstanceOf(CancelledError);
@@ -69,12 +71,12 @@ describe("fetchMe and the signed-out state", () => {
       release = resolve;
     });
     const api = createFakeApi({ [ME_PATH]: () => late });
-    const asked = fetchMeForRevision(clientFor(api), currentRevision());
+    const asked = fetchMe(clientFor(api), currentRevision());
     await vi.waitFor(() => {
       expect(api.requests).toHaveLength(1);
     });
 
-    changeIdentity();
+    bumpEpoch();
     release(Response.json(makeMe()));
 
     await expect(asked).rejects.toBeInstanceOf(CancelledError);

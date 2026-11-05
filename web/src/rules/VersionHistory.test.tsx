@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
-import { acceptSession } from "../session/session-revision";
+import { simulateLogin } from "../test/simulate-session";
 import { apiError, makeMe, makeVoidReasonFields, makeVoidReasonItems } from "../test/fake-api";
 import {
   ADMIN,
@@ -273,7 +273,7 @@ describe("voiding a scheduled version", () => {
     await user.click(screen.getByRole("button", { name: "Anular" }));
     await screen.findByRole("button", { name: "Anulando…" });
 
-    acceptSession();
+    simulateLogin();
     release(Response.json({ ...SCHEDULED, status: "voided" }));
 
     await waitFor(() => {

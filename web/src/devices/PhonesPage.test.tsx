@@ -6,7 +6,8 @@ import { describe, expect, test, vi } from "vitest";
 import { createWebApiClient } from "../api/create-web-api-client";
 import { ME_QUERY_KEY } from "../session/me-query";
 import { switchOrganization } from "../session/organization-switch";
-import { acceptSession, sessionState, subscribeToRevision } from "../session/session-revision";
+import { sessionState, subscribeToRevision } from "../session/session-revision";
+import { simulateLogin } from "../test/simulate-session";
 import { apiError, createFakeApi, makeMe, makeOrganization } from "../test/fake-api";
 import type { RecordedRequest } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
@@ -213,7 +214,7 @@ describe("phones list (W67)", () => {
     });
     await screen.findByText("Cargando resultados");
 
-    acceptSession();
+    simulateLogin();
     release(pageOf([phone({ label: "Teléfono VIEJO" })]));
 
     expect(await screen.findByRole("row", { name: /Teléfono de Luis/ })).toBeDefined();
@@ -447,8 +448,10 @@ describe("phones list (W67)", () => {
 
     const switching = switchOrganization(app.queryClient, client, "sur");
     expect(sessionState()).toBe("reconciling"); // entered synchronously, before anything else
-    await app.router.navigate({ to: "/settings" });
-    app.router.history.back(); // Back to the screen of the old organization
+    // The guards wait for the verified identity (the stale `/me/` is not trusted): navigation
+    // stays pending, and Back to the screen of the old organization fetches nothing either.
+    void app.router.navigate({ to: "/settings" });
+    app.router.history.back();
     await new Promise<void>((resolve) => {
       const hop = new MessageChannel();
       hop.port1.onmessage = () => {
@@ -470,6 +473,7 @@ describe("phones list (W67)", () => {
     );
     await switching;
 
+    await app.router.navigate({ to: PHONES });
     expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
     expect(stored().map((query) => query.queryKey[2])).toEqual(["sur"]);
   });

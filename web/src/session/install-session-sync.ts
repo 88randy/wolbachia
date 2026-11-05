@@ -3,7 +3,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import { setIdentityMismatchHandler } from "./attestation";
 import { reconcileSession } from "./session-reconcile";
 import { subscribeToSessionChanged } from "./session-sync";
-import { leaveKnown } from "./session-transition";
+import { leaveKnown } from "./session-controller";
 
 interface Wiring {
   queryClient: QueryClient;
