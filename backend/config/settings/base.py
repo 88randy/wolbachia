@@ -5,6 +5,8 @@ environment variables (django-environ); see `backend/.env.example` for the full 
 """
 
 import environ
+from celery.schedules import crontab
+from django.core.exceptions import ImproperlyConfigured
 
 from ._env import BASE_DIR, load_dotenv
 
@@ -84,6 +86,15 @@ THROTTLE_USER_RATE = env("THROTTLE_USER_RATE", default="600/min")
 # organization is unknown before login), env-configurable defaults [PENDING client].
 AUTH_ACCESS_TOKEN_TTL_SECONDS = env.int("AUTH_ACCESS_TOKEN_TTL_SECONDS", default=900)
 AUTH_REFRESH_TOKEN_TTL_DAYS = env.int("AUTH_REFRESH_TOKEN_TTL_DAYS", default=30)  # idle, slides
+# Security metadata retention (#54): invalid configuration must fail before a worker starts.
+try:
+    AUTH_TOKEN_PAIR_RETENTION_DAYS = env.int("AUTH_TOKEN_PAIR_RETENTION_DAYS", default=90)
+except ValueError as error:
+    raise ImproperlyConfigured(
+        "AUTH_TOKEN_PAIR_RETENTION_DAYS must be an integer (30..365)."
+    ) from error
+if not 30 <= AUTH_TOKEN_PAIR_RETENTION_DAYS <= 365:
+    raise ImproperlyConfigured("AUTH_TOKEN_PAIR_RETENTION_DAYS must be between 30 and 365.")
 AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", default=60)
 AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
 AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)
@@ -128,6 +139,30 @@ SYNC_MAX_EVENT_PAYLOAD_BYTES = env.int("SYNC_MAX_EVENT_PAYLOAD_BYTES", default=1
 SYNC_CURSOR_MAX_AGE_SECONDS = env.int("SYNC_CURSOR_MAX_AGE_SECONDS", default=2_592_000)  # 30 days
 SYNC_LOCK_TIMEOUT_MS = env.int("SYNC_LOCK_TIMEOUT_MS", default=3_000)
 SYNC_RETRY_AFTER_SECONDS = env.int("SYNC_RETRY_AFTER_SECONDS", default=2)
+
+# SA09 / #56: deployment limits, validated at startup rather than silently clamped.
+try:
+    SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY = env.int(
+        "SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY", default=1000
+    )
+except ValueError as error:
+    raise ImproperlyConfigured(
+        "SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY must be an integer."
+    ) from error
+if not 100 <= SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY <= 10000:
+    raise ImproperlyConfigured("SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY must be within 100..10000.")
+try:
+    SYNC_REJECTION_ALERT_PERCENTS = sorted(
+        set(env.list("SYNC_REJECTION_ALERT_PERCENTS", cast=int, default=[80, 100]))
+    )
+except ValueError as error:
+    raise ImproperlyConfigured(
+        "SYNC_REJECTION_ALERT_PERCENTS must be a list of integers."
+    ) from error
+if not SYNC_REJECTION_ALERT_PERCENTS or any(
+    not 1 <= percent <= 100 for percent in SYNC_REJECTION_ALERT_PERCENTS
+):
+    raise ImproperlyConfigured("SYNC_REJECTION_ALERT_PERCENTS must contain integers within 1..100.")
 
 # Void reasons (#32): minimum characters after trimming, shared by every void path and sent to
 # the web in `GET /me/` (`limits`). Owner delegated the value to the orchestrator (2026-11-04).
@@ -192,6 +227,13 @@ SPECTACULAR_SETTINGS = {
 
 CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
+CELERY_TIMEZONE = "UTC"
+CELERY_BEAT_SCHEDULE = {
+    "prune-ended-token-pairs": {
+        "task": "accounts.tasks.prune_ended_token_pairs",
+        "schedule": crontab(hour=3, minute=30),
+    },
+}
 
 LOGGING = {
     "version": 1,
