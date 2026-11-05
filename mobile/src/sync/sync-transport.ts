@@ -12,7 +12,7 @@ export type SyncBatchRequest = Schemas["SyncBatchRequest"];
 export type SyncResponse = Schemas["SyncResponse"];
 
 export type SyncCallResult =
-  | { readonly ok: true; readonly response: SyncResponse }
+  | { readonly ok: true; readonly response: SyncResponse; readonly isSessionRevoked?: boolean }
   | { readonly ok: false; readonly failure: SyncFailure };
 
 /** Sends one batch and returns either the answer or a classified failure. Never throws. */
@@ -29,6 +29,10 @@ function parseRetryAfter(header: string | null): number | null {
   return Number.isFinite(seconds) && seconds >= 0 ? seconds : null;
 }
 
+function syncSuccess(response: SyncResponse, headers: Headers): SyncCallResult {
+  return { ok: true, response, isSessionRevoked: headers.get("X-Session-Revoked") === "true" };
+}
+
 /** `POST /api/v1/field/sync/` through the api-client. */
 export function createSyncTransport(client: ApiClient): SyncTransport {
   return async (request) => {
@@ -38,7 +42,7 @@ export function createSyncTransport(client: ApiClient): SyncTransport {
         signal: AbortSignal.timeout(SYNC_REQUEST_TIMEOUT_MS),
       });
       if (result.response.ok && isSyncResponse(result.data)) {
-        return { ok: true, response: result.data };
+        return syncSuccess(result.data, result.response.headers);
       }
       const envelope = isErrorEnvelope(result.error) ? result.error : undefined;
       return {

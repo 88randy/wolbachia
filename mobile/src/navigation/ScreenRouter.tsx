@@ -1,3 +1,5 @@
+import { P9Screen } from "../features/day/P9Screen.tsx";
+import { P10Screen } from "../features/day/P10Screen.tsx";
 import { OpenShiftScreen } from "../features/shift-open/OpenShiftScreen.tsx";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
@@ -11,6 +13,10 @@ import type { Route } from "./routes.ts";
 
 function screenFor(route: Route): ReactNode {
   switch (route.name) {
+    case "day":
+      return <P9Screen />;
+    case "map":
+      return <P10Screen />;
     case "openShift":
       return <OpenShiftScreen />;
     case "home":

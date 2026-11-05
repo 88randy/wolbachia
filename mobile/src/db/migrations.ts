@@ -66,6 +66,13 @@ const MIGRATIONS: readonly (readonly string[])[] = [
         (SELECT 1 FROM outbox_event WHERE id = OLD.opening_event_id AND local_status = 'rejected'))
       BEGIN SELECT RAISE(ABORT, 'a captured shift is immutable unless rejected'); END`,
   ],
+  [
+    `CREATE TABLE day_assignment (id TEXT PRIMARY KEY NOT NULL, version TEXT NOT NULL,
+      sequence INTEGER NOT NULL DEFAULT 0, payload TEXT, retained_payload TEXT, removed INTEGER NOT NULL DEFAULT 0, kept INTEGER NOT NULL DEFAULT 0)`,
+    `CREATE TABLE day_map_manifest (id TEXT PRIMARY KEY NOT NULL, version TEXT NOT NULL,
+      sequence INTEGER NOT NULL DEFAULT 0, payload TEXT, removed INTEGER NOT NULL DEFAULT 0)`,
+    "CREATE TABLE day_bundle_meta (slot INTEGER PRIMARY KEY CHECK(slot=1), payload TEXT NOT NULL)",
+  ],
 ];
 
 /** Highest schema version this build knows. */

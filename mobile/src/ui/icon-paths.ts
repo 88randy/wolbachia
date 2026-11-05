@@ -10,6 +10,13 @@ export const ICON_PATHS = {
   cloudOk: "M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM9 14.5l2 2 4-4",
   cloudUp:
     "M7 19h10a4 4 0 0 0 .5-7.97A6 6 0 0 0 6 10.5 4.25 4.25 0 0 0 7 19zM12 16v-5M9.5 13.5 12 11l2.5 2.5",
+  list: "M8 6h13M8 12h13M8 18h13M3 6h.1M3 12h.1M3 18h.1",
+  map: "M3 5l6-2 6 2 6-2v16l-6 2-6-2-6 2zM9 3v16M15 5v16",
+  navigation: "M3 10l18-7-7 18-3-8z",
+  door: "M5 21V3h14v18M2 21h20M14 12h.1",
+  clock: "M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 7v5l3 2",
+  move: "M3 12h18M3 12l4-4M3 12l4 4M21 12l-4-4M21 12l-4 4",
+  location: "M12 3v3M12 18v3M3 12h3M18 12h3M12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z",
   left: "M15 5l-7 7 7 7",
   noSignal: "M4 20v-3M9 20v-6M14 20v-4M19 20v-2M3 3l18 18M14 11V9M19 13V5",
   phone: "M7 3h10v18H7zM11 18h2",

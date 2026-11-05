@@ -33,6 +33,7 @@ Rules:
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
 | muestra | sample | `/wolbachia-samples/`, `sample` | Lab sample (e.g. for Wolbachia results). |
 
+
 ## Configuration
 
 | Spanish | English name in code | API / field form | Notes |
@@ -46,6 +47,7 @@ Rules:
 | alcance efectivo | effective scope | `effective_scope` | The action-granting profile scope intersects membership scope in both applicable dimensions; unrelated grants never combine into a new pair. |
 | revisión de configuración | configuration revision | `ConfigurationRevision`, `revision`, `expected_revision` | Immutable authored snapshot of organization settings, profile permissions or membership assignments. |
 | paquete de configuración | snapshot | `/field/catalog/`, `/field/rules/`, `version` | Compact copy of a configuration that the phone keeps offline; `version` is a content hash and the `ETag`. |
+
 
 ## Release
 
@@ -132,3 +134,10 @@ Rules:
 | Ovitrap void lifecycle | OvitrapVoid | New authored lifecycle record linking a record.void event to its target; no original row is deleted. |
 | Index exclusion | is_index_excluded | Derived lagged exclusion provenance; does not remove lab countability. |
 | Archived catalog | CatalogSnapshot | Exact immutable delivered catalog content resolved by organization and submitted version hash. |
+
+## Offline day work (#135)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| tarea asignada | assigned task | `AssignedTask`, `assignments` | Downloaded day work for one sampling point/action/date, with risk, assignment version and status. Producer shape remains [ASSUMPTION] until published. |
+| manifiesto de mapa | map manifest | `MapManifest`, `map_manifests` | Licensed offline asset metadata (asset id/version/hash/size/quadrant); it does not publish a download URL or certify local file readiness. |

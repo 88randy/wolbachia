@@ -3,6 +3,8 @@
  * without a phone. Later epics add their routes here (one union member each).
  */
 export type Route =
+  | { readonly name: "day" }
+  | { readonly name: "map" }
   | { readonly name: "openShift" }
   | { readonly name: "home" }
   | { readonly name: "inbox" }
