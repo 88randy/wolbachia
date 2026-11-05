@@ -24,7 +24,7 @@ Per-organization option lists (incident reasons, removal reasons, the motorcycle
 
 ## Snapshot
 
-`GET /api/v1/field/catalog/` returns active items only and a `version` hash that is also the `ETag` (`core/snapshots.py`). It changes when any label, order, flag or active state changes.
+`GET /api/v1/field/catalog/` returns active items and the non-voided fleet (`motorcycles`, including blocked motorcycles with their reason, #72), plus a `version` hash that is also the `ETag` (`core/snapshots.py`). It changes when any label, order, flag, active state or fleet content changes. The same hash is sync `catalog_version`; the snapshot keeps `catalog.read` for this compact organization configuration.
 
 ## Void reasons (#80)
 

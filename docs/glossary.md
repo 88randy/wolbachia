@@ -77,6 +77,7 @@ Rules:
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
+| evento de bloqueo de motocicleta | motorcycle block event | `MotorcycleBlockEvent`, `action` (`block`, `unblock`) | Insert-only audit of severe-check blocks and manual unblocks; stores the actor and reason. |
 | motocicleta | motorcycle | `/motorcycles/`, `motorcycle` | Never "bike". |
 | revisión de la moto | motorcycle check | `MotorcycleCheck`, `checks`, `result` (`ok`, `minor`, `severe`) | One line of the checklist done when the shift opens; the items are the catalog `motorcycle-check-item`. A `severe` result blocks the motorcycle. |
 | odómetro | odometer | `odometer_km`, `odometer_open_km`, `odometer_close_km` | Kilometers shown by the motorcycle. Never "mileage". |
@@ -104,7 +105,7 @@ Rules:
 | sesión del dispositivo | device session | `DeviceSession`, `revoke-device-sessions` | One login of a user on a device: an access + refresh token pair, revoked and never deleted. |
 | baja del dispositivo | device revocation | `POST /devices/{id}/revoke/`, `is_revoked` | Lost or retired phone: it cannot log in again. |
 | última carga | final upload | `final_upload_deadline`, `X-Session-Revoked`, `FinalUploadMixin` | The one upload a revoked phone may still make. |
-| — | token pair | `TokenPair`, `accounts/token_pairs.py` | Hashes of one access + refresh pair of a device session. A refresh consumes its pair and issues a child pair. Never deleted (retention: #54). |
+| — | token pair | `TokenPair`, `accounts/token_pairs.py` | Hashes of one access + refresh pair of a device session. A refresh consumes its pair and issues a child pair. Live families are kept in full for reuse detection. Ended families are pruned together by retention (#54); their device session audit row is kept. |
 | — | sibling pair | `is_retired_sibling`, `MAX_SIBLING_PAIRS` | A pair reissued for a lost refresh response inside the grace window. Per parent, only the first sibling used stays valid. |
 | — | session revision | `currentRevision()`, `web/src/session/session-revision.ts` | Web counter that changes only on an accepted login and a confirmed sign-out. Tells whether a response still belongs to the current session, without clocks or booleans. |
 

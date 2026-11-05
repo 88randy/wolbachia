@@ -690,6 +690,14 @@ paths:
       - bearerAuth: []
       responses:
         '200':
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Present only when a result has code rejection_quota_exceeded.
+                Seconds until the next organization-local midnight (minimum 1). Keep
+                those events in the outbox/quarantine and resend after this delay;
+                they were not stored. Other results remain final.
           content:
             application/json:
               schema:
@@ -746,6 +754,300 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Me'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/:
+    get:
+      operationId: motorcycles_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+        description: Include voided motorcycles (default false).
+      - in: query
+        name: is_blocked
+        schema:
+          type: boolean
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - motorcycles
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMotorcycleList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: motorcycles_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MotorcycleWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{id}/:
+    get:
+      operationId: motorcycles_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle.
+        required: true
+      tags:
+      - motorcycles
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: motorcycles_partial_update
+      description: Update the plate only. Supplying code (even unchanged) returns
+        400 validation_error with fields.code immutable_code. To correct a code, void
+        the motorcycle and create a new one; the voided code remains reserved.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle.
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMotorcycleUpdateRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{id}/unblock/:
+    post:
+      operationId: motorcycles_unblock_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle.
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/motorcycles/{id}/void/:
+    post:
+      operationId: motorcycles_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle.
+        required: true
+      tags:
+      - motorcycles
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Motorcycle'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -1243,6 +1545,19 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
+    BlankEnum:
+      enum:
+      - ''
+    BlockedReasonEnum:
+      enum:
+      - severe_check
+      - service_overdue
+      - out_of_service
+      type: string
+      description: |-
+        * `severe_check` - Severe Check
+        * `service_overdue` - Service Overdue
+        * `out_of_service` - Out Of Service
     Catalog:
       type: object
       description: |-
@@ -1367,8 +1682,13 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SnapshotCatalog'
+        motorcycles:
+          type: array
+          items:
+            $ref: '#/components/schemas/SnapshotMotorcycle'
       required:
       - catalogs
+      - motorcycles
       - version
     Changes:
       type: object
@@ -1466,6 +1786,9 @@ components:
       - serial
     EventResult:
       type: object
+      description: |-
+        One ingestion verdict. rejection_quota_exceeded is not stored: retain and retry the event
+        after params.retry_after_seconds (also the 200 response's Retry-After header).
       properties:
         id:
           type: string
@@ -1703,6 +2026,67 @@ components:
       - me
       - refresh
       - server_time
+    Motorcycle:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        plate:
+          type: string
+          readOnly: true
+        is_blocked:
+          type: boolean
+          readOnly: true
+        blocked_reason:
+          readOnly: true
+          oneOf:
+          - $ref: '#/components/schemas/BlockedReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        voided_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+      required:
+      - blocked_reason
+      - code
+      - created_at
+      - created_by
+      - id
+      - is_blocked
+      - plate
+      - void_reason
+      - voided_at
+      - voided_by
     MotorcycleCheck:
       type: object
       description: One checklist line; `item_code` is the code of the catalog item.
@@ -1731,6 +2115,25 @@ components:
       - item_code
       - note
       - result
+    MotorcycleWriteRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        plate:
+          type: string
+          maxLength: 20
+      required:
+      - code
     PaginatedCatalogItemList:
       type: object
       required:
@@ -1800,6 +2203,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Device'
+    PaginatedMotorcycleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Motorcycle'
     PaginatedReviewItemList:
       type: object
       required:
@@ -1945,6 +2371,14 @@ components:
           minimum: 0
         requires_photo:
           type: boolean
+    PatchedMotorcycleUpdateRequest:
+      type: object
+      description: Only the plate can change; code identifies pending schema-1 offline
+        events forever.
+      properties:
+        plate:
+          type: string
+          maxLength: 20
     RefreshRequest:
       type: object
       properties:
@@ -2392,6 +2826,26 @@ components:
       - label_es
       - requires_photo
       - sort
+    SnapshotMotorcycle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        plate:
+          type: string
+        is_blocked:
+          type: boolean
+        blocked_reason:
+          type: string
+      required:
+      - blocked_reason
+      - code
+      - id
+      - is_blocked
+      - plate
     SnapshotParameter:
       type: object
       description: Documents the field rules snapshot (the payload is built by `build_rules_snapshot`).

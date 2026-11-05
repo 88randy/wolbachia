@@ -15,6 +15,9 @@ UNSUPPORTED_SCHEMA_VERSION = "unsupported_schema_version"
 INVALID_PAYLOAD = "invalid_payload"
 EVENT_PAYLOAD_TOO_LARGE = "event_payload_too_large"
 EVENT_ID_CONFLICT = "event_id_conflict"
+# This response is not stored or final; clients retain the event and retry after local midnight.
+# Keep it separate from REJECTED_CODES (final, translated ingestion verdicts).
+REJECTION_QUOTA_EXCEEDED = "rejection_quota_exceeded"
 VOID_TARGET_NOT_FOUND = "void_target_not_found"
 VOID_TARGET_NOT_OWNED = "void_target_not_owned"
 ALREADY_VOIDED = "already_voided"

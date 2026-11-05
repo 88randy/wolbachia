@@ -93,6 +93,7 @@ A failed request leaves nothing behind (and gives a final upload back).
 | `rejected` | `unsupported_schema_version` | `{type, schema_version}` | The type exists, not at that version |
 | `rejected` | `invalid_payload` | `{fields: {<field>: [<code>]}}` | The handler's serializer failed, `voids_event_id` on a non-void event, a NUL character, or nesting deeper than 32 levels |
 | `rejected` | `event_payload_too_large` | `{max_bytes}` | Payload over `SYNC_MAX_EVENT_PAYLOAD_BYTES` |
+| `rejected` | `rejection_quota_exceeded` | `{retry_after_seconds}` | **Not stored, retryable.** The device daily rejection quota is full. Retain the evidence in the outbox/quarantine and resend after this many seconds (also `Retry-After` on the `200` response) |
 | `rejected` | `event_id_conflict` | `{}` | The id is already used by another organization, device or user. Nothing is stored and nothing is revealed |
 | `rejected` | `void_target_not_found` | `{voids_event_id}` | The event to void does not exist, is of another organization (same answer, no leak), is a rejected event or a void event |
 | `rejected` | `void_target_not_owned` | `{voids_event_id}` | The event to void was sent by another user |
@@ -118,7 +119,7 @@ Handlers of each epic may add their own codes (`EventRejected(code, params)`, `E
 
 - **Idempotent.** The event `id` is the primary key. The same id again (also concurrently, also twice in one batch) returns the stored result and creates nothing. Each event runs in its own savepoint: the `INSERT` is the arbiter of a race, and the loser's domain writes roll back with its savepoint. The same id with other content returns the stored result and logs a warning (`payload_sha256` differs). Two couriers (or organizations) that share an id are arbitrated by the primary key and the savepoint, like any duplicate; there are no per-id locks (decision 72). The whole batch transaction runs with `SET LOCAL lock_timeout` (`SYNC_LOCK_TIMEOUT_MS`): an insert that waits too long for another batch's uncommitted row with the same id (`lock_not_available`), or a deadlock between two such batches that share ids in opposite order (`deadlock_detected`), rolls the batch back and answers `429 sync_in_progress`. The phone retries the same batch, which is safe because of the event ids; on the retry each shared id resolves to one `accepted` and one `event_id_conflict`. An id stored by another organization, device or user is `event_id_conflict`.
 - **One batch per courier at a time.** Batches of one (organization, user) are serialized with a PostgreSQL advisory transaction lock that is *tried*, never waited for: a second batch (for example from another phone of the same courier) is answered `429 sync_in_progress` with `Retry-After` at once, so a burst of retries cannot exhaust workers or connections (decision 71). The pull of `changes` runs inside the same locked transaction. Inside a batch, events are processed in `(device_time, id)` order (a void sent before its original in the array still works). An event older than the last accepted one is still processed: offline is normal.
-- **Partial batches.** An invalid event never blocks the others: its domain writes roll back and the rejected `FieldEvent` is stored with its `ReviewItem`. Its payload is stored as received, except (decision 74) when it is too large, too deep or not storable (lone surrogate, non-finite number): then a marker `{"_not_stored": "<code>", "size_bytes": n}` is stored instead, so a hostile phone cannot fill the table with junk; a NUL character is replaced by U+FFFD.
+- **Partial batches.** An invalid event never blocks the others: its domain writes roll back and, while its device has rejection quota available, the rejected `FieldEvent` is stored with its `ReviewItem`. With no slot left, only that event returns `rejection_quota_exceeded` and remains on the phone (see Rejection quota). Its payload is stored as received, except (decision 74) when it is too large, too deep or not storable (lone surrogate, non-finite number): then a marker `{"_not_stored": "<code>", "size_bytes": n}` is stored instead, so a hostile phone cannot fill the table with junk; a NUL character is replaced by U+FFFD.
 - **Precedence** when several statuses apply: `rejected` over `in_review` over `accepted`. Among in-review reasons: `final_upload_after_revoke`, then a handler's own, then the shift's (`captured_after_shift_close`), then `clock_skew`.
 - **Clock skew** (decision 62). `skew = sent_at - server_received_at`. If `|skew|` is over `clock_skew_review_seconds` (the value in force when the server received the batch, `rules.selectors.get_values_in_force`), every event of the batch is `in_review` with `clock_skew`; so is an event with `device_time > sent_at + threshold`. Never rejected for skew alone, and an old event sent late is not flagged for being old. With no value configured **[PENDING client]** nothing is flagged, `clock_skew_seconds` is stored on every event and a warning is logged.
 - **Doubtful events do not change records** (decision 73). When an event will land `in_review` anyway (`ctx.review_code` is set: final upload or clock skew), a `record.void` is validated but does **not** void its target: the void event is stored `in_review` and the target stays intact until a supervisor accepts it (#22 applies it). Handlers of other types decide for themselves with `ctx.review_code`.
@@ -128,7 +129,7 @@ Handlers of each epic may add their own codes (`EventRejected(code, params)`, `E
 
 ## Limits and throttle
 
-All are environment settings (technical limits, not business rules). Values are **[ASSUMPTION]** until the field test (#13).
+All are environment settings (technical limits, not business rules). Defaults are **[ASSUMPTION]** until the field test (#13), except the owner-delegated SA09 quota settings below.
 
 | Setting | Default | Effect |
 |---|---|---|
@@ -140,6 +141,87 @@ All are environment settings (technical limits, not business rules). Values are 
 | `SYNC_CURSOR_MAX_AGE_SECONDS` | `2592000` (30 days) | A `changes.cursor` older than this is `invalid_cursor`: after a long inactivity the phone does a clean resync (recovery above) |
 | `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for any lock inside a batch transaction (`SET LOCAL lock_timeout`); then `429 sync_in_progress` |
 | `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
+| `SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY` | `1000` | New stored rejections per device and organization-local receipt day; env integer in `100..10000`, invalid values fail at settings load (SA09, decision 89) |
+| `SYNC_REJECTION_ALERT_PERCENTS` | `80,100` | Comma-separated integer percentages in `1..100`; nonempty; invalid values fail at settings load; duplicates removed, sorted; each threshold is rounded up (SA09) |
+
+## Rejection quota (#56, SA09)
+
+`RejectionQuotaCounter` is mutable bookkeeping with `organization_id`, `device_id`, `local_date`
+and `count`, unique on `(device, local_date)`. It does not change `FieldEvent` or `ReviewItem`:
+those audit rows remain insert-only. The quota counts only **new stored rejected events**.
+A revoked phone's **final upload** is never refused by the quota (it happens once and cannot be retried, so its rejections are stored without claiming a slot; it is bounded by `SYNC_MAX_EVENTS`).
+Accepted and `in_review` events never claim a slot and are always processed, including when
+other events of the same batch hit the quota. Existing review items, pulls and cursors are unchanged.
+
+**Deliberate deviation from issue #56's proposed blanket `429`:** a valid batch still responds
+`200` with a result for every event, in request order. Each rejection beyond the quota produces:
+
+```json
+{"id": "uuid", "status": "rejected", "code": "rejection_quota_exceeded", "params": {"retry_after_seconds": 43200}}
+```
+
+No `FieldEvent` and no `ReviewItem` are inserted for that result. When at least one result has
+that code, the `200` response also has `Retry-After: N`, equal to its `retry_after_seconds`.
+Without a blocked result the quota adds no header, even if the last available slot was used.
+
+**Phone recovery:** unlike final rejection codes, `rejection_quota_exceeded` means **not stored**.
+Never discard that event or its evidence. Keep the original id and payload in the outbox or
+quarantine, resend after `Retry-After`, and continue sending valid events. It is a retry control
+code, separate from the final, translated rejection verdicts in `REJECTED_CODES`. Mobile handling
+and localized copy are outside this backend change. No rejection is fabricated in the review queue
+for an event that was not stored; the phone remains the source of that evidence.
+
+The counter day is the batch's `server_received_at` converted with `ZoneInfo(Organization.timezone)`;
+never the phone's clock or the deployment's timezone. Every event of a batch uses that one day,
+even if processing crosses midnight. The next receipt-local midnight selects a new row; old counters
+are retained. The delay is the ceiling of actual seconds to that midnight (UTC instants, so DST
+changes are handled), minimum 1. UTC midnight does not reset a Mexico City counter.
+
+The Nth rejection is stored; the (N+1)th is not. A stored rejection replays its original result
+without claiming a slot, including at full quota. A blocked event has no server row, so retrying it
+on the next local day validates and stores it normally. Different devices have independent quotas;
+two couriers sharing a device share its quota. Quotas start counting new rejections at deployment;
+there is no audit-row backfill or deletion. Operators must use the same deployment limits on all workers.
+
+### Atomic claims and lock order
+
+The race rule is a unique device/day row plus a conditional database increment, never a Python
+read-then-write check. Inside `EventProcessor._reject`'s own savepoint, `get_or_create` (unique index
+arbitrates concurrent creation) is followed by `UPDATE ... SET count = count + 1 WHERE count < limit`.
+The row stays locked until batch commit. The event and review item are inserted after the claim.
+A duplicate event id rolls back that savepoint, including the claim and any scheduled alerts, then
+replays the stored result. If a claim fails after waiting for the final slot, the processor rechecks
+the stored id: a concurrent winner must resolve as a replay or `event_id_conflict`, rather than quota.
+
+Order: any final-upload `User` / `DeviceSession` locks first; courier advisory try-lock; handler row
+locks of the event; quota counter in the rejection savepoint. Nothing after the counter explicitly
+locks a user, device, session or token row. Rejected handler writes/locks are rolled back before
+rejection storage; locks from earlier successful events may remain until batch end. A later event
+may run its own handler, so domain-row cycles remain subject to the existing bounded wait policy.
+Each batch has exactly one authenticated device and one receipt-local day, hence at most one quota
+row: two batches cannot acquire *different quota rows* in opposite order. Shared devices serialize
+slot claims on that row even for different couriers. See [`accounts/README.md`](../backend/accounts/README.md#row-lock-order).
+
+The counter's creation/update and deferred FK checks run under the existing `SET LOCAL lock_timeout`.
+SQLSTATE `55P03` or `40P01` follows the existing `sync_batch` mapping to `429 sync_in_progress`;
+it rolls back the **whole batch**, counter increments, events, review items, alerts and any final-upload
+consumption. This 429 retains its short `SYNC_RETRY_AFTER_SECONDS` delay, distinct from the quota's
+per-event `200` response and local-midnight delay.
+
+### Operator alerts
+
+Logger `field_sync.services` emits a warning only when a successful claim equals
+`ceil(limit * percent / 100)` for a configured threshold. Default: once at 80% and once at 100%,
+never for a replay or an unstored rejection. A duplicate percentage is normalized once at settings
+load. Several distinct percentages may round to one count; each still emits its own crossing.
+Structured fields and the log line carry only `organization`, `device`, `local_date`, `count`,
+`limit`, `threshold_percent`, without personal data or payloads. `transaction.on_commit` discards
+alerts from a rolled-back savepoint or batch; a successful retry alerts once. This is operator logging,
+not notification delivery (#49), and does not aggregate or change review items (#22).
+
+Implementation APIs: [Django atomic get-or-create/update](https://docs.djangoproject.com/en/5.2/ref/models/querysets/),
+[on-commit and savepoints](https://docs.djangoproject.com/en/5.2/topics/db/transactions/#savepoints),
+[drf-spectacular response headers](https://drf-spectacular.readthedocs.io/en/latest/drf_spectacular.html#drf_spectacular.utils.OpenApiParameter).
 
 ## The `changes.cursor`
 

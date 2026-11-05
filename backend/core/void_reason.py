@@ -153,6 +153,12 @@ class VoidReasonField(serializers.CharField):
         return None
 
 
+class UnblockSerializer(serializers.Serializer[Any]):
+    """Free-text reason of a fleet unblock; the service validates it with `validate_void_reason`."""
+
+    reason = serializers.CharField(allow_blank=True, max_length=VOID_REASON_MAX_LENGTH)
+
+
 class VoidSerializer(serializers.Serializer[Any]):
     """Shared HTTP and sync body. The target-aware resolver validates the choice and text."""
 

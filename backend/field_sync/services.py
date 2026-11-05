@@ -20,19 +20,25 @@
    its `ReviewItem` (its payload only when the database can hold it, see `storable_payload`).
    Precedence: rejected, in review, accepted.
 
-The advisory lock is not a row lock and is a *try* (never waits), so the global row lock order
-(accounts/README.md) is untouched.
+The quota counter is locked after the courier try-lock and any handler locks of that event,
+inside the rejection savepoint. No later code takes a user/device/session row lock; see
+accounts/README.md for the global order. A batch has one device and one receipt-local day.
 Nothing here calls an external service: the view may hold the user and session locks of a final
 upload for the whole batch.
 """
 
 import hashlib
 import logging
+import math
 from dataclasses import dataclass, field
+from datetime import UTC, date, datetime, time, timedelta
+from functools import partial
 from typing import Any, Self
+from zoneinfo import ZoneInfo
 
 from django.conf import settings
 from django.db import IntegrityError, OperationalError, connection, transaction
+from django.db.models import F
 from rest_framework.exceptions import ValidationError
 
 from core.validation import flatten_error_details
@@ -42,6 +48,7 @@ from field_sync.codes import (
     EVENT_PAYLOAD_TOO_LARGE,
     FINAL_UPLOAD_AFTER_REVOKE,
     INVALID_PAYLOAD,
+    REJECTION_QUOTA_EXCEEDED,
     VOID_EVENT_TYPE,
 )
 from field_sync.cursor import ChangesCursor
@@ -57,7 +64,7 @@ from field_sync.exceptions import (
     EventSignal,
     SyncInProgressError,
 )
-from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent
+from field_sync.models import ACCEPTED_CODE, EventStatus, FieldEvent, RejectionQuotaCounter
 from field_sync.registry import (
     EventContext,
     EventHandler,
@@ -104,6 +111,62 @@ class PreparedEvent:
 class SyncOutcome:
     results: list[EventResult]
     changes: Changes
+
+
+def rejection_quota_window(batch: BatchContext) -> tuple[date, int]:
+    """Receipt-local day and seconds until its next midnight (ceil, at least one).
+
+    Subtract UTC instants: local wall-clock subtraction is wrong on DST transition days.
+    All events of a batch use its receipt time, so it cannot lock counters for two days.
+    """
+    local = batch.received_at.astimezone(ZoneInfo(batch.organization.timezone))
+    midnight = datetime.combine(local.date() + timedelta(days=1), time.min, tzinfo=local.tzinfo)
+    seconds = (midnight.astimezone(UTC) - batch.received_at.astimezone(UTC)).total_seconds()
+    return local.date(), max(1, math.ceil(seconds))
+
+
+def claim_rejection_slot(batch: BatchContext, local_date: date) -> bool:
+    """Atomically increment the budget and schedule threshold logs (writes).
+
+    Call only inside the rejection's savepoint: an id race must roll back the claim and its
+    on-commit callbacks, just like a whole-batch rollback. The unique device/day index arbitrates
+    concurrent row creation; the conditional UPDATE arbitrates concurrent slot claims.
+    """
+    limit = settings.SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY
+    counter, _ = RejectionQuotaCounter.objects.get_or_create(
+        organization=batch.organization, device=batch.device, local_date=local_date
+    )
+    claimed = RejectionQuotaCounter.objects.filter(pk=counter.pk, count__lt=limit).update(
+        count=F("count") + 1
+    )
+    if not claimed:
+        return False
+    counter.refresh_from_db(fields=["count"])
+    schedule_rejection_alerts(counter, limit)
+    return True
+
+
+def schedule_rejection_alerts(counter: RejectionQuotaCounter, limit: int) -> None:
+    """Emit each configured crossing only after the transaction commits, without personal data."""
+    for percent in settings.SYNC_REJECTION_ALERT_PERCENTS:
+        if counter.count != math.ceil(limit * percent / 100):
+            continue
+        fields = {
+            "organization": str(counter.organization_id),
+            "device": str(counter.device_id),
+            "local_date": counter.local_date.isoformat(),
+            "count": counter.count,
+            "limit": limit,
+            "threshold_percent": percent,
+        }
+        transaction.on_commit(
+            partial(
+                logger.warning,
+                "Rejection quota threshold: organization=%s device=%s local_date=%s count=%s limit=%s threshold_percent=%s",
+                *fields.values(),
+                extra=fields,
+            )
+        )
 
 
 def advisory_key(*parts: object) -> int:
@@ -295,8 +358,14 @@ class EventProcessor:
         if envelope.voids_event_id is not None:
             params["voids_event_id"] = str(envelope.voids_event_id)  # the link is not stored
         outcome = Verdict(EventStatus.REJECTED, rejection.code, params)
+        local_date, retry_after = rejection_quota_window(self.batch)
         try:
             with transaction.atomic():
+                # A final upload happens once and cannot be retried: never refuse its evidence.
+                if not self.batch.is_final_upload and not claim_rejection_slot(
+                    self.batch, local_date
+                ):
+                    return self._quota_exceeded_result(envelope, retry_after)
                 self._store(envelope, outcome)
         except IntegrityError as error:
             return self._replay_after_conflict(envelope, error)
@@ -309,6 +378,18 @@ class EventProcessor:
             outcome.code,
         )
         return outcome.result_for(envelope)
+
+    def _quota_exceeded_result(self, envelope: EventEnvelope, retry_after: int) -> EventResult:
+        """Resolve an id stored while we waited for the last slot before refusing new storage."""
+        stored = find_stored_event(envelope.id)
+        if stored is not None:
+            return self._replay(envelope, stored)
+        return EventResult(
+            envelope.id,
+            EventStatus.REJECTED,
+            REJECTION_QUOTA_EXCEEDED,
+            {"retry_after_seconds": retry_after},
+        )
 
     # --- storing ----------------------------------------------------------------------------
 
