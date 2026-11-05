@@ -88,9 +88,9 @@ def test_concurrent_unblocks_create_only_one_audit_event(org_a):
         lambda: unblock_motorcycle(motorcycle, user, "Vehicle repaired now"),
         lambda: unblock_motorcycle(motorcycle, user, "Vehicle repaired now"),
     )
-    assert (
-        sum(isinstance(outcome, MotorcycleNotBlockedError) for outcome in outcomes) == 1
-    ), outcomes
+    assert sum(isinstance(outcome, MotorcycleNotBlockedError) for outcome in outcomes) == 1, (
+        outcomes
+    )
     assert sum(not isinstance(outcome, Exception) for outcome in outcomes) == 1, outcomes
     assert MotorcycleBlockEvent.objects.filter(motorcycle=motorcycle).count() == 1
 
