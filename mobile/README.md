@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). P1/P2 login and local unlock are #7 (decision 117); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
+> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). P1/P2 login and local unlock are #7 (decision 118); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
 
 ## Rules
 
@@ -325,7 +325,7 @@ P14 advances finding -> paddle present -> eggs Yes/No -> conditions/bag/reinstat
 -> confirmation. Closed-house/absent/missing/destroyed skip paddle/eggs/bag.
 There is no egg-count input, draft field or event payload field.
 
-### Decisions applied (ADR 117)
+### Decisions applied (ADR 118)
 
 - `domain.ts` contains strict ASCII `wbf:1:<kind>:<hyphenated UUID>` parsing,
   conditional boolean eggs and shared route transitions. Kinds are lot, ovitrap,

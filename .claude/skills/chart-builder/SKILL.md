@@ -89,27 +89,32 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 
-df = pd.DataFrame({
-    'Region': ['West', 'East', 'North', 'South'],
-    'Revenue': [4200, 3100, 1800, 2700]
-})
+df = pd.DataFrame(
+    {"Region": ["West", "East", "North", "South"], "Revenue": [4200, 3100, 1800, 2700]}
+)
 
 fig, ax = plt.subplots(figsize=(8, 5))
-bars = ax.bar(df['Region'], df['Revenue'], color=['#2563EB', '#64748B', '#64748B', '#64748B'])
-ax.set_title("West Region Leads Q3 Revenue", fontsize=16, fontweight='bold', pad=12)
+bars = ax.bar(df["Region"], df["Revenue"], color=["#2563EB", "#64748B", "#64748B", "#64748B"])
+ax.set_title("West Region Leads Q3 Revenue", fontsize=16, fontweight="bold", pad=12)
 ax.set_xlabel("Region", fontsize=12)
 ax.set_ylabel("Revenue (USD thousands)", fontsize=12)
-ax.yaxis.grid(True, color='#E5E7EB', linewidth=0.8)
+ax.yaxis.grid(True, color="#E5E7EB", linewidth=0.8)
 ax.set_axisbelow(True)
-ax.spines[['top', 'right']].set_visible(False)
+ax.spines[["top", "right"]].set_visible(False)
 
 # Value labels on bars
 for bar in bars:
-    ax.text(bar.get_x() + bar.get_width()/2, bar.get_height() + 50,
-            f"${bar.get_height():,.0f}K", ha='center', va='bottom', fontsize=11)
+    ax.text(
+        bar.get_x() + bar.get_width() / 2,
+        bar.get_height() + 50,
+        f"${bar.get_height():,.0f}K",
+        ha="center",
+        va="bottom",
+        fontsize=11,
+    )
 
 plt.tight_layout()
-plt.savefig("revenue_by_region.png", dpi=150, bbox_inches='tight')
+plt.savefig("revenue_by_region.png", dpi=150, bbox_inches="tight")
 plt.show()
 ```
 
@@ -118,21 +123,20 @@ plt.show()
 import matplotlib.pyplot as plt
 import pandas as pd
 
-df = pd.DataFrame({
-    'Month': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    'Revenue': [180, 210, 195, 240, 285, 310]
-})
+df = pd.DataFrame(
+    {"Month": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"], "Revenue": [180, 210, 195, 240, 285, 310]}
+)
 
 fig, ax = plt.subplots(figsize=(9, 5))
-ax.plot(df['Month'], df['Revenue'], color='#2563EB', linewidth=2.5, marker='o', markersize=7)
-ax.fill_between(range(len(df)), df['Revenue'], alpha=0.08, color='#2563EB')
-ax.set_title("Revenue Growing Steadily — Up 72% H1", fontsize=16, fontweight='bold')
+ax.plot(df["Month"], df["Revenue"], color="#2563EB", linewidth=2.5, marker="o", markersize=7)
+ax.fill_between(range(len(df)), df["Revenue"], alpha=0.08, color="#2563EB")
+ax.set_title("Revenue Growing Steadily — Up 72% H1", fontsize=16, fontweight="bold")
 ax.set_ylabel("Revenue (USD thousands)", fontsize=12)
-ax.yaxis.grid(True, color='#E5E7EB', linewidth=0.8)
+ax.yaxis.grid(True, color="#E5E7EB", linewidth=0.8)
 ax.set_axisbelow(True)
-ax.spines[['top', 'right']].set_visible(False)
+ax.spines[["top", "right"]].set_visible(False)
 plt.tight_layout()
-plt.savefig("revenue_trend.png", dpi=150, bbox_inches='tight')
+plt.savefig("revenue_trend.png", dpi=150, bbox_inches="tight")
 ```
 
 **Scatter plot (correlation):**
@@ -141,13 +145,20 @@ import seaborn as sns
 import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots(figsize=(8, 6))
-sns.regplot(data=df, x='marketing_spend', y='revenue', ax=ax,
-            scatter_kws={'alpha': 0.6, 'color': '#2563EB'},
-            line_kws={'color': '#DC2626', 'linewidth': 1.5})
-ax.set_title("Marketing Spend Strongly Correlates with Revenue (r=0.78)", fontsize=14, fontweight='bold')
+sns.regplot(
+    data=df,
+    x="marketing_spend",
+    y="revenue",
+    ax=ax,
+    scatter_kws={"alpha": 0.6, "color": "#2563EB"},
+    line_kws={"color": "#DC2626", "linewidth": 1.5},
+)
+ax.set_title(
+    "Marketing Spend Strongly Correlates with Revenue (r=0.78)", fontsize=14, fontweight="bold"
+)
 ax.set_xlabel("Marketing Spend (USD)", fontsize=12)
 ax.set_ylabel("Revenue (USD)", fontsize=12)
-ax.spines[['top', 'right']].set_visible(False)
+ax.spines[["top", "right"]].set_visible(False)
 plt.tight_layout()
 ```
 
@@ -156,11 +167,21 @@ plt.tight_layout()
 import seaborn as sns
 import matplotlib.pyplot as plt
 
-corr = df[['revenue', 'units_sold', 'discount_pct', 'marketing_spend']].corr()
+corr = df[["revenue", "units_sold", "discount_pct", "marketing_spend"]].corr()
 fig, ax = plt.subplots(figsize=(7, 6))
-sns.heatmap(corr, annot=True, fmt=".2f", cmap='RdBu_r', center=0,
-            vmin=-1, vmax=1, square=True, linewidths=0.5, ax=ax)
-ax.set_title("Correlation Matrix — Sales Variables", fontsize=14, fontweight='bold')
+sns.heatmap(
+    corr,
+    annot=True,
+    fmt=".2f",
+    cmap="RdBu_r",
+    center=0,
+    vmin=-1,
+    vmax=1,
+    square=True,
+    linewidths=0.5,
+    ax=ax,
+)
+ax.set_title("Correlation Matrix — Sales Variables", fontsize=14, fontweight="bold")
 plt.tight_layout()
 ```
 
@@ -244,23 +265,23 @@ import matplotlib.pyplot as plt
 import pandas as pd
 
 data = {
-    'month': pd.date_range('2023-01', periods=12, freq='MS'),
-    'revenue': [210, 195, 230, 255, 280, 310, 295, 340, 365, 390, 410, 445]
+    "month": pd.date_range("2023-01", periods=12, freq="MS"),
+    "revenue": [210, 195, 230, 255, 280, 310, 295, 340, 365, 390, 410, 445],
 }
 df = pd.DataFrame(data)
-mom_growth = (df['revenue'].iloc[-1] / df['revenue'].iloc[0] - 1) * 100
+mom_growth = (df["revenue"].iloc[-1] / df["revenue"].iloc[0] - 1) * 100
 
 fig, ax = plt.subplots(figsize=(10, 5))
-ax.plot(df['month'], df['revenue'], color='#2563EB', linewidth=2.5, marker='o', markersize=6)
-ax.fill_between(df['month'], df['revenue'], alpha=0.07, color='#2563EB')
-ax.set_title(f"Revenue Up {mom_growth:.0f}% in 2023", fontsize=16, fontweight='bold')
+ax.plot(df["month"], df["revenue"], color="#2563EB", linewidth=2.5, marker="o", markersize=6)
+ax.fill_between(df["month"], df["revenue"], alpha=0.07, color="#2563EB")
+ax.set_title(f"Revenue Up {mom_growth:.0f}% in 2023", fontsize=16, fontweight="bold")
 ax.set_ylabel("Revenue (USD thousands)", fontsize=12)
-ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter('%b'))
-ax.yaxis.grid(True, color='#E5E7EB', linewidth=0.8, linestyle='--')
+ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%b"))
+ax.yaxis.grid(True, color="#E5E7EB", linewidth=0.8, linestyle="--")
 ax.set_axisbelow(True)
-ax.spines[['top', 'right']].set_visible(False)
+ax.spines[["top", "right"]].set_visible(False)
 plt.tight_layout()
-plt.savefig("2023_revenue_trend.png", dpi=150, bbox_inches='tight')
+plt.savefig("2023_revenue_trend.png", dpi=150, bbox_inches="tight")
 ```
 
 **Output:** A clean line chart titled "Revenue Up 112% in 2023" with subtle area fill, gridlines only on y-axis, no top/right spines.
@@ -278,36 +299,47 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
-df = pd.DataFrame({
-    'Category': ['Analytics', 'Storage', 'Compute', 'Networking', 'Security'],
-    'Revenue':   [4200, 2800, 3600, 1500, 3100],
-    'Target':    [3800, 3000, 3500, 2000, 2900]
-})
-df['above_target'] = df['Revenue'] >= df['Target']
-colors = ['#2563EB' if above else '#94A3B8' for above in df['above_target']]
+df = pd.DataFrame(
+    {
+        "Category": ["Analytics", "Storage", "Compute", "Networking", "Security"],
+        "Revenue": [4200, 2800, 3600, 1500, 3100],
+        "Target": [3800, 3000, 3500, 2000, 2900],
+    }
+)
+df["above_target"] = df["Revenue"] >= df["Target"]
+colors = ["#2563EB" if above else "#94A3B8" for above in df["above_target"]]
 
 fig, ax = plt.subplots(figsize=(9, 5))
-bars = ax.barh(df['Category'], df['Revenue'], color=colors, height=0.6)
-ax.vlines(df['Target'], -0.4, len(df)-0.6, colors='#DC2626', linewidth=1.5,
-          linestyle='--', label='Target')
+bars = ax.barh(df["Category"], df["Revenue"], color=colors, height=0.6)
+ax.vlines(
+    df["Target"],
+    -0.4,
+    len(df) - 0.6,
+    colors="#DC2626",
+    linewidth=1.5,
+    linestyle="--",
+    label="Target",
+)
 
-ax.set_title("3 of 5 Categories Beat Q3 Revenue Target", fontsize=15, fontweight='bold')
+ax.set_title("3 of 5 Categories Beat Q3 Revenue Target", fontsize=15, fontweight="bold")
 ax.set_xlabel("Revenue (USD thousands)", fontsize=12)
-ax.xaxis.grid(True, color='#E5E7EB', linewidth=0.8)
+ax.xaxis.grid(True, color="#E5E7EB", linewidth=0.8)
 ax.set_axisbelow(True)
-ax.spines[['top', 'right']].set_visible(False)
+ax.spines[["top", "right"]].set_visible(False)
 
 # Labels
-for bar, val in zip(bars, df['Revenue']):
-    ax.text(val + 30, bar.get_y() + bar.get_height()/2,
-            f"${val:,}K", va='center', fontsize=10)
+for bar, val in zip(bars, df["Revenue"]):
+    ax.text(val + 30, bar.get_y() + bar.get_height() / 2, f"${val:,}K", va="center", fontsize=10)
 
 from matplotlib.patches import Patch
-legend_elements = [Patch(color='#2563EB', label='Above Target'),
-                   Patch(color='#94A3B8', label='Below Target')]
-ax.legend(handles=legend_elements, loc='lower right')
+
+legend_elements = [
+    Patch(color="#2563EB", label="Above Target"),
+    Patch(color="#94A3B8", label="Below Target"),
+]
+ax.legend(handles=legend_elements, loc="lower right")
 plt.tight_layout()
-plt.savefig("category_vs_target.png", dpi=150, bbox_inches='tight')
+plt.savefig("category_vs_target.png", dpi=150, bbox_inches="tight")
 ```
 
 **Output:** Horizontal bar chart with blue bars (above target) and grey bars (below target), red dashed target line, value labels on each bar.

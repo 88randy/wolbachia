@@ -107,6 +107,14 @@ def test_seeded_parameters_have_the_expected_types_and_units() -> None:
 
     assert (fuel.value_type, fuel.unit) == ("decimal", "km_l")
     assert (speed.value_type, speed.unit) == ("integer", "km_h")
+    target = RuleParameter.objects.get(organization=organization, key="daily_task_target")
+    assert (target.value_type, target.unit, target.min_value, target.max_value) == (
+        "integer",
+        "count",
+        Decimal(1),
+        Decimal(200),
+    )
+    assert current_values(organization)["daily_task_target"] == 40
 
 
 def test_catalogs_follow_the_open_and_closed_defaults() -> None:
@@ -225,6 +233,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, FIELD_BOOTSTRAP, MOTORCYCLE_READ}
     assert by_slug["supervisor"] == {
+        "schedule.read",
+        "schedule.manage",
         "ovitrap.read",
         "reading.read",
         "quadrant.read",
@@ -235,7 +245,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_UNBLOCK,
         MOTORCYCLE_SERVICE_CLEAR,
     }
-    assert by_slug["entomologist"] == {*reader, "reading.read"}
+    assert by_slug["entomologist"] == {
+        *reader,
+        "reading.read",
+        "schedule.read",
+        "risk_import.apply",
+    }
     assert by_slug["community_promoter"] == reader
     assert by_slug["coordinator"] == {
         "ovitrap.read",
@@ -246,6 +261,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "schedule.read",
+        "schedule.manage",
+        "risk_import.apply",
         "ovitrap.read",
         "reading.read",
         "quadrant.read",
