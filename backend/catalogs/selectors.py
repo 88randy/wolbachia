@@ -56,6 +56,7 @@ def _reference_count(queryset: QuerySet[Any], reference: str) -> Coalesce:
 
 def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QuerySet[CatalogItem]:
     """Sum historical references in correlated subqueries, never one query per item."""
+    from ovitraps.models import OvitrapReading
     from shifts.models import MotorcycleCheck
 
     usage: Expression = _reference_count(
@@ -64,6 +65,16 @@ def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QueryS
         ),
         "item_id",
     )
+    ovitrap_reference = {"ovitrap-finding": "finding_id", "paddle-type": "paddle_type_id"}.get(
+        catalog.slug
+    )
+    if ovitrap_reference is not None:
+        usage = usage + _reference_count(
+            OvitrapReading.objects.filter(
+                organization_id=catalog.organization_id, **{ovitrap_reference: OuterRef("pk")}
+            ),
+            ovitrap_reference,
+        )
     if catalog.slug == "void-reason":
         for model in apps.get_models():
             fields = {field.name for field in model._meta.fields}

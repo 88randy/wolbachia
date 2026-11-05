@@ -39,6 +39,7 @@ DEFAULT_CATALOG_SEEDS = (
     CatalogSeed("replacement-reason", "Motivo de reposición", "Replacement reason"),
     CatalogSeed("damage-reason", "Motivo de daño", "Damage reason"),
     CatalogSeed("ovitrap-finding", "Hallazgo en ovitrampa", "Ovitrap finding", is_open=False),
+    CatalogSeed("paddle-type", "Tipo de papeleta", "Egg paddle type"),
     CatalogSeed("intervention-type", "Tipo de intervención", "Intervention type"),
 )
 
@@ -59,7 +60,7 @@ def missing_catalog_slugs(organization: Organization) -> list[str]:
 def _needs_catalog_seed(catalog: Catalog | None, seed: CatalogSeed) -> bool:
     if catalog is None:
         return True
-    required = {OTHER_ITEM_CODE} if catalog.is_open else set()
+    required = {OTHER_ITEM_CODE} if catalog.is_open or seed.slug == "ovitrap-finding" else set()
     if seed.slug == "void-reason":
         required.update(row[0] for row in VOID_REASON_ITEMS)
     required.update(row[0] for row in CLOSED_CATALOG_ITEMS.get(seed.slug, ()))
@@ -85,7 +86,7 @@ def _seed_catalog(organization: Organization, seed: CatalogSeed) -> Catalog:
     )
     # Lock before item reads/inserts: unique-index waits must not invert deferred FK locks.
     locked = Catalog.objects.select_for_update().get(pk=catalog.pk, organization=organization)
-    if locked.is_open:
+    if locked.is_open or locked.slug == "ovitrap-finding":
         _ensure_other_item(locked)
     if locked.slug == "void-reason":
         _seed_void_reason_items(locked)
@@ -138,11 +139,15 @@ CLOSED_CATALOG_ITEMS = {
         ("mirrors", "Espejos", "Mirrors"),
         ("fuel", "Combustible", "Fuel"),
     ),
+    "paddle-type": (("standard", "Estándar", "Standard"),),
     "ovitrap-finding": (
         ("intact", "Intacta", "Intact"),
         ("dry", "Seca", "Dry"),
         ("damaged", "Dañada", "Damaged"),
         ("missing", "No encontrada", "Missing"),
+        ("closed-house", "Casa cerrada", "Closed house"),
+        ("absent", "Ausente", "Absent"),
+        ("destroyed", "Destruida", "Destroyed"),
     ),
 }
 

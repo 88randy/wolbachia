@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("catalogs", "0003_void_reason_catalog"),
+        ("catalogs", "0005_snapshot_insert_only_guard"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 

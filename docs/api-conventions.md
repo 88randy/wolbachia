@@ -169,28 +169,42 @@ remain unchanged. Error envelopes keep code/detail, fields only on 400 and safe
 blocked_by on 409. See geography/README.md for choices and acceptance mapping.
 
 
-## Catalog item revisions and atomic reorder (#182)
+## Ovitrap provenance (#111, B-14)
 
-CatalogItem list/detail reads include read-only catalog_version (integer,
-item.catalog.revision), read in the same statement as the item order. A client
-must build ordered_ids and version from the same items read: use the MINIMUM
-catalog_version across all fetched items if pages straddle a write. Using the
-independently cached catalog-list version with an older item order can silently
-overwrite another editor's reorder. The conservative minimum may produce a
-spurious 409; the client refetches and asks the user to retry. Catalog.version
-and the reorder response's top-level version are retained.
+Read-only GET /ovitraps/, /readings/, /bags/ and /{uuid}/ details under /api/v1.
+Page-number paging; stable ordering by -created_at,id (bags also support code
+ordering/search). Filters: code (UUID for ovitrap/reading, human code for bag),
+status=active|voided|all, point=<sampling point UUID>, week=YYYY-Www (local epi week).
+Lists default active; details include voided history. ?code= is exact and scoped.
+Foreign point filters, foreign-org/center/quadrant detail references return 404.
+ovitrap.read authorizes identities; reading.read authorizes readings/bags; actions
+default-deny. Organization is resolved from membership/pinned bearer session.
+Session cookie + CSRF remains the web contract. No HTTP mutation/DELETE is added.
 
-GET /catalogs/ adds integer version (Catalog.revision, default 0). Every effective
-item create/update/deactivate/activate/reorder increments it under the catalog row
-lock. This revision is separate from the content hash of GET /field/catalog/.
-POST /catalogs/{slug}/items/reorder/ requires catalog_item.update and takes
-{version: integer >= 0, ordered_ids: UUID[<=200]}. A stale version is 409
-catalog_version_conflict (code/detail only, no current_version params). Otherwise
-ordered_ids must be exactly the active non-Other items, with no duplicates. All
-mismatches, including inactive/Other/foreign ids, return the same 400
-validation_error with fields.ordered_ids: [{code: reorder_ids_mismatch, params: {}}].
-Another organization's catalog slug returns 404. One transaction assigns sort
-10,20,30... to active regular items and returns 200 {version, items: CatalogItem[]}
-with the full server-ordered list including usage and audit fields. Inactive and
-Other sorts stay unchanged; Other stays last. Automatic sort for creation ignores
-inactive and Other items. The existing 200 active-item limit remains unchanged.
+Responses expose event_id, device_time, server_received_at, GPS, manual_capture,
+rules_version/catalog_version (phone tokens), evaluated_rules/rule_version_ids,
+author/timestamps, status and void metadata. Ovitrap includes historical point
+version and opaque supply/evidence refs. Reading includes finding identity/code/
+historical labels, conditional boolean eggs, conditions, paddle type, epi week,
+lagged/index exclusion provenance, is_countable and bag link. Bag includes unique
+org code, reading, collector and original field flags. Lagged paddles remain
+countable. Voids/corrections retain original records and event ingest status.
+
+GET /field/catalog/ archives delivered snapshots immutably by organization/hash;
+its wire format/ETag is unchanged. Ovitrap handlers resolve submitted catalog_version
+against that archive. Missing pre-archive versions review, unknown snapshot choices
+reject, known now-inactive choices review. Findings add closed-house/absent/destroyed
+and protected Other; paddle-type adds standard/Other. max_gps_accuracy_m is versioned
+(default 50, inclusive 1..200 m, assumption pending pilot confirmation). No
+index-exclusion rule exists: is_index_excluded=is_lagged is an explicit assumption.
+Sync event schemas/codes and no-effects review policy: sync.md. Full lead decisions,
+lock order and acceptance map: ../backend/ovitraps/README.md, ADR 99.
+
+
+Ovitrap identity isolation (#111 adversarial correction): the physical phone UUID
+is stored as client_uuid, unique per organization. A separate server-generated PK
+is used only for internal relations. Ovitrap responses retain physical UUID as
+id/code, /ovitraps/{id}/ and ?code= resolve that UUID inside organization/scope, and
+reading.ovitrap returns the same physical UUID. Identical phone UUIDs can coexist
+in different organizations without changing either organization's outcome or
+exposing the other row. No public response/type shape or sync result code changes.
