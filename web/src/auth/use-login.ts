@@ -10,7 +10,7 @@ import { forgetIdentity, recordIdentity } from "../session/identity";
 import type { Me } from "../session/me";
 import { ME_QUERY_KEY } from "../session/me-query";
 import { endSessionExpiry } from "../session/session-events";
-import { acceptSession } from "../session/session-revision";
+import { acceptSession, clearSessionUnknown } from "../session/session-revision";
 import type { LoginFailure } from "./login-failure";
 import { requestLogin } from "./request-login";
 import type { Credentials } from "./request-login";
@@ -24,6 +24,7 @@ function replaceSession(me: Me, queryClient: QueryClient, commit: () => void): v
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
   acceptSession();
+  clearSessionUnknown(); // a verified identity is stored: the tab knows who it is
 }
 
 /** Where the user goes after signing in. Runs outside the auth queue (navigation can wait). */

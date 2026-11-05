@@ -3,7 +3,13 @@ import { renderHook } from "@testing-library/react";
 import { describe, expect, test } from "vitest";
 import { makeMe } from "../test/fake-api";
 import { recordIdentity } from "./identity";
-import { acceptSession } from "./session-revision";
+import {
+  acceptSession,
+  beginExternalChange,
+  endExternalChange,
+  markSessionUnknown,
+  clearSessionUnknown,
+} from "./session-revision";
 import { useSessionGuard } from "./use-session-guard";
 
 const OTHER_USER = makeMe({ user: { ...makeMe().user, id: "another-user" } });
@@ -33,6 +39,22 @@ describe("useSessionGuard", () => {
     acceptSession();
 
     expect(request.isStale()).toBe(true);
+  });
+
+  test("a request begun while the session is reconciling or unknown is never sent", () => {
+    const { result } = renderHook(() => useSessionGuard());
+    beginExternalChange();
+    const duringReconcile = result.current();
+    endExternalChange();
+    markSessionUnknown();
+    const duringUnknown = result.current();
+    clearSessionUnknown();
+    const whenKnown = result.current();
+
+    expect(duringReconcile.signal.aborted).toBe(true);
+    expect(duringReconcile.isStale()).toBe(true);
+    expect(duringUnknown.signal.aborted).toBe(true);
+    expect(whenKnown.signal.aborted).toBe(false);
   });
 
   test("unmounting aborts the request and makes it stale", () => {

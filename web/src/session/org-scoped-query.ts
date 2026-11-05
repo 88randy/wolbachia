@@ -2,7 +2,7 @@ import { CancelledError, queryOptions } from "@tanstack/react-query";
 import type { QueryClient, QueryFunction, QueryKey } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { isRecordedIdentity } from "./identity";
-import { currentRevision } from "./session-revision";
+import { currentRevision, isSessionKnown } from "./session-revision";
 
 /** Elements of the scope prefix: `["org", userId, organizationSlug]`. */
 const SCOPE_LENGTH = 3;
@@ -80,9 +80,15 @@ export function orgScopedQueryOptions<TData>(
     // Waits for `/me/` after another tab changed the session: the cached identity may be stale.
     enabled: identity.isSettled,
     queryFn: async (context) => {
-      // Known state only: a render that still holds an identity the cache no longer records
+      // Only in the `known` state (synchronously, at start): while reconciling or unknown the
+      // cached identity cannot be trusted. Also: a render that still holds an identity the cache no longer records
       // (another identity was recorded a moment ago) must not send a request under its key.
-      if (!isRecordedIdentity(context.client, identity.userId, identity.organizationSlug)) {
+      const isTrusted = isRecordedIdentity(
+        context.client,
+        identity.userId,
+        identity.organizationSlug,
+      );
+      if (!isSessionKnown() || !isTrusted) {
         throw new CancelledError({ revert: true });
       }
       const started = currentRevision();

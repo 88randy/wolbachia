@@ -2,16 +2,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import { useEffect } from "react";
 import { useApiClient } from "../api/ApiClientProvider";
-import { ME_QUERY_KEY } from "./me-query";
 import { reconcileSession } from "./session-reconcile";
 import { subscribeToSessionChanged } from "./session-sync";
 
 /**
  * Cross-tab session sync (#82): when another tab announces a session change, reconcile with
  * `/me/` (`reconcileSession`) and run the route guards again (the new user may not be allowed on
- * this page). Also asks `/me/` whenever this tab becomes visible or focused (cheap), so a tab that
- * missed an announcement still reconciles; `recordIdentity` drops the cache if the answer names
- * someone else.
+ * this page). Also verifies `/me/` whenever this tab becomes visible or focused, so a tab that
+ * missed an announcement still reconciles.
  */
 export function useCrossTabSession(): void {
   const queryClient = useQueryClient();
@@ -27,9 +25,11 @@ export function useCrossTabSession(): void {
     [queryClient, client, router],
   );
   useEffect(() => {
+    // A tab that missed the announcement still reconciles: asking `/me/` is cheap, and the tab is
+    // blocked until it answers. Identity changes re-run the guards through `recordIdentity`.
     const refresh = (): void => {
       if (document.visibilityState === "visible") {
-        void queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
+        void reconcileSession(queryClient, client, "verify");
       }
     };
     document.addEventListener("visibilitychange", refresh);
@@ -38,5 +38,5 @@ export function useCrossTabSession(): void {
       document.removeEventListener("visibilitychange", refresh);
       window.removeEventListener("focus", refresh);
     };
-  }, [queryClient]);
+  }, [queryClient, client]);
 }

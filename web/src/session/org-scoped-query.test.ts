@@ -5,7 +5,12 @@ import { describe, expect, test } from "vitest";
 import { findUnscopedQueries } from "../test/find-unscoped-queries";
 import { orgScopedQueryOptions } from "./org-scoped-query";
 import type { SessionIdentity } from "./org-scoped-query";
-import { changeIdentity } from "./session-revision";
+import {
+  beginExternalChange,
+  changeIdentity,
+  endExternalChange,
+  markSessionUnknown,
+} from "./session-revision";
 
 const NORTE: SessionIdentity = {
   userId: "u1",
@@ -63,6 +68,27 @@ describe("orgScopedQueryOptions", () => {
     answer(5);
 
     await expect(request).rejects.toBeInstanceOf(CancelledError);
+  });
+
+  test("refuses to start while the session is reconciling or unknown, without calling the request", async () => {
+    let calls = 0;
+    const { queryFn } = orgScopedQueryOptions(NORTE, {
+      key: ["things"],
+      queryFn: () => {
+        calls += 1;
+        return Promise.resolve(1);
+      },
+    });
+    if (typeof queryFn !== "function") throw new TypeError("expected a function");
+    const context = { client: new QueryClient(), queryKey: [] } as never;
+
+    beginExternalChange();
+    await expect(queryFn(context)).rejects.toBeInstanceOf(CancelledError);
+    endExternalChange();
+    markSessionUnknown();
+    await expect(queryFn(context)).rejects.toBeInstanceOf(CancelledError);
+
+    expect(calls).toBe(0);
   });
 
   test("does not run while the tab waits for /me/ after another tab changed the session", () => {

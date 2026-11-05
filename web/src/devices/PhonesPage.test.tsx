@@ -226,7 +226,9 @@ describe("phones list (W67)", () => {
     announceFromAnotherTab();
 
     expect(await screen.findByText("No pudimos verificar tu sesión")).toBeDefined();
-    expect(screen.queryByText("Teléfono de Norte")).toBeNull();
+    // The page stays mounted (drafts are kept) but inert, and nothing is asked in this state.
+    expect(screen.getByRole("main", { hidden: true }).hasAttribute("inert")).toBe(true);
+    expect(devicesRequests(api)).toHaveLength(1);
     const requestsBefore = devicesRequests(api).length;
     api.setRoute(ME, Response.json(ALLOWED));
     api.setRoute(DEVICES, pageOf([phone({ label: "Teléfono de Sur" })]));
@@ -235,6 +237,31 @@ describe("phones list (W67)", () => {
     expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
     expect(screen.queryByText("No pudimos verificar tu sesión")).toBeNull();
     expect(requestsBefore).toBe(1);
+  });
+
+  test("a tab that missed the broadcast reconciles on focus: blocked until /me/ answers, then the new identity's data (#82)", async () => {
+    const newMe = (() => {
+      let release: (response: Response) => void = () => undefined;
+      const promise = new Promise<Response>((resolve) => {
+        release = resolve;
+      });
+      return { promise, release };
+    })();
+    const { api } = await open(pageOf([phone({ label: "Teléfono de Norte" })]));
+    await screen.findByRole("row", { name: /Teléfono de Norte/ });
+    api.setRoute(ME, () => newMe.promise);
+    api.setRoute(DEVICES, pageOf([phone({ label: "Teléfono de Sur" })]));
+
+    window.dispatchEvent(new Event("focus"));
+
+    expect(await screen.findByText("Verificando tu sesión…")).toBeDefined();
+    expect(screen.getByRole("main", { hidden: true }).hasAttribute("inert")).toBe(true);
+    expect(devicesRequests(api)).toHaveLength(1);
+    newMe.release(Response.json({ ...ALLOWED, organization: makeOrganization("sur", "Sur") }));
+
+    expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
+    expect(screen.queryByText("Verificando tu sesión…")).toBeNull();
+    expect(screen.getByRole("main").hasAttribute("inert")).toBe(false);
   });
 
   test("another tab signs in as someone else while this tab pages: no old rows, and the late answer is dropped (#82)", async () => {

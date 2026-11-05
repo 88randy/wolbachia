@@ -9,6 +9,7 @@ import { renderApp } from "../test/render-app";
 import type { Me } from "./me";
 import { clearOrganizationSlug } from "./organization-slug";
 import { endSessionExpiry } from "./session-events";
+import { isSessionKnown, markSessionUnknown } from "./session-revision";
 
 const ME = "GET /api/v1/me/";
 const LOGIN = "POST /api/v1/auth/login/";
@@ -359,6 +360,21 @@ describe("the dialog cannot be closed from the keyboard", () => {
 });
 
 describe("the cookie is the truth (#82)", () => {
+  test("a re-authentication from the unknown state makes the identity known again", async () => {
+    const { app } = await openExpired();
+    markSessionUnknown();
+    await screen.findByText("No pudimos verificar tu sesión");
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+
+    await waitFor(() => {
+      expect(isSessionKnown()).toBe(true);
+    });
+    expect(screen.queryByText("No pudimos verificar tu sesión")).toBeNull();
+    expect(app.queryClient.getQueryData<Me>(["me"])).toBeDefined();
+  });
+
   test("a login the server accepted is not dropped when another identity was recorded meanwhile", async () => {
     const login = deferred();
     const userA = makeMe();

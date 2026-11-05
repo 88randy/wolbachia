@@ -20,6 +20,7 @@ export const states = {
   "states.sessionCheck.title": "No pudimos verificar tu sesión",
   "states.sessionCheck.body":
     "Otra pestaña cambió la sesión y no logramos confirmar quién eres. No mostramos datos de la organización hasta saberlo. Revisa tu conexión y reintenta.",
+  "states.sessionCheck.checking": "Verificando tu sesión…",
   "states.offline.banner":
     "Sin conexión. Lo que ves puede no estar actualizado; se actualizará cuando vuelva la red.",
 } as const satisfies AreaCatalog<"states">;

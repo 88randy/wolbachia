@@ -1,7 +1,7 @@
 import { Outlet } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
-import { isSessionUnknown, subscribeToRevision } from "../session/session-revision";
-import { SessionCheckFailed } from "../states/SessionCheckFailed";
+import { sessionState, subscribeToRevision } from "../session/session-revision";
+import { SessionBlocker } from "../states/SessionBlocker";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
 import { useCrossTabSession } from "../session/use-cross-tab-session";
 import { useSessionChanges } from "../session/use-session-changes";
@@ -23,7 +23,7 @@ export function AppShell() {
   useFocusMainOnNavigation();
   useSessionChanges();
   useCrossTabSession();
-  const isUnknown = useSyncExternalStore(subscribeToRevision, isSessionUnknown);
+  const state = useSyncExternalStore(subscribeToRevision, sessionState);
   return (
     <div className={styles.shell}>
       <SkipLink />
@@ -32,9 +32,11 @@ export function AppShell() {
         <Sidebar collapsed={collapsed} onToggle={toggle} canToggle={!isCompact} />
         <div className={styles.column}>
           <TopBar />
-          <main id={MAIN_ID} className={styles.main} tabIndex={-1}>
-            {isUnknown ? <SessionCheckFailed /> : <Outlet />}
+          {/* Org-scoped content only in `known`: the screens stay mounted (drafts are kept) but inert. */}
+          <main id={MAIN_ID} className={styles.main} tabIndex={-1} inert={state !== "known"}>
+            <Outlet />
           </main>
+          {state !== "known" && <SessionBlocker state={state} />}
         </div>
       </div>
       <SessionExpiredDialog />

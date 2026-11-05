@@ -19,7 +19,7 @@ import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
 import { endSessionExpiry } from "./session-events";
 import { reconcileSession } from "./session-reconcile";
-import { acceptSession, currentRevision } from "./session-revision";
+import { acceptSession, clearSessionUnknown, currentRevision } from "./session-revision";
 import { useMe } from "./use-me";
 
 /** The session is back: store `/me/` and drop another user's or organization's cache (synchronous). */
@@ -29,6 +29,7 @@ function restoreSession(me: Me, queryClient: QueryClient, commit: () => void): v
   queryClient.setQueryData(ME_QUERY_KEY, me);
   endSessionExpiry();
   acceptSession();
+  clearSessionUnknown(); // a verified identity is stored: the tab knows who it is
 }
 
 /** After the queue: navigating can wait on the network, so it comes last. */

@@ -1,12 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { sessionIdentityOf } from "./org-scoped-query";
 import type { SessionIdentity } from "./org-scoped-query";
-import {
-  currentRevision,
-  isReconcilingSession,
-  isSessionUnknown,
-  subscribeToRevision,
-} from "./session-revision";
+import { currentRevision, isSessionKnown, subscribeToRevision } from "./session-revision";
 import { useMe } from "./use-me";
 
 /**
@@ -16,7 +11,6 @@ import { useMe } from "./use-me";
 export function useSessionIdentity(): SessionIdentity {
   const me = useMe();
   const revision = useSyncExternalStore(subscribeToRevision, currentRevision);
-  const isReconciling = useSyncExternalStore(subscribeToRevision, isReconcilingSession);
-  const isUnknown = useSyncExternalStore(subscribeToRevision, isSessionUnknown);
-  return sessionIdentityOf(me, revision, !isReconciling && !isUnknown);
+  const isKnown = useSyncExternalStore(subscribeToRevision, isSessionKnown);
+  return sessionIdentityOf(me, revision, isKnown);
 }

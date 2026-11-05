@@ -109,6 +109,16 @@ export function markSessionUnknown(): void {
   emit();
 }
 
+/**
+ * A verification of `/me/` started WITHOUT a change of session (window focus, tab visible): the
+ * tab is `reconciling` until it answers, but the revision stays (nothing changed yet) and the
+ * cache is kept if `/me/` names the same identity.
+ */
+export function beginVerification(): void {
+  reconciling += 1;
+  emit();
+}
+
 /** `/me/` answered: the identity is known again. */
 export function clearSessionUnknown(): void {
   isUnknown = false;
@@ -117,6 +127,18 @@ export function clearSessionUnknown(): void {
 
 export function isSessionUnknown(): boolean {
   return isUnknown;
+}
+
+export type SessionState = "known" | "reconciling" | "unknown";
+
+/** The one place that says whether org-scoped work may run: only in `known`. */
+export function sessionState(): SessionState {
+  if (isUnknown) return "unknown";
+  return reconciling > 0 ? "reconciling" : "known";
+}
+
+export function isSessionKnown(): boolean {
+  return sessionState() === "known";
 }
 
 /** True between a confirmed sign-out and the next accepted login. */
