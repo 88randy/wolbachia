@@ -13,9 +13,11 @@ export function observeSyncSession(engine: SyncEngine, tokens: TokenStore): () =
     const hasAccessChanged = previous.access !== current.access;
     previous = current;
     if (!hasEligibilityChanged && !hasAccessChanged) return;
-    // A new sign-in is an external fix for a worker blocked on needsLogin; everything else is a hint.
-    if (hasEligibilityChanged && current.canSync) engine.notifyConditionsChanged();
-    void engine.hint();
+    // A new sign-in is an explicit trigger: it must reach a pass that is still deciding needsLogin
+    // (requestSync sets the repeat flag), whatever phase was last published. Rotation and session end
+    // are hints that never cut a retry short.
+    if (hasEligibilityChanged && current.canSync) void engine.requestSync();
+    else void engine.hint();
   });
 }
 
