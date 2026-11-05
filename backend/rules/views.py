@@ -128,7 +128,7 @@ class RuleParameterVersionViewSet(
         version = self.get_object()
         payload = VoidSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        void_rule_version(version, request.user, payload.validated_data["reason"])  # type: ignore[arg-type]
+        void_rule_version(version, request.user, **payload.validated_data)  # type: ignore[arg-type]
         return Response(self._read(version))
 
     def _read(self, version: RuleParameterVersion) -> Any:  # noqa: ANN401

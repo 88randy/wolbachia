@@ -6,20 +6,27 @@ from django.utils import timezone
 from accounts.models import User
 from core.exceptions import AlreadyVoidedError
 from core.models import VoidableMixin
-from core.void_reason import validate_void_reason
+from core.void_reason import ResolvedVoidReason, resolve_void_reason
 
 
-def void_record[VoidableT: VoidableMixin](
-    instance: VoidableT, user: User, reason: str
+def void_record[VoidableT: VoidableMixin](  # noqa: PLR0913 -- explicit public void contract
+    instance: VoidableT, user: User, reason: str, reason_code: str
 ) -> VoidableT:
-    """Void a record (writes: voided_at, voided_by, void_reason). Never deletes anything.
+    """Resolve the organization's catalog choice and void the record; never delete it."""
+    choice = resolve_void_reason(instance.organization_id, reason, reason_code)  # type: ignore[attr-defined]
+    return void_validated_record(instance, user, choice)
 
-    The row is locked so two concurrent voids cannot both succeed; the second one gets
-    `AlreadyVoidedError` (409). The reason goes through `validate_void_reason`, so no caller can
-    store an unchecked one. It raises a DRF `ValidationError` (400) on purpose: it is the single
-    validator of every void path and the error handler already answers it with `params`.
+
+def void_validated_record[VoidableT: VoidableMixin](
+    instance: VoidableT, user: User, choice: ResolvedVoidReason
+) -> VoidableT:
+    """Write a choice returned by the resolver without repeating its catalog query.
+
+    Callers must resolve against the target first. Inactive sync choices are for review only.
+    The row lock arbitrates concurrent voids; all four fields are saved together.
     """
-    cleaned_reason = validate_void_reason(reason, "reason")
+    if not choice.is_active or choice.organization_id != instance.organization_id:  # type: ignore[attr-defined]
+        raise ValueError("A void requires an active choice from the target's organization.")
     with transaction.atomic():
         locked = cast(
             VoidableT, type(instance)._default_manager.select_for_update().get(pk=instance.pk)
@@ -28,8 +35,9 @@ def void_record[VoidableT: VoidableMixin](
             raise AlreadyVoidedError
         locked.voided_at = timezone.now()
         locked.voided_by = user
-        locked.void_reason = cleaned_reason
-        locked.save(update_fields=["voided_at", "voided_by", "void_reason"])
+        locked.void_reason = choice.reason
+        locked.void_reason_code = choice.code
+        locked.save(update_fields=["voided_at", "voided_by", "void_reason", "void_reason_code"])
     return locked
 
 

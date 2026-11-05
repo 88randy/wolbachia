@@ -4,6 +4,7 @@ from decimal import Decimal
 import pytest
 from django.utils import timezone
 
+from catalogs.seeds import seed_default_catalogs
 from core.exceptions import AlreadyVoidedError, FieldValidationError
 from core.services import void_record
 from rules.exceptions import VersionNotScheduledError
@@ -411,7 +412,8 @@ def test_today_version_is_always_allowed_even_if_one_already_started_today(now) 
 def test_a_voided_future_version_frees_its_date(now) -> None:
     parameter = RuleParameterFactory()
     wrong = create_rule_version(parameter, spec("99", date(2026, 11, 10)), UserFactory())
-    void_rule_version(wrong, UserFactory(), "a typo in the value")
+    seed_default_catalogs(wrong.organization)
+    void_rule_version(wrong, UserFactory(), "a typo in the value", "other")
 
     fixed = create_rule_version(parameter, spec("60", date(2026, 11, 10)), UserFactory())
 
@@ -437,7 +439,8 @@ def test_void_marks_a_scheduled_version_with_author_and_reason(now) -> None:
     version = create_rule_version(RuleParameterFactory(), spec(), UserFactory())
     admin = UserFactory()
 
-    voided = void_rule_version(version, admin, "wrong value")
+    seed_default_catalogs(version.organization)
+    voided = void_rule_version(version, admin, "wrong value", "other")
 
     assert (voided.voided_by, voided.void_reason) == (admin, "wrong value")
     assert voided.voided_at == NOW
@@ -449,8 +452,9 @@ def test_void_refuses_a_version_that_already_took_effect(now, hours) -> None:
         effective_from=NOW + timedelta(hours=hours), effective_date=date(2026, 11, 1)
     )
 
+    seed_default_catalogs(started.organization)
     with pytest.raises(VersionNotScheduledError):
-        void_rule_version(started, UserFactory(), "already in force, too late")
+        void_rule_version(started, UserFactory(), "already in force, too late", "other")
 
     started.refresh_from_db()
     assert started.voided_at is None
@@ -458,10 +462,11 @@ def test_void_refuses_a_version_that_already_took_effect(now, hours) -> None:
 
 def test_void_twice_is_already_voided(now) -> None:
     version = create_rule_version(RuleParameterFactory(), spec(), UserFactory())
-    void_rule_version(version, UserFactory(), "first void, with reason")
+    seed_default_catalogs(version.organization)
+    void_rule_version(version, UserFactory(), "first void, with reason", "other")
 
     with pytest.raises(AlreadyVoidedError):
-        void_rule_version(version, UserFactory(), "second void, with reason")
+        void_rule_version(version, UserFactory(), "second void, with reason", "other")
 
 
 def test_voided_version_is_excluded_from_value_in_force_and_snapshot(now) -> None:
@@ -475,7 +480,8 @@ def test_voided_version_is_excluded_from_value_in_force_and_snapshot(now) -> Non
     future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
     before = build_rules_snapshot(parameter.organization, NOW)
 
-    void_rule_version(future, UserFactory(), "a typo in the value")
+    seed_default_catalogs(future.organization)
+    void_rule_version(future, UserFactory(), "a typo in the value", "other")
     after = build_rules_snapshot(parameter.organization, NOW)
 
     assert before["next_change_at"] is not None
@@ -487,7 +493,8 @@ def test_voided_version_is_excluded_from_value_in_force_and_snapshot(now) -> Non
 def test_voided_version_stays_in_history_with_status_voided(now) -> None:
     parameter = RuleParameterFactory()
     future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
-    void_rule_version(future, UserFactory(), "a typo in the value")
+    seed_default_catalogs(future.organization)
+    void_rule_version(future, UserFactory(), "a typo in the value", "other")
 
     assert [v.status for v in list_versions(parameter, NOW)] == ["voided"]
 
@@ -501,7 +508,8 @@ def test_a_voided_version_does_not_count_as_in_force_when_it_would_have_started(
         effective_date=date(2026, 10, 25),
     )
     future = create_rule_version(parameter, spec("60", date(2026, 11, 6)), UserFactory())
-    void_rule_version(future, UserFactory(), "a typo in the value")
+    seed_default_catalogs(future.organization)
+    void_rule_version(future, UserFactory(), "a typo in the value", "other")
 
     later = NOW + timedelta(days=10)
 
@@ -553,7 +561,8 @@ def test_values_in_force_ignores_voided_versions_and_other_organizations() -> No
         value=999,
         effective_from=NOW - timedelta(days=1),
     )
-    void_record(voided, UserFactory(), "a typo in the value")
+    seed_default_catalogs(voided.organization)
+    void_record(voided, UserFactory(), "a typo in the value", "other")
 
     values = get_values_in_force(parameter.organization, NOW)
 

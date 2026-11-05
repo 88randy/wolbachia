@@ -1,7 +1,8 @@
 """The one place that decides whether a void reason is acceptable (issue #32).
 
 Every void path goes through it: `POST .../void/` (`VoidSerializer`), the phone's `record.void`
-event and `core.services.void_record` itself, so no caller can write a shorter reason.
+event and `core.services.void_record` itself. The organization catalog selects the reason;
+only Other requires the visible-character minimum (#80).
 Errors carry a machine code and params, never user-facing text.
 
 What counts as a character is decided here once (the web mirrors it in `count-characters.ts`):
@@ -9,18 +10,26 @@ invisible text (zero-width, combining marks, spaces, filler glyphs) never reache
 """
 
 import unicodedata
+from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 from django.conf import settings
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ErrorDetail
 
+from catalogs.models import CatalogItem
+from core.models import OTHER_ITEM_CODE
 from core.validation import params_message
 
 VOID_REASON_MAX_LENGTH = 1000
 VOID_REASON_TOO_SHORT = "void_reason_too_short"
 VOID_REASON_INVALID_CHARACTERS = "void_reason_invalid_characters"
 MAX_LENGTH_CODE = "max_length"
+VOID_REASON_CATALOG_SLUG = "void-reason"
+VOID_REASON_CODE_UNKNOWN = "void_reason_code_unknown"
+VOID_REASON_REQUIRED_FOR_OTHER = "void_reason_required_for_other"
 
 # Text that shows nothing: format (zero-width, joiners), combining marks, every space and line
 # separator, private-use and unassigned code points (no font draws them). They are not trimmed away, only ignored for the minimum.
@@ -68,7 +77,9 @@ def _refusal(code: str, params: dict[str, Any], field: str | None) -> serializer
     return serializers.ValidationError({field: detail} if field else detail)
 
 
-def validate_void_reason(reason: str, field: str | None = None) -> str:
+def validate_void_reason(
+    reason: str, field: str | None = None, *, enforce_minimum: bool = True
+) -> str:
     """Normalize (NFC, CRLF as LF) and trim `reason`; returns the text to store.
 
     Raises a DRF `ValidationError` (400 `validation_error`; the error handler keeps its `params`)
@@ -80,28 +91,56 @@ def validate_void_reason(reason: str, field: str | None = None) -> str:
     if _has_forbidden_characters(cleaned):
         raise _refusal(VOID_REASON_INVALID_CHARACTERS, {}, field)
     minimum = void_reason_min_length()
-    if visible_length(cleaned) < minimum:
+    if enforce_minimum and visible_length(cleaned) < minimum:
         raise _refusal(VOID_REASON_TOO_SHORT, {"min_length": minimum}, field)
     if len(cleaned) > VOID_REASON_MAX_LENGTH:
         raise _refusal(MAX_LENGTH_CODE, {"max_length": VOID_REASON_MAX_LENGTH}, field)
     return cleaned
 
 
+@dataclass(frozen=True)
+class ResolvedVoidReason:
+    organization_id: UUID
+    code: str
+    reason: str
+    is_active: bool
+
+
+def resolve_void_reason(  # noqa: PLR0913 -- the public void contract plus sync policy
+    organization_id: UUID, reason: str, reason_code: str, *, allow_inactive: bool = False
+) -> ResolvedVoidReason:
+    """Resolve in the target's organization with one query, then normalize the note.
+
+    Sync may inspect an inactive choice for review, but invalid text is always refused first.
+    Unknown, foreign and missing catalogs share one error without echoing user input.
+    """
+    if not reason_code.strip():
+        raise _refusal("required", {}, "reason_code")
+    item = CatalogItem.objects.filter(
+        organization_id=organization_id,
+        catalog__organization_id=organization_id,
+        catalog__slug=VOID_REASON_CATALOG_SLUG,
+        code=reason_code,
+    ).first()
+    if item is None or (not item.is_active and not allow_inactive):
+        raise _refusal(VOID_REASON_CODE_UNKNOWN, {}, "reason_code")
+    is_other = reason_code == OTHER_ITEM_CODE
+    if is_other and not reason.strip():
+        raise _refusal(VOID_REASON_REQUIRED_FOR_OTHER, {}, "reason")
+    cleaned = validate_void_reason(reason, "reason", enforce_minimum=is_other)
+    return ResolvedVoidReason(organization_id, reason_code, cleaned, item.is_active)
+
+
+@extend_schema_field({"type": "string", "maxLength": VOID_REASON_MAX_LENGTH})
 class VoidReasonField(serializers.CharField):
-    """A void reason in a request body. Blank is allowed here so the one validator answers it
-    (`void_reason_too_short`); a missing field stays `required`."""
+    """Text shape only; the resolver owns text checks and their #32 error codes."""
 
-    def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401
-        super().__init__(
-            allow_blank=True, trim_whitespace=True, max_length=VOID_REASON_MAX_LENGTH, **kwargs
-        )
-
-    def run_validation(self, data: Any = serializers.empty) -> Any:  # noqa: ANN401
-        value = super().run_validation(data)
-        return validate_void_reason(value)
+    def run_validators(self, value: str) -> None:
+        return None
 
 
 class VoidSerializer(serializers.Serializer[Any]):
-    """Body of `POST .../void/`."""
+    """Shared HTTP and sync body. The target-aware resolver validates the choice and text."""
 
-    reason = VoidReasonField()
+    reason_code = serializers.CharField(allow_blank=True, max_length=64)
+    reason = VoidReasonField(allow_blank=True, required=False, default="", trim_whitespace=False)

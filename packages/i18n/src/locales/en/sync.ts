@@ -26,6 +26,10 @@ export const sync: Record<keyof typeof source, string> = {
     "The record you wanted to void doesn't exist on the server. Tell your supervisor.",
   "sync.result.voidTargetNotOwned":
     "Only the person who captured a record can void it. Ask your supervisor to correct it.",
+  "sync.result.voidReasonCodeUnknown":
+    "This reason is no longer available. Refresh the catalogs and choose another reason.",
+  "sync.result.voidReasonCodeDeactivated":
+    "This reason changed since the last update. A supervisor will review the void; the original record remains intact.",
   "sync.result.alreadyVoided": "This record was already voided. You have nothing else to do.",
   "sync.result.clockSkew":
     "Your phone's clock looks wrong, so a supervisor will review this record. Check the date and time on your phone.",

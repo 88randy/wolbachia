@@ -19,3 +19,9 @@ The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md
 Dependency: `field_sync` creates `reviews.ReviewItem` rows (`reviews.services`) and reads them for `changes`; `reviews` only points at `FieldEvent` by a string foreign key and never imports `field_sync` code except constants and the event model type. Keep it one-way.
 
 Rules for code in this app and in handlers: nothing is deleted; a handler writes only inside the savepoint the pipeline opens and calls no external service; no user-facing text (codes and params only); a new result code needs a row in `docs/sync.md` and `sync.result.*` keys in both languages of `packages/i18n` (a test checks it). Tests: `backend/tests/test_sync_*.py`; test-only event types live in `tests/testapp/handlers.py`.
+
+`record.void` schema 1 takes `{reason_code, reason?}` (#80). The shared organization-scoped
+resolver rejects unknown/foreign codes and invalid text before checking deactivation. A known
+inactive choice raises `EventNeedsReview("void_reason_code_deactivated")` and leaves every
+target void field intact, including when the batch is already under review. Applied voids store
+both code and note. Supervisor acceptance and the target's `on_void` hook remain #22.

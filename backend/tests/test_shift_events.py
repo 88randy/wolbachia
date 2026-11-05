@@ -9,6 +9,7 @@ import pytest
 from django.utils import timezone
 
 from catalogs.models import CatalogItem
+from catalogs.seeds import seed_default_catalogs
 from field_sync.models import FieldEvent
 from organizations.models import Organization
 from shifts.models import CheckResult, Motorcycle, MotorcycleCheck, Shift, ShiftStatus
@@ -462,8 +463,11 @@ def test_a_shift_event_cannot_be_voided_by_its_author(
     if kind == "close":
         phone.sync([open_event("M-03", shift_id)])
     phone.sync([target])
+    seed_default_catalogs(phone.organization)
     void = event(
-        type="record.void", payload={"reason": "mistake in the shift"}, voids_event_id=target["id"]
+        type="record.void",
+        payload={"reason_code": "other", "reason": "mistake in the shift"},
+        voids_event_id=target["id"],
     )
 
     result = only_result(phone.sync([void]))

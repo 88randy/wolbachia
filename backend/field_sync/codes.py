@@ -4,6 +4,10 @@ The phone translates each code with `packages/i18n` (keys `sync.result.*`); the 
 returns user-facing text. `ACCEPTED_CODE` lives in `models` because it is stored on events.
 """
 
+from core.void_reason import VOID_REASON_CODE_UNKNOWN
+
+VOID_REASON_CODE_DEACTIVATED = "void_reason_code_deactivated"
+
 VOID_EVENT_TYPE = "record.void"
 
 UNSUPPORTED_EVENT_TYPE = "unsupported_event_type"
@@ -26,5 +30,6 @@ REJECTED_CODES = (
     VOID_TARGET_NOT_FOUND,
     VOID_TARGET_NOT_OWNED,
     ALREADY_VOIDED,
+    VOID_REASON_CODE_UNKNOWN,
 )
-IN_REVIEW_CODES = (CLOCK_SKEW, FINAL_UPLOAD_AFTER_REVOKE)
+IN_REVIEW_CODES = (CLOCK_SKEW, FINAL_UPLOAD_AFTER_REVOKE, VOID_REASON_CODE_DEACTIVATED)

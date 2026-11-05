@@ -14,6 +14,9 @@ export const voiding = {
 
   // What went wrong. Generic failures use `errors.api.*`.
   "voiding.error.title": "No pudimos anular",
+  "voiding.error.codeUnknown":
+    "Este motivo ya no está disponible. Actualiza los catálogos y elige otro motivo.",
+  "voiding.error.requiredForOther": "Escribe el motivo al elegir Otro (especificar).",
   "voiding.error.tooShort": "El motivo necesita al menos {min} caracteres. Cuéntanos un poco más.",
   "voiding.error.invalidCharacters":
     "El motivo tiene caracteres que no se pueden guardar (de control o que cambian el sentido del texto). Quítalos y vuelve a intentar.",

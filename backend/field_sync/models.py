@@ -50,7 +50,9 @@ class FieldEvent(ImmutableMixin, VoidableMixin, OrgScopedModel):
     on accepted or in-review `record.void` events (the target was verified).
     """
 
-    mutable_fields: ClassVar[frozenset[str]] = frozenset({"voided_at", "voided_by", "void_reason"})
+    mutable_fields: ClassVar[frozenset[str]] = frozenset(
+        {"voided_at", "voided_by", "void_reason", "void_reason_code"}
+    )
 
     type = models.CharField(max_length=TYPE_MAX_LENGTH, db_index=True)
     schema_version = models.PositiveSmallIntegerField()

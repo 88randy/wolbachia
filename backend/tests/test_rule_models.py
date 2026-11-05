@@ -4,6 +4,7 @@ import pytest
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, IntegrityError, connection, transaction
 
+from catalogs.seeds import seed_default_catalogs
 from core.exceptions import ImmutableRecordError, PhysicalDeleteForbiddenError
 from core.services import void_record
 from rules.models import RuleParameterVersion
@@ -155,7 +156,8 @@ def test_voiding_through_save_is_allowed_once() -> None:
     version = RuleParameterVersionFactory()
     user = UserFactory()
 
-    voided = void_record(version, user, "a typo in the value")
+    seed_default_catalogs(version.organization)
+    voided = void_record(version, user, "a typo in the value", "other")
 
     assert (voided.voided_at is not None, voided.void_reason) == (True, "a typo in the value")
 
@@ -178,7 +180,8 @@ def test_raw_delete_is_rejected_by_the_database() -> None:
 
 def test_raw_update_cannot_change_a_stored_void_or_unvoid_it() -> None:
     version = RuleParameterVersionFactory()
-    void_record(version, UserFactory(), "a typo in the value")
+    seed_default_catalogs(version.organization)
+    void_record(version, UserFactory(), "a typo in the value", "other")
 
     with pytest.raises(DatabaseError, match="insert-only"), connection.cursor() as cursor:
         cursor.execute(
@@ -194,7 +197,7 @@ def test_raw_update_may_void_a_version_from_null() -> None:
     with connection.cursor() as cursor:
         cursor.execute(
             "UPDATE rules_ruleparameterversion SET voided_at = now(), voided_by_id = %s,"
-            " void_reason = 'x' WHERE id = %s",
+            " void_reason = 'x', void_reason_code = 'other' WHERE id = %s",
             [user.id, version.id],
         )
 

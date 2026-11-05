@@ -8,7 +8,7 @@ from rules import permissions as rule_codes
 from rules.models import RuleParameterVersion, ValueType
 from tests.factories import RuleParameterFactory, RuleParameterVersionFactory
 
-pytestmark = pytest.mark.django_db
+pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("void_catalog")]
 
 ADMIN_CODES = (
     rule_codes.RULE_PARAMETER_READ,
@@ -282,7 +282,9 @@ def test_another_organizations_version_id_under_an_own_key_is_404(admin, speed, 
 
     assert admin.get(versions_url("speed_lock_kmh", f"{foreign.id}/")).status_code == 404
     response = admin.post(
-        versions_url("speed_lock_kmh", f"{foreign.id}/void/"), {"reason": "x"}, format="json"
+        versions_url("speed_lock_kmh", f"{foreign.id}/void/"),
+        {"reason_code": "other", "reason": "x"},
+        format="json",
     )
     assert response.status_code == 404
 
@@ -299,7 +301,7 @@ def test_void_a_scheduled_version_returns_it_voided(admin, speed) -> None:
 
     response = admin.post(
         versions_url("speed_lock_kmh", f"{version.id}/void/"),
-        {"reason": "a typo in the value"},
+        {"reason_code": "other", "reason": "a typo in the value"},
         format="json",
     )
 
@@ -308,6 +310,7 @@ def test_void_a_scheduled_version_returns_it_voided(admin, speed) -> None:
         "voided",
         "a typo in the value",
     )
+    assert response.data["void_reason_code"] == "other"
     assert response.data["voided_by"] is not None
     assert response.data["voided_at"] is not None
 
@@ -316,7 +319,7 @@ def test_voided_version_stays_in_the_history(admin, speed) -> None:
     version = scheduled(speed)
     admin.post(
         versions_url("speed_lock_kmh", f"{version.id}/void/"),
-        {"reason": "a typo in the value"},
+        {"reason_code": "other", "reason": "a typo in the value"},
         format="json",
     )
 
@@ -330,7 +333,7 @@ def test_void_a_version_in_force_is_409_version_not_scheduled(admin, speed) -> N
 
     response = admin.post(
         versions_url("speed_lock_kmh", f"{version.id}/void/"),
-        {"reason": "a typo in the value"},
+        {"reason_code": "other", "reason": "a typo in the value"},
         format="json",
     )
 
@@ -340,9 +343,11 @@ def test_void_a_version_in_force_is_409_version_not_scheduled(admin, speed) -> N
 
 def test_void_twice_is_409_already_voided(admin, speed) -> None:
     url = versions_url("speed_lock_kmh", f"{scheduled(speed).id}/void/")
-    admin.post(url, {"reason": "first void, with reason"}, format="json")
+    admin.post(url, {"reason_code": "other", "reason": "first void, with reason"}, format="json")
 
-    response = admin.post(url, {"reason": "second void, with reason"}, format="json")
+    response = admin.post(
+        url, {"reason_code": "other", "reason": "second void, with reason"}, format="json"
+    )
 
     assert (response.status_code, response.data["code"]) == (409, "already_voided")
 
@@ -350,7 +355,7 @@ def test_void_twice_is_409_already_voided(admin, speed) -> None:
 def test_void_requires_a_reason(admin, speed) -> None:
     url = versions_url("speed_lock_kmh", f"{scheduled(speed).id}/void/")
 
-    response = admin.post(url, {"reason": " "}, format="json")
+    response = admin.post(url, {"reason_code": "other", "reason": " "}, format="json")
 
     assert response.status_code == 400
     assert "reason" in response.data["fields"]
@@ -361,7 +366,7 @@ def test_a_date_freed_by_voiding_can_be_scheduled_again(admin, speed) -> None:
     created = admin.post(versions_url("speed_lock_kmh"), payload, format="json")
     admin.post(
         versions_url("speed_lock_kmh", f"{created.data['id']}/void/"),
-        {"reason": "a typo in the value"},
+        {"reason_code": "other", "reason": "a typo in the value"},
         format="json",
     )
 
