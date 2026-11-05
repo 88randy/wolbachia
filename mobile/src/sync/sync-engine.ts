@@ -31,7 +31,8 @@ type Listener = () => void;
  * The rule that makes a race impossible: **at most one pass runs at a time.** `requestSync`
  * while a pass is running does not start another one; it sets `#again`, and the running loop
  * makes exactly one more pass when it finishes. Since only a pass moves events through `sending`
- * (see `runSyncPass`), no two writers ever touch the same event.
+ * (see `runSyncPass`), no two writers ever touch the same event. Pending recovery must finish
+ * inside this loop before any pass can select a batch.
  */
 export class SyncEngine {
   readonly #deps: SyncEngineDeps;
@@ -40,7 +41,7 @@ export class SyncEngine {
   #snapshot: SyncSnapshot = INITIAL_SNAPSHOT;
   #running: Promise<void> | null = null;
   #started: Promise<void> | null = null;
-  #initialized = false;
+  #isRecoveryPending = true;
   #again = false;
   #forceOffline = false;
   #failuresInARow = 0;
@@ -110,21 +111,29 @@ export class SyncEngine {
 
   async #loop(): Promise<void> {
     try {
-      if (!this.#initialized) {
-        await this.#deps.pass.outbox.recoverInterrupted();
-        await this.#refresh({ lastSyncAt: await this.#deps.pass.kv.get(KV_KEYS.lastSyncAt) });
-        this.#initialized = true;
-      }
       let shouldRun = true;
       while (shouldRun) {
         this.#again = false;
+        await this.#recoverPending();
         await this.#runOnce();
         shouldRun = this.#wasRepeatRequested();
       }
     } catch (error) {
-      // The database itself failed: nothing is lost (events are saved before they are sent).
+      // Recovery can fail too; schedule before refreshing counts touches storage again.
       this.#deps.report(error);
+      try {
+        await this.#retryLater({ countsAsFailure: true, code: "storage" });
+      } catch (retryError) {
+        this.#deps.report(retryError);
+      }
     }
+  }
+
+  async #recoverPending(): Promise<void> {
+    if (!this.#isRecoveryPending) return;
+    await this.#deps.pass.outbox.recoverInterrupted();
+    await this.#refresh({ lastSyncAt: await this.#deps.pass.kv.get(KV_KEYS.lastSyncAt) });
+    this.#isRecoveryPending = false;
   }
 
   // A method, so the flag is read again after the awaits (a pass may have asked for another).
@@ -154,8 +163,9 @@ export class SyncEngine {
     try {
       return await runSyncPass(this.#deps.pass, this.#passState);
     } catch (error) {
+      this.#isRecoveryPending = true;
       this.#deps.report(error);
-      await this.#deps.pass.outbox.recoverInterrupted();
+      await this.#recoverPending();
       return null;
     }
   }

@@ -203,6 +203,41 @@ void describe("sync engine", () => {
     assert.deepEqual(sent, [event.id, event.id]);
   });
 
+  void it("resends without restarting after both the pending transition and recovery fail", async () => {
+    const event = makeEnvelope();
+    const sent: string[][] = [];
+    let isStorageAvailable = true;
+    const { engine, stores, scheduled } = await harness((request) => {
+      sent.push(request.events.map((item) => item.id));
+      if (sent.length === 1) {
+        isStorageAvailable = false;
+        return Promise.resolve(failure({ kind: "network" }));
+      }
+      return Promise.resolve(answer(request.events.map((item) => accepted(item.id))));
+    });
+    await stores.outbox.enqueue(event);
+    const run = stores.db.runAtomically.bind(stores.db);
+    mock.method(stores.db, "runAtomically", async (statements: readonly SqlStatement[]) => {
+      if (!isStorageAvailable) throw new Error("Storage unavailable");
+      await run(statements);
+    });
+
+    await engine.requestSync();
+
+    assert.equal((await stores.outbox.countByStatus()).sending, 1);
+    assert.deepEqual(scheduled, [1000]);
+    await engine.requestSync();
+    assert.deepEqual(scheduled, [1000, 2000]);
+    assert.deepEqual(sent, [[event.id]]);
+    isStorageAvailable = true;
+    await engine.retryNow();
+
+    assert.deepEqual(sent, [[event.id], [event.id]]);
+    assert.equal((await stores.outbox.countByStatus()).sending, 0);
+    assert.equal((await stores.outbox.countByStatus()).sent, 1);
+    assert.equal(engine.getSnapshot().phase, "idle");
+  });
+
   void it("repeated start calls cannot recover an event being uploaded by the live worker", async () => {
     const gate = deferred<SyncCallResult>();
     const reached = deferred<undefined>();
