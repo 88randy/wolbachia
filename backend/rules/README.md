@@ -48,10 +48,17 @@ Seed reruns add versions only when none exist and preserve all existing versions
 including deactivated/voided history. Bounds are reviewed definitions and are
 updated to the accepted ranges on seed rerun. Historical out-of-bound values are
 not rewritten. Fuel min/max edits serialize on the organization before parameter
-locks and must remain ordered (min < max) at every scheduled transition; voiding
+locks (Organization uses FOR NO KEY UPDATE, including nested seeds) and must remain ordered (min < max) at every scheduled transition; voiding
 a scheduled bound cannot invalidate another bound. Conflict is a value field
 error fuel_bounds_conflict. Reuse `seed_organization_defaults --apply` for existing
-organizations. The idle rule is the mobile local PIN/biometric lock, not web/token
+organizations. Before inserting any missing default versions, the seed stages
+both proposed fuel defaults together and validates the resulting current/future
+non-voided timeline with the same validator used by manual edits. An incompatible
+existing or scheduled counterpart raises the explicit value-field conflict
+fuel_bounds_conflict (400 validation_error). The entire organization seed rolls
+back, including profile grants, catalogs, new definitions, bound updates and
+versions. Existing versions and scheduled transitions are never rewritten to make
+a default fit. The idle rule is the mobile local PIN/biometric lock, not web/token
 expiry. Fuel anomalies mark review, not a capture/shift-close ban.
 
 

@@ -34,6 +34,7 @@ from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UN
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    FIELD_EVENT_SYNC,
     "portal.read",
     "organization.read",
     "organization.update",
@@ -138,7 +139,7 @@ def seed_default_permission_codes(organization: Organization) -> PermissionSeedP
     grants: dict[str, tuple[str, ...]] = {}
     skipped = []
     with transaction.atomic():
-        Organization.objects.select_for_update().get(pk=organization.pk)
+        Organization.objects.select_for_update(no_key=True).get(pk=organization.pk)
         locked = (
             Profile.objects.select_for_update()
             .filter(organization=organization, slug__in=DEFAULT_PROFILE_PERMISSIONS)
@@ -190,7 +191,7 @@ def seed_organization_defaults(organization: Organization) -> DefaultsPlan:
     from organizations.services import seed_default_profiles
 
     with transaction.atomic():
-        Organization.objects.select_for_update().get(pk=organization.pk)
+        Organization.objects.select_for_update(no_key=True).get(pk=organization.pk)
         missing_profiles = _missing_profile_slugs(organization)
         seed_default_profiles(organization)
         missing_catalogs = tuple(missing_catalog_slugs(organization))

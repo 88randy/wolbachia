@@ -539,3 +539,248 @@ def test_seed_plan_reports_missing_items_and_versions_in_existing_launch_definit
     assert "motorcycle-check-item" in plan.missing_catalogs
     assert "speed_unlock_seconds" in plan.missing_parameters
     assert "coordinator" in plan.missing_profiles
+
+
+def test_default_admin_bundle_covers_courier_permissions_within_scope(monkeypatch):
+    from field_sync.permissions import FIELD_EVENT_SYNC
+    from organizations.defaults import DEFAULT_PROFILE_PERMISSIONS
+
+    center, quadrant, foreign_center, foreign_quadrant = [str(uuid4()) for _ in range(4)]
+    membership = SimpleNamespace(
+        scope={
+            "centers": dimension("selected", center),
+            "quadrants": dimension("selected", quadrant),
+        },
+        is_active=True,
+        organization=SimpleNamespace(is_active=True),
+        user=SimpleNamespace(is_active=True),
+    )
+    admin = SimpleNamespace(
+        slug="admin", scope=scope(), permission_codes=DEFAULT_PROFILE_PERMISSIONS["admin"]
+    )
+    monkeypatch.setattr("organizations.selectors.list_active_profiles", lambda member: [admin])
+
+    effective = services.effective_scope(membership)
+
+    for permission in DEFAULT_PROFILE_PERMISSIONS["courier"]:
+        assert effective.allows(permission, center, quadrant), permission
+    assert not effective.allows(FIELD_EVENT_SYNC, foreign_center, quadrant)
+    assert not effective.allows(FIELD_EVENT_SYNC, center, foreign_quadrant)
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("entry_point", ["configuration", "defaults", "permissions", "rules"])
+def test_organization_serialization_allows_catalog_writer_foreign_keys(entry_point):
+    """Commit a real catalog writer while each organization serialization lock is held.
+
+    The SQL wrapper gates scheduling only. A nested upgrade to FOR UPDATE fails the
+    same commit handshake, so fixing just the outer seed lock cannot pass this test.
+    """
+    from queue import Queue
+
+    from django.db import DatabaseError
+
+    from catalogs.models import CatalogItem
+    from catalogs.services import CatalogItemSpec, create_catalog_item
+    from organizations.defaults import seed_default_permission_codes, seed_organization_defaults
+    from rules.seeds import seed_default_rule_parameters
+    from tests.factories import CatalogFactory, OrganizationFactory, UserFactory
+
+    organization = OrganizationFactory()
+    catalog = CatalogFactory(organization=organization, slug="lock-order-probe")
+    author = UserFactory()
+    requests, completed = Queue(), Queue()
+    wait_seconds = 15
+
+    def write_catalog_items():
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET lock_timeout = '1s'")
+            sequence = 0
+            while requests.get(timeout=wait_seconds) is not None:
+                try:
+                    item = create_catalog_item(
+                        catalog, CatalogItemSpec(f"lock-probe-{sequence}", "Lock probe"), author
+                    )
+                except DatabaseError as error:
+                    completed.put(error)
+                else:
+                    # create_catalog_item returns only after its FK checks and COMMIT.
+                    completed.put(item.pk)
+                sequence += 1
+        finally:
+            connection.close()
+
+    def probe_after_organization_lock(execute, sql, params, many, context):
+        result = execute(sql, params, many, context)
+        if (
+            sql.startswith("SELECT")
+            and 'FROM "organizations_organization"' in sql
+            and " FOR " in sql
+        ):
+            requests.put(True)
+            outcome = completed.get(timeout=wait_seconds)
+            assert not isinstance(outcome, DatabaseError), str(outcome)
+        return result
+
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        writer = executor.submit(write_catalog_items)
+        try:
+            with connection.execute_wrapper(probe_after_organization_lock):
+                if entry_point == "configuration":
+                    with services.lock_organization_configuration(organization.pk):
+                        pass
+                elif entry_point == "defaults":
+                    seed_organization_defaults(organization)
+                elif entry_point == "permissions":
+                    seed_default_permission_codes(organization)
+                else:
+                    seed_default_rule_parameters(organization)
+        finally:
+            requests.put(None)
+            writer.result(timeout=wait_seconds)
+    assert CatalogItem.objects.filter(catalog=catalog, code__startswith="lock-probe-").exists()
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("operation", ["create", "change"])
+def test_membership_delegation_checks_each_profiles_effective_scope(operation):
+    from rest_framework.exceptions import NotFound
+
+    from organizations.models import Center, Membership
+    from tests.factories import MembershipFactory, OrganizationFactory, ProfileFactory, UserFactory
+
+    organization = OrganizationFactory()
+    center_a = Center.objects.create(organization=organization, code="DELEGATE-A", name="Center A")
+    center_b = Center.objects.create(organization=organization, code="DELEGATE-B", name="Center B")
+    quadrant_a, quadrant_b = str(uuid4()), str(uuid4())
+    scope_a = {
+        "centers": dimension("selected", str(center_a.pk)),
+        "quadrants": dimension("selected", quadrant_a),
+    }
+    scope_b = {
+        "centers": dimension("selected", str(center_b.pk)),
+        "quadrants": dimension("selected", quadrant_b),
+    }
+    reader_a = ProfileFactory(
+        organization=organization, scope=scope_a, permission_codes=["visit.read"]
+    )
+    reader_b = ProfileFactory(
+        organization=organization, scope=scope_b, permission_codes=["report.read"]
+    )
+    manager = ProfileFactory(
+        organization=organization, scope=scope(), permission_codes=["role.update"]
+    )
+    actor = MembershipFactory(organization=organization, scope=scope())
+    actor.profiles.set([manager, reader_a, reader_b])
+    recipient = UserFactory()
+
+    def assign_recipient(user):
+        change = services.MembershipChange(actor.user, 1, [reader_a, reader_b], scope())
+        if operation == "create":
+            return services.create_managed_membership(user, organization, change)
+        member = MembershipFactory(user=user, organization=organization)
+        return services.update_membership(member, change)
+
+    assigned = assign_recipient(recipient)
+    effective = services.effective_scope(assigned)
+    assert assigned.scope == scope()
+    assert effective.allows("visit.read", str(center_a.pk), quadrant_a)
+    assert effective.allows("report.read", str(center_b.pk), quadrant_b)
+    assert not effective.allows("visit.read", str(center_b.pk), quadrant_b)
+    assert not effective.allows("report.read", str(center_a.pk), quadrant_a)
+
+    # Holding a profile through a narrower actor membership does not authorize its
+    # full stored scope. This also guards against dropping delegation checks entirely.
+    actor.scope = scope_a
+    actor.save(update_fields=["scope"])
+    denied_recipient = UserFactory()
+    with pytest.raises(NotFound):
+        assign_recipient(denied_recipient)
+    denied = Membership.objects.filter(user=denied_recipient, organization=organization).first()
+    if operation == "create":
+        assert denied is None
+    else:
+        assert denied.scope == default_scope()
+        assert not denied.profiles.exists()
+        assert denied.revision == 1
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize("is_compatible", [False, True])
+@pytest.mark.parametrize(
+    ("missing_key", "is_scheduled"),
+    [
+        ("fuel_efficiency_min_km_l", False),
+        ("fuel_efficiency_min_km_l", True),
+        ("fuel_efficiency_max_km_l", False),
+        ("fuel_efficiency_max_km_l", True),
+    ],
+)
+def test_missing_fuel_default_validates_current_and_scheduled_pair_atomically(
+    monkeypatch, missing_key, is_scheduled, is_compatible
+):
+    from datetime import UTC, datetime, timedelta
+
+    from catalogs.models import Catalog
+    from core.exceptions import FieldValidationError
+    from organizations.defaults import seed_organization_defaults
+    from organizations.models import Profile
+    from rules.models import RuleParameter, RuleParameterVersion, Unit, ValueType
+    from tests.factories import (
+        OrganizationFactory,
+        RuleParameterFactory,
+        RuleParameterVersionFactory,
+    )
+
+    now = datetime(2026, 11, 5, 12, tzinfo=UTC)
+    monkeypatch.setattr("django.utils.timezone.now", lambda: now)
+    organization = OrganizationFactory()
+    is_missing_minimum = missing_key == "fuel_efficiency_min_km_l"
+    counterpart = RuleParameterFactory(
+        organization=organization,
+        key="fuel_efficiency_max_km_l" if is_missing_minimum else "fuel_efficiency_min_km_l",
+        value_type=ValueType.DECIMAL,
+        unit=Unit.KILOMETERS_PER_LITER,
+    )
+    counterpart_value = (
+        (20 if is_missing_minimum else 10) if is_compatible else (10 if is_missing_minimum else 70)
+    )
+    current = RuleParameterVersionFactory(
+        parameter=counterpart,
+        value=(60 if is_missing_minimum else 15) if is_scheduled else counterpart_value,
+        effective_from=now - timedelta(days=1),
+    )
+    expected_versions = {current.pk}
+    if is_scheduled:
+        scheduled = RuleParameterVersionFactory(
+            parameter=counterpart, value=counterpart_value, effective_from=now + timedelta(days=1)
+        )
+        expected_versions.add(scheduled.pk)
+
+    if is_compatible:
+        seed_organization_defaults(organization)
+        seeded = RuleParameter.objects.get(organization=organization, key=missing_key)
+        assert seeded.versions.get().value == (15 if is_missing_minimum else 60)
+        assert set(counterpart.versions.values_list("pk", flat=True)) == expected_versions
+        return
+
+    with pytest.raises(FieldValidationError) as conflict:
+        seed_organization_defaults(organization)
+
+    assert conflict.value.fields["value"][0]["code"] == "fuel_bounds_conflict"
+    assert (
+        set(
+            RuleParameterVersion.objects.filter(organization=organization).values_list(
+                "pk", flat=True
+            )
+        )
+        == expected_versions
+    )
+    assert list(
+        RuleParameter.objects.filter(organization=organization).values_list("pk", flat=True)
+    ) == [counterpart.pk]
+    counterpart.refresh_from_db()
+    assert counterpart.min_value is None  # the seed's bound updates rolled back too
+    assert not Profile.objects.filter(organization=organization).exists()
+    assert not Catalog.objects.filter(organization=organization).exists()

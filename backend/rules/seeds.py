@@ -117,14 +117,21 @@ def seed_default_rule_parameters(organization: Organization) -> list[RuleParamet
 
     Writes RuleParameter and RuleParameterVersion. A parameter that already has any version is
     left alone, so running it again never adds a second version or touches admin changes.
+    Missing fuel defaults are staged together and checked against the complete resulting
+    current/future timeline before insertion; a conflict rolls back the whole seed.
     """
     now = timezone.now()
     with transaction.atomic():
-        Organization.objects.select_for_update().get(pk=organization.pk)
+        Organization.objects.select_for_update(no_key=True).get(pk=organization.pk)
         parameters = [_ensure_parameter(organization, seed) for seed in DEFAULT_PARAMETER_SEEDS]
-        for parameter, seed in zip(parameters, DEFAULT_PARAMETER_SEEDS, strict=True):
-            if seed.value is not None and not parameter.versions.exists():
-                _create_first_version(parameter, seed.value, now)
+        pending = [
+            (parameter, seed.value)
+            for parameter, seed in zip(parameters, DEFAULT_PARAMETER_SEEDS, strict=True)
+            if seed.value is not None and not parameter.versions.exists()
+        ]
+        _validate_pending_fuel_defaults(organization, pending, now)
+        for parameter, value in pending:
+            _create_first_version(parameter, value, now)
     return parameters
 
 
@@ -157,3 +164,31 @@ def _create_first_version(parameter: RuleParameter, value: int, now: datetime) -
         effective_date=local_today(organization.timezone, now),
         reason=SEED_REASON,
     )
+
+
+def _validate_pending_fuel_defaults(
+    organization: Organization, pending: list[tuple[RuleParameter, int]], now: datetime
+) -> None:
+    """Validate both proposed fuel defaults together against current and scheduled history."""
+    # Runtime import: organization services load these seed definitions during startup.
+    from rules.services import FUEL_MAX_KEY, FUEL_MIN_KEY, validate_fuel_timeline
+
+    fuel_keys = {FUEL_MIN_KEY, FUEL_MAX_KEY}
+    proposed = [
+        (now, parameter.key, Decimal(value))
+        for parameter, value in pending
+        if parameter.key in fuel_keys
+    ]
+    if not proposed:
+        return
+    existing = (
+        RuleParameterVersion.objects.filter(
+            organization=organization, parameter__key__in=fuel_keys, voided_at__isnull=True
+        )
+        .select_related("parameter")
+        .order_by("effective_from", "created_at", "id")
+    )
+    timeline = [
+        (version.effective_from, version.parameter.key, version.value) for version in existing
+    ]
+    validate_fuel_timeline([*timeline, *proposed], now)

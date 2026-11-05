@@ -214,10 +214,10 @@ def effective_scope(membership: Membership) -> EffectiveScope:
 
 @contextmanager
 def lock_organization_configuration(organization_id: UUID) -> Iterator[Organization]:
-    """Serialize configuration writes; try-lock contention rolls back with retryable 429."""
+    """Serialize without blocking FK KEY SHARE; try-lock contention is retryable 429."""
     try:
         with transaction.atomic():
-            organization = Organization.objects.select_for_update(nowait=True).get(
+            organization = Organization.objects.select_for_update(nowait=True, no_key=True).get(
                 pk=organization_id
             )
             yield organization
@@ -415,8 +415,15 @@ def _validate_membership_change(organization: Organization, change: MembershipCh
         raise NotFound
     if any(profile.slug == "government" for profile in profiles) and len(change.profiles) != 1:
         raise GovernmentPermissionError
-    codes = {code for profile in profiles for code in profile.permission_codes}
-    _validate_delegation(effective, scope, codes or {"role.update"})
+    if not profiles:
+        _validate_delegation(effective, scope, {"role.update"})
+    for profile in profiles:
+        profile_scope = safe_scope(profile.scope)
+        delegated_scope = WorkScope(
+            centers=intersect(scope["centers"], profile_scope["centers"]),
+            quadrants=intersect(scope["quadrants"], profile_scope["quadrants"]),
+        )
+        _validate_delegation(effective, delegated_scope, profile.permission_codes)
 
 
 def update_membership(membership: Membership, change: MembershipChange) -> Membership:

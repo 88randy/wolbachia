@@ -55,8 +55,8 @@ broader grant. No center rows are fabricated from legacy ids.
   default-deny. The active organization always comes from the authenticated membership.
   A membership create references an existing shared User by UUID and exposes only
   that UUID, not an unrelated personnel profile. It never creates a user or tenant.
-- A change revalidates the actor under an organization row lock, then locks the
-  target. All privilege removals, including the platform assign_profiles helper,
+- A change revalidates the actor under an organization FOR NO KEY UPDATE lock
+  (`select_for_update(no_key=True)`), then locks the target. All privilege removals, including the platform assign_profiles helper,
   use that serialization point. No User/Device/DeviceSession/TokenPair locks are
   acquired below it, and no network/storage/mail runs inside it. Contention on
   administration's try-lock is retryable 429 administration_in_progress, Retry-After 1.
@@ -74,9 +74,42 @@ broader grant. No center rows are fabricated from legacy ids.
   configuration; domain-specific inventory/permit permissions belong to their future
   issues. Government is fixed to portal.read and cannot be mixed with internal
   profiles. The effective service clamps even corrupted mixed assignments to the
-  government grant; #99 adds no portal endpoint. Seed reruns retain revoked grants.
+  government grant; #99 adds no portal endpoint. Admin includes field_event.sync
+  explicitly so its effective grants can delegate every courier permission. This
+  is an actual permission, not a delegation bypass: scopes and device/bearer
+  authentication still apply. The idempotent seed grants it once to existing
+  seed-created admins and preserves later revocation. Seed reruns retain revoked grants.
 - Organizations are created only by bootstrap_organization, a platform command.
   There is no organization-creation HTTP endpoint.
+
+## Configuration lock order and delegation (review round 1)
+
+Any already-held User -> Device -> DeviceSession -> TokenPair locks precede
+organization configuration; none is acquired after organization serialization.
+Configuration writers take Organization FOR NO KEY UPDATE before target
+Profile/Membership/RuleParameter locks. Administration uses nowait and retryable
+429; management seeds may wait. Every nested seed uses the same no_key mode:
+seed_organization_defaults, seed_default_permission_codes and
+seed_default_rule_parameters must never upgrade the organization to FOR UPDATE.
+These paths do not change organization primary/unique keys.
+
+Catalog writers retain their Catalog FOR UPDATE lock. Their insert/commit needs
+Organization FOR KEY SHARE for its foreign key. The seed may hold the organization
+while it creates catalog rows/items whose foreign keys need Catalog KEY SHARE.
+Organization NO KEY UPDATE is compatible with the writer's KEY SHARE, so the writer
+can commit and release Catalog instead of closing the opposite-lock-order cycle.
+The regression gates real catalog commits at every organization lock acquisition,
+including nested seeds, with queues and a database lock timeout; it uses no sleeps.
+See [PostgreSQL row-lock compatibility](https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-ROWS)
+and [Django no_key](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update).
+
+Membership delegation validates each profile separately. Each permission's proposed
+grant is profile.scope intersected with the proposed membership scope, compared
+against one actor effective grant for that permission. An all membership ceiling
+can therefore hold multiple narrowly scoped profiles without granting all access.
+If the actor's own membership narrows a profile further, it cannot delegate the
+profile's wider stored grant. No profile permissions or dimensions are unioned
+into a broader grant during assignment.
 
 ## Raster logo
 
@@ -183,3 +216,39 @@ Changed implementation files (relative to repository root):
 - Contract/docs: docs/api-conventions.md, glossary.md, decisions.md (92);
   packages/api-client/openapi.yaml, README.md, test/helpers.ts;
   web/src/test/fake-api.ts. src/generated/schema.ts awaits the installed generator.
+
+
+## Adversarial round 1 regressions
+
+The corrections remain uncommitted. Tests in tests/test_organizations_b_01.py:
+
+| Finding | Regression |
+| --- | --- |
+| 1: admin/courier authority | test_default_admin_bundle_covers_courier_permissions_within_scope; real effective grants cover all courier codes and still deny foreign center/quadrant ids |
+| 2: organization/catalog lock cycle | test_organization_serialization_allows_catalog_writer_foreign_keys; four entry points probe catalog writer commits under every outer/nested organization lock |
+| 3: profile-limited delegation | test_membership_delegation_checks_each_profiles_effective_scope; create and change accept profile intersections, deny grants wider than the actor and preserve state on failure |
+| 4: missing fuel defaults | test_missing_fuel_default_validates_current_and_scheduled_pair_atomically; compatible current/scheduled counterparts retain history and receive the missing min/max; incompatible pairs abort profiles, catalogs, definitions and versions together |
+
+Existing seed-contract assertions now include admin sync authority; upgrade and
+revocation cases also cover the new admin permission. No endpoint/schema shape,
+void-reason policy or dependency changes are part of this review round.
+
+
+Round 1 local validation (base commit 1d03032; fixes uncommitted):
+
+- ruff check .: passed; format --check on the six changed Python files: passed.
+- mypy --follow-imports=silent on the four changed production modules: passed.
+  Full mypy still reports only rules/selectors.py:72 (Any return) and
+  accounts/views.py:14 (missing kombu stubs), both unmodified in this round.
+- pytest tests/test_organizations_b_01.py tests/test_rule_contract.py
+  -m "not django_db" -q: 18 passed, 24 deselected. The admin-bundle regression was
+  observed failing on field_event.sync before the fix and passing afterwards.
+- Organization/seed tests collect successfully: 81 cases in the two changed test
+  files. Four new regression functions cover 15 cases: one unit and fourteen
+  PostgreSQL cases. The two added admin-sync upgrade/revocation seed cases also
+  require PostgreSQL. No database assertions in these new integration cases ran here.
+- An initial name-based selection accidentally included two delegation DB cases;
+  their setup failed to connect to isolated port 55499. The corrected marker-based
+  unit run above avoids the unavailable database. Docker was not invoked.
+- manage.py check: passed. No dependencies, migrations, schema/client types,
+  void-reason validation, commits or pushes were changed by this review round.

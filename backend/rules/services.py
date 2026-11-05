@@ -128,7 +128,7 @@ def void_rule_version(  # noqa: PLR0913 -- explicit void contract
         if locked.effective_from <= timezone.now():
             raise VersionNotScheduledError
         if locked.parameter.key in (FUEL_MIN_KEY, FUEL_MAX_KEY):
-            _validate_fuel_timeline(_fuel_versions(locked.parameter, locked), timezone.now())
+            validate_fuel_timeline(_fuel_versions(locked.parameter, locked), timezone.now())
         return void_validated_record(locked, user, choice)
 
 
@@ -142,7 +142,7 @@ def _validate_fuel_pair(parameter: RuleParameter, value: Decimal, effective_from
         return
     versions = _fuel_versions(parameter)
     versions.append((effective_from, parameter.key, value))
-    _validate_fuel_timeline(versions, effective_from)
+    validate_fuel_timeline(versions, effective_from)
 
 
 def _fuel_versions(
@@ -162,7 +162,8 @@ def _fuel_versions(
     return [(version.effective_from, version.parameter.key, version.value) for version in versions]
 
 
-def _validate_fuel_timeline(versions: list[tuple[datetime, str, Decimal]], start: datetime) -> None:
+def validate_fuel_timeline(versions: list[tuple[datetime, str, Decimal]], start: datetime) -> None:
+    """Reject a resulting min/max timeline that is incompatible at or after start."""
     current: dict[str, Decimal] = {}
     transitions: dict[datetime, list[tuple[str, Decimal]]] = {}
     for at, key, value in sorted(versions, key=lambda version: version[0]):

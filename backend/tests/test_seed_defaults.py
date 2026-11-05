@@ -228,6 +228,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
     assert by_slug["admin"] == {
+        FIELD_EVENT_SYNC,
         "portal.read",
         "organization.read",
         "organization.update",
@@ -435,6 +436,7 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
     ("slug", "code"),
     [
         ("courier", FIELD_EVENT_SYNC),
+        ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),
         ("admin", REVIEW_ITEM_READ),
         ("supervisor", SHIFT_READ),
@@ -466,6 +468,7 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
     ("slug", "code"),
     [
         ("courier", FIELD_EVENT_SYNC),
+        ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),
         ("supervisor", SHIFT_READ),
         ("courier", MOTORCYCLE_READ),
@@ -486,10 +489,13 @@ def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str)
     assert code in profile.seeded_permission_codes
 
 
-def test_only_the_courier_syncs_and_only_supervisor_and_admin_read_review_items() -> None:
+def test_only_courier_and_admin_sync_and_only_supervisor_and_admin_read_review_items() -> None:
     by_slug = DEFAULT_PROFILE_PERMISSIONS
 
-    assert [s for s, codes in by_slug.items() if FIELD_EVENT_SYNC in codes] == ["courier"]
+    assert sorted(s for s, codes in by_slug.items() if FIELD_EVENT_SYNC in codes) == [
+        "admin",
+        "courier",
+    ]
     assert sorted(s for s, codes in by_slug.items() if REVIEW_ITEM_READ in codes) == [
         "admin",
         "supervisor",
