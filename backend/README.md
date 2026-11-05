@@ -255,3 +255,8 @@ Deploy: #18. Each epic registers its event handlers with `field_sync.registry` (
 `fleet/` implements #103/B-05: immutable service/letter/fuel history, named
 inspection clearances, scoped nested routes and event-time efficiency advisories.
 It depends on shifts and registers optional hooks; see fleet/README.md.
+## Ovitraps (#111)
+
+ovitraps/ provides immutable placement/readings/bag provenance and read-only scoped
+resources. Field handlers never accept numeric courier egg counts. See its README
+and docs/sync.md for decisions, historical catalog archive and no-effects review.

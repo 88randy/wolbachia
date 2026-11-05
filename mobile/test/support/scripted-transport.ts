@@ -48,6 +48,13 @@ export function answer(
         catalog_version: changes.catalogVersion ?? null,
         rules_version: changes.rulesVersion ?? null,
         has_more: changes.hasMore ?? false,
+        next_change_at: null,
+        assignments: [],
+        supplies: [],
+        permits: [],
+        eligibility: [],
+        history: [],
+        map_manifests: [],
       },
     },
   };

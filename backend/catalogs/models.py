@@ -1,12 +1,13 @@
 """Configurable option lists per organization (decision 5). They are configuration, not records:
 items are deactivated instead of deleted, and `OrgScopedModel` already forbids `delete()`."""
 
+from django.conf import settings
 from django.core.validators import MaxValueValidator, RegexValidator
 from django.db import models
 from django.db.models import Q
 
 from core.models import OTHER_ITEM_CODE as OTHER_ITEM_CODE
-from core.models import OrgScopedModel
+from core.models import ImmutableMixin, OrgScopedModel
 
 CODE_MAX_LENGTH = 64
 LABEL_MAX_LENGTH = 200
@@ -30,6 +31,7 @@ class Catalog(OrgScopedModel):
     label_es = models.CharField(max_length=LABEL_MAX_LENGTH)
     label_en = models.CharField(max_length=LABEL_MAX_LENGTH)
     is_open = models.BooleanField(default=True)
+    revision = models.PositiveIntegerField(default=0)
 
     class Meta:
         constraints = [
@@ -55,6 +57,10 @@ class CatalogItem(OrgScopedModel):
     is_other = models.BooleanField(default=False)
     requires_photo = models.BooleanField(default=False)
     updated_at = models.DateTimeField(auto_now=True)
+    deactivated_at = models.DateTimeField(null=True, blank=True)
+    deactivated_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
 
     class Meta:
         # "Other (specify)" is always last, whatever its `sort`.
@@ -76,3 +82,17 @@ class CatalogItem(OrgScopedModel):
 
     def __str__(self) -> str:
         return f"{self.catalog_id}:{self.code}"
+
+
+class CatalogSnapshot(ImmutableMixin, OrgScopedModel):
+    """Exact configuration delivered to a phone, retained by organization/hash for offline ingest."""
+
+    version = models.CharField(max_length=64)
+    content = models.JSONField()
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "version"], name="catalog_snapshot_org_version"
+            )
+        ]

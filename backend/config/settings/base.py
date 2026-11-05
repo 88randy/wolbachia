@@ -31,6 +31,7 @@ INSTALLED_APPS = [
     "shifts",
     "geography",
     "fleet",
+    "ovitraps",
 ]
 
 MIDDLEWARE = [
@@ -220,6 +221,8 @@ SPECTACULAR_SETTINGS = {
         "CheckResultEnum": "shifts.models.CheckResult",
         "ServiceKindEnum": "fleet.models.ServiceKind",
         "StatusEnum": "rules.selectors.VERSION_STATUSES",
+        "OvitrapLifecycleStatusEnum": ["active", "voided"],
+        "OvitrapStatusFilterEnum": ["active", "voided", "all"],
     },
     # The enum hook is spectacular's default; ours adds ErrorEnvelope and the `default` error
     # response to every operation (packages/api-client types errors from it).

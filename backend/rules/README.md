@@ -69,3 +69,12 @@ expiry. Fuel anomalies mark review, not a capture/shift-close ban.
 The version void action takes `{reason_code, reason?}` (#80). The organization's `void-reason`
 catalog is resolved before state checks; only `other` requires the #32 text minimum. The
 read-only history exposes both `void_reason_code` and `void_reason`.
+
+## Capture accuracy (#111)
+
+Add max_gps_accuracy_m, integer metres, versioned organization parameter through
+the existing seed. [ASSUMPTION] default 50, inclusive bounds 1..200 until pilot
+confirmation. Existing values/versions remain untouched. Ovitrap safety gates use
+the registry historical lookup at device_time and retain applied version ids.
+Missing/unusable rules/accuracy review without operational effects. There are now
+14 seeded definitions; no existing index-exclusion rule was found.

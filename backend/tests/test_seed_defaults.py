@@ -10,7 +10,7 @@ from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from catalogs import permissions as catalog_codes
 from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
-from field_sync.permissions import FIELD_EVENT_SYNC
+from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from organizations.defaults import (
     DEFAULT_PROFILE_PERMISSIONS,
@@ -58,7 +58,7 @@ def test_create_organization_seeds_catalogs_and_parameters() -> None:
     assert (
         Catalog.objects.filter(organization=organization).count()
         == len(DEFAULT_CATALOG_SEEDS)
-        == 10
+        == 11
     )
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
@@ -131,6 +131,10 @@ def test_catalogs_have_the_expected_initial_items() -> None:
         expected = (
             ["other"] if catalog.is_open else [row[0] for row in CLOSED_CATALOG_ITEMS[catalog.slug]]
         )
+        if catalog.slug == "ovitrap-finding":
+            expected.append("other")
+        if catalog.slug == "paddle-type":
+            expected.insert(0, "standard")
         if catalog.slug == "void-reason":
             expected = ["data-entry-error", "duplicate-record", "wrong-location", "other"]
         assert codes_in_catalog == expected
@@ -201,9 +205,9 @@ def test_seed_does_not_cross_organizations() -> None:
     first = create_organization(SPEC)
     second = create_organization(OrganizationSpec("Beta", "beta", "MX", "America/Mexico_City"))
 
-    assert Catalog.objects.filter(organization=first).count() == 10
-    assert Catalog.objects.filter(organization=second).count() == 10
-    assert Catalog.objects.count() == 20
+    assert Catalog.objects.filter(organization=first).count() == 11
+    assert Catalog.objects.filter(organization=second).count() == 11
+    assert Catalog.objects.count() == 22
 
 
 def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
@@ -219,8 +223,10 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "organization.read",
         "center.read",
     }
-    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, MOTORCYCLE_READ}
+    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, FIELD_BOOTSTRAP, MOTORCYCLE_READ}
     assert by_slug["supervisor"] == {
+        "ovitrap.read",
+        "reading.read",
         "quadrant.read",
         *reader,
         REVIEW_ITEM_READ,
@@ -229,18 +235,24 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_UNBLOCK,
         MOTORCYCLE_SERVICE_CLEAR,
     }
-    assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
+    assert by_slug["entomologist"] == {*reader, "reading.read"}
+    assert by_slug["community_promoter"] == reader
     assert by_slug["coordinator"] == {
+        "ovitrap.read",
+        "reading.read",
         *reader,
         "quadrant.read",
         "quadrant.publish",
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "ovitrap.read",
+        "reading.read",
         "quadrant.read",
         "quadrant.publish",
         "sampling_point.create",
         FIELD_EVENT_SYNC,
+        FIELD_BOOTSTRAP,
         "portal.read",
         "organization.read",
         "organization.update",
@@ -291,6 +303,7 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     assert courier.seeded_permission_codes == [
         "catalog.read",
         "center.read",
+        "field.bootstrap",
         "field_event.sync",
         "motorcycle.read",
         "organization.read",
@@ -311,6 +324,7 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     assert courier.permission_codes == [
         "catalog.read",
         "center.read",
+        "field.bootstrap",
         "field_event.sync",
         "motorcycle.read",
         "organization.read",
@@ -345,6 +359,7 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
             "organization.read",
             "center.read",
             FIELD_EVENT_SYNC,
+            FIELD_BOOTSTRAP,
             MOTORCYCLE_READ,
         )
     }
@@ -409,7 +424,7 @@ def test_command_apply_updates_an_existing_organization() -> None:
     output = run_command("--organization", organization.slug, "--apply")
 
     assert "Applied" in output
-    assert Catalog.objects.filter(organization=organization).count() == 10
+    assert Catalog.objects.filter(organization=organization).count() == 11
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
     )

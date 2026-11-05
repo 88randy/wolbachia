@@ -91,3 +91,8 @@ npm install
 npm run typecheck      # tsc --noEmit
 npm test               # node:test
 ```
+
+## Ovitrap sync (#111)
+
+The sync area includes every registered ovitrap placement/check result code;
+rules.param.maxGpsAccuracyM labels the new versioned accuracy threshold.

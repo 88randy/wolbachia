@@ -33,6 +33,10 @@ class ParameterSeed:
 
 
 DEFAULT_PARAMETER_SEEDS = (
+    # [ASSUMPTION] Pilot accuracy policy; versioned per organization, never hard-coded in a handler.
+    ParameterSeed(
+        "max_gps_accuracy_m", ValueType.INTEGER, Unit.METERS, 50, Decimal(1), Decimal(200)
+    ),
     ParameterSeed(
         "max_distance_to_point_m", ValueType.INTEGER, Unit.METERS, 50, Decimal(10), Decimal(200)
     ),

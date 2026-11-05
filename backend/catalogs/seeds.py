@@ -5,8 +5,10 @@ Closed lists have actual launch checks/findings. Seeds preserve labels and deact
 """
 
 from dataclasses import dataclass
+from typing import Any
 
 from django.db import transaction
+from django.db.models import F
 
 from catalogs.models import OTHER_ITEM_CODE, Catalog, CatalogItem
 from organizations.models import Organization
@@ -37,6 +39,7 @@ DEFAULT_CATALOG_SEEDS = (
     CatalogSeed("replacement-reason", "Motivo de reposición", "Replacement reason"),
     CatalogSeed("damage-reason", "Motivo de daño", "Damage reason"),
     CatalogSeed("ovitrap-finding", "Hallazgo en ovitrampa", "Ovitrap finding", is_open=False),
+    CatalogSeed("paddle-type", "Tipo de papeleta", "Egg paddle type"),
     CatalogSeed("intervention-type", "Tipo de intervención", "Intervention type"),
 )
 
@@ -57,7 +60,7 @@ def missing_catalog_slugs(organization: Organization) -> list[str]:
 def _needs_catalog_seed(catalog: Catalog | None, seed: CatalogSeed) -> bool:
     if catalog is None:
         return True
-    required = {OTHER_ITEM_CODE} if catalog.is_open else set()
+    required = {OTHER_ITEM_CODE} if catalog.is_open or seed.slug == "ovitrap-finding" else set()
     if seed.slug == "void-reason":
         required.update(row[0] for row in VOID_REASON_ITEMS)
     required.update(row[0] for row in CLOSED_CATALOG_ITEMS.get(seed.slug, ()))
@@ -83,7 +86,7 @@ def _seed_catalog(organization: Organization, seed: CatalogSeed) -> Catalog:
     )
     # Lock before item reads/inserts: unique-index waits must not invert deferred FK locks.
     locked = Catalog.objects.select_for_update().get(pk=catalog.pk, organization=organization)
-    if locked.is_open:
+    if locked.is_open or locked.slug == "ovitrap-finding":
         _ensure_other_item(locked)
     if locked.slug == "void-reason":
         _seed_void_reason_items(locked)
@@ -92,7 +95,7 @@ def _seed_catalog(organization: Organization, seed: CatalogSeed) -> Catalog:
 
 
 def _ensure_other_item(catalog: Catalog) -> None:
-    CatalogItem.objects.get_or_create(
+    _create_seed_item(
         catalog=catalog,
         code=OTHER_ITEM_CODE,
         defaults={
@@ -114,7 +117,7 @@ VOID_REASON_ITEMS = (
 
 def _seed_void_reason_items(catalog: Catalog) -> None:
     for code, label_es, label_en, sort in VOID_REASON_ITEMS:
-        CatalogItem.objects.get_or_create(
+        _create_seed_item(
             catalog=catalog,
             code=code,
             defaults={
@@ -136,11 +139,15 @@ CLOSED_CATALOG_ITEMS = {
         ("mirrors", "Espejos", "Mirrors"),
         ("fuel", "Combustible", "Fuel"),
     ),
+    "paddle-type": (("standard", "Estándar", "Standard"),),
     "ovitrap-finding": (
         ("intact", "Intacta", "Intact"),
         ("dry", "Seca", "Dry"),
         ("damaged", "Dañada", "Damaged"),
         ("missing", "No encontrada", "Missing"),
+        ("closed-house", "Casa cerrada", "Closed house"),
+        ("absent", "Ausente", "Absent"),
+        ("destroyed", "Destruida", "Destroyed"),
     ),
 }
 
@@ -149,7 +156,7 @@ def _seed_closed_items(catalog: Catalog) -> None:
     for sort, (code, label_es, label_en) in enumerate(
         CLOSED_CATALOG_ITEMS.get(catalog.slug, ()), start=1
     ):
-        CatalogItem.objects.get_or_create(
+        _create_seed_item(
             catalog=catalog,
             code=code,
             defaults={
@@ -159,3 +166,11 @@ def _seed_closed_items(catalog: Catalog) -> None:
                 "sort": sort,
             },
         )
+
+
+def _create_seed_item(*, catalog: Catalog, code: str, defaults: dict[str, Any]) -> None:
+    """The caller holds Catalog; only inserted seed items invalidate existing reorder plans."""
+    _, is_created = CatalogItem.objects.get_or_create(catalog=catalog, code=code, defaults=defaults)
+    if is_created:
+        Catalog.objects.filter(pk=catalog.pk).update(revision=F("revision") + 1)
+        catalog.revision += 1

@@ -1,6 +1,9 @@
 from typing import Any
 
-from django.db.models import Prefetch, QuerySet
+from django.apps import apps
+from django.db.models import Count, IntegerField, OuterRef, Prefetch, QuerySet, Subquery
+from django.db.models.expressions import Expression
+from django.db.models.functions import Coalesce
 
 from catalogs.models import Catalog, CatalogItem
 from core.snapshots import with_version
@@ -46,39 +49,52 @@ def build_catalog_snapshot(organization: Organization) -> dict[str, Any]:
     )
 
 
-def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QuerySet[CatalogItem]:
-    """Project actual historical references in the list query, avoiding per-item lookups."""
-    from django.apps import apps
-    from django.db.models import Exists, OuterRef, Q
+def _reference_count(queryset: QuerySet[Any], reference: str) -> Coalesce:
+    counts = queryset.order_by().values(reference).annotate(total=Count("pk")).values("total")
+    return Coalesce(Subquery(counts, output_field=IntegerField()), 0)
 
+
+def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QuerySet[CatalogItem]:
+    """Sum historical references in correlated subqueries, never one query per item."""
+    from ovitraps.models import OvitrapReading
     from shifts.models import MotorcycleCheck
 
-    usage = Q(
-        Exists(
-            MotorcycleCheck.objects.filter(
-                organization_id=catalog.organization_id, item_id=OuterRef("pk")
-            )
-        )
+    usage: Expression = _reference_count(
+        MotorcycleCheck.objects.filter(
+            organization_id=catalog.organization_id, item_id=OuterRef("pk")
+        ),
+        "item_id",
     )
+    ovitrap_reference = {"ovitrap-finding": "finding_id", "paddle-type": "paddle_type_id"}.get(
+        catalog.slug
+    )
+    if ovitrap_reference is not None:
+        usage = usage + _reference_count(
+            OvitrapReading.objects.filter(
+                organization_id=catalog.organization_id, **{ovitrap_reference: OuterRef("pk")}
+            ),
+            ovitrap_reference,
+        )
     if catalog.slug == "void-reason":
         for model in apps.get_models():
             fields = {field.name for field in model._meta.fields}
             if {"organization", "void_reason_code"} <= fields:
-                usage |= Q(
-                    Exists(
-                        model._default_manager.filter(
-                            organization_id=catalog.organization_id,
-                            void_reason_code=OuterRef("code"),
-                        )
-                    )
+                usage = usage + _reference_count(
+                    model._default_manager.filter(
+                        organization_id=catalog.organization_id,
+                        void_reason_code=OuterRef("code"),
+                    ),
+                    "void_reason_code",
                 )
-    return queryset.select_related("catalog").annotate(is_in_use=usage)
+    return queryset.select_related("catalog", "created_by", "deactivated_by").annotate(
+        usage_count=usage
+    )
 
 
-def catalog_item_is_in_use(item: CatalogItem) -> bool:
-    """Use the list projection or resolve a standalone item's actual committed references."""
-    if hasattr(item, "is_in_use"):
-        return bool(item.is_in_use)
+def catalog_item_usage_count(item: CatalogItem) -> int:
+    """Use the list projection or load a standalone item's committed reference count."""
+    if hasattr(item, "usage_count"):
+        return int(item.usage_count)
     queryset = CatalogItem.objects.filter(pk=item.pk, organization_id=item.organization_id)
     annotated = with_item_usage(queryset, item.catalog).get()
-    return bool(getattr(annotated, "is_in_use", False))
+    return int(getattr(annotated, "usage_count", 0))
