@@ -76,3 +76,15 @@ next_change_at refresh while capture-time evaluation retains historical versions
 No operational in_review effects or acceptance handler are added (#22).
 
 Acceptance tests: tests/test_field_sync_b_13.py. No new event result codes/locales.
+
+
+Scope capture uses ONE membership SELECT with an ArraySubquery of active assigned
+same-organization profiles, including current user/organization activity. Both
+bootstrap and initial/cursor sync compute effective grants from that statement's
+snapshot; the shared algebra never performs a later profile read on this path.
+A transaction at READ COMMITTED alone cannot prevent mixing old membership scope
+with new profile scope. Capture takes no configuration row lock after the courier
+lock; existing lock order is preserved. Regression:
+`test_producer_scope_capture_never_mixes_membership_and_profile_revisions` pauses
+after the membership statement while an organization-locked admin transaction
+commits both scope changes. CI runs this PostgreSQL test; it uses no sleeps.

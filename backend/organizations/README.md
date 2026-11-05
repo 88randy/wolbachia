@@ -267,3 +267,11 @@ B-13 (#110) adds field.bootstrap to the seeded courier and admin bundles through
 the same once-only seed path as field_event.sync. Existing organizations upgrade
 with seed_organization_defaults --apply; later explicit revocations stay revoked.
 Admin carries the actual grant to preserve its explicit delegation ceiling.
+
+
+Offline bootstrap/sync pass explicit captured profiles to effective_scope. Their
+membership, user/organization activity and active assigned profile projections
+come from one SQL snapshot; this path performs no further profile queries.
+Supplying profiles preserves the same scope intersection and government clamp,
+and still rejects inactive/foreign profiles. Ordinary callers retain their existing
+profile-loading path. No new Organization lock is acquired below a courier lock.

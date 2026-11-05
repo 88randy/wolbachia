@@ -4,7 +4,9 @@ from dataclasses import dataclass, field, replace
 from typing import Any
 
 from django.conf import settings
-from django.db.models import Max, Q
+from django.contrib.postgres.expressions import ArraySubquery
+from django.db.models import Max, OuterRef, Q
+from django.db.models.functions import JSONObject
 from rest_framework.exceptions import PermissionDenied
 
 from catalogs.selectors import build_catalog_snapshot
@@ -19,7 +21,7 @@ from field_sync.producers import (
     bundle_schema_version,
     map_manifests_ready,
 )
-from organizations.models import Membership
+from organizations.models import Membership, Profile
 from organizations.scope import Dimension
 from organizations.services import effective_scope
 from reviews.models import ReviewItem
@@ -82,16 +84,46 @@ class Changes:
     map_manifests: list[dict[str, Any]] = field(default_factory=list)
 
 
-def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
-    """Compute paired grants from the current active membership, never a body selector."""
-    membership = (
+def _capture_membership(batch: BatchContext) -> Membership | None:
+    """One SQL snapshot for membership, user/org activity and active assigned profiles.
+
+    READ COMMITTED gives each statement its own snapshot. A separate profile query
+    could combine an old membership with new profile grants. No row lock is taken:
+    organization configuration must never be locked below the courier lock.
+    """
+    profiles = (
+        Profile.objects.filter(
+            memberships__pk=OuterRef("pk"),
+            organization_id=OuterRef("organization_id"),
+            is_active=True,
+        )
+        .order_by("slug")
+        .values(
+            snapshot=JSONObject(
+                slug="slug",
+                scope="scope",
+                permission_codes="permission_codes",
+                is_active="is_active",
+            )
+        )
+    )
+    membership: Membership | None = (
         Membership.objects.select_related("user", "organization")
         .filter(organization=batch.organization, user=batch.user, is_active=True)
+        .annotate(scope_profiles=ArraySubquery(profiles))
         .first()
     )
+    return membership
+
+
+def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
+    """Compute paired grants exclusively from one captured configuration snapshot."""
+    membership = _capture_membership(batch)
     if membership is None:
         raise PermissionDenied
-    scope = effective_scope(membership)
+    snapshots: list[dict[str, Any]] = membership.scope_profiles  # type: ignore[attr-defined]
+    profiles = [Profile(organization_id=membership.organization_id, **row) for row in snapshots]
+    scope = effective_scope(membership, profiles=profiles)
     if not scope.allows(permission):
         raise PermissionDenied
     return ProducerContext(batch.organization, batch.user, scope, batch.received_at, permission)

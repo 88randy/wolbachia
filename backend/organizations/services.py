@@ -184,8 +184,14 @@ ORGANIZATION_FIELDS = (
 )
 
 
-def effective_scope(membership: Membership) -> EffectiveScope:
-    """Single authority for action + center + applicable quadrant checks, including /me/."""
+def effective_scope(
+    membership: Membership, *, profiles: list[Profile] | None = None
+) -> EffectiveScope:
+    """Single authority for paired action/scope checks, including /me/.
+
+    Supply profiles only when captured with the membership in one SQL statement
+    (field bootstrap/sync). That path performs no further configuration reads.
+    """
     from organizations.selectors import list_active_profiles
 
     if (
@@ -196,7 +202,13 @@ def effective_scope(membership: Membership) -> EffectiveScope:
         return EffectiveScope(())
     member_scope = safe_scope(membership.scope)
     grants = []
-    profiles = list_active_profiles(membership)
+    if profiles is None:
+        profiles = list_active_profiles(membership)
+    profiles = [
+        profile
+        for profile in profiles
+        if profile.is_active and profile.organization_id == membership.organization_id
+    ]
     if any(getattr(profile, "slug", "") == "government" for profile in profiles):
         profiles = [profile for profile in profiles if profile.slug == "government"]
     for profile in profiles:

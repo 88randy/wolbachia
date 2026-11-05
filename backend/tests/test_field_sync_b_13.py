@@ -28,9 +28,10 @@ from field_sync.producers import (
     map_manifests_ready,
     register,
 )
+from field_sync.selectors import producer_context
 from field_sync.services import ChangeInput, append_courier_change, lock_courier_batches
 from organizations.defaults import seed_default_permission_codes
-from organizations.models import Membership
+from organizations.models import Membership, Organization
 from rules.selectors import get_values_in_force
 from tests.factories import ProfileFactory, RuleParameterFactory, RuleParameterVersionFactory
 from tests.sync_support import event, make_phone, second_device_of
@@ -530,3 +531,83 @@ def test_change_log_blocks_rewrite_and_delete_in_orm_and_raw_sql(phone):
             cursor.execute(statement, [stored.pk])
     stored.refresh_from_db()
     assert stored.payload == {"id": "point-1", "value": "assigned"}
+
+
+@pytest.mark.django_db(transaction=True)
+def test_producer_scope_capture_never_mixes_membership_and_profile_revisions(phone):
+    """Neither committed configuration grants A; the old two-query read could invent that grant."""
+    center_a, center_b = str(uuid.uuid4()), str(uuid.uuid4())
+    scope_a = {
+        "centers": {"mode": "selected", "ids": [center_a]},
+        "quadrants": {"mode": "all", "ids": []},
+    }
+    scope_b = {
+        "centers": {"mode": "selected", "ids": [center_b]},
+        "quadrants": {"mode": "all", "ids": []},
+    }
+    membership = Membership.objects.get(user=phone.user, organization=phone.organization)
+    profile = membership.profiles.get()
+    membership.scope = scope_a
+    membership.save(update_fields=["scope"])
+    profile.scope = scope_b
+    profile.save(update_fields=["scope"])
+    register_rows(
+        [
+            {
+                "id": "never-authorized",
+                "value": "private",
+                "organization_id": str(phone.organization.pk),
+                "center_id": center_a,
+                "quadrant_id": None,
+            }
+        ]
+    )
+    batch = batch_context(phone)
+    read_finished, update_committed = threading.Event(), threading.Event()
+    captured, errors = [], []
+
+    def pause_after_membership_read(execute, sql, params, many, context):
+        result = execute(sql, params, many, context)
+        if '"organizations_membership"' in sql and not read_finished.is_set():
+            # Freeze after the membership statement, before a possible second
+            # profile SELECT. The single-statement fix already captured both.
+            read_finished.set()
+            assert update_committed.wait(10)
+        return result
+
+    def reader():
+        try:
+            with transaction.atomic():
+                lock_courier_batches(batch)
+                with connection.execute_wrapper(pause_after_membership_read):
+                    ctx = producer_context(batch, FIELD_BOOTSTRAP)
+                captured.append(producers.build_sections(ctx)["assignments"])
+        except Exception as error:  # noqa: BLE001 -- propagate worker failures to the test
+            errors.append(error)
+        finally:
+            connection.close()
+
+    thread = threading.Thread(target=reader)
+    thread.start()
+    try:
+        assert read_finished.wait(10)
+        # Same organization-first serialization as administration. The writer
+        # commits both changes together while the reader holds the courier lock.
+        with transaction.atomic():
+            Organization.objects.select_for_update(no_key=True).get(pk=phone.organization.pk)
+            membership.scope = scope_b
+            membership.save(update_fields=["scope"])
+            profile.scope = scope_a
+            profile.save(update_fields=["scope"])
+    finally:
+        update_committed.set()
+        thread.join(15)
+    assert not thread.is_alive()
+    assert not errors
+    assert captured == [[]]
+    # Both bootstrap and initial sync use this same capture; the new committed
+    # configuration must still deny A on the next request.
+    with transaction.atomic():
+        lock_courier_batches(batch)
+        current = producer_context(batch, FIELD_EVENT_SYNC)
+    assert producers.build_sections(current)["assignments"] == []

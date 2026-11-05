@@ -412,7 +412,18 @@ A transaction-local connection marker guards append and rolls back with savepoin
 it cannot authorize a later transaction. CourierChange uses OrgScopedModel and
 ImmutableMixin, a positive unique organization/courier/sequence constraint and
 PostgreSQL insert-only trigger. Bootstrap reads max, builds every section and
-issues its cursor in ONE transaction under that same try-lock. Sync captures one effective context under the courier lock, validates scope,
+issues its cursor in ONE transaction under that same try-lock. Bootstrap and sync
+capture membership, user/organization activity and active assigned profiles from
+ONE SQL statement: an ArraySubquery of same-organization profile snapshots is part
+of the membership SELECT. Under READ COMMITTED, a transaction alone cannot prevent
+a separate profile SELECT from observing a newer configuration than the membership.
+The shared effective_scope algebra consumes these captured profiles without another
+query, preserving government restrictions and paired grants. No Organization row
+lock is taken here: configuration writers lock Organization before their targets,
+and taking that lock after the courier lock would add a reverse lock-order edge.
+See [Django ArraySubquery](https://docs.djangoproject.com/en/5.2/ref/contrib/postgres/expressions/)
+and [PostgreSQL READ COMMITTED](https://www.postgresql.org/docs/18/transaction-iso.html#XACT-READ-COMMITTED).
+Sync captures one effective context under the courier lock, validates scope,
 ingests and pulls with that SAME context/revision inside the transaction. It must
 not recompute r after ingest: a concurrent configuration commit must leave the
 issued old revision detectable on the next pull, requiring bootstrap to remove
