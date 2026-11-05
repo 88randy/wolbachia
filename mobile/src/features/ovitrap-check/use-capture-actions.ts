@@ -21,13 +21,13 @@ export async function runCaptureAction(
     const abandonsDraft = startsCapture && state.canStartCapture && state.isShiftBlocked;
     if (!abandonsDraft) await buffer.persist(service);
     await action();
-    if (abandonsDraft && (await service.read()).draft?.eventId !== state.draft?.eventId)
-      buffer.discard();
     await refresh();
     return true;
   } catch (error) {
     setError(actionErrorKey(error));
     return false;
+  } finally {
+    if (buffer.takeDiscardedEditNotice()) setError("mobile.ovitrap.immutableEdit");
   }
 }
 export function useCaptureActions(input: Input) {

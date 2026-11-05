@@ -27,5 +27,19 @@ unsaved draft. Migration 6 archives its complete JSON (including evidence refere
 and replacement UUID in an immutable table in the same transaction that replaces the
 active slot. Saved events keep their existing append-only projections. Old-shift
 edits/saves stay blocked; only new-capture controls use live departure authorization.
-The command runner skips the old-shift buffer only for this explicit new capture,
-and discards it only once the draft UUID actually changes.
+The service owns the draft buffer. Each edit supplies its originating event UUID;
+merge checks the displayed UUID, and persistence checks the expected UUID inside
+the serialized writer and again against the draft used for the conditional SQL
+update. A mismatch discards the input and uses the existing explicit edit-not-saved
+notice. Retryable storage failures retain input for its original UUID only.
+
+Immediately after `store.begin` commits, the service discards/rebinds its buffer
+before any fallible snapshot read. The command runner reports a discarded-edit
+notice even when that later read fails. No cleanup depends on action success or a
+subsequent read. The command runner skips old-shift persistence only for an explicit
+new capture authorized under the current shift.
+
+Round 3 regressions in `test/m-08.test.ts` cover the exact 37/88 buffered-condition
+retry after a post-begin read failure, both merge/persist UUID mismatches, and a
+second writer replacing the draft during a queued update's read. Deferred promises
+control interleavings; no timer waits are used.

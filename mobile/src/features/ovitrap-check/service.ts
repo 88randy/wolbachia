@@ -1,3 +1,4 @@
+import { ImmutableCaptureError, OvitrapDraftBuffer } from "./draft-buffer.ts";
 import { ShiftBlockedError } from "./shift-authorization.ts";
 import { availability } from "./availability.ts";
 import { correctionDraft } from "./correction.ts";
@@ -33,14 +34,16 @@ export interface Snapshot extends StoredCapture {
 }
 /** Serialize start/edit/commit. SQL slot/capture constraints protect against a second service instance. */
 export class OvitrapService {
+  readonly draftBuffer = new OvitrapDraftBuffer();
   readonly #deps: Dependencies;
   #tail: Promise<unknown> = Promise.resolve();
   constructor(deps: Dependencies) {
     this.#deps = deps;
   }
-  #write<T>(action: () => Promise<T>, startsCapture = false): Promise<T> {
+  #write<T>(action: () => Promise<T>, startsCapture = false, eventId?: string | null): Promise<T> {
     const next = this.#tail.then(async () => {
       const draft = startsCapture ? null : (await this.#deps.store.read()).draft;
+      if (eventId !== undefined && draft?.eventId !== eventId) throw new ImmutableCaptureError();
       if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();
       return action();
     });
@@ -104,6 +107,7 @@ export class OvitrapService {
     const located = await this.#locateDraft(draft, isManual);
     if (await this.#isShiftBlocked(located)) throw new ShiftBlockedError();
     await store.begin(located);
+    this.draftBuffer.rebind(located.eventId);
     const saved = await this.read();
     if (saved.draft) assertSameTarget(saved.draft, mode, ovitrapId);
     return saved;
@@ -122,18 +126,26 @@ export class OvitrapService {
       manualCapture: isManual,
     };
   }
-  update(patch: DraftPatch): Promise<Snapshot & { readonly isUpdateApplied: boolean }> {
-    return this.#write(async () => {
-      const state = await this.read();
-      const { draft, event } = state;
-      if (!draft || event) return { ...state, isUpdateApplied: false };
-      if (state.isShiftBlocked) throw new ShiftBlockedError();
-      const manual = patch.bagCode !== undefined ? { manualCapture: true, bagUuid: null } : {};
-      const isUpdateApplied = await this.#deps.store.update(
-        normalizePaddle({ ...draft, ...patch, ...manual }),
-      );
-      return { ...(await this.read()), isUpdateApplied };
-    });
+  update(
+    patch: DraftPatch,
+    eventId?: string | null,
+  ): Promise<Snapshot & { readonly isUpdateApplied: boolean }> {
+    return this.#write(
+      async () => {
+        const state = await this.read();
+        const { draft, event } = state;
+        if (eventId !== undefined && draft?.eventId !== eventId) throw new ImmutableCaptureError();
+        if (!draft || event) return { ...state, isUpdateApplied: false };
+        if (state.isShiftBlocked) throw new ShiftBlockedError();
+        const manual = patch.bagCode !== undefined ? { manualCapture: true, bagUuid: null } : {};
+        const isUpdateApplied = await this.#deps.store.update(
+          normalizePaddle({ ...draft, ...patch, ...manual }),
+        );
+        return { ...(await this.read()), isUpdateApplied };
+      },
+      false,
+      eventId,
+    );
   }
   scan(target: "bag" | "ovitrap"): Promise<string> {
     return this.#write(async () => {

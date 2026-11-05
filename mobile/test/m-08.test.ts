@@ -571,8 +571,13 @@ void test("regression: an immutable late edit is reported and does not block the
   };
   const saving = h.service.save();
   await entered.promise;
-  const buffer = new OvitrapDraftBuffer();
-  buffer.edit({ otherText: "Late finding text", reason: "Late correction reason" });
+  const buffer = h.service.draftBuffer;
+  const editingDraft = (await h.service.read()).draft;
+  assert.ok(editingDraft);
+  buffer.edit(editingDraft.eventId, {
+    otherText: "Late finding text",
+    reason: "Late correction reason",
+  });
   let notice: string | null = null;
   const commands = {
     service: h.service,
@@ -715,8 +720,10 @@ void test("regression: SQL skipped immutable edits are reported and discarded af
     await release.promise;
     return update(draft);
   };
-  const buffer = new OvitrapDraftBuffer();
-  buffer.edit({ reason: "Pending correction text" });
+  const buffer = h.service.draftBuffer;
+  const editingDraft = (await h.service.read()).draft;
+  assert.ok(editingDraft);
+  buffer.edit(editingDraft.eventId, { reason: "Pending correction text" });
   const persisting = assert.rejects(buffer.persist(h.service), ImmutableCaptureError);
   await entered.promise;
   const other = await harness(h);
@@ -769,8 +776,9 @@ void test("regression: an authorized replacement shift supersedes the old draft 
       /ShiftBlockedError/,
     );
     await assert.rejects(capture.service.adoptSnapshots(), /ShiftBlockedError/);
-    const buffer = new OvitrapDraftBuffer();
-    buffer.edit({ otherText: "Old shift input" });
+    const buffer = capture.service.draftBuffer;
+    buffer.edit(original.eventId, { otherText: "Old shift input" });
+    let notice: string | null = null;
     const command = {
       service: capture.service,
       buffer,
@@ -778,10 +786,11 @@ void test("regression: an authorized replacement shift supersedes the old draft 
         await capture.service.read();
       },
       setError: (key: string | null) => {
-        if (key) assert.fail(key);
+        notice = key;
       },
     };
     assert.equal(await runCaptureAction(command, () => capture.service.startPlace(), true), true);
+    assert.equal(notice, "mobile.ovitrap.immutableEdit");
     const fresh = buffer.merge(await capture.service.read());
     assert.ok(fresh.draft);
     assert.ok(replacement.draft);
@@ -826,4 +835,111 @@ void test("regression: an authorized replacement shift supersedes the old draft 
     phone.close();
     rmSync(directory, { recursive: true });
   }
+});
+
+void test("regression: retry after a post-begin read failure never saves the previous shift's buffered conditions", async () => {
+  let shiftId = "55555555-5555-4555-8555-555555555555";
+  const h = await harness(undefined, { shiftId: () => Promise.resolve(shiftId) });
+  const original = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  assert.ok(original.draft);
+  const buffer = h.service.draftBuffer;
+  buffer.edit(original.draft.eventId, { temperature: "37", humidity: "88" });
+  shiftId = "66666666-6666-4666-8666-666666666666";
+  let shouldFailRead = false;
+  const read = h.store.read.bind(h.store);
+  h.store.read = () => {
+    if (shouldFailRead) {
+      shouldFailRead = false;
+      return Promise.reject(new Error("Read failed after the new draft committed"));
+    }
+    return read();
+  };
+  const begin = h.store.begin.bind(h.store);
+  h.store.begin = async (draft) => {
+    await begin(draft);
+    shouldFailRead = true;
+  };
+  const notices: string[] = [];
+  const commands = {
+    service: h.service,
+    buffer,
+    refresh: async () => {
+      await h.service.read();
+    },
+    setError: (key: string | null) => {
+      if (key) notices.push(key);
+    },
+  };
+  const target = "99999999-9999-4999-8999-999999999999";
+  assert.equal(
+    await runCaptureAction(commands, () => h.service.startCheck(target, true), true),
+    false,
+  );
+  const replacement = await h.service.read();
+  assert.notEqual(replacement.draft?.eventId, original.draft.eventId);
+  assert.equal(replacement.draft?.shiftId, shiftId);
+  assert.equal(replacement.draft.ovitrapId, target);
+  assert.ok(notices.includes("mobile.ovitrap.immutableEdit"));
+  assert.equal(
+    await runCaptureAction(commands, () => h.service.startCheck(target, true), true),
+    true,
+  );
+  await prepareCheck(h.service);
+  assert.equal(await runCaptureAction(commands, () => h.service.save()), true);
+  const saved = await h.service.read();
+  assert.equal(saved.event?.envelope.payload.temperature_c, null);
+  assert.equal(saved.event.envelope.payload.humidity_pct, null);
+  await h.engine.requestSync();
+});
+
+void test("regression: neither merge nor persist can apply a buffer to another event UUID", async () => {
+  for (const operation of ["merge", "persist"] as const) {
+    let shiftId = "55555555-5555-4555-8555-555555555555";
+    const h = await harness(undefined, { shiftId: () => Promise.resolve(shiftId) });
+    const original = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+    assert.ok(original.draft);
+    const buffer = new OvitrapDraftBuffer();
+    buffer.edit(original.draft.eventId, { temperature: "37", humidity: "88" });
+    shiftId = "66666666-6666-4666-8666-666666666666";
+    const replacement = await h.service.startCheck("99999999-9999-4999-8999-999999999999", true);
+    if (operation === "merge") {
+      const displayed = buffer.merge(replacement);
+      assert.equal(displayed.draft?.temperature, "");
+      assert.equal(displayed.draft.humidity, "");
+      assert.equal(buffer.takeDiscardedEditNotice(), true);
+    } else {
+      await assert.rejects(buffer.persist(h.service), ImmutableCaptureError);
+    }
+    await buffer.persist(h.service);
+    assert.equal((await h.service.read()).draft?.temperature, "");
+    assert.equal((await h.service.read()).draft?.humidity, "");
+  }
+});
+
+void test("regression: a draft replaced while a buffered update reads cannot receive the old patch", async () => {
+  let shiftId = "55555555-5555-4555-8555-555555555555";
+  const h = await harness(undefined, { shiftId: () => Promise.resolve(shiftId) });
+  const original = await h.service.startCheck("44444444-4444-4444-8444-444444444444", true);
+  assert.ok(original.draft);
+  const buffer = h.service.draftBuffer;
+  buffer.edit(original.draft.eventId, { temperature: "37", humidity: "88" });
+  const entered = barrier();
+  const release = barrier();
+  const read = h.service.read.bind(h.service);
+  h.service.read = async () => {
+    entered.resolve();
+    await release.promise;
+    return read();
+  };
+  const persisting = assert.rejects(buffer.persist(h.service), ImmutableCaptureError);
+  await entered.promise;
+  shiftId = "66666666-6666-4666-8666-666666666666";
+  const other = await harness(h, { shiftId: () => Promise.resolve(shiftId) });
+  await other.service.startCheck("99999999-9999-4999-8999-999999999999", true);
+  release.resolve();
+  await persisting;
+  const replacement = await h.service.read();
+  assert.equal(replacement.draft?.temperature, "");
+  assert.equal(replacement.draft.humidity, "");
+  await buffer.persist(h.service);
 });
