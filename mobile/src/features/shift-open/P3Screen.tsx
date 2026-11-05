@@ -1,3 +1,4 @@
+import { OvitrapEntry } from "../ovitrap-check/OvitrapEntry.tsx";
 import { HomeShiftAction } from "./HomeShiftAction.tsx";
 import { ScrollView } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
@@ -19,6 +20,7 @@ export function P3Screen() {
       <SaveFeedback model={model} />
       <HomeShiftCard state={model.state} />
       <HomeShiftAction model={model} />
+      <OvitrapEntry />
       <ShiftAction
         label={t("mobile.shiftOpen.inbox")}
         onPress={() => {

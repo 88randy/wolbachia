@@ -238,3 +238,132 @@ Android force-stop/device certification claim. There is no mobile e2e harness, s
 `mobile/e2e/m-04.spec.ts` is intentionally not added. APK CI, real API/device flows,
 native SQLite, Galaxy S24 Ultra SM-S928B/Android 16 and the arm64/4 GB/64 GB/Android
 13+ profile must be qualified by the orchestrator. Docker is blocked in this task.
+
+
+## M-08: place/check ovitraps (#137)
+
+Design mapping: `S06-Escaner` = scanner/manual entry and P21 invalid code;
+`S07-Colocar` = P13; `S08-Revisar` = P14; `S15-Ingles` and
+`S16-Accesibilidad` guide English, dark mode and enlarged text. Their PNGs and
+P13/P14/P21 HTML sources were inspected. Issue #137 supersedes the missing
+Yes/No eggs question in the P14 PNG. P13 groups point, preparation and confirmation;
+P14 advances finding -> paddle present -> eggs Yes/No -> conditions/bag/reinstatement
+-> confirmation. Closed-house/absent/missing/destroyed skip paddle/eggs/bag.
+There is no egg-count input, draft field or event payload field.
+
+### Decisions applied (ADR 101)
+
+- `domain.ts` contains strict ASCII `wbf:1:<kind>:<hyphenated UUID>` parsing,
+  conditional boolean eggs and shared route transitions. Kinds are lot, ovitrap,
+  bag, release-device and sample. Wrong-kind/failed scans always open P21; only an
+  explicit manual action sets `manual_capture=true`. A pending draft for a different
+  target blocks switching with a resume message instead of silently editing it.
+- **[ASSUMPTION]** Native scanner/camera/GPS integration is unavailable in this build.
+  Production `ScannerPort`, `GpsPort` and `EvidencePort` return unavailable/null;
+  manual ovitrap UUID and human bag entry work without camera dependencies. A typed
+  bag QR preserves its UUID; a scanned bag UUID resolves its human code from cached
+  bootstrap context, otherwise the courier must type the printed human code. The
+  UUID history stays local even when manual editing removes the active association.
+- Physical ovitrap UUIDs are generated on the phone at placement and retained as the
+  projection identity. Checks resolve the fixed point/source evidence from a local
+  placement or explicit cached assignment; a scanned unknown UUID has an explicit
+  location/scope review notice. P13 only offers downloaded assignment points.
+  Missing assignment/version/epi week blocks saving; an explicitly lost or narrowed
+  downloaded assignment blocks new capture while retaining drafts/outbox.
+- Catalog/rules download uses `packages/api-client` and saves snapshots atomically.
+  Drafts pin catalog labels, hashes, assignment version/epi week, GPS including
+  accuracy, shift and capture time. New catalogs warn without clearing old answers.
+  Explicit adoption refuses to discard a retired captured choice's historical label.
+  Catalog photo requirements apply to current evidence; an old placement photo is
+  retained as source provenance and cannot satisfy a required current visit photo.
+- **[ASSUMPTION]** No B-13/B-19 assignment/bootstrap adapter exists on this baseline.
+  The factory accepts an assignment port and caches its explicit context; it never
+  invents an endpoint, scope, point or week. Production stays gated when that context
+  is absent, like M-04's unavailable map port. Bootstrap integration must provide
+  assignment points, local epi week, optional ovitrap/bag mappings and reuse eligibility.
+- OP03: max paddle reuses defaults to 2; absent bootstrap eligibility offers only a
+  new paddle. Durable local uses are added across assignment versions, including
+  voided/review captures because physical reuse cannot be undone. Without a server
+  reconciliation watermark, overlap with refreshed counters is conservative and can
+  disable reuse early; a hash change never grants another reuse. **[ASSUMPTION]**
+  50 m distance/50 m accuracy defaults only support local warnings; missing/out-of-bound
+  required parameters block capture. B-14 reviews unusable GPS; an injected downloaded
+  block policy is enforced. `next_change_at` expiration warns/requires review under
+  the stored policy, and no acknowledgement can override a block policy.
+- A repeat local ovitrap/epi-week reading offers reasoned void-plus-new. Both new UUIDs,
+  `record.void {reason_code, reason}`, replacement, draft, immutable projections,
+  source/current evidence references and lineage commit through the existing outbox
+  transaction. Reasons need 10 visible characters and at most 1000 code points after
+  normalization. Original rows/evidence remain. A new bag code is required because
+  B-14 reserves prior codes even after void. Corrections retain current GPS, manual
+  flag, shift and snapshots; prior answers never replace current provenance.
+- Lagged paddles remain bagged and lab-countable; the UI explains that index exclusion
+  belongs to the server. Reinstatement/preparation and reused paddle provenance remain
+  local: they are not extra keys in the strict B-14 payload. Supply/evidence refs are
+  bounded UUID lists. No unsupported lifecycle mutation or community notification is
+  invented; replacement/relocation/removal destinations belong to B-15.
+- Migration **5** adds the durable singleton draft and append-only capture/evidence/
+  correction projections. SQL guards enforce capture identity and active weekly reading
+  uniqueness. `engine.enqueue(event, projectionStatements)` is the only queue entry.
+  A void uses the same outbox insertion helper to insert its replacement atomically.
+  Errors never claim Saved; pending/error only proves phone storage. Phone-saved,
+  server-received and supervisor-review-confirmation are separate; an accepted ingest
+  does not invent a supervisor decision.
+- Tokens, `AppText`, wrapping layouts, decimal condition inputs, explicit labels,
+  selected/disabled states and live-region notices are native React Native controls.
+  M-08 opts the shared header targets into 56 dp, as are its form/actions. No inline
+  styles, color literals, user copy or text truncation is added. All copy is in the
+  `mobile` i18n area (es-MX/en). Strings go through the existing `translate.ts` over
+  `packages/i18n` (no second i18n runtime). No dependency was added.
+
+### Acceptance map and verification boundary
+
+Node tests: `test/m-08.test.ts`; behavior-specific factories live in `test/support/`.
+No case takes two seconds in the focused local run. No duplicate framework tests.
+
+| Issue checkbox | Evidence | Status |
+| --- | --- | --- |
+| 1. Branches, conditional eggs and no count | Conditional payload whitelist (explicitly excludes egg_count/eggs/count), no-paddle findings, Other/photo/gates, strict QR, UUID bounds; source review of form inputs | Node verified; native UI unverified |
+| 2. Place/check/lagged/repeat, fixed point/evidence, taps | Real SQLite place/check/correction journey, current-provenance regression, reserved-bag rejection, rollback, cached/local reuse across bootstrap versions | Node verified; physical journey unverified |
+| 3. Offline/restart and later sync | File-backed SQLite close/reopen restores draft and original UUID; interrupted sending recovered through real SyncEngine and scripted transport; failed commit/double save; null/omitted GPS; revoked scope preserves draft | Node verified; phone force-stop/API/upload unverified |
+| 4. TalkBack/130%/light-dark/es-MX-en | Native labels/states, AppText, 56 dp targets, scrollable wrapping controls and both locales implemented | **UNVERIFIED** on device |
+
+`measureCheckTaps` walks the same automatic step transitions used by the UI:
+**normal = 10 control taps; closed-house = 2 control taps after the resolved target scan**.
+Normal includes finding, paddle presence, eggs, paddle type, bag scan, three
+reinstatement confirmations, Continue and Save. These budgets assume usable cached
+snapshots/assignment/GPS, mapped bag code, no repeat/review and empty optional
+conditions. Text entry, keyboard/focus taps, scroll gestures, error/review actions
+and the initial target scan are excluded. Optional condition-field focus adds at
+least two taps; manual QR entry has a different interaction count. This is a pure
+route measurement, not a claim of measured native scanner performance.
+
+There is **no mobile e2e harness**, so `mobile/e2e/m-08.spec.ts` was not created.
+Docker, Playwright and emulators were not run. Real backend acceptance/idempotency,
+attachment upload/resume, native adapters and Android force-stop remain unverified.
+The full accessibility matrix must run separately on the Galaxy S24 Ultra SM-S928B /
+Android 16 reference and the arm64/4 GB/64 GB/Android 13+ low-resource profile.
+Neither profile is qualified by Node tests. Authentication/phone lock integration
+remains the shell/M-01 dependency; capture does not add a parallel auth/session path.
+
+Official references checked for reused APIs: [React Native accessibility](https://reactnative.dev/docs/accessibility),
+[React Native text](https://reactnative.dev/docs/text).
+
+
+### Local handoff verification
+
+Run from the repository root on Windows (`npx.cmd`/`npm.cmd`):
+
+| Command | Result |
+| --- | --- |
+| `npx eslint mobile packages/i18n` | Passed |
+| `npx prettier --check mobile packages docs` | Passed; Markdown and generated artifacts follow the repository ignore rules |
+| `node scripts/typecheck.mjs mobile` | Passed |
+| `npm test --workspace=mobile -- --test-concurrency=1` | 105 passed, including 15 M-08 cases |
+| `npm test --workspace=packages/i18n` | 13 passed |
+| `git diff --check` | Passed |
+
+Code and security reviewers reproduced their findings, then confirmed the fixes;
+no remaining blocker was identified in the reviewed local scope. No commit/push/PR,
+Docker, Playwright, emulator or device qualification was performed. No generated
+stackdump/test-results artifacts were retained.

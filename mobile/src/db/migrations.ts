@@ -66,6 +66,24 @@ const MIGRATIONS: readonly (readonly string[])[] = [
         (SELECT 1 FROM outbox_event WHERE id = OLD.opening_event_id AND local_status = 'rejected'))
       BEGIN SELECT RAISE(ABORT, 'a captured shift is immutable unless rejected'); END`,
   ],
+  [
+    `CREATE TABLE ovitrap_draft (slot INTEGER PRIMARY KEY CHECK(slot = 1), draft TEXT NOT NULL, event_id TEXT REFERENCES outbox_event(id))`,
+    `CREATE TABLE ovitrap_capture (event_id TEXT PRIMARY KEY REFERENCES outbox_event(id), ovitrap_id TEXT NOT NULL, mode TEXT NOT NULL, epi_week TEXT NOT NULL, draft TEXT NOT NULL)`,
+    `CREATE UNIQUE INDEX ovitrap_placed_identity ON ovitrap_capture(ovitrap_id) WHERE mode = 'place'`,
+    `CREATE TABLE ovitrap_evidence (event_id TEXT NOT NULL REFERENCES outbox_event(id), evidence_id TEXT NOT NULL, file_ref TEXT NOT NULL, PRIMARY KEY(event_id, evidence_id))`,
+    `CREATE TABLE ovitrap_lineage (void_event_id TEXT PRIMARY KEY REFERENCES outbox_event(id), target_event_id TEXT NOT NULL UNIQUE REFERENCES outbox_event(id), replacement_event_id TEXT NOT NULL UNIQUE REFERENCES outbox_event(id) DEFERRABLE INITIALLY DEFERRED)`,
+    `CREATE TRIGGER ovitrap_capture_slot BEFORE INSERT ON ovitrap_capture WHEN NOT EXISTS
+      (SELECT 1 FROM ovitrap_draft WHERE slot = 1 AND event_id IS NULL AND json_extract(draft, '$.eventId') = NEW.event_id)
+      BEGIN SELECT RAISE(ABORT, 'draft changed or already captured'); END`,
+    `CREATE TRIGGER ovitrap_week_unique BEFORE INSERT ON ovitrap_capture WHEN NEW.mode = 'check' AND EXISTS
+      (SELECT 1 FROM ovitrap_capture c WHERE c.mode = 'check' AND c.ovitrap_id = NEW.ovitrap_id AND c.epi_week = NEW.epi_week
+      AND NOT EXISTS (SELECT 1 FROM ovitrap_lineage l WHERE l.target_event_id = c.event_id))
+      BEGIN SELECT RAISE(ABORT, 'active reading already exists this epi week'); END`,
+    ...["ovitrap_capture", "ovitrap_evidence", "ovitrap_lineage"].flatMap((table) => [
+      `CREATE TRIGGER ${table}_immutable BEFORE UPDATE ON ${table} BEGIN SELECT RAISE(ABORT, 'capture evidence is immutable'); END`,
+      `CREATE TRIGGER ${table}_no_delete BEFORE DELETE ON ${table} BEGIN SELECT RAISE(ABORT, 'capture evidence is retained'); END`,
+    ]),
+  ],
 ];
 
 /** Highest schema version this build knows. */
