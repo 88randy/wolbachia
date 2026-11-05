@@ -15,10 +15,11 @@ Rules:
 | ovitrampa | ovitrap | `ovitrap` | Trap that holds the egg paddle. Models `Ovitrap`, `OvitrapReading`; sync events `ovitrap.place|check|replace|relocate|remove`. |
 | papeleta | egg paddle | `/egg-paddles/`, `paddle_present`, `paddle_type` | The courier only records presence and Yes/No eggs; never a count (decision 14). |
 | ¿tiene huevos? | has eggs | `has_eggs` (`bool`, `null` when there is no paddle) | Yes/No by the courier; the egg count is the entomologist's (web). |
-| folio | sampling point code | `/sampling-points/`, `code` on `sampling_point` [ASSUMPTION] | Fixed human code of a sampling point (e.g. OV-010). |
-| punto de muestreo | sampling point | `sampling_point` | Has a code (folio). |
-| manzana | block | `/blocks/`, `block` | City block that groups sampling points. |
-| cuadrante | quadrant | `/quadrants/`, `quadrant` | Work area assigned to a courier; versioned. |
+| folio | sampling point code | `/sampling-points/`, `code` on `SamplingPoint` | Fixed organization-unique sampling point code, retained across all location versions (e.g. OV-010). |
+| punto de muestreo | sampling point | `sampling_point` | Immutable identity (code/folio and block); PointVersion appends location and retirement history. |
+| manzana | block | `/blocks/`, `block` | Organization-coded child of a quadrant; BlockVersion appends polygon history. |
+| cuadrante | quadrant | `/quadrants/`, `quadrant` | Organization-coded work area belonging to a Center; QuadrantVersion is append-only. Current geometry is the highest revision; captured_at resolves past geometry. |
+| resoluci?n de punto excluido | excluded point resolution | `ExcludedPointResolution`, `point_resolutions` | Authored keep/move/remove decision with evidence for every point outside a proposed quadrant geometry; remove appends a retired PointVersion. |
 | jornada | shift | `/shifts/`, `shift` | Courier's work day, from start to closing. |
 | lectura desfasada | lagged reading | `is_lagged` | Reading outside the expected interval (rule from rule parameters). |
 | hallazgo | finding | `finding` | Result noted when checking an ovitrap. |
@@ -41,6 +42,9 @@ Rules:
 | Otro (especificar) | other item | `is_other`, code `other` | Fixed last item of an open catalog; cannot be deactivated; choosing it requires free text. |
 | parámetro de regla | rule parameter | `/rule-parameters/`, `RuleParameter`, `key` | A threshold (e.g. `max_distance_to_point_m`) with type, unit and optional bounds. |
 | versión de parámetro | rule parameter version | `/rule-parameters/{key}/versions/`, `RuleParameterVersion` | One value from `effective_from` on; insert-only; voided (not deleted) if wrong and still scheduled. |
+| modo de alcance | scope mode | `scope.centers.mode`, `scope.quadrants.mode` | Explicit none/selected/all; empty selected denies, all requires an explicit grant, selected never expands to new centers. |
+| alcance efectivo | effective scope | `effective_scope` | The action-granting profile scope intersects membership scope in both applicable dimensions; unrelated grants never combine into a new pair. |
+| revisión de configuración | configuration revision | `ConfigurationRevision`, `revision`, `expected_revision` | Immutable authored snapshot of organization settings, profile permissions or membership assignments. |
 | paquete de configuración | snapshot | `/field/catalog/`, `/field/rules/`, `version` | Compact copy of a configuration that the phone keeps offline; `version` is a content hash and the `ETag`. |
 
 ## Release
@@ -61,7 +65,7 @@ Rules:
 | baja | write-off | `/write-offs/`, `write_off` | Removal from stock, with reason and evidence. |
 | conciliación | reconciliation | `/reconciliations/`, `reconciliation` | Assigned vs used vs returned, per courier and day. |
 | discrepancia | discrepancy | `/discrepancies/`, `discrepancy` | Unjustified difference found in a reconciliation or reception. |
-| centro | center | `center` | Operational center (US spelling, never "centre"). |
+| centro | center | `/centers/`, `Center`, `code`, `name`, `is_active` | Organization-scoped operational center; code unique per organization, deactivate rather than delete. US spelling, never "centre". |
 
 ## People
 

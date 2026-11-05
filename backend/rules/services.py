@@ -3,7 +3,6 @@ from datetime import UTC, date, datetime, time, timedelta
 from decimal import Decimal
 from zoneinfo import ZoneInfo
 
-from django.db import transaction
 from django.utils import timezone
 
 from accounts.models import User
@@ -11,6 +10,7 @@ from core.exceptions import FieldValidationError
 from core.services import lock_record_for_update, void_validated_record
 from core.time import local_today
 from core.void_reason import resolve_void_reason
+from organizations.services import lock_organization_configuration
 from rules.exceptions import VersionNotScheduledError
 from rules.models import RuleParameter, RuleParameterVersion, ValueType
 from rules.selectors import to_number
@@ -76,13 +76,13 @@ def create_rule_version(
     """Schedule a new value for a parameter (writes RuleParameterVersion). Never edits a version.
 
     The parameter row is locked, so two admins scheduling the same future date cannot both
-    succeed: the second gets `duplicate_effective_date` (a voided version does not count, so a
+    succeed: contention gets retryable 429; after retry, `duplicate_effective_date` (a voided version does not count, so a
     wrong one is voided first). A version for today is always allowed: it takes effect now and
     the latest `effective_from` wins, which lets an admin correct a seeded value on day one.
     Field errors: `effective_from_in_past`, `effective_from_too_far`, `duplicate_effective_date`,
     `not_an_integer`, `out_of_range` (with params `{min, max}`).
     """
-    with transaction.atomic():
+    with lock_organization_configuration(parameter.organization_id):
         locked = (
             RuleParameter.objects.select_for_update(of=("self",))
             .select_related("organization")
@@ -93,6 +93,7 @@ def create_rule_version(
         effective_from = resolve_effective_from(
             spec.effective_date, locked.organization.timezone, now
         )
+        _validate_fuel_pair(locked, spec.value, effective_from)
         if effective_from > now and _is_date_taken(locked, spec.effective_date):
             raise FieldValidationError("effective_from", DUPLICATE_DATE)
         return RuleParameterVersion.objects.create(
@@ -121,9 +122,58 @@ def void_rule_version(  # noqa: PLR0913 -- explicit void contract
     be voided: `VersionNotScheduledError` (409). A voided version is excluded from the value
     in force and from the snapshots but stays in the history.
     """
-    with transaction.atomic():
+    with lock_organization_configuration(version.organization_id):
         choice = resolve_void_reason(version.organization_id, reason, reason_code)
         locked = lock_record_for_update(version)
         if locked.effective_from <= timezone.now():
             raise VersionNotScheduledError
+        if locked.parameter.key in (FUEL_MIN_KEY, FUEL_MAX_KEY):
+            validate_fuel_timeline(_fuel_versions(locked.parameter, locked), timezone.now())
         return void_validated_record(locked, user, choice)
+
+
+FUEL_MIN_KEY = "fuel_efficiency_min_km_l"
+FUEL_MAX_KEY = "fuel_efficiency_max_km_l"
+
+
+def _validate_fuel_pair(parameter: RuleParameter, value: Decimal, effective_from: datetime) -> None:
+    """Check every future transition, including this parameter's scheduled replacements."""
+    if parameter.key not in (FUEL_MIN_KEY, FUEL_MAX_KEY):
+        return
+    versions = _fuel_versions(parameter)
+    versions.append((effective_from, parameter.key, value))
+    validate_fuel_timeline(versions, effective_from)
+
+
+def _fuel_versions(
+    parameter: RuleParameter, exclude: RuleParameterVersion | None = None
+) -> list[tuple[datetime, str, Decimal]]:
+    versions = (
+        RuleParameterVersion.objects.filter(
+            organization_id=parameter.organization_id,
+            parameter__key__in=[FUEL_MIN_KEY, FUEL_MAX_KEY],
+            voided_at__isnull=True,
+        )
+        .select_related("parameter")
+        .order_by("effective_from", "created_at", "id")
+    )
+    if exclude is not None:
+        versions = versions.exclude(pk=exclude.pk)
+    return [(version.effective_from, version.parameter.key, version.value) for version in versions]
+
+
+def validate_fuel_timeline(versions: list[tuple[datetime, str, Decimal]], start: datetime) -> None:
+    """Reject a resulting min/max timeline that is incompatible at or after start."""
+    current: dict[str, Decimal] = {}
+    transitions: dict[datetime, list[tuple[str, Decimal]]] = {}
+    for at, key, value in sorted(versions, key=lambda version: version[0]):
+        transitions.setdefault(at, []).append((key, value))
+    for at, changes in sorted(transitions.items()):
+        current.update(changes)
+        if (
+            at >= start
+            and FUEL_MIN_KEY in current
+            and FUEL_MAX_KEY in current
+            and current[FUEL_MIN_KEY] >= current[FUEL_MAX_KEY]
+        ):
+            raise FieldValidationError("value", "fuel_bounds_conflict")

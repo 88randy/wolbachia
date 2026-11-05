@@ -13,3 +13,11 @@ class CatalogItemLimitError(DomainError):
     code = "catalog_item_limit_reached"
     status_code = HTTPStatus.CONFLICT
     default_detail = "The catalog already has the maximum number of active items."
+
+
+class ProtectedOtherItemError(OtherItemLockedError):
+    code = "other_item_protected"
+    default_detail = 'The fixed "Other (specify)" item cannot be edited.'
+    blocked_by = [
+        {"reason": "protected_other_item", "unblocked_by_role": "admin", "link": "/catalogs/"}
+    ]

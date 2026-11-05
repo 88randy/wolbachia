@@ -5,7 +5,7 @@ from django.contrib.postgres.fields import ArrayField
 from django.core.exceptions import ValidationError
 from django.db import models
 
-from core.models import OrgScopedModel
+from core.models import ImmutableMixin, OrgScopedModel
 from organizations.validators import (
     validate_country_code,
     validate_permission_code,
@@ -21,9 +21,14 @@ def default_languages() -> list[str]:
     return [DEFAULT_LANGUAGE]
 
 
-def default_scope() -> dict[str, list[str]]:
-    """Until Center and Quadrant models exist, scope holds their ids as plain lists."""
-    return {"centers": [], "quadrants": []}
+def default_scope() -> dict[str, dict[str, object]]:
+    """A missing grant denies both dimensions; all is never inferred from an empty list."""
+    return {"centers": {"mode": "none", "ids": []}, "quadrants": {"mode": "none", "ids": []}}
+
+
+def all_scope() -> dict[str, dict[str, object]]:
+    """Explicit organization-wide grant used only by the platform bootstrap/seed."""
+    return {"centers": {"mode": "all", "ids": []}, "quadrants": {"mode": "all", "ids": []}}
 
 
 class Organization(models.Model):
@@ -38,6 +43,13 @@ class Organization(models.Model):
         models.CharField(max_length=LANGUAGE_MAX_LENGTH), default=default_languages
     )
     logo = models.FileField(upload_to="organizations/logos/", blank=True)
+    epi_week = models.CharField(
+        max_length=16, choices=[("iso", "ISO"), ("mmwr", "MMWR")], default="iso"
+    )
+    label_phone = models.CharField(max_length=40, blank=True)
+    support_contact = models.CharField(max_length=200, blank=True)
+    logo_content = models.BinaryField(default=bytes, blank=True)
+    revision = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -58,6 +70,8 @@ class Profile(OrgScopedModel):
         default=list,
         blank=True,
     )
+    scope = models.JSONField(default=default_scope)
+    revision = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
     # Seed bookkeeping: the default permission seed grants a code at most once (so a code an admin
     # revoked is never granted again) and only to profiles the seed itself created.
@@ -85,6 +99,7 @@ class Membership(OrgScopedModel):
     )
     profiles = models.ManyToManyField(Profile, related_name="memberships", blank=True)
     scope = models.JSONField(default=default_scope)
+    revision = models.PositiveIntegerField(default=1)
     is_active = models.BooleanField(default=True)
 
     class Meta:
@@ -95,12 +110,48 @@ class Membership(OrgScopedModel):
         ]
 
     def clean(self) -> None:
-        """`scope` is a JSON object whose known keys hold lists (ids of centers and quadrants)."""
-        known_keys = default_scope().keys()
-        scope = self.scope
-        if not isinstance(scope, dict) or not all(
-            isinstance(scope.get(key, []), list) for key in known_keys
-        ):
-            raise ValidationError(
-                {"scope": "Use an object with list values for centers and quadrants."}
+        from organizations.scope import normalize_scope
+
+        try:
+            normalize_scope(self.scope)
+        except ValueError as error:
+            raise ValidationError({"scope": str(error)}) from error
+
+
+class Center(OrgScopedModel):
+    """An operational center; deactivate rather than delete."""
+
+    code = models.CharField(max_length=50)
+    name = models.CharField(max_length=200)
+    is_active = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ["code", "id"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "code"], name="center_unique_code_per_organization"
             )
+        ]
+
+    def __str__(self) -> str:
+        return self.code
+
+
+class ConfigurationRevision(ImmutableMixin, OrgScopedModel):
+    """Append-only settings, ProfilePermission and Membership audit snapshots."""
+
+    kind = models.CharField(
+        max_length=16,
+        choices=[("organization", "Organization"), ("role", "Role"), ("membership", "Membership")],
+    )
+    target_id = models.UUIDField()
+    revision = models.PositiveIntegerField()
+    snapshot = models.JSONField()
+
+    class Meta(ImmutableMixin.Meta):
+        constraints = [
+            models.UniqueConstraint(
+                fields=["organization", "kind", "target_id", "revision"],
+                name="configuration_revision_unique",
+            )
+        ]

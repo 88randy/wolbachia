@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from typing import Any, Literal
 
 from django.db.models import QuerySet
 
@@ -24,7 +25,7 @@ class MeContext:
     organization: Organization | None
     profiles: list[Profile]
     permissions: list[str]
-    scope: dict[str, list[str]] = field(default_factory=default_scope)
+    scope: dict[str, dict[str, object]] = field(default_factory=default_scope)
     organizations: list[Organization] = field(default_factory=list)
     limits: dict[str, int] = field(default_factory=default_limits)
 
@@ -76,19 +77,37 @@ def list_active_profiles(membership: Membership) -> list[Profile]:
 
 def get_permission_codes(membership: Membership) -> frozenset[str]:
     """Union of the permission codes of the membership's active profiles."""
-    codes: set[str] = set()
-    for profile in list_active_profiles(membership):
-        codes.update(profile.permission_codes)
-    return frozenset(codes)
+    from organizations.services import effective_scope
+
+    return effective_scope(membership).permissions
 
 
-def get_scope(membership: Membership) -> dict[str, list[str]]:
-    """The membership scope with its known keys always present, whatever the stored JSON is."""
-    stored = membership.scope if isinstance(membership.scope, dict) else {}
+def get_scope(membership: Membership) -> dict[str, dict[str, object]]:
+    """Effective projection for display; action/object authorization keeps each grant paired."""
+    from organizations.services import effective_scope
+
+    effective = effective_scope(membership)
     scope = default_scope()
-    for key in scope:
-        value = stored.get(key, [])
-        scope[key] = [str(item) for item in value] if isinstance(value, list) else []
+    names: tuple[Literal["centers", "quadrants"], ...] = ("centers", "quadrants")
+    for name in names:
+        dimensions = [grant[name] for _codes, grant in effective.grants]
+        if any(dimension["mode"] == "all" for dimension in dimensions):
+            scope[name] = {"mode": "all", "ids": []}
+        else:
+            ids = sorted(
+                {
+                    identifier
+                    for dimension in dimensions
+                    if dimension["mode"] == "selected"
+                    for identifier in dimension["ids"]
+                }
+            )
+            scope[name] = {
+                "mode": "selected"
+                if any(dimension["mode"] == "selected" for dimension in dimensions)
+                else "none",
+                "ids": ids,
+            }
     return scope
 
 
@@ -108,3 +127,41 @@ def get_me_context(user: User, organization_slug: str | None) -> MeContext:
         scope=get_scope(membership),
         organizations=organizations,
     )
+
+
+def filter_by_effective_scope(
+    queryset: QuerySet[Any], membership: Membership, permission: str
+) -> QuerySet[Any]:
+    """Filter applicable dimensions with paired per-profile grants; foreign rows stay 404."""
+    from django.db.models import Q
+
+    from organizations.services import effective_scope
+
+    effective = effective_scope(membership)
+    fields = {field.name for field in queryset.model._meta.get_fields()}
+    center_field = (
+        "pk"
+        if queryset.model._meta.label_lower == "organizations.center"
+        else ("center_id" if "center" in fields else None)
+    )
+    center_field = getattr(queryset.model, "scope_center_lookup", center_field)
+    quadrant_field = getattr(
+        queryset.model, "scope_quadrant_lookup", "quadrant_id" if "quadrant" in fields else None
+    )
+    allowed = Q(pk__in=[])
+    lookups: tuple[tuple[Literal["centers", "quadrants"], str | None], ...] = (
+        ("centers", center_field),
+        ("quadrants", quadrant_field),
+    )
+    for codes, scope in effective.grants:
+        if permission not in codes:
+            continue
+        grant = Q(pk__isnull=False)
+        for name, lookup in lookups:
+            if lookup is None or scope[name]["mode"] == "all":
+                continue
+            grant &= Q(
+                **{f"{lookup}__in": scope[name]["ids"] if scope[name]["mode"] == "selected" else []}
+            )
+        allowed |= grant
+    return queryset.filter(allowed)
