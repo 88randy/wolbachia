@@ -28,7 +28,9 @@ export function AuthGate({ children }: { readonly children: ReactNode }) {
         <Notice tone="warning" icon="alert" message={t("mobile.login.clockSkew")} />
       ) : null}
       {!isLocked && isWarning ? <IdleWarning keepWorking={touch} /> : null}
-      {isLocked ? <AuthOverlay snapshot={snapshot} /> : null}
+      {isLocked ? (
+        <AuthOverlay snapshot={snapshot} isWarning={isWarning} keepWorking={touch} />
+      ) : null}
     </View>
   );
 }

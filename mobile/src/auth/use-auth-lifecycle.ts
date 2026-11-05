@@ -3,6 +3,7 @@ import { AppState, Keyboard } from "react-native";
 
 import { useServices } from "../app/services-context.ts";
 import { IdleLock } from "./idle-lock.ts";
+import { shouldRunIdleTimer } from "./idle-policy.ts";
 
 export function useAuthLifecycle() {
   const { auth } = useServices();
@@ -11,12 +12,10 @@ export function useAuthLifecycle() {
   const idle = useIdleLock(auth, setIsWarning);
   useAuthSignals(idle);
   useEffect(() => {
-    if (snapshot.phase === "unlocked") idle.start(snapshot.rules.sessionIdleMinutes);
-    else {
-      idle.stop();
-      // Remote session end must also blur a covered form, without unmounting or clearing it.
-      Keyboard.dismiss();
-    }
+    if (shouldRunIdleTimer(snapshot.phase)) idle.start(snapshot.rules.sessionIdleMinutes);
+    else idle.stop();
+    // PIN setup and remote session end still blur covered inputs without clearing them.
+    if (snapshot.phase !== "unlocked") Keyboard.dismiss();
     return () => {
       idle.stop();
     };

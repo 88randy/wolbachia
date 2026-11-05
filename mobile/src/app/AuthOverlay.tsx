@@ -4,6 +4,8 @@ import { StatusBar } from "expo-status-bar";
 import type { Theme } from "@wolbachia/tokens";
 
 import type { AuthSnapshot } from "../auth/auth-controller.ts";
+import { shouldRunIdleTimer } from "../auth/idle-policy.ts";
+import { IdleWarning } from "./IdleWarning.tsx";
 import { useT } from "../i18n/I18nProvider.tsx";
 import { useStyles, useTheme } from "../theme/ThemeProvider.tsx";
 import { LoginScreen } from "../screens/auth/LoginScreen.tsx";
@@ -22,7 +24,12 @@ const createStyles = (theme: Theme) =>
     },
   });
 
-export function AuthOverlay({ snapshot }: { readonly snapshot: AuthSnapshot }) {
+interface AuthOverlayProps {
+  readonly snapshot: AuthSnapshot;
+  readonly isWarning: boolean;
+  readonly keepWorking: () => void;
+}
+export function AuthOverlay({ snapshot, isWarning, keepWorking }: AuthOverlayProps) {
   const styles = useStyles(createStyles);
   const { scheme } = useTheme();
   const t = useT();
@@ -31,6 +38,9 @@ export function AuthOverlay({ snapshot }: { readonly snapshot: AuthSnapshot }) {
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       {snapshot.hasClockSkew && snapshot.phase !== "login" ? (
         <Notice tone="warning" icon="alert" message={t("mobile.login.clockSkew")} />
+      ) : null}
+      {shouldRunIdleTimer(snapshot.phase) && isWarning ? (
+        <IdleWarning keepWorking={keepWorking} />
       ) : null}
       {snapshot.phase === "login" ? (
         <LoginScreen snapshot={snapshot} />
