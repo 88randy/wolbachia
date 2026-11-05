@@ -180,9 +180,9 @@ Description of the desired end state and how it differs from today.
 
 **Swimlane notation (text format):**
 ```
-Customer → [Submit order form] → [Order lands in shared inbox] 
+Customer → [Submit order form] → [Order lands in shared inbox]
                                           ↓
-Sales Rep → [Manually copy to ERP] → [Check inventory] 
+Sales Rep → [Manually copy to ERP] → [Check inventory]
                                           ↓ (if in stock)
 Warehouse → [Pick and pack] → [Update ERP] → [Email customer]
                                           ↓ (if out of stock)
@@ -197,7 +197,7 @@ Pain points: ⚠️ Manual ERP entry takes 15 min/order; 🔴 3.2% error rate on
 - Include new systems or tools introduced
 
 ```
-Customer → [Submit order on web portal] → [System auto-validates] 
+Customer → [Submit order on web portal] → [System auto-validates]
                                                     ↓ (auto-routed)
 ERP System → [Inventory check (real-time)] → [Confirmation email auto-sent]
                                                     ↓ (if in stock)

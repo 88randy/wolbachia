@@ -238,11 +238,84 @@ id/code, /ovitraps/{id}/ and ?code= resolve that UUID inside organization/scope,
 reading.ovitrap returns the same physical UUID. Identical phone UUIDs can coexist
 in different organizations without changing either organization's outcome or
 exposing the other row. No public response/type shape or sync result code changes.
+
+
+## Scheduling and risk provenance (#109, B-12)
+
+All routes are under /api/v1; organization comes from membership/pinned device
+session. Session cookie + CSRF remains the web contract; no organization selector.
+Permissions default-deny, always intersected with center AND quadrant EffectiveScope.
+
+- POST /risk-category-import-uploads/ multipart file requires risk_import.apply,
+  returns 201 {upload_id,sha256,size}. UTF-8 CSV (optional BOM), <=1 MiB and 5000
+  data rows; header block_code,category with optional protocol. Unknown/duplicate
+  columns rejected; XLSX deferred. Controls/NUL and formula prefixes = + - @
+  (including behind whitespace) are coded errors and never echoed. Upload handler
+  limits bytes before buffering, per-user THROTTLE_RISK_IMPORT_UPLOAD_RATE defaults
+  10/hour **[ASSUMPTION]**. DB retains immutable bytes until attachments integration.
+- POST /risk-category-imports/ {upload_id,week,source} returns 201 immutable
+  {id,file_hash,preview_rows,errors,source,week_start,revision,applied_at,created_by,created_at}.
+  week is a YYYY-MM-DD local date normalized with the organization's ISO/MMWR epi
+  convention. source=official_import|company_rule; category=low|medium|high
+  **[ASSUMPTION pending official scale]**; optional protocol normalized <=80 chars.
+  Unknown/out-of-scope blocks share block_inaccessible; preview has no domain effects.
+- POST /risk-category-imports/{uuid}/apply/ {expected_revision} returns stable
+  {id,risk_import,applied_at,applied_by}; retries append nothing. Errors block all
+  effects with 409 import_has_errors; stale=409 stale_revision; policy/scope
+  mismatch=409 import_scope_mismatch; lost block scope/foreign upload/import=404.
+  Risk versions and the application append atomically, never rewrite originals.
+- GET /risk-categories/?week= with optional block,quadrant,code returns latest
+  per block/week, including source,origin,protocol,revision and author/timestamps.
+  Requires schedule.read; page-number paging; ordering=block__code|category|created_at,
+  optionally descending (-). code is exact block code within scope.
+- GET /quadrant-assignments/ requires schedule.read, page-number paging; optional
+  courier,quadrant,center,code and ordering=code|load (optional -). Current effective
+  rows expose quadrant/code/center/courier/revision/assignment_version/load/target/
+  blockers. PUT requires schedule.manage and {quadrant_id,courier_id|null,
+  expected_revision}, returns the exact new assignment revision and schedule_revision.
+  Couriers must be active members with applicable field_event.sync authority.
+  Old assignments remain available to capture-time selectors after supersession.
+- POST /schedule/generate/ {week}, schedule.manage, appends only missing scoped
+  place/check tasks; returns {created,revision}. GET never writes. remove is omitted:
+  master has no accepted removal lifecycle. Check due dates use historical
+  revisit_interval_days and retain the rule version ids. At most one earliest-due
+  check is planned per ovitrap/epi week; an active reading in that week suppresses generation. Missing policy returns
+  409 revisit_rule_not_configured and rolls back the entire generation.
+- GET /schedule/?week=&courier=&day=&quadrant=&code= requires schedule.read.
+  Day is optional YYYY-MM-DD within the epi week. Exact task code is
+  point:action:YYYY-MM-DD. Page-number response includes results plus organization
+  schedule revision, pending load by courier (null=unassigned), daily target.
+  Task rows include ownership revision, risk category/source/origin/protocol,
+  load/target and coded blockers (unassigned). Order is risk descending, due date,
+  point code, action, id; no risk is lowest/null source. Loads use the full scoped
+  filtered list before paging. Versioned daily_task_target defaults 40, count
+  1..200 **[ASSUMPTION]**. Exceeding it never rejects work; it is a daily target,
+  not measured capacity or a weekly aggregate. Each task resolves its due-day target.
+- POST /schedule/reassign-pending/ {task_ids,courier,expected_revision},
+  schedule.manage, deduplicates 1..200 ids and appends owners atomically. The
+  expected revision is the PAGE schedule revision, not a task/assignment revision.
+  Completed point/action/date effects reject the whole request with 409
+  task_completed and only visible task ids/codes in blocked_by. Stale writers get
+  409 stale_revision; old ownership remains. No original FieldEvent is changed.
+
+All references/filters are scoped (foreign organization/center/quadrant=404);
+unknown and inaccessible identifiers are indistinguishable. 400 uses code/detail/
+fields only, 409 uses safe blocked_by, lock contention/deadlock is retryable
+429 scheduling_in_progress with Retry-After: 1. Shared organization NOWAIT
+NO KEY UPDATE locking precedes sorted courier try-locks and point locks; no network/storage/mail or account
+locks occur inside. Existing User -> Device -> DeviceSession -> TokenPair order
+is preserved. No void/delete endpoints, new sync events or result codes are added;
+#22 owns review acceptance. Scheduling registers the assignments v2 bundle producer
+and atomically emits scoped allocation/task deltas through #110 delivery APIs.
+See scheduling/README.md and ADR 117 for lead decisions and lock ordering.
+
+Planning input dates use the same technical 2020-01-01..2100-01-01 window as
+field sync; out-of-range week/day returns 400 out_of_range, never date overflow.
 ## Offline bundle additions (#110 / B-13)
 
 | Contract | Rule |
 | --- | --- |
-| GET /api/v1/field/bootstrap/ | Live pinned bearer device token, field.bootstrap, token/membership organization only; no final-upload entitlement. One courier try-locked transaction builds fixed assignments/supplies/permits/eligibility/history/map_manifests lists and cursor. |
+| GET /api/v1/field/bootstrap/ | Live pinned bearer device token, field.bootstrap, token/membership organization only; no final-upload entitlement. One courier try-locked transaction builds fixed assignments/supplies/permits/eligibility/history/map_manifests/quadrants/sampling_points/ovitraps lists and cursor. |
 | Bootstrap metadata | bundle_version (content hash/ETag), schema_version (opaque registered-schema hash), generated_at, scope_revision, cursor, catalog_version, rules_version, next_change_at, map_manifest_ready. Private no-cache, Vary X-Organization; conditional 304 only after auth/permission. |
 | Sync producer arrays | Six typed changes arrays with sequence/action/resource_type/resource_id/resource_version/data, plus nullable next_change_at. Independent sequence pages; has_more if either stream remains. Existing event order and final-upload restriction are preserved. |
 | Cursor v2 | Signed o/u/s/c/r, bound to effective paired scope and field.bootstrap/field_event.sync codes; v1, expired or changed scope returns 400 invalid_cursor before ingest. Recover with bootstrap and retain unsent phone events. |

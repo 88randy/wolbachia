@@ -30,6 +30,8 @@ upload for the whole batch.
 import hashlib
 import logging
 import math
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from functools import partial
@@ -55,6 +57,7 @@ from field_sync.codes import (
 from field_sync.cursor import ChangesCursor
 from field_sync.envelope import (
     BatchContext,
+    CourierContext,
     EventEnvelope,
     EventResult,
     is_plausible_time,
@@ -63,6 +66,7 @@ from field_sync.exceptions import (
     EventNeedsReview,
     EventRejected,
     EventSignal,
+    FanoutLimitExceededError,
     InvalidCursorError,
     SyncInProgressError,
 )
@@ -73,7 +77,7 @@ from field_sync.models import (
     FieldEvent,
     RejectionQuotaCounter,
 )
-from field_sync.permissions import FIELD_EVENT_SYNC
+from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from field_sync.producers import get_producer, serialize_payload
 from field_sync.registry import (
     EventContext,
@@ -87,11 +91,14 @@ from field_sync.selectors import (
     StoredEvent,
     build_bootstrap,
     build_changes,
+    captured_scope,
     find_stored_event,
     latest_change_sequence,
+    membership_snapshots,
     producer_context,
     scope_revision,
 )
+from organizations.models import Organization
 from reviews.services import create_review_item
 
 logger = logging.getLogger(__name__)
@@ -195,7 +202,7 @@ def advisory_key(*parts: object) -> int:
     return int.from_bytes(digest[:8], "big", signed=True)
 
 
-def lock_courier_batches(batch: BatchContext) -> None:
+def lock_courier_batches(batch: BatchContext | CourierContext) -> None:
     """Take the (organization, user) batch lock or raise `SyncInProgressError` (never waits).
 
     A PostgreSQL advisory transaction lock, released at commit or rollback. It is not a row
@@ -528,15 +535,9 @@ class ChangeInput:
     payload: dict[str, Any]
 
 
-def require_courier_lock(batch: BatchContext) -> None:
+def require_courier_lock(batch: BatchContext | CourierContext) -> None:
     """Transaction-local marker: cannot outlive commit or savepoint rollback."""
-    if not connection.in_atomic_block:
-        raise RuntimeError("CourierChange append requires the courier transaction lock.")
-    key = str(advisory_key("courier", batch.organization.pk, batch.user.pk))
-    with connection.cursor() as cursor:
-        cursor.execute("SELECT current_setting('field_sync.courier_locks', true)")
-        row = cursor.fetchone()
-    if row is None or key not in (row[0] or "").split(","):
+    if not _has_courier_lock(batch):
         raise RuntimeError("CourierChange append requires the courier transaction lock.")
 
 
@@ -550,7 +551,9 @@ def _validate_change_scope(scope: dict[str, str | None] | None) -> None:
             raise ValueError("Change scope identifiers must be canonical UUID strings.")
 
 
-def append_courier_change(batch: BatchContext, change: ChangeInput) -> CourierChange:
+def append_courier_change(
+    batch: BatchContext | CourierContext, change: ChangeInput
+) -> CourierChange:
     """Append a validated producer change; caller holds the lock through domain write + commit."""
     require_courier_lock(batch)
     producer = get_producer(change.kind)
@@ -584,3 +587,77 @@ def bootstrap_bundle(batch: BatchContext) -> dict[str, Any]:
         if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
             raise SyncInProgressError from None
         raise
+
+
+@dataclass(frozen=True)
+class FanoutScope:
+    organization: Organization
+    center_id: UUID
+    quadrant_id: UUID
+
+    @property
+    def metadata(self) -> dict[str, str | None]:
+        return {"center_id": str(self.center_id), "quadrant_id": str(self.quadrant_id)}
+
+
+def _fanout_recipients(scope: FanoutScope) -> list[CourierContext]:
+    """Bound candidates before evaluating the shared captured scope algebra."""
+    limit = settings.SYNC_MAX_FANOUT_COURIERS
+    candidates = list(
+        membership_snapshots(scope.organization)
+        .filter(
+            profiles__is_active=True,
+            profiles__organization=scope.organization,
+            profiles__permission_codes__contains=[FIELD_BOOTSTRAP],
+        )
+        .distinct()
+        .order_by("user_id")[: limit + 1]
+    )
+    if limit < 1 or len(candidates) > limit:
+        raise FanoutLimitExceededError
+    return [
+        CourierContext(scope.organization, member.user)
+        for member in candidates
+        if captured_scope(member).allows(
+            FIELD_BOOTSTRAP, str(scope.center_id), str(scope.quadrant_id)
+        )
+    ]
+
+
+def _has_courier_lock(batch: BatchContext | CourierContext) -> bool:
+    if not connection.in_atomic_block:
+        return False
+    key = str(advisory_key("courier", batch.organization.pk, batch.user.pk))
+    with connection.cursor() as cursor:
+        cursor.execute("SELECT current_setting('field_sync.courier_locks', true)")
+        row = cursor.fetchone()
+    return row is not None and key in (row[0] or "").split(",")
+
+
+@contextmanager
+def fanout_courier_changes(scope: FanoutScope) -> Iterator[Callable[[ChangeInput], None]]:
+    """Lock ALL recipients before yielding the domain write and validated upsert publisher.
+
+    Caller serializes organization configuration first. Transaction-local lock markers
+    skip the actor's existing sync lock and other locks held earlier in this batch.
+    """
+    if not connection.in_atomic_block:
+        raise RuntimeError("Fan-out requires the domain write transaction.")
+    recipients = sorted(
+        _fanout_recipients(scope),
+        key=lambda batch: (
+            advisory_key("courier", batch.organization.pk, batch.user.pk),
+            batch.user.pk,
+        ),
+    )
+    for batch in recipients:
+        if not _has_courier_lock(batch):
+            lock_courier_batches(batch)
+
+    def append(change: ChangeInput) -> None:
+        if change.action != "upsert" or change.scope != scope.metadata:
+            raise ValueError("Fan-out requires an upsert in its locked center/quadrant scope.")
+        for batch in recipients:
+            append_courier_change(batch, change)
+
+    yield append
