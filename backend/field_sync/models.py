@@ -92,3 +92,18 @@ class FieldEvent(ImmutableMixin, VoidableMixin, OrgScopedModel):
 
     def __str__(self) -> str:
         return f"{self.type}:{self.pk}"
+
+
+class RejectionQuotaCounter(OrgScopedModel):
+    """Mutable bookkeeping per device and organization-local receipt day, not an audit record."""
+
+    device = models.ForeignKey("accounts.Device", on_delete=models.PROTECT, related_name="+")
+    local_date = models.DateField()
+    count = models.PositiveIntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["device", "local_date"], name="rejection_quota_device_day_unique"
+            ),
+        ]

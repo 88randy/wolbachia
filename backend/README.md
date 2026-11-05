@@ -40,6 +40,70 @@ curl http://127.0.0.1:8000/api/v1/health/    # {"status":"ok"}
 
 Services: `api` (migrate + runserver), `worker` (Celery), `db` (PostgreSQL 18; keep the major equal to the DigitalOcean managed cluster [PENDING: #18]), `redis`. If a host port is taken: `POSTGRES_PORT=55432 REDIS_PORT=56379 API_PORT=18000 docker compose -f backend/compose.yaml up`. Postgres and Redis are published on 127.0.0.1 so the code can also run outside Docker; the venv lives in the image (`/opt/venv`), so rebuild with `--build` after changing `uv.lock`. In dev a Redis outage makes throttled requests fail with 500 (the cache backend does not ignore errors). The compose file carries throwaway dev credentials only; production deploy is #18.
 
+## Testing with a phone on the LAN
+
+**Use only on a trusted network.** This exposes the development API over plain HTTP
+on all IPv4 interfaces; it is not a production setup. Connect the PC and phone to
+the same Wi-Fi with client isolation disabled. The default API binding remains
+`127.0.0.1`; PostgreSQL and Redis stay on loopback even when LAN access is enabled.
+
+From the repo root, copy the root [`.env.example`](../.env.example) to `.env`,
+uncomment both LAN overrides and replace `192.168.1.50` with the PC's LAN IPv4
+address (`ipconfig` on Windows). Do not commit `.env`. Start Compose explicitly
+with that file:
+
+```bash
+docker compose --env-file .env -f backend/compose.yaml up --build -d
+```
+
+Alternatively, set the variables in PowerShell without creating a file:
+
+```powershell
+$env:API_BIND = "0.0.0.0"
+$env:DJANGO_ALLOWED_HOSTS = "localhost,127.0.0.1,[::1],192.168.1.50"
+docker compose -f backend/compose.yaml up --build -d
+```
+
+Compose passes `DJANGO_ALLOWED_HOSTS` to Django. In `config/settings/dev.py`,
+`env.list` reads comma-separated hosts, **replacing** the default
+`localhost,127.0.0.1,[::1]` list. Keep those entries and add the PC's IP without a
+scheme or port; do not use `*`. `API_BIND` controls the host interface and
+`API_PORT` controls the host port (default `8000`). After changing the overrides,
+run `up` again so Compose recreates the affected containers.
+
+On the phone, open `http://192.168.1.50:8000/api/v1/health/`, substituting the PC's
+IP and port. Expect HTTP `200` with `{"status":"ok"}`. Use
+`http://192.168.1.50:8000` as the mobile app's backend origin, not the phone's
+localhost. HTTP `400` with `DisallowedHost` in the API logs means the IP is missing
+from the allowlist; a timeout can indicate a firewall or Wi-Fi isolation problem.
+
+If Windows Firewall blocks the port, ensure the trusted Wi-Fi uses the **Private**
+network profile. In elevated PowerShell, add an inbound rule for that profile and
+the local subnet only (adjust `8000` if using a different `API_PORT`):
+
+```powershell
+New-NetFirewallRule -Name "WolbachiaDevApiLan" -DisplayName "Wolbachia dev API (LAN)" -Direction Inbound -Action Allow -Protocol TCP -LocalPort 8000 -Profile Private -RemoteAddress LocalSubnet
+```
+
+Do not disable the firewall or allow public networks. When finished, remove the
+rule from elevated PowerShell:
+
+```powershell
+Remove-NetFirewallRule -Name "WolbachiaDevApiLan"
+```
+
+To restore loopback-only access, comment out both overrides in the root `.env`
+(if used), remove any shell overrides below, and rerun the same Compose `up -d`
+command. Shell variables take precedence over the file.
+
+```powershell
+Remove-Item Env:API_BIND -ErrorAction SilentlyContinue
+Remove-Item Env:DJANGO_ALLOWED_HOSTS -ErrorAction SilentlyContinue
+```
+
+References: [Compose interpolation and `--env-file`](https://docs.docker.com/compose/how-tos/environment-variables/variable-interpolation/),
+[Windows Firewall rule parameters](https://learn.microsoft.com/powershell/module/netsecurity/new-netfirewallrule).
+
 ## Run and test without Docker
 
 ```bash
@@ -133,6 +197,8 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `SYNC_CURSOR_MAX_AGE_SECONDS` | `2592000` | Lifetime of a `changes.cursor` (30 days) |
 | `SYNC_LOCK_TIMEOUT_MS` | `3000` | Longest wait for any lock in a batch transaction (then `429 sync_in_progress`) |
 | `SYNC_RETRY_AFTER_SECONDS` | `2` | `Retry-After` of `sync_in_progress` |
+| `SYNC_MAX_REJECTIONS_PER_DEVICE_PER_DAY` | `1000` | New stored rejections per device/organization-local day; env integer in 100..10000, fail fast (#56, SA09) |
+| `SYNC_REJECTION_ALERT_PERCENTS` | `80,100` | Nonempty env list of percentages in 1..100; warning once per crossing on commit (#56) |
 
 ## Void reasons (#32)
 

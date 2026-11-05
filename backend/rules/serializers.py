@@ -71,6 +71,12 @@ class RuleParameterVersionSerializer(OrgScopedModelSerializer):
         choices=list(VERSION_STATUSES),
         read_only=True,
     )
+    created_by_username = serializers.CharField(
+        source="created_by.username", read_only=True, allow_null=True, default=None
+    )
+    voided_by_username = serializers.CharField(
+        source="voided_by.username", read_only=True, allow_null=True, default=None
+    )
 
     class Meta:
         model = RuleParameterVersion
@@ -82,9 +88,11 @@ class RuleParameterVersionSerializer(OrgScopedModelSerializer):
             "reason",
             "status",
             "created_by",
+            "created_by_username",
             "created_at",
             "voided_at",
             "voided_by",
+            "voided_by_username",
             "void_reason",
         ]
         read_only_fields = fields
@@ -92,6 +100,14 @@ class RuleParameterVersionSerializer(OrgScopedModelSerializer):
     @extend_schema_field(serializers.FloatField())
     def number(self, version: RuleParameterVersion) -> int | float:
         return to_number(version.parameter.value_type, version.value)
+
+
+class VersionFilterSerializer(serializers.Serializer[Any]):
+    """Query parameters of `GET /rule-parameters/{key}/versions/`."""
+
+    include_voided = serializers.ChoiceField(
+        choices=["true", "false"], required=False, default="false"
+    )
 
 
 class RuleParameterVersionCreateSerializer(OrgScopedModelSerializer):

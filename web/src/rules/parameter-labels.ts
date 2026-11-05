@@ -21,6 +21,7 @@ const NAME_KEYS: Readonly<Record<string, MessageKey>> = {
   session_idle_minutes: "rules.param.sessionIdle",
   reminder_minutes_before_end: "rules.param.reminderBeforeEnd",
   max_paddle_reuses: "rules.param.maxPaddleReuses",
+  revisit_interval_days: "rules.param.revisitInterval",
 };
 
 /** Typed on the API's unit enum: a new unit in the schema fails the build until it is named here. */
@@ -29,6 +30,7 @@ const UNIT_KEYS = {
   km_h: "rules.unit.kmPerHour",
   s: "rules.unit.seconds",
   min: "rules.unit.minutes",
+  day: "rules.unit.days",
   week: "rules.unit.weeks",
   count: "rules.unit.count",
   km_l: "rules.unit.kmPerLiter",

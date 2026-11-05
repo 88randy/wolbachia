@@ -23,6 +23,7 @@ const SCHEDULED = makeVersion({
   effective_from: "2026-11-10T06:00:00Z",
   reason: "Ajuste de temporada",
   created_by: ADMIN.user.id,
+  created_by_username: ADMIN.user.username,
   created_at: "2026-11-04T18:30:00Z",
 });
 const IN_FORCE = makeVersion({
@@ -30,6 +31,7 @@ const IN_FORCE = makeVersion({
   status: "in_force",
   value: 50,
   created_by: OTHER_USER,
+  created_by_username: "luis.promotor",
   reason: "Primera revisión",
 });
 const SUPERSEDED = makeVersion({
@@ -48,6 +50,7 @@ const VOIDED = makeVersion({
   reason: "Versión capturada por error",
   voided_at: "2026-11-04T20:00:00Z",
   voided_by: OTHER_USER,
+  voided_by_username: "luis.promotor",
   void_reason: "Se capturó dos veces",
 });
 const HISTORY = [SCHEDULED, IN_FORCE, SUPERSEDED, VOIDED];
@@ -66,7 +69,7 @@ describe("version history", () => {
     expect(within(scheduled).getByText("ana.supervisora")).toBeDefined();
     expect(within(scheduled).getByText(/4 nov 2026/)).toBeDefined();
     expect(within(rowOf(/50 metros/)).getByText("Vigente")).toBeDefined();
-    expect(within(rowOf(/50 metros/)).getByText("Usuario 9d3c8a77")).toBeDefined();
+    expect(within(rowOf(/50 metros/)).getByText("luis.promotor")).toBeDefined();
     expect(within(rowOf(/60 metros/)).getByText("Anterior")).toBeDefined();
     expect(within(rowOf(/60 metros/)).getByText("Sistema")).toBeDefined();
     const values = screen
@@ -79,17 +82,19 @@ describe("version history", () => {
 
   test("hides voided versions until Include voided is on, then shows them struck through with reason and author", async () => {
     const user = userEvent.setup();
-    await openParameterPage({ versions: HISTORY });
+    const { api } = await openParameterPage({ versions: HISTORY });
     await screen.findByRole("row", { name: /40 metros/ });
     expect(screen.queryByRole("row", { name: /45 metros/ })).toBeNull();
+    expect(requestsTo(api, "GET", VERSIONS_API)[0]?.path).toContain("include_voided=false");
 
     await user.click(screen.getByRole("checkbox", { name: "Incluir anulados" }));
 
     const voided = await screen.findByRole("row", { name: /45 metros/ });
     expect(within(voided).getByText("Motivo: Se capturó dos veces")).toBeDefined();
-    expect(within(voided).getByText("Anuló: Usuario 9d3c8a77")).toBeDefined();
+    expect(within(voided).getByText("Anuló: luis.promotor")).toBeDefined();
     expect(within(voided).getByText("Anulado")).toBeDefined();
     expect(screen.getByText("Mostrando 1 a 4 de 4")).toBeDefined();
+    expect(requestsTo(api, "GET", VERSIONS_API).at(-1)?.path).toContain("include_voided=true");
   });
 
   test("only a scheduled version has an enabled Void; the others say why they cannot be voided", async () => {

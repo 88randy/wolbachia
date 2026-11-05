@@ -690,6 +690,14 @@ paths:
       - bearerAuth: []
       responses:
         '200':
+          headers:
+            Retry-After:
+              schema:
+                type: integer
+              description: Present only when a result has code rejection_quota_exceeded.
+                Seconds until the next organization-local midnight (minimum 1). Keep
+                those events in the outbox/quarantine and resend after this delay;
+                they were not stored. Other results remain final.
           content:
             application/json:
               schema:
@@ -900,6 +908,18 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: include_voided
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          default: 'false'
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
       - name: page
         required: false
         in: query
@@ -1454,6 +1474,9 @@ components:
       - serial
     EventResult:
       type: object
+      description: |-
+        One ingestion verdict. rejection_quota_exceeded is not stored: retain and retry the event
+        after params.retry_after_seconds (also the 200 response's Retry-After header).
       properties:
         id:
           type: string
@@ -2150,6 +2173,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_username:
+          type: string
+          readOnly: true
+          nullable: true
         created_at:
           type: string
           format: date-time
@@ -2164,12 +2191,17 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        voided_by_username:
+          type: string
+          readOnly: true
+          nullable: true
         void_reason:
           type: string
           readOnly: true
       required:
       - created_at
       - created_by
+      - created_by_username
       - effective_date
       - effective_from
       - id
@@ -2179,6 +2211,7 @@ components:
       - void_reason
       - voided_at
       - voided_by
+      - voided_by_username
     RuleParameterVersionCreateRequest:
       type: object
       description: '`effective_from` is a local calendar date (`YYYY-MM-DD`): the
@@ -2509,6 +2542,7 @@ components:
       - km_h
       - s
       - min
+      - day
       - week
       - count
       - km_l
@@ -2518,6 +2552,7 @@ components:
         * `km_h` - Kilometers Per Hour
         * `s` - Seconds
         * `min` - Minutes
+        * `day` - Days
         * `week` - Weeks
         * `count` - Count
         * `km_l` - Kilometers Per Liter

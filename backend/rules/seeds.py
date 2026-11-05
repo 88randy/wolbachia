@@ -29,6 +29,8 @@ class ParameterSeed:
     value_type: ValueType
     unit: Unit
     value: int | None = None
+    min_value: Decimal = NON_NEGATIVE
+    max_value: Decimal | None = None
 
 
 DEFAULT_PARAMETER_SEEDS = (
@@ -44,6 +46,15 @@ DEFAULT_PARAMETER_SEEDS = (
     ParameterSeed("session_idle_minutes", ValueType.INTEGER, Unit.MINUTES),
     ParameterSeed("reminder_minutes_before_end", ValueType.INTEGER, Unit.MINUTES, 60),
     ParameterSeed("max_paddle_reuses", ValueType.INTEGER, Unit.COUNT, 2),
+    # Decision OP02/OP03 (docs/pending-decisions-proposal.md): revisit every 7 days, 1 to 28.
+    ParameterSeed(
+        "revisit_interval_days",
+        ValueType.INTEGER,
+        Unit.DAYS,
+        7,
+        min_value=Decimal(1),
+        max_value=Decimal(28),
+    ),
 )
 
 
@@ -77,7 +88,8 @@ def _ensure_parameter(organization: Organization, seed: ParameterSeed) -> RulePa
         defaults={
             "value_type": seed.value_type,
             "unit": seed.unit,
-            "min_value": NON_NEGATIVE,
+            "min_value": seed.min_value,
+            "max_value": seed.max_value,
         },
     )
     return parameter

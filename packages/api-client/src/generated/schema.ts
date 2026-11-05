@@ -624,6 +624,10 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description One ingestion verdict. rejection_quota_exceeded is not stored: retain and retry the event
+         *     after params.retry_after_seconds (also the 200 response's Retry-After header).
+         */
         EventResult: {
             /** Format: uuid */
             id: string;
@@ -941,12 +945,14 @@ export interface components {
             readonly status: components["schemas"]["StatusEnum"];
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_username: string | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: date-time */
             readonly voided_at: string | null;
             /** Format: uuid */
             readonly voided_by: string | null;
+            readonly voided_by_username: string | null;
             readonly void_reason: string;
         };
         /** @description `effective_from` is a local calendar date (`YYYY-MM-DD`): the server resolves the instant. */
@@ -1094,12 +1100,13 @@ export interface components {
          *     * `km_h` - Kilometers Per Hour
          *     * `s` - Seconds
          *     * `min` - Minutes
+         *     * `day` - Days
          *     * `week` - Weeks
          *     * `count` - Count
          *     * `km_l` - Kilometers Per Liter
          * @enum {string}
          */
-        UnitEnum: "m" | "km_h" | "s" | "min" | "week" | "count" | "km_l";
+        UnitEnum: "m" | "km_h" | "s" | "min" | "day" | "week" | "count" | "km_l";
         /**
          * @description * `integer` - Integer
          *     * `decimal` - Decimal
@@ -1791,6 +1798,8 @@ export interface operations {
         responses: {
             200: {
                 headers: {
+                    /** @description Present only when a result has code rejection_quota_exceeded. Seconds until the next organization-local midnight (minimum 1). Keep those events in the outbox/quarantine and resend after this delay; they were not stored. Other results remain final. */
+                    "Retry-After"?: number;
                     [name: string]: unknown;
                 };
                 content: {
@@ -1979,6 +1988,11 @@ export interface operations {
     rule_parameters_versions_list: {
         parameters: {
             query?: {
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                include_voided?: "true" | "false";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
