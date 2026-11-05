@@ -182,3 +182,13 @@ Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-st
 ## Design source
 
 Design canvas (desktop design system, W1–W71, 10 clickable journeys): Wolbachia web design artifact on claude.ai. Values marked "sample" in the canvas are not product data.
+
+### Catalogs (W63, #35)
+
+`/settings/catalogs` opens the first catalog returned by the API, or an empty state.
+`/settings/catalogs/<slug>` provides API-defined tabs and a generic item editor, gated by
+`catalog.read`. Create, edit/reorder, deactivate and activate use their own permission codes.
+See [catalog module](src/catalogs/README.md) for ordering, pagination, session guards and tests.
+Inactive items are hidden unless `include_deactivated=true`; configuration is deactivated
+after confirmation and can be reactivated, rather than voided. No usage count/author is
+invented. Other free-text validation belongs to consumer screens and mobile.

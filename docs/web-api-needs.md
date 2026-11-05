@@ -188,3 +188,7 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 | GET | /portal/downloads/ · /portal/downloads/{id}/?format=pdf\|csv | reports with cut-off date | GOB | W71 |
 
 Machine access via API keys (W66) uses the same `/portal/` endpoints, limited by the key's scope and rate limit. **[PENDING]** Confirm.
+
+W63 (#35): catalog item reads do not expose an in-use count or an author. The editor omits
+the design's usage and author columns; a backend follow-up must define these fields before
+the web can show them or enforce usage-specific editing rules.

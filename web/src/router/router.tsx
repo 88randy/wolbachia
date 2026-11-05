@@ -1,3 +1,4 @@
+import { CatalogsPage } from "../catalogs/CatalogsPage";
 import { createRootRouteWithContext, createRoute, createRouter } from "@tanstack/react-router";
 import type { RouterHistory } from "@tanstack/react-router";
 import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
@@ -137,6 +138,26 @@ const notFoundRoute = createRoute({
   component: NotFoundState,
 });
 
+const catalogsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/catalogs",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, "catalog.read");
+  },
+  component: CatalogsPage,
+  errorComponent: AreaErrorState,
+});
+const catalogRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/catalogs/$slug",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, "catalog.read");
+  },
+  component: CatalogsPage,
+  errorComponent: AreaErrorState,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
@@ -145,6 +166,8 @@ const routeTree = rootRoute.addChildren([
   selectOrganizationRoute,
   authenticatedRoute.addChildren([
     ...areaRoutes,
+    catalogsRoute,
+    catalogRoute,
     phonesRoute,
     ruleParametersRoute,
     ruleParameterRoute,

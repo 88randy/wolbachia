@@ -21,6 +21,11 @@ const locales = Object.keys(messages) as Locale[];
  */
 const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = [
   ["auth.lockout.message", ["minutes"]],
+  ["catalogs.actions.movedDown", ["name"]],
+  ["catalogs.actions.moveDown", ["name"]],
+  ["catalogs.actions.movedUp", ["name"]],
+  ["catalogs.actions.moveUp", ["name"]],
+  ["catalogs.confirm.title", ["name"]],
   ["errors.api.blocked", ["role"]],
   ["rules.compare.from", ["date"]],
   ["rules.error.atLeast", ["min"]],
