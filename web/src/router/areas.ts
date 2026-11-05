@@ -1,4 +1,4 @@
-/**
+﻿/**
  * The areas of the back-office (see web/README.md), one placeholder route each until the real
  * screens land. Names follow docs/glossary.md.
  *
@@ -30,7 +30,13 @@ export const AREAS = [
     path: "/settings",
     group: "analysis",
     // Codes that exist today (docs/api-conventions.md, #3 and #4); W62 to W68 refine them.
-    requiredPermissions: ["catalog.read", "rule_parameter.read", "device.read"],
+    requiredPermissions: [
+      "catalog.read",
+      "rule_parameter.read",
+      "device.read",
+      "organization.read",
+      "role.read",
+    ],
   },
 ] as const;
 

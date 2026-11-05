@@ -47,3 +47,29 @@ describe("areas still waiting for a permission code", () => {
     expect(pendingAreaIds()).not.toContain("settings");
   });
 });
+
+test("organization/role settings navigation requires a nonempty explicit center grant", () => {
+  const permissions = ["organization.read", "role.read"];
+  expect(canOpenArea(makeMe({ permissions }), area("settings"))).toBe(false);
+  expect(
+    canOpenArea(
+      makeMe({
+        permissions,
+        scope: { centers: { mode: "selected", ids: [] }, quadrants: { mode: "all", ids: [] } },
+      }),
+      area("settings"),
+    ),
+  ).toBe(false);
+  expect(
+    canOpenArea(
+      makeMe({
+        permissions,
+        scope: {
+          centers: { mode: "selected", ids: ["center"] },
+          quadrants: { mode: "none", ids: [] },
+        },
+      }),
+      area("settings"),
+    ),
+  ).toBe(true);
+});

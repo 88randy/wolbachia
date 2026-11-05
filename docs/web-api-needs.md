@@ -188,3 +188,7 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 | GET | /portal/downloads/ · /portal/downloads/{id}/?format=pdf\|csv | reports with cut-off date | GOB | W71 |
 
 Machine access via API keys (W66) uses the same `/portal/` endpoints, limited by the key's scope and rate limit. **[PENDING]** Confirm.
+
+## W-03 web consumption limits (#147)
+
+The merged B-01 serializers are authoritative: country is read-only; profile scope applies to its whole permission bundle. `Profile` lacks a fixed/external discriminator and a permission catalog. W65 conservatively locks empty/portal-only bundles without branching on names; explicit fixed metadata is required to distinguish a revoked internal bundle from a fixed external one. No per-action scopes, export/void endpoints, revision history or effective timestamps are projected. Memberships expose ids without user labels. The current logo validator accepts restricted PNG only; W68 normalizes JPEG/WebP raster input to PNG before multipart upload. Organization-global settings, roles and memberships have no center filter parameter; the shell selection is only applicable to resources declaring that parameter.

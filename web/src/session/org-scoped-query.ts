@@ -1,4 +1,4 @@
-import { CancelledError, queryOptions } from "@tanstack/react-query";
+﻿import { CancelledError, queryOptions } from "@tanstack/react-query";
 import type { QueryClient, QueryFunction, QueryKey } from "@tanstack/react-query";
 import type { Me } from "./me";
 import { isRecordedIdentity } from "./identity";
@@ -20,6 +20,10 @@ export interface SessionIdentity {
   organizationSlug: string;
   revision: number;
   isSettled: boolean;
+  activeCenter?: string;
+  authorization?: string;
+  hasScope?: boolean;
+  permissions?: readonly string[];
 }
 
 export function sessionIdentityOf(
@@ -44,7 +48,12 @@ interface PreviousQuery {
 function isSameScope(identity: SessionIdentity, previous: PreviousQuery | undefined): boolean {
   const key: QueryKey = previous?.queryKey ?? [];
   const isSameKey = scopeOf(identity).every((part, index) => key[index] === part);
-  return isSameKey && previous?.meta?.["revision"] === identity.revision;
+  return (
+    isSameKey &&
+    previous?.meta?.["revision"] === identity.revision &&
+    previous.meta["center"] === identity.activeCenter &&
+    previous.meta["authorization"] === identity.authorization
+  );
 }
 
 interface OrgScopedOptions<TData> {
@@ -69,35 +78,43 @@ interface OrgScopedOptions<TData> {
  *
  * `org-scoped-query.test.ts` fails when a query is defined without it.
  */
+/** Session epoch and recorded identity protect the full asynchronous request. */
+function guardedQuery<T>(identity: SessionIdentity, request: QueryFunction<T>): QueryFunction<T> {
+  return async (context) => {
+    const isTrusted = isRecordedIdentity(
+      context.client,
+      identity.userId,
+      identity.organizationSlug,
+    );
+    if (!isSessionKnown() || !isTrusted || identity.revision !== currentRevision())
+      throw new CancelledError({ revert: true });
+    const started = currentRevision();
+    const result = await request(context);
+    if (currentRevision() !== started) throw new CancelledError({ revert: true });
+    return result;
+  };
+}
 export function orgScopedQueryOptions<TData>(
   identity: SessionIdentity,
   { key, queryFn }: OrgScopedOptions<TData>,
 ) {
   return queryOptions<TData>({
-    queryKey: [...scopeOf(identity), ...key],
+    queryKey: [
+      ...scopeOf(identity),
+      ...key,
+      ...(identity.authorization === undefined
+        ? []
+        : [identity.authorization, identity.activeCenter ?? ""]),
+    ],
     // Read back by the placeholder rule: data of an earlier revision is never a placeholder.
-    meta: { revision: identity.revision },
+    meta: {
+      revision: identity.revision,
+      center: identity.activeCenter,
+      authorization: identity.authorization,
+    },
     // Waits for `/me/` after another tab changed the session: the cached identity may be stale.
     enabled: identity.isSettled,
-    queryFn: async (context) => {
-      // Only in the `known` state (synchronously, at start): while reconciling or unknown the
-      // cached identity cannot be trusted. Also: a render that still holds an identity the cache no longer records
-      // (another identity was recorded a moment ago) must not send a request under its key.
-      const isTrusted = isRecordedIdentity(
-        context.client,
-        identity.userId,
-        identity.organizationSlug,
-      );
-      if (!isSessionKnown() || !isTrusted) {
-        throw new CancelledError({ revert: true });
-      }
-      const started = currentRevision();
-      const data = await queryFn(context);
-      // The session changed while this was in flight (this tab or another one): the answer was
-      // sent with whatever cookie was current, so it is not stored under this identity.
-      if (currentRevision() !== started) throw new CancelledError({ revert: true });
-      return data;
-    },
+    queryFn: guardedQuery(identity, queryFn),
     placeholderData: (previous, previousQuery) =>
       isSameScope(identity, previousQuery) ? previous : undefined,
   });
