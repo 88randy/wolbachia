@@ -135,6 +135,20 @@ Rules:
 | Index exclusion | is_index_excluded | Derived lagged exclusion provenance; does not remove lab countability. |
 | Archived catalog | CatalogSnapshot | Exact immutable delivered catalog content resolved by organization and submitted version hash. |
 
+
+## Scheduling and risk (B-12)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| carga de importaci?n de riesgo | risk import upload | RiskImportUpload, upload_id | Immutable bounded CSV bytes and SHA-256, organization/author scoped. |
+| importaci?n de riesgo | risk import | RiskImport, /risk-category-imports/ | Immutable preview; unique appended RiskImportApplication applies it once. |
+| versi?n de categor?a de riesgo | risk category version | RiskCategoryVersion, /risk-categories/ | Block/epi-week, source/origin/protocol provenance; never permit authority. |
+| versi?n de asignaci?n | assignment version | AssignmentVersion, /quadrant-assignments/ | Retained quadrant/courier validity history. |
+| tarea programada | scheduled task | ScheduledTask, /schedule/ | Unique point/action/local due date. |
+| titularidad de tarea | task ownership | TaskOwnership, revision | Append-only courier decision; highest revision owns the task. |
+| revisi?n de agenda | schedule revision | ScheduleRevision, expected_revision | Organization counter serializes planning changes. |
+| meta diaria de tareas | daily task target | daily_task_target | Configurable operational target, never a hard cap. |
+
 ## Offline day work (#135)
 
 | Spanish | English name in code | API / field form | Notes |

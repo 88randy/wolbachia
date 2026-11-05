@@ -33,6 +33,8 @@ class ParameterSeed:
 
 
 DEFAULT_PARAMETER_SEEDS = (
+    # [ASSUMPTION] Operational daily target, never a capture cap; confirm bounds with client.
+    ParameterSeed("daily_task_target", ValueType.INTEGER, Unit.COUNT, 40, Decimal(1), Decimal(200)),
     # [ASSUMPTION] Pilot accuracy policy; versioned per organization, never hard-coded in a handler.
     ParameterSeed(
         "max_gps_accuracy_m", ValueType.INTEGER, Unit.METERS, 50, Decimal(1), Decimal(200)
