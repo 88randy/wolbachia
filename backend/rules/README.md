@@ -20,7 +20,7 @@ Versioned rule parameters per organization: the thresholds the app shows but nev
 | `services.py` | `create_rule_version` (locks the parameter, validates value and date), `void_rule_version`, `resolve_effective_from` |
 | `permissions.py` | Permission codes of this app (`rule_parameter_version.read` is the history, admin only by default) |
 | `selectors.py` | `get_version_in_force`, `list_versions` (status `scheduled`/`in_force`/`superseded`/`voided`), `list_parameters_with_current` (one query), `get_next_change_at`, `build_rules_snapshot` |
-| `seeds.py` | `seed_default_rule_parameters`: the twelve parameters and the brief's values |
+| `seeds.py` | `seed_default_rule_parameters`: the thirteen parameters and the brief's values |
 | `views.py`, `serializers.py`, `urls.py` | Thin DRF layer; nested routes by regex prefix |
 
 ## Seed

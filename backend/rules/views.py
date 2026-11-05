@@ -25,6 +25,7 @@ from rules.serializers import (
     RuleParameterVersionCreateSerializer,
     RuleParameterVersionSerializer,
     RulesSnapshotSerializer,
+    VersionFilterSerializer,
 )
 from rules.services import RuleVersionSpec, create_rule_version, void_rule_version
 
@@ -103,12 +104,21 @@ class RuleParameterVersionViewSet(
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return RuleParameterVersion.objects.none()
-        return list_versions(self.get_parameter(), timezone.now())
+        include_voided = True
+        if self.action == "list":
+            query = VersionFilterSerializer(data=self.request.query_params.dict())
+            query.is_valid(raise_exception=True)
+            include_voided = query.validated_data["include_voided"] == "true"
+        return list_versions(self.get_parameter(), timezone.now(), include_voided=include_voided)
 
     def get_serializer_class(self) -> type[serializers.BaseSerializer[Any]]:
         if self.action == "create":
             return RuleParameterVersionCreateSerializer
         return RuleParameterVersionSerializer
+
+    @extend_schema(parameters=[VersionFilterSerializer])
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
         request=RuleParameterVersionCreateSerializer,

@@ -31,8 +31,10 @@ def get_version_in_force(parameter: RuleParameter, at: datetime) -> RuleParamete
     return started.order_by(*IN_FORCE_ORDER).first()
 
 
-def list_versions(parameter: RuleParameter, at: datetime) -> QuerySet[RuleParameterVersion]:
-    """Full history (voided included), newest first, each labelled with its `status`.
+def list_versions(
+    parameter: RuleParameter, at: datetime, *, include_voided: bool = True
+) -> QuerySet[RuleParameterVersion]:
+    """History, newest first, each labelled with its `status` (voided left out if asked).
 
     Statuses: `voided`, `scheduled`, `in_force` or `superseded`.
     """
@@ -46,10 +48,12 @@ def list_versions(parameter: RuleParameter, at: datetime) -> QuerySet[RuleParame
     status = Case(*cases, default=Value(STATUS_SUPERSEDED), output_field=CharField())
     history = (
         RuleParameterVersion.objects.filter(parameter=parameter)
-        .select_related("parameter")
+        .select_related("parameter", "created_by", "voided_by")
         .annotate(status=status)
         .order_by("-effective_from", "-created_at")
     )
+    if not include_voided:
+        history = history.filter(voided_at__isnull=True)
     return cast("QuerySet[RuleParameterVersion]", history)
 
 

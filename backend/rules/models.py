@@ -36,6 +36,7 @@ class Unit(models.TextChoices):
     KILOMETERS_PER_HOUR = "km_h"
     SECONDS = "s"
     MINUTES = "min"
+    DAYS = "day"
     WEEKS = "week"
     COUNT = "count"
     KILOMETERS_PER_LITER = "km_l"

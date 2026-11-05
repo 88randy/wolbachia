@@ -6,7 +6,7 @@ from django.utils import timezone
 
 from rules import permissions as rule_codes
 from rules.models import RuleParameterVersion, ValueType
-from tests.factories import RuleParameterFactory, RuleParameterVersionFactory
+from tests.factories import RuleParameterFactory, RuleParameterVersionFactory, UserFactory
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("void_catalog")]
 
@@ -289,10 +289,14 @@ def test_another_organizations_version_id_under_an_own_key_is_404(admin, speed, 
     assert response.status_code == 404
 
 
-def scheduled(speed, days: int = 3):
+def scheduled(speed, days: int = 3, created_by=None):
     moment = timezone.now() + timedelta(days=days)
     return RuleParameterVersionFactory(
-        parameter=speed, value=12, effective_from=moment, effective_date=moment.date()
+        parameter=speed,
+        value=12,
+        effective_from=moment,
+        effective_date=moment.date(),
+        created_by=created_by,
     )
 
 
@@ -323,9 +327,84 @@ def test_voided_version_stays_in_the_history(admin, speed) -> None:
         format="json",
     )
 
-    statuses = [row["status"] for row in admin.get(versions_url("speed_lock_kmh")).data["results"]]
+    url = versions_url("speed_lock_kmh")
+    statuses = [row["status"] for row in admin.get(url, {"include_voided": "true"}).data["results"]]
 
     assert statuses == ["voided", "in_force"]
+
+
+def test_versions_list_leaves_voided_out_unless_asked(admin, speed) -> None:
+    version = scheduled(speed)
+    admin.post(
+        versions_url("speed_lock_kmh", f"{version.id}/void/"),
+        {"reason": "a typo in the value"},
+        format="json",
+    )
+    url = versions_url("speed_lock_kmh")
+
+    default = admin.get(url).data
+    explicit_false = admin.get(url, {"include_voided": "false"}).data
+    included = admin.get(url, {"include_voided": "true"}).data
+
+    assert [row["status"] for row in default["results"]] == ["in_force"]
+    assert default["count"] == explicit_false["count"] == 1
+    assert included["count"] == 2
+
+
+def test_voided_version_can_still_be_retrieved(admin, speed) -> None:
+    version = scheduled(speed)
+    url = versions_url("speed_lock_kmh", f"{version.id}/")
+    admin.post(url + "void/", {"reason": "a typo in the value"}, format="json")
+
+    response = admin.get(url)
+
+    assert (response.status_code, response.data["status"]) == (200, "voided")
+
+
+@pytest.mark.parametrize("value", ["yes", "1", "True", ""])
+def test_include_voided_with_another_value_is_400(admin, speed, value) -> None:
+    response = admin.get(versions_url("speed_lock_kmh"), {"include_voided": value})
+
+    assert (response.status_code, response.data["code"]) == (400, "validation_error")
+    assert "include_voided" in response.data["fields"]
+
+
+def test_versions_carry_the_usernames_even_of_users_without_a_membership(
+    api_client, org_a, make_member, speed
+) -> None:
+    author = UserFactory(username="ana")  # no membership: someone who left the organization
+    voider, _ = make_member(org_a, ADMIN_CODES, user=UserFactory(username="beto"))
+    api_client.force_authenticate(voider)
+    version = scheduled(speed, created_by=author)
+    api_client.post(
+        versions_url("speed_lock_kmh", f"{version.id}/void/"),
+        {"reason": "a typo in the value"},
+        format="json",
+    )
+
+    row = api_client.get(versions_url("speed_lock_kmh", f"{version.id}/")).data
+
+    assert (row["created_by_username"], row["voided_by_username"]) == ("ana", "beto")
+    assert row["created_by"] == author.id
+
+
+def test_a_seed_version_has_no_usernames(admin, speed) -> None:
+    [row] = admin.get(versions_url("speed_lock_kmh")).data["results"]
+
+    assert (row["created_by_username"], row["voided_by_username"]) == (None, None)
+
+
+def test_versions_list_does_not_query_per_author(
+    admin, speed, django_assert_max_num_queries
+) -> None:
+    author = UserFactory()
+    for days in range(1, 6):
+        scheduled(speed, days, created_by=author)
+    url = versions_url("speed_lock_kmh")
+    admin.get(url)
+
+    with django_assert_max_num_queries(12):
+        assert admin.get(url).data["count"] == 6
 
 
 def test_void_a_version_in_force_is_409_version_not_scheduled(admin, speed) -> None:

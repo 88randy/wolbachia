@@ -1,8 +1,9 @@
 import { act, screen, waitFor } from "@testing-library/react";
 import type { Root } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { STORAGE_KEYS } from "../storage/safe-storage";
 import { createFakeApi, makeMe } from "../test/fake-api";
+import { stubColorScheme } from "../test/color-scheme";
+import { applyTheme } from "../theme/theme";
 import { startApp } from "./start-app";
 
 let container: HTMLElement;
@@ -19,6 +20,7 @@ afterEach(() => {
     root?.unmount();
   });
   root = undefined;
+  applyTheme("light");
   container.remove();
   vi.restoreAllMocks();
   vi.unstubAllGlobals();
@@ -36,8 +38,8 @@ describe("startApp", () => {
     expect(consoleError).toHaveBeenCalledWith(expect.stringContaining("VITE_API_BASE_URL"));
   });
 
-  test("applies the stored dark theme before the first render", async () => {
-    window.localStorage.setItem(STORAGE_KEYS.theme, "dark");
+  test("resolves the default System preference before the first render", async () => {
+    stubColorScheme(true);
 
     root = await startApp(container, { VITE_API_BASE_URL: "/api/v1" });
 

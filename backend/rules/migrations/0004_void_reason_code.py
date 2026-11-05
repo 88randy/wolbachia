@@ -59,7 +59,7 @@ def restore_legacy_notes(apps, schema_editor):
 class Migration(migrations.Migration):
     atomic = True
     dependencies = [
-        ("rules", "0002_version_void_and_guard"),
+        ("rules", "0003_unit_day"),
         ("catalogs", "0003_void_reason_catalog"),
     ]
     operations = [

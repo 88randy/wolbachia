@@ -25,18 +25,19 @@ node scripts/typecheck.mjs mobile
 
 ## Debug APK from GitHub Actions
 
-The APK is built in CI (job `debug-apk` of `.github/workflows/mobile.yml`), not on a developer machine. No JDK, Android SDK or NDK is needed locally.
+The APK is built in CI (job `debug-apk` of `.github/workflows/mobile-apk.yml`), not on a developer machine. No JDK, Android SDK or NDK is needed locally.
 
 Until issue #6 creates the app in this folder, the job builds the #1 spike (`spikes/mobile-foundations/`, set in `APP_DIR` at the top of the job). #6 switches `APP_DIR` to `mobile`.
 
 ### When it runs
 
-- On every pull request and push to `master` that touches the `paths:` of the workflow (this folder, `packages/**`, the spike folder, root JS tooling).
-- On demand: GitHub, tab **Actions**, workflow **mobile**, **Run workflow**. The optional `abis` input lists the CPU architectures (default `arm64-v8a`, enough for current phones; add `armeabi-v7a` for old 32-bit phones).
+- On every pull request and push to `master` that touches `mobile/**`, `spikes/mobile-foundations/**`, `packages/api-client/**`, `packages/tokens/**` or `.github/workflows/mobile-apk.yml`.
+- Changes limited to `packages/i18n/**` or `web/**` do not build an APK. The fast mobile checks in `.github/workflows/mobile.yml` keep their existing filters, including all shared packages. Mobile type-checking still catches i18n breakage; rebuild the APK on the next mobile change or by manual dispatch.
+- On demand: GitHub, tab **Actions**, workflow **mobile-apk**, **Run workflow**. The optional `abis` input lists the CPU architectures (default `arm64-v8a`, enough for current phones; add `armeabi-v7a` for old 32-bit phones).
 
 ### Download
 
-1. Open the run: in the pull request, **Checks**, **mobile**; or in **Actions**, workflow **mobile**, pick the run.
+1. Open the run: in the pull request, **Checks**, **mobile-apk**; or in **Actions**, workflow **mobile-apk**, pick the run.
 2. Scroll to **Artifacts** at the bottom of the run summary and download `wolbachia-debug-apk-<sha>` (`<sha>` is the first 7 characters of the commit). It is a `.zip` with one `.apk` inside.
 3. Unzip it. Artifacts are kept for 14 days; run the workflow again when it expires.
 
