@@ -1,4 +1,4 @@
-﻿import { AdminSaveButton } from "./AdminSaveButton";
+import { AdminSaveButton } from "./AdminSaveButton";
 import { useTranslation } from "react-i18next";
 import type { OrganizationFormController } from "./use-organization-form";
 import type { OrganizationAvailability } from "./use-organization-availability";
@@ -24,6 +24,7 @@ export function OrganizationActions({ controller, availability }: Props) {
         </>
       )}
       <p role="status">{controller.isSaved ? t("orgAdmin.action.saved") : ""}</p>
+      <p role="status">{controller.isLogoSaved ? t("orgAdmin.brand.saved") : ""}</p>
     </>
   );
 }

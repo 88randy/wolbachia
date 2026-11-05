@@ -1,9 +1,10 @@
-﻿import type { Schemas } from "@wolbachia/api-client";
+import type { ScopeDimensionChange } from "./scope-types";
+import type { Schemas } from "@wolbachia/api-client";
 import { ScopeReference } from "./ScopeReference";
 interface Props {
   dimension: "centers" | "quadrants";
   value: Schemas["ScopeDimension"];
-  onChange: (value: Schemas["ScopeDimension"]) => void;
+  onChange: ScopeDimensionChange;
 }
 export function ScopeReferences({ dimension, value, onChange }: Props) {
   return (
@@ -14,7 +15,10 @@ export function ScopeReferences({ dimension, value, onChange }: Props) {
           id={identifier}
           dimension={dimension}
           onRemove={() => {
-            onChange({ ...value, ids: value.ids.filter((item) => item !== identifier) });
+            onChange((current) => ({
+              ...current,
+              ids: current.ids.filter((item) => item !== identifier),
+            }));
           }}
         />
       ))}

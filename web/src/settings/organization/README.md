@@ -4,9 +4,10 @@ W65 `/settings/roles` and W68 `/settings/organization` consume the generated B-0
 
 - `use-w-03.ts`: organization-scoped generated projections and server paging/search/order. The roles/memberships view is also URL-owned (`?view=memberships`). No invented center parameter on organization-global resources.
 - `use-admin-write.ts`, `run-admin-write.ts`: one guarded attempt, immediate duplicate-submit lock, no automatic replay after reauthentication.
-- `use-scope-editor.ts`: role permissions and membership scope, explicit revision comparison/review. Profile scope applies to the entire bundle.
-- `branding.ts`, `organization-requests.ts`: PNG/JPEG/WebP input; JPEG/WebP normalize to PNG because the current backend validator accepts only PNG. Multipart uses the client's documented [bodySerializer](https://openapi-ts.dev/openapi-fetch/api#bodyserializer). No new dependencies.
+- `use-scope-editor.ts`: role permissions and membership scope, explicit revision comparison/review. Profile scope applies to the entire bundle. Scope searches merge into current state, are cancelled on mode/context changes, and hold a token that blocks Save until settlement or cancellation. Checked permissions can be revoked even when the actor cannot grant them.
+- `branding.ts`, `organization-requests.ts`: PNG/JPEG/WebP input; all three formats normalize to bounded RGB/RGBA PNG because the current backend validator accepts only PNG. Multipart uses the client's documented [bodySerializer](https://openapi-ts.dev/openapi-fetch/api#bodyserializer). No new dependencies.
 - `use-logo.ts`: retrieves only the same-origin authenticated raster endpoint through the API client so the organization header is retained; displays trusted PNG data under the existing `img-src self data:` policy, with initials on failure.
+- `organization-cache.ts` publishes guarded write responses across the same actor/organization/authorization center variants, cancelling older reads and never replacing a newer cached revision. Clean forms adopt newer snapshots; dirty forms retain their draft and expected revision. Logo-only success has its own announcement and preserves pending field changes.
 - Components are presentation modules; request, draft, conflict and session logic live in hooks/domain functions.
 
 ## Contract gaps returned to B-01 (#99)
@@ -24,6 +25,8 @@ The shell center preference invalidates context and URL filter chips. B-01 organ
 | Keyboard matrix payload, last administrator retained, fixed consultation bundle | `w-03.test.tsx` keyboard/refusal case; server role is never optimistically overwritten |
 | Concurrent edits require refresh/review | `w-03.test.tsx` revision conflict case |
 | Center changes clear results/chips without expanding scope; late response ignored | `../../centers/center-selection.test.tsx` barrier journey and paged remembered-selection case |
+| Pending scope lookup / removed ids / mode changes; delegated revocation | `w-03.test.tsx` deferred lookup and keyboard revoke regressions |
+| Organization cache revision after navigation; clean/dirty draft synchronization; stale write isolation | `w-03.test.tsx`, `organization-cache.test.ts`, `use-organization-draft.test.ts` |
 | Branding, timezone/epi-week roundtrip, invalid upload | `w-03.test.tsx`, `branding.test.ts`, `logo-upload.test.tsx` |
 | Empty/out-of-scope deep link; permission/scope revocation clears content | `w-03.test.tsx` denial and live revocation cases |
 | Unknown/foreign codes indistinguishable; membership exact scope payload | `w-03.test.tsx` membership case |

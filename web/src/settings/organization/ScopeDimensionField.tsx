@@ -1,27 +1,23 @@
 ﻿import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
-import { useMe } from "../../session/use-me";
-import { useScopeCode } from "./use-scope-code";
+import { useSessionIdentity } from "../../session/use-session-identity";
+import type { BeginScopeLookup, ScopeDimensionChange } from "./scope-types";
 import { ScopeModeSelect } from "./ScopeModeSelect";
-import { ScopeCodeInput } from "./ScopeCodeInput";
+import { ScopeCodeLookup } from "./ScopeCodeLookup";
 import { ScopeReferences } from "./ScopeReferences";
 import styles from "./organization.module.css";
 interface Props {
   dimension: "centers" | "quadrants";
   value: Schemas["ScopeDimension"];
-  onChange: (value: Schemas["ScopeDimension"]) => void;
+  onChange: ScopeDimensionChange;
+  beginLookup: BeginScopeLookup;
 }
 export function ScopeDimensionField(props: Props) {
   const { dimension, value, onChange } = props;
   const { t } = useTranslation();
   const id = useId();
-  const canRead = useMe().permissions.includes(
-    dimension === "centers" ? "center.read" : "quadrant.read",
-  );
-  const lookup = useScopeCode(dimension, (identifier) => {
-    onChange({ mode: "selected", ids: [...new Set([...value.ids, identifier])].sort() });
-  });
+  const context = JSON.stringify(useSessionIdentity());
   return (
     <fieldset className={styles.fieldset}>
       <legend>
@@ -31,11 +27,7 @@ export function ScopeDimensionField(props: Props) {
       {value.mode === "selected" && (
         <>
           <ScopeReferences dimension={dimension} value={value} onChange={onChange} />
-          {canRead ? (
-            <ScopeCodeInput id={`${id}-code`} lookup={lookup} />
-          ) : (
-            <p>{t("orgAdmin.scope.unavailable")}</p>
-          )}
+          <ScopeCodeLookup key={context} {...props} id={`${id}-code`} />
         </>
       )}
     </fieldset>

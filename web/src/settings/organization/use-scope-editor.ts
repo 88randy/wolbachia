@@ -1,4 +1,5 @@
-﻿import { useQueryClient } from "@tanstack/react-query";
+import { useScopeLookups } from "./use-scope-lookups";
+import { useQueryClient } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
 import { useApiClient } from "../../api/ApiClientProvider";
 import { refreshAdministration } from "./refresh-administration";
@@ -16,6 +17,7 @@ export function useScopeEditor(target: EditTarget, onSaved: () => void) {
   const queryClient = useQueryClient();
   const writer = useAdminWrite();
   const draft = useScopeDraft(target);
+  const lookups = useScopeLookups();
   const versions = useScopeRevision(target.record.revision, writer.reviewed);
   async function refresh() {
     const result = await writer.run<Profile | Membership>((guard) =>
@@ -24,6 +26,7 @@ export function useScopeEditor(target: EditTarget, onSaved: () => void) {
     if (result) versions.setCurrent(result);
   }
   async function save() {
+    if (lookups.isPending()) return;
     const change = { client, target, ...draft, revision: versions.revision };
     const saved = await writer.run(async (guard) => {
       await requestScopeChange({ ...change, guard });
@@ -34,7 +37,7 @@ export function useScopeEditor(target: EditTarget, onSaved: () => void) {
     onSaved();
     await invalidateOrgScoped(queryClient, "administration");
   }
-  return { writer, ...draft, ...versions, refresh, save };
+  return { writer, lookups, ...draft, ...versions, refresh, save };
 }
 export type ScopeEditor = ReturnType<typeof useScopeEditor>;
 export type WorkScope = Schemas["MeScope"];

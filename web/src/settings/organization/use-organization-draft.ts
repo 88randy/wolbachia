@@ -1,27 +1,28 @@
-﻿import { useState } from "react";
+import { useState } from "react";
 import type { Organization } from "./use-w-03";
+import { acceptOrganizationDraft, rebaseOrganizationDraft } from "./organization-draft";
+import { useOrganizationState } from "./use-organization-state";
 export function useOrganizationDraft(initial: Organization) {
-  const [settings, setSettings] = useState(initial);
+  const { setDraft, ...state } = useOrganizationState(initial);
   const [comparison, setComparison] = useState<Organization | null>(null);
-  const [isSaved, setSaved] = useState(false);
   function change<K extends keyof Organization>(key: K, value: Organization[K]) {
-    setSaved(false);
-    setSettings((previous) => ({ ...previous, [key]: value }));
+    setDraft((current) => ({
+      ...current,
+      settings: { ...current.settings, [key]: value },
+      notice: null,
+    }));
   }
   function accept(result: Organization) {
-    setSettings(result);
-    setSaved(true);
+    setDraft((current) => acceptOrganizationDraft(current, result, "settings"));
   }
   function acceptLogo(result: Organization) {
-    setSettings((draft) => ({ ...draft, revision: result.revision, logo_url: result.logo_url }));
-    setSaved(true);
+    setDraft((current) => acceptOrganizationDraft(current, result, "logo"));
   }
   function review(onReviewed: () => void) {
-    if (comparison) {
-      change("revision", comparison.revision);
-      setComparison(null);
-      onReviewed();
-    }
+    if (!comparison) return;
+    setDraft((current) => rebaseOrganizationDraft(current, comparison));
+    setComparison(null);
+    onReviewed();
   }
-  return { settings, change, isSaved, comparison, setComparison, accept, acceptLogo, review };
+  return { ...state, change, comparison, setComparison, accept, acceptLogo, review };
 }

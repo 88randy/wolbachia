@@ -1,4 +1,4 @@
-﻿import type { Schemas } from "@wolbachia/api-client";
+import type { Schemas } from "@wolbachia/api-client";
 export class InvalidLogoError extends Error {}
 export const MAX_LOGO_BYTES = 1024 * 1024;
 const MAX_DIMENSION = 1024;
@@ -24,10 +24,9 @@ export function isSafeLogoUrl(value: string | null): boolean {
     !url.password
   );
 }
-/** Backend currently accepts PNG only. Browser raster decoding normalizes JPEG/WebP before upload. */
+/** Backend currently accepts PNG only. Browser decoding normalizes every raster, including PNG, before upload. */
 export async function prepareLogo(file: File): Promise<File> {
   if (!isAllowedLogo(file)) throw new InvalidLogoError("Invalid raster logo");
-  if (file.type === "image/png") return file;
   const bitmap = await createImageBitmap(file);
   try {
     if (bitmap.width > MAX_DIMENSION || bitmap.height > MAX_DIMENSION)

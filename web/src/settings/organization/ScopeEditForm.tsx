@@ -1,4 +1,4 @@
-﻿import { AdminSaveButton } from "./AdminSaveButton";
+import { AdminSaveButton } from "./AdminSaveButton";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "./use-online";
 import { ScopeFields } from "./ScopeFields";
@@ -15,7 +15,8 @@ interface Props {
 export function ScopeEditForm({ editor, target, codes, onClose }: Props) {
   const { t } = useTranslation();
   const isOnline = useOnline();
-  const isBlocked = editor.writer.isBusy || editor.writer.needsReview || !isOnline;
+  const isBlocked =
+    editor.writer.isBusy || editor.writer.needsReview || editor.lookups.hasPending || !isOnline;
   return (
     <form
       className={styles.form}
@@ -26,9 +27,10 @@ export function ScopeEditForm({ editor, target, codes, onClose }: Props) {
     >
       <fieldset disabled={editor.writer.isBusy} className={styles.fields}>
         {target.kind === "role" && <PermissionFields codes={codes} editor={editor} />}
-        <ScopeFields scope={editor.scope} onChange={editor.setScope} />
+        <ScopeFields editor={editor} />
       </fieldset>
       <RevisionReview editor={editor} />
+      {editor.lookups.hasPending && <p role="status">{t("orgAdmin.scope.pending")}</p>}
       {!isOnline && <p>{t("orgAdmin.error.offline")}</p>}
       <div className={styles.row}>
         <AdminSaveButton isBlocked={isBlocked} isBusy={editor.writer.isBusy} />

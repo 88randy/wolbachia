@@ -1,4 +1,4 @@
-﻿import type { orgAdmin as Spanish } from "../es-MX/orgAdmin.ts";
+import type { orgAdmin as Spanish } from "../es-MX/orgAdmin.ts";
 export const orgAdmin = {
   "orgAdmin.roles.scope": "Role scope",
   "orgAdmin.roles.view": "View",
@@ -27,6 +27,7 @@ export const orgAdmin = {
   "orgAdmin.scope.none": "No access",
   "orgAdmin.scope.selected": "Explicit selection",
   "orgAdmin.scope.all": "All",
+  "orgAdmin.scope.pending": "Looking up code. Wait for the search to finish before saving.",
   "orgAdmin.scope.hint":
     "An empty selection denies access. Role and membership scope intersect; changing the center filter never grants permission.",
   "orgAdmin.scope.code": "Code",
@@ -68,6 +69,7 @@ export const orgAdmin = {
   "orgAdmin.organization.languageRequired": "Select at least one language before saving.",
   "orgAdmin.organization.phone": "Phone on ovitrap labels",
   "orgAdmin.organization.support": "Support contact",
+  "orgAdmin.brand.saved": "Logo saved",
   "orgAdmin.brand.logo": "Logo",
   "orgAdmin.brand.initials": "Organization initials",
   "orgAdmin.brand.preview": "Label preview",
@@ -75,7 +77,7 @@ export const orgAdmin = {
   "orgAdmin.brand.hint":
     "New labels use the name, logo and phone. Already printed labels do not change.",
   "orgAdmin.brand.formats":
-    "PNG, JPEG or WebP up to 1 MB and 1024 × 1024. JPEG and WebP are converted to PNG before upload.",
+    "PNG, JPEG or WebP up to 1 MB and 1024 × 1024. All images are normalized to PNG before upload.",
   "orgAdmin.brand.invalid":
     "Choose a PNG, JPEG or WebP image up to 1 MB. Check the file and try again.",
   "orgAdmin.brand.upload": "Save logo",

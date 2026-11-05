@@ -1,4 +1,5 @@
-﻿import { isSessionKnown } from "../../session/session-revision";
+import type { Profile } from "./use-w-03";
+import { isSessionKnown } from "../../session/session-revision";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
@@ -51,7 +52,7 @@ const PROFILES = [
     permissions: ["portal.read"],
   },
 ];
-async function open(path = "/settings/roles", me = ME, profiles = PROFILES) {
+async function open(path = "/settings/roles", me = ME, profiles: Profile[] = PROFILES) {
   const api = createFakeApi({
     "GET /api/v1/me/": () => Response.json(me),
     "GET /api/v1/roles/": () => Response.json(page(profiles)),
@@ -402,4 +403,158 @@ test("organization drafts survive same-user reauthentication without replaying t
       .value,
   ).toBe("1234");
   expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(1);
+});
+
+function deferredResponse() {
+  let resolve!: (response: Response) => void;
+  const promise = new Promise<Response>((release) => {
+    resolve = release;
+  });
+  return { promise, resolve };
+}
+const CENTER_A = { id: "00000000-0000-4000-8000-000000000011", code: "C-A", name: "A" };
+const CENTER_B = { id: "00000000-0000-4000-8000-000000000012", code: "C-B", name: "B" };
+async function openScopeSearch() {
+  const role = {
+    ...ROLE,
+    scope: { ...SCOPE, centers: { mode: "selected" as const, ids: [CENTER_A.id] } },
+  };
+  const context = await open("/settings/roles", ME, [role]);
+  const lookup = deferredResponse();
+  context.api.setRoute("GET /api/v1/centers/", (request) =>
+    new URL(request.path, "http://localhost").searchParams.has("code")
+      ? lookup.promise
+      : Response.json(page([CENTER_A])),
+  );
+  for (const center of [CENTER_A, CENTER_B])
+    context.api.setRoute(`GET /api/v1/centers/${center.id}/`, () => Response.json(center));
+  await context.user.click(await screen.findByRole("button", { name: "Equipo: role.update" }));
+  const centers = within(screen.getByRole("group", { name: "Centros" }));
+  await centers.findByRole("button", { name: /Quitar referencia: C-A/ });
+  await context.user.click(centers.getByRole("textbox"));
+  await context.user.paste("C-B");
+  await context.user.click(centers.getByRole("button", { name: "Agregar código" }));
+  await waitFor(() => {
+    expect(context.api.requests.some((request) => request.path.includes("code=C-B"))).toBe(true);
+  });
+  return { ...context, lookup, centers, dialog: within(screen.getByRole("dialog")) };
+}
+
+test("a pending scope search blocks save and merges into the current draft without restoring removed references", async () => {
+  const { api, user, lookup, centers, dialog } = await openScopeSearch();
+  expect(dialog.getByRole("button", { name: "Guardar" }).getAttribute("aria-disabled")).toBe(
+    "true",
+  );
+  await user.click(dialog.getByRole("button", { name: "Guardar" }));
+  expect(api.requests.some((request) => request.method === "PUT")).toBe(false);
+  await user.click(centers.getByRole("button", { name: /Quitar referencia: C-A/ }));
+  await user.selectOptions(
+    within(screen.getByRole("group", { name: "Cuadrantes" })).getByRole("combobox"),
+    "none",
+  );
+  await act(async () => {
+    lookup.resolve(Response.json(page([CENTER_B])));
+    await lookup.promise;
+  });
+  await centers.findByRole("button", { name: /Quitar referencia: C-B/ });
+  expect(centers.queryByRole("button", { name: /Quitar referencia: C-A/ })).toBeNull();
+  await user.click(dialog.getByRole("button", { name: "Guardar" }));
+  await screen.findByText(/Debe permanecer al menos una persona administradora/);
+  expect(api.requests.find((request) => request.method === "PUT")?.body).toEqual({
+    permissions: ROLE.permissions,
+    expected_revision: 3,
+    scope: {
+      centers: { mode: "selected", ids: [CENTER_B.id] },
+      quadrants: { mode: "none", ids: [] },
+    },
+  });
+});
+
+test("changing scope mode discards an outstanding search even when returning to selected mode", async () => {
+  const { api, user, lookup, centers, dialog } = await openScopeSearch();
+  await user.selectOptions(centers.getByRole("combobox"), "none");
+  await user.selectOptions(centers.getByRole("combobox"), "selected");
+  await act(async () => {
+    lookup.resolve(Response.json(page([CENTER_B])));
+    await lookup.promise;
+  });
+  await waitFor(() => {
+    expect(
+      centers.getByRole<HTMLButtonElement>("button", { name: "Agregar código" }).disabled,
+    ).toBe(true);
+  });
+  expect(centers.queryByRole("button", { name: /Quitar referencia/ })).toBeNull();
+  await user.click(dialog.getByRole("button", { name: "Guardar" }));
+  await screen.findByText(/Debe permanecer al menos una persona administradora/);
+  expect(api.requests.find((request) => request.method === "PUT")?.body).toMatchObject({
+    scope: { centers: { mode: "selected", ids: [] } },
+  });
+});
+
+test("a delegated administrator can revoke a checked permission they cannot grant", async () => {
+  const { api, user } = await open("/settings/roles", ME, [
+    { ...ROLE, permissions: [...ROLE.permissions, "motorcycle.unblock"] },
+  ]);
+  await user.click(await screen.findByRole("button", { name: "Equipo: motorcycle.unblock" }));
+  const dialog = within(screen.getByRole("dialog"));
+  const checkbox = dialog.getByRole<HTMLInputElement>("checkbox", { name: "motorcycle.unblock" });
+  expect(checkbox.disabled).toBe(false);
+  checkbox.focus();
+  await user.keyboard(" ");
+  expect(checkbox.checked).toBe(false);
+  expect(checkbox.disabled).toBe(true);
+  await user.click(dialog.getByRole("button", { name: "Guardar" }));
+  await screen.findByText(/Debe permanecer al menos una persona administradora/);
+  expect(api.requests.find((request) => request.method === "PUT")?.body).toEqual({
+    permissions: ROLE.permissions,
+    scope: SCOPE,
+    expected_revision: 3,
+  });
+});
+
+test("a successful settings patch publishes its revision before navigation and the next manual save", async () => {
+  const { api, user, app } = await open("/settings/organization");
+  const timezone = await screen.findByRole("textbox", { name: "Zona horaria" });
+  await user.clear(timezone);
+  await user.paste("UTC");
+  await user.click(screen.getByRole("button", { name: "Guardar" }));
+  await screen.findByText("Cambios guardados");
+  await waitFor(() => {
+    expect(screen.getByRole("button", { name: "Guardar" }).getAttribute("aria-disabled")).toBe(
+      "false",
+    );
+  });
+  const refresh = deferredResponse();
+  api.setRoute("GET /api/v1/organization/", () => refresh.promise);
+  await act(async () => {
+    await app.router.navigate({ to: "/settings" });
+  });
+  await screen.findByRole("heading", { name: "Configuración" });
+  await act(async () => {
+    await app.router.navigate({ to: "/settings/organization" });
+  });
+  expect(
+    (await screen.findByRole<HTMLInputElement>("textbox", { name: "Zona horaria" })).value,
+  ).toBe("UTC");
+  expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
+  await user.click(screen.getByRole("button", { name: "Guardar" }));
+  await waitFor(() => {
+    expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(2);
+  });
+  expect(api.requests.filter((request) => request.method === "PATCH")[1]?.body).toMatchObject({
+    expected_revision: 5,
+    timezone: "UTC",
+  });
+  await waitFor(() => {
+    expect(
+      api.requests
+        .filter((request) => request.path === "/api/v1/organization/" && request.method === "GET")
+        .at(-1)?.signal.aborted,
+    ).toBe(true);
+  });
+  await act(async () => {
+    refresh.resolve(Response.json(ORGANIZATION));
+    await refresh.promise;
+  });
+  expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
 });

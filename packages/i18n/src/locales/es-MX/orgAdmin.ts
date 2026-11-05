@@ -1,4 +1,4 @@
-﻿import type { AreaCatalog } from "../area.ts";
+import type { AreaCatalog } from "../area.ts";
 export const orgAdmin = {
   "orgAdmin.roles.scope": "Alcance del perfil",
   "orgAdmin.roles.view": "Vista",
@@ -27,6 +27,7 @@ export const orgAdmin = {
   "orgAdmin.scope.none": "Sin acceso",
   "orgAdmin.scope.selected": "Selección explícita",
   "orgAdmin.scope.all": "Todos",
+  "orgAdmin.scope.pending": "Buscando código. Espera a que termine la búsqueda para guardar.",
   "orgAdmin.scope.hint":
     "Una selección vacía niega el acceso. El alcance del perfil se intersecta con el de la membresía; cambiar el filtro de centro no otorga permisos.",
   "orgAdmin.scope.code": "Código",
@@ -69,6 +70,7 @@ export const orgAdmin = {
   "orgAdmin.organization.languageRequired": "Selecciona al menos un idioma para guardar.",
   "orgAdmin.organization.phone": "Teléfono en etiquetas de ovitrampa",
   "orgAdmin.organization.support": "Contacto de soporte",
+  "orgAdmin.brand.saved": "Logotipo guardado",
   "orgAdmin.brand.logo": "Logotipo",
   "orgAdmin.brand.initials": "Iniciales de la organización",
   "orgAdmin.brand.preview": "Vista previa de etiqueta",
@@ -76,7 +78,7 @@ export const orgAdmin = {
   "orgAdmin.brand.hint":
     "El nombre, el logotipo y el teléfono se usan en las nuevas etiquetas. Las etiquetas ya impresas no cambian.",
   "orgAdmin.brand.formats":
-    "PNG, JPEG o WebP de hasta 1 MB y 1024 × 1024. JPEG y WebP se convierten a PNG antes de enviar.",
+    "PNG, JPEG o WebP de hasta 1 MB y 1024 × 1024. Todas las imágenes se normalizan a PNG antes de enviar.",
   "orgAdmin.brand.invalid":
     "Elige una imagen PNG, JPEG o WebP de hasta 1 MB. Revisa el archivo e intenta de nuevo.",
   "orgAdmin.brand.upload": "Guardar logotipo",

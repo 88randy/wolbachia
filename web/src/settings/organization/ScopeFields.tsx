@@ -1,27 +1,29 @@
 ﻿import { useTranslation } from "react-i18next";
-import type { Schemas } from "@wolbachia/api-client";
+import type { ScopeEditor } from "./use-scope-editor";
 import { ScopeDimensionField } from "./ScopeDimensionField";
 interface Props {
-  scope: Schemas["MeScope"];
-  onChange: (scope: Schemas["MeScope"]) => void;
+  editor: Pick<ScopeEditor, "scope" | "setScope" | "lookups">;
 }
-export function ScopeFields({ scope, onChange }: Props) {
+export function ScopeFields({ editor }: Props) {
   const { t } = useTranslation();
+  const { scope, setScope } = editor;
   return (
     <>
       <p>{t("orgAdmin.scope.hint")}</p>
       <ScopeDimensionField
         dimension="centers"
         value={scope.centers}
-        onChange={(centers) => {
-          onChange({ ...scope, centers });
+        beginLookup={editor.lookups.begin}
+        onChange={(update) => {
+          setScope((current) => ({ ...current, centers: update(current.centers) }));
         }}
       />
       <ScopeDimensionField
         dimension="quadrants"
         value={scope.quadrants}
-        onChange={(quadrants) => {
-          onChange({ ...scope, quadrants });
+        beginLookup={editor.lookups.begin}
+        onChange={(update) => {
+          setScope((current) => ({ ...current, quadrants: update(current.quadrants) }));
         }}
       />
     </>

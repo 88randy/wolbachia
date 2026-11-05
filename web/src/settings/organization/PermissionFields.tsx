@@ -1,4 +1,4 @@
-﻿import { useTranslation } from "react-i18next";
+import { useTranslation } from "react-i18next";
 import { useMe } from "../../session/use-me";
 import type { ScopeEditor } from "./use-scope-editor";
 import styles from "./organization.module.css";
@@ -17,7 +17,9 @@ export function PermissionFields({ codes, editor }: Props) {
           <input
             type="checkbox"
             checked={editor.permissions.includes(permission)}
-            disabled={!me.permissions.includes(permission)}
+            disabled={
+              !editor.permissions.includes(permission) && !me.permissions.includes(permission)
+            }
             onChange={() => {
               editor.toggle(permission);
             }}

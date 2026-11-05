@@ -1,11 +1,12 @@
-﻿import { useTranslation } from "react-i18next";
+import type { ScopeDimensionChange } from "./scope-types";
+import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { useMe } from "../../session/use-me";
 interface Props {
   id: string;
   dimension: "centers" | "quadrants";
   value: Schemas["ScopeDimension"];
-  onChange: (value: Schemas["ScopeDimension"]) => void;
+  onChange: ScopeDimensionChange;
 }
 export function ScopeModeSelect({ id, dimension, value, onChange }: Props) {
   const { t } = useTranslation();
@@ -18,7 +19,7 @@ export function ScopeModeSelect({ id, dimension, value, onChange }: Props) {
         value={value.mode}
         onChange={(event) => {
           const mode = event.target.value as Schemas["ModeEnum"];
-          onChange({ mode, ids: mode === "selected" ? value.ids : [] });
+          onChange((current) => ({ mode, ids: mode === "selected" ? current.ids : [] }));
         }}
       >
         <option value="none">{t("orgAdmin.scope.none")}</option>

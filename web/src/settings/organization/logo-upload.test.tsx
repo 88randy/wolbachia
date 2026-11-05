@@ -1,7 +1,7 @@
-﻿import { endSessionExpiry } from "../../session/session-events";
+import { endSessionExpiry } from "../../session/session-events";
 import { fireEvent, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { afterEach, expect, test } from "vitest";
+import { afterEach, expect, test, vi } from "vitest";
 import {
   apiError,
   createFakeApi,
@@ -10,7 +10,11 @@ import {
   makeOrganization,
 } from "../../test/fake-api";
 import { renderApp } from "../../test/render-app";
-afterEach(endSessionExpiry);
+afterEach(() => {
+  endSessionExpiry();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 const ORGANIZATION = { ...makeOrganization("norte", "Programa de prueba"), revision: 4 };
 
 test("logo upload sends raster multipart with revision and CSRF while retaining unsaved label draft", async () => {
@@ -26,7 +30,7 @@ test("logo upload sends raster multipart with revision and CSRF while retaining 
   });
   document.cookie = "csrftoken=w03-csrf; path=/";
   try {
-    await renderApp({
+    const app = await renderApp({
       path: "/settings/organization",
       fetch: async (request) => {
         if (request.method !== "POST") return api.fetch(request);
@@ -54,9 +58,24 @@ test("logo upload sends raster multipart with revision and CSRF while retaining 
       "logo.png",
       { type: "image/png" },
     );
+    vi.stubGlobal(
+      "createImageBitmap",
+      vi.fn().mockResolvedValue({ width: 1, height: 1, close: vi.fn() }),
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue({
+      drawImage: vi.fn(),
+    } as unknown as CanvasRenderingContext2D);
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((callback) => {
+      callback(png);
+    });
     fireEvent.change(screen.getByLabelText("Logotipo"), { target: { files: [png] } });
     await userEvent.click(screen.getByRole("button", { name: "Guardar logotipo" }));
-    await screen.findByText("Cambios guardados");
+    await screen.findByText("Logotipo guardado");
+    expect(screen.queryByText("Cambios guardados")).toBeNull();
+    const cached = app.queryClient.getQueriesData({
+      predicate: (query) => query.queryKey[4] === "organization",
+    });
+    expect(cached.map(([, value]) => value)).toEqual([{ ...ORGANIZATION, revision: 5 }]);
     expect(uploaded).not.toBeNull();
     expect((uploaded as unknown as FormData).get("expected_revision")).toBe("4");
     const raster = (uploaded as unknown as FormData).get("logo");
