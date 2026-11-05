@@ -15,19 +15,21 @@ from accounts.final_upload import FinalUploadMixin
 from accounts.models import DeviceSession, User
 from core.exceptions import PayloadTooLargeError
 from core.permissions import HasPermissionCode
+from core.snapshots import IF_NONE_MATCH_PARAMETER, SNAPSHOT_CACHE_CONTROL, etag_matches
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
 from field_sync.codes import REJECTION_QUOTA_EXCEEDED
 from field_sync.cursor import decode_cursor
 from field_sync.envelope import BatchContext, EventEnvelope
 from field_sync.exceptions import DeviceMismatchError
-from field_sync.permissions import FIELD_EVENT_SYNC, BodySizeWithinLimit
+from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC, BodySizeWithinLimit
 from field_sync.serializers import (
+    BootstrapSerializer,
     SyncBatchSerializer,
     SyncResponseSerializer,
     build_envelopes,
 )
-from field_sync.services import sync_batch
+from field_sync.services import bootstrap_bundle, sync_batch
 from field_sync.throttling import FieldSyncDeviceThrottle
 
 
@@ -121,3 +123,42 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
         serializer = SyncBatchSerializer(data=raw)
         serializer.is_valid(raise_exception=True)
         return dict(serializer.validated_data)
+
+
+class FieldBootstrapViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
+    """Versioned assigned bundle. Revoked devices have no final-upload entitlement here."""
+
+    authentication_classes = [DeviceBearerAuthentication]
+    permission_classes = [IsAuthenticated, HasPermissionCode]
+    required_permissions = {"list": FIELD_BOOTSTRAP}
+    serializer_class = BootstrapSerializer
+    pagination_class = None
+    throttle_classes = [FieldSyncDeviceThrottle]
+    http_method_names = ["get", "options"]
+
+    @extend_schema(
+        parameters=[IF_NONE_MATCH_PARAMETER], responses={200: BootstrapSerializer, 304: None}
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        session, user = request.auth, request.user
+        if not isinstance(session, DeviceSession) or not isinstance(user, User):
+            raise NotAuthenticated
+        now = server_now()
+        organization = request.organization  # type: ignore[attr-defined]
+        batch = BatchContext(
+            organization=organization,
+            user=user,
+            device=session.device,
+            sent_at=now,
+            received_at=now,
+        )
+        bundle = bootstrap_bundle(batch)
+        version = str(bundle["bundle_version"])
+        headers = {
+            "ETag": f'"{version}"',
+            "Cache-Control": SNAPSHOT_CACHE_CONTROL,
+            "Vary": "X-Organization",
+        }
+        if etag_matches(request, version):
+            return Response(status=304, headers=headers)
+        return Response(BootstrapSerializer(bundle).data, headers=headers)

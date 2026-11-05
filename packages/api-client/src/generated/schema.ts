@@ -438,6 +438,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/bootstrap/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Versioned assigned bundle. Revoked devices have no final-upload entitlement here. */
+        get: operations["field_bootstrap_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/catalog/": {
         parameters: {
             query?: never;
@@ -1283,6 +1300,12 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * @description * `upsert` - upsert
+         *     * `remove` - remove
+         * @enum {string}
+         */
+        ActionEnum: "upsert" | "remove";
+        /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
          *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
@@ -1409,6 +1432,35 @@ export interface components {
          * @enum {string}
          */
         BlockedReasonEnum: "severe_check" | "service_overdue" | "out_of_service";
+        Bootstrap: {
+            bundle_version: string;
+            schema_version: string;
+            /** Format: date-time */
+            generated_at: string;
+            scope_revision: string;
+            cursor: string;
+            catalog_version: string;
+            rules_version: string;
+            /** Format: date-time */
+            next_change_at: string | null;
+            map_manifest_ready: boolean;
+            assignments: {
+                [key: string]: unknown;
+            }[];
+            supplies: {
+                [key: string]: unknown;
+            }[];
+            permits: {
+                [key: string]: unknown;
+            }[];
+            eligibility: {
+                [key: string]: unknown;
+            }[];
+            history: {
+                [key: string]: unknown;
+            }[];
+            map_manifests: components["schemas"]["MapManifest"][];
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -1477,6 +1529,14 @@ export interface components {
             catalog_version: string | null;
             rules_version: string | null;
             has_more: boolean;
+            /** Format: date-time */
+            next_change_at: string | null;
+            assignments: components["schemas"]["ProducerChange"][];
+            supplies: components["schemas"]["ProducerChange"][];
+            permits: components["schemas"]["ProducerChange"][];
+            eligibility: components["schemas"]["ProducerChange"][];
+            history: components["schemas"]["ProducerChange"][];
+            map_manifests: components["schemas"]["ProducerChange"][];
         };
         /**
          * @description * `ok` - Ok
@@ -1599,6 +1659,16 @@ export interface components {
             expected_revision: number;
             /** Format: binary */
             logo: string;
+        };
+        /** @description Metadata only; a producer must report missing/failed assets as unlicensed or incomplete. */
+        MapManifest: {
+            asset_id: string;
+            version: string;
+            sha256: string;
+            size_bytes: number;
+            /** Format: uuid */
+            quadrant_id: string;
+            licensed: boolean;
         };
         /** @description `organization` is null when the user has several organizations and sent no header. */
         Me: {
@@ -2176,6 +2246,16 @@ export interface components {
         PointWrite: {
             point: components["schemas"]["SamplingPoint"];
             spacing_warnings: components["schemas"]["SpacingWarning"][];
+        };
+        ProducerChange: {
+            sequence: number;
+            action: components["schemas"]["ActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: {
+                [key: string]: unknown;
+            };
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -3636,6 +3716,46 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Device"];
                 };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    field_bootstrap_list: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description The `ETag` (the snapshot `version`) the client already holds. When it is still current the answer is `304` with no body. */
+                "If-None-Match"?: string;
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Bootstrap"][];
+                };
+            };
+            /** @description No response body */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
             default: {

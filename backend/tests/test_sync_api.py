@@ -53,6 +53,13 @@ def test_the_answer_has_results_and_changes(phone: Phone) -> None:
         "catalog_version",
         "rules_version",
         "has_more",
+        "next_change_at",
+        "assignments",
+        "supplies",
+        "permits",
+        "eligibility",
+        "history",
+        "map_manifests",
     }
     assert response.data["results"][0]["id"] == sent["id"]
 
@@ -207,6 +214,13 @@ def test_the_final_upload_pulls_nothing(phone: Phone) -> None:
         "catalog_version": None,
         "rules_version": None,
         "has_more": False,
+        "next_change_at": None,
+        "assignments": [],
+        "supplies": [],
+        "permits": [],
+        "eligibility": [],
+        "history": [],
+        "map_manifests": [],
     }
 
 
