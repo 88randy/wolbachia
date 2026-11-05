@@ -51,6 +51,7 @@ def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QueryS
     from django.apps import apps
     from django.db.models import Exists, OuterRef, Q
 
+    from ovitraps.models import OvitrapReading
     from shifts.models import MotorcycleCheck
 
     usage = Q(
@@ -60,6 +61,15 @@ def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QueryS
             )
         )
     )
+    if catalog.slug in {"ovitrap-finding", "paddle-type"}:
+        usage |= Q(
+            Exists(
+                OvitrapReading.objects.filter(
+                    Q(finding_id=OuterRef("pk")) | Q(paddle_type_id=OuterRef("pk")),
+                    organization_id=catalog.organization_id,
+                )
+            )
+        )
     if catalog.slug == "void-reason":
         for model in apps.get_models():
             fields = {field.name for field in model._meta.fields}

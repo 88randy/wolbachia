@@ -146,6 +146,140 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bags/:
+    get:
+      operationId: bags_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - active
+          - voided
+          - all
+          type: string
+          minLength: 1
+        description: |-
+          * `active` - active
+          * `voided` - voided
+          * `all` - all
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - bags
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBagList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bags/{id}/:
+    get:
+      operationId: bags_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - bags
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Bag'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/blocks/:
     get:
       operationId: blocks_list
@@ -1815,6 +1949,139 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/ovitraps/:
+    get:
+      operationId: ovitraps_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: code
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - active
+          - voided
+          - all
+          type: string
+          minLength: 1
+        description: |-
+          * `active` - active
+          * `voided` - voided
+          * `all` - all
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - ovitraps
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedOvitrapList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/ovitraps/{id}/:
+    get:
+      operationId: ovitraps_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - ovitraps
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ovitrap'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/quadrants/:
     get:
       operationId: quadrants_list
@@ -2043,6 +2310,139 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QuadrantWrite'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/readings/:
+    get:
+      operationId: readings_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: code
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - name: search
+        required: false
+        in: query
+        description: A search term.
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - active
+          - voided
+          - all
+          type: string
+          minLength: 1
+        description: |-
+          * `active` - active
+          * `voided` - voided
+          * `all` - all
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - readings
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReadingList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/readings/{id}/:
+    get:
+      operationId: readings_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - readings
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Reading'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -2935,6 +3335,115 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
+    Bag:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        reading:
+          type: string
+          format: uuid
+          readOnly: true
+        collector:
+          type: string
+          format: uuid
+          readOnly: true
+        field_flags:
+          readOnly: true
+        evaluated_rules:
+          readOnly: true
+        rule_version_ids:
+          readOnly: true
+        event_id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        rules_version:
+          type: string
+          readOnly: true
+        catalog_version:
+          type: string
+          readOnly: true
+        manual_capture:
+          type: boolean
+          readOnly: true
+        gps:
+          type: object
+          nullable: true
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            accuracy_m:
+              type: number
+              nullable: true
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OvitrapLifecycleStatusEnum'
+          readOnly: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - catalog_version
+      - code
+      - collector
+      - created_at
+      - created_by
+      - device_time
+      - evaluated_rules
+      - event_id
+      - field_flags
+      - gps
+      - id
+      - manual_capture
+      - reading
+      - rule_version_ids
+      - rules_version
+      - server_received_at
+      - status
+      - void_reason
+      - void_reason_code
+      - voided_at
     BlankEnum:
       enum:
       - ''
@@ -3544,8 +4053,8 @@ components:
           type: number
           format: double
           minimum: 0
+          nullable: true
       required:
-      - accuracy_m
       - lat
       - lng
     Health:
@@ -4025,6 +4534,150 @@ components:
       - slug
       - support_contact
       - timezone
+    Ovitrap:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        sampling_point:
+          type: string
+          format: uuid
+          readOnly: true
+        point_code:
+          type: string
+          readOnly: true
+        point_version:
+          type: string
+          format: uuid
+          readOnly: true
+        evaluated_rules:
+          readOnly: true
+        rule_version_ids:
+          readOnly: true
+        supply_refs:
+          readOnly: true
+        evidence_ids:
+          readOnly: true
+        event_id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        rules_version:
+          type: string
+          readOnly: true
+        catalog_version:
+          type: string
+          readOnly: true
+        manual_capture:
+          type: boolean
+          readOnly: true
+        gps:
+          type: object
+          nullable: true
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            accuracy_m:
+              type: number
+              nullable: true
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OvitrapLifecycleStatusEnum'
+          readOnly: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - catalog_version
+      - code
+      - created_at
+      - created_by
+      - device_time
+      - evaluated_rules
+      - event_id
+      - evidence_ids
+      - gps
+      - id
+      - manual_capture
+      - point_code
+      - point_version
+      - rule_version_ids
+      - rules_version
+      - sampling_point
+      - server_received_at
+      - status
+      - supply_refs
+      - void_reason
+      - void_reason_code
+      - voided_at
+    OvitrapLifecycleStatusEnum:
+      type: string
+      enum:
+      - active
+      - voided
+    PaginatedBagList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Bag'
     PaginatedBlockList:
       type: object
       required:
@@ -4209,6 +4862,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Motorcycle'
+    PaginatedOvitrapList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Ovitrap'
     PaginatedPointVersionList:
       type: object
       required:
@@ -4301,6 +4977,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/QuadrantVersion'
+    PaginatedReadingList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reading'
     PaginatedReviewItemList:
       type: object
       required:
@@ -4874,6 +5573,187 @@ components:
       required:
       - spacing_warnings
       - version
+    Reading:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          format: uuid
+          readOnly: true
+        ovitrap:
+          type: string
+          format: uuid
+          readOnly: true
+        point_version:
+          type: string
+          format: uuid
+          readOnly: true
+        finding:
+          type: string
+          format: uuid
+          readOnly: true
+        finding_code:
+          type: string
+          readOnly: true
+        finding_label:
+          readOnly: true
+        other_text:
+          type: string
+          readOnly: true
+        paddle_present:
+          type: boolean
+          readOnly: true
+        has_eggs:
+          type: boolean
+          readOnly: true
+          nullable: true
+        temperature_c:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        humidity_pct:
+          type: number
+          format: double
+          readOnly: true
+          nullable: true
+        paddle_type:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        is_lagged:
+          type: boolean
+          readOnly: true
+        is_index_excluded:
+          type: boolean
+          readOnly: true
+        index_exclusion_reason:
+          type: string
+          readOnly: true
+        is_countable:
+          type: boolean
+          readOnly: true
+        epi_week:
+          type: string
+          readOnly: true
+        bag_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        bag_code:
+          type: string
+          readOnly: true
+          nullable: true
+        evaluated_rules:
+          readOnly: true
+        rule_version_ids:
+          readOnly: true
+        event_id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        rules_version:
+          type: string
+          readOnly: true
+        catalog_version:
+          type: string
+          readOnly: true
+        manual_capture:
+          type: boolean
+          readOnly: true
+        gps:
+          type: object
+          nullable: true
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            accuracy_m:
+              type: number
+              nullable: true
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/OvitrapLifecycleStatusEnum'
+          readOnly: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - bag_code
+      - bag_id
+      - catalog_version
+      - code
+      - created_at
+      - created_by
+      - device_time
+      - epi_week
+      - evaluated_rules
+      - event_id
+      - finding
+      - finding_code
+      - finding_label
+      - gps
+      - has_eggs
+      - humidity_pct
+      - id
+      - index_exclusion_reason
+      - is_countable
+      - is_index_excluded
+      - is_lagged
+      - manual_capture
+      - other_text
+      - ovitrap
+      - paddle_present
+      - paddle_type
+      - point_version
+      - rule_version_ids
+      - rules_version
+      - server_received_at
+      - status
+      - temperature_c
+      - void_reason
+      - void_reason_code
+      - voided_at
     RefreshRequest:
       type: object
       properties:
