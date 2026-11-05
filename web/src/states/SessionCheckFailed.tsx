@@ -20,6 +20,7 @@ export function SessionCheckFailed() {
         <button
           type="button"
           className={classNames(buttons.button, buttons.primary)}
+          data-initial-focus
           aria-disabled={isBusy}
           onClick={() => {
             void retry();

@@ -362,8 +362,8 @@ describe("the dialog cannot be closed from the keyboard", () => {
 describe("the cookie is the truth (#82)", () => {
   test("a re-authentication from the unknown state makes the identity known again", async () => {
     const { app } = await openExpired();
-    markSessionUnknown();
-    await screen.findByText("No pudimos verificar tu sesión");
+    markSessionUnknown(); // the expiry dialog is the way out, so the blocker stays hidden
+    expect(isSessionKnown()).toBe(false);
     await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
 
     await userEvent.click(screen.getByRole("button", { name: "Continuar" }));

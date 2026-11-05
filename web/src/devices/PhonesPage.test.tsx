@@ -1,11 +1,12 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
-import { describe, expect, test } from "vitest";
+import { describe, expect, test, vi } from "vitest";
 import { ME_QUERY_KEY } from "../session/me-query";
 import { acceptSession } from "../session/session-revision";
 import { apiError, createFakeApi, makeMe, makeOrganization } from "../test/fake-api";
 import type { RecordedRequest } from "../test/fake-api";
+import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
 import type { Phone } from "./phones-query";
 
@@ -262,6 +263,71 @@ describe("phones list (W67)", () => {
     expect(await screen.findByRole("row", { name: /Teléfono de Sur/ })).toBeDefined();
     expect(screen.queryByText("Verificando tu sesión…")).toBeNull();
     expect(screen.getByRole("main").hasAttribute("inert")).toBe(false);
+  });
+
+  test("a late answer sent with the old cookie never survives a failed session check and a re-authentication (#82)", async () => {
+    const user = userEvent.setup();
+    document.cookie = "csrftoken=test-csrf; path=/";
+    let release: (response: Response) => void = () => undefined;
+    const late = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
+    let call = 0;
+    const { api, app } = await open(() => {
+      call += 1;
+      return call === 1 ? late : pageOf([phone({ label: "Teléfono de A" })]);
+    });
+    await screen.findByText("Cargando resultados");
+
+    // A broadcast was missed; B signed out meanwhile, so on focus /me/ answers 401.
+    api.setRoute(ME, apiError(401, "not_authenticated"));
+    window.dispatchEvent(new Event("focus"));
+    await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+    release(pageOf([phone({ label: "Teléfono de B" })]));
+    await new Promise<void>((resolve) => {
+      const hop = new MessageChannel();
+      hop.port1.onmessage = () => {
+        resolve();
+      };
+      hop.port2.postMessage(0);
+    });
+    // B's answer was sent with the old cookie: it must not be stored, not even while unknown.
+    const stored = app.queryClient
+      .getQueryCache()
+      .findAll({ predicate: (query) => query.queryKey[0] === "org" })
+      .filter((query) => query.state.data !== undefined);
+    expect(stored).toEqual([]);
+
+    api.setRoute(ME, Response.json(ALLOWED));
+    api.setRoute("GET /api/v1/auth/csrf/", new Response(null, { status: 204 }));
+    api.setRoute(
+      "POST /api/v1/auth/login/",
+      Response.json({ me: ALLOWED, server_time: "2026-11-04T12:00:00Z" }),
+    );
+    await user.type(screen.getByLabelText("Contraseña"), fakePassword());
+    await user.click(screen.getByRole("button", { name: "Continuar" }));
+
+    expect(await screen.findByRole("row", { name: /Teléfono de A/ })).toBeDefined();
+    expect(screen.queryByText("Teléfono de B")).toBeNull();
+  });
+
+  test("the blocker is a modal dialog opened last, so it covers a content dialog that was open (#82)", async () => {
+    const showModal = vi.spyOn(HTMLDialogElement.prototype, "showModal");
+    const { api } = await open(pageOf([phone()]));
+    await screen.findByRole("row", { name: /Teléfono de Luis/ });
+    const content = document.createElement("dialog");
+    document.body.append(content);
+    content.showModal();
+    api.setRoute(ME, apiError(503, "server_error"));
+
+    window.dispatchEvent(new Event("focus"));
+    await screen.findByText("No pudimos verificar tu sesión");
+
+    const blocker = screen.getByText("No pudimos verificar tu sesión").closest("dialog");
+    expect(blocker).not.toBe(content);
+    expect(showModal.mock.contexts.at(-1)).toBe(blocker);
+    showModal.mockRestore();
+    content.remove();
   });
 
   test("another tab signs in as someone else while this tab pages: no old rows, and the late answer is dropped (#82)", async () => {

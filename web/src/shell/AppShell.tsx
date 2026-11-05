@@ -1,5 +1,6 @@
 import { Outlet } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
+import { useSessionExpired } from "../session/use-session-expired";
 import { sessionState, subscribeToRevision } from "../session/session-revision";
 import { SessionBlocker } from "../states/SessionBlocker";
 import { SessionExpiredDialog } from "../session/SessionExpiredDialog";
@@ -24,6 +25,7 @@ export function AppShell() {
   useSessionChanges();
   useCrossTabSession();
   const state = useSyncExternalStore(subscribeToRevision, sessionState);
+  const isExpired = useSessionExpired();
   return (
     <div className={styles.shell}>
       <SkipLink />
@@ -36,7 +38,7 @@ export function AppShell() {
           <main id={MAIN_ID} className={styles.main} tabIndex={-1} inert={state !== "known"}>
             <Outlet />
           </main>
-          {state !== "known" && <SessionBlocker state={state} />}
+          {state !== "known" && !isExpired && <SessionBlocker key={state} state={state} />}
         </div>
       </div>
       <SessionExpiredDialog />

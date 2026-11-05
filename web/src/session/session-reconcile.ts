@@ -6,6 +6,7 @@ import { endSessionExpiry } from "./session-events";
 import {
   beginExternalChange,
   beginVerification,
+  changeIdentity,
   clearSessionUnknown,
   endExternalChange,
   markSessionUnknown,
@@ -65,7 +66,13 @@ async function run(queryClient: QueryClient, client: ApiClient, mode: ReconcileM
     return true;
   } catch {
     // A 401 or a lost membership is also reported by the caches (like any request). Whatever the
-    // failure, the identity is UNKNOWN: never fall back to the one held before.
+    // failure, the identity is UNKNOWN: never fall back to the one held before. Leaving `known`
+    // for any reason first bumps the revision, cancels pending org-scoped queries and removes
+    // org-scoped data, so a late answer of the old cookie is dropped and returning to `known`
+    // always starts from an empty org cache.
+    changeIdentity();
+    await queryClient.cancelQueries();
+    removeOrganizationQueries(queryClient);
     markSessionUnknown();
     return false;
   } finally {
