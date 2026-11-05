@@ -1,5 +1,8 @@
 import { getRandomBytes, randomUUID } from "expo-crypto";
 
+import { createShiftOpen } from "../features/shift-open/create-shift-open.ts";
+import type { ShiftOpenService } from "../features/shift-open/service.ts";
+
 import { createMobileApiClient } from "../api/create-api-client.ts";
 import { createAuth } from "../auth/create-auth.ts";
 import { CredentialStore } from "../auth/credential-store.ts";
@@ -22,6 +25,7 @@ import type { SyncTransport } from "../sync/sync-transport.ts";
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly auth: AuthController;
+  readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -66,7 +70,8 @@ export async function createServices(): Promise<AppServices> {
     appVersion: appManifest.version,
   });
   const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
-  return { kv, outbox, engine, tokens, server, deviceId, auth };
+  const shiftOpen = createShiftOpen({ db, engine, server, tokens });
+  return { kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
 }
 
 async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
@@ -82,7 +87,7 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
 }
 
 function createEngine(
-  deps: Omit<AppServices, "engine" | "auth"> & { requests: SessionRequests },
+  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen"> & { requests: SessionRequests },
 ): SyncEngine {
   const { kv, outbox, server, deviceId, tokens, requests } = deps;
   return new SyncEngine({

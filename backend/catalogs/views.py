@@ -8,6 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from catalogs.history import remember_catalog_snapshot
 from catalogs.models import Catalog, CatalogItem
 from catalogs.permissions import (
     CATALOG_ITEM_ACTIVATE,
@@ -62,6 +63,7 @@ class CatalogSnapshotViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
     )
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
         snapshot = build_catalog_snapshot(request.organization)  # type: ignore[attr-defined]
+        remember_catalog_snapshot(request.organization, request.user, snapshot)  # type: ignore[attr-defined,arg-type]
         return snapshot_response(request, snapshot)
 
 

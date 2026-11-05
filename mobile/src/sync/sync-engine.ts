@@ -1,3 +1,4 @@
+import type { SqlStatement } from "../db/sql.ts";
 import { KV_KEYS } from "../db/kv-store.ts";
 import type { FieldEventEnvelope } from "../outbox/outbox-event.ts";
 import { backoffDelayMs } from "./backoff.ts";
@@ -73,9 +74,13 @@ export class SyncEngine {
   }
 
   /** Saves a captured event on the phone, then syncs in the background. Resolves once it is saved. */
-  async enqueue(event: FieldEventEnvelope): Promise<void> {
-    await this.#deps.pass.outbox.enqueue(event);
-    await this.#refresh({});
+  async enqueue(event: FieldEventEnvelope, extra: readonly SqlStatement[] = []): Promise<void> {
+    await this.#deps.pass.outbox.enqueue(event, extra);
+    try {
+      await this.#refresh({});
+    } catch (error) {
+      this.#deps.report(error);
+    }
     void this.requestSync();
   }
 

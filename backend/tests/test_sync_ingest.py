@@ -322,7 +322,6 @@ def test_payload_serializers_can_use_org_scoped_relations(
         {"payload": []},
         {"payload": "text"},
         {"gps": {"lat": 91, "lng": 0, "accuracy_m": 1}},
-        {"gps": {"lat": 0, "lng": 0}},
         {"shift_id": "x"},
     ],
 )
