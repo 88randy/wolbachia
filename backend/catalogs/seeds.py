@@ -6,6 +6,8 @@ Closed lists have actual launch checks/findings. Seeds preserve labels and deact
 
 from dataclasses import dataclass
 
+from django.db import transaction
+
 from catalogs.models import OTHER_ITEM_CODE, Catalog, CatalogItem
 from organizations.models import Organization
 
@@ -63,25 +65,30 @@ def _needs_catalog_seed(catalog: Catalog | None, seed: CatalogSeed) -> bool:
 
 
 def seed_default_catalogs(organization: Organization) -> list[Catalog]:
-    """Create the default catalogs and the "Other" item of the open ones (writes Catalog, CatalogItem)."""
-    catalogs = []
-    for seed in DEFAULT_CATALOG_SEEDS:
-        catalog, _ = Catalog.objects.get_or_create(
-            organization=organization,
-            slug=seed.slug,
-            defaults={
-                "label_es": seed.label_es,
-                "label_en": seed.label_en,
-                "is_open": seed.is_open,
-            },
-        )
-        if catalog.is_open:
-            _ensure_other_item(catalog)
-        if catalog.slug == "void-reason":
-            _seed_void_reason_items(catalog)
-        _seed_closed_items(catalog)
-        catalogs.append(catalog)
-    return catalogs
+    """Seed atomically in Organization -> Catalog -> item order, including direct calls."""
+    with transaction.atomic():
+        Organization.objects.select_for_update(no_key=True).get(pk=organization.pk)
+        return [_seed_catalog(organization, seed) for seed in DEFAULT_CATALOG_SEEDS]
+
+
+def _seed_catalog(organization: Organization, seed: CatalogSeed) -> Catalog:
+    catalog, _ = Catalog.objects.get_or_create(
+        organization=organization,
+        slug=seed.slug,
+        defaults={
+            "label_es": seed.label_es,
+            "label_en": seed.label_en,
+            "is_open": seed.is_open,
+        },
+    )
+    # Lock before item reads/inserts: unique-index waits must not invert deferred FK locks.
+    locked = Catalog.objects.select_for_update().get(pk=catalog.pk, organization=organization)
+    if locked.is_open:
+        _ensure_other_item(locked)
+    if locked.slug == "void-reason":
+        _seed_void_reason_items(locked)
+    _seed_closed_items(locked)
+    return locked
 
 
 def _ensure_other_item(catalog: Catalog) -> None:

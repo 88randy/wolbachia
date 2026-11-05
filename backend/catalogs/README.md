@@ -49,3 +49,38 @@ concrete initial safety/finding codes implement OP01's required nonempty lists;
 the program entomologist should validate labels/content before pilot. Reruns use
 get_or_create and preserve labels, order and deactivation. The seven OP01 open
 catalogs keep fixed Other; #80's additional open void-reason remains unchanged.
+
+
+## Seed/request lock order (#99, adversarial round 2)
+
+The mutating seed is one transaction, including standalone seed_default_catalogs
+calls. It first locks Organization with select_for_update(no_key=True), then
+locks each Catalog with select_for_update() before checking or inserting any of
+that catalog's items. Closed launch items, open-list Other and void-reason seed
+items all follow this order. Nested organization seeds retain NO KEY UPDATE;
+they must not upgrade it to FOR UPDATE. Read-only dry-run planning does not write
+items or acquire mutation locks.
+
+The seed's order is Organization NO KEY UPDATE -> Catalog FOR UPDATE -> item
+reads/inserts. create_catalog_item also locks Catalog before item existence checks
+or inserts. Its deferred Organization KEY SHARE remains compatible with the seed's
+NO KEY UPDATE. If the request wins first, the seed waits on Catalog and retains the
+committed item's labels/state. If the seed wins first, the request waits on Catalog
+before it can query or insert a duplicate code; after the seed commits it returns
+400 validation_error with fields.code duplicate_code. The seed's deferred Catalog
+FK check cannot wait on a Catalog lock held by a request already waiting on the
+seed's uncommitted unique-index entry.
+
+Regression: tests/test_organizations_b_01.py::
+test_closed_catalog_seed_and_same_code_request_finish_without_deadlock. Two real
+PostgreSQL connections rendezvous at a barrier after the seed inserts brakes but
+before commit. A third connection waits for pg_blocking_pids to confirm the request
+is blocked by that seed, then releases the seed commit. Both operations must finish,
+the request reports duplicate_code, and exactly the original seeded item remains.
+There are no sleeps; bounded barrier/event waits and session lock_timeout guard
+failure. This test requires PostgreSQL and is not executed in the Docker-blocked
+agent environment.
+
+References: [Django row locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update),
+[PostgreSQL blocking-session inspection](https://www.postgresql.org/docs/18/functions-info.html#FUNCTIONS-INFO-SESSION).
+No new dependency, API/schema shape, migration or void-reason validation change.

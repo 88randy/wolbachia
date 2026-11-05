@@ -784,3 +784,92 @@ def test_missing_fuel_default_validates_current_and_scheduled_pair_atomically(
     assert counterpart.min_value is None  # the seed's bound updates rolled back too
     assert not Profile.objects.filter(organization=organization).exists()
     assert not Catalog.objects.filter(organization=organization).exists()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_closed_catalog_seed_and_same_code_request_finish_without_deadlock():
+    """Hold a seeded code uncommitted, then release commit only once the request waits.
+
+    Without the Catalog lock the request holds that row and waits on the unique
+    index; the seed's deferred Catalog FK check then closes the deadlock cycle.
+    """
+    from queue import Queue
+    from time import monotonic
+
+    from django.db import transaction
+
+    from catalogs.models import CatalogItem
+    from catalogs.seeds import seed_default_catalogs
+    from catalogs.services import CatalogItemSpec, create_catalog_item
+    from core.exceptions import FieldValidationError
+    from tests.factories import CatalogFactory, OrganizationFactory, UserFactory
+
+    organization = OrganizationFactory()
+    catalog = CatalogFactory(organization=organization, slug="motorcycle-check-item", is_open=False)
+    author = UserFactory()
+    code = "brakes"
+    wait_seconds = 15
+    inserted = threading.Barrier(2, timeout=wait_seconds)
+    release_commit = threading.Event()
+    request_started = threading.Event()
+    backend_pids = Queue()
+
+    def seed_uncommitted():
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET lock_timeout = '5s'")
+                cursor.execute("SELECT pg_backend_pid()")
+                backend_pids.put(("seed", cursor.fetchone()[0]))
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute("SET CONSTRAINTS ALL DEFERRED")
+                seed_default_catalogs(organization)
+                item = CatalogItem.objects.get(catalog=catalog, code=code)
+                inserted.wait()
+                assert release_commit.wait(wait_seconds)
+            return item.pk, item.label_es
+        finally:
+            connection.close()
+
+    def request_same_code():
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute("SET lock_timeout = '5s'")
+                cursor.execute("SELECT pg_backend_pid()")
+                backend_pids.put(("request", cursor.fetchone()[0]))
+            inserted.wait()
+            request_started.set()
+            create_catalog_item(catalog, CatalogItemSpec(code, "Request brakes"), author)
+        except FieldValidationError as error:
+            return error
+        else:
+            return None
+        finally:
+            connection.close()
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        seed = executor.submit(seed_uncommitted)
+        request = executor.submit(request_same_code)
+        try:
+            pids = dict(backend_pids.get(timeout=wait_seconds) for _ in range(2))
+            assert request_started.wait(wait_seconds)
+            deadline = monotonic() + wait_seconds
+            with connection.cursor() as cursor:
+                while monotonic() < deadline:
+                    cursor.execute(
+                        "SELECT %s = ANY(pg_blocking_pids(%s))", [pids["seed"], pids["request"]]
+                    )
+                    if cursor.fetchone()[0]:
+                        break
+                else:
+                    pytest.fail("The same-code request never waited behind the uncommitted seed.")
+        finally:
+            release_commit.set()
+            seeded_id, seeded_label = seed.result(timeout=wait_seconds)
+            outcome = request.result(timeout=wait_seconds)
+
+    assert isinstance(outcome, FieldValidationError)
+    assert outcome.fields["code"][0]["code"] == "duplicate_code"
+    assert CatalogItem.objects.filter(catalog=catalog, code=code).count() == 1
+    item = CatalogItem.objects.get(catalog=catalog, code=code)
+    assert (item.pk, item.label_es) == (seeded_id, seeded_label)
