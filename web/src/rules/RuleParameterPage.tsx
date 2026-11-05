@@ -51,6 +51,7 @@ function RefreshFailed({ onRetry }: { onRetry: () => void }) {
 function ParameterScreen({ parameter, notice }: { parameter: RuleParameter; notice: ReactNode }) {
   const { t } = useTranslation();
   const can = useCan();
+  const canVoid = can(RULE_VERSION_VOID) && can(CATALOG_READ);
   const name = useParameterLabels().name(parameter.key);
   useDocumentTitle(name);
   return (
@@ -69,12 +70,7 @@ function ParameterScreen({ parameter, notice }: { parameter: RuleParameter; noti
         {notice}
         <ParameterSummary parameter={parameter} />
         {can(RULE_VERSION_CREATE) && <NewVersionForm parameter={parameter} />}
-        {can(RULE_VERSION_READ) && (
-          <VersionHistory
-            parameter={parameter}
-            canVoid={can(RULE_VERSION_VOID) && can(CATALOG_READ)}
-          />
-        )}
+        {can(RULE_VERSION_READ) && <VersionHistory parameter={parameter} canVoid={canVoid} />}
       </div>
     </section>
   );
