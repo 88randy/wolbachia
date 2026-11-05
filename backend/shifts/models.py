@@ -3,7 +3,7 @@
 `Shift` and `MotorcycleCheck` are insert-only: a shift is written by `shift.open` and changes
 exactly once, when `shift.close` closes it (`mutable_fields`). Nothing is deleted; a correction is
 a supervisor's decision later (#34), never an edit. `Motorcycle` is fleet configuration that only
-a seed or an administrator changes (its CRUD is not part of this issue).
+an administrator changes through the fleet API (#72).
 """
 
 from typing import ClassVar
@@ -12,7 +12,7 @@ from django.conf import settings
 from django.db import models
 from django.db.models import Q
 
-from core.models import ImmutableMixin, OrgScopedModel
+from core.models import ImmutableMixin, OrgScopedModel, VoidableMixin
 
 CODE_MAX_LENGTH = 50
 PLATE_MAX_LENGTH = 20
@@ -41,10 +41,10 @@ class CheckResult(models.TextChoices):
     SEVERE = "severe"
 
 
-class Motorcycle(OrgScopedModel):
+class Motorcycle(VoidableMixin, OrgScopedModel):
     """A fleet motorcycle. `code` is the human code printed on it (e.g. `M-03`), unique per
-    organization. A blocked motorcycle cannot open a shift until an administrator clears it
-    (the clearing flow is a later issue)."""
+    organization. A blocked motorcycle cannot open a shift until an authorized supervisor clears it
+    through an audited unblock."""
 
     code = models.CharField(max_length=CODE_MAX_LENGTH)
     plate = models.CharField(max_length=PLATE_MAX_LENGTH, blank=True)
@@ -53,8 +53,9 @@ class Motorcycle(OrgScopedModel):
         max_length=BLOCKED_REASON_MAX_LENGTH, choices=BlockedReason.choices, blank=True
     )
 
-    class Meta:
+    class Meta(VoidableMixin.Meta):
         constraints = [
+            *VoidableMixin.Meta.constraints,
             models.UniqueConstraint(
                 fields=["organization", "code"], name="motorcycle_unique_code_per_organization"
             ),
@@ -66,6 +67,37 @@ class Motorcycle(OrgScopedModel):
 
     def __str__(self) -> str:
         return self.code
+
+
+class MotorcycleBlockAction(models.TextChoices):
+    BLOCK = "block"
+    UNBLOCK = "unblock"
+
+
+class MotorcycleBlockEvent(ImmutableMixin, OrgScopedModel):
+    """Insert-only fleet audit. `blocked_reason` is the block being applied or cleared.
+
+    Severe checks point to their field event; manual unblocks keep the normalized reason and
+    actor. The migration also refuses UPDATE and DELETE in PostgreSQL.
+    """
+
+    motorcycle = models.ForeignKey(
+        Motorcycle, on_delete=models.PROTECT, related_name="block_events"
+    )
+    action = models.CharField(max_length=STATUS_MAX_LENGTH, choices=MotorcycleBlockAction.choices)
+    blocked_reason = models.CharField(
+        max_length=BLOCKED_REASON_MAX_LENGTH, choices=BlockedReason.choices, blank=True
+    )
+    reason = models.TextField()
+    field_event = models.ForeignKey(
+        "field_sync.FieldEvent", on_delete=models.PROTECT, null=True, blank=True, related_name="+"
+    )
+
+    class Meta(ImmutableMixin.Meta):
+        ordering = ["created_at", "id"]
+
+    def __str__(self) -> str:
+        return f"{self.motorcycle_id}:{self.action}"
 
 
 class Shift(ImmutableMixin, OrgScopedModel):

@@ -29,7 +29,7 @@ from reviews.permissions import REVIEW_ITEM_READ
 from rules import permissions as rule_codes
 from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS, seed_default_rule_parameters
-from shifts.permissions import SHIFT_READ
+from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
 from tests.factories import OrganizationFactory
 
 pytestmark = pytest.mark.django_db
@@ -239,8 +239,14 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
 
     reader = {catalog_codes.CATALOG_READ, rule_codes.RULE_PARAMETER_READ}
-    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC}
-    assert by_slug["supervisor"] == {*reader, REVIEW_ITEM_READ, SHIFT_READ}
+    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, MOTORCYCLE_READ}
+    assert by_slug["supervisor"] == {
+        *reader,
+        REVIEW_ITEM_READ,
+        SHIFT_READ,
+        MOTORCYCLE_READ,
+        MOTORCYCLE_UNBLOCK,
+    }
     assert by_slug["entomologist"] == by_slug["community_promoter"] == reader
     assert by_slug["admin"] == {
         catalog_codes.CATALOG_READ,
@@ -255,6 +261,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         *ADMIN_AUTH_PERMISSION_CODES,
         REVIEW_ITEM_READ,
         SHIFT_READ,
+        MOTORCYCLE_READ,
+        MOTORCYCLE_MANAGE,
+        MOTORCYCLE_UNBLOCK,
     }
 
 
@@ -283,6 +292,7 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     assert courier.seeded_permission_codes == [
         "catalog.read",
         "field_event.sync",
+        "motorcycle.read",
         "rule_parameter.read",
     ]
 
@@ -300,6 +310,7 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     assert courier.permission_codes == [
         "catalog.read",
         "field_event.sync",
+        "motorcycle.read",
         "rule_parameter.read",
         "widget.read",
     ]
@@ -325,7 +336,7 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     plan = seed_default_permission_codes(organization)
 
-    assert plan.grants == {"courier": ("rule_parameter.read", FIELD_EVENT_SYNC)}
+    assert plan.grants == {"courier": ("rule_parameter.read", FIELD_EVENT_SYNC, MOTORCYCLE_READ)}
 
 
 def test_seed_skips_profiles_not_created_by_the_seed_and_reports_them() -> None:
@@ -431,6 +442,11 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
         ("admin", REVIEW_ITEM_READ),
         ("supervisor", SHIFT_READ),
         ("admin", SHIFT_READ),
+        ("courier", MOTORCYCLE_READ),
+        ("supervisor", MOTORCYCLE_READ),
+        ("supervisor", MOTORCYCLE_UNBLOCK),
+        ("admin", MOTORCYCLE_MANAGE),
+        ("admin", MOTORCYCLE_UNBLOCK),
     ],
 )
 def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_existed(
@@ -451,7 +467,14 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
 
 @pytest.mark.parametrize(
     ("slug", "code"),
-    [("courier", FIELD_EVENT_SYNC), ("supervisor", REVIEW_ITEM_READ), ("supervisor", SHIFT_READ)],
+    [
+        ("courier", FIELD_EVENT_SYNC),
+        ("supervisor", REVIEW_ITEM_READ),
+        ("supervisor", SHIFT_READ),
+        ("courier", MOTORCYCLE_READ),
+        ("admin", MOTORCYCLE_MANAGE),
+        ("admin", MOTORCYCLE_UNBLOCK),
+    ],
 )
 def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str) -> None:
     organization, profile = seeded_profile(slug)
