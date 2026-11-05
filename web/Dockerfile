@@ -29,11 +29,15 @@ CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"]
 FROM deps AS build
 # Vite writes VITE_* into the public bundle at build time. Never pass a secret here.
 ARG VITE_API_BASE_URL=/api/v1
+ARG VITE_MAP_TILES_URL
+ARG VITE_MAP_ATTRIBUTION
+ENV VITE_MAP_TILES_URL=${VITE_MAP_TILES_URL}
+ENV VITE_MAP_ATTRIBUTION=${VITE_MAP_ATTRIBUTION}
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 RUN npm run build --workspace=@wolbachia/web
 
 FROM nginxinc/nginx-unprivileged:${NGINX_VERSION}-alpine AS runtime
-COPY web/nginx/security-headers.conf /etc/nginx/security-headers.conf
+COPY --from=build /repo/web/dist/security-headers.conf /etc/nginx/security-headers.conf
 COPY web/nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=build /repo/web/dist /usr/share/nginx/html
 EXPOSE 8080

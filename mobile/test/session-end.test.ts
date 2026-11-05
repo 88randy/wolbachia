@@ -1,0 +1,818 @@
+import assert from "node:assert/strict";
+import { randomBytes, randomUUID } from "node:crypto";
+import { it } from "node:test";
+
+import { loginNotice } from "../src/screens/auth/auth-notice-presentation.ts";
+import { createMobileApiClient } from "../src/api/create-api-client.ts";
+import { AuthController } from "../src/auth/auth-controller.ts";
+import { CredentialStore } from "../src/auth/credential-store.ts";
+import { readEndedSession } from "../src/auth/session-journal.ts";
+import { RemoteSessionEnded, SessionRequests } from "../src/auth/session-requests.ts";
+import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
+import { observeSyncSession } from "../src/sync/observe-sync-session.ts";
+import { SyncEngine } from "../src/sync/sync-engine.ts";
+import { runSyncPass, SYNC_BATCH_SIZE } from "../src/sync/sync-pass.ts";
+import { createSyncTransport } from "../src/sync/sync-transport.ts";
+import { deferred, makeCredentials } from "./support/auth-fakes.ts";
+import { createStores, makeEnvelope, FIXED_DEVICE_ID, FIXED_NOW } from "./support/factories.ts";
+import { accepted, answer } from "./support/scripted-transport.ts";
+import type { SqlExecutor } from "../src/db/sql.ts";
+
+function jsonResponse(body: unknown, status = 200, revoked = false): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: {
+      "Content-Type": "application/json",
+      ...(revoked ? { "X-Session-Revoked": "true" } : {}),
+    },
+  });
+}
+
+function controller(
+  stores: Awaited<ReturnType<typeof createStores>>,
+  credentials: CredentialStore,
+) {
+  return new AuthController({
+    ...stores,
+    credentials,
+    randomBytes,
+    now: () => FIXED_NOW.getTime(),
+    login: () => {
+      throw new Error("No online login in a session-end test.");
+    },
+    fetchRules: () => Promise.resolve(null),
+  });
+}
+
+async function harness() {
+  const stores = await createStores();
+  const secrets = await makeCredentials();
+  const auth = controller(stores, secrets.credentials);
+  await auth.load();
+  await stores.kv.set("test_draft", "half-filled form");
+  const event = makeEnvelope();
+  await stores.outbox.enqueue(event);
+  return { ...stores, ...secrets, auth, event };
+}
+
+void it("refresh revoke retries sync with the expired access and commits results before cleanup", async () => {
+  const h = await harness();
+  const originalAccess = h.credentials.getAccessToken();
+  const refreshEntered = deferred<undefined>();
+  const refreshed = deferred<never>();
+  const finalEntered = deferred<undefined>();
+  const finalResponse = deferred<Response>();
+  const sent: Request[] = [];
+  let refreshes = 0;
+  const session = new SessionRequests({
+    credentials: h.credentials,
+    isOnline: () => true,
+    endSession: () => h.auth.endSession(),
+    refresh: () => {
+      refreshes += 1;
+      refreshEntered.resolve(undefined);
+      return refreshed.promise;
+    },
+  });
+  const client = createMobileApiClient({
+    baseUrl: "https://example.invalid",
+    tokens: h.credentials,
+    fetch: (request) => {
+      sent.push(request);
+      if (sent.length === 1)
+        return Promise.resolve(jsonResponse({ code: "token_expired", detail: "" }, 401));
+      finalEntered.resolve(undefined);
+      return finalResponse.promise;
+    },
+  });
+  const running = runSyncPass(
+    {
+      ...h,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: createSyncTransport(client, session),
+    },
+    { batchSize: SYNC_BATCH_SIZE },
+  );
+  await refreshEntered.promise;
+  refreshed.reject(new RemoteSessionEnded());
+  await Promise.race([
+    finalEntered.promise,
+    running.then(() => {
+      throw new Error("The pass ended before its authorized final POST.");
+    }),
+  ]);
+  assert.equal(h.auth.getSnapshot().phase, "login");
+  assert.equal(h.auth.getSnapshot().notice?.key, "mobile.login.sessionEnded");
+  assert.notEqual(h.credentials.getSnapshot().pair, null);
+  assert.equal(h.auth.canLogin(), false);
+  h.auth.setOnline(true);
+  await h.auth.login("courier-test", randomUUID());
+  assert.equal(h.credentials.getAccessToken(), undefined);
+  assert.equal(sent.length, 2);
+  assert.equal(refreshes, 1);
+  assert.ok(
+    sent.every(
+      (request) => request.headers.get("Authorization") === `Bearer ${String(originalAccess)}`,
+    ),
+  );
+  const result = answer([
+    { id: h.event.id, status: "in_review", code: "final_upload_after_revoke", params: {} },
+  ]);
+  assert.ok(result.ok);
+  finalResponse.resolve(
+    jsonResponse({ ...result.response, changes: { ...result.response.changes, has_more: true } }),
+  );
+  await running;
+  assert.equal((await h.outbox.countByStatus()).in_review, 1);
+  assert.equal(h.credentials.getSnapshot().pair, null);
+  assert.equal(h.credentials.getSnapshot().pin, null);
+  assert.equal(h.credentials.getSnapshot().password, null);
+  assert.equal(h.auth.canLogin(), true);
+  assert.equal(sent.length, 2);
+  assert.equal(await h.kv.get("test_draft"), "half-filled form");
+});
+
+void it("the revoked response header closes local unlock immediately and defers cleanup until results persist", async () => {
+  const h = await harness();
+  const commitEntered = deferred<undefined>();
+  const commit = deferred<undefined>();
+  const db: SqlExecutor = {
+    ...h.db,
+    runAtomically: async (statements) => {
+      if (statements.some((statement) => statement.params?.[0] === "sent")) {
+        commitEntered.resolve(undefined);
+        await commit.promise;
+      }
+      await h.db.runAtomically(statements);
+    },
+  };
+  const outbox = new OutboxRepository(db, () => FIXED_NOW);
+  let posts = 0;
+  const session = new SessionRequests({
+    credentials: h.credentials,
+    isOnline: () => true,
+    endSession: () => h.auth.endSession(),
+    refresh: () => {
+      throw new Error("A confirmed final upload must never refresh.");
+    },
+  });
+  const result = answer([accepted(h.event.id)]);
+  assert.ok(result.ok);
+  const client = createMobileApiClient({
+    baseUrl: "https://example.invalid",
+    tokens: h.credentials,
+    fetch: () => {
+      posts += 1;
+      return Promise.resolve(jsonResponse(result.response, 200, true));
+    },
+  });
+  const running = runSyncPass(
+    {
+      ...h,
+      outbox,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: createSyncTransport(client, session),
+    },
+    { batchSize: SYNC_BATCH_SIZE },
+  );
+  await commitEntered.promise;
+  assert.equal((await h.outbox.countByStatus()).sent, 0);
+  assert.notEqual(h.credentials.getSnapshot().pair, null);
+  await h.auth.unlock(h.pinSecret, "pin");
+  await h.auth.unlock(h.passwordSecret, "password");
+  assert.equal(h.auth.getSnapshot().phase, "login");
+  assert.equal(h.auth.canUseBiometrics(), false);
+  commit.resolve(undefined);
+  await running;
+  assert.equal((await h.outbox.countByStatus()).sent, 1);
+  assert.equal(h.credentials.getSnapshot().pair, null);
+  assert.equal(posts, 1);
+  const restarted = new CredentialStore(h.secrets);
+  await restarted.load();
+  const auth = controller(h, restarted);
+  await auth.load();
+  await auth.unlock(h.passwordSecret, "password");
+  await auth.unlock(h.pinSecret, "pin");
+  assert.equal(auth.getSnapshot().phase, "login");
+  assert.equal(auth.getSnapshot().notice?.key, "mobile.login.sessionEnded");
+  assert.equal(await h.kv.get("test_draft"), "half-filled form");
+});
+
+void it("a restart after persisted session end cannot unlock or refresh; only a final sync may use the retained pair", async () => {
+  const h = await harness();
+  await h.auth.endSession();
+  assert.notEqual(h.credentials.getSnapshot().pair, null);
+  const restarted = new CredentialStore(h.secrets);
+  await restarted.load();
+  const auth = controller(h, restarted);
+  await auth.load();
+  await auth.unlock(h.pinSecret, "pin");
+  await auth.unlock(h.passwordSecret, "password");
+  await auth.unlockBiometric(auth.biometricGate());
+  assert.equal(auth.getSnapshot().phase, "login");
+  assert.equal(auth.canUseBiometrics(), false);
+  assert.equal(loginNotice(auth.getSnapshot(), null)?.key, "mobile.login.sessionEnded");
+  assert.notEqual(restarted.getSnapshot().pair, null);
+  const session = new SessionRequests({
+    credentials: restarted,
+    isOnline: () => true,
+    endSession: () => auth.endSession(),
+    refresh: () => {
+      throw new Error("Ended pairs never refresh.");
+    },
+  });
+  await assert.rejects(
+    session.run(() => {
+      throw new Error("Ended sessions cannot make ordinary requests.");
+    }),
+    RemoteSessionEnded,
+  );
+  const result = answer([accepted(h.event.id)]);
+  assert.ok(result.ok);
+  let posts = 0;
+  const client = createMobileApiClient({
+    baseUrl: "https://example.invalid",
+    tokens: restarted,
+    fetch: () => {
+      posts += 1;
+      return Promise.resolve(jsonResponse(result.response));
+    },
+  });
+  const engine = new SyncEngine({
+    pass: {
+      ...h,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: createSyncTransport(client, session),
+    },
+    hasSession: () => restarted.hasSyncSession(),
+    hasPendingFinalUpload: restarted.hasPendingFinalUpload,
+    hasServer: () => true,
+    random: () => 0,
+    schedule: () => {
+      throw new Error("A definitive final upload cannot schedule another attempt.");
+    },
+    report: (error) => {
+      throw error;
+    },
+  });
+  engine.setOnline(false);
+  await engine.start();
+  assert.equal(posts, 0);
+  assert.notEqual(restarted.getSnapshot().pair, null);
+  engine.setOnline(true);
+  await engine.requestSync();
+  assert.equal(posts, 1);
+  assert.equal(restarted.getSnapshot().pair, null);
+  assert.equal((await h.outbox.countByStatus()).sent, 1);
+});
+
+void it("network failure or timeout keeps the ended pair; normal backoff retries the same access and a final 401 erases it", async () => {
+  for (const failure of [
+    new TypeError("No signal"),
+    new DOMException("Request timed out", "TimeoutError"),
+  ]) {
+    const h = await harness();
+    const access = h.credentials.getSnapshot().pair?.access;
+    const entered = deferred<undefined>();
+    const response = deferred<Response>();
+    const sent: Request[] = [];
+    let refreshes = 0;
+    const timers: { callback: () => void; delay: number }[] = [];
+    const session = new SessionRequests({
+      credentials: h.credentials,
+      isOnline: () => true,
+      endSession: () => h.auth.endSession(),
+      refresh: () => {
+        refreshes += 1;
+        return Promise.reject(new RemoteSessionEnded());
+      },
+    });
+    const client = createMobileApiClient({
+      baseUrl: "https://example.invalid",
+      tokens: h.credentials,
+      fetch: (request) => {
+        sent.push(request);
+        if (sent.length === 1)
+          return Promise.resolve(jsonResponse({ code: "token_expired", detail: "" }, 401));
+        if (sent.length === 2) {
+          entered.resolve(undefined);
+          return response.promise;
+        }
+        return Promise.resolve(jsonResponse({ code: "token_expired", detail: "" }, 401));
+      },
+    });
+    const engine = new SyncEngine({
+      pass: {
+        ...h,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+        transport: createSyncTransport(client, session),
+      },
+      hasSession: () => h.credentials.hasSyncSession(),
+      hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
+      hasServer: () => true,
+      random: () => 0,
+      schedule: (callback, delay) => {
+        timers.push({ callback, delay });
+        return () => undefined;
+      },
+      report: (error) => {
+        throw error;
+      },
+    });
+    const stop = observeSyncSession(engine, h.credentials);
+    const firstPass = engine.start();
+    await entered.promise;
+    response.reject(failure);
+    await firstPass;
+    assert.equal(engine.getSnapshot().phase, "waitingRetry");
+    assert.equal(timers.length, 1);
+    assert.equal(timers[0]?.delay, 1000);
+    assert.equal(sent.length, 2);
+    assert.equal(h.credentials.getSnapshot().pair?.access, access);
+    assert.equal(h.credentials.getSnapshot().status, "ended");
+    assert.equal((await h.outbox.countByStatus()).pending, 1);
+    timers[0].callback();
+    await engine.requestSync();
+    stop();
+    assert.equal(sent.length, 3);
+    assert.equal(refreshes, 1);
+    const firstBody: unknown = await sent[1]?.clone().json();
+    const retriedBody: unknown = await sent[2]?.clone().json();
+    assert.deepEqual(retriedBody, firstBody);
+    assert.ok(
+      sent.every((request) => request.headers.get("Authorization") === `Bearer ${String(access)}`),
+    );
+    assert.equal(h.credentials.getSnapshot().pair, null);
+    assert.equal((await h.outbox.countByStatus()).pending, 1);
+    assert.equal(await h.kv.get("test_draft"), "half-filled form");
+  }
+});
+
+void it("retryable 5xx, 429, 400 and 413 responses preserve the ended pair and follow the sync failure table", async () => {
+  for (const status of [500, 429, 400, 413]) {
+    const h = await harness();
+    await h.auth.endSession();
+    const pair = h.credentials.getSnapshot().pair;
+    const session = new SessionRequests({
+      credentials: h.credentials,
+      isOnline: () => true,
+      endSession: () => h.auth.endSession(),
+      refresh: () => {
+        throw new Error("An ended session never refreshes.");
+      },
+    });
+    const code = (
+      {
+        500: "server_error",
+        429: "throttled",
+        400: "validation_error",
+        413: "payload_too_large",
+      } as const
+    )[status];
+    const client = createMobileApiClient({
+      baseUrl: "https://example.invalid",
+      tokens: h.credentials,
+      fetch: () =>
+        Promise.resolve(
+          new Response(JSON.stringify({ code, detail: "" }), {
+            status,
+            headers: { "Content-Type": "application/json", "Retry-After": "7" },
+          }),
+        ),
+    });
+    const result = await runSyncPass(
+      {
+        ...h,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+        transport: createSyncTransport(client, session),
+      },
+      { batchSize: SYNC_BATCH_SIZE },
+    );
+    assert.equal(h.credentials.getSnapshot().pair, pair);
+    assert.equal(h.credentials.getSnapshot().status, "ended");
+    assert.equal(h.credentials.getAccessToken(), undefined);
+    if (status === 429)
+      assert.deepEqual(result, {
+        kind: "retry",
+        delayMs: 7000,
+        countsAsFailure: false,
+        code: "throttled",
+      });
+    else assert.equal(result.kind, status === 500 ? "retry" : "idle");
+    const counts = await h.outbox.countByStatus();
+    assert.equal(counts.pending + counts.error, 1);
+    assert.equal(await h.kv.get("test_draft"), "half-filled form");
+  }
+});
+
+void it("a clock-wrong final POST blocks once with the pair retained; hints wait until conditions change", async () => {
+  const h = await harness();
+  await h.auth.endSession();
+  const pair = h.credentials.getSnapshot().pair;
+  const timers: number[] = [];
+  let posts = 0;
+  const session = new SessionRequests({
+    credentials: h.credentials,
+    isOnline: () => true,
+    endSession: () => h.auth.endSession(),
+    refresh: () => {
+      throw new Error("An ended session never refreshes.");
+    },
+  });
+  const client = createMobileApiClient({
+    baseUrl: h.credentials.getOrigin() ?? "",
+    tokens: h.credentials,
+    fetch: () => {
+      posts += 1;
+      void engine.hint();
+      // Bound a broken immediate-repeat loop without a time-based wait.
+      if (posts > 2) return Promise.reject(new TypeError("Unexpected immediate repeat."));
+      return Promise.resolve(
+        jsonResponse(
+          {
+            code: "validation_error",
+            detail: "",
+            fields: { sent_at: [{ code: "out_of_range", params: {} }] },
+          },
+          400,
+        ),
+      );
+    },
+  });
+  const engine = new SyncEngine({
+    pass: {
+      ...h,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: createSyncTransport(client, session),
+    },
+    hasSession: () => h.credentials.hasSyncSession(),
+    hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
+    hasServer: () => true,
+    random: () => 0,
+    schedule: (_callback, delay) => {
+      timers.push(delay);
+      return () => undefined;
+    },
+    report: (error) => {
+      throw error;
+    },
+  });
+  await engine.start();
+  assert.equal(posts, 1);
+  assert.equal(engine.getSnapshot().phase, "blocked");
+  assert.equal(engine.getSnapshot().blockReason, "clockWrong");
+  assert.equal(h.credentials.getSnapshot().pair, pair);
+  assert.equal((await h.outbox.countByStatus()).pending, 1);
+  await engine.hint();
+  assert.equal(posts, 1);
+  const blockedAgain = deferred<undefined>();
+  const stop = engine.subscribe(() => {
+    if (engine.getSnapshot().phase === "blocked" && posts === 2) blockedAgain.resolve(undefined);
+  });
+  engine.notifyConditionsChanged();
+  await blockedAgain.promise;
+  await engine.hint();
+  stop();
+  assert.equal(posts, 2);
+  assert.equal(engine.getSnapshot().phase, "blocked");
+  assert.equal(h.credentials.getSnapshot().pair, pair);
+  assert.deepEqual(timers, []);
+});
+
+void it("a definitive final 401/403 erases the pair without deleting unsent work", async () => {
+  for (const status of [401, 403]) {
+    const h = await harness();
+    await h.auth.endSession();
+    const session = new SessionRequests({
+      credentials: h.credentials,
+      isOnline: () => true,
+      endSession: () => h.auth.endSession(),
+      refresh: () => {
+        throw new Error("An ended session never refreshes.");
+      },
+    });
+    const client = createMobileApiClient({
+      baseUrl: "https://example.invalid",
+      tokens: h.credentials,
+      fetch: () =>
+        Promise.resolve(
+          jsonResponse(
+            {
+              code: status === 401 ? "token_expired" : "device_revoked",
+              detail: "",
+            },
+            status,
+          ),
+        ),
+    });
+    await runSyncPass(
+      {
+        ...h,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+        transport: createSyncTransport(client, session),
+      },
+      { batchSize: SYNC_BATCH_SIZE },
+    );
+    assert.equal(h.credentials.getSnapshot().pair, null);
+    assert.equal((await h.outbox.countByStatus()).pending, 1);
+    assert.equal(await h.kv.get("test_draft"), "half-filled form");
+  }
+});
+
+void it("an ended session with no configured server keeps its pair and waits without a POST", async () => {
+  const h = await harness();
+  await h.auth.endSession();
+  const engine = new SyncEngine({
+    pass: {
+      ...h,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: () => {
+        throw new Error("No final POST is possible without a server.");
+      },
+    },
+    hasSession: () => h.credentials.hasSyncSession(),
+    hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
+    hasServer: () => false,
+    random: () => 0,
+    schedule: () => {
+      throw new Error("A missing server blocks the worker.");
+    },
+    report: (error) => {
+      throw error;
+    },
+  });
+  const stop = h.credentials.subscribe(() => {
+    engine.notifyConditionsChanged();
+  });
+  await engine.start();
+  stop();
+  assert.notEqual(h.credentials.getSnapshot().pair, null);
+  assert.equal(engine.getSnapshot().blockReason, "noServer");
+  assert.equal((await h.outbox.countByStatus()).pending, 1);
+});
+
+void it("the ended journal precedes interrupted-password exhaustion on restart and preserves the retry pair", async () => {
+  const h = await harness();
+  await h.credentials.update((current) => ({ ...current, passwordAttempts: 5 }));
+  const pair = h.credentials.getSnapshot().pair;
+  await h.kv.set(
+    "session_ended",
+    JSON.stringify({
+      sessionId: h.credentials.getSnapshot().sessionId,
+      status: "ended",
+    }),
+  );
+  const restarted = new CredentialStore(h.secrets);
+  await restarted.load((sessionId) => readEndedSession(h.kv, sessionId));
+  const auth = controller(h, restarted);
+  await auth.load();
+  await auth.unlock(h.pinSecret, "pin");
+  await auth.unlock(h.passwordSecret, "password");
+  assert.equal(auth.getSnapshot().phase, "login");
+  assert.equal(auth.canUseBiometrics(), false);
+  assert.equal(restarted.getAccessToken(), undefined);
+  assert.deepEqual(restarted.getSnapshot().pair, pair);
+  assert.equal((await h.outbox.countByStatus()).pending, 1);
+});
+
+void it("an active POST's late 200 cannot consume final-upload provenance after rules revoke the session", async () => {
+  for (const batchSize of [1, 2]) {
+    const h = await harness();
+    const second = makeEnvelope();
+    await h.outbox.enqueue(second);
+    const entered = deferred<undefined>();
+    const delayed = deferred<Response>();
+    const requests: Request[] = [];
+    const session = new SessionRequests({
+      credentials: h.credentials,
+      isOnline: () => true,
+      endSession: () => h.auth.endSession(),
+      refresh: () => {
+        throw new Error("Revoked sessions never refresh.");
+      },
+    });
+    const client = createMobileApiClient({
+      baseUrl: "https://example.invalid",
+      tokens: h.credentials,
+      fetch: (request) => {
+        requests.push(request);
+        if (requests.length === 1) {
+          entered.resolve(undefined);
+          return delayed.promise;
+        }
+        const result = answer(batchSize === 1 ? [accepted(second.id)] : []);
+        assert.ok(result.ok);
+        return Promise.resolve(jsonResponse(result.response, 200, true));
+      },
+    });
+    const running = runSyncPass(
+      {
+        ...h,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+        transport: createSyncTransport(client, session),
+      },
+      { batchSize },
+    );
+    await entered.promise;
+    await session.run(() =>
+      Promise.resolve({
+        response: jsonResponse({ code: "session_revoked", detail: "" }, 401),
+        error: { code: "session_revoked", detail: "" },
+      }),
+    );
+    assert.equal(h.credentials.getSnapshot().status, "ended");
+    const firstResult = answer(
+      batchSize === 1 ? [accepted(h.event.id)] : [accepted(h.event.id), accepted(second.id)],
+    );
+    assert.ok(firstResult.ok);
+    delayed.resolve(jsonResponse(firstResult.response));
+    await running;
+    assert.equal(requests.length, 2);
+    const finalBody: unknown = await requests[1]?.clone().json();
+    assert.ok(typeof finalBody === "object" && finalBody !== null && "events" in finalBody);
+    assert.deepEqual(finalBody.events, batchSize === 1 ? [second] : []);
+    assert.equal((await h.outbox.countByStatus()).sent, 2);
+    assert.equal(h.credentials.getSnapshot().pair, null);
+  }
+});
+
+void it("an empty active POST revoked with 401 continues to a real final POST through the engine and observer", async () => {
+  const stores = await createStores();
+  const h = await makeCredentials();
+  const auth = controller(stores, h.credentials);
+  await auth.load();
+  let posts = 0;
+  const session = new SessionRequests({
+    credentials: h.credentials,
+    isOnline: () => true,
+    endSession: () => auth.endSession(),
+    refresh: () => {
+      throw new Error("No refresh for session_revoked.");
+    },
+  });
+  const client = createMobileApiClient({
+    baseUrl: "https://example.invalid",
+    tokens: h.credentials,
+    fetch: () => {
+      posts += 1;
+      if (posts === 1)
+        return Promise.resolve(jsonResponse({ code: "session_revoked", detail: "" }, 401));
+      const result = answer([]);
+      assert.ok(result.ok);
+      return Promise.resolve(jsonResponse(result.response, 200, true));
+    },
+  });
+  const engine = new SyncEngine({
+    pass: {
+      ...stores,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+      transport: createSyncTransport(client, session),
+    },
+    hasSession: h.credentials.hasSyncSession,
+    hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
+    hasServer: () => true,
+    random: () => 0,
+    schedule: () => {
+      throw new Error("No retry for definitive answers.");
+    },
+    report: (error) => {
+      throw error;
+    },
+  });
+  const stop = observeSyncSession(engine, h.credentials);
+  await engine.start();
+  stop();
+  assert.equal(posts, 2);
+  assert.equal(h.credentials.getSnapshot().pair, null);
+  assert.equal(engine.getSnapshot().phase, "blocked");
+});
+
+void it("level-triggered final upload survives revoke during active result settlement, without observer delivery, and waits after 5xx/Retry-After", async () => {
+  const cases = [true, false].flatMap((useObserver) =>
+    [200, 500, 429].map((finalStatus) => ({ useObserver, finalStatus })),
+  );
+  for (const { useObserver, finalStatus } of cases) {
+    const h = await harness();
+    const commitEntered = deferred<undefined>();
+    const commit = deferred<undefined>();
+    const unexpectedPost = deferred<undefined>();
+    const never = deferred<Response>();
+    let hasPaused = false;
+    const db: SqlExecutor = {
+      ...h.db,
+      runAtomically: async (statements) => {
+        if (!hasPaused && statements.some((statement) => statement.params?.[0] === "sent")) {
+          hasPaused = true;
+          commitEntered.resolve(undefined);
+          await commit.promise;
+        }
+        await h.db.runAtomically(statements);
+      },
+    };
+    const outbox = new OutboxRepository(db, () => FIXED_NOW);
+    const session = new SessionRequests({
+      credentials: h.credentials,
+      isOnline: () => true,
+      endSession: () => h.auth.endSession(),
+      refresh: () => {
+        throw new Error("An ended pair never refreshes.");
+      },
+    });
+    let posts = 0;
+    const access = h.credentials.getSnapshot().pair?.access;
+    const client = createMobileApiClient({
+      baseUrl: h.credentials.getOrigin() ?? "",
+      tokens: h.credentials,
+      fetch: (request) => {
+        if (request.url.endsWith("/rules/"))
+          return Promise.resolve(jsonResponse({ code: "session_revoked", detail: "" }, 401));
+        posts += 1;
+        if (posts > 2) {
+          unexpectedPost.resolve(undefined);
+          return never.promise;
+        }
+        assert.equal(request.headers.get("Authorization"), `Bearer ${String(access)}`);
+        if (posts === 1 || finalStatus === 200) {
+          const result = answer(posts === 1 ? [accepted(h.event.id)] : []);
+          assert.ok(result.ok);
+          return Promise.resolve(jsonResponse(result.response, 200, posts === 2));
+        }
+        return Promise.resolve(
+          new Response(
+            JSON.stringify({
+              code: finalStatus === 429 ? "throttled" : "server_error",
+              detail: "",
+            }),
+            {
+              status: finalStatus,
+              headers: { "Content-Type": "application/json", "Retry-After": "7" },
+            },
+          ),
+        );
+      },
+    });
+    const timers: { delay: number; isActive: boolean }[] = [];
+    const engine = new SyncEngine({
+      pass: {
+        ...h,
+        outbox,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+        transport: createSyncTransport(client, session),
+      },
+      hasSession: h.credentials.hasSyncSession,
+      hasPendingFinalUpload: h.credentials.hasPendingFinalUpload,
+      hasServer: () => true,
+      random: () => 0,
+      schedule: (_callback, delay) => {
+        const timer = { delay, isActive: true };
+        timers.push(timer);
+        return () => {
+          timer.isActive = false;
+        };
+      },
+      report: (error) => {
+        throw error;
+      },
+    });
+    const stop = useObserver ? observeSyncSession(engine, h.credentials) : () => undefined;
+    const running = engine.start();
+    await commitEntered.promise;
+    await session.run(() => client.GET("/api/v1/field/rules/"));
+    assert.equal(h.credentials.getSnapshot().status, "ended");
+    assert.equal((await h.outbox.countByStatus()).sent, 0);
+    assert.equal(posts, 1, "A final POST cannot preempt unsettled active results.");
+    commit.resolve(undefined);
+    await Promise.race([
+      running,
+      unexpectedPost.promise.then(() => {
+        throw new Error("Final upload must respect its retry deadline.");
+      }),
+    ]);
+    assert.equal(posts, 2, `One active POST and one final POST (observer=${String(useObserver)}).`);
+    assert.equal((await h.outbox.countByStatus()).sent, 1);
+    assert.equal(await h.kv.get("test_draft"), "half-filled form");
+    if (finalStatus === 200) {
+      assert.equal(h.credentials.getSnapshot().pair, null);
+      assert.equal(timers.length, 0);
+    } else {
+      assert.notEqual(h.credentials.getSnapshot().pair, null);
+      assert.equal(engine.getSnapshot().phase, "waitingRetry");
+      assert.deepEqual(timers, [{ delay: finalStatus === 429 ? 7000 : 1000, isActive: true }]);
+      await engine.hint();
+      assert.equal(posts, 2, "Observer hints cannot bypass the retry deadline.");
+      assert.equal(timers[0]?.isActive, true);
+    }
+    stop();
+  }
+});

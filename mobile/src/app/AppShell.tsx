@@ -1,3 +1,5 @@
+import { AuthGate } from "./AuthGate.tsx";
+
 import { NavigationProvider } from "../navigation/NavigationProvider.tsx";
 import { ScreenRouter } from "../navigation/ScreenRouter.tsx";
 import { useSyncLifecycle } from "../sync/use-sync-lifecycle.ts";
@@ -7,7 +9,9 @@ export function AppShell() {
   useSyncLifecycle();
   return (
     <NavigationProvider>
-      <ScreenRouter />
+      <AuthGate>
+        <ScreenRouter />
+      </AuthGate>
     </NavigationProvider>
   );
 }

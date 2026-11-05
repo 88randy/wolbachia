@@ -5,7 +5,7 @@ import { describe, it, mock } from "node:test";
 import { unwrap } from "@wolbachia/api-client";
 
 import { createMobileApiClient } from "../src/api/create-api-client.ts";
-import { createMemoryTokenStore } from "../src/auth/token-store.ts";
+import { createMemoryTokenStore } from "./support/token-store.ts";
 import { createSyncTransport } from "../src/sync/sync-transport.ts";
 import { FIXED_DEVICE_ID, makeEnvelope } from "./support/factories.ts";
 

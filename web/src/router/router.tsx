@@ -1,3 +1,5 @@
+import { W22Page } from "../quadrants/geography/W22Page";
+import { W23Page } from "../quadrants/geography/W23Page";
 import { CatalogsPage } from "../catalogs/CatalogsPage";
 import { W20Page } from "../fleet/W20Page";
 import { W21Page } from "../fleet/W21Page";
@@ -90,6 +92,7 @@ const areaRoutes = AREAS.map((area) =>
   createRoute({
     getParentRoute: () => authenticatedRoute,
     path: area.path,
+    ...(area.id === "quadrants" ? { validateSearch: tableSearchSchema } : {}),
     beforeLoad: ({ context }) => {
       requireAreaAccess(area, context.me);
     },
@@ -98,10 +101,23 @@ const areaRoutes = AREAS.map((area) =>
         ? SettingsPage
         : area.id === "fleet"
           ? FleetHome
-          : () => <AreaPlaceholder areaId={area.id} />,
+          : area.id === "quadrants"
+            ? W22Page
+            : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
+
+const quadrantVersionsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/quadrants/$code/versions",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("quadrants", context.me, "quadrant.read");
+  },
+  component: W23Page,
+  errorComponent: AreaErrorState,
+});
 
 // W20-W21: the fleet area and both motorcycle routes require motorcycle.read.
 const motorcyclesRoute = createRoute({
@@ -198,6 +214,7 @@ const routeTree = rootRoute.addChildren([
   selectOrganizationRoute,
   authenticatedRoute.addChildren([
     ...areaRoutes,
+    quadrantVersionsRoute,
     catalogsRoute,
     catalogRoute,
     motorcyclesRoute,
