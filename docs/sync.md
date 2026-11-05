@@ -147,6 +147,7 @@ All are environment settings (technical limits, not business rules). Defaults ar
 `RejectionQuotaCounter` is mutable bookkeeping with `organization_id`, `device_id`, `local_date`
 and `count`, unique on `(device, local_date)`. It does not change `FieldEvent` or `ReviewItem`:
 those audit rows remain insert-only. The quota counts only **new stored rejected events**.
+A revoked phone's **final upload** is never refused by the quota (it happens once and cannot be retried, so its rejections are stored without claiming a slot; it is bounded by `SYNC_MAX_EVENTS`).
 Accepted and `in_review` events never claim a slot and are always processed, including when
 other events of the same batch hit the quota. Existing review items, pulls and cursors are unchanged.
 

@@ -361,7 +361,10 @@ class EventProcessor:
         local_date, retry_after = rejection_quota_window(self.batch)
         try:
             with transaction.atomic():
-                if not claim_rejection_slot(self.batch, local_date):
+                # A final upload happens once and cannot be retried: never refuse its evidence.
+                if not self.batch.is_final_upload and not claim_rejection_slot(
+                    self.batch, local_date
+                ):
                     return self._quota_exceeded_result(envelope, retry_after)
                 self._store(envelope, outcome)
         except IntegrityError as error:

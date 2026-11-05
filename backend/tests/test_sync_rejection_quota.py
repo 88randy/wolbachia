@@ -5,6 +5,8 @@ from datetime import UTC, datetime, timedelta
 
 import pytest
 
+from accounts.models import RevokeReason
+from accounts.revocation import Revocation, revoke_session
 from field_sync.models import FieldEvent, RejectionQuotaCounter
 from reviews.models import ReviewItem
 from tests.sync_support import event, make_phone, second_device_of
@@ -161,3 +163,22 @@ def test_alerts_fire_once_at_rounded_up_thresholds_after_commit_not_on_replays(
         == (str(phone.organization.pk), str(phone.device_id), "2026-11-04", 5)
         for record in alerts
     )
+
+
+def test_final_upload_of_a_revoked_phone_is_never_refused_by_the_quota(phone):
+    RejectionQuotaCounter.objects.create(
+        organization=phone.organization,
+        device_id=phone.device_id,
+        local_date=RECEIVED_AT.date(),
+        count=2,
+    )
+    revoke_session(
+        phone.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+    )
+
+    response = phone.sync([rejected()])
+
+    assert response.status_code == 200
+    assert response.data["results"][0]["code"] == "unsupported_event_type"
+    assert "Retry-After" not in response.headers
+    assert FieldEvent.objects.count() == ReviewItem.objects.count() == 1
