@@ -168,7 +168,8 @@ describe("voiding a scheduled version", () => {
       await screen.findByRole("button", { name: "Anular la versión del 10 nov 2026" }),
     );
     const dialog = await screen.findByRole("dialog");
-    await user.type(within(dialog).getByRole("textbox", { name: /Motivo/ }), REASON);
+    await user.selectOptions(within(dialog).getByRole("combobox"), "other");
+    await user.type(within(dialog).getByRole("textbox", { name: /Detalle/ }), REASON);
     return { user, ...opened };
   }
 
@@ -183,11 +184,24 @@ describe("voiding a scheduled version", () => {
     await waitFor(() => {
       expect(screen.queryByRole("dialog")).toBeNull();
     });
-    expect(requestsTo(api, "POST", VOID_PATH)[0]?.body).toEqual({ reason: REASON });
+    expect(requestsTo(api, "POST", VOID_PATH)[0]?.body).toEqual({
+      reason_code: "other",
+      reason: REASON,
+    });
     expect(screen.getByText("Versión anulada. Sigue en el historial, tachada.")).toBeDefined();
     await waitFor(() => {
       expect(requestsTo(api, "GET", VERSIONS_API).length).toBeGreaterThan(1);
     });
+  });
+
+  test("a catalog reason is sent without an empty note", async () => {
+    const { user, api } = await startVoid(Response.json({ ...SCHEDULED, status: "voided" }));
+    await user.selectOptions(within(screen.getByRole("dialog")).getByRole("combobox"), "duplicate");
+    await user.click(screen.getByRole("button", { name: "Anular" }));
+    await waitFor(() => {
+      expect(screen.queryByRole("dialog")).toBeNull();
+    });
+    expect(requestsTo(api, "POST", VOID_PATH)[0]?.body).toEqual({ reason_code: "duplicate" });
   });
 
   test("regression: a void answered after a re-authentication is ignored, not shown as an error", async () => {

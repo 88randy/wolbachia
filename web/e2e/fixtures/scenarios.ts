@@ -26,6 +26,7 @@ const PHONES = [
 
 const RULES_ME = makeMe({
   permissions: [
+    "catalog.read",
     "rule_parameter.read",
     "rule_parameter_version.read",
     "rule_parameter_version.create",
@@ -252,6 +253,21 @@ export const scenarios: Scenario[] = [
       await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
       await page.locator("form button[type=submit]").click();
       await expect(page.locator("#rule-version-reason-error")).toBeVisible();
+    },
+  },
+  {
+    name: "void dialog with Other details",
+    api: { me: RULES_ME, rules: RULES },
+    reach: async (page) => {
+      await page.goto(SPEED);
+      await page
+        .getByRole("button", {
+          name: /Anular la versi\u00f3n del 1 dic|Void the version of Dec 1,/,
+        })
+        .click();
+      const dialog = page.getByRole("dialog");
+      await dialog.getByRole("combobox").selectOption("other");
+      await expect(dialog.getByRole("textbox")).toBeFocused();
     },
   },
   {

@@ -7,6 +7,11 @@
 import "@fontsource/inter/latin-400.css";
 import "@fontsource/inter/latin-700.css";
 import "@wolbachia/tokens/tokens.css";
+import { QueryClientProvider } from "@tanstack/react-query";
+import { ApiClientProvider } from "../src/api/ApiClientProvider";
+import { createAppQueryClient } from "../src/api/query-client";
+import { createWebApiClient } from "../src/api/create-web-api-client";
+import { createFakeApi, makeVoidReasonItems } from "../src/test/fake-api";
 import { createRoot } from "react-dom/client";
 import { I18nextProvider } from "react-i18next";
 import "../src/styles/global.css";
@@ -38,8 +43,21 @@ applyTheme(params.get("theme") === "dark" ? "dark" : "light");
 const i18n = await setupI18n(params.get("lang") === "en" ? "en" : "es-MX");
 const container = document.getElementById("root");
 if (container === null) throw new Error("Missing #root in void.html");
+const fake = createFakeApi({
+  "GET /api/v1/catalogs/void-reason/items/": Response.json({
+    count: 3,
+    next: null,
+    previous: null,
+    results: makeVoidReasonItems(),
+  }),
+});
+const client = createWebApiClient({ apiBaseUrl: "/api/v1" }, { fetch: fake.fetch });
 createRoot(container).render(
   <I18nextProvider i18n={i18n}>
-    <VoidHarness submit={submit} />
+    <QueryClientProvider client={createAppQueryClient({ retry: false })}>
+      <ApiClientProvider client={client}>
+        <VoidHarness submit={submit} />
+      </ApiClientProvider>
+    </QueryClientProvider>
   </I18nextProvider>,
 );

@@ -6,6 +6,11 @@ export const voiding: Record<keyof typeof source, string> = {
   "voiding.dialog.title": "Void {record}",
   "voiding.dialog.hint":
     "Nothing is deleted: it stays struck through in the history with your reason.",
+  "voiding.dialog.reasonLabel": "Void reason (required)",
+  "voiding.dialog.details": "Details",
+  "voiding.dialog.placeholder": "Select a reason",
+  "voiding.dialog.loading": "Loading reasons…",
+  "voiding.dialog.retry": "Retry",
   "voiding.dialog.required": "required",
   "voiding.dialog.minHelp": "Write at least {min} characters so the reason is useful later.",
   "voiding.dialog.counterBelow": "{count} of {min} minimum characters",
@@ -14,9 +19,11 @@ export const voiding: Record<keyof typeof source, string> = {
   "voiding.dialog.busy": "Voiding…",
 
   // What went wrong. Generic failures use `errors.api.*`.
+  "voiding.error.chooseReason": "Choose a reason.",
+  "voiding.error.catalogUnavailable": "We could not load available reasons. Retry to continue.",
   "voiding.error.title": "We could not void it",
   "voiding.error.codeUnknown":
-    "This reason is no longer available. Refresh the catalogs and choose another reason.",
+    "This reason is no longer available. Choose another reason from the updated list.",
   "voiding.error.requiredForOther": "Enter a reason when choosing Other (specify).",
   "voiding.error.tooShort": "The reason needs at least {min} characters. Tell us a bit more.",
   "voiding.error.invalidCharacters":

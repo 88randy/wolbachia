@@ -1,3 +1,4 @@
+import type { Schemas } from "@wolbachia/api-client";
 import type { Me } from "../session/me";
 
 /** One request the app made, as a test wants to inspect it. */
@@ -129,4 +130,43 @@ export function makeMe(overrides: Partial<Me> = {}): Me {
     limits: { void_reason_min_length: 10, void_reason_max_length: 1000 },
     ...overrides,
   };
+}
+
+const VOID_REASON_BASE = {
+  icon: "",
+  sort: 0,
+  is_active: true,
+  is_other: false,
+  requires_photo: false,
+  created_at: "2026-01-01T00:00:00Z",
+  updated_at: "2026-01-01T00:00:00Z",
+};
+
+/** Catalog fixture in API order, including an inactive reason that the picker must hide. */
+export function makeVoidReasonItems(): Schemas["CatalogItem"][] {
+  return [
+    {
+      ...VOID_REASON_BASE,
+      id: "duplicate",
+      code: "duplicate",
+      label_es: "Capturado dos veces",
+      label_en: "Duplicate entry",
+    },
+    {
+      ...VOID_REASON_BASE,
+      id: "inactive",
+      code: "inactive",
+      label_es: "Inactivo",
+      label_en: "Inactive",
+      is_active: false,
+    },
+    {
+      ...VOID_REASON_BASE,
+      id: "other",
+      code: "other",
+      label_es: "Otro (especificar)",
+      label_en: "Other (specify)",
+      is_other: true,
+    },
+  ];
 }

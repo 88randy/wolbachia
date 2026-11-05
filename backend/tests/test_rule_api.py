@@ -337,7 +337,7 @@ def test_versions_list_leaves_voided_out_unless_asked(admin, speed) -> None:
     version = scheduled(speed)
     admin.post(
         versions_url("speed_lock_kmh", f"{version.id}/void/"),
-        {"reason": "a typo in the value"},
+        {"reason_code": "other", "reason": "a typo in the value"},
         format="json",
     )
     url = versions_url("speed_lock_kmh")
@@ -354,7 +354,9 @@ def test_versions_list_leaves_voided_out_unless_asked(admin, speed) -> None:
 def test_voided_version_can_still_be_retrieved(admin, speed) -> None:
     version = scheduled(speed)
     url = versions_url("speed_lock_kmh", f"{version.id}/")
-    admin.post(url + "void/", {"reason": "a typo in the value"}, format="json")
+    admin.post(
+        url + "void/", {"reason_code": "other", "reason": "a typo in the value"}, format="json"
+    )
 
     response = admin.get(url)
 
@@ -378,7 +380,7 @@ def test_versions_carry_the_usernames_even_of_users_without_a_membership(
     version = scheduled(speed, created_by=author)
     api_client.post(
         versions_url("speed_lock_kmh", f"{version.id}/void/"),
-        {"reason": "a typo in the value"},
+        {"reason_code": "other", "reason": "a typo in the value"},
         format="json",
     )
 

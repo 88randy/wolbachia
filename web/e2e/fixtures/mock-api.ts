@@ -147,6 +147,7 @@ class FakeServer implements MockApi {
 
   /** Paths with variable parts (`/rule-parameters/{key}/...`); anything else is a 404. */
   private handleOther(route: Route, request: RecordedRequest) {
+    if (request.path === "/api/v1/catalogs/void-reason/items/") return this.rules.catalog(route);
     if (request.path.startsWith("/api/v1/rule-parameters/")) return this.rules.answer(route);
     return route.fulfill(envelope(404, "not_found"));
   }

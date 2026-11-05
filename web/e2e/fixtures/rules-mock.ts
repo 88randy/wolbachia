@@ -1,4 +1,5 @@
 import type { Schemas } from "@wolbachia/api-client";
+import { makeVoidReasonItems } from "../../src/test/fake-api";
 import type { Route } from "@playwright/test";
 
 export type ParameterFixture = Schemas["RuleParameter"];
@@ -27,6 +28,7 @@ export function makeRuleVersion(overrides: Partial<VersionFixture> = {}): Versio
     voided_at: null,
     voided_by: null,
     voided_by_username: null,
+    void_reason_code: "",
     void_reason: "",
     ...overrides,
   };
@@ -167,20 +169,35 @@ export class FakeRules {
   private voidVersion(
     route: Route,
     fixture: RuleParameterFixture,
-    target: { id: string; reason: string },
+    target: { id: string; reason: string; reasonCode: string },
   ) {
     const version = fixture.versions.find((candidate) => candidate.id === target.id);
     if (version === undefined) return json(route, 404, { code: "not_found", detail: "Fake." });
     if (version.effective_from <= RULES_NOW) {
       return json(route, 409, { code: "version_not_scheduled", detail: "Fake." });
     }
+    const item = makeVoidReasonItems().find(
+      (candidate) => candidate.is_active && candidate.code === target.reasonCode,
+    );
+    if (item === undefined)
+      return json(route, 400, {
+        code: "validation_error",
+        detail: "Fake.",
+        fields: { reason_code: [{ code: "void_reason_code_unknown", params: {} }] },
+      });
     const voided = {
       voided_at: RULES_NOW,
       voided_by: this.signedIn.id,
       voided_by_username: this.signedIn.username,
-      void_reason: target.reason,
+      void_reason_code: target.reasonCode,
+      void_reason: item.is_other ? target.reason : item.label_es,
     };
     return json(route, 200, Object.assign(version, voided));
+  }
+
+  catalog(route: Route): Promise<void> {
+    const results = makeVoidReasonItems();
+    return json(route, 200, { count: results.length, next: null, previous: null, results });
   }
 
   async answer(route: Route): Promise<void> {
@@ -198,7 +215,11 @@ export class FakeRules {
     if (request.method() === "GET") return this.versions(route, fixture, url.searchParams);
     if (id === undefined) return this.create(route, fixture, body);
     if (action !== "void") return json(route, 405, {});
-    return this.voidVersion(route, fixture, { id, reason: body["reason"] ?? "" });
+    return this.voidVersion(route, fixture, this.voidTarget(id, body));
+  }
+
+  private voidTarget(id: string, body: Record<string, string>) {
+    return { id, reason: body["reason"] ?? "", reasonCode: body["reason_code"] ?? "" };
   }
 
   private list(route: Route, query: URLSearchParams) {

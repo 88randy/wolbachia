@@ -4,6 +4,7 @@ import { useModalDialog } from "../session/use-modal-dialog";
 import styles from "./void-dialog.module.css";
 import { VoidDialogForm } from "./VoidDialogForm";
 import { useVoidForm } from "./use-void-form";
+import type { VoidChoice } from "./use-void-form";
 import type { VoidResult } from "./submit-void";
 import type { VoidLimits } from "./void-limits";
 
@@ -12,15 +13,15 @@ export interface VoidDialogProps {
   record: string;
   /** From `useVoidLimits()` (the server's values in `GET /me/`). */
   limits: VoidLimits;
-  /** Sends the void with the trimmed reason: `submitVoid(() => client.POST(...))`. */
-  submit: (reason: string) => Promise<VoidResult>;
+  /** Sends the void with the selected code and normalized Other text: `submitVoid(() => client.POST(...))`. */
+  submit: (choice: VoidChoice) => Promise<VoidResult>;
   /** The server voided the record: close the dialog and refresh what shows it. */
   onVoided: () => void;
   /** The user gave up (Cancel or Escape). Not called while a request is in flight. */
   onCancel: () => void;
 }
 
-const REASON_FIELD = "textarea";
+const REASON_FIELD = "select";
 
 /**
  * A browser can close a modal `<dialog>` by itself (a second Escape, the close-watcher rule) even

@@ -6,6 +6,8 @@ import type { ServiceFailure } from "../api/service-failure";
 
 /** Why a void request did not succeed, from the codes of docs/api-conventions.md (void contract). */
 export type VoidFailure =
+  | { kind: "codeUnknown" }
+  | { kind: "requiredForOther" }
   /** `400 validation_error`, `fields.reason`: `void_reason_too_short` with `{min_length}`. */
   | { kind: "reasonTooShort"; minLength: number | undefined }
   /** `400`, `fields.reason`: `void_reason_invalid_characters` (control or bidirectional text). */
@@ -43,6 +45,9 @@ function hasReasonCode(envelope: ErrorEnvelope, wanted: string): boolean {
 
 function badRequestOf(error: unknown): VoidFailure {
   if (!isErrorEnvelope(error)) return { kind: "invalid" };
+  if (error.fields?.["reason_code"]?.some(({ code }) => code === "void_reason_code_unknown"))
+    return { kind: "codeUnknown" };
+  if (hasReasonCode(error, "void_reason_required_for_other")) return { kind: "requiredForOther" };
   if (hasReasonCode(error, INVALID_CHARACTERS_CODE)) return { kind: "invalidCharacters" };
   return tooShortOf(error) ?? { kind: "invalid" };
 }
@@ -62,6 +67,8 @@ export function voidFailureOf(status: number, error: unknown): VoidFailure {
 }
 
 const KEYS: Record<Exclude<VoidFailure["kind"], "service">, MessageKey> = {
+  codeUnknown: "voiding.error.codeUnknown",
+  requiredForOther: "voiding.error.requiredForOther",
   reasonTooShort: "voiding.error.tooShort",
   invalidCharacters: "voiding.error.invalidCharacters",
   invalid: "errors.api.validation",

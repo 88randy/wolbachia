@@ -10,3 +10,5 @@ export { voidInfoOf } from "./void-info";
 export type { VoidFields, VoidInfo } from "./void-info";
 export { DEFAULT_VOID_LIMITS } from "./void-limits";
 export type { VoidLimits } from "./void-limits";
+
+export type { VoidChoice } from "./use-void-form";
