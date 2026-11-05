@@ -60,12 +60,13 @@ function loginResponse(): Schemas["MobileLoginResponse"] {
 
 void it("enforces offline first-login and owner binding before any server call, while allowing the same username", async () => {
   let loginCalls = 0;
-  const { auth, outbox } = await harness(() => {
+  const { auth, outbox, credentials } = await harness(() => {
     loginCalls += 1;
     return Promise.resolve({ ok: false, notice: { key: "mobile.login.wrongCredentials" } });
   });
   await outbox.enqueue(makeEnvelope());
   await auth.endSession();
+  await credentials.finishEndedSession(credentials.getSnapshot().sessionId);
   await auth.login("courier-test", randomUUID());
   assert.equal(loginCalls, 0);
   auth.setOnline(true);
@@ -106,7 +107,8 @@ void it("remote session end and local password exhaustion preserve the actual ou
     await kv.set("test_draft", "half-filled form");
     await endForTest(auth, reason);
     assert.equal(auth.getSnapshot().phase, "login");
-    assert.equal(credentials.getSnapshot().pair, null);
+    if (reason === "remote") assert.notEqual(credentials.getSnapshot().pair, null);
+    else assert.equal(credentials.getSnapshot().pair, null);
     assert.equal(credentials.getSnapshot().pin, null);
     assert.equal(credentials.getSnapshot().password, null);
     const [pending] = await outbox.claimPending(1);
@@ -131,6 +133,7 @@ void it("accepts online login despite a failed rules fetch, creates a PIN, and u
     () => rules.promise,
   );
   await auth.endSession();
+  await credentials.finishEndedSession(credentials.getSnapshot().sessionId);
   auth.setOnline(true);
   await auth.login("courier-test", randomUUID());
   assert.equal(auth.getSnapshot().phase, "createPin");

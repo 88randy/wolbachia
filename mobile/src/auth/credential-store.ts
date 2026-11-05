@@ -5,7 +5,9 @@ import type { SecretStorage } from "./secret-storage.ts";
 import type { Verifier } from "./verifier.ts";
 
 export type TokenPair = Pick<Schemas["RefreshResponse"], "access" | "refresh">;
+export type SessionStatus = "active" | "ended";
 export interface Credentials {
+  readonly status: SessionStatus;
   readonly sessionId: string | null;
   readonly pair: TokenPair | null;
   readonly pin: Verifier | null;
@@ -14,6 +16,7 @@ export interface Credentials {
   readonly passwordAttempts: number;
 }
 export const EMPTY_CREDENTIALS: Credentials = {
+  status: "active",
   sessionId: null,
   pair: null,
   pin: null,
@@ -31,6 +34,7 @@ export class CredentialStore {
   readonly #storage: SecretStorage;
   readonly #listeners = new Set<() => void>();
   #credentials: Credentials = EMPTY_CREDENTIALS;
+  #endingSessionId: string | null = null;
   #tail: Promise<unknown> = Promise.resolve();
 
   constructor(storage: SecretStorage) {
@@ -45,7 +49,43 @@ export class CredentialStore {
   }
 
   getSnapshot = (): Credentials => this.#credentials;
-  getAccessToken = (): string | undefined => this.#credentials.pair?.access;
+  getAccessToken = (): string | undefined =>
+    this.isSessionActive() ? this.#credentials.pair?.access : undefined;
+  hasSyncSession = (): boolean => this.#credentials.pair !== null;
+  isSessionActive(): boolean {
+    return (
+      this.#credentials.status === "active" &&
+      this.#credentials.pair !== null &&
+      this.#credentials.sessionId !== this.#endingSessionId
+    );
+  }
+
+  /** Step 1 is monotonic and disables local secrets before any final upload. */
+  markEnded(sessionId: string | null): Promise<void> {
+    if (this.#credentials.sessionId !== sessionId) return Promise.resolve();
+    this.#endingSessionId = sessionId;
+    return this.update((current) =>
+      current.sessionId !== sessionId
+        ? current
+        : {
+            ...current,
+            pin: null,
+            password: null,
+            pinAttempts: 0,
+            passwordAttempts: 0,
+            status: "ended",
+          },
+    );
+  }
+
+  /** Step 2 follows sync's durable settlement and cannot clear a replacement login. */
+  finishEndedSession(sessionId: string | null): Promise<void> {
+    return this.update((current) =>
+      current.sessionId !== sessionId || current.status === "active" || current.pair === null
+        ? current
+        : { ...EMPTY_CREDENTIALS, sessionId, status: "ended" },
+    );
+  }
   subscribe = (listener: () => void): (() => void) => {
     this.#listeners.add(listener);
     return () => {
@@ -56,6 +96,7 @@ export class CredentialStore {
   update(change: (current: Credentials) => Credentials): Promise<void> {
     const operation = this.#tail.then(async () => {
       const next = change(this.#credentials);
+      if (next === this.#credentials) return;
       await this.#storage.set(ITEM, JSON.stringify(next));
       this.#credentials = next;
       for (const listener of this.#listeners) listener();
@@ -78,7 +119,9 @@ export class CredentialStore {
 }
 
 function decodeCredentials(saved: string): Credentials {
-  const value: unknown = JSON.parse(saved);
+  const parsed: unknown = JSON.parse(saved);
+  const value: unknown =
+    typeof parsed === "object" && parsed !== null ? { status: "active", ...parsed } : parsed;
   if (!isCredentials(value)) throw new Error("Invalid secure credentials; refusing to unlock.");
   return value;
 }
@@ -87,6 +130,7 @@ function isCredentials(value: unknown): value is Credentials {
   if (typeof value !== "object" || value === null) return false;
   const record = value as Record<string, unknown>;
   return (
+    isSessionStatus(record.status) &&
     (record.sessionId === null || typeof record.sessionId === "string") &&
     isTokenPair(record.pair) &&
     isVerifier(record.pin) &&
@@ -126,4 +170,8 @@ function isHex(value: unknown, length: number): boolean {
 
 function isCounter(value: unknown): value is number {
   return typeof value === "number" && Number.isSafeInteger(value) && value >= 0;
+}
+
+function isSessionStatus(value: unknown): value is SessionStatus {
+  return value === "active" || value === "ended";
 }

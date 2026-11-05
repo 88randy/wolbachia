@@ -8,6 +8,7 @@ import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Button } from "../../ui/Button.tsx";
 import { ServerSection } from "../settings/ServerSection.tsx";
+import { loginNotice } from "./auth-notice-presentation.ts";
 import { AuthNotice } from "./AuthNotice.tsx";
 import { LoginFields } from "./LoginFields.tsx";
 import { createAuthStyles } from "./auth-styles.ts";
@@ -19,9 +20,7 @@ interface LoginContentProps {
 export function LoginContent({ snapshot, form }: LoginContentProps) {
   const t = useT();
   const styles = useStyles(createAuthStyles);
-  const notice =
-    form.error ??
-    (!snapshot.isOnline ? { key: "mobile.login.noSignal" as const } : snapshot.notice);
+  const notice = loginNotice(snapshot, form.error);
   return (
     <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.logo}>

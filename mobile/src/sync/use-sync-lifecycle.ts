@@ -2,6 +2,8 @@ import NetInfo from "@react-native-community/netinfo";
 import { useEffect } from "react";
 import { AppState } from "react-native";
 
+import { observeSyncSession } from "./observe-sync-session.ts";
+
 import { useServices } from "../app/services-context.ts";
 
 /**
@@ -22,9 +24,7 @@ export function useSyncLifecycle(): void {
     const appState = AppState.addEventListener("change", (next) => {
       if (next === "active") void engine.requestSync();
     });
-    const stopTokens = tokens.subscribe(() => {
-      engine.notifyConditionsChanged();
-    });
+    const stopTokens = observeSyncSession(engine, tokens);
     return () => {
       stopNet();
       appState.remove();

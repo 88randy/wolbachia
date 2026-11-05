@@ -6,6 +6,7 @@ export function createMemoryTokenStore(): TokenStore & {
   let accessToken: string | undefined;
   const listeners = new Set<() => void>();
   return {
+    hasSyncSession: () => accessToken !== undefined,
     getAccessToken: () => accessToken,
     setAccessToken(token) {
       accessToken = token;

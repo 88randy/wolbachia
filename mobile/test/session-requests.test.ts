@@ -33,7 +33,7 @@ void it("shares one refresh across concurrent callers and does not retry until t
   const requests = new SessionRequests({
     credentials: store,
     isOnline: () => true,
-    endSession: () => store.clear(),
+    endSession: () => store.markEnded(store.getSnapshot().sessionId),
     refresh: () => {
       refreshCalls += 1;
       entered.resolve(undefined);
@@ -70,7 +70,7 @@ void it("retries a late old-access 401 with the already rotated pair instead of 
   const requests = new SessionRequests({
     credentials,
     isOnline: () => true,
-    endSession: () => credentials.clear(),
+    endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
     refresh: () => {
       refreshes += 1;
       return Promise.resolve({ access: randomUUID(), refresh: randomUUID() });
@@ -102,7 +102,7 @@ void it("does not refresh offline; refresh expiry and bearer revoke end the sess
   const requests = new SessionRequests({
     credentials,
     isOnline: () => false,
-    endSession: () => credentials.clear(),
+    endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
     refresh: () => {
       refreshes += 1;
       throw new RemoteSessionEnded();
@@ -114,7 +114,7 @@ void it("does not refresh offline; refresh expiry and bearer revoke end the sess
   const online = new SessionRequests({
     credentials,
     isOnline: () => true,
-    endSession: () => credentials.clear(),
+    endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
     refresh: () => Promise.reject(new RemoteSessionEnded()),
   });
   await assert.rejects(
@@ -129,7 +129,7 @@ void it("handles a session-ended error on the retry, but ignores a stale respons
   const requests = new SessionRequests({
     credentials,
     isOnline: () => true,
-    endSession: () => credentials.clear(),
+    endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
     refresh: () => Promise.resolve({ access: randomUUID(), refresh: randomUUID() }),
   });
   let calls = 0;
@@ -138,7 +138,15 @@ void it("handles a session-ended error on the retry, but ignores a stale respons
     error: { code: "session_revoked", detail: "" },
   });
   await requests.run(() => Promise.resolve(++calls === 1 ? expired() : revoked()));
-  assert.equal(credentials.getSnapshot().pair, null);
+  assert.notEqual(credentials.getSnapshot().pair, null);
+  assert.equal(credentials.getSnapshot().status, "ended");
+  await credentials.finishEndedSession(credentials.getSnapshot().sessionId);
+  await credentials.update((current) => ({
+    ...current,
+    status: "active",
+    pair: { access: randomUUID(), refresh: randomUUID() },
+    sessionId: randomUUID(),
+  }));
   const late = deferred<ReturnType<typeof revoked>>();
   const pending = requests.run(() => late.promise);
   const replacement = { access: randomUUID(), refresh: randomUUID() };

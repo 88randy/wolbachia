@@ -20,7 +20,7 @@ void it("an expired access refreshes and retries inside the sync pass, leaving i
   const requests = new SessionRequests({
     credentials,
     isOnline: () => true,
-    endSession: () => credentials.clear(),
+    endSession: () => credentials.markEnded(credentials.getSnapshot().sessionId),
     refresh: () => {
       refreshes += 1;
       return Promise.resolve({ access: randomUUID(), refresh: randomUUID() });

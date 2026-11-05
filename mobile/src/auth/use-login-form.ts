@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 import { useServices } from "../app/services-context.ts";
 import { useAuthAction } from "./use-auth-action.ts";
 
 export function useLoginForm() {
-  const { auth } = useServices();
+  const { auth, tokens } = useServices();
+  const isFinalUploadPending = useSyncExternalStore(tokens.subscribe, tokens.hasSyncSession);
   const fields = useLoginFields(auth.getSnapshot().profile?.username ?? "");
   const panels = useLoginPanels();
   const action = useAuthAction();
@@ -17,7 +18,7 @@ export function useLoginForm() {
       }
     });
   };
-  return { ...fields, ...panels, ...action, submit };
+  return { ...fields, ...panels, ...action, isBusy: action.isBusy || isFinalUploadPending, submit };
 }
 
 function useLoginFields(initialUsername: string) {

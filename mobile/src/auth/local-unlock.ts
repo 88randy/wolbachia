@@ -27,12 +27,17 @@ export class LocalUnlock {
   canUseBiometrics(): boolean {
     const current = this.#deps.credentials.getSnapshot();
     return (
-      current.pair !== null && current.pin !== null && !this.isPasswordRequired() && !this.#isBusy
+      this.#deps.credentials.isSessionActive() &&
+      current.pair !== null &&
+      current.pin !== null &&
+      !this.isPasswordRequired() &&
+      !this.#isBusy
     );
   }
 
   /** Count BEFORE deriving, including an interrupted attempt. A concurrent tap cannot race it. */
   async attempt(secret: string, kind: "pin" | "password"): Promise<boolean> {
+    if (!this.#deps.credentials.isSessionActive()) return false;
     if (this.#isBusy || (kind === "pin" && this.isPasswordRequired())) return false;
     this.#isBusy = true;
     try {
@@ -60,7 +65,12 @@ export class LocalUnlock {
     const isCorrect = await (this.#deps.verify ?? verifySecret)(secret, verifier);
     let isAccepted = false;
     await store.update((current) => {
-      if (current.sessionId !== before.sessionId || current[kind] !== verifier) return current;
+      if (
+        current.status !== "active" ||
+        current.sessionId !== before.sessionId ||
+        current[kind] !== verifier
+      )
+        return current;
       isAccepted = isCorrect;
       if (isCorrect) return { ...current, pinAttempts: 0, passwordAttempts: 0 };
       return current.passwordAttempts >= PASSWORD_ATTEMPT_LIMIT ? EMPTY_CREDENTIALS : current;

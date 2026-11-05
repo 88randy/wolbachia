@@ -81,17 +81,25 @@ export class AuthController {
   };
 
   async load(): Promise<void> {
-    const hasEnded = (await this.#deps.kv.get(ENDED_KEY)) === "true";
-    if (hasEnded) await this.#deps.credentials.clear();
+    const hasEnded = await this.#loadEndedSession();
     const profile = await this.#deps.kv.get(PROFILE_KEY);
     const rules = await this.#deps.kv.get(RULES_KEY);
     const parsed: unknown = rules === null ? null : JSON.parse(rules);
     this.#publish({
       profile: profile === null ? null : (JSON.parse(profile) as Profile),
       rules: readAuthRules(isRulesSnapshot(parsed) ? parsed : null),
-      phase: this.#deps.credentials.getSnapshot().pair === null ? "login" : "locked",
+      phase: this.#deps.credentials.isSessionActive() ? "locked" : "login",
       notice: hasEnded ? { key: "mobile.login.sessionEnded" } : null,
     });
+  }
+
+  async #loadEndedSession(): Promise<boolean> {
+    const marker = await this.#deps.kv.get(ENDED_KEY);
+    const current = this.#deps.credentials.getSnapshot();
+    const hasEnded = current.status === "ended" || readEndedMarker(marker, current.sessionId);
+    if (hasEnded && current.status === "active")
+      await this.#deps.credentials.markEnded(current.sessionId);
+    return hasEnded;
   }
 
   setOnline(isOnline: boolean): void {
@@ -104,18 +112,23 @@ export class AuthController {
   }
 
   async endSession(): Promise<void> {
+    const sessionId = this.#deps.credentials.getSnapshot().sessionId;
     this.#gate += 1;
     // Hide the app immediately, even if Keystore fails. Do not let failed cleanup unlock it.
     this.#publish({ phase: "login", notice: { key: "mobile.login.sessionEnded" } });
     try {
-      await this.#deps.kv.set(ENDED_KEY, "true");
+      await this.#deps.kv.set(ENDED_KEY, JSON.stringify({ sessionId, status: "ended" }));
     } finally {
-      await this.#deps.credentials.clear();
+      await this.#deps.credentials.markEnded(sessionId);
     }
   }
 
+  canLogin(): boolean {
+    return this.#snapshot.phase === "login" && !this.#deps.credentials.hasSyncSession();
+  }
+
   async login(username: string, password: string): Promise<void> {
-    if (this.#isBusy) return;
+    if (this.#isBusy || !this.canLogin()) return;
     this.#isBusy = true;
     const gate = this.#gate;
     try {
@@ -184,6 +197,7 @@ export class AuthController {
       gate !== this.#gate
         ? current
         : {
+            status: "active",
             sessionId: toHex(this.#deps.randomBytes(16)),
             pair: { access: login.access, refresh: login.refresh },
             password: verifier,
@@ -247,6 +261,7 @@ export class AuthController {
   }
 
   async unlock(secret: string, kind: "pin" | "password"): Promise<void> {
+    if (this.#snapshot.phase !== "locked") return;
     const gate = this.#gate;
     const isCorrect = await this.#unlock.attempt(secret, kind);
     if (gate !== this.#gate) return;
@@ -301,4 +316,18 @@ function profileOf(me: Schemas["Me"]): Profile {
     organization: me.organization,
     permissions: me.permissions,
   };
+}
+
+/** The journal closes the crash window between kv and the atomic SecureStore replacement. */
+function readEndedMarker(marker: string | null, sessionId: string | null): boolean {
+  if (marker === "true") return true;
+  if (sessionId !== null && marker === sessionId) return true;
+  if (marker === null || !marker.startsWith("{")) return false;
+  return isEndedJournal(JSON.parse(marker), sessionId);
+}
+
+function isEndedJournal(value: unknown, sessionId: string | null): boolean {
+  if (typeof value !== "object" || value === null) return false;
+  const journal = value as Record<string, unknown>;
+  return journal.sessionId === sessionId && journal.status === "ended";
 }

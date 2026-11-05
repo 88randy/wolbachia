@@ -211,11 +211,20 @@ async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): P
     events: batch.map((event) => event.envelope),
   };
   const call = await deps.transport(request);
-  if (!call.ok) return handleFailure(context, batch, call.failure);
+  if (!call.ok) {
+    const step = await handleFailure(context, batch, call.failure);
+    return call.completeSession === undefined ? step : finishSession(call.completeSession);
+  }
   await applyAnswer(context, batch, call.response);
+  if (call.completeSession !== undefined) return finishSession(call.completeSession);
   const missing = missingResultOutcome(batch, call.response);
   if (missing !== null) return stop(missing);
   return { next: "again", pull: call.response.changes.has_more };
+}
+
+async function finishSession(complete: () => Promise<void>): Promise<Step> {
+  await complete();
+  return stop({ kind: "blocked", reason: "needsLogin", code: "session_revoked" });
 }
 
 /**

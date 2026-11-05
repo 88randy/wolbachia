@@ -80,7 +80,7 @@ function createEngine(
       now: () => new Date(),
       transport: lazyTransport(server, tokens, requests),
     },
-    hasSession: () => tokens.getAccessToken() !== undefined,
+    hasSession: () => tokens.hasSyncSession(),
     hasServer: () => server.baseUrl() !== null,
     random: Math.random,
     schedule: (callback, delayMs) => {
