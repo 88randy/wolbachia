@@ -1,14 +1,21 @@
 from collections.abc import Mapping
 from dataclasses import dataclass
+from uuid import UUID
 
 from django.db import transaction
-from django.db.models import Max
+from django.db.models import F, Max
+from django.utils import timezone
 
 from accounts.models import User
-from catalogs.exceptions import CatalogItemLimitError, OtherItemLockedError, ProtectedOtherItemError
+from catalogs.exceptions import (
+    CatalogItemLimitError,
+    CatalogVersionConflictError,
+    OtherItemLockedError,
+    ProtectedOtherItemError,
+)
 from catalogs.models import MAX_SORT, OTHER_ITEM_CODE, Catalog, CatalogItem
+from catalogs.selectors import with_item_usage
 from core.exceptions import FieldValidationError
-from core.services import lock_record_for_update
 
 # `code`, `is_other` and `is_active` are not editable: the first is the stable identity items
 # are referenced by, the others have their own rules (the "Other" item is fixed).
@@ -19,6 +26,7 @@ SORT_EXHAUSTED = "sort_exhausted"
 # Caps what a phone downloads and what an admin screen lists.
 MAX_ACTIVE_ITEMS_PER_CATALOG = 200
 FIRST_SORT = 1
+REORDER_SORT_STEP = 10
 
 
 @dataclass(frozen=True)
@@ -35,7 +43,7 @@ class CatalogItemSpec:
 
 def _next_sort(catalog: Catalog) -> int:
     """One after the highest `sort` of the regular items ("Other" is always listed last)."""
-    highest = CatalogItem.objects.filter(catalog=catalog, is_other=False).aggregate(
+    highest = CatalogItem.objects.filter(catalog=catalog, is_active=True, is_other=False).aggregate(
         highest=Max("sort")
     )["highest"]
     next_sort = FIRST_SORT if highest is None else highest + 1
@@ -66,7 +74,7 @@ def create_catalog_item(catalog: Catalog, spec: CatalogItemSpec, user: User) -> 
         if CatalogItem.objects.filter(catalog=locked, code=spec.code).exists():
             raise FieldValidationError("code", DUPLICATE_CODE)
         sort = spec.sort if spec.sort is not None else _next_sort(locked)
-        return CatalogItem.objects.create(
+        item = CatalogItem.objects.create(
             organization_id=locked.organization_id,
             catalog=locked,
             code=spec.code,
@@ -77,28 +85,31 @@ def create_catalog_item(catalog: Catalog, spec: CatalogItemSpec, user: User) -> 
             requires_photo=spec.requires_photo,
             created_by=user,
         )
+        _bump_revision(locked)
+        return item
 
 
 def update_catalog_item(item: CatalogItem, changes: Mapping[str, object]) -> CatalogItem:
     """Apply label, icon, order and photo changes (writes CatalogItem); other keys are ignored."""
     fields = [name for name in EDITABLE_ITEM_FIELDS if name in changes]
     with transaction.atomic():
-        locked = lock_record_for_update(item)
+        catalog, locked = _lock_item(item)
         if locked.is_other and fields:
             raise ProtectedOtherItemError
         for name in fields:
             setattr(locked, name, changes[name])
         if fields:
             locked.save(update_fields=[*fields, "updated_at"])
+            _bump_revision(catalog)
     return locked
 
 
-def deactivate_catalog_item(item: CatalogItem) -> CatalogItem:
+def deactivate_catalog_item(item: CatalogItem, user: User) -> CatalogItem:
     """Hide an item from new records (writes CatalogItem). Old records keep showing it.
 
     Raises `OtherItemLockedError` (409) for the fixed "Other (specify)" item.
     """
-    return _set_item_active(item, is_active=False)
+    return _set_item_active(item, is_active=False, user=user)
 
 
 def activate_catalog_item(item: CatalogItem) -> CatalogItem:
@@ -106,16 +117,69 @@ def activate_catalog_item(item: CatalogItem) -> CatalogItem:
     return _set_item_active(item, is_active=True)
 
 
-def _set_item_active(item: CatalogItem, *, is_active: bool) -> CatalogItem:
+def _set_item_active(
+    item: CatalogItem, *, is_active: bool, user: User | None = None
+) -> CatalogItem:
     with transaction.atomic():
-        locked = lock_record_for_update(item)
+        catalog, locked = _lock_item(item)
         if locked.is_other and not is_active:
             raise OtherItemLockedError
         if locked.is_active != is_active:
             if is_active:
-                _ensure_room_for_an_active_item(
-                    Catalog.objects.select_for_update().get(pk=locked.catalog_id)
-                )
+                _ensure_room_for_an_active_item(catalog)
             locked.is_active = is_active
-            locked.save(update_fields=["is_active", "updated_at"])
+            locked.deactivated_at = None if is_active else timezone.now()
+            locked.deactivated_by = None if is_active else user
+            locked.save(
+                update_fields=["is_active", "deactivated_at", "deactivated_by", "updated_at"]
+            )
+            _bump_revision(catalog)
     return locked
+
+
+def _lock_item(item: CatalogItem) -> tuple[Catalog, CatalogItem]:
+    """Global order: Catalog first, then its item; never reuse pre-lock annotations."""
+    catalog_id = CatalogItem.objects.values_list("catalog_id", flat=True).get(pk=item.pk)
+    catalog = Catalog.objects.select_for_update().get(pk=catalog_id)
+    locked = CatalogItem.objects.select_for_update().get(pk=item.pk, catalog=catalog)
+    return catalog, locked
+
+
+def _bump_revision(catalog: Catalog) -> int:
+    """Called only inside a transaction holding this catalog's row lock."""
+    Catalog.objects.filter(pk=catalog.pk).update(revision=F("revision") + 1)
+    catalog.refresh_from_db(fields=["revision"])
+    return catalog.revision
+
+
+def reorder_catalog_items(  # noqa: PLR0913 -- explicit issue #182 service contract
+    catalog: Catalog, version: int, ordered_ids: list[UUID], user: User
+) -> tuple[int, list[CatalogItem]]:
+    """Atomically replace the active regular order; reject stale or mismatching plans.
+
+    Materialize the full response under the lock so its items match the returned revision.
+    Other and inactive items keep their sort. The actor is supplied by the request; reorder
+    preserves item authorship (there is no separate reorder audit model).
+    """
+    with transaction.atomic():
+        locked = Catalog.objects.select_for_update().get(pk=catalog.pk)
+        if locked.revision != version:
+            raise CatalogVersionConflictError
+        active = list(
+            CatalogItem.objects.select_for_update()
+            .filter(catalog=locked, is_active=True, is_other=False)
+            .order_by("id")
+        )
+        by_id = {item.pk: item for item in active}
+        if len(ordered_ids) != len(by_id) or set(ordered_ids) != set(by_id):
+            raise FieldValidationError("ordered_ids", "reorder_ids_mismatch")
+        changed = []
+        for position, item_id in enumerate(ordered_ids, start=1):
+            item = by_id[item_id]
+            sort = position * REORDER_SORT_STEP
+            if item.sort != sort:
+                item.sort = sort
+                changed.append(item)
+        CatalogItem.objects.bulk_update(changed, ["sort"])
+        revision = _bump_revision(locked)
+        return revision, list(with_item_usage(locked.items.all(), locked))

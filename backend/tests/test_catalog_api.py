@@ -50,7 +50,13 @@ def test_list_catalogs_returns_the_organization_catalogs_only(admin, catalog, or
 
     assert response.status_code == 200
     assert [row["slug"] for row in response.data["results"]] == ["removal-reason"]
-    assert set(response.data["results"][0]) == {"slug", "label_es", "label_en", "is_open"}
+    assert set(response.data["results"][0]) == {
+        "slug",
+        "label_es",
+        "label_en",
+        "is_open",
+        "version",
+    }
 
 
 def test_there_is_no_post_on_catalogs(admin) -> None:
@@ -252,6 +258,7 @@ def test_an_item_under_the_wrong_catalog_slug_is_404(admin, catalog, org_a) -> N
         ("patch", "ITEM/", catalog_codes.CATALOG_ITEM_UPDATE),
         ("post", "ITEM/deactivate/", catalog_codes.CATALOG_ITEM_DEACTIVATE),
         ("post", "ITEM/activate/", catalog_codes.CATALOG_ITEM_ACTIVATE),
+        ("post", "reorder/", catalog_codes.CATALOG_ITEM_UPDATE),
     ],
 )
 def test_each_action_needs_its_own_permission_code(
@@ -314,7 +321,7 @@ def test_patch_validates_icon_and_sort(admin, catalog) -> None:
 
 
 def test_create_item_when_the_order_is_exhausted_is_400_sort_exhausted(admin, catalog) -> None:
-    CatalogItemFactory(catalog=catalog, code="last", sort=10_000, is_active=False)
+    CatalogItemFactory(catalog=catalog, code="last", sort=10_000)
 
     response = admin.post(
         items_url("removal-reason"), {"code": "x", "label_es": "X"}, format="json"
@@ -357,3 +364,118 @@ def test_patch_activate_and_deactivate_of_another_organizations_item_are_404(
     foreign.refresh_from_db()
     assert foreign.label_es != "Hacked"
     assert foreign.is_active is True
+
+
+def test_inactive_maximum_does_not_block_automatic_sort(admin, catalog):
+    CatalogItemFactory(catalog=catalog, sort=10_000, is_active=False)
+    response = admin.post(
+        items_url(catalog.slug), {"code": "new", "label_es": "New"}, format="json"
+    )
+    assert (response.status_code, response.data["sort"]) == (201, 1)
+
+
+def test_list_returns_usage_counts_and_authorship_without_per_item_queries(
+    admin, catalog, django_assert_num_queries
+):
+    from catalogs.selectors import with_item_usage
+    from catalogs.serializers import CatalogItemSerializer
+    from shifts.models import MotorcycleCheck
+    from tests.factories import ShiftFactory, UserFactory
+
+    author = UserFactory()
+    used = CatalogItemFactory(catalog=catalog, created_by=author)
+    seed = CatalogItemFactory(catalog=catalog)
+    for _ in range(2):
+        MotorcycleCheck.objects.create(
+            organization=catalog.organization,
+            shift=ShiftFactory(organization=catalog.organization),
+            item=used,
+            result="ok",
+        )
+    # Projection includes usage and usernames in one SQL query, independent of list size.
+    with django_assert_num_queries(1):
+        list(CatalogItemSerializer(with_item_usage(catalog.items.all(), catalog), many=True).data)
+
+    response = admin.get(items_url(catalog.slug))
+    rows = {row["id"]: row for row in response.data["results"]}
+    assert (rows[str(used.pk)]["usage_count"], rows[str(used.pk)]["in_use"]) == (2, True)
+    assert (rows[str(used.pk)]["created_by"], rows[str(used.pk)]["created_by_username"]) == (
+        author.pk,
+        author.username,
+    )
+    assert (rows[str(seed.pk)]["usage_count"], rows[str(seed.pk)]["in_use"]) == (0, False)
+    assert rows[str(seed.pk)]["created_by"] is None
+    assert rows[str(seed.pk)]["created_by_username"] is None
+
+
+def test_deactivation_records_actor_and_time_and_activation_clears_them(
+    admin, catalog, monkeypatch
+):
+    from datetime import UTC, datetime
+
+    item = CatalogItemFactory(catalog=catalog)
+    base = items_url(catalog.slug, f"{item.pk}/")
+    instant = datetime(2026, 1, 15, 12, tzinfo=UTC)
+    monkeypatch.setattr("catalogs.services.timezone.now", lambda: instant)
+    deactivated = admin.post(f"{base}deactivate/")
+    row = admin.get(items_url(catalog.slug)).data["results"][0]
+    actor = deactivated.wsgi_request.user
+    assert deactivated.status_code == 200
+    assert row["deactivated_by"] == actor.pk
+    assert row["deactivated_by_username"] == actor.username
+    assert datetime.fromisoformat(row["deactivated_at"].replace("Z", "+00:00")) == instant
+    activated = admin.post(f"{base}activate/")
+    assert activated.status_code == 200
+    assert all(
+        activated.data[field] is None
+        for field in ["deactivated_at", "deactivated_by", "deactivated_by_username"]
+    )
+
+
+def test_void_usage_sums_historical_sources_and_isolates_organization(admin, catalog, org_b):
+    from django.utils import timezone
+
+    from tests.factories import MotorcycleFactory, UserFactory
+    from tests.testapp.models import Widget
+
+    catalog.slug = "void-reason"
+    catalog.save(update_fields=["slug"])
+    item = CatalogItemFactory(catalog=catalog, code="duplicate-record")
+    CatalogItemFactory(
+        catalog=CatalogFactory(organization=org_b, slug="void-reason"), code=item.code
+    )
+    actor = UserFactory()
+    for organization in [catalog.organization, org_b]:
+        audit = dict(
+            organization=organization,
+            voided_at=timezone.now(),
+            voided_by=actor,
+            void_reason_code=item.code,
+        )
+        Widget.objects.create(name="Historical", **audit)
+        MotorcycleFactory(**audit)
+    response = admin.get(items_url(catalog.slug))
+    assert response.data["results"][0]["usage_count"] == 2
+    assert response.data["results"][0]["in_use"] is True
+
+
+def test_item_reads_carry_the_catalog_revision_and_follow_item_writes(admin, catalog):
+    catalog.revision = 7
+    catalog.save(update_fields=["revision"])
+    first = CatalogItemFactory(catalog=catalog)
+    CatalogItemFactory(catalog=catalog, is_active=False)
+    CatalogItemFactory(catalog=catalog, code="other", is_other=True)
+    url = items_url(catalog.slug)
+
+    before = admin.get(url)
+    assert before.status_code == 200
+    assert {row["catalog_version"] for row in before.data["results"]} == {7}
+    detail = admin.get(f"{url}{first.pk}/")
+    assert detail.data["catalog_version"] == 7
+
+    changed = admin.patch(f"{url}{first.pk}/", {"label_es": "Changed"}, format="json")
+    assert changed.status_code == 200
+    catalog.refresh_from_db()
+    after = admin.get(url)
+    assert catalog.revision == 8
+    assert {row["catalog_version"] for row in after.data["results"]} == {catalog.revision}

@@ -10,9 +10,11 @@ export const catalogs = {
     "Cada lista abierta conserva «Otro (especificar)» al final. Al elegirlo en un formulario se requiere texto libre. Los registros anteriores conservan los elementos desactivados.",
   "catalogs.page.closed":
     "Este catálogo es cerrado y no tiene «Otro (especificar)». Los registros anteriores conservan los elementos desactivados.",
+  "catalogs.table.unknownAuthor": "—",
+  "catalogs.table.usage": "En uso",
   "catalogs.table.item": "Elemento",
   "catalogs.table.code": "Código",
-  "catalogs.table.created": "Creación",
+  "catalogs.table.created": "Desde",
   "catalogs.table.status": "Estado",
   "catalogs.table.actions": "Acciones",
   "catalogs.table.include": "Incluir desactivados",
@@ -58,6 +60,8 @@ export const catalogs = {
   "catalogs.error.limit":
     "El catálogo alcanzó el límite de 200 elementos activos. Desactiva uno antes de continuar.",
   "catalogs.error.other": "«Otro (especificar)» es fijo y no puede desactivarse.",
+  "catalogs.error.versionConflict":
+    "El catálogo cambió. Se recargó la lista; revisa el orden e intenta de nuevo.",
   "catalogs.error.reorder":
     "No se pudo completar el cambio de orden. Se recargó la lista; revísala antes de reintentar.",
 } as const satisfies AreaCatalog<"catalogs">;

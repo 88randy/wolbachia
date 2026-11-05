@@ -11,6 +11,7 @@ from tests.factories import (
     CatalogItemFactory,
     RuleParameterFactory,
     RuleParameterVersionFactory,
+    UserFactory,
 )
 
 pytestmark = pytest.mark.django_db
@@ -98,7 +99,7 @@ def test_snapshot_version_changes_after_item_edit(phone, catalog) -> None:
 def test_deactivated_items_leave_the_snapshot_and_change_its_version(phone, catalog) -> None:
     etag = phone.get(CATALOG_URL)["ETag"]
 
-    deactivate_catalog_item(catalog.items.get(code="blocked"))
+    deactivate_catalog_item(catalog.items.get(code="blocked"), UserFactory())
     response = revalidate(phone, CATALOG_URL, etag)
 
     assert response.status_code == 200
