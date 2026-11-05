@@ -111,7 +111,8 @@ class TokenPair(OrgScopedModel):
     (`parent`): the parent is `consumed_at` (refresh used) and `superseded_at` (its access token
     keeps working only for the grace window). A duplicate refresh inside the window adds a
     sibling child instead; `access_used_at` is the first time an access token was used, which
-    closes the window for further duplicates. Rows are never deleted.
+    closes the window for further duplicates. Ended families are pruned together by the
+    retention service (#54); the DeviceSession audit row is always kept.
     """
 
     session = models.ForeignKey(DeviceSession, on_delete=models.PROTECT, related_name="token_pairs")

@@ -104,7 +104,7 @@ Rules:
 | sesión del dispositivo | device session | `DeviceSession`, `revoke-device-sessions` | One login of a user on a device: an access + refresh token pair, revoked and never deleted. |
 | baja del dispositivo | device revocation | `POST /devices/{id}/revoke/`, `is_revoked` | Lost or retired phone: it cannot log in again. |
 | última carga | final upload | `final_upload_deadline`, `X-Session-Revoked`, `FinalUploadMixin` | The one upload a revoked phone may still make. |
-| — | token pair | `TokenPair`, `accounts/token_pairs.py` | Hashes of one access + refresh pair of a device session. A refresh consumes its pair and issues a child pair. Never deleted (retention: #54). |
+| — | token pair | `TokenPair`, `accounts/token_pairs.py` | Hashes of one access + refresh pair of a device session. A refresh consumes its pair and issues a child pair. Live families are kept in full for reuse detection. Ended families are pruned together by retention (#54); their device session audit row is kept. |
 | — | sibling pair | `is_retired_sibling`, `MAX_SIBLING_PAIRS` | A pair reissued for a lost refresh response inside the grace window. Per parent, only the first sibling used stays valid. |
 | — | session revision | `currentRevision()`, `web/src/session/session-revision.ts` | Web counter that changes only on an accepted login and a confirmed sign-out. Tells whether a response still belongs to the current session, without clocks or booleans. |
 
