@@ -2187,6 +2187,9 @@ components:
         void_reason:
           type: string
           readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
       required:
       - created_at
       - created_by
@@ -2198,6 +2201,7 @@ components:
       - status
       - value
       - void_reason
+      - void_reason_code
       - voided_at
       - voided_by
       - voided_by_username
@@ -2555,13 +2559,18 @@ components:
         * `decimal` - Decimal
     VoidRequest:
       type: object
-      description: Body of `POST .../void/`.
+      description: Shared HTTP and sync body. The target-aware resolver validates
+        the choice and text.
       properties:
+        reason_code:
+          type: string
+          maxLength: 64
         reason:
           type: string
           maxLength: 1000
+          default: ''
       required:
-      - reason
+      - reason_code
     WebLoginResponse:
       type: object
       properties:
