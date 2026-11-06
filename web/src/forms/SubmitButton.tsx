@@ -14,12 +14,18 @@ export function SubmitButton({ label, busyLabel, isBusy }: SubmitButtonProps) {
       <Button
         type="submit"
         loading={isBusy}
+        aria-label={isBusy ? busyLabel : undefined}
         className={styles.submit}
         aria-describedby={isBusy ? statusId : undefined}
       >
         {label}
       </Button>
-      <span id={statusId} role="status" className={styles.srOnly}>
+      <span
+        id={statusId}
+        role={isBusy ? "status" : undefined}
+        aria-live="polite"
+        className={styles.srOnly}
+      >
         {isBusy ? busyLabel : ""}
       </span>
     </>

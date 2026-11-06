@@ -1,5 +1,20 @@
 import type { refresh as source } from "../es-MX/refresh.ts";
 export const refresh: Record<keyof typeof source, string> = {
+  "refresh.buttons.primary": "Primary",
+  "refresh.buttons.secondary": "Secondary",
+  "refresh.buttons.tertiary": "Tertiary",
+  "refresh.buttons.ghost": "Ghost",
+  "refresh.buttons.sizeSm": "sm",
+  "refresh.buttons.sizeMd": "md",
+  "refresh.buttons.sizeLg": "lg",
+  "refresh.buttons.sizeXl": "xl",
+  "refresh.buttons.state": "State",
+  "refresh.buttons.default": "Default",
+  "refresh.buttons.icon": "With icon",
+  "refresh.buttons.disabled": "Disabled",
+  "refresh.buttons.loading": "Loading",
+  "refresh.buttons.disabledHint":
+    "Missing-permission example; an administrator can enable the action.",
   "refresh.sidebar.resize": "Resize navigation",
   "refresh.commands.title": "Go to…",
   "refresh.commands.hint": "Find an area or action. Use arrows and Enter.",

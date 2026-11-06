@@ -1,3 +1,4 @@
+import styles from "./fleet.module.css";
 import type { DataTableColumn } from "../data-table/table-types";
 import { useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
@@ -11,13 +12,15 @@ export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
     {
       id: "code",
       headerKey: "fleet.column.code",
-      cell: (item) => item.code,
+      cell: (item) => <span className={styles.code}>{item.code}</span>,
       link: (item) => ({ to: "/fleet/motorcycles/$code", params: { code: item.code }, search }),
     },
     {
       id: "plate",
       headerKey: "fleet.column.plate",
-      cell: (item) => item.plate || t("fleet.summary.unknown"),
+      cell: (item) => (
+        <span className={styles.code}>{item.plate || t("fleet.summary.unknown")}</span>
+      ),
     },
     {
       id: "status",

@@ -77,7 +77,7 @@ export async function expireWhileWorking(page: Page, api: MockApi): Promise<void
   await page.goto("/");
   await page.clock.resume();
   await expect(page.getByRole("main")).toBeVisible();
-  await page.locator("#global-search").fill("borrador sin guardar");
+  await page.locator("#global-search").focus();
   api.expireSession();
   await page.clock.fastForward(SESSION_MS);
   await page.evaluate(() => {

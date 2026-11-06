@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
+import { Card } from "../ui/Card";
 import type { FleetTab } from "./use-fleet-tabs";
 import styles from "./fleet.module.css";
 const GAPS: Record<Exclude<FleetTab, "summary">, MessageKey> = {
@@ -11,10 +12,9 @@ const GAPS: Record<Exclude<FleetTab, "summary">, MessageKey> = {
 export function FleetGap({ tab }: { tab: Exclude<FleetTab, "summary"> }) {
   const { t } = useTranslation();
   return (
-    <section className={styles.card} aria-label={t("fleet.gap.title")}>
-      <h2>{t("fleet.gap.title")}</h2>
+    <Card title={t("fleet.gap.title")}>
       <p className={styles.hint}>{t(GAPS[tab])}</p>
       {tab === "fuel" && <p>{t("fleet.gap.insufficient")}</p>}
-    </section>
+    </Card>
   );
 }

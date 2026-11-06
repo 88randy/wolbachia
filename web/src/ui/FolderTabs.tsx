@@ -12,6 +12,7 @@ interface FolderTabsProps {
 export function FolderTabs({ label, items, defaultValue, value, onValueChange }: FolderTabsProps) {
   return (
     <Tabs.Root
+      className={styles.tabsRoot}
       defaultValue={defaultValue ?? items[0]?.value}
       value={value}
       onValueChange={onValueChange}

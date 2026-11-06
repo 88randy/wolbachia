@@ -12,6 +12,8 @@
 /* A wide table scrolls inside its card, never the whole page (reflow, WCAG 1.4.10). */
 .scroll {
   overflow: auto;
+  min-width: 0;
+  max-width: 100%;
   max-height: 60vh;
 }
 
@@ -300,7 +302,7 @@
 .rowActions {
   display: flex;
   gap: var(--space-0-5);
-  opacity: 0;
+  opacity: 1;
 }
 .table tr:hover .rowActions,
 .table tr:focus-within .rowActions {
@@ -368,4 +370,16 @@
 .selected > .cell,
 .selected:hover > .cell {
   background: var(--color-tint);
+}
+
+.wrap {
+  max-width: 100%;
+}
+.cell {
+  position: relative;
+}
+.wrap[data-embedded="true"] {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }

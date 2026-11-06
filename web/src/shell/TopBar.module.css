@@ -90,18 +90,40 @@
   width: var(--web-icon-md);
   height: var(--web-icon-md);
 }
-.themeSelect {
-  min-width: var(--web-control-md);
+.themeSwitch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-0-5);
+  min-width: calc(var(--web-control-sm) * 2 + var(--space-0-5));
   min-height: var(--web-control-md);
-  max-width: 100%;
   padding: var(--space-0-5);
-  border: 1px solid var(--color-border-strong);
+  border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-full);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font: inherit;
-  font-size: var(--web-type-label-small-font-size);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
+}
+.sunSymbol,
+.moonSymbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--web-icon-lg);
+  height: var(--web-icon-lg);
+  border-radius: var(--radius-full);
+}
+.sunSymbol svg,
+.moonSymbol svg {
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+}
+.themeSwitch[aria-checked="false"] .sunSymbol,
+.themeSwitch[aria-checked="true"] .moonSymbol {
+  background: var(--color-surface-raised);
+  color: var(--color-action-strong);
+  box-shadow: var(--shadow-level-1);
 }
 .avatar {
   display: inline-flex;

@@ -12,3 +12,7 @@
     gap: var(--space-3);
   }
 }
+
+.page {
+  max-width: 100%;
+}

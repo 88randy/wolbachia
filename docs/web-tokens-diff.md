@@ -51,8 +51,7 @@ Typography: Inter with tabular figures in both.
 ## Visual refresh #202
 
 Issue #202 and the owner-approved preview are the visual source of truth (decision
-115). **Preview approval is pending**: this delivery implements step 1 only;
-screen rollout and visual/e2e updates remain step 2. Sections 1–5 above record the
+118). **The owner approved Step 1**; Step 2 now applies the shared look to existing screens, with the owner-requested single top-bar theme switch. Visual/e2e execution remains a CI/review check. Sections 1–5 above record the
 historical comparison. `design/mobile/source/codequim.css` and
 `design/web/source/web.css` stay unchanged as history. The design-CSS test retains
 complete variable-name-to-token coverage, not equality with historical values.
@@ -127,7 +126,7 @@ WCAG relative-luminance ratios (unrounded values are asserted in
 - KPI type is 28/34; mono labels and captions are 12 px with `0.06em` header
   spacing. No minimum type size changed. Base spacing remains the 8 px grid.
 - D3: Radix unstyled primitives and cmdk share accessible overlay behavior.
-  Existing native-dialog screen logic is outside this step.
+  Existing native-dialog screen logic stays intact; Step 2 uses the shared dialog appearance.
 - D4: in-house pixel splitter: default 248, min 200, max 360, collapsed 64, keyboard
   step 16 px. Compact breakpoint remains 768; wide rail breakpoint is 1280.
 - D5: one token-driven 6 px scrollbar, standard thin scrollbar plus Safari
@@ -136,4 +135,35 @@ WCAG relative-luminance ratios (unrounded values are asserted in
   animate opacity/transform only and disable animation for reduced motion.
 - D6: no native alert/confirm/prompt; ESLint `no-alert` is an error for web.
 - D7: dev-only `/harness/style-preview.html`, with `?theme=dark` and `?lang=en`;
-  no production route. Owner approval is required before step 2.
+  no production route. The owner approved Step 1 and authorized Step 2.
+
+### Approved rollout audit (Step 2)
+
+The owner approved the Step 1 preview and authorized the existing-screen rollout.
+Decision **118** applies; no API, permission, query, mutation or draft contract changes.
+
+| Area | Shared presentation applied / retained |
+|---|---|
+| Shell | One top-bar sun/moon switch; System follows live OS appearance until the first explicit choice. Sidebar keeps its user menu and collapse control. |
+| Login, forgot/reset password, organization selection | AuthLayout uses Card; brand panel, canvas and form surfaces use both theme palettes. Existing field validation and submission flow remain. |
+| Phones | Existing FilterBar/DataTable supply loading, error, empty and table surfaces; PhoneStatusBadge uses StatusPill. |
+| Rule parameters | Initial CardSkeleton; summary, new-version form and history Cards; history DataTable embedded in its Card; StatusPill/Button; failed refresh keeps existing data and draft with an inline Retry notice. |
+| Catalogs | Shaped initial skeleton; scoped EmptyState/ErrorState and refresh notice; StatusPill/Button. Empty index offers Retry because no create-catalog API exists. Permission-gated item creation stays intact. |
+| Fleet | Shared Card/EmptyState/ErrorState and initial skeleton; StatusPill/Button; record summaries retain void reason/author and all permission guards. |
+| States and void | Shared Cards and actionable error/empty states; native dialog styling retained. Void confirmation initially focuses Cancel; invalid selection still receives focus after submit. |
+| Preview | Unbroken pills/relative times; visible named row actions; a one-row title/actions/period header; labeled size/state button matrices; two-column compact and one-column narrow KPI layout. Wide content scrolls in named, keyboard-scrollable regions. |
+
+Definition-of-done exceptions: existing native dialogs and existing form/draft
+logic are retained as explicitly requested; existing reversible deactivation
+confirmation is not redesigned into an Undo flow in this visual-only rollout.
+Configuration errors describe repairing build configuration rather than offering
+a Retry that cannot fix it. The owner-requested top-bar theme switch supersedes
+the skill's footer placement. No new optimistic mutations or screen features
+are introduced. Contrast, keyboard/state regressions and tokens-only styling
+are automated checks; rendered light/dark screenshots, 320/390/768/1280/1440 px
+geometry, 200% zoom and +30% text remain visual review checks, not assertions
+that a jsdom test can establish. Playwright is reserved for CI in this task.
+
+Integration compatibility: the geography block-column helper now accepts i18next's concrete TFunction type instead of expanding ReturnType of the generic useTranslation overload. This avoids excessive type instantiation with the merged locale catalog; its rendered columns, handlers and permissions are unchanged.
+
+Session e2e adaptation: the shell search is now a read-only command-palette trigger. The expiry fixture focuses it instead of filling a dummy draft, and checks the route, focus return and palette availability after reauthentication. It no longer claims to prove form-draft persistence through session expiry. Existing form/draft and organization-cache logic is retained; restoring a real record-form draft after that cache is cleared is outside this visual rollout and has not been verified here.

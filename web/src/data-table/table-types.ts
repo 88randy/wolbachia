@@ -139,6 +139,7 @@ export interface DataTableColumn<Row> {
 
 /** Optional presentation only: these never sort/filter server-owned rows. */
 export interface TablePresentation<Row> {
+  embedded?: boolean;
   groupOf?: (row: Row) => { id: string; label: string };
   renderDetail?: (row: Row) => ReactNode;
   rowActions?: (row: Row) => ReactNode;

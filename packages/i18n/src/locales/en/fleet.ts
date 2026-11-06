@@ -8,6 +8,7 @@ export const fleet = {
   "fleet.column.plate": "Plate",
   "fleet.column.status": "Status",
   "fleet.status.available": "Available",
+  "fleet.status.blockedShort": "Blocked",
   "fleet.status.blocked": "Out of service / Blocked",
   "fleet.status.voided": "Voided",
   "fleet.reason.severeCheck": "Severe check failure",

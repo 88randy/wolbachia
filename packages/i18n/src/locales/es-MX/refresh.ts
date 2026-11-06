@@ -1,5 +1,20 @@
 import type { AreaCatalog } from "../area.ts";
 export const refresh = {
+  "refresh.buttons.primary": "Primario",
+  "refresh.buttons.secondary": "Secundario",
+  "refresh.buttons.tertiary": "Terciario",
+  "refresh.buttons.ghost": "Discreto",
+  "refresh.buttons.sizeSm": "sm",
+  "refresh.buttons.sizeMd": "md",
+  "refresh.buttons.sizeLg": "lg",
+  "refresh.buttons.sizeXl": "xl",
+  "refresh.buttons.state": "Estado",
+  "refresh.buttons.default": "Predeterminado",
+  "refresh.buttons.icon": "Con ícono",
+  "refresh.buttons.disabled": "No disponible",
+  "refresh.buttons.loading": "En curso",
+  "refresh.buttons.disabledHint":
+    "Ejemplo de permiso insuficiente; Administración puede habilitar la acción.",
   "refresh.sidebar.resize": "Cambiar ancho del menú",
   "refresh.commands.title": "Ir a…",
   "refresh.commands.hint": "Busca un área o una acción. Usa las flechas y Enter.",

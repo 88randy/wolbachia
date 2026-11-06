@@ -2,7 +2,7 @@
 
 Codequim design tokens shared by `mobile/` and `web/`. A token value changes **only here**; apps never hard-code a color, radius, spacing or font size.
 
-Visual source of truth: issue #202 + the owner-approved style preview (approval pending). `design/mobile/source/codequim.css` and `design/web/source/web.css` preserve history. `docs/web-tokens-diff.md` records values, contrast ratios and decisions.
+Visual source of truth: issue #202 + the owner-approved style preview. `design/mobile/source/codequim.css` and `design/web/source/web.css` preserve history. `docs/web-tokens-diff.md` records values, contrast ratios and decisions.
 
 ## Structure
 

@@ -4,7 +4,7 @@ import { applyTheme, getInitialTheme, isThemePreference } from "./theme";
 import type { ThemePreference } from "./theme";
 import { ThemePreferenceContext } from "./preference-context";
 const THEME_EVENT = "wolbachia:theme-preference";
-/** Keep footer and top selector synchronized; System remains a distinct preference. */
+/** Keep explicit preferences synchronized; System remains the untouched initial default. */
 export function useTheme() {
   const initialPreference = useContext(ThemePreferenceContext);
   const [preference, setState] = useState(() => initialPreference ?? getInitialTheme());

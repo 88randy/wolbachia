@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { SubmitButton } from "../forms/SubmitButton";
-import buttons from "../styles/button.module.css";
+import { Button } from "../ui/Button";
 import styles from "./fleet.module.css";
 export function MotorcycleCreateActions({
   isBusy,
@@ -12,16 +12,15 @@ export function MotorcycleCreateActions({
   const { t } = useTranslation();
   return (
     <div className={styles.actions}>
-      <button
-        type="button"
-        className={buttons.button}
+      <Button
+        variant="secondary"
         aria-disabled={isBusy}
         onClick={() => {
           if (!isBusy) onClose();
         }}
       >
         {t("common.actions.cancel")}
-      </button>
+      </Button>
       <SubmitButton
         label={t("common.actions.save")}
         busyLabel={t("fleet.create.busy")}

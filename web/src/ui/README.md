@@ -1,14 +1,17 @@
 # Shared UI primitives
 
-Issue #202, step 1. Components use semantic token variables, translated caller
+Issue #202, shared kit and approved screen rollout. Components use semantic token variables, translated caller
 content, and Radix unstyled primitives. No business or network behavior belongs
 here. Import the component from its own file.
 
 - `Button`: `variant` (`primary`, `secondary`, `tertiary`, `ghost`), `size`
   (`sm`, `md`, `lg`, `xl`), optional `leadingIcon` and `loading`. Keep a translated
-  accessible name on icon-only controls. Explain disabled actions beside the
+  accessible name on icon-only controls. Explicit `aria-disabled` actions stay
+  focusable and reject activation; `loading` also prevents duplicate submission. Explain disabled actions beside the
   control or with `Tooltip`; a reason must name who can unblock it.
-- `Card`: `title`, optional `actions` and `period` slots, `children`, `muted`.
+- `Card`: `title`, optional `actions` and `period` slots, `children`, `muted`,
+  `className`, `titleId`, and `headingLevel` (1/2/3, default 2). The header keeps
+  the title, actions and trailing period selector on one row.
   `CardMenu` accepts translated `items: { label, onSelect, disabled? }[]`.
 - `FolderTabs`: `label`, `items: { value, label, content }[]`, optional controlled
   `value`/`onValueChange`, or `defaultValue`. Screens own URL state.
@@ -35,7 +38,8 @@ here. Import the component from its own file.
   `CardSkeleton` provide content-shaped loading regions. A loaded view keeps its
   content and adds `Refreshing` while fetching again.
 - `EmptyState` distinguishes `kind="noData"` and `kind="noResults"`; pass
-  `onAction` and optionally `actionLabel`/`message`. The second default action
+  `onAction` and optionally `actionLabel`/`message`, or an `action` slot for a
+  real navigation link. Omit an action when there is no authorized next step. The second default action
   clears filters. `ErrorState` takes `onRetry`, optional translated `message`,
   and optional technical `code`/`requestId` in expandable details. Scope it to the
   widget that failed.
@@ -45,3 +49,5 @@ labels. `ValidatedTextField` takes `validate(value) => translatedError | undefin
 while its caller retains the draft. It validates on blur, then on change after
 its first error. Existing `TextField` remains presentational and compatible with
 React Hook Form. Submission progress uses the shared `Button`.
+
+Compact card period selectors may use Select hideLabel; their accessible label remains present. DataTable embedded removes its outer frame when a parent Card already supplies the surface; it does not change table behavior.

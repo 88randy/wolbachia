@@ -82,9 +82,9 @@ async function waitForClose() {
 }
 
 describe("VoidDialog", () => {
-  test("opens on an empty select with active items in API order, Other last", async () => {
+  test("opens on Cancel with an empty select, active items in API order and Other last", async () => {
     const { select, user } = await openChoiceDialog(submitStub());
-    expect(document.activeElement).toBe(select);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancelar" }));
     expect(select.value).toBe("");
     expect(screen.getAllByRole("option").map((option) => option.textContent)).toEqual([
       "Selecciona un motivo",
@@ -190,6 +190,7 @@ describe("VoidDialog: catalog choices", () => {
     const { user, select } = await openChoiceDialog(submit);
     await pressVoid(user);
     expect(select.getAttribute("aria-invalid")).toBe("true");
+    expect(document.activeElement).toBe(select);
     expect(descriptionOf(select)).toMatch(/Elige un motivo/);
     expect(submit).not.toHaveBeenCalled();
     await user.selectOptions(select, "other");
@@ -233,7 +234,7 @@ describe("VoidDialog: catalog choices", () => {
     );
     await screen.findByRole("option", { name: "Otro (especificar)" });
     expect(select.disabled).toBe(false);
-    expect(document.activeElement).toBe(select);
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Cancelar" }));
   });
 
   test("uses English labels and falls back to Spanish for a blank English label", async () => {

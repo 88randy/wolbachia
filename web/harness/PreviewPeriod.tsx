@@ -17,6 +17,7 @@ export function PreviewPeriod({ weeks = false, onChange }: PreviewPeriodProps) {
     <div className={styles.period}>
       <Select
         id={id}
+        hideLabel
         label={t("refresh.preview.period")}
         value={period}
         options={options}

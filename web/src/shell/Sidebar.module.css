@@ -232,37 +232,3 @@
     transition: none;
   }
 }
-.themeSegment {
-  display: inline-flex;
-  flex: none;
-  gap: var(--space-0-5);
-  padding: var(--space-0-5);
-  border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius-full);
-  background: var(--color-surface-muted);
-}
-.themeSegment button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: var(--web-control-sm);
-  min-height: var(--web-control-sm);
-  padding: var(--space-0-5);
-  border: 0;
-  border-radius: var(--radius-full);
-  background: transparent;
-  color: var(--color-text-secondary);
-  cursor: pointer;
-}
-.themeSegment button[aria-pressed="true"] {
-  background: var(--color-surface-raised);
-  color: var(--color-action-strong);
-  box-shadow: var(--shadow-level-1);
-}
-.themeSegment svg {
-  width: var(--web-icon-sm);
-  height: var(--web-icon-sm);
-}
-.collapsed .themeSegment {
-  flex-direction: column;
-}

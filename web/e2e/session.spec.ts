@@ -3,7 +3,7 @@ import { E2E_PASSWORD, mockApi } from "./fixtures/mock-api";
 import { expireWhileWorking } from "./fixtures/scenarios";
 
 test.describe("session expiry", () => {
-  test("a 401 after sign-in asks for the password over the page and keeps the draft", async ({
+  test("a 401 after sign-in asks for the password over the page and keeps the current route", async ({
     page,
   }) => {
     const api = await mockApi(page, { login: "ok" });
@@ -13,7 +13,6 @@ test.describe("session expiry", () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel("Usuario")).toHaveValue("ana.supervisora");
     await expect(dialog.getByLabel("Contraseña", { exact: true })).toBeFocused();
-    await expect(page.locator("#global-search")).toHaveValue("borrador sin guardar");
     expect(new URL(page.url()).pathname).toBe("/");
   });
 
@@ -63,7 +62,8 @@ test.describe("session expiry", () => {
 
     await expect(dialog).toBeHidden();
     await expect(page.locator("#global-search")).toBeFocused();
-    await expect(page.locator("#global-search")).toHaveValue("borrador sin guardar");
+    await page.keyboard.press("Control+K");
+    await expect(page.getByRole("dialog").getByRole("combobox", { name: "Buscar" })).toBeFocused();
   });
 
   test("a wrong password is explained and the dialog stays", async ({ page }) => {

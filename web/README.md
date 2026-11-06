@@ -102,7 +102,7 @@ The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only f
 | `i18n/` | i18next fed by `@wolbachia/i18n` (typed keys, `{param}`), `useLanguage` |
 | `theme/` | Light/Dark/System preference, System by default; resolved light/dark `data-theme` on `<html>` before the first render; System follows live `prefers-color-scheme` changes |
 | `router/` | code-based TanStack Router routes: public routes, the guarded layout and one placeholder per area (`areas.ts`, each with its `requiredPermissions`); `guards.ts`, `safe-redirect.ts` |
-| `shell/` | skip link, sidebar (232 px, 64 px collapsed), top bar, offline banner |
+| `shell/` | skip link, sidebar (248 px by default, resizable, 64 px collapsed), top bar, offline banner |
 | `states/` | placeholder, not found, route error, loading skeleton, configuration error |
 | `styles/` | global CSS, shared CSS modules, `no-style-literals.test.ts` |
 | `storage/` | `localStorage` wrapper that never throws (preferences are conveniences) |
@@ -117,8 +117,8 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 ### What the shell does today
 
 - Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists only the areas the user may open (see "Session, guards and permissions"); a group with no visible area loses its heading.
-- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), a native Light/Dark/System selector beside it, and the user menu. The center selector is **[PENDING]**: `scope.centers` are plain strings and there is no centers endpoint.
-- The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. An explicit Light/Dark choice removes the system listener. The selector uses the shared focus ring and 32 px control token; narrow top bars put search on its own row so all controls remain reachable.
+- Top bar slots: search (Ctrl+K / Cmd+K opens the command palette; hint in the field), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), one sun/moon dark-theme switch on the right; the user menu stays in the sidebar footer. The center selector is **[PENDING]**: `scope.centers` are plain strings and there is no centers endpoint.
+- The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. Until the first toggle, the switch announces the resolved System appearance and follows live system changes. Space, Enter or a click selects the opposite resolved theme and stores an explicit Light/Dark preference, removing the system listener. The switch uses the shared focus ring and a target larger than 24 px; narrow top bars put search on its own row so all controls remain reachable.
 - Below 768 px (`web.layout.compactBreakpoint`) the sidebar stays collapsed, so the page reflows at 320 CSS px without two-axis scroll (WCAG 1.4.10; e2e checks it). Each page sets its own `document.title` ("<page> · Wolbachia", WCAG 2.4.2).
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
@@ -278,16 +278,16 @@ remain follow-up #182. Other free-text validation belongs to consumer screens an
 
 ## Visual refresh #202: shared components and approval preview
 
-Source of truth: issue #202 plus the owner's approved preview (approval pending).
-Historical design CSS is retained. Step 1 changes shared tokens and components,
-without rolling out new screen layouts.
+Source of truth: issue #202 plus the owner's approved Step 1 preview (decision 118).
+Historical design CSS is retained. Step 1 provides the approved tokens and
+shared components. Step 2 applies them to existing screens without changing behavior.
 
 Run npm run dev -w @wolbachia/web, then open /harness/style-preview.html.
 Use ?theme=dark, ?lang=en, or both. This separate dev-only Vite entry uses the
 real shell, in-memory history and a fake API with domain demo records. It is
 neither a production route nor a production build entry. Preview query themes
-do not overwrite the saved theme preference. Review both themes at 1440x900,
-390px and 320px before step 2.
+do not overwrite the saved theme preference. The owner approved Step 1 with one
+theme control in the top bar; regression review targets 1440/1280/768/390/320 px.
 
 Shared components:
 - src/ui/: buttons, cards/menus, folder tabs, status pills, notices/banner,
@@ -297,17 +297,20 @@ Shared components:
   in the organization time zone, SVG trend/mini-bar charts and equivalent tables.
 - src/forms/: labeled text/select/search and blur-first validation.
 - src/shell/: permission-filtered command palette (Ctrl/Cmd+K), help (?),
-  canvas sidebar with segmented theme controls, user menu and persistent width.
+  canvas sidebar with user menu and persistent width; the single sun/moon switch
+  lives in the top bar.
 - DataTable retains its previous API. Optional groupOf, renderDetail, rowActions,
-  density and onDensityChange add grouped headings, accessible expansion,
+  density, onDensityChange and embedded add grouped headings, accessible expansion,
   focus-visible row actions and controlled comfortable/compact density.
+  The embedded option omits the outer table frame when a parent Card supplies it.
   These options never sort, filter or aggregate server-owned records.
 
 The sidebar separator supports ArrowLeft/ArrowRight (16px), Home/End (200/360px),
 Enter (collapse) and double-click (reset 248px). Compact mode changes appearance
 without overwriting desktop preferences. Width storage is validated and clamped.
-System remains reachable in the top theme selector. Global scrollbars and existing
-native-dialog surfaces use the same tokens; native dialog logic is unchanged.
+System remains the stored default until the first explicit toggle. The top-bar
+switch follows the live resolved appearance; there is no separate System picker.
+Global scrollbars and existing native-dialog surfaces use the same tokens; native dialog logic is unchanged.
 
 Primitives: [Radix Dialog](https://www.radix-ui.com/primitives/docs/components/dialog),
 [Tabs](https://www.radix-ui.com/primitives/docs/components/tabs) and
@@ -318,7 +321,7 @@ The preview demonstrates skeleton, empty/no-results, scoped error with details,
 partial, refreshing and Undo states. Native alert/confirm/prompt is forbidden.
 
 Focused verification (one worker; no Playwright on this host):
-npx vitest run --maxWorkers=1 src/shell src/data-table src/styles src/ui src/forms src/analytics src/theme.
+npx vitest run --maxWorkers=1 --pool=threads src/shell src/data-table src/styles src/ui src/forms src/analytics src/theme.
 If host memory cannot sustain multiple forks, run the same test files individually.
 
 On this low-memory Windows host, npm/fork startup can fail before tests start.

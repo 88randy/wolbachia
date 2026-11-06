@@ -2,16 +2,16 @@
 .dialog {
   width: min(26rem, calc(100vw - var(--space-3)));
   padding: var(--space-3);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
   background: var(--color-surface);
   color: var(--color-text-primary);
-  box-shadow: var(--shadow-level-1);
+  box-shadow: var(--shadow-overlay);
 }
 
 .dialog::backdrop {
-  background: var(--color-navy);
-  opacity: 0.6;
+  background: var(--web-overlay-backdrop);
+  opacity: 1;
 }
 
 .title {
@@ -89,12 +89,12 @@
 
 /* Critical foreground as the fill and `on-action` as the text: both flip with the theme, so the
    contrast holds in light (white on red) and in dark (navy on light red). */
-.danger {
+.actions .danger {
   background: var(--color-status-critical-fg);
   color: var(--color-on-action);
 }
 
-.danger[aria-disabled="true"] {
+.actions .danger[aria-disabled="true"] {
   cursor: progress;
 }
 

@@ -60,16 +60,12 @@ a.kpiValue:hover {
   height: var(--web-icon-sm);
 }
 .srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  border: 0;
-  clip-path: inset(50%);
-  white-space: nowrap;
+  composes: srOnly from "../styles/utilities.module.css";
 }
 .relativeTime {
+  white-space: nowrap;
+  flex-shrink: 0;
+  width: max-content;
   font-family: var(--font-family-mono);
   color: var(--color-text-secondary);
   font-size: var(--web-type-caption-font-size);
@@ -320,4 +316,57 @@ a.kpiValue:hover {
   to {
     opacity: 1;
   }
+}
+
+/* 768/390px match the compact and narrow viewport contracts of #202. */
+@media (max-width: 48rem) {
+  .kpiStrip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .kpiCell + .kpiCell {
+    border-inline-start: 0;
+  }
+  .kpiCell:nth-child(even) {
+    border-inline-start: 1px solid var(--color-border-soft);
+  }
+  .kpiCell:nth-child(n + 3) {
+    border-block-start: 1px solid var(--color-border-soft);
+  }
+}
+@media (max-width: 24.375rem) {
+  .kpiStrip {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .kpiCell:nth-child(even) {
+    border-inline-start: 0;
+  }
+  .kpiCell + .kpiCell {
+    border-block-start: 1px solid var(--color-border-soft);
+  }
+}
+
+.kpiStrip,
+.chart,
+.miniChart,
+.chartExplorer,
+.dataScroll {
+  max-width: 100%;
+}
+.kpiCell {
+  position: relative;
+}
+.legend li {
+  min-width: 0;
+  max-width: 100%;
+}
+.legend li > span:last-child {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.dataScroll {
+  min-width: 0;
+}
+.trendSvg,
+.miniSvg {
+  max-width: 100%;
 }

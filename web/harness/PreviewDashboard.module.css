@@ -112,3 +112,22 @@
     grid-template-columns: minmax(0, 1fr) var(--web-layout-right-rail-width);
   }
 }
+
+.dashboard,
+.columns,
+.main,
+.rail {
+  max-width: 100%;
+}
+.period {
+  flex: none;
+  min-width: 0;
+}
+.period select {
+  max-width: 100%;
+}
+.heading > div,
+.demo {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}

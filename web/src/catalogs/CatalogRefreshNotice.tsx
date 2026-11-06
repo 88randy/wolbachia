@@ -1,27 +1,31 @@
 import { useTranslation } from "react-i18next";
-import styles from "./catalogs.module.css";
-
+import { InlineNotice } from "../ui/InlineNotice";
+import { Button } from "../ui/Button";
 interface Props {
   error: Error | null;
   onRetry: () => Promise<unknown>;
 }
-
-/** Cached catalogs keep the editor mounted while a failed refresh can be retried. */
+/** A failed refresh never unmounts the editor or its retained dialog draft. */
 export function CatalogRefreshNotice({ error, onRetry }: Props) {
   const { t } = useTranslation();
   if (error === null) return null;
   return (
-    <div role="status" className={styles.note}>
-      <p>{t("catalogs.page.refreshFailed")}</p>
-      <button
-        type="button"
-        className={styles.action}
-        onClick={() => {
-          void onRetry();
-        }}
+    <div role="status">
+      <InlineNotice
+        tone="warning"
+        action={
+          <Button
+            variant="secondary"
+            onClick={() => {
+              void onRetry();
+            }}
+          >
+            {t("common.actions.retry")}
+          </Button>
+        }
       >
-        {t("common.actions.retry")}
-      </button>
+        {t("catalogs.page.refreshFailed")}
+      </InlineNotice>
     </div>
   );
 }

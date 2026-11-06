@@ -109,14 +109,12 @@ describe("keyboard", () => {
     within(nav).getAllByRole("link").at(-1)?.focus();
     const targets = [
       screen.getByRole("button", { name: "Colapsar menú" }),
-      screen.getByRole("button", { name: "Claro" }),
-      screen.getByRole("button", { name: "Oscuro" }),
       screen.getByRole("button", { name: /Menú de usuario/ }),
       screen.getByRole("separator"),
       screen.getByRole("searchbox", { name: "Buscar" }),
       screen.getByRole("button", { name: "Notificaciones" }),
       screen.getByRole("button", { name: "ES: cambiar idioma a inglés" }),
-      screen.getByRole("combobox", { name: "Tema" }),
+      screen.getByRole("switch", { name: "Tema oscuro" }),
     ];
     for (const target of targets) {
       await userEvent.tab();

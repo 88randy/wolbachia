@@ -7,15 +7,17 @@ interface SelectProps extends Omit<ComponentPropsWithoutRef<"select">, "id" | "c
   options: readonly { value: string; label: string }[];
   error?: string;
   hint?: string;
+  hideLabel?: boolean;
 }
-export function Select({ id, label, options, error, hint, ...props }: SelectProps) {
+export function Select(props: SelectProps) {
+  const { id, label, options, error, hint, hideLabel = false, ...attributes } = props;
   return (
     <div className={styles.field}>
-      <label className={styles.label} htmlFor={id}>
+      <label className={hideLabel ? styles.srOnly : styles.label} htmlFor={id}>
         {label}
       </label>
       <select
-        {...props}
+        {...attributes}
         id={id}
         className={styles.control}
         aria-invalid={error !== undefined || undefined}

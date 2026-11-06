@@ -34,6 +34,7 @@ export function DataTable<Row extends RowData>(props: DataTableProps<Row>) {
     <div
       className={styles.wrap}
       aria-busy={data.isFetching}
+      data-embedded={presentation.embedded || undefined}
       data-density={presentation.density ?? "comfortable"}
     >
       <TableToolbar

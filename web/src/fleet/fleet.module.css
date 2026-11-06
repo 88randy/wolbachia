@@ -11,6 +11,7 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-1);
+  min-width: 0;
 }
 .heading {
   justify-content: space-between;
@@ -20,62 +21,35 @@
   color: var(--color-text-secondary);
   overflow-wrap: anywhere;
 }
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  padding: var(--space-2);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.badge {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--space-0-5);
-  padding: var(--space-0-5) var(--space-1);
-  border-radius: var(--radius-full);
-  font-size: var(--web-type-label-small-font-size);
-  font-weight: 700;
-}
-.icon {
-  width: var(--web-icon-sm);
-  height: var(--web-icon-sm);
-  flex-shrink: 0;
-}
-.available {
-  composes: badge;
-  color: var(--color-status-success-fg);
-  background: var(--color-status-success-bg);
-}
-.blocked {
-  composes: badge;
-  color: var(--color-status-critical-fg);
-  background: var(--color-status-critical-bg);
-}
-.voided {
-  composes: badge;
-  color: var(--color-status-neutral-fg);
-  background: var(--color-status-neutral-bg);
+.code,
+.timestamp {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: var(--font-variant-numeric);
 }
 .code {
   overflow-wrap: anywhere;
 }
+.timestamp {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
 .tabs {
-  border-bottom: 1px solid var(--color-border-default);
+  align-items: end;
 }
 .tab {
   display: inline-flex;
   align-items: center;
   min-height: var(--web-control-lg);
-  padding: var(--space-1);
-  color: var(--color-action-strong);
+  max-width: 100%;
+  padding: var(--space-1-5);
+  border-radius: var(--radius-inner) var(--radius-inner) 0 0;
+  color: var(--color-text-secondary);
+  text-decoration: none;
   overflow-wrap: anywhere;
 }
 .tab[aria-current="page"] {
-  border-bottom: 2px solid var(--color-action);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
   font-weight: 700;
 }
 .summary {
@@ -85,7 +59,8 @@
   margin: 0;
 }
 .summary dt {
-  font-weight: 700;
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-caption-font-size);
 }
 .summary dd {
   margin: 0;
@@ -95,4 +70,8 @@
   background: var(--color-disabled-background);
   color: var(--color-text-secondary);
   cursor: not-allowed;
+}
+
+.feedbackSlot {
+  min-height: var(--web-control-sm);
 }

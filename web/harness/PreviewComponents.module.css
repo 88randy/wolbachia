@@ -12,7 +12,7 @@
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-6) * 5)), 1fr));
+  grid-template-columns: minmax(0, 1fr);
   gap: var(--space-3);
   min-width: 0;
 }
@@ -37,22 +37,6 @@
   margin: 0 0 var(--space-1);
   font-size: var(--web-type-body-font-size);
   font-weight: 600;
-}
-.buttonRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-1);
-}
-.buttonSamples {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-1);
-}
-.variantLabel {
-  color: var(--color-text-secondary);
-  font-family: var(--font-family-mono);
-  font-size: var(--web-type-caption-font-size);
 }
 .strong {
   color: var(--color-text-primary);
@@ -152,4 +136,51 @@
   border-bottom: 1px solid var(--color-border-soft);
   font-family: var(--font-family-mono);
   font-size: var(--web-type-caption-font-size);
+}
+
+.gallery,
+.grid,
+.stack,
+.swatches,
+.swatch {
+  max-width: 100%;
+}
+.mono {
+  overflow-wrap: anywhere;
+}
+.catalogWide {
+  grid-column: 1 / -1;
+}
+.buttonMatrixScroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+}
+.buttonMatrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--web-type-caption-font-size);
+}
+.buttonMatrix caption {
+  text-align: start;
+  font-weight: 600;
+  padding-block: var(--space-1);
+}
+.buttonMatrix th,
+.buttonMatrix td {
+  padding: var(--space-1);
+  text-align: start;
+  border-bottom: 1px solid var(--color-border-soft);
+  white-space: nowrap;
+}
+.buttonMatrix th {
+  font-family: var(--font-family-mono);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+@media (min-width: 64rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
 }

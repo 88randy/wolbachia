@@ -15,10 +15,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.language.toEnglish": "ES: change language to English",
   "shell.language.toSpanish": "EN: change language to Spanish",
 
-  "shell.theme.label": "Theme",
-  "shell.theme.light": "Light",
-  "shell.theme.dark": "Dark",
-  "shell.theme.system": "System",
+  "shell.theme.dark": "Dark theme",
 
   // Web shell: sidebar groups and areas (one entry per area of web/README.md)
   "shell.group.operation": "Operation",
