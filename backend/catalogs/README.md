@@ -2,6 +2,19 @@
 
 Per-organization option lists (incident reasons, removal reasons, the motorcycle checklist...) that admins edit and phones download. Issue #3. Contract: [`docs/api-conventions.md`](../../docs/api-conventions.md) (rows "Catalog items" and "Field snapshots").
 
+## Server table queries (#224)
+
+Catalog lists search/order `slug`, `label_es`, `label_en`; item lists search
+`code`/both labels and order those fields plus `sort`, `created_at`, `usage_count`.
+`is_active=true|false` is strictly validated; omission keeps active and inactive
+items visible. Every item ordering keeps Other last among matching rows and every
+list adds `id` for stable ties before paging. Counts retain historical references;
+reads never bump revisions. A filtered list does not reduce the complete active
+non-Other id set required by reorder. Field snapshots/availability are unchanged.
+Exact queries and errors: [configuration table contract](../../docs/api-conventions.md#configuration-table-queries-224).
+Focused evidence: `tests/test_table_queries_224.py` catalog/item cases; existing
+`test_catalog_reorder.py` retains the atomic revision/full-set invariants.
+
 ## Rules of this app
 
 - Catalogs and items are configuration, not records: nothing is deleted. An item is **deactivated** (old records keep showing it) and can be **reactivated**.

@@ -20,6 +20,7 @@ from catalogs.permissions import (
 from catalogs.selectors import build_catalog_snapshot, list_catalogs, with_item_usage
 from catalogs.serializers import (
     CatalogItemCreateSerializer,
+    CatalogItemFilterSerializer,
     CatalogItemSerializer,
     CatalogItemUpdateSerializer,
     CatalogReorderResponseSerializer,
@@ -35,7 +36,9 @@ from catalogs.services import (
     reorder_catalog_items,
     update_catalog_item,
 )
+from core.filters import CodeLookupFilter
 from core.snapshots import IF_NONE_MATCH_PARAMETER, snapshot_response
+from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.views import OrgScopedViewSetMixin
 
 
@@ -45,6 +48,10 @@ class CatalogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.Gene
     queryset = Catalog.objects.all()
     serializer_class = CatalogSerializer
     required_permissions = {"list": CATALOG_READ}
+    filter_backends = [CodeLookupFilter, TableSearchFilter, TableOrderingFilter]
+    search_fields = ["slug", "label_es", "label_en"]
+    ordering_fields = ["slug", "label_es", "label_en"]
+    ordering = ["slug"]
 
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
@@ -81,6 +88,11 @@ class CatalogItemViewSet(
 
     queryset = CatalogItem.objects.all()
     serializer_class = CatalogItemSerializer
+    filter_backends = [CodeLookupFilter, TableSearchFilter, TableOrderingFilter]
+    search_fields = ["code", "label_es", "label_en"]
+    ordering_fields = ["code", "label_es", "label_en", "sort", "created_at", "usage_count"]
+    ordering_prefix = ["is_other"]
+    ordering = ["sort", "code"]
     http_method_names = ["get", "post", "patch", "head", "options"]
     required_permissions = {
         "list": CATALOG_READ,
@@ -100,9 +112,20 @@ class CatalogItemViewSet(
         return self._catalog  # type: ignore[no-any-return]
 
     def get_queryset(self) -> QuerySet[Any]:
+        if getattr(self, "swagger_fake_view", False):
+            return CatalogItem.objects.none()
         catalog = self.get_catalog()
         queryset = super().get_queryset().filter(catalog=catalog)
+        if self.action == "list":
+            query = CatalogItemFilterSerializer(data=self.request.query_params)
+            query.is_valid(raise_exception=True)
+            if (is_active := query.validated_data.get("is_active")) is not None:
+                queryset = queryset.filter(is_active=is_active == "true")
         return with_item_usage(queryset, catalog)
+
+    @extend_schema(parameters=[CatalogItemFilterSerializer])
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     def get_serializer_class(self) -> type[serializers.BaseSerializer[Any]]:
         by_action: dict[str, type[serializers.BaseSerializer[Any]]] = {

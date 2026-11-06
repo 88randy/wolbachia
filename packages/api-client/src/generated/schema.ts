@@ -4504,10 +4504,27 @@ export interface operations {
     blocks_versions_list: {
         parameters: {
             query?: {
+                created_by?: string;
+                effective_from_before?: string;
+                effective_from_from?: string;
+                /**
+                 * @description One ordering field, optional - for descending; ties use id ascending.
+                 *
+                 *     * `revision` - revision
+                 *     * `effective_from` - effective_from
+                 *     * `created_at` - created_at
+                 *     * `created_by` - created_by
+                 *     * `-revision` - -revision
+                 *     * `-effective_from` - -effective_from
+                 *     * `-created_at` - -created_at
+                 *     * `-created_by` - -created_by
+                 */
+                ordering?: "revision" | "effective_from" | "created_at" | "created_by" | "-revision" | "-effective_from" | "-created_at" | "-created_by";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                revision?: number;
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -4614,10 +4631,14 @@ export interface operations {
     catalogs_list: {
         parameters: {
             query?: {
+                /** @description Comma-separated fields: slug, label_es, label_en. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description Case-insensitive search across: slug, label_es, label_en. */
+                search?: string;
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -4650,10 +4671,19 @@ export interface operations {
     catalogs_items_list: {
         parameters: {
             query?: {
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                is_active?: "true" | "false";
+                /** @description Comma-separated fields: code, label_es, label_en, sort, created_at, usage_count. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description Case-insensitive search across: code, label_es, label_en. */
+                search?: string;
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -4983,10 +5013,14 @@ export interface operations {
         parameters: {
             query?: {
                 is_revoked?: boolean | null;
+                /** @description Comma-separated fields: label, serial, app_version, last_seen_at, created_at. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description Case-insensitive search across: label, serial, app_version, last_user.username (same organization). */
+                search?: string;
                 user?: string;
             };
             header?: {
@@ -6522,10 +6556,27 @@ export interface operations {
     quadrants_versions_list: {
         parameters: {
             query?: {
+                created_by?: string;
+                effective_from_before?: string;
+                effective_from_from?: string;
+                /**
+                 * @description One ordering field, optional - for descending; ties use id ascending.
+                 *
+                 *     * `revision` - revision
+                 *     * `effective_from` - effective_from
+                 *     * `created_at` - created_at
+                 *     * `created_by` - created_by
+                 *     * `-revision` - -revision
+                 *     * `-effective_from` - -effective_from
+                 *     * `-created_at` - -created_at
+                 *     * `-created_by` - -created_by
+                 */
+                ordering?: "revision" | "effective_from" | "created_at" | "created_by" | "-revision" | "-effective_from" | "-created_at" | "-created_by";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                revision?: number;
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -7030,10 +7081,30 @@ export interface operations {
     rule_parameters_list: {
         parameters: {
             query?: {
+                /** @description Comma-separated fields: key, unit, value_type, effective_from. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description Case-insensitive search across: key. */
+                search?: string;
+                /**
+                 * @description * `m` - Meters
+                 *     * `km_h` - Kilometers Per Hour
+                 *     * `s` - Seconds
+                 *     * `min` - Minutes
+                 *     * `day` - Days
+                 *     * `week` - Weeks
+                 *     * `count` - Count
+                 *     * `km_l` - Kilometers Per Liter
+                 */
+                unit?: "m" | "km_h" | "s" | "min" | "day" | "week" | "count" | "km_l";
+                /**
+                 * @description * `integer` - Integer
+                 *     * `decimal` - Decimal
+                 */
+                value_type?: "integer" | "decimal";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -7104,10 +7175,21 @@ export interface operations {
                  *     * `false` - false
                  */
                 include_voided?: "true" | "false";
+                /** @description Comma-separated fields: effective_from, created_at, value. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /** @description Case-insensitive search across: reason. */
+                search?: string;
+                /**
+                 * @description * `scheduled` - scheduled
+                 *     * `in_force` - in_force
+                 *     * `superseded` - superseded
+                 *     * `voided` - voided
+                 */
+                status?: "scheduled" | "in_force" | "superseded" | "voided";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -7369,10 +7451,34 @@ export interface operations {
     sampling_points_versions_list: {
         parameters: {
             query?: {
+                created_by?: string;
+                effective_from_before?: string;
+                effective_from_from?: string;
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                is_retired?: "true" | "false";
+                /**
+                 * @description One ordering field, optional - for descending; ties use id ascending.
+                 *
+                 *     * `version` - version
+                 *     * `effective_from` - effective_from
+                 *     * `created_at` - created_at
+                 *     * `created_by` - created_by
+                 *     * `is_retired` - is_retired
+                 *     * `-version` - -version
+                 *     * `-effective_from` - -effective_from
+                 *     * `-created_at` - -created_at
+                 *     * `-created_by` - -created_by
+                 *     * `-is_retired` - -is_retired
+                 */
+                ordering?: "version" | "effective_from" | "created_at" | "created_by" | "is_retired" | "-version" | "-effective_from" | "-created_at" | "-created_by" | "-is_retired";
                 /** @description A page number within the paginated result set. */
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                version?: number;
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
