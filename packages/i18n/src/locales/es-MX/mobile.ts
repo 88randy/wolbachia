@@ -434,6 +434,8 @@ export const mobile = {
   "mobile.login.wrongCredentials": "Usuario o contraseña no coinciden. Revisa y vuelve a intentar.",
   "mobile.login.sessionEnded": "Tu sesión se cerró por seguridad. Entra de nuevo.",
   "mobile.login.deviceRevoked": "Este teléfono fue dado de baja. Llama a tu supervisor.",
+  "mobile.login.cleanupFailed":
+    "El teléfono no pudo preparar el inicio de sesión. Reintenta; tus registros capturados siguen guardados.",
   "mobile.login.genericError":
     "No pudimos iniciar sesión. Inténtalo de nuevo o llama a tu supervisor.",
   "mobile.login.throttled": "Demasiados intentos. Espera {minutes} min y vuelve a intentar.",

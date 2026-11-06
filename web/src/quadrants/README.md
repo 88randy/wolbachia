@@ -71,15 +71,79 @@ There is no geography export operation in OpenAPI, so no export is offered.
 | History, keyboard map/form parity at 1280/1440, dialog focus return | `w-15-accessibility.test.tsx`, independent history paging in recovery tests |
 | Explicit grants, denied/unknown/foreign deep links, scope clearing | `w-15-access.test.tsx`, router area-access tests |
 | Retirement evidence without accidental publication; permitted geometry survives scope changes | `w-15-retention.test.tsx` |
-| Failed write never replayed after reauthentication | `w-15-session.test.tsx` |
+| Retained draft and explicit retry after reauthentication, with unchanged or refreshed permitted scope | `w-15-session.test.tsx` |
 | Bilingual light/dark axe checks | `w-15-accessibility.test.tsx` |
 | Add then undo restores the exact exterior and holes | `drawing-controls.test.tsx` |
 | Tile configuration and strict build CSP | `map-security.test.ts` |
-| Real browser R2, focus/reflow at 320 and +30% text | `web/e2e/w-15.spec.ts` (written, intentionally not run) |
+| Real browser R2, focus/reflow at 320 and +30% text, including delayed compact resize notification (#232) | `web/e2e/w-15.spec.ts` |
 
 jsdom checks behavior, not physical layout, rendered contrast or WebGL. Docker,
 Playwright and real browser manual focus/contrast/visual checks remain separate
 verification gates. GitHub issue lookup returned 401; the supplied issue/lead
 decisions are the implementation specification, not evidence of live issue state.
 
+The reauthentication regression holds point revalidation behind a deferred network
+response. Publication stays disabled until it settles, and a permitted scope
+refresh may replace the editor while retaining its draft. Assertions and the
+manual retry therefore locate the current controls rather than retaining DOM
+references across that refresh. Neither reauthentication nor revalidation sends
+the refused publication again.
+
 Quadrant list/code queries forward the explicit URL center before the active shell center; this only narrows backend grants. Blocks and points retain their quadrant constraint because their generated list contract has no center parameter.
+
+## MapLibre 6 compatibility and attribution security (#225)
+
+`maplibre-gl` is pinned to **6.4.1**, the first patched version in
+[GHSA-jrc7-96c5-q579 / CVE-2026-85061](https://github.com/maplibre/maplibre-gl-js/security/advisories/GHSA-jrc7-96c5-q579).
+Upstream lists versions through 6.4.0 as affected by the attribution sanitizer
+bypass. This is a dependency finding: exploitation of this application's current
+configuration has **not** been established. `MapCanvas` keeps native
+`attributionControl: false`; the application shows its linked copyright notice
+and renders custom attribution as React text, never application HTML.
+
+The [official v5-to-v6 guide](https://maplibre.org/maplibre-gl-js/docs/guides/v5-to-v6-migration-guide/)
+and [6.0.0 release](https://github.com/maplibre/maplibre-gl-js/releases/tag/v6.0.0)
+were checked alongside the installed sources:
+
+| Major-version change | Application integration |
+| --- | --- |
+| ESM only; no default export or CommonJS entry | Vite handles the ESM package; the maintained React adapter imports its module namespace. No CDN/script-tag build or `require()` is used. |
+| Explicit worker URL for bundlers; worker imports a shared ESM file | `MapCanvas` imports `maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url` and supplies the adapter's public `workerUrl` prop. Vite emits a bundled same-origin worker asset, including shared dependencies; bare `?url` would leave the sibling chunk unresolved. The existing CSP stays unchanged. |
+| WebGL2 required; `map.transform` removed and camera API changed | `useMapDisplay` checks WebGL2 availability before mounting. GPU/style errors still select the coordinate fallback. The adapter is upgraded rather than patched with an application shim. |
+| Event classes/types, GeoJSON setData signature and stricter style typing | Existing click coordinates, GeoJSON layers, raster/style configuration and public adapter props remain the app boundary. Typecheck, production build and focused integration checks cover this wiring. |
+
+`react-map-gl` is pinned to **8.1.3** (MIT). The old 8.0.4 implementation directly
+read the removed `map.transform`; peer metadata alone would not prove support.
+Upstream [8.1.2 explicitly adds MapLibre 6 support](https://github.com/visgl/react-map-gl/releases/tag/v8.1.2),
+and [8.1.3 fixes an app-wide crash with undefined terrain properties](https://github.com/visgl/react-map-gl/releases/tag/v8.1.3),
+relevant to this map without a terrain prop. Installed adapter sources use map
+getters and `setTransformCameraUpdate` for v6. MapLibre remains BSD-3-Clause;
+6.4.1 supports Node >=16.14.0, including this repository's Node 22.13.0.
+No unrelated direct dependency is upgraded and no `npm audit fix` is used.
+
+`map-integration.test.tsx` exercises our public adapter configuration, WebGL1-only
+fallback, literal custom attribution and style-error recovery without losing the
+coordinate-drawing draft. Its adapter/worker are mocked: it does **not** test the
+library sanitizer or claim real WebGL rendering. `map-security.test.ts` retains
+the provider/CSP checks; geometry, drawing-controls and W15 accessibility suites
+cover existing coordinate and keyboard behavior. The production JS build proves
+the real ESM adapter and bundled worker resolve, separately from CI's real-browser
+map and runtime-image checks. Those browser/GPU/container checks remain required;
+local jsdom, typecheck or build results cannot establish them.
+
+`e2e/map-runtime.spec.ts` adds one production-renderer smoke (English/light) to
+the existing browser and runtime-image jobs. It keeps the normal OSM raster build
+configuration and unchanged CSP. Public `BrowserContext.route` intercepts the
+already-allowed tile origin, including dedicated-worker requests, and fulfills
+valid synthetic PNGs from memory. Unexpected external origins are recorded and
+aborted; no provider tile is downloaded. A native Worker subclass only records
+public message/error events while delegating construction/execution. The smoke
+requires a same-origin emitted worker, actual worker replies, intercepted raster
+requests and a real canvas click that changes the polygon draft. It also checks
+the linked attribution. Missing WebGL2 is a failure, never a silent skip; no
+speculative browser flags or runtime allowlist/CSP bypass are added. The fixture
+answers the quadrant collection and immutable version-history endpoints with
+their distinct response shapes. After an actual CI fixture failure, an authorized
+focused local run passed on Windows/Chromium on 2026-11-06, including the native
+worker and canvas-to-coordinate interaction. This does not qualify physical GPUs
+or the Linux runtime image; the corrected smoke still must pass those CI jobs.

@@ -2,6 +2,17 @@
 
 Versioned rule parameters per organization: the thresholds the app shows but never decides (50 m from the point, 10 km/h speed lock...). Issue #3. Contract: [`docs/api-conventions.md`](../../docs/api-conventions.md) (rows "Rule parameters" and "Field snapshots").
 
+## Server table queries (#224)
+
+Parameter lists search `key`, filter `unit`/`value_type` and order by
+`key`, `unit`, `value_type` or projected `effective_from`. History searches `reason`,
+filters its existing `status` annotation and orders by `effective_from`,
+`created_at` or numeric `value`. Existing `include_voided=false` remains the default;
+status never expands visibility. Sorting resolves ties with `id`; defaults,
+detail/write behavior and field snapshots are preserved. Exact query values,
+pagination and error semantics: [configuration table contract](../../docs/api-conventions.md#configuration-table-queries-224).
+Focused evidence: `tests/test_table_queries_224.py` parameter and rule-history cases.
+
 ## Rules of this app
 
 - No threshold is hard-coded anywhere else: code reads it from here. Sync handlers can resolve values at an event's `device_time` from the existing historical selector; receipt-time clock-skew evaluation is the explicit exception (R03). This does not claim every future handler already uses it.
@@ -20,7 +31,7 @@ Versioned rule parameters per organization: the thresholds the app shows but nev
 | `services.py` | `create_rule_version` (locks the parameter, validates value and date), `void_rule_version`, `resolve_effective_from` |
 | `permissions.py` | Permission codes of this app (`rule_parameter_version.read` is the history, admin only by default) |
 | `selectors.py` | `get_version_in_force`, `list_versions` (status `scheduled`/`in_force`/`superseded`/`voided`), `list_parameters_with_current` (one query), `get_next_change_at`, `build_rules_snapshot` |
-| `seeds.py` | `seed_default_rule_parameters`: the fifteen parameters and the brief's values |
+| `seeds.py` | `seed_default_rule_parameters`: the sixteen parameters and their accepted defaults |
 | `views.py`, `serializers.py`, `urls.py` | Thin DRF layer; nested routes by regex prefix |
 
 ## Seed
@@ -86,3 +97,18 @@ daily_task_target is a versioned integer count, default 40, inclusive bounds 1..
 **[ASSUMPTION]** until client confirmation. This operational target never caps
 captures, task generation or reassignment. Scheduling resolves it at each local
 planned date. There are now 15 seeded definitions; reruns retain existing values.
+
+## Local PIN attempt limit (#209)
+
+`pin_max_attempts` is a versioned integer count: default 3, inclusive bounds 1..10,
+as specified in #209 for the mobile login's offline PIN gate (#7). The existing
+value validator rejects fractions with `not_an_integer` and out-of-bound values
+with `out_of_range`, including `{min: 1, max: 10}`. The shared rules snapshot exposes
+the value through `GET /api/v1/field/rules/`; bootstrap and sync retain their existing
+`rules_version` refresh signal. No bundle field or API schema shape changes.
+
+New organizations receive the default immediately. Existing organizations use
+`seed_organization_defaults --organization <slug> --apply`; its dry run lists the
+missing definition/default. Reruns preserve administrator versions and append no
+second default. There are now 16 definitions. The limit controls local PIN attempts,
+not the online login lockout or the mobile password-attempt policy. See ADR 125.

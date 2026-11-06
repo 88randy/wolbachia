@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import Map from "react-map-gl/maplibre";
+import workerUrl from "maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url";
 import type { MapProps } from "./map-types";
 import type { MapSource } from "./map-source";
 import { MAX_MAP_ZOOM } from "./map-source";
@@ -20,6 +21,8 @@ export function MapCanvas({ features, source, visible, onFailure }: Props) {
     initialViewState: initialMapView(features),
     mapStyle: baseMapStyle(source),
     maxZoom: MAX_MAP_ZOOM,
+    // Vite bundles the v6 worker and its shared ESM dependencies into one same-origin asset.
+    workerUrl,
     attributionControl: false as const,
     onError: onFailure,
     onClick: (event: { lngLat: { lng: number; lat: number } }) => {

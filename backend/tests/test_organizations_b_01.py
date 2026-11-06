@@ -232,6 +232,7 @@ def test_launch_contract_has_bounded_versioned_defaults_and_closed_items():
         "fuel_efficiency_min_km_l": (15, "km_l", 5, 100),
         "fuel_efficiency_max_km_l": (60, "km_l", 5, 100),
         "session_idle_minutes": (5, "min", 1, 30),
+        "pin_max_attempts": (3, "count", 1, 10),
         "reminder_minutes_before_end": (60, "min", 5, 180),
         "max_paddle_reuses": (2, "count", 0, 2),
         "revisit_interval_days": (7, "day", 1, 28),

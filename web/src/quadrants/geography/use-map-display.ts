@@ -23,7 +23,7 @@ export function useMapDisplay() {
     visible,
     setVisible,
     source,
-    hasFailed: hasFailed || typeof WebGLRenderingContext === "undefined",
+    hasFailed: hasFailed || typeof WebGL2RenderingContext === "undefined",
     fail: () => {
       setFailed(true);
     },

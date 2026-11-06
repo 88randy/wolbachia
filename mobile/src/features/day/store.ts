@@ -1,4 +1,5 @@
-import { VISIBLE_ASSIGNMENTS } from "./pending-work.ts";
+import { LOCATED_ASSIGNMENTS } from "./task-locations.ts";
+import { samplingPointChange, replaceSamplingPoints } from "./sampling-point-statements.ts";
 import { setStatement, removeStatement, KV_KEYS } from "../../db/kv-store.ts";
 import { readText } from "../../db/sql.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
@@ -38,7 +39,7 @@ export class DayStore {
   }
   async read(): Promise<DayCache> {
     const [tasks, manifests, meta] = await Promise.all([
-      this.#db.query(VISIBLE_ASSIGNMENTS),
+      this.#db.query(LOCATED_ASSIGNMENTS),
       this.#db.query("SELECT payload FROM day_map_manifest WHERE removed=0"),
       this.#db.query("SELECT payload FROM day_bundle_meta WHERE slot=1"),
     ]);
@@ -65,6 +66,8 @@ export class DayStore {
         sql: "INSERT INTO day_bundle_meta(slot,payload) VALUES(1,?) ON CONFLICT(slot) DO UPDATE SET payload=excluded.payload",
         params: [JSON.stringify(bundle.meta)],
       },
+      ...replaceSamplingPoints(bundle.samplingPoints),
+      removeStatement(KV_KEYS.daySamplingPointsBootstrapPending),
       setStatement(KV_KEYS.syncCursor, bundle.cursor),
     ];
     await this.#db.runAtomically(statements);
@@ -78,10 +81,11 @@ export class DayStore {
       )
       .map(assignmentStatement);
     const manifests = parseChanges(body.map_manifests).map(manifestStatement);
-    const statements = [...tasks, ...manifests].filter(
+    const points = parseChanges(body.sampling_points).map(samplingPointChange);
+    const statements = [...tasks, ...manifests, ...points].filter(
       (entry): entry is SqlStatement => entry !== null,
     );
-    const unreadable = tasks.length + manifests.length - statements.length;
+    const unreadable = tasks.filter((entry) => entry === null).length;
     statements.push({
       sql: "UPDATE day_bundle_meta SET payload=json_set(payload,'$.unreadable_rows',json_extract(payload,'$.unreadable_rows')+?)",
       params: [unreadable],
@@ -96,6 +100,13 @@ export class DayStore {
   async markCleanupPending(): Promise<void> {
     await this.#db.runAtomically([setStatement("day_cleanup_pending", "true")]);
   }
+  /** An upgraded cache needs a complete point section even when its ETag/cursor remain valid. */
+  async needsSamplingPointBootstrap(): Promise<boolean> {
+    const rows = await this.#db.query("SELECT value FROM kv WHERE key=?", [
+      KV_KEYS.daySamplingPointsBootstrapPending,
+    ]);
+    return rows[0]?.value === "true";
+  }
   async needsCleanup(): Promise<boolean> {
     const rows = await this.#db.query("SELECT value FROM kv WHERE key='day_cleanup_pending'");
     return rows[0]?.value === "true";
@@ -105,6 +116,7 @@ export class DayStore {
       { sql: "DELETE FROM day_assignment" },
       { sql: "DELETE FROM day_map_manifest" },
       { sql: "DELETE FROM day_bundle_meta" },
+      { sql: "DELETE FROM day_sampling_point" },
       removeStatement("day_navigation"),
       removeStatement("shift_open_map"),
       removeStatement(KV_KEYS.syncCursor),

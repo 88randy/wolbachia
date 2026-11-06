@@ -26,8 +26,8 @@ const SCHEMA_FILE_FROM_BACKEND = "../packages/api-client/openapi.yaml";
 const SCHEMA_EXPORT_ENV = {
   DJANGO_SETTINGS_MODULE: "config.settings.dev",
   DJANGO_SECRET_KEY: "schema-export-only-not-a-secret",
-  DATABASE_URL: "postgres://wolbachia:wolbachia@127.0.0.1:5432/wolbachia",
-  REDIS_URL: "redis://127.0.0.1:6379/0",
+  DATABASE_URL: "postgres://wolbachia:wolbachia@127.0.0.1:55432/wolbachia",
+  REDIS_URL: "redis://127.0.0.1:56379/0",
   DJANGO_READ_DOT_ENV_FILE: "false",
 };
 

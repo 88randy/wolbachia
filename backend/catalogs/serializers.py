@@ -16,6 +16,10 @@ class CatalogSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
 
+class CatalogItemFilterSerializer(serializers.Serializer[Any]):
+    is_active = serializers.ChoiceField(choices=["true", "false"], required=False)
+
+
 class CatalogItemSerializer(OrgScopedModelSerializer):
     """Read shape of an item. `is_active` and `is_other` change only through their own rules."""
 

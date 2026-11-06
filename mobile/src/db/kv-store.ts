@@ -5,6 +5,7 @@ import { readText } from "./sql.ts";
 export const KV_KEYS = {
   deviceId: "device_id",
   syncCursor: "sync_cursor",
+  daySamplingPointsBootstrapPending: "day_sampling_points_bootstrap_pending",
   catalogVersion: "catalog_version",
   rulesVersion: "rules_version",
   lastSyncAt: "last_sync_at",

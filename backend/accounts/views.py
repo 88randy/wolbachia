@@ -31,7 +31,7 @@ from accounts.models import Device, DeviceSession, RevokeReason, User
 from accounts.permissions import DEVICE_READ, DEVICE_REVOKE, USER_REVOKE_DEVICE_SESSIONS
 from accounts.request_context import organization_header
 from accounts.revocation import Revocation, revoke_device, revoke_session, revoke_user_sessions
-from accounts.selectors import list_devices, users_of_organization
+from accounts.selectors import list_devices, users_of_organization, with_searchable_device_user
 from accounts.serializers import (
     DeviceFilterSerializer,
     DeviceSerializer,
@@ -57,7 +57,9 @@ from accounts.throttling import (
 )
 from accounts.token_pairs import rotate_refresh_token
 from core.authentication import ApiSessionAuthentication
+from core.filters import CodeLookupFilter
 from core.session_identity import remember_active_organization
+from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.time import server_now
 from core.views import OrgScopedViewSetMixin
 from organizations.exceptions import NoActiveMembershipError, OrganizationHeaderRequiredError
@@ -315,6 +317,11 @@ class DeviceViewSet(
 
     queryset = Device.objects.all()
     serializer_class = DeviceSerializer
+    filter_backends = [CodeLookupFilter, TableSearchFilter, TableOrderingFilter]
+    search_fields = ["label", "serial", "app_version", "searchable_username"]
+    search_field_labels = {"searchable_username": "last_user.username (same organization)"}
+    ordering_fields = ["label", "serial", "app_version", "last_seen_at", "created_at"]
+    ordering = ["-created_at"]
     http_method_names = ["get", "post", "head", "options"]
     required_permissions = {
         "list": DEVICE_READ,
@@ -323,6 +330,8 @@ class DeviceViewSet(
     }
 
     def get_queryset(self) -> QuerySet[Device]:
+        if getattr(self, "swagger_fake_view", False):
+            return Device.objects.none()
         filters: dict[str, Any] = {}
         if self.action == "list":
             query = DeviceFilterSerializer(data=self.request.query_params)
@@ -331,7 +340,8 @@ class DeviceViewSet(
                 "is_revoked": query.validated_data.get("is_revoked"),
                 "user_id": query.validated_data.get("user"),
             }
-        return list_devices(self.request.organization, **filters)  # type: ignore[attr-defined]
+        devices = list_devices(self.request.organization, **filters)  # type: ignore[attr-defined]
+        return with_searchable_device_user(devices) if self.action == "list" else devices
 
     @extend_schema(parameters=[DeviceFilterSerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:

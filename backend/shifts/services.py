@@ -27,7 +27,9 @@ from core.services import lock_record_for_update, void_validated_record
 from core.void_reason import resolve_void_reason, validate_void_reason
 from field_sync.codes import INVALID_PAYLOAD
 from field_sync.exceptions import EventNeedsReview, EventRejected
+from field_sync.permissions import FIELD_EVENT_SYNC
 from field_sync.registry import EventContext
+from field_sync.selectors import captured_scope, membership_snapshots
 from organizations.models import Organization
 from shifts.codes import (
     MOTORCYCLE_BLOCKED,
@@ -83,7 +85,7 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     """
     shift_id = _require_shift_id(ctx)
     items = _resolve_check_items(ctx.organization, data["checks"])
-    motorcycle = _lock_motorcycle(ctx.organization, data["motorcycle_code"])
+    motorcycle = _lock_motorcycle(ctx, data["motorcycle_code"])
     _ensure_odometer_in_range(data["odometer_km"])
     _ensure_no_open_shift(ctx)
     _ensure_shift_id_is_free(shift_id)
@@ -175,17 +177,36 @@ def _resolve_check_items(
     return items
 
 
-def _lock_motorcycle(organization: Organization, code: str) -> Motorcycle:
-    """The motorcycle with that code, row-locked so a severe check and an open cannot interleave."""
-    motorcycle = (
-        Motorcycle.objects.for_org(organization)
-        .select_for_update()
-        .filter(code=code, voided_at__isnull=True)
-        .first()
+def _lock_motorcycle(ctx: EventContext, code: str) -> Motorcycle:
+    """Deny outside scope without a lock wait; recheck current allocation under its lock."""
+    motorcycles = Motorcycle.objects.for_org(ctx.organization).filter(
+        code=code, voided_at__isnull=True
     )
-    if motorcycle is None:
+    candidate = motorcycles.first()
+    if candidate is None or not _has_motorcycle_scope(ctx, candidate):
+        raise EventRejected(MOTORCYCLE_UNKNOWN)
+    motorcycle = motorcycles.select_for_update().first()
+    if motorcycle is None or not _has_motorcycle_scope(ctx, motorcycle):
         raise EventRejected(MOTORCYCLE_UNKNOWN)
     return cast(Motorcycle, motorcycle)
+
+
+def _has_motorcycle_scope(ctx: EventContext, motorcycle: Motorcycle) -> bool:
+    """Capture membership and profiles together for preflight and locked revalidation.
+
+    EventContext carries no captured scope. The shared single-statement capture avoids
+    mixing configuration revisions, without configuration locks, including on a final upload.
+    """
+    membership = membership_snapshots(ctx.organization).filter(user=ctx.user).first()
+    if membership is None:
+        return False
+    scope = captured_scope(membership)
+    if motorcycle.center_id is None:
+        return any(
+            FIELD_EVENT_SYNC in codes and grant["centers"]["mode"] == "all"
+            for codes, grant in scope.grants
+        )
+    return scope.allows(FIELD_EVENT_SYNC, str(motorcycle.center_id))
 
 
 def _ensure_no_open_shift(ctx: EventContext) -> None:
