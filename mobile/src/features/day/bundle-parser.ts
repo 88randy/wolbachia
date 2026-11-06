@@ -1,3 +1,5 @@
+import { parseSamplingPoints } from "./sampling-point-parser.ts";
+import type { SamplingPoint } from "./sampling-point-parser.ts";
 import {
   isRecord,
   isQuadrantAssignment,
@@ -8,6 +10,7 @@ import type { AssignedTask, BundleMeta, MapManifest } from "./types.ts";
 export interface ParsedBundle {
   readonly tasks: readonly AssignedTask[];
   readonly manifests: readonly MapManifest[];
+  readonly samplingPoints: readonly SamplingPoint[];
   readonly meta: BundleMeta;
   readonly cursor: string;
 }
@@ -20,6 +23,11 @@ interface RawBundle {
   readonly map_manifest_ready: boolean;
   readonly assignments: readonly unknown[];
   readonly map_manifests: readonly unknown[];
+  readonly sampling_points?: readonly unknown[];
+}
+function validateSamplingPoints(value: unknown): void {
+  if (value !== undefined && !Array.isArray(value))
+    throw new Error("Malformed sampling point section.");
 }
 function validateBundle(body: unknown): asserts body is RawBundle {
   if (!isRecord(body)) throw new Error("Malformed day bundle.");
@@ -35,6 +43,7 @@ function validateBundle(body: unknown): asserts body is RawBundle {
     typeof body.map_manifest_ready !== "boolean"
   )
     throw new Error("Missing bundle sections.");
+  validateSamplingPoints(body.sampling_points);
   if (
     body.next_change_at !== null &&
     (typeof body.next_change_at !== "string" || !Number.isFinite(Date.parse(body.next_change_at)))
@@ -51,9 +60,12 @@ export function parseBundle(body: unknown, now: Date): ParsedBundle {
     if (manifest === null) throw new Error("Malformed bootstrap map manifest.");
     return manifest;
   });
+  const pointRows = body.sampling_points ?? [];
+  const samplingPoints = parseSamplingPoints(pointRows);
   return {
     tasks,
     manifests,
+    samplingPoints,
     cursor: body.cursor,
     meta: {
       bundle_version: body.bundle_version,
@@ -62,8 +74,7 @@ export function parseBundle(body: unknown, now: Date): ParsedBundle {
       next_change_at: body.next_change_at,
       map_manifest_ready: body.map_manifest_ready,
       fetched_at: now.toISOString(),
-      unreadable_rows:
-        assignments.length - tasks.length + body.map_manifests.length - manifests.length,
+      unreadable_rows: assignments.length - tasks.length + pointRows.length - samplingPoints.length,
     },
   };
 }

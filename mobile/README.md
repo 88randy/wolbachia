@@ -523,7 +523,7 @@ navigation button says "How to get there", without claiming a specific navigator
   session/scope download access clears projections, saved map preparation/navigation
   and the cursor, retaining unsent evidence. Expired auth/network failures keep cache.
 - The single tolerant parser follows `backend/scheduling/courier_feed.py`'s
-  `AssignmentProducerSerializer` (#109 assignments v2): common fields are
+  `AssignmentProducerSerializer` (#109 assignments v2, #212 v3): common fields are
   `{id, kind, quadrant_id, courier, revision}`; tasks add
   `{code, point, action, date, category, source, protocol, target}`. Local names map
   code to point_code (the producer's human task code includes :action:YYYY-MM-DD),
@@ -531,10 +531,12 @@ navigation button says "How to get there", without claiming a specific navigator
   high risk; medium/low/null/unknown are normal for ordering. Allocation rows with
   kind=quadrant_assignment are intentionally ignored for the task list and never
   count as unreadable, in bootstrap or deltas. Malformed task rows are counted.
-  **[ASSUMPTION: future points projection #196]** coordinates, block code,
-  reference, history and ovitrap linkage are optional enrichment; no location is
-  invented. Unlocated tasks remain in the list with an explanation, no distance,
-  map marker or How to get there action. The real producer supplies only
+  The existing #196 `sampling_points` projection supplies coordinates by the
+  `task.point` UUID and matching quadrant (#221). Inline or retained task GPS is
+  not current location authority. Block code, reference, history and ovitrap
+  linkage remain optional enrichment. Missing, retired, malformed or out-of-scope
+  points leave tasks listed without distance, map marker or How to get there
+  action. The real producer supplies only
   place/check; closed-house/relocate states in the design await capture/point data.
   Delta numeric versions are ordered numerically; opaque versions deduplicate by equality
   and ordered change sequence. Bootstrap authoritatively restores present resources and removes missing ids.
@@ -546,15 +548,21 @@ navigation button says "How to get there", without claiming a specific navigator
   Pending retention conservatively matches the ovitrap regardless of date, so
   this uncertainty never drops recoverable work from the list. Day progress
   uses local captured work plus removal of tasks from the server projection
-  **[ASSUMPTION]**: assignments v2 publishes no completion/status field and capture
-  completion currently needs a bootstrap refresh (see scheduling README).
+  Assignments v3 now publishes `is_completed` (#212), but the mobile parser still
+  ignores it; consuming that completion contract remains the separate #229
+  follow-up. #221 does not change local completion policy.
   Phone-saved and server-received text
   remain separate; the existing `SyncChip` opens the inbox with actual delivery/review
   outcomes. Neither an error nor a pending upload implies server delivery/review.
   No new capture queue, upload transport, ping producer or server lookup was added.
 - Bootstrap uses `packages/api-client`, validates `unknown` at the runtime object
   boundary (generated response incorrectly says array) and sends the stored bundle
-  version as a quoted ETag. 304 preserves cache. Open/reconnect/foreground/due-time
+  version as a quoted ETag when the local projection is ready. Migration 9 records
+  durable pending bootstrap readiness for the new point cache. Normal refresh
+  omits the ETag and rejects 304 while pending, preserving the existing cursor
+  and outbox across failures/restart. Only a successful transactional bundle
+  replacement clears readiness; valid-cursor sync does not replace a full body.
+  Once ready, 304 preserves cache. Open/reconnect/foreground/due-time
   triggers refresh while cached list/point actions remain usable. Local map
   verification is published before HTTP starts, including a stalled transport.
   A response from a replacement session or changed issuer is discarded; legitimate

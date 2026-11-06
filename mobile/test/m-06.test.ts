@@ -712,12 +712,33 @@ void test("Regression: removed assignments cannot launch external navigation fro
 
 void test("AC ordering: high risk precedes nearest fresh fix and distance precedes point code", async () => {
   const { store } = await setup();
+  const quadrant = "11111111-1111-4111-8111-111111111111";
+  const points = [
+    { id: "22222222-2222-4222-8222-222222222222", code: "OV-010", location: [-99.1, 50] },
+    { id: "33333333-3333-4333-8333-333333333333", code: "OV-001", location: [1, 1] },
+    { id: "44444444-4444-4444-8444-444444444444", code: "OV-999", location: [0, 0] },
+  ];
   await store.replace(
-    bundle([
-      task({ point_code: "OV-010", lat: 50 }),
-      task({ id: "far", point_code: "OV-001", risk: "normal", lat: 1, lng: 1 }),
-      task({ id: "near", point_code: "OV-999", risk: "normal", lat: 0, lng: 0 }),
-    ]),
+    {
+      ...bundle(
+        points.map((point, index) =>
+          task({
+            id: point.id,
+            point: point.id,
+            point_code: point.code,
+            quadrant_id: quadrant,
+            risk: index === 0 ? "high" : "normal",
+          }),
+        ),
+      ),
+      sampling_points: points.map((point) => ({
+        ...point,
+        quadrant_id: quadrant,
+        block_id: "55555555-5555-4555-8555-555555555555",
+        is_retired: false,
+        version: 1,
+      })),
+    },
     FIXED_NOW,
   );
   const day = buildDay({
@@ -1538,25 +1559,25 @@ void test("Review2 retention: only captures enrolled in the retained view can ke
   const first = makeEnvelope({ payload: { ovitrap_id: "trap-1" } });
   await fixture.outbox.enqueue(first);
   await fixture.service.applyProjectionChanges({
-    assignments: [change("upsert", 2, task({ version: 2, lat: 20, ovitrap_id: "trap-1" }))],
+    assignments: [change("upsert", 2, task({ version: 2, ovitrap_id: "trap-1" }))],
   });
-  assert.equal((await fixture.store.read()).tasks[0]?.task.lat, 19.4);
-  // This capture was made while the old point view still applied; it also keeps that view.
+  assert.equal((await fixture.store.read()).tasks[0]?.task.version, "1");
+  // This capture was made while the old task view still applied; it also keeps that view.
   const duringRetention = makeEnvelope({ payload: { ovitrap_id: "trap-1" } });
   await fixture.outbox.enqueue(duringRetention);
   await fixture.outbox.claimPending(1);
   await fixture.outbox.settle([
     { id: first.id, action: "accept", result: { code: "accepted", params: {} } },
   ]);
-  assert.equal((await fixture.store.read()).tasks[0]?.task.lat, 19.4);
+  assert.equal((await fixture.store.read()).tasks[0]?.task.version, "1");
   await fixture.outbox.claimPending(1);
   await fixture.outbox.settle([
     { id: duringRetention.id, action: "accept", result: { code: "accepted", params: {} } },
   ]);
-  assert.equal((await fixture.store.read()).tasks[0]?.task.lat, 20);
+  assert.equal((await fixture.store.read()).tasks[0]?.task.version, "2");
   await fixture.outbox.enqueue(makeEnvelope({ payload: { ovitrap_id: "trap-1" } }));
   const latest = (await fixture.store.read()).tasks[0];
-  assert.equal(latest?.task.lat, 20);
+  assert.equal(latest?.task.version, "2");
   assert.equal(latest.isKept, false);
 });
 
