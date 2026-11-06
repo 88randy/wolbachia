@@ -280,7 +280,7 @@ remain follow-up #182. Other free-text validation belongs to consumer screens an
 
 ## Visual refresh #202: shared components and approval preview
 
-Source of truth: issue #202 plus the owner's approved Step 1 preview (decision 122).
+Source of truth: issue #202 plus the owner's approved Step 1 preview (decision 123).
 Historical design CSS is retained. Step 1 provides the approved tokens and
 shared components. Step 2 applies them to existing screens without changing behavior.
 

@@ -1,3 +1,7 @@
+import type { SqlExecutor } from "../db/sql.ts";
+import { createDay, createDayBundle } from "../features/day/create-day.ts";
+import type { DayService } from "../features/day/service.ts";
+import type { DayBundleService } from "../features/day/bundle-service.ts";
 import { getRandomBytes, randomUUID } from "expo-crypto";
 
 import { createOvitrapCheck } from "../features/ovitrap-check/create-ovitrap-check.ts";
@@ -5,7 +9,6 @@ import type { OvitrapService } from "../features/ovitrap-check/service.ts";
 import { createShiftOpen } from "../features/shift-open/create-shift-open.ts";
 import type { ShiftOpenService } from "../features/shift-open/service.ts";
 
-import { createMobileApiClient } from "../api/create-api-client.ts";
 import { createAuth } from "../auth/create-auth.ts";
 import { CredentialStore } from "../auth/credential-store.ts";
 import { nativeSecrets } from "../auth/native-secrets.ts";
@@ -21,29 +24,20 @@ import { openDatabase } from "../db/open-database.ts";
 import { OutboxRepository } from "../outbox/outbox-repository.ts";
 import { getOrCreateDeviceId } from "../sync/device-id.ts";
 import { SyncEngine } from "../sync/sync-engine.ts";
-import { createSyncTransport } from "../sync/sync-transport.ts";
-import type { SyncTransport } from "../sync/sync-transport.ts";
+import { createScopedSyncTransport } from "../sync/scoped-sync-transport.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
   readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
-  readonly tokens: TokenStore;
+  readonly tokens: TokenStore & Pick<CredentialStore, "getSnapshot">;
   readonly server: ServerSettings;
   readonly deviceId: string;
-}
-
-// Initial provisioning selects the identity-bound address before authenticated work begins.
-function lazyTransport(tokens: TokenStore, session: SessionRequests): SyncTransport {
-  return async (request) => {
-    const baseUrl = tokens.getOrigin();
-    if (baseUrl === null) return { ok: false, failure: { kind: "network" } };
-    return createSyncTransport(createMobileApiClient({ baseUrl, tokens }), session)(request);
-  };
 }
 
 function logEngineError(error: unknown): void {
@@ -58,24 +52,34 @@ export async function createServices(): Promise<AppServices> {
   const outbox = new OutboxRepository(db, () => new Date());
   const { server, credentials } = await loadIdentity(kv, outbox);
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);
+  // Bootstrap cannot run until composition finishes; auth cleanup can use the short projection gate during load.
+  const bundle = createDayBundle({ db, tokens: credentials, requests: () => requests });
   const {
     auth,
     credentials: tokens,
     requests,
-  } = await createAuth({
-    randomBytes: getRandomBytes,
-    now: Date.now,
-    credentials,
-    kv,
-    db,
-    server,
-    deviceId,
-    appVersion: appManifest.version,
-  });
-  const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
+  } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests }, bundle);
+  const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
   const ovitrapCheck = createOvitrapCheck({ db, engine, requests, tokens, shiftOpen });
-  return { ovitrapCheck, kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
+  return { ovitrapCheck, kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen, day };
+}
+
+function createRuntimeAuth(
+  deps: Pick<AppServices, "kv" | "server" | "deviceId"> & {
+    db: SqlExecutor;
+    credentials: CredentialStore;
+  },
+  bundle: DayBundleService,
+) {
+  return createAuth({
+    ...deps,
+    clearSessionData: bundle.clearForAuth,
+    randomBytes: getRandomBytes,
+    now: Date.now,
+    appVersion: appManifest.version,
+  });
 }
 
 async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
@@ -91,9 +95,10 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
 }
 
 function createEngine(
-  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen" | "ovitrapCheck"> & {
+  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen" | "ovitrapCheck" | "day"> & {
     requests: SessionRequests;
   },
+  bundle: DayBundleService,
 ): SyncEngine {
   const { kv, outbox, server, deviceId, tokens, requests } = deps;
   return new SyncEngine({
@@ -102,7 +107,8 @@ function createEngine(
       kv,
       deviceId,
       now: () => new Date(),
-      transport: lazyTransport(tokens, requests),
+      transport: createScopedSyncTransport({ tokens, requests }),
+      ...bundle.syncHooks(),
     },
     hasSession: () => tokens.hasSyncSession(),
     hasPendingFinalUpload: tokens.hasPendingFinalUpload,

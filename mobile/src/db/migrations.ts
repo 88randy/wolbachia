@@ -10,6 +10,22 @@ import { readInteger } from "./sql.ts";
  * Nothing is deleted and the envelope never changes after the insert (triggers below), which is
  * what "records are immutable" means on the phone.
  */
+// Migration 6 snapshots event references without putting projection writes in receipt settlement.
+const ENROLLED_RETAINED_EVENTS = `SELECT json_group_array(e.id) FROM outbox_event e
+  WHERE e.local_status IN ('pending','sending','error','in_review') AND
+    (json_extract(e.payload,'$.task_id')=day_assignment.id OR
+     (json_extract(e.payload,'$.task_id') IS NULL AND
+      json_extract(e.payload,'$.ovitrap_id')=json_extract(day_assignment.retained_payload,'$.ovitrap_id')))`;
+const ENROLL_VISIBLE_CAPTURE = `CREATE TRIGGER day_enroll_retained_capture AFTER INSERT ON outbox_event
+  BEGIN UPDATE day_assignment SET retained_event_ids=json_insert(retained_event_ids,'$[#]',NEW.id)
+  WHERE kept=1 AND retained_payload IS NOT NULL AND EXISTS
+    (SELECT 1 FROM outbox_event e WHERE e.local_status IN ('pending','sending','error','in_review')
+      AND e.id IN (SELECT value FROM json_each(day_assignment.retained_event_ids)))
+    AND (json_extract(NEW.payload,'$.task_id')=day_assignment.id OR
+      (json_extract(NEW.payload,'$.task_id') IS NULL AND
+       json_extract(NEW.payload,'$.ovitrap_id')=json_extract(day_assignment.retained_payload,'$.ovitrap_id')));
+  END`;
+
 const MIGRATIONS: readonly (readonly string[])[] = [
   [
     `CREATE TABLE kv (
@@ -90,6 +106,19 @@ const MIGRATIONS: readonly (readonly string[])[] = [
       BEGIN SELECT RAISE(ABORT, 'superseded draft evidence is immutable'); END`,
     `CREATE TRIGGER ovitrap_superseded_draft_no_delete BEFORE DELETE ON ovitrap_superseded_draft
       BEGIN SELECT RAISE(ABORT, 'superseded draft evidence is retained'); END`,
+  ],
+  [
+    `CREATE TABLE day_assignment (id TEXT PRIMARY KEY NOT NULL, version TEXT NOT NULL,
+      sequence INTEGER NOT NULL DEFAULT 0, payload TEXT, retained_payload TEXT, removed INTEGER NOT NULL DEFAULT 0, kept INTEGER NOT NULL DEFAULT 0)`,
+    `CREATE TABLE day_map_manifest (id TEXT PRIMARY KEY NOT NULL, version TEXT NOT NULL,
+      sequence INTEGER NOT NULL DEFAULT 0, payload TEXT, removed INTEGER NOT NULL DEFAULT 0)`,
+    "CREATE TABLE day_bundle_meta (slot INTEGER PRIMARY KEY CHECK(slot=1), payload TEXT NOT NULL)",
+  ],
+  [
+    "ALTER TABLE day_assignment ADD COLUMN retained_event_ids TEXT NOT NULL DEFAULT '[]'",
+    `UPDATE day_assignment SET retained_event_ids=(${ENROLLED_RETAINED_EVENTS}) WHERE retained_payload IS NOT NULL`,
+    "UPDATE day_assignment SET retained_payload=NULL,kept=0 WHERE retained_payload IS NOT NULL AND retained_event_ids='[]' AND removed=0",
+    ENROLL_VISIBLE_CAPTURE,
   ],
 ];
 

@@ -6,7 +6,12 @@ import type { OutboxRepository, OutboxTransition } from "../outbox/outbox-reposi
 import { quotaTransition, quotaWaitOutcome, missingResultOutcome } from "./sync-results.ts";
 import { planFailure } from "./sync-failure.ts";
 import type { BlockReason, SyncFailure } from "./sync-failure.ts";
-import type { SyncBatchRequest, SyncResponse, SyncTransport } from "./sync-transport.ts";
+import type {
+  SyncBatchRequest,
+  SyncCallResult,
+  SyncResponse,
+  SyncTransport,
+} from "./sync-transport.ts";
 
 /** Events per request. A technical limit under the server's `SYNC_MAX_EVENTS` (200). [ASSUMPTION] until #13. */
 export const SYNC_BATCH_SIZE = 50;
@@ -17,6 +22,11 @@ export interface SyncPassDeps {
   readonly transport: SyncTransport;
   readonly deviceId: string;
   readonly now: () => Date;
+  /** Projection failures propagate before any cursor advance. Replays are idempotent. */
+  readonly serializeProjectionPass?: (pass: () => Promise<PassOutcome>) => Promise<PassOutcome>;
+  readonly applyProjectionChanges?: (changes: SyncResponse["changes"]) => Promise<void>;
+  readonly recoverProjections?: () => Promise<void>;
+  readonly revokeProjections?: () => Promise<void>;
 }
 
 /** State that lives as long as the engine: a `413` shrinks the batch for the following passes too. */
@@ -91,8 +101,11 @@ function bookkeeping(response: SyncResponse, now: Date): SqlStatement[] {
 async function applyAnswer(
   { deps }: PassContext,
   batch: readonly OutboxEvent[],
-  response: SyncResponse,
+  call: Extract<SyncCallResult, { readonly ok: true }>,
 ): Promise<void> {
+  const response = call.response;
+  // A final upload grants no downloadable projections; acknowledge its results before revoking access.
+  if (canDownload(call)) await deps.applyProjectionChanges?.(response.changes);
   const sentIds = new Set(batch.map((event) => event.envelope.id));
   // The server also lists a review item for every event of this batch it rejected or put in
   // review; those are already in `results`. Only reviews of other events add information.
@@ -106,7 +119,10 @@ async function applyAnswer(
   );
   const answered = batch.map((event) => transitionFor(event, response, deps.now()));
   // One transaction: statuses, cursor and versions are saved together or not at all.
-  await deps.outbox.settle([...answered, ...pulled], bookkeeping(response, deps.now()));
+  const statements = canDownload(call)
+    ? bookkeeping(response, deps.now())
+    : [setStatement(KV_KEYS.lastSyncAt, deps.now().toISOString())];
+  await deps.outbox.settle([...answered, ...pulled], statements);
 }
 
 function eventsTo(
@@ -136,8 +152,10 @@ async function waitAsked(context: PassContext, batch: readonly OutboxEvent[], wa
 }
 
 async function dropCursor(context: PassContext, batch: readonly OutboxEvent[]): Promise<Step> {
-  const drop = [removeStatement(KV_KEYS.syncCursor)];
+  const drop =
+    context.deps.recoverProjections === undefined ? [removeStatement(KV_KEYS.syncCursor)] : [];
   await context.deps.outbox.settle(eventsTo(batch, "release", null), drop);
+  await context.deps.recoverProjections?.();
   context.cursorReset = true;
   // The pull that failed must be repeated without the cursor, even when the batch was empty.
   return { next: "again", pull: true };
@@ -173,12 +191,20 @@ async function parkMalformed(
   return CONTINUE;
 }
 
+function isProjectionRevoked(failure: SyncFailure): boolean {
+  return (
+    failure.kind === "http" &&
+    (failure.status === 403 || (failure.status === 401 && failure.code === "session_revoked"))
+  );
+}
+
 async function handleFailure(
   context: PassContext,
   batch: readonly OutboxEvent[],
   failure: SyncFailure,
 ): Promise<Step> {
   const code = failureCode(failure);
+  if (isProjectionRevoked(failure)) await context.deps.revokeProjections?.();
   const plan = planFailure(failure, {
     batchSize: batch.length,
     cursorAlreadyReset: context.cursorReset,
@@ -201,6 +227,35 @@ async function handleFailure(
   }
 }
 
+function canDownload(call: SyncCallResult): boolean {
+  return (
+    call.isSessionRevoked !== true &&
+    call.needsFinalUpload !== true &&
+    call.completeSession === undefined
+  );
+}
+/** Session completion belongs after durable batch settlement and downloaded-access cleanup. */
+async function finishSession({ deps }: PassContext, complete?: () => Promise<void>): Promise<Step> {
+  if (deps.revokeProjections === undefined) await deps.kv.remove(KV_KEYS.syncCursor);
+  else await deps.revokeProjections();
+  await complete?.();
+  return stop({ kind: "blocked", reason: "needsLogin", code: "session_revoked" });
+}
+async function failedCall(
+  context: PassContext,
+  batch: readonly OutboxEvent[],
+  call: Extract<SyncCallResult, { readonly ok: false }>,
+): Promise<Step> {
+  const step = await handleFailure(context, batch, call.failure);
+  if (call.completeSession !== undefined) return finishSession(context, call.completeSession);
+  if (
+    call.needsFinalUpload === true &&
+    call.failure.kind === "http" &&
+    [401, 403].includes(call.failure.status)
+  )
+    return { next: "again", pull: true };
+  return step;
+}
 async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): Promise<Step> {
   const { deps } = context;
   const cursor = await deps.kv.get(KV_KEYS.syncCursor);
@@ -211,27 +266,13 @@ async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): P
     events: batch.map((event) => event.envelope),
   };
   const call = await deps.transport(request);
-  if (!call.ok) {
-    const step = await handleFailure(context, batch, call.failure);
-    if (call.completeSession !== undefined) return finishSession(call.completeSession);
-    if (
-      call.needsFinalUpload === true &&
-      call.failure.kind === "http" &&
-      [401, 403].includes(call.failure.status)
-    )
-      return { next: "again", pull: true };
-    return step;
-  }
-  await applyAnswer(context, batch, call.response);
-  if (call.completeSession !== undefined) return finishSession(call.completeSession);
+  if (!call.ok) return failedCall(context, batch, call);
+  await applyAnswer(context, batch, call);
+  if (call.completeSession !== undefined || call.isSessionRevoked === true)
+    return finishSession(context, call.completeSession);
   const missing = missingResultOutcome(batch, call.response);
   if (missing !== null) return stop(missing);
   return { next: "again", pull: call.response.changes.has_more || call.needsFinalUpload === true };
-}
-
-async function finishSession(complete: () => Promise<void>): Promise<Step> {
-  await complete();
-  return stop({ kind: "blocked", reason: "needsLogin", code: "session_revoked" });
 }
 
 /**
@@ -243,7 +284,7 @@ async function finishSession(complete: () => Promise<void>): Promise<Step> {
  * Concurrency rule: a pass is the only code that moves events in or out of `sending`, and the
  * engine never runs two passes at once (see `SyncEngine`).
  */
-export async function runSyncPass(deps: SyncPassDeps, state: PassState): Promise<PassOutcome> {
+async function runPass(deps: SyncPassDeps, state: PassState): Promise<PassOutcome> {
   const context: PassContext = { deps, state, cursorReset: false };
   let pull = true;
   for (;;) {
@@ -256,4 +297,10 @@ export async function runSyncPass(deps: SyncPassDeps, state: PassState): Promise
     if (step.next === "stop") return step.outcome;
     pull = step.pull;
   }
+}
+
+/** The optional shared turn prevents an in-flight sync answer from superseding a newer bootstrap/revocation. */
+export function runSyncPass(deps: SyncPassDeps, state: PassState): Promise<PassOutcome> {
+  const pass = () => runPass(deps, state);
+  return deps.serializeProjectionPass === undefined ? pass() : deps.serializeProjectionPass(pass);
 }

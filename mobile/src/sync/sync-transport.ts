@@ -15,6 +15,7 @@ export type SyncBatchRequest = Schemas["SyncBatchRequest"];
 export type SyncResponse = Schemas["SyncResponse"];
 
 interface SyncCompletion {
+  readonly isSessionRevoked?: boolean;
   readonly needsFinalUpload?: boolean;
   readonly completeSession?: () => Promise<void>;
 }
@@ -80,14 +81,14 @@ function classifySyncAnswer(
   wrapped: SyncAnswer<Awaited<ReturnType<typeof postSync>>>,
 ): SyncCallResult {
   const result = wrapped.answer;
-  const completion = {
-    ...(wrapped.completeSession === undefined ? {} : { completeSession: wrapped.completeSession }),
-    ...(wrapped.needsFinalUpload === undefined
-      ? {}
-      : { needsFinalUpload: wrapped.needsFinalUpload }),
-  };
+  const completion = syncCompletion(wrapped);
   if (result.response.ok && isSyncResponse(result.data)) {
-    return { ok: true, response: result.data, ...completion };
+    return {
+      ok: true,
+      response: result.data,
+      ...completion,
+      isSessionRevoked: result.response.headers.get("X-Session-Revoked") === "true",
+    };
   }
   const envelope = isErrorEnvelope(result.error) ? result.error : undefined;
   return {
@@ -100,5 +101,14 @@ function classifySyncAnswer(
       fieldCodes: fieldCodesOf(envelope),
       retryAfterSeconds: parseRetryAfter(result.response.headers.get("Retry-After")),
     },
+  };
+}
+
+function syncCompletion(wrapped: SyncAnswer<unknown>): SyncCompletion {
+  return {
+    ...(wrapped.completeSession === undefined ? {} : { completeSession: wrapped.completeSession }),
+    ...(wrapped.needsFinalUpload === undefined
+      ? {}
+      : { needsFinalUpload: wrapped.needsFinalUpload }),
   };
 }

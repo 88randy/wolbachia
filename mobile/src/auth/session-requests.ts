@@ -12,7 +12,7 @@ interface SessionRequestDeps {
   readonly credentials: CredentialStore;
   readonly isOnline: () => boolean;
   readonly refresh: (pair: TokenPair) => Promise<TokenPair>;
-  readonly endSession: () => Promise<void>;
+  readonly endSession: (hasFinalReceipt?: boolean) => Promise<void>;
 }
 export interface SyncAnswer<Answer> {
   readonly answer: Answer;
@@ -52,7 +52,8 @@ export class SessionRequests {
   readonly #deps: SessionRequestDeps;
   #inFlight: Promise<void> | null = null;
   #inFlightPair: TokenPair | null = null;
-  #ending: { sessionId: string | null; promise: Promise<void> } | null = null;
+  #ending: { sessionId: string | null; hasFinalReceipt: boolean; promise: Promise<void> } | null =
+    null;
 
   constructor(deps: SessionRequestDeps) {
     this.#deps = deps;
@@ -105,7 +106,7 @@ export class SessionRequests {
       answer = await call();
     }
     if (this.#belongsTo(session) && hasEndedResponse(answer, isSync)) {
-      await this.#beginEnd(session.sessionId);
+      await this.#beginEnd(session.sessionId, isFinalUpload(answer));
     }
     return answer;
   }
@@ -149,13 +150,15 @@ export class SessionRequests {
     }
   }
 
-  #beginEnd(sessionId: string | null): Promise<void> {
+  #beginEnd(sessionId: string | null, hasFinalReceipt = false): Promise<void> {
     if (this.#deps.credentials.getSnapshot().sessionId !== sessionId) return Promise.resolve();
-    if (this.#ending?.sessionId === sessionId) return this.#ending.promise;
-    const promise = this.#deps.endSession().finally(() => {
+    // A final receipt must not inherit an ordinary request's fallible projection cleanup.
+    if (this.#ending?.sessionId === sessionId && (!hasFinalReceipt || this.#ending.hasFinalReceipt))
+      return this.#ending.promise;
+    const promise = this.#deps.endSession(hasFinalReceipt).finally(() => {
       if (this.#ending?.promise === promise) this.#ending = null;
     });
-    this.#ending = { sessionId, promise };
+    this.#ending = { sessionId, hasFinalReceipt, promise };
     return promise;
   }
 

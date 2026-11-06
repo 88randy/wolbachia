@@ -1,3 +1,5 @@
+import { P9Screen } from "../features/day/P9Screen.tsx";
+import { P10Screen } from "../features/day/P10Screen.tsx";
 import { OvitrapScreen } from "../features/ovitrap-check/OvitrapScreen.tsx";
 import { ScannerScreen } from "../features/ovitrap-check/ScannerScreen.tsx";
 import { P21Screen } from "../features/ovitrap-check/P21Screen.tsx";
@@ -14,6 +16,10 @@ import type { Route } from "./routes.ts";
 
 function screenFor(route: Route): ReactNode {
   switch (route.name) {
+    case "day":
+      return <P9Screen />;
+    case "map":
+      return <P10Screen />;
     case "ovitrapCapture":
       return <OvitrapScreen />;
     case "ovitrapScanner":
