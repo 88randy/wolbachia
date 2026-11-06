@@ -1384,6 +1384,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/ovitrap-advisories/{id}/:
+    get:
+      operationId: field_ovitrap_advisories_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: If-None-Match
+        schema:
+          type: string
+        description: The `ETag` (the snapshot `version`) the client already holds.
+          When it is still current the answer is `304` with no body.
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: at
+        schema:
+          type: string
+          format: date-time
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - field
+      security:
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OvitrapAdvisory'
+          description: ''
+        '304':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/field/rules/:
     get:
       operationId: field_rules_list
@@ -7703,6 +7759,44 @@ components:
       description: |-
         * `human` - human
         * `system` - system
+    AdvisoryParameters:
+      type: object
+      properties:
+        closed_house_weeks_to_relocate:
+          $ref: '#/components/schemas/AdvisoryRuleVersion'
+        incidents_to_relocate:
+          $ref: '#/components/schemas/AdvisoryRuleVersion'
+      required:
+      - closed_house_weeks_to_relocate
+      - incidents_to_relocate
+    AdvisoryRuleContext:
+      type: object
+      properties:
+        timezone:
+          type: string
+        epi_week:
+          $ref: '#/components/schemas/EpiWeekEnum'
+        parameters:
+          $ref: '#/components/schemas/AdvisoryParameters'
+      required:
+      - epi_week
+      - parameters
+      - timezone
+    AdvisoryRuleVersion:
+      type: object
+      properties:
+        version_id:
+          type: string
+          format: uuid
+        value:
+          type: integer
+        effective_from:
+          type: string
+          format: date-time
+      required:
+      - effective_from
+      - value
+      - version_id
     Application:
       type: object
       properties:
@@ -11434,6 +11528,79 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    OvitrapAdvisory:
+      type: object
+      properties:
+        schema_version:
+          type: integer
+          maximum: 1
+          minimum: 1
+        version:
+          type: string
+        physical_ovitrap_id:
+          type: string
+          format: uuid
+        point_id:
+          type: string
+          format: uuid
+        as_of:
+          type: string
+          format: date-time
+        state:
+          $ref: '#/components/schemas/OvitrapAdvisoryStateEnum'
+        unavailable_reason:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/UnavailableReasonEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        rule_context:
+          allOf:
+          - $ref: '#/components/schemas/AdvisoryRuleContext'
+          nullable: true
+        rule_context_version:
+          type: string
+          nullable: true
+        required_epi_weeks:
+          type: array
+          items:
+            type: string
+          nullable: true
+          maxItems: 8
+        observed_closed_house_weeks:
+          type: array
+          items:
+            type: string
+          nullable: true
+          maxItems: 8
+        incident_count:
+          type: integer
+          minimum: 0
+          nullable: true
+        suggested:
+          type: boolean
+          nullable: true
+      required:
+      - as_of
+      - incident_count
+      - observed_closed_house_weeks
+      - physical_ovitrap_id
+      - point_id
+      - required_epi_weeks
+      - rule_context
+      - rule_context_version
+      - schema_version
+      - state
+      - suggested
+      - unavailable_reason
+      - version
+    OvitrapAdvisoryStateEnum:
+      enum:
+      - available
+      - unavailable
+      type: string
+      description: |-
+        * `available` - available
+        * `unavailable` - unavailable
     OvitrapBundle:
       type: object
       properties:
@@ -16417,6 +16584,16 @@ components:
       description: |-
         * `place` - place
         * `check` - check
+    UnavailableReasonEnum:
+      enum:
+      - rule_context_unavailable
+      - organization_context_unavailable
+      - future_cutoff
+      type: string
+      description: |-
+        * `rule_context_unavailable` - rule_context_unavailable
+        * `organization_context_unavailable` - organization_context_unavailable
+        * `future_cutoff` - future_cutoff
     UnblockRequest:
       type: object
       description: Free-text reason of a fleet unblock; the service validates it with

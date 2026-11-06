@@ -514,7 +514,7 @@ def test_foreign_author_and_scope_loss_voids_never_expose_dependencies(field):
 @pytest.mark.django_db
 def test_closed_house_suggestion_uses_latest_epi_weeks_and_is_advisory(field):
     from ovitraps.lifecycle.selectors import suggest_relocation
-    from ovitraps.models import Ovitrap
+    from ovitraps.models import Ovitrap, OvitrapReading
 
     ingest(field, envelope(field))
     trap = Ovitrap.objects.get()
@@ -541,14 +541,88 @@ def test_closed_house_suggestion_uses_latest_epi_weeks_and_is_advisory(field):
         ingest(field, lifecycle(field, "relocate", device_time=CAPTURED + timedelta(days=7))).status
         == "accepted"
     )
+    from ovitraps.lifecycle.advisory_selectors import select_advisory_observation
+    from rules.models import RuleParameter
+    from tests.factories import RuleParameterVersionFactory
+
+    parameter = RuleParameter.objects.get(
+        organization=field.batch.organization, key="closed_house_weeks_to_relocate"
+    )
+    RuleParameterVersionFactory(
+        parameter=parameter, value=8, effective_from=CAPTURED + timedelta(days=8)
+    )
+    # The existing two weeks plus six later weeks fill the actual configured upper bound.
+    for offset in range(14, 50, 7):
+        instant = CAPTURED + timedelta(days=offset)
+        field.batch = replace(field.batch, sent_at=instant, received_at=instant)
+        assert (
+            ingest(
+                field,
+                envelope(
+                    field,
+                    "ovitrap.check",
+                    device_time=instant,
+                    payload={
+                        "finding": "closed-house",
+                        "paddle_present": False,
+                        "has_eggs": None,
+                        "paddle_type": None,
+                        "bag_code": None,
+                    },
+                ),
+            ).status
+            == "accepted"
+        )
+    # A second physical identity makes the same point/week's second reading legitimate.
+    replacement = lifecycle(field, "replace", device_time=instant)
+    assert ingest(field, replacement).status == "accepted"
+    field.identity = replacement.payload["replacement_id"]
+    new_trap = Ovitrap.objects.get(client_uuid=field.identity)
+    assert new_trap.pk != trap.pk
+    assert new_trap.sampling_point_id == trap.sampling_point_id
+    assert (
+        ingest(
+            field,
+            envelope(
+                field,
+                "ovitrap.check",
+                device_time=instant,
+                payload={
+                    "finding": "closed-house",
+                    "paddle_present": False,
+                    "has_eggs": None,
+                    "paddle_type": None,
+                    "bag_code": None,
+                },
+            ),
+        ).status
+        == "accepted"
+    )
+    observed = select_advisory_observation(trap, instant)
+    assert (
+        OvitrapReading.objects.filter(
+            ovitrap__sampling_point=trap.sampling_point, epi_week=observed.required_epi_weeks[0]
+        ).count()
+        == 2
+    )
+    assert observed.required_epi_weeks == tuple(f"2026-W{week:02d}" for week in range(13, 5, -1))
+    assert observed.observed_closed_house_weeks == observed.required_epi_weeks
+    assert len(observed.observed_closed_house_weeks) == 8  # Duplicate visit adds no label.
+    later = select_advisory_observation(trap, instant + timedelta(days=7))
+    assert later.observed_closed_house_weeks == observed.required_epi_weeks[:-1]
+    assert len(later.observed_closed_house_weeks) == 7  # Earliest existing reading is outside.
 
 
 @pytest.mark.django_db
 def test_incident_threshold_counts_fixed_point_across_physical_replacements(field):
+    from field_sync.services import sync_batch
+    from ovitraps.lifecycle.advisory_selectors import select_advisory_observation
     from ovitraps.lifecycle.selectors import suggest_relocation
     from ovitraps.models import Ovitrap
+    from tests.ovitrap_support import second_courier
 
     ingest(field, envelope(field))
+    first_identity = field.identity
     for index in range(3):
         checked = envelope(
             field,
@@ -561,7 +635,12 @@ def test_incident_threshold_counts_fixed_point_across_physical_replacements(fiel
                 "bag_code": None,
             },
         )
-        assert ingest(field, checked).status == "accepted"
+        result = (
+            sync_batch(second_courier(field), [checked], None).results[0]
+            if index == 1
+            else ingest(field, checked)
+        )
+        assert result.status == "accepted"
         trap = Ovitrap.objects.get(
             organization=field.batch.organization, client_uuid=field.identity
         )
@@ -570,6 +649,12 @@ def test_incident_threshold_counts_fixed_point_across_physical_replacements(fiel
             sent = lifecycle(field, "replace")
             assert ingest(field, sent).status == "accepted"
             field.identity = sent.payload["replacement_id"]
+    original = Ovitrap.objects.get(client_uuid=first_identity)
+    assert select_advisory_observation(original, CAPTURED).incident_count == 3
+    assert select_advisory_observation(trap, CAPTURED - timedelta(seconds=1)).incident_count == 0
+    assert ingest(field, void_event(field, checked)).status == "accepted"
+    assert select_advisory_observation(original, CAPTURED).incident_count == 2
+    assert not suggest_relocation(trap, CAPTURED)
 
 
 @pytest.mark.django_db
