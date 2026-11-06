@@ -547,6 +547,16 @@ def test_void_reviewed_event_without_operational_row_preserves_history_without_p
         voids_event_id=reviewed.id,
     )
     assert ingest(field, void).status == "accepted"
+    from field_sync.models import FieldEvent
+    from reviews.models import ReviewDependencyResolution, ReviewEffectReceipt
+
+    original = FieldEvent.objects.get(pk=reviewed.id)
+    assert original.status == "in_review"
+    assert original.voided_at is not None
+    assert not ReviewEffectReceipt.objects.filter(source_event=original).exists()
+    assert not ReviewDependencyResolution.objects.filter(
+        dependency__source_event_id=void.id
+    ).exists()
     assert OvitrapVoid.objects.filter(target_event_id=reviewed.id).exists()
     assert pull(field.batch, before["cursor"]).ovitraps == []
     assert bootstrap_bundle(field.batch)["ovitraps"] == before["ovitraps"]

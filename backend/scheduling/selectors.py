@@ -32,6 +32,7 @@ from organizations.models import Membership, Organization
 from organizations.selectors import filter_by_effective_scope
 from organizations.services import effective_scope
 from ovitraps.models import Ovitrap, OvitrapReading
+from reviews.effect_receipts import effective_effects
 from rules.selectors import get_values_in_force
 from scheduling.models import (
     AssignmentVersion,
@@ -171,19 +172,25 @@ def _task_projection(
     ).order_by("-version")
     capture_tz = ZoneInfo(organization.timezone)
     placements = (
-        Ovitrap.objects.filter(
-            organization=organization,
-            sampling_point_id=OuterRef("point_id"),
-            event__voided_at__isnull=True,
+        effective_effects(
+            Ovitrap.objects.filter(
+                organization=organization,
+                sampling_point_id=OuterRef("point_id"),
+                event__voided_at__isnull=True,
+            ),
+            "event",
         )
         .annotate(capture_date=TruncDate("event__device_time", tzinfo=capture_tz))
         .filter(capture_date=OuterRef("due_date"))
     )
     readings = (
-        OvitrapReading.objects.filter(
-            organization=organization,
-            ovitrap__sampling_point_id=OuterRef("point_id"),
-            event__voided_at__isnull=True,
+        effective_effects(
+            OvitrapReading.objects.filter(
+                organization=organization,
+                ovitrap__sampling_point_id=OuterRef("point_id"),
+                event__voided_at__isnull=True,
+            ),
+            "event",
         )
         .annotate(capture_date=TruncDate("event__device_time", tzinfo=capture_tz))
         .filter(capture_date=OuterRef("due_date"))

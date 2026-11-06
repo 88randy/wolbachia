@@ -3,6 +3,7 @@ import { AppText } from "../../ui/AppText.tsx";
 import { Badge } from "../../ui/Badge.tsx";
 import type { DayTask } from "./domain.ts";
 import { ACTION_KEYS, markerState } from "./presentation.ts";
+import { TaskDelivery } from "./TaskDelivery.tsx";
 export function TaskSummary({ row }: { readonly row: DayTask }) {
   const t = useT();
   const locale = useLocale();
@@ -24,11 +25,7 @@ export function TaskSummary({ row }: { readonly row: DayTask }) {
         </AppText>
       )}
       <Badge tone={state.tone} icon={state.icon} label={t(state.key)} />
-      {row.delivery === "none" ? null : (
-        <AppText>
-          {t(row.delivery === "phone" ? "mobile.day.phoneSaved" : "mobile.day.serverReceived")}
-        </AppText>
-      )}
+      <TaskDelivery delivery={row.delivery} />
       {row.isKept ? <Badge tone="warning" icon="alert" label={t("mobile.day.kept")} /> : null}
     </>
   );

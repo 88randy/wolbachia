@@ -4,7 +4,16 @@ Permission-scoped motorcycles list and human-code record. See [web README](../..
 
 - `fleet-query.ts`: the single query-key/invalidation boundary, scoped by session identity. Supported center filtering uses the explicit URL center before the shell active center, including exact code lookups; both contexts are keyed.
 - `use-motorcycle-action.ts`, `use-send-motorcycle.ts`: one guarded write attempt, never replayed.
-- `MotorcycleReasonDialog`: shared void dialog and validation with local action translations.
+- `MotorcycleReasonDialog`: void-only catalog dialog with a forked, local in-use error translation.
+- `UnblockDialog` (#186): a required text-only evidence field, no void catalog read/selection.
+  `use-unblock-form` reuses GET `/me/` limits and the same normalized visible-character,
+  forbidden-character and server-minimum helpers as void reasons. Native modal lifecycle
+  starts on Cancel, traps keyboard focus and returns to the trigger. A synchronous attempt
+  guard and busy controls prevent duplicate writes; errors retain evidence. Session boundary
+  unmount and the existing action guard discard stale completions and never replay a write.
+- `unblock-failure.ts`: narrowly retains known unblock conflict codes through the existing
+  request adapter: already unblocked and inspection required have distinct localized messages;
+  unfamiliar conflicts get a safe generic message. All conflict invalidation stays unchanged.
 - `use-fleet-tabs.ts`: flat tab links preserving the list search.
 - `*.test.tsx`: acceptance behavior, conflict evidence and deterministic session races.
 
@@ -15,9 +24,8 @@ A refresh keeps the existing record visible with `Refreshing` and the existing
 verification guard on actions. List loading/empty/error states remain provided by
 `DataTable`, with the permission-gated Add action in its header. Status labels use
 `StatusPill`, actions use shared `Button`, and record codes/dates use mono tokens.
-The native create/reason dialogs keep their existing logic and the shared dialog
-CSS; no missing B-05 history, mutation or permission behavior is introduced.
-
+The native create/void dialogs retain their existing logic. Unblock uses the same
+token-based dialog CSS and form feedback with its dedicated text-only content; no missing B-05 history, mutation or permission behavior is introduced.
 
 Issue #218 connects the existing server exact-code filter and ordering keys (code, plate,
 created_at, center). Only rendered supported columns expose sort controls. Filters, sorting

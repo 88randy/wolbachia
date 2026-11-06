@@ -39,11 +39,23 @@ describe("W20 fleet list", () => {
   });
   test("owns server filters and paging in the URL and preserves them on a record link", async () => {
     const user = userEvent.setup();
+    let release: (reply: Response) => void = () => undefined;
+    const held = new Promise<Response>((resolve) => {
+      release = resolve;
+    });
     const { api, app } = await openFleet({
       path: `${LIST}?page=2`,
-      routes: { [GET]: pageOf([motorcycle()], 60) },
+      routes: {
+        [GET]: ({ path }) =>
+          path.includes("is_blocked=true") && path.includes("include_voided=true")
+            ? held
+            : pageOf(
+                [motorcycle({ id: "00000000-0000-4000-8000-000000000002", code: "M-02" })],
+                60,
+              ),
+      },
     });
-    await screen.findByRole("link", { name: "M-03" });
+    await screen.findByRole("link", { name: "M-02" });
     await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "true");
     await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
     await waitFor(() => {
@@ -53,15 +65,14 @@ describe("W20 fleet list", () => {
       });
     });
     await waitFor(() => {
-      expect(
-        api.requests.some(
-          ({ path }) => path.includes("is_blocked=true") && path.includes("include_voided=true"),
-        ),
-      ).toBe(true);
+      const finalRequest = api.requests.at(-1);
+      expect(finalRequest?.path).toContain("is_blocked=true");
+      expect(finalRequest?.path).toContain("include_voided=true");
     });
-    expect(screen.getByRole("link", { name: "M-03" }).getAttribute("href")).toContain(
-      "is_blocked=true",
-    );
+    release(pageOf([motorcycle()], 60));
+    const href = (await screen.findByRole("link", { name: "M-03" })).getAttribute("href");
+    expect(href).toContain("is_blocked=true");
+    expect(href).toContain("include_voided=true");
     expect(
       api.requests.some(({ path }) => path.includes("page=2") && path.includes("page_size=25")),
     ).toBe(true);

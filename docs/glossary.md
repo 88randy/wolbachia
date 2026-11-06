@@ -70,10 +70,21 @@ Rules:
 
 ## Inventory and money-like control
 
+Inventory foundation (#105) retains these distinct facts: `SupplyTypeVersion`
+(supply master revision), `BiologicalProtocolVersion` (named ranges/shelf life and
+reading windows), `LocationVersion` (storage master revision), `LotVersion` (lot
+draft/detail revision), `LotAdmission` (authored opening custody), `Piece` (immutable
+inventory identity), `StockOperation`/`StockMovement` (source and signed ledger leg),
+`ConditionReading` (both clocks and evaluated protocol), `ConditionBreach` (owned
+hold), `ConditionIncidentLink` (once-only incident linkage) and
+`AutomaticIncidentOrigin` (explicit system source). A piece is not implicitly an
+Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
+
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
 | insumo | supply | `/supply-types/`, `supply` | Anything the courier is assigned and consumes. |
 | lote | lot | `/lots/`, `lot` | Lot of a supply (`ReleaseLot` for release lots). |
+| vida útil | shelf life | `shelf_life_seconds` | Explicit elapsed duration from the laid-on local midnight, added in UTC. A calendar `expiry_date` instead ends at its following local midnight; neither supplies a scientific default (#105). |
 | merma | shrinkage | `shrinkage` | Expected or unexplained loss in a reconciliation. |
 | baja | write-off | `/write-offs/`, `write_off` | Removal from stock, with reason and evidence. |
 | conciliación | reconciliation | `/reconciliations/`, `reconciliation` | Assigned vs used vs returned, per courier and day. |
@@ -112,7 +123,7 @@ Rules:
 | --- | --- | --- | --- |
 | lote de sincronización | sync batch | `events` in `POST /field/sync/` | The events the phone uploads in one request. Never "batch" for supply lots (that is `lot`). |
 | evento de campo | field event | `FieldEvent`, `event`, `/field/sync/` | One immutable record sent by the phone; its id is a UUID generated on the phone. Status `accepted`, `rejected` or `in_review`. |
-| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | What a supervisor must look at: a rejected or in-review field event. Insert-only; decisions arrive with #22. |
+| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | A rejected or in-review field event for supervisor review. Insert-only ingest history; later ReviewDecision records remain separate. |
 
 ## Devices and sessions
 
@@ -166,3 +177,27 @@ Rules:
 | --- | --- | --- | --- |
 | tarea asignada | assigned task | `AssignedTask`, `assignments` | Downloaded scheduling assignments v2 task (#109): code -> point_code, point -> point_id, revision -> version, category -> risk. quadrant_assignment is ownership metadata, never a task. No server completion status or coordinates; [ASSUMPTION] progress uses local captures and server removal, while optional location/reference/history enrichment awaits #196. |
 | manifiesto de mapa | map manifest | `MapManifest`, `map_manifests` | Licensed offline asset metadata (asset id/version/hash/size/quadrant); it does not publish a download URL or certify local file readiness. |
+
+## Scoped incidents (#104)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| versión de tipo de incidente | incident type version | IncidentTypeVersion, type_id | Immutable UUID pins explicit SLA, severity, evidence and named chain. |
+| incidente reportado | reported incident | Incident, kind=reported | Separate from legacy fleet MotorcycleBlockEvent IDs. |
+| evento de incidente | incident event | IncidentEvent, expected_revision | Append-only full state/comment/closure snapshot. |
+| bloqueo propio | owned blocker | IncidentBlocker | Only its owning incident can resolve it. |
+| acuse de escalamiento | escalation receipt | EscalationReceipt | Unique stage/deadline; final reminders also use rolling hours. |
+| intención de aviso | notice intent | IncidentNoticeIntent | Durable scoped B-07 producer fact, never delivery proof. |
+| origen de incidente | incident origin | IncidentOrigin | Explicit adoption of an opaque ovitrap marker; no historic ID rewrite. |
+
+## Append-only review decisions (#113)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| decisión de revisión | review decision | ReviewDecision | Separate immutable audit; original ingest never rewritten. |
+| recibo de efecto | effect receipt | ReviewEffectReceipt | Exactly-once applied operation or proven legacy adoption. |
+| disposición de seguridad | safety disposition | ReviewSafetyDisposition | Current administrative attestation with real inspection/proof; only its source hold. |
+| validación de jornada | shift validation | ShiftDecision | Approve/observe a CLOSED frame, independent from Shift lifecycle. |
+| historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
+| resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |
+| reserva de identidad padre | parent claim | ReviewParentClaim | Immutable typed identity reservation for one source; cancellation does not reassign it or authorize a child. |

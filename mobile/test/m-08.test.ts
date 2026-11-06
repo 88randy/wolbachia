@@ -14,10 +14,20 @@ import { captureEvent, voidEvent } from "../src/features/ovitrap-check/events.ts
 void test("AC1: conditional Yes/No never generates numeric egg fields", () => {
   for (const hasEggs of [true, false]) {
     const payload = checkPayload(
-      makeDraft({ paddlePresent: true, hasEggs, paddleType: "standard", bagCode: "B-1" }),
+      makeDraft({
+        paddlePresent: true,
+        hasEggs,
+        paddleType: "standard",
+        bagCode: "B-1",
+        evidence: [{ id: "66666666-6666-4666-8666-666666666666", fileRef: "owned-photo" }],
+        sourceEvidence: [
+          { id: "77777777-7777-4777-8777-777777777777", fileRef: "historical-photo" },
+        ],
+      }),
     );
     assert.equal(payload.has_eggs, hasEggs);
     assert.equal(payload.bag_code, "B-1");
+    assert.deepEqual(payload.evidence_ids, ["66666666-6666-4666-8666-666666666666"]);
     for (const key of ["egg_count", "eggs", "count"])
       assert.equal(Object.hasOwn(payload, key), false);
     assert.deepEqual(
@@ -32,6 +42,7 @@ void test("AC1: conditional Yes/No never generates numeric egg fields", () => {
         "paddle_type",
         "is_lagged",
         "bag_code",
+        "evidence_ids",
       ].sort(),
     );
   }

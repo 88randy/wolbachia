@@ -4,6 +4,29 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#113 adds page-number review queue/detail, immutable accept/void/open-incident
+decisions, optional source-bound safety disposition and CLOSED-shift approve/
+observe. Source ingest/provenance remain separate from current decision state.
+The single typed CourierHistoryEntry producer supplies actual review/whole-shift
+history with current subject filtering before cursor/bootstrap; it is not a
+delivery receipt or durable permission. Unknown-scope audit stays pending.
+See ../../backend/reviews/README.md for exact effect/legacy/evidence boundaries.
+
+#105 adds supply-types, locations/stock and lots/conditions. Resource ids remain
+stable master/lot UUIDs; version is the exact immutable snapshot UUID. PATCH uses
+expected_revision. Lot supply_version_id/protocol_id pins change explicitly;
+quantity is initial custody input, never a writable balance. Both current local
+reading slots are required. Unknown protocols/safety data remain nondispatchable.
+No transfer, stock writer, label or courier assignment contract is fabricated.
+See ../../backend/inventory/README.md for queries, codes and integration limits.
+
+#270 adds paginated real movement provenance and action-scoped owner, placement
+and protocol incident-type version choices. Lot reads retain exact supply/location
+snapshots and admission identity; blocker/calendar-date facets execute server-side.
+Use generated discriminated placement choices and their existing write-payload
+mapping; no LotWrite quadrant_id, broad permission or transfer API is introduced.
+Both artifacts are generated from backend source; never edit them manually.
+
 #102 adds private upload authorization/renewal/finalization, raw authenticated PUT
 and sanitized private downloads. The returned PUT url is relative; Upload-Lease
 and authentication are both required. Download responses are binary, not JSON.

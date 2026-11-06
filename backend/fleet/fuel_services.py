@@ -1,5 +1,6 @@
 """fuel.load: immutable capture with review-only advisories and explicit provisional history."""
 
+from copy import deepcopy
 from decimal import Decimal
 from typing import Any, cast
 
@@ -7,6 +8,7 @@ from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.registry import EventContext
 from fleet.codes import FUEL_EFFICIENCY_REVIEW, FUEL_MOTORCYCLE_MISMATCH
 from fleet.models import EfficiencyStatus, FuelLoad
+from reviews.effect_receipts import effective_effects
 from rules.selectors import list_parameters_with_current, to_number
 from shifts.access import lock_motorcycle
 from shifts.codes import MOTORCYCLE_UNKNOWN, ODOMETER_DECREASED, SHIFT_NOT_OPEN
@@ -41,6 +43,10 @@ def apply_fuel_load(ctx: EventContext, values: dict[str, Any]) -> None:
 
 
 def _thresholds(ctx: EventContext) -> dict[str, Any]:
+    if ctx.review_authorization is not None:
+        from fleet.review_facts import frozen_thresholds
+
+        return frozen_thresholds(ctx)
     versions = list_parameters_with_current(ctx.organization, ctx.envelope.device_time).filter(
         key__in=[MIN_KEY, MAX_KEY]
     )
@@ -78,11 +84,17 @@ def _thresholds(ctx: EventContext) -> dict[str, Any]:
 def _comparable_baseline(
     ctx: EventContext, motorcycle: Motorcycle, values: dict[str, Any]
 ) -> FuelLoad | None:
-    history = FuelLoad.objects.filter(
-        organization=ctx.organization,
-        motorcycle=motorcycle,
-        provisional=False,
-        event__voided_at__isnull=True,
+    if ctx.review_authorization is not None:
+        from fleet.review_facts import frozen_baseline
+
+        return frozen_baseline(ctx)
+    history = effective_effects(
+        FuelLoad.objects.filter(
+            organization=ctx.organization,
+            motorcycle=motorcycle,
+            event__voided_at__isnull=True,
+        ),
+        "event",
     )
     # Late uploads cannot rewrite an already measured interval. Equal timestamps are unknown.
     if (
@@ -102,6 +114,12 @@ def _insert_fuel(
     thresholds = _thresholds(ctx)
     baseline = _comparable_baseline(ctx, shift.motorcycle, values)
     previous_km = highest_recorded_km(shift.motorcycle)
+    if ctx.review_authorization is not None:
+        from fleet.review_facts import frozen_comparison
+
+        original_maximum = frozen_comparison(ctx)["highest_recorded_km"]
+        readings = [value for value in (previous_km, original_maximum) if value is not None]
+        previous_km = max(readings) if readings else None
     decreased = previous_km is not None and values["odometer_km"] < previous_km
     efficiency = (
         None
@@ -118,6 +136,16 @@ def _insert_fuel(
         if efficiency is None
         else (EfficiencyStatus.REVIEW if outside else EfficiencyStatus.OK)
     )
+    from fleet.review_facts import calculation_facts
+
+    ctx.observed_facts.update(
+        deepcopy(calculation_facts(ctx, shift.motorcycle, (baseline, thresholds, previous_km)))
+    )
+    ctx.observed_facts["fuel_assessment"] = {
+        "efficiency_km_l": None if efficiency is None else str(efficiency),
+        "efficiency_status": state,
+        "provisional": bool(ctx.review_code or decreased or outside),
+    }
     FuelLoad.objects.create(
         organization=ctx.organization,
         created_by=ctx.user,

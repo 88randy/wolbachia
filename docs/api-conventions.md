@@ -516,3 +516,246 @@ locks or external I/O. Contention/deferred-FK lock waits/deadlocks roll back and
 return 429 removal_in_progress, Retry-After: 1. Resolution is a retained dependent:
 later source void uses existing ovitrap_void_blocked with a safe resolution ID.
 No new sync event, result code or courier payload is added. See accepted ADR 130.
+
+## Scoped incidents (#104 / B-06)
+
+There is one `/incidents/` facade and the existing `fleet-incident` basename.
+Unqualified GET and `?kind=fleet` preserve the legacy paged `Incident` schema,
+MotorcycleBlockEvent IDs, `motorcycle.read`, filters and ordering. `?kind=reported`
+explicitly selects the paged `ReportedIncident` schema and `incident.read`.
+OpenAPI represents the response item alternatives with oneOf and documents the
+query selector; the legacy object gains no discriminator property. Grant changes
+never silently change the selected representation. New detail/POST/actions apply
+to reported incidents only. Lists filter state, severity, owner, type_id, center,
+quadrant and exact scoped code before paging; ordering is created_at with id ties.
+
+GET/POST `/incident-types/`; PATCH `/incident-types/{id}/` appends a version.
+The URL `id` is the stable incident-type CatalogItem UUID; `current_version_id`
+is the immutable IncidentTypeVersion UUID. Configure an unconfigured existing
+catalog item (including protected Other) with expected_revision=0. POST creates
+a regular catalog item plus its first version. PATCH requires the current revision
+and retains omitted settings. Code is immutable; Other cannot be renamed, have
+its icon changed or be deactivated, and a report of Other requires text.
+
+Type configuration names supervisor_id/coordinator_id (nullable), terminal_id,
+positive supervisor_sla_seconds/coordinator_sla_seconds and severity
+low|medium|high|critical. Report evidence minimum is 0..100 (default 0); closure
+minimum is 1..100 (default 1). Blocker kinds are dispatch|quadrant_closure, default
+empty. These are owned holds exposed by a selector, not a new dispatch/closure API.
+Duplicate blocker kinds return 400 validation_error with
+fields.blocker_kinds code duplicate_blocker_kind before a type version is retained.
+No organization gets an invented SLA, terminal roster or automatic data backfill.
+Reserved emergency-accident must be critical. The terminal must be an active
+same-organization member with actual administrative capabilities plus incident
+read/close; each incident rechecks the exact paired scope.
+
+POST `/incidents/` uses the incident.report payload documented in sync.md.
+`type_id` is explicitly the **immutable version UUID**, not the catalog item ID.
+Typed resource_ref derives scope; otherwise explicit scope is required for web
+creation. If both are supplied they must agree, including applicable quadrant.
+There is no GPS/home-center inference. Web uses server time for both capture
+clocks; field captures retain their original device/server clocks and source.
+
+POST `/incidents/{id}/{comments|reassign|change-severity|close|void}/` requires
+expected_revision. Comments use text; reassign uses owner_id (Membership UUID);
+change-severity uses severity; close uses reason and evidence_ids; void uses reason.
+Close/void normalize the existing 10 visible-character minimum and 1000 maximum.
+Evidence must be verified by #102 and bound to this incident or its unique source
+event; unbound owned files can bind during the atomic close. Other-case/unfinished
+files never certify closure. Close resolves server-selected IDs of this incident's
+owned holds only; fleet inspection clearance and RemovalResolution remain separate.
+Incident void refuses dependent history/holds (409) rather than deleting them.
+Voiding a source retains the linked incident, original ingest status and timeline.
+
+Permissions: incident.read, incident.create (report/comment), incident.reassign
+(reassign/severity), incident.close (close/void), incident.manage_type. Current
+organization AND each action's paired center/applicable quadrant apply before
+lock contention and again in the transaction. Foreign/out-of-scope relations are
+404; missing actions and metadata/OPTIONS are default-denied (403).
+Stale state/revision/evidence/configuration returns 409 incident_conflict with safe
+blocked_by reason/unblocked_by_role/link entries and, for stale decisions, the
+entry's current_revision (explicitly typed by IncidentConflictResponse). NOWAIT/deferred lock
+contention returns 429 incident_in_progress, Retry-After: 1, rolling back all writes.
+
+Account order precedes Organization NO KEY UPDATE → Incident NO KEY UPDATE → sorted
+Upload NO KEY UPDATE. Type configuration uses Organization → Catalog → CatalogItem.
+Source void already owns FieldEvent first; it never acquires it below Organization.
+System scheduler/publication facts explicitly carry actor_kind=system, null author
+and policy_version; human facts require the real author. New migrations enforce
+insert-only guards named exactly `<table>_guard`; existing facts are not backfilled.
+
+Escalation skips missing intermediates, advances at server deadlines and terminates
+at the active administrative final owner. Severity changes retain the pinned SLA
+and deadline; reassign does not reset the clock or move the stage backward. Final
+reminders require a rolling hour, not just a new calendar-hour bucket. One catch-up
+transition/reminder per invocation prevents bursts after outages or clock rollback.
+Configuration guards preserve the latest active type terminal and each open case's
+effective terminal, while allowing retired historical owners once no longer needed.
+
+ReportedIncident.publication_state is pending_outbox|outboxed for its latest event.
+After commit, concrete IncidentEvent, critical emergency FieldEvent (including
+audit-only ReviewItem references) and severe MotorcycleBlockEvent causes publish
+deduplicated IncidentNoticeIntent rows. Current scoped supervisor/coordinator and
+eligible source/owner recipients are checked individually; named terminal fallback
+uses explicit type configuration. Unknown scope/owner remains pending, never global.
+Keyset recovery pages advance past pending causes before continuing; no delivered
+state, email, push, native screen or notification inbox is claimed. B-07/#49 owns
+delivery. Review acceptance is #113; mobile evidence transport remains #246.
+
+## Inventory foundation (#105 / B-08)
+
+GET/POST /supply-types/, /locations/ and /lots/ plus GET/PATCH detail routes use
+stable UUID identities, organization-unique codes and immutable version/revision
+responses. POST supplies code and explicit data; PATCH requires expected_revision
+and appends a snapshot. POST /supply-types/{id}/deactivate/ requires expected_revision,
+is idempotent and retains historical types. No PUT/DELETE or balance/status mutation
+is registered; unknown operational inputs return 400.
+
+Supplies define label, unit, identity_kind=piece|lot, is_biological/is_chemical,
+expiry_required/requires_insecticide_free, descriptive specification and optional
+named protocol. Protocol includes explicit shelf_life_seconds/expiry_basis=laid_on,
+inclusive temperature/humidity min/max, two ordered nonoverlapping reading_windows
+(minute intervals in 0..1440), required_fields and incident_type_id. No biological,
+scientific, commercial or protocol values are seeded. Missing configuration is
+explicitly nondispatchable; humidity is represented in 0..100 percent.
+
+Locations use actual center_id, optional quadrant_id within that center, kind=
+biofactory|warehouse|center, GeoJSON Point, active same-organization owner Membership
+and nullable is_insecticide_free. Unknown/false storage safety never implies true.
+Biological drafts require species/strain/generation/laid_on/estimated_organism_count
+and real provenance/expiry/location. Incomplete proposed quantity/location stay
+provisional until admission. Once admitted, quantity/location/piece identities cannot
+be overwritten. supply_version_id/protocol_id pins change explicitly; unrelated
+detail revisions preserve them. An expiry date means the next local midnight, with
+original date/timezone retained. Equality at expiry is expired; supplied protocol
+basis/duration bounds explicit expiry. No species lifetime is inferred.
+
+Lot responses include draft|available|blocked, missing_fields, safe blocked_by,
+expiry/provenance and stock_url. Both configured slots of the current organization-
+local day are required, even before the second slot; no yesterday/grace substitution.
+A technical 10,000-piece cap bounds integral Decimal admission/SQL expansion, not
+biology. Stock is SUM of immutable signed movements with actual source operations.
+
+GET /locations/{id}/stock/ requires location.read and lot.read for disclosed rows;
+page-number paging, lot/supply filters, lot__code/piece_id ordering (optional minus),
+stable lot/piece ties. Rows expose quantity/unit, lot/supply/piece and source UUIDs.
+GET/POST /lots/{id}/conditions/ requires lot.read/condition.create and appends
+{device_time,temperature_c,humidity_pct}. Both clocks and exact evaluated lot,
+location/protocol/range/timezone/window are retained. Exact natural-key replay
+(organization,lot,device_time) returns the original; changed measurements conflict.
+Future capture time is 400. Missing named protocol is unassessed, never normal.
+
+A breached reading retains one owned hold and its new explicit automatic adapter
+creates one #104 incident. No fake FieldEvent, borrowed incident.create or delivery
+claim. Missing configured type/terminal keeps measurement+hold pending for bounded
+recovery. Only its linked incident's verified-evidence close clears that hold;
+normal readings and other closes cannot erase it. Incident identity/pending fields
+require current incident.read. No Incident -> Lot lock callback is added.
+
+All lists use page-number paging, scoped exact ?code, server search/order. Supply
+facets: is_active/is_biological/identity_kind; locations: center/kind/is_insecticide_free;
+lots: supply/location/center/status/expiry_from/expiry_before. Supply/location order:
+code|created_at; lots also expiry; id resolves ties. Conditions use local_date,
+evaluation, device_time_from/device_time_before and device_time ordering. Range ends
+are exclusive; no default 'expires soon' threshold. Detail lookup ignores list facets.
+
+Actions default-deny and retain paired center/applicable quadrant scope; foreign/
+out-of-scope references are 404, rechecked under the arbiter.
+Supply-type/protocol masters are explicitly organization-wide configuration; work
+axes do not apply to those known resources. Storage Location/Lot requires an
+actual center, with none/empty selected denied there. A missing center/unknown
+model never becomes organization-wide by omission. Storage placement authorization
+precedes even code-existence lookup. See inventory/README.md for policy sources.
+Seed grants once: admin all, warehouse master create/update plus lot/conditions, supervisor reads/
+lot writes/conditions, entomologist reads/conditions. supply_type.deactivate is
+admin-only by default; custom/revoked/government grants remain unchanged.
+Cookie+CSRF/current pinned bearer inherit existing rules, without final-sync
+entitlement here. Account locks precede Organization NOWAIT NO KEY UPDATE and
+inventory identities; deferred checks share bounded rollback. No I/O in SQL.
+400 has fields; 409 inventory_state_conflict has safe blocked_by reasons;
+429 inventory_in_progress has Retry-After:1. No sync event/result/localization change.
+Real transfer/debit/current-destination authority is #106/#107, not an invented
+route/writer here. Details: ../backend/inventory/README.md.
+
+### Inventory read additions (#270)
+
+All new lists use standard count/next/previous/results page-number pagination,
+current tenant/action authority and scoped filtering before count/page. Missing
+actions return 403; missing/foreign/out-of-scope references share 404. Invalid
+query shapes, bounds and values return coded 400 validation_error. No write,
+grant, model, default or custody workflow is added.
+
+| GET route | Input and boundary | Projection |
+| --- | --- | --- |
+| /locations/{id}/movements/ | Current location.read parent/placement plus lot.read for each real lot; lot/supply/operation UUID, piece=UUID\|none, exact unit, inclusive created_at_from and exclusive created_at_before; ordering=created_at\|lot_code\|quantity, optional minus, default -created_at, id tie. Scoped operation filters never expand foreign legs. | id, operation_id, line_number, lot_id, lot_code, supply_id, location_id, location_code, piece_id, signed Decimal quantity, unit, unit_version_id, source_kind=lot_admission, actual source_id, created_at, nullable created_by User reference. |
+| /locations/owner-options/ | Create: center + quadrant=UUID\|none under location.create. Update: location only under location.update; derive immutable placement. Active actual Center required in both modes. search and ordering=label\|-label, membership UUID tie. | membership_id, label only; full name with username fallback, duplicate eligible labels disambiguated with username. |
+| /locations/placement-options/ | Closed create modes: action=location.create\|lot.create + center. Update: lot only, derives lot.update and actual immutable pair; overrides refused. Active Center required. Search actual code, stable kind/code/id ties. | location.create: kind=quadrant\|center_only, quadrant_id, code. lot modes: kind=location\|center_only_draft, location_id, code, quadrant_id, is_read_only. Admitted lots expose only exact retained readonly Location. |
+| /supply-types/protocol-incident-type-options/ | No supply: supply_type.create; supply=UUID: supply_type.update on actual org master, even when work axes are none. Search code/label, code/id order. | Active configured latest_types: incident_type_version_id, code, label; version UUID is the accepted ProtocolWrite.incident_type_id. No incident.read or new terminal policy. |
+
+Location create maps its choice to center_id/quadrant_id. Lot create maps a real
+Location to initial_location_id, deriving quadrant server-side, or sends center_id
+only for a center-only draft. LotWrite never accepts quadrant_id. Lot update
+choices match its original actual pair; only a center-only draft can clear location.
+The existing writer revalidates all choices when saving.
+
+Owner eligibility uses DISTINCT raw scope values with the shared whole-shape
+safe_scope/contains normalizer, then a lazy SQL predicate requiring eligible raw
+membership scope AND the SAME assigned active same-org location.read Profile's
+eligible raw scope, excluding any active same-org government binding. Count/page
+follow eligibility. No full membership/user roster or second authorization grammar
+is introduced. Final evaluation sees revocations; new raw scopes may wait until
+refresh. O(D) distinct scopes/binds can approach N; values are never capped or
+broadened. See inventory/README.md for the cost and PostgreSQL verification gate.
+
+Additive Lot.supply_version is the exact pinned Supply projection, including its
+protocol; admission_id is the real admission UUID or null. Lot.location_version
+is exactly {id,location_id,code,name} from its retained location_version_id or null.
+These labels belong to lot.read, even without current location.read; current
+Location geometry/owner/safety/stock remains separately authorized. Protocol adds
+incident_type={incident_type_version_id,code,label}|null from its exact retained FK.
+Location adds owner_label under location.read. Existing fields remain unchanged.
+
+Lot blocked_by accepts supply_type_inactive|lot_expired|protocol_not_configured|
+storage_safety_not_configured|insecticide_free_required|condition_slot_missing|
+condition_breach, matching current evaluate_lot facts before paging, including
+drafts. expiry_from_date/expiry_before_date (YYYY-MM-DD) resolve organization-local
+day starts inclusive/exclusive, including DST. They cannot mix with the same-bound
+expiry_from/expiry_before instant; inverted resolved bounds are refused. Existing
+instant facets/orders/status remain; no implicit expires-soon threshold exists.
+## Append-only reviews (#113)
+
+GET /review-items/ uses StandardPagination (count/next/previous/results), kind/code
+filters, server search and explicit ordering. Detail separates immutable original
+source/provenance from current state/evaluation and revision-ordered decisions.
+POST {id}/accept/, void/ or open-incident/ requires review_item.decide and
+{expected_revision,reason,evidence_ids?}; returns 201 immutable ReviewDecision.
+is_terminal/audit_only/decision_state are server-derived/read-only. Source status,
+subject/effect receipt/terminal flags are not writable. Stale revisions return
+409 review_conflict; unsafe effects 409 review_blocked with blocked_by; contention
+uses existing retryable 429. Tenant/actor/current paired scopes are rechecked.
+
+Unknown source scope has a narrow read/audit exception: ONE contributing grant
+for that requested permission explicitly has centers=all AND quadrants=all. No
+cross-profile union/dimension borrowing or missing-axis inference. Accept stays
+blocked. Void under this exception is AUDIT ONLY/nonterminal/pending, with no
+source/operational mutation, foreign lookup/labels or unattributable hold clear.
+
+Optional void safety_disposition={inspection_id,attest_safe_now:true} applies only
+to NEW/unapplied severe source with exact bound Motorcycle. It also needs current
+motorcycle.service_clear, real same-Motorcycle unvoided ServiceRecord inspection
+and verified exact ReviewItem evidence. Missing proof retains pending hold with
+409 safety_disposition_required. Current administrative attestation uses server
+time, never photo/date/performed_at as physical-time proof. Referenced inspection
+void is 409 service_has_safety_disposition. Other faults/holds remain intact.
+
+POST /shifts/{id}/approve/ or observe/ needs shift.validate, revision/reason and a
+CLOSED frame. It appends audit without changing Shift lifecycle. Every current
+source center/quadrant plus Motorcycle context must be covered. Later sources
+invalidate approval without deleting history. Cookie CSRF, pinned bearer and
+default-deny action mapping remain inherited; no new permission/force-close route.
+
+Review uploads keep one immutable REAL parent. Follow-up Incident is a current
+reviewer report at server_now/source_event=None; its review link is audit, never
+parent-read authority. The typed history v1 owner appends real CourierChange plus
+publication receipt once and filters actual current subjects BEFORE LIMIT/cursor/
+bootstrap. See ../backend/reviews/README.md for causal, legacy and safety boundaries.

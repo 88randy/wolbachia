@@ -1,9 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useSessionGuard } from "../session/use-session-guard";
 import { submitVoid } from "../void";
 import type { VoidChoice, VoidResult } from "../void";
 import { invalidateFleet } from "./fleet-query";
+import { withUnblockFailure } from "./unblock-failure";
 export type MotorcycleAction = "void" | "unblock";
 /** One explicit attempt. The revision guard precedes session reports and invalidation;
  * no effect, mutation retry or re-authentication callback can replay the write. */
@@ -26,10 +28,29 @@ export function useMotorcycleAction(id: string, action: MotorcycleAction) {
             body: { reason },
             signal,
           });
-    const result = await submitVoid(queryClient, send, isStale);
+    const { result, error } = await submitMotorcycleAction(queryClient, send, isStale);
     if (!isStale() && shouldRefresh(result)) void invalidateFleet(queryClient);
-    return isStale() ? { ok: false, isStale: true } : result;
+    if (isStale()) return { ok: false, isStale: true };
+    return action === "unblock" ? withUnblockFailure(result, error) : result;
   };
+}
+
+async function submitMotorcycleAction(
+  queryClient: QueryClient,
+  send: Parameters<typeof submitVoid>[1],
+  isStale: () => boolean,
+) {
+  let error: unknown;
+  const result = await submitVoid(
+    queryClient,
+    async () => {
+      const answer = await send();
+      error = answer.error;
+      return answer;
+    },
+    isStale,
+  );
+  return { result, error };
 }
 function shouldRefresh(result: VoidResult): boolean {
   if (result.ok) return true;

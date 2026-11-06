@@ -9,7 +9,10 @@ export interface MarkerState {
 }
 /** Native markers and list badges use the same icon/text state so color never carries meaning alone. */
 export function markerState(row: DayTask): MarkerState {
-  if (row.isReviewed) return { tone: "success", icon: "check", key: "mobile.day.doneStatus" };
+  if (row.completion === "complete")
+    return { tone: "success", icon: "check", key: "mobile.day.doneStatus" };
+  if (row.completion === "unknown")
+    return { tone: "neutral", icon: "clock", key: "mobile.day.unknownStatus" };
   if (row.task.action === "relocate")
     return { tone: "neutral", icon: "move", key: "mobile.day.relocateStatus" };
   return { tone: "info", icon: "clock", key: "mobile.day.pendingStatus" };

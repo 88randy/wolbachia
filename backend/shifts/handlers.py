@@ -11,6 +11,7 @@ from shifts.codes import (
     SHIFT_OPEN_EVENT_TYPE,
 )
 from shifts.payloads import ShiftClosePayloadSerializer, ShiftOpenPayloadSerializer
+from shifts.review import ShiftReviewAdapter
 from shifts.services import close_shift, open_shift
 
 
@@ -30,6 +31,7 @@ def register_shift_handlers() -> None:
             on_void=refuse_void,
             codes=OPEN_CODES,
             checks_shift=False,
+            review_adapter=ShiftReviewAdapter(),
         )
     )
     register(
@@ -41,5 +43,6 @@ def register_shift_handlers() -> None:
             on_void=refuse_void,
             codes=CLOSE_CODES,
             checks_shift=False,
+            review_adapter=ShiftReviewAdapter(),
         )
     )

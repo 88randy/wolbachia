@@ -25,7 +25,7 @@ def _identifiers(references: list[str]) -> set[UUID]:
 
 def require_event_evidence(ctx: EventContext, references: list[str]) -> None:
     """New required evidence cannot be satisfied by pending, foreign or differently bound files."""
-    if ctx.review_code is not None:
+    if ctx.review_code is not None and not ctx.acknowledges(ctx.review_code):
         raise EventNeedsReview(ctx.review_code)
     identifiers = _identifiers(references)
     event = FieldEvent(
@@ -34,11 +34,16 @@ def require_event_evidence(ctx: EventContext, references: list[str]) -> None:
         created_by=ctx.user,
         device=ctx.device,
         type=ctx.envelope.type,
+        shift_id=ctx.envelope.shift_id,
         payload=ctx.envelope.payload,
     )
     actor = UploadActor(ctx.user, ctx.organization, ctx.device.pk)
     try:
-        scope = require_upload_permission(actor)
+        scope = (
+            ctx.review_authorization.historical_scope
+            if ctx.review_authorization is not None
+            else require_upload_permission(actor)
+        )
         allowed = has_event_upload_scope(scope, event)
     except (Http404, PermissionDenied):
         allowed = False

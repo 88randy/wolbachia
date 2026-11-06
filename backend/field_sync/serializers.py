@@ -20,6 +20,7 @@ from field_sync.projection_serializers import (
     QuadrantReferenceSerializer,
     SamplingPointBundleSerializer,
 )
+from reviews.history_serializers import CourierHistoryEntrySerializer
 from reviews.models import ReviewKind
 
 MAX_LATITUDE = 90
@@ -166,6 +167,11 @@ class OvitrapChangeSerializer(ProducerChangeSerializer):
     data = OvitrapBundleSerializer()  # type: ignore[assignment]
 
 
+class HistoryChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = CourierHistoryEntrySerializer()  # type: ignore[assignment]
+
+
 class ChangesSerializer(serializers.Serializer[Any]):
     cursor = serializers.CharField(allow_null=True)
     reviews = ReviewChangeSerializer(many=True)
@@ -177,7 +183,7 @@ class ChangesSerializer(serializers.Serializer[Any]):
     supplies = ProducerChangeSerializer(many=True)
     permits = ProducerChangeSerializer(many=True)
     eligibility = ProducerChangeSerializer(many=True)
-    history = ProducerChangeSerializer(many=True)
+    history = HistoryChangeSerializer(many=True)
     map_manifests = ProducerChangeSerializer(many=True)
     quadrants = QuadrantChangeSerializer(many=True)
     sampling_points = SamplingPointChangeSerializer(many=True)
@@ -204,7 +210,7 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     supplies = serializers.ListField(child=serializers.DictField())
     permits = serializers.ListField(child=serializers.DictField())
     eligibility = serializers.ListField(child=serializers.DictField())
-    history = serializers.ListField(child=serializers.DictField())
+    history = CourierHistoryEntrySerializer(many=True)
     map_manifests = MapManifestSerializer(many=True)
     quadrants = QuadrantReferenceSerializer(many=True)
     sampling_points = SamplingPointBundleSerializer(many=True)

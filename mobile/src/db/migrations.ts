@@ -1,6 +1,8 @@
 import type { SqlExecutor, SqlStatement } from "./sql.ts";
-import { readInteger } from "./sql.ts";
 import { KV_KEYS } from "./kv-store.ts";
+import { ATTACHMENT_SCHEMA } from "../attachments/schema.ts";
+import { schemaProfiles } from "./schema-profile.ts";
+import { inspectSchemaLineage } from "./schema-lineage.ts";
 
 /**
  * Schema of the phone's database. Each entry is one migration; the position (1-based) is the
@@ -126,15 +128,24 @@ const MIGRATIONS: readonly (readonly string[])[] = [
       sequence INTEGER NOT NULL DEFAULT 0,payload TEXT,removed INTEGER NOT NULL DEFAULT 0 CHECK(removed IN (0,1)))`,
     `INSERT INTO kv(key,value) VALUES('${KV_KEYS.daySamplingPointsBootstrapPending}','true')`,
   ],
+  ATTACHMENT_SCHEMA,
+  [`INSERT INTO kv(key,value) VALUES('${KV_KEYS.dayCompletionBootstrapPending}','true')`],
 ];
 
 /** Highest schema version this build knows. */
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
+/** @internal Released statements are also the sole source of structural prefix profiles. */
+export const CANONICAL_MIGRATIONS = MIGRATIONS;
+const LINEAGE_PROFILES = schemaProfiles(MIGRATIONS);
+
+export function assertCanonicalDatabaseLineage(db: SqlExecutor): Promise<number> {
+  return inspectSchemaLineage(db, LINEAGE_PROFILES);
+}
+
 /** Applies the migrations the database has not seen yet, each one atomically with its version. */
 export async function migrate(db: SqlExecutor): Promise<void> {
-  const rows = await db.query("PRAGMA user_version");
-  const current = rows[0] === undefined ? 0 : readInteger(rows[0], "user_version");
+  const current = await assertCanonicalDatabaseLineage(db);
   for (const [index, statements] of MIGRATIONS.entries()) {
     const version = index + 1;
     if (version <= current) continue;

@@ -51,7 +51,12 @@ def _link_declared(actor: UploadActor, upload: Upload, event_id: UUID) -> bool:
         upload=upload,
         defaults={"organization": actor.organization, "created_by": actor.user, **parent},
     )
-    is_same_parent = link.field_event_id == event_id and link.fault_id is None
+    is_same_parent = (
+        link.field_event_id == event_id
+        and link.fault_id is None
+        and link.incident_id is None
+        and link.review_item_id is None
+    )
     if not is_same_parent:
         logger.info(
             "Evidence binding retained: organization=%s user=%s device=%s event=%s upload=%s",

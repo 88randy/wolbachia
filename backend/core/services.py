@@ -32,13 +32,25 @@ def void_validated_record[VoidableT: VoidableMixin](
         locked = cast(
             VoidableT, type(instance)._default_manager.select_for_update().get(pk=instance.pk)
         )
-        if locked.voided_at is not None:
-            raise AlreadyVoidedError
-        locked.voided_at = timezone.now()
-        locked.voided_by = user
-        locked.void_reason = choice.reason
-        locked.void_reason_code = choice.code
-        locked.save(update_fields=["voided_at", "voided_by", "void_reason", "void_reason_code"])
+        void_locked_record(locked, user, choice)
+    return locked
+
+
+def void_locked_record[VoidableT: VoidableMixin](
+    locked: VoidableT, user: User, choice: ResolvedVoidReason
+) -> VoidableT:
+    """Same validated mutation for a caller already holding its NO KEY row lock."""
+    if not transaction.get_connection().in_atomic_block:
+        raise RuntimeError("An existing target lock requires its surrounding transaction.")
+    if not choice.is_active or choice.organization_id != locked.organization_id:  # type: ignore[attr-defined]
+        raise ValueError("A void requires an active choice from the target's organization.")
+    if locked.voided_at is not None:
+        raise AlreadyVoidedError
+    locked.voided_at = timezone.now()
+    locked.voided_by = user
+    locked.void_reason = choice.reason
+    locked.void_reason_code = choice.code
+    locked.save(update_fields=["voided_at", "voided_by", "void_reason", "void_reason_code"])
     return locked
 
 

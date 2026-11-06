@@ -24,7 +24,9 @@ def supervisor_client(
     make_member: MemberFactory,
     codes: tuple[str, ...] = (SHIFT_READ,),
 ) -> APIClient:
-    user, _ = make_member(organization, codes)
+    from tests.fleet_support import grant_fleet_scope
+
+    user, _ = grant_fleet_scope(make_member(organization, codes))
     client = APIClient()
     client.force_authenticate(user)
     return client
@@ -90,6 +92,8 @@ def test_the_detail_carries_the_motorcycle_odometers_and_checklist(
         "close_note",
         "checks",
         "created_at",
+        "validation",
+        "validation_timeline",
     }
 
 

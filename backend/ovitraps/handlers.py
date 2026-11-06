@@ -3,6 +3,7 @@
 from field_sync.registry import EventHandler, register
 from ovitraps.codes import CODES
 from ovitraps.payloads import CheckPayloadSerializer, PlacePayloadSerializer
+from ovitraps.review import OvitrapReviewAdapter
 from ovitraps.services import check_ovitrap, place_ovitrap, void_ovitrap_event
 
 
@@ -15,6 +16,7 @@ def register_ovitrap_handlers() -> None:
             place_ovitrap,
             on_void=void_ovitrap_event,
             codes=CODES,
+            review_adapter=OvitrapReviewAdapter(),
         )
     )
     register(
@@ -25,5 +27,6 @@ def register_ovitrap_handlers() -> None:
             check_ovitrap,
             on_void=void_ovitrap_event,
             codes=CODES,
+            review_adapter=OvitrapReviewAdapter(),
         )
     )
