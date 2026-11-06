@@ -9,18 +9,18 @@ FORWARD_SQL = """
 CREATE FUNCTION upload_insert_only_guard() RETURNS trigger AS $$
 BEGIN RAISE EXCEPTION 'upload records are insert-only'; END;
 $$ LANGUAGE plpgsql;
-CREATE TRIGGER upload_guard BEFORE UPDATE OR DELETE ON uploads_upload FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
-CREATE TRIGGER upload_lease_guard BEFORE UPDATE OR DELETE ON uploads_uploadlease FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
-CREATE TRIGGER upload_source_guard BEFORE UPDATE OR DELETE ON uploads_uploadsource FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
-CREATE TRIGGER upload_verification_guard BEFORE UPDATE OR DELETE ON uploads_uploadverification FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
-CREATE TRIGGER attachment_link_guard BEFORE UPDATE OR DELETE ON uploads_attachmentlink FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
+CREATE TRIGGER uploads_upload_guard BEFORE UPDATE OR DELETE ON uploads_upload FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
+CREATE TRIGGER uploads_uploadlease_guard BEFORE UPDATE OR DELETE ON uploads_uploadlease FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
+CREATE TRIGGER uploads_uploadsource_guard BEFORE UPDATE OR DELETE ON uploads_uploadsource FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
+CREATE TRIGGER uploads_uploadverification_guard BEFORE UPDATE OR DELETE ON uploads_uploadverification FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
+CREATE TRIGGER uploads_attachmentlink_guard BEFORE UPDATE OR DELETE ON uploads_attachmentlink FOR EACH ROW EXECUTE FUNCTION upload_insert_only_guard();
 """
 REVERSE_SQL = """
-DROP TRIGGER attachment_link_guard ON uploads_attachmentlink;
-DROP TRIGGER upload_verification_guard ON uploads_uploadverification;
-DROP TRIGGER upload_source_guard ON uploads_uploadsource;
-DROP TRIGGER upload_lease_guard ON uploads_uploadlease;
-DROP TRIGGER upload_guard ON uploads_upload;
+DROP TRIGGER uploads_attachmentlink_guard ON uploads_attachmentlink;
+DROP TRIGGER uploads_uploadverification_guard ON uploads_uploadverification;
+DROP TRIGGER uploads_uploadsource_guard ON uploads_uploadsource;
+DROP TRIGGER uploads_uploadlease_guard ON uploads_uploadlease;
+DROP TRIGGER uploads_upload_guard ON uploads_upload;
 DROP FUNCTION upload_insert_only_guard();
 """
 
