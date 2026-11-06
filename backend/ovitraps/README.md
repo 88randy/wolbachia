@@ -92,6 +92,16 @@ selectors.py applies paired scope and server filters; capture.py evaluates histo
 findings.py resolves archived catalogs; payloads.py rejects unknown keys;
 handlers.py follows shifts/handlers.py. No third-party dependency is added.
 
+Accepted placement/check and their voids also publish assignments v3 task completion
+(#212), inside the existing fan-out transaction and recipient locks. The scheduling
+projection retains point/action/organization-local due-date semantics and explicit
+task ownership; the capturing courier may differ from the receiving owner. Only an
+active owner in the captured paired field.bootstrap scope receives the task upsert.
+Pending accepted captures complete before FieldEvent insertion; voids recompute from
+remaining active effects using the original source date. Review/replay has no task
+effects. No event status/evidence is rewritten. See scheduling/README.md and ADR 127
+for the publication rule, schema recovery and tests/test_task_completion_212.py.
+
 ## Acceptance map
 
 All new cases are in ../tests/test_ovitraps_b_14.py; helpers in ovitrap_support.py.
