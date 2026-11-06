@@ -100,7 +100,7 @@ export const sync = {
   "sync.result.ovitrapVoidBlocked":
     "Hay lecturas vinculadas a esta colocación. Consulta a tu supervisor para corregirlas.",
   "sync.result.ovitrapStaleIdentity":
-    "La identidad f?sica cambi?. Tu supervisor revisar? la captura sin perder la evidencia.",
+    "La identidad física cambió. Tu supervisor revisará la captura sin perder la evidencia.",
   "sync.result.ovitrapEvidenceRequired":
-    "Falta evidencia fotogr?fica. Tu supervisor revisar? la captura; conserva los archivos pendientes.",
+    "Falta evidencia fotográfica. Tu supervisor revisará la captura; conserva los archivos pendientes.",
 } as const satisfies AreaCatalog<"sync">;
