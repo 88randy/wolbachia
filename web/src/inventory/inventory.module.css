@@ -1,0 +1,113 @@
+.content {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-width: 0;
+}
+.controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-2);
+  min-width: 0;
+  margin-bottom: var(--space-2);
+}
+.controls > * {
+  justify-self: start;
+  max-width: 100%;
+}
+.filters {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+}
+.filters :where(form, div, input, select, label) {
+  min-width: 0;
+  max-width: 100%;
+}
+.filters form {
+  flex-basis: 100%;
+}
+.filters form > div {
+  flex-wrap: wrap;
+}
+.filters input {
+  flex: 1 1 100%;
+  width: 100%;
+}
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-6) * 5)), 1fr));
+  gap: var(--space-2);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  align-items: center;
+}
+.actions > p {
+  margin: 0;
+}
+.form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-width: 0;
+}
+.notes {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+  gap: var(--space-1);
+  overflow-wrap: anywhere;
+}
+.mono {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.map {
+  height: calc(var(--space-6) * 6);
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-card);
+}
+.marker {
+  display: grid;
+  gap: var(--space-1);
+  width: calc(var(--space-6) * 2);
+  overflow-wrap: anywhere;
+  font-family: var(--font-family);
+  font-size: var(--web-type-body-font-size);
+  line-height: var(--web-type-body-line-height);
+  border: var(--web-focus-ring-width) solid var(--color-action);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  padding: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.map :global(.maplibregl-marker:hover) {
+  z-index: 1;
+}
+.map :global(.maplibregl-marker:focus-within) {
+  z-index: 2;
+}
+.options {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1);
+  min-width: 0;
+}
+.summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-1);
+  margin: 0;
+}
+.summary dt {
+  color: var(--color-text-secondary);
+}
+.summary dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}

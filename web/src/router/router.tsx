@@ -1,3 +1,9 @@
+import { InventoryHome } from "../inventory/InventoryHome";
+import { W8Page } from "../inventory/supplies/W8Page";
+import { W9Page } from "../inventory/lots/W9Page";
+import { W10Page } from "../inventory/lots/W10Page";
+import type { ReactElement } from "react";
+import { W11Page } from "../inventory/locations/W11Page";
 import { ORGANIZATION_READ, ROLE_READ } from "../settings/organization/permissions";
 import { W65Page } from "../settings/organization/W65Page";
 import { W68Page } from "../settings/organization/W68Page";
@@ -106,7 +112,9 @@ const areaRoutes = AREAS.map((area) =>
           ? FleetHome
           : area.id === "quadrants"
             ? W22Page
-            : () => <AreaPlaceholder areaId={area.id} />,
+            : area.id === "inventory"
+              ? InventoryHome
+              : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
@@ -228,6 +236,33 @@ const catalogRoute = createRoute({
   component: CatalogsPage,
   errorComponent: AreaErrorState,
 });
+function inventoryRoute<const Path extends string>(
+  path: Path,
+  options: { permission: string; component: () => ReactElement },
+) {
+  return createRoute({
+    getParentRoute: () => authenticatedRoute,
+    path,
+    validateSearch: tableSearchSchema,
+    beforeLoad: ({ context }) => {
+      requirePermission("inventory", context.me, options.permission);
+    },
+    component: options.component,
+    errorComponent: AreaErrorState,
+  });
+}
+const inventoryRoutes = [
+  inventoryRoute("/inventory/supplies", { permission: "supply_type.read", component: W8Page }),
+  inventoryRoute("/inventory/lots", { permission: "lot.read", component: W9Page }),
+  inventoryRoute("/inventory/locations", { permission: "location.read", component: W11Page }),
+  inventoryRoute("/inventory/lots/new", { permission: "lot.create", component: W10Page }),
+  inventoryRoute("/inventory/supplies/$code", {
+    permission: "supply_type.read",
+    component: W8Page,
+  }),
+  inventoryRoute("/inventory/lots/$code", { permission: "lot.read", component: W10Page }),
+  inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
+];
 const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
@@ -236,6 +271,7 @@ const routeTree = rootRoute.addChildren([
   selectOrganizationRoute,
   authenticatedRoute.addChildren([
     ...areaRoutes,
+    ...inventoryRoutes,
     quadrantVersionsRoute,
     catalogsRoute,
     catalogRoute,

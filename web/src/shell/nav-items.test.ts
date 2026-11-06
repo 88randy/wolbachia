@@ -7,18 +7,23 @@ function idsOf(me: Parameters<typeof visibleNavGroups>[0]): string[] {
 }
 
 describe("visibleNavGroups", () => {
-  test("a user with Settings and fleet permissions sees every area", () => {
+  test("a user with all required area read permissions sees every area", () => {
     expect(
-      idsOf(makeMe({ permissions: ["rule_parameter.read", "motorcycle.read", "quadrant.read"] })),
+      idsOf(
+        makeMe({
+          permissions: ["rule_parameter.read", "motorcycle.read", "quadrant.read", "location.read"],
+        }),
+      ),
     ).toHaveLength(13);
   });
 
-  test("a user with no permissions sees Home and the areas still pending, not Settings", () => {
+  test("a user with no permissions sees Home and pending areas, not Settings or Inventory", () => {
     const ids = idsOf(makeMe({ permissions: [] }));
 
     expect(ids).toContain("home");
     expect(ids).toContain("lab");
     expect(ids).not.toContain("settings");
+    expect(ids).not.toContain("inventory");
   });
 
   test("any one of the Settings codes opens Settings", () => {
