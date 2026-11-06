@@ -37,4 +37,3 @@ The shell center preference invalidates context and URL filter chips. B-01 organ
 | Axe, focus/return, live results, light/dark, es-MX/en, expanded text, 320px | Component axe plus `web/e2e/w-03.spec.ts` (CI; deliberately not run locally) |
 
 Manual browser focus/contrast/reflow and real-backend integration remain unverified locally. No Docker, commits, push, PR, merge or deployment.
-
