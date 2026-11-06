@@ -98,4 +98,8 @@ export const sync: Record<keyof typeof source, string> = {
     "The movement needs review. Your supervisor will review the capture.",
   "sync.result.ovitrapVoidBlocked":
     "This placement has linked readings. Contact your supervisor to correct them.",
+  "sync.result.ovitrapStaleIdentity":
+    "The physical identity changed. Your supervisor will review the capture and retain its evidence.",
+  "sync.result.ovitrapEvidenceRequired":
+    "Photo evidence is missing. Your supervisor will review the capture; keep pending files.",
 };

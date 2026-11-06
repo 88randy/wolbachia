@@ -5,6 +5,7 @@ from typing import Any, cast
 from django.db.models import QuerySet
 from drf_spectacular.utils import extend_schema, extend_schema_view
 from rest_framework import mixins, serializers, viewsets
+from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter, SearchFilter
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -12,6 +13,7 @@ from rest_framework.response import Response
 from core.filters import CodeLookupFilter
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
+from ovitraps.lifecycle.serializers import OvitrapHistorySerializer
 from ovitraps.models import Bag, Ovitrap, OvitrapReading
 from ovitraps.permissions import OVITRAP_READ, READING_READ
 from ovitraps.selectors import filter_records
@@ -49,6 +51,7 @@ class RecordViewSet(
             code := query.validated_data.get("code")
         ):
             queryset = queryset.filter(**{self.lookup_field: code})
+            query.validated_data.setdefault("status", "all")
         if self.action != "list":
             query.validated_data.setdefault("status", "all")
         return filter_records(
@@ -67,10 +70,18 @@ class OvitrapViewSet(RecordViewSet):
     lookup_field = "client_uuid"
     lookup_url_kwarg = "id"
     queryset = Ovitrap.objects.select_related(
-        "event", "placement", "sampling_point__block__quadrant", "point_version"
+        "event", "placement", "replacement", "sampling_point__block__quadrant", "point_version"
     )
     serializer_class = OvitrapSerializer
-    required_permissions = {"list": OVITRAP_READ, "retrieve": OVITRAP_READ}
+    required_permissions = {"list": OVITRAP_READ, "retrieve": OVITRAP_READ, "history": OVITRAP_READ}
+
+    @extend_schema(responses=OvitrapHistorySerializer)
+    @action(detail=True, methods=["get"])
+    def history(self, request: Request, *args: object, **kwargs: object) -> Response:
+        from ovitraps.lifecycle.selectors import ovitrap_history
+        from ovitraps.lifecycle.serializers import OvitrapHistorySerializer
+
+        return Response(OvitrapHistorySerializer(ovitrap_history(self.get_object())).data)
 
 
 class ReadingViewSet(RecordViewSet):

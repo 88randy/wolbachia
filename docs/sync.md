@@ -728,3 +728,56 @@ validate/export OpenAPI via spectacular, then generate packages/api-client types
 This backend-only work does not hand-edit generated files. The lead must regenerate
 both artifacts before integration; its script's database placeholder must not be
 used to connect to host 5432 in this worktree.
+
+
+## Ovitrap lifecycle (#112, B-15)
+
+ovitraps registers three schema-1 handlers, all through field_event.sync and the
+existing review pipeline/savepoint:
+
+| Type | Strict payload |
+| --- | --- |
+| ovitrap.replace | {ovitrap_id: physical UUID, replacement_id: unused phone UUID, reason_code, other_text?, evidence_ids: UUID[]} |
+| ovitrap.relocate | {ovitrap_id: physical UUID, proposed_location: [longitude, latitude], reason_code, other_text?, evidence_ids: UUID[]} |
+| ovitrap.remove | {ovitrap_id: physical UUID, reason_code, other_text?, is_recovered: boolean, evidence_ids: UUID[]} |
+
+Unknown keys and numeric physical UUIDs reject as invalid_payload; physical IDs
+use UUID strings. UUID evidence is opaque/unverified, max
+100; absence is a review blocker, never silent acceptance. Valid finite WGS84
+proposed_location does not alter approved geometry. All three resolve their reason
+from the exact archived delivered catalog: replacement-reason, relocation-reason,
+removal-reason. Other requires text and regular choices forbid it. Archived labels,
+original envelope, applied historical rules/version ids and both timestamps survive.
+
+| Result code | Outcome / next step |
+| --- | --- |
+| `ovitrap_stale_identity` | in_review, no effects: retired/replaced physical identity, pre-placement capture or already-used replacement UUID; supervisor reconciliation retains evidence. |
+| `ovitrap_evidence_required` | in_review, no effects: no photo/evidence references; preserve pending attachments for review. |
+
+Existing ovitrap_inaccessible is the shared unknown/foreign/ungranted rejection.
+Existing catalog/GPS/rule/distance/speed/point and invalid_payload codes remain as
+listed for B-14. All declared codes have sync.result.* entries in es-MX/en and are
+checked by test_sync_registry (no duplicate registry tests). All review signals,
+including clock/shift/final upload, precede new identities, proposals, removals,
+incident links and feed appends. B-22 acceptance and B-33 proposal decisions are
+separate writers; original FieldEvent status and evidence are never rewritten.
+
+Replacement creates a new physical identity at the same fixed point plus lineage;
+removed/replaced identities stay searchable. Removal retires the identity; accepted
+abandoned/removed findings and unrecovered removals reserve one incident-link marker
+per physical trap via constraint+savepoint. No incident app or stock effects exist.
+Unrecovered state is available to the future closure gate until explicit resolution.
+Voids use record.void, normalize 10..1000 text and append OvitrapVoid. Dependents on
+new replacement identities/proposals or competing placement after removal block the
+void with safe scoped IDs and preserve every source/dependent row.
+
+User -> Device -> DeviceSession -> TokenPair precede the actor courier try-lock.
+Organization NO KEY UPDATE serializes configuration; shared fan-out tries remaining
+recipient locks before SamplingPoint NO KEY UPDATE and old Ovitrap. New identity
+insertion follows old-identity locking. Try-lock contention is retryable 429 with
+Retry-After and atomic rollback; row/deferred-FK waits retain timeout/deadlock mapping.
+No network/storage/mail under locks. Replacement emits old/new upserts; removal emits
+a retired upsert; proposal emits nothing. Courier schema 1 adds optional is_retired
+(default false for old payloads) without changing existing field meanings. Version
+hashes include nonvoided lineage/removal event UUIDs; pending source handling keeps
+feed and subsequent bootstrap consistent. Details: ADR 119 and lifecycle/README.md.

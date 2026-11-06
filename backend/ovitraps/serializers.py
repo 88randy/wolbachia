@@ -1,12 +1,13 @@
 """Read-only projections preserve event, capture, rule and catalog provenance."""
 
-from typing import Any
+from typing import Any, cast
 
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from core.serializers import OrgScopedModelSerializer
-from ovitraps.models import Bag, Ovitrap, OvitrapReading
+from ovitraps.lifecycle.models import PhysicalOvitrapLineage
+from ovitraps.models import Bag, Ovitrap, OvitrapReading, PlacementAttempt
 
 
 class ProvenanceSerializer(OrgScopedModelSerializer):
@@ -69,16 +70,51 @@ class OvitrapSerializer(ProvenanceSerializer):
     id = serializers.UUIDField(source="client_uuid", read_only=True)
     code = serializers.CharField(read_only=True)
     point_code = serializers.CharField(source="sampling_point.code", read_only=True)
-    evaluated_rules = serializers.JSONField(source="placement.evaluated_rules", read_only=True)
-    rule_version_ids = serializers.JSONField(source="placement.rule_version_ids", read_only=True)
-    supply_refs = serializers.JSONField(source="placement.supply_refs", read_only=True)
-    evidence_ids = serializers.JSONField(source="placement.evidence_ids", read_only=True)
+    evaluated_rules = serializers.SerializerMethodField()
+    rule_version_ids = serializers.SerializerMethodField()
+    supply_refs = serializers.JSONField(
+        source="placement.supply_refs", read_only=True, default=list
+    )
+    evidence_ids = serializers.SerializerMethodField()
+
+    is_retired = serializers.SerializerMethodField()
+    suggest_relocation = serializers.SerializerMethodField()
+
+    def _capture_record(self, instance: Ovitrap) -> PlacementAttempt | PhysicalOvitrapLineage:
+        return cast(
+            PlacementAttempt | PhysicalOvitrapLineage,
+            getattr(instance, "placement", None) or getattr(instance, "replacement", None),
+        )
+
+    @extend_schema_field(serializers.JSONField())
+    def get_evaluated_rules(self, instance: Ovitrap) -> dict[str, Any]:
+        return dict(self._capture_record(instance).evaluated_rules)
+
+    @extend_schema_field(serializers.JSONField())
+    def get_rule_version_ids(self, instance: Ovitrap) -> dict[str, str]:
+        return dict(self._capture_record(instance).rule_version_ids)
+
+    @extend_schema_field(serializers.JSONField())
+    def get_evidence_ids(self, instance: Ovitrap) -> list[str]:
+        return list(self._capture_record(instance).evidence_ids)
+
+    def get_is_retired(self, instance: Ovitrap) -> bool:
+        return bool(
+            getattr(instance, "is_replaced", False) or getattr(instance, "is_removed", False)
+        )
+
+    def get_suggest_relocation(self, instance: Ovitrap) -> bool:
+        from ovitraps.lifecycle.selectors import suggest_relocation
+
+        return suggest_relocation(instance)
 
     class Meta:
         model = Ovitrap
         fields = (
             "id",
             "code",
+            "is_retired",
+            "suggest_relocation",
             "sampling_point",
             "point_code",
             "point_version",
@@ -92,6 +128,15 @@ class OvitrapSerializer(ProvenanceSerializer):
 
 
 class ReadingSerializer(ProvenanceSerializer):
+    incident_link = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.UUIDField(allow_null=True))
+    def get_incident_link(self, instance: OvitrapReading) -> str | None:
+        if instance.finding_code not in {"abandoned", "removed"}:
+            return None
+        marker = instance.ovitrap.incident_links.first()
+        return None if marker is None else str(marker.pk)
+
     ovitrap = serializers.UUIDField(source="ovitrap.client_uuid", read_only=True)
     code = serializers.UUIDField(source="id", read_only=True)
     bag_id = serializers.UUIDField(source="bag.id", read_only=True, allow_null=True)
@@ -110,6 +155,7 @@ class ReadingSerializer(ProvenanceSerializer):
             "point_version",
             "finding",
             "finding_code",
+            "incident_link",
             "finding_label",
             "other_text",
             "paddle_present",

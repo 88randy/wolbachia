@@ -36,6 +36,7 @@ DEFAULT_CATALOG_SEEDS = (
     ),
     CatalogSeed("void-reason", "Motivo de anulación", "Void reason"),
     CatalogSeed("removal-reason", "Motivo de retiro", "Removal reason"),
+    CatalogSeed("relocation-reason", "Motivo de reubicaci?n", "Relocation reason"),
     CatalogSeed("replacement-reason", "Motivo de reposición", "Replacement reason"),
     CatalogSeed("damage-reason", "Motivo de daño", "Damage reason"),
     CatalogSeed("ovitrap-finding", "Hallazgo en ovitrampa", "Ovitrap finding", is_open=False),
@@ -148,6 +149,8 @@ CLOSED_CATALOG_ITEMS = {
         ("closed-house", "Casa cerrada", "Closed house"),
         ("absent", "Ausente", "Absent"),
         ("destroyed", "Destruida", "Destroyed"),
+        ("abandoned", "Abandonada", "Abandoned"),
+        ("removed", "Retirada", "Removed"),
     ),
 }
 
