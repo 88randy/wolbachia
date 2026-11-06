@@ -1,6 +1,6 @@
 import { expect, test } from "./fixtures/test";
 import type { Schemas } from "@wolbachia/api-client";
-import { makeMe, makeVoidReasonItems } from "../src/test/fake-api";
+import { makeMe } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
 import {
   LANGUAGES,
@@ -34,12 +34,6 @@ for (const language of LANGUAGES) {
       await mockApi(page, {
         me: makeMe({ permissions: ["motorcycle.read", "motorcycle.manage", "motorcycle.unblock"] }),
       });
-      // The shared void dialog (#80) loads the catalog of reasons and asks for one first.
-      await page.route("**/api/v1/catalogs/void-reason/items/**", (route) =>
-        route.fulfill({
-          json: { count: 3, next: null, previous: null, results: makeVoidReasonItems() },
-        }),
-      );
       let motorcycle = { ...RECORD };
       await page.route("**/api/v1/motorcycles/**", async (route) => {
         if (route.request().method() === "POST") {
@@ -78,7 +72,24 @@ for (const language of LANGUAGES) {
           exact: true,
         }),
       ).toBeFocused();
-      await dialog.getByRole("combobox").selectOption("other");
+      await expect(dialog.getByRole("combobox")).toHaveCount(0);
+      const reason = dialog.getByRole("textbox");
+      await expect(reason).toHaveAttribute("required", "");
+      await page.keyboard.press("Shift+Tab");
+      await expect(reason).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(
+        dialog.getByRole("button", {
+          name: language === "en" ? "Cancel" : "Cancelar",
+          exact: true,
+        }),
+      ).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(reason).toBeFocused();
+      await page.keyboard.press("Escape");
+      await expect(dialog).toHaveCount(0);
+      await expect(unblock).toBeFocused();
+      await page.keyboard.press("Enter");
       await expectNoAxeViolations(page);
       await dialog.getByRole("textbox").fill("Repair checked and documented");
       await dialog
