@@ -25,6 +25,7 @@ from shifts.models import MotorcycleBlockEvent, Shift
 from tests.factories import MotorcycleFactory
 from tests.shift_support import close_event, make_check_items, open_event
 from tests.sync_support import event, make_phone, run_in_threads
+from tests.uploads_support import verified_upload
 
 pytestmark = pytest.mark.django_db
 
@@ -167,7 +168,8 @@ def test_clearance_requires_grant_evidence_and_revision(org_a, make_member):
     user, _ = make_member(org_a, ["motorcycle.read"])
     motorcycle = MotorcycleFactory(organization=org_a)
     fault = make_fault(motorcycle, user)
-    request = ClearanceRequest(fault.pk, [uuid.uuid4()], "Inspection completed", 0)
+    evidence = verified_upload(org_a, user, fault=fault)
+    request = ClearanceRequest(fault.pk, [evidence.public_id], "Inspection completed", 0)
     with pytest.raises(Http404):
         clear_fault(motorcycle, user, request)
     admin, _ = make_member(org_a, ["motorcycle.service_clear"])
@@ -292,7 +294,8 @@ def test_clearance_races_with_use_without_losing_other_blocks(org_a, make_member
         make_phone(make_member, org_a, codes=("field_event.sync",)),
         make_phone(make_member, org_a, codes=("field_event.sync",)),
     )
-    request = ClearanceRequest(fault.pk, [uuid.uuid4()], "Inspection completed", 0)
+    evidence = verified_upload(org_a, reviewer, fault=fault)
+    request = ClearanceRequest(fault.pk, [evidence.public_id], "Inspection completed", 0)
     # run_in_threads uses a barrier and separate DB connections; all contenders take Motorcycle.
     answers = run_in_threads(
         lambda: clear_fault(motorcycle, reviewer, request),

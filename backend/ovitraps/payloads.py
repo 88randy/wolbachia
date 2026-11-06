@@ -46,6 +46,9 @@ class PlacePayloadSerializer(StrictPayloadSerializer):
 
 
 class CheckPayloadSerializer(StrictPayloadSerializer):
+    evidence_ids = serializers.ListField(
+        child=OpaqueUUIDField(), max_length=MAX_REFERENCES, required=False, default=list
+    )
     ovitrap_id = serializers.UUIDField()
     finding = serializers.CharField(max_length=64)
     paddle_present = StrictBooleanField()

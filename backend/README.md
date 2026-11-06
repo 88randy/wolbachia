@@ -261,3 +261,10 @@ It depends on shifts and registers optional hooks; see fleet/README.md.
 ovitraps/ provides immutable placement/readings/bag provenance and read-only scoped
 resources. Field handlers never accept numeric courier egg counts. See its README
 and docs/sync.md for decisions, historical catalog archive and no-effects review.
+
+## Private evidence (#102)
+
+uploads/ authorizes authenticated local PUT leases and certifies sanitized JPEG/PNG.
+Its private_uploads/ root is separate from MEDIA/static and ignored by git. See
+uploads/README.md for binding authority, lock matrix, current consumer gates and
+the mobile transport/final-upload capability limits (#246).

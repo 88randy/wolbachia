@@ -280,3 +280,8 @@ profile-loading path. No new Organization lock is acquired below a courier lock.
 permission seed. Existing organizations opt in with seed_organization_defaults --apply;
 custom profiles and later revocations remain unchanged. The resolution migration
 adds no tenant data or automatic permission backfill.
+
+#102 grants field.upload once to seeded admin/supervisor/courier, needed by current
+fault-clearance/field-capture callers. Existing tenants use the same explicit
+seed_organization_defaults --apply path. Custom profiles and later revocations are
+preserved; the uploads migration adds no tenant data or permission backfill.

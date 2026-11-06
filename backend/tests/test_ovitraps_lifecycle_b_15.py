@@ -43,6 +43,16 @@ def lifecycle(field, kind, **overrides):
     if kind == "remove":
         payload["is_recovered"] = False
     payload.update(overrides.pop("payload", {}))
+    if hasattr(field, "batch"):
+        from tests.uploads_support import verified_upload
+
+        for identifier in payload["evidence_ids"]:
+            verified_upload(
+                field.batch.organization,
+                field.batch.user,
+                device=field.batch.device,
+                public_id=identifier,
+            )
     sent = envelope(field, f"ovitrap.{kind}", **overrides)
     from field_sync.envelope import describe_payload
 

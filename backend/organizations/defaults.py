@@ -33,12 +33,14 @@ from rules.permissions import (
 from rules.seeds import missing_parameter_keys, seed_default_rule_parameters
 from scheduling.permissions import RISK_IMPORT_APPLY, SCHEDULE_MANAGE, SCHEDULE_READ
 from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
+from uploads.limits import FIELD_UPLOAD
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
     OVITRAP_REMOVAL_RESOLVE,
+    FIELD_UPLOAD,
     SCHEDULE_READ,
     SCHEDULE_MANAGE,
     RISK_IMPORT_APPLY,
@@ -70,6 +72,7 @@ ADMIN_CODES = (
     MOTORCYCLE_SERVICE_CLEAR,
 )
 COURIER_CODES = (
+    FIELD_UPLOAD,
     *READ_ONLY_CODES,
     FIELD_EVENT_SYNC,
     FIELD_BOOTSTRAP,
@@ -78,6 +81,7 @@ COURIER_CODES = (
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
     OVITRAP_REMOVAL_RESOLVE,
+    FIELD_UPLOAD,
     SCHEDULE_READ,
     SCHEDULE_MANAGE,
     *READ_CODES,

@@ -57,6 +57,9 @@ def clear_fault(motorcycle: Motorcycle, reviewer: User, request: ClearanceReques
             ).exists():
                 raise Http404
             raise FleetConflictError("motorcycle_fault_not_open")
+        from uploads.gates import require_fault_evidence
+
+        require_fault_evidence(fault, request.evidence_ids)
         _insert_clearance(locked, reviewer, (request, reason, fault))
         _save_remaining_blocks(locked, [block for block in opened if block.pk != fault.pk])
         return locked
