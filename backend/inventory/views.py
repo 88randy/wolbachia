@@ -77,7 +77,11 @@ class InventoryVersionViewSet(
             "placement_options": PlacementOptionQuerySerializer,
             "protocol_incident_type_options": ProtocolTypeOptionQuerySerializer,
         }
-        if self.action in option_queries and self.request.user.is_authenticated:
+        if (
+            not getattr(self, "swagger_fake_view", False)
+            and self.action in option_queries
+            and self.request.user.is_authenticated
+        ):
             payload = option_queries[self.action](data=self.request.query_params.dict())
             payload.is_valid(raise_exception=True)
             self.option_values = dict(payload.validated_data)

@@ -1,16 +1,21 @@
 """#270 read contracts: real provenance, exact pins and pre-page authority."""
 
+import json
 from copy import deepcopy
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import SimpleNamespace
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
+from django.db.backends.base.base import BaseDatabaseWrapper
 from django.db.models import JSONField, Value
+from rest_framework.renderers import JSONRenderer
 from rest_framework.request import Request
 from rest_framework.test import APIRequestFactory
 
+from accounts.models import User
 from catalogs.services import deactivate_catalog_item
 from geography.models import Quadrant
 from incidents.configuration import write_type
@@ -42,6 +47,24 @@ from organizations.services import effective_scope
 from tests.factories import ProfileFactory
 from tests.inventory_support import AT, allow_all, capture, configure_incident, inventory_context
 from uploads.access import UploadActor
+
+
+def test_authenticated_schema_metadata_does_not_require_inventory_option_targets(api_client):
+    api_client.force_authenticate(User(pk=uuid4(), username="synthetic-schema-reader"))
+    with patch.object(
+        BaseDatabaseWrapper,
+        "ensure_connection",
+        side_effect=AssertionError("Database connection forbidden"),
+    ) as connection_guard:
+        response = api_client.get("/api/v1/schema/", {"format": "json"})
+    assert response.status_code == 200
+    assert {
+        "/api/v1/me/",
+        "/api/v1/locations/owner-options/",
+        "/api/v1/locations/placement-options/",
+        "/api/v1/supply-types/protocol-incident-type-options/",
+    } <= response.json()["paths"].keys()
+    connection_guard.assert_not_called()
 
 
 def test_expiry_calendar_bounds_use_local_midnight_and_refuse_ambiguous_ranges():
@@ -235,7 +258,7 @@ def test_real_movement_legs_explain_stock_with_exact_filters_and_persisted_prove
         row["quantity"] for row in location_stock(context.actor, context.location)
     )
     first = rows[0]
-    payload = MovementSerializer(first).data
+    payload = json.loads(JSONRenderer().render(MovementSerializer(first).data))
     assert payload["quantity"] == str(first.quantity)
     assert str(payload["created_by"]) == str(context.actor.user.pk)
     assert payload["created_at"] == first.created_at.isoformat().replace("+00:00", "Z")
@@ -320,11 +343,11 @@ def test_exact_retained_supply_protocol_location_and_admission_survive_current_m
     )
     _, reader = make_member(org_a, ["lot.read"])
     allow_all(reader)
-    payload = LotSerializer(current_lot(context.lot)).data
+    payload = json.loads(JSONRenderer().render(LotSerializer(current_lot(context.lot)).data))
     assert payload["supply_version"]["version"] == str(supply_pin)
     assert payload["supply_version"]["label"] == "Synthetic supply"
     assert payload["supply_version"]["protocol"]["incident_type"] == {
-        "incident_type_version_id": incident_type.pk,
+        "incident_type_version_id": str(incident_type.pk),
         "code": incident_type.code,
         "label": incident_type.label,
     }
