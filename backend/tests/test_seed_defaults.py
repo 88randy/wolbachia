@@ -52,7 +52,7 @@ def current_values(organization: Organization) -> dict[str, Decimal | None]:
     }
 
 
-def test_create_organization_seeds_catalogs_and_parameters() -> None:
+def test_create_organization_seeds_catalogs_and_downloadable_rules(api_client, make_member) -> None:
     organization = create_organization(SPEC)
 
     assert (
@@ -63,6 +63,15 @@ def test_create_organization_seeds_catalogs_and_parameters() -> None:
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
     )
+    user, _ = make_member(organization, [rule_codes.RULE_PARAMETER_READ])
+    api_client.force_authenticate(user)
+
+    response = api_client.get("/api/v1/field/rules/")
+
+    assert response.status_code == 200
+    pin = next(row for row in response.data["parameters"] if row["key"] == "pin_max_attempts")
+    assert (pin["value"], pin["value_type"], pin["unit"]) == (3, "integer", "count")
+    assert pin["version_id"] is not None
 
 
 def test_bootstrap_organization_is_seeded_too() -> None:
@@ -72,21 +81,28 @@ def test_bootstrap_organization_is_seeded_too() -> None:
     assert RuleParameter.objects.filter(organization=organization).exists()
 
 
-def test_seed_adds_the_revisit_interval_to_an_organization_seeded_before_it_existed(
+@pytest.mark.parametrize(
+    ("key", "default"), [("revisit_interval_days", 7), ("pin_max_attempts", 3)]
+)
+def test_seed_command_adds_a_parameter_to_an_organization_seeded_before_it_existed(
     monkeypatch,
+    key,
+    default,
 ) -> None:
     organization = OrganizationFactory()
-    older = tuple(s for s in DEFAULT_PARAMETER_SEEDS if s.key != "revisit_interval_days")
+    older = tuple(s for s in DEFAULT_PARAMETER_SEEDS if s.key != key)
     monkeypatch.setattr("rules.seeds.DEFAULT_PARAMETER_SEEDS", older)
     seed_default_rule_parameters(organization)
     monkeypatch.undo()
-    assert "revisit_interval_days" not in current_values(organization)
+    assert key not in current_values(organization)
     before = RuleParameterVersion.objects.filter(organization=organization).count()
 
-    seed_default_rule_parameters(organization)
-    seed_default_rule_parameters(organization)
+    assert key in run_command("--organization", organization.slug)
+    assert key not in current_values(organization)
+    run_command("--organization", organization.slug, "--apply")
+    run_command("--organization", organization.slug, "--apply")
 
-    assert current_values(organization)["revisit_interval_days"] == 7
+    assert current_values(organization)[key] == default
     assert RuleParameterVersion.objects.filter(organization=organization).count() == before + 1
 
 
@@ -174,13 +190,18 @@ def test_seed_is_idempotent() -> None:
     )
 
 
-def test_seed_never_adds_a_second_version_to_a_parameter_an_admin_changed() -> None:
+@pytest.mark.parametrize(
+    ("key", "default", "changed"), [("speed_lock_kmh", 10, 12), ("pin_max_attempts", 3, 4)]
+)
+def test_seed_never_adds_a_second_version_to_a_parameter_an_admin_changed(
+    key, default, changed
+) -> None:
     organization = create_organization(SPEC)
-    parameter = RuleParameter.objects.get(organization=organization, key="speed_lock_kmh")
+    parameter = RuleParameter.objects.get(organization=organization, key=key)
     RuleParameterVersion.objects.create(
         organization=organization,
         parameter=parameter,
-        value=12,
+        value=changed,
         effective_from=timezone.now() + timedelta(days=3),
         effective_date=(timezone.now() + timedelta(days=3)).date(),
         reason="admin change",
@@ -188,7 +209,7 @@ def test_seed_never_adds_a_second_version_to_a_parameter_an_admin_changed() -> N
 
     seed_organization_defaults(organization)
 
-    assert sorted(parameter.versions.values_list("value", flat=True)) == [10, 12]
+    assert sorted(parameter.versions.values_list("value", flat=True)) == [default, changed]
 
 
 def test_seed_keeps_admin_edits_to_catalog_labels() -> None:

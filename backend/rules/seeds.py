@@ -84,6 +84,7 @@ DEFAULT_PARAMETER_SEEDS = (
     ParameterSeed(
         "session_idle_minutes", ValueType.INTEGER, Unit.MINUTES, 5, Decimal(1), Decimal(30)
     ),
+    ParameterSeed("pin_max_attempts", ValueType.INTEGER, Unit.COUNT, 3, Decimal(1), Decimal(10)),
     ParameterSeed(
         "reminder_minutes_before_end", ValueType.INTEGER, Unit.MINUTES, 60, Decimal(5), Decimal(180)
     ),
