@@ -90,14 +90,25 @@ def upload_transaction(actor: UploadActor, identifier: UUID) -> Iterator[Upload]
 
 def _authorize_existing_link(actor: UploadActor, upload: Upload) -> None:
     if link := AttachmentLink.objects.filter(upload=upload).first():
-        target = (
-            AttachmentTarget("field_event", link.field_event_id)
-            if link.field_event_id
-            else AttachmentTarget("motorcycle_fault", link.fault_id)
-            if link.fault_id
-            else AttachmentTarget("incident", link.incident_id)
-        )
-        authorize_target(actor, target, upload)
+        authorize_target(actor, _resolve_link_target(link), upload)
+
+
+def _resolve_link_target(link: AttachmentLink) -> AttachmentTarget:
+    """Resolve the one actual parent; never infer a kind from a missing identifier."""
+    identifiers = (
+        ("field_event", link.field_event_id),
+        ("motorcycle_fault", link.fault_id),
+        ("incident", link.incident_id),
+        ("review_item", link.review_item_id),
+    )
+    targets = [
+        AttachmentTarget(kind, identifier)
+        for kind, identifier in identifiers
+        if identifier is not None
+    ]
+    if len(targets) != 1:
+        raise Http404
+    return targets[0]
 
 
 def _bind(actor: UploadActor, upload: Upload, target: AttachmentTarget | None) -> None:
@@ -108,12 +119,7 @@ def _bind(actor: UploadActor, upload: Upload, target: AttachmentTarget | None) -
         upload=upload,
         defaults={"organization": actor.organization, "created_by": actor.user, **parent},
     )
-    identifier = {
-        "field_event": existing.field_event_id,
-        "motorcycle_fault": existing.fault_id,
-        "incident": existing.incident_id,
-    }[target.kind]
-    if identifier != target.identifier:
+    if _resolve_link_target(existing) != target:
         raise UploadConflictError("upload_already_bound")
 
 
