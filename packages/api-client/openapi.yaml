@@ -2694,6 +2694,49 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/ovitraps/{id}/history/:
+    get:
+      operationId: ovitraps_history_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - ovitraps
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OvitrapHistory'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/quadrant-assignments/:
     get:
       operationId: quadrant_assignments_list
@@ -3182,6 +3225,94 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Reading'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/relocations/:
+    get:
+      operationId: relocations_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: code
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: ovitrap
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: status
+        schema:
+          enum:
+          - pending
+          - approved
+          - rejected
+          type: string
+          minLength: 1
+        description: |-
+          * `pending` - pending
+          * `approved` - approved
+          * `rejected` - rejected
+      tags:
+      - relocations
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRelocationList'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -5690,6 +5821,65 @@ components:
           type: string
       required:
       - status
+    HistoryEntry:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        type:
+          type: string
+        device_time:
+          type: string
+          format: date-time
+        server_received_at:
+          type: string
+          format: date-time
+        point_code:
+          type: string
+        author:
+          type: string
+          format: uuid
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        void_reason:
+          type: string
+        void_reason_code:
+          type: string
+        void_event_id:
+          type: string
+          format: uuid
+          nullable: true
+        ingest_status:
+          type: string
+        rules_version:
+          type: string
+        catalog_version:
+          type: string
+        gps:
+          nullable: true
+        payload: {}
+        effects: {}
+      required:
+      - author
+      - catalog_version
+      - device_time
+      - effects
+      - event_id
+      - gps
+      - ingest_status
+      - payload
+      - point_code
+      - rules_version
+      - server_received_at
+      - type
+      - void_event_id
+      - void_reason
+      - void_reason_code
+      - voided_at
     Import:
       type: object
       description: |-
@@ -6481,6 +6671,12 @@ components:
         code:
           type: string
           readOnly: true
+        is_retired:
+          type: boolean
+          readOnly: true
+        suggest_relocation:
+          type: boolean
+          readOnly: true
         sampling_point:
           type: string
           format: uuid
@@ -6568,6 +6764,7 @@ components:
       - evidence_ids
       - gps
       - id
+      - is_retired
       - manual_capture
       - point_code
       - point_version
@@ -6576,6 +6773,7 @@ components:
       - sampling_point
       - server_received_at
       - status
+      - suggest_relocation
       - supply_refs
       - void_reason
       - void_reason_code
@@ -6583,6 +6781,9 @@ components:
     OvitrapBundle:
       type: object
       properties:
+        is_retired:
+          type: boolean
+          default: false
         version:
           type: string
         id:
@@ -6688,6 +6889,25 @@ components:
       - resource_type
       - resource_version
       - sequence
+    OvitrapHistory:
+      type: object
+      properties:
+        ovitrap:
+          type: string
+          format: uuid
+        point_code:
+          type: string
+        suggest_relocation:
+          type: boolean
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistoryEntry'
+      required:
+      - entries
+      - ovitrap
+      - point_code
+      - suggest_relocation
     OvitrapLifecycleStatusEnum:
       type: string
       enum:
@@ -7122,6 +7342,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Reading'
+    PaginatedRelocationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Relocation'
     PaginatedResponsibilityLetterList:
       type: object
       required:
@@ -7896,6 +8139,11 @@ components:
         finding_code:
           type: string
           readOnly: true
+        incident_link:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
         finding_label:
           readOnly: true
         other_text:
@@ -8026,6 +8274,7 @@ components:
       - has_eggs
       - humidity_pct
       - id
+      - incident_link
       - index_exclusion_reason
       - is_countable
       - is_index_excluded
@@ -8103,6 +8352,141 @@ components:
       - access
       - refresh
       - server_time
+    Relocation:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          format: uuid
+          readOnly: true
+        ovitrap:
+          type: string
+          format: uuid
+          readOnly: true
+        point:
+          type: string
+          format: uuid
+          readOnly: true
+        point_code:
+          type: string
+          readOnly: true
+        point_version:
+          type: string
+          format: uuid
+          readOnly: true
+        old_location:
+          readOnly: true
+        new_location:
+          readOnly: true
+        reason_code:
+          type: string
+          readOnly: true
+        reason_label:
+          readOnly: true
+        other_text:
+          type: string
+          readOnly: true
+        evidence_ids:
+          readOnly: true
+        evaluated_rules:
+          readOnly: true
+        rule_version_ids:
+          readOnly: true
+        event_id:
+          type: string
+          format: uuid
+          readOnly: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        rules_version:
+          type: string
+          readOnly: true
+        catalog_version:
+          type: string
+          readOnly: true
+        manual_capture:
+          type: boolean
+          readOnly: true
+        gps:
+          type: object
+          nullable: true
+          properties:
+            lat:
+              type: number
+            lng:
+              type: number
+            accuracy_m:
+              type: number
+              nullable: true
+          readOnly: true
+        status:
+          type: string
+          readOnly: true
+        voided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        void_reason:
+          type: string
+          readOnly: true
+        void_reason_code:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - catalog_version
+      - code
+      - created_at
+      - created_by
+      - device_time
+      - evaluated_rules
+      - event_id
+      - evidence_ids
+      - gps
+      - id
+      - manual_capture
+      - new_location
+      - old_location
+      - other_text
+      - ovitrap
+      - point
+      - point_code
+      - point_version
+      - reason_code
+      - reason_label
+      - rule_version_ids
+      - rules_version
+      - server_received_at
+      - status
+      - void_reason
+      - void_reason_code
+      - voided_at
     ResourceTypeEnum:
       enum:
       - quadrant

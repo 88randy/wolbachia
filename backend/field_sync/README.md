@@ -163,3 +163,12 @@ added because parent identities are immutable (D7b).
   restriction). OpenAPI/client artifacts remain for lead regeneration.
 - PostgreSQL tests, real SQL/query-count bound, advisory contention, and migration
   forward/reverse remain unverified. No connection to host 5432 was attempted.
+
+
+## Ovitrap lifecycle (#112)
+
+Courier ovitrap schema 1 adds optional is_retired, default false when absent.
+Existing fields retain their meanings. Resource hashes include outgoing live
+lineage/removal UUIDs; replacement/removal use the same atomic fan-out boundary,
+while relocation proposals emit no geometry or courier changes. See
+../ovitraps/lifecycle/README.md and ../../docs/sync.md for locks and acceptance map.

@@ -25,6 +25,8 @@ class SamplingPointBundleSerializer(serializers.Serializer[Any]):
 
 
 class OvitrapBundleSerializer(serializers.Serializer[Any]):
+    # Additive schema-1 field: older snapshots/producers imply no retirement.
+    is_retired = serializers.BooleanField(required=False, default=False)
     version = serializers.CharField()
     id = serializers.UUIDField()
     client_uuid = serializers.UUIDField()

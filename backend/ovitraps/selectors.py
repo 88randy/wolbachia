@@ -93,6 +93,17 @@ def filter_records(  # noqa: PLR0913 -- query and its authorization context
                 **{("reading__epi_week" if model_name == "bag" else "epi_week"): week}
             )
     state = query.get("status", "active")
+    if model_name == "ovitrap":
+        from ovitraps.lifecycle.selectors import with_retirement
+
+        queryset = with_retirement(queryset, membership.organization)
+        if state == "active":
+            return queryset.filter(
+                event__voided_at__isnull=True, **{"is_replaced": False, "is_removed": False}
+            )
+        if state == "voided":
+            return queryset.filter(event__voided_at__isnull=False)
+        return queryset
     if state != "all":
         queryset = queryset.filter(event__voided_at__isnull=state == "active")
     return queryset
@@ -173,7 +184,9 @@ def projected_ovitraps(organization: Organization) -> QuerySet[Ovitrap]:
         )
         .order_by("client_uuid")
     )
-    return cast("QuerySet[Ovitrap]", rows)
+    from ovitraps.lifecycle.selectors import with_retirement
+
+    return with_retirement(cast("QuerySet[Ovitrap]", rows), organization)
 
 
 def ovitrap_row(ovitrap: Ovitrap) -> dict[str, Any]:
@@ -205,6 +218,9 @@ def ovitrap_row(ovitrap: Ovitrap) -> dict[str, Any]:
                 "is_lagged",
             )
         },
+        "is_retired": bool(
+            getattr(ovitrap, "is_replaced", False) or getattr(ovitrap, "is_removed", False)
+        ),
         "placement_voided": placement_voided,
         "voided": bool(lifecycle) or placement_voided,
         "voided_resource_type": (
@@ -228,6 +244,8 @@ def ovitrap_resource_version(ovitrap: Ovitrap) -> str:
     """Stable revision of append-only lifecycle effects, also for backdated checks."""
     return snapshot_hash(
         {
+            "replacement": str(getattr(ovitrap, "replacement_event_id", None)),
+            "removal": str(getattr(ovitrap, "removal_event_id", None)),
             "placement": str(ovitrap.event_id),
             "placement_voided": ovitrap.event.voided_at is not None,
             "readings": getattr(ovitrap, "reading_revision", None) or 0,
