@@ -20,10 +20,14 @@ import {
   removeManifest,
 } from "./projection-statements.ts";
 import type { AssignedTask, BundleMeta, DayCache, MapManifest, ProjectionChange } from "./types.ts";
-function assignmentStatement(change: ProjectionChange): SqlStatement | null {
-  if (change.action === "remove") return removeTask(change);
+function assignmentStatement(change: ProjectionChange) {
+  if (change.action === "remove") return { statement: removeTask(change), isUnreadable: false };
   const task = parseAssignment(change.data);
-  return task === null || task.id !== change.resource_id ? null : upsertTask(task, change);
+  const isUnreadable = task === null || task.id !== change.resource_id;
+  return {
+    statement: task !== null && !isUnreadable ? upsertTask(task, change) : removeTask(change),
+    isUnreadable,
+  };
 }
 function manifestStatement(change: ProjectionChange): SqlStatement {
   if (change.action === "remove") return removeManifest(change);
@@ -48,6 +52,8 @@ export class DayStore {
       tasks: tasks.map((row) => ({
         task: JSON.parse(readText(row, "payload")) as AssignedTask,
         isKept: row.kept === 1,
+        serverCompletion:
+          row.server_completed === 1 ? true : row.server_completed === 0 ? false : null,
       })),
       manifests: manifests.map((row) => JSON.parse(readText(row, "payload")) as MapManifest),
       meta: meta[0] ? (JSON.parse(readText(meta[0], "payload")) as BundleMeta) : null,
@@ -70,6 +76,7 @@ export class DayStore {
       },
       ...replaceSamplingPoints(bundle.samplingPoints),
       removeStatement(KV_KEYS.daySamplingPointsBootstrapPending),
+      removeStatement(KV_KEYS.dayCompletionBootstrapPending),
       setStatement(KV_KEYS.syncCursor, bundle.cursor),
     ];
     await this.#db.runAtomically(statements);
@@ -79,16 +86,15 @@ export class DayStore {
     const tasks = parseChanges(body.assignments)
       .filter(
         (change) =>
-          change.resource_type !== "quadrant_assignment" && !isQuadrantAssignment(change.data),
+          change.resource_type !== "quadrant_assignment" &&
+          (change.resource_type === "task" || !isQuadrantAssignment(change.data)),
       )
       .map(assignmentStatement);
     const manifests = parseChanges(body.map_manifests).map(manifestStatement);
     const points = parseChanges(body.sampling_points).map(samplingPointChange);
-    const statements = [...tasks, ...manifests, ...points].filter(
-      (entry): entry is SqlStatement => entry !== null,
-    );
+    const statements = [...tasks.map((entry) => entry.statement), ...manifests, ...points];
     if (tasks.length || points.length) statements.unshift(INVALIDATE_ATTACHMENTS);
-    const unreadable = tasks.filter((entry) => entry === null).length;
+    const unreadable = tasks.filter((entry) => entry.isUnreadable).length;
     statements.push({
       sql: "UPDATE day_bundle_meta SET payload=json_set(payload,'$.unreadable_rows',json_extract(payload,'$.unreadable_rows')+?)",
       params: [unreadable],
@@ -103,12 +109,13 @@ export class DayStore {
   async markCleanupPending(): Promise<void> {
     await this.#db.runAtomically([setStatement("day_cleanup_pending", "true")]);
   }
-  /** An upgraded cache needs a complete point section even when its ETag/cursor remain valid. */
-  async needsSamplingPointBootstrap(): Promise<boolean> {
-    const rows = await this.#db.query("SELECT value FROM kv WHERE key=?", [
+  /** Older parsers may have discarded fields even while their ETag/cursor remain valid. */
+  async needsBootstrap(): Promise<boolean> {
+    const rows = await this.#db.query("SELECT value FROM kv WHERE key IN (?,?) AND value='true'", [
       KV_KEYS.daySamplingPointsBootstrapPending,
+      KV_KEYS.dayCompletionBootstrapPending,
     ]);
-    return rows[0]?.value === "true";
+    return rows.length > 0;
   }
   async needsCleanup(): Promise<boolean> {
     const rows = await this.#db.query("SELECT value FROM kv WHERE key='day_cleanup_pending'");

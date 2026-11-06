@@ -164,5 +164,5 @@ export function dayViewPhase(
     now: new Date(0),
   });
   if (day.total === 0) return "empty";
-  return day.reviewed === day.total ? "complete" : "content";
+  return day.completed === day.total ? "complete" : "content";
 }

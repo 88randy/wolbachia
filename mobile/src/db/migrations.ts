@@ -128,6 +128,7 @@ const MIGRATIONS: readonly (readonly string[])[] = [
     `INSERT INTO kv(key,value) VALUES('${KV_KEYS.daySamplingPointsBootstrapPending}','true')`,
   ],
   ATTACHMENT_SCHEMA,
+  [`INSERT INTO kv(key,value) VALUES('${KV_KEYS.dayCompletionBootstrapPending}','true')`],
 ];
 
 /** Highest schema version this build knows. */
