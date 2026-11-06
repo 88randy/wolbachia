@@ -1,12 +1,12 @@
 """Atomic lifecycle writes; every review signal precedes domain and courier effects."""
 
-from collections.abc import Callable
-from contextlib import nullcontext
+from collections.abc import Callable, Iterator
+from contextlib import contextmanager, nullcontext
 from dataclasses import dataclass
 from typing import Any, cast
 from uuid import UUID
 
-from django.db import IntegrityError, transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from rest_framework.exceptions import ValidationError
 from rest_framework.serializers import UUIDField
 
@@ -16,19 +16,29 @@ from field_sync.codes import INVALID_PAYLOAD
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
 from field_sync.registry import EventContext
-from field_sync.services import ChangeInput, fanout_courier_changes, rejection_params
+from field_sync.services import (
+    RETRYABLE_SQLSTATES,
+    ChangeInput,
+    check_deferred_constraints_now,
+    fanout_courier_changes,
+    rejection_params,
+    set_batch_lock_timeout,
+)
+from organizations.models import Membership, Organization
 from organizations.selectors import filter_by_effective_scope
 from ovitraps import codes
 from ovitraps.capture import Capture, capture_context
 from ovitraps.findings import CatalogChoice, resolve_item, validate_other_text
+from ovitraps.lifecycle.exceptions import RemovalConflictError, RemovalInProgressError
 from ovitraps.lifecycle.models import (
     OvitrapIncidentLink,
     PhysicalOvitrapLineage,
     RelocationDecision,
     RelocationProposal,
     RemovalAttempt,
+    RemovalResolution,
 )
-from ovitraps.lifecycle.selectors import active_ovitraps, is_active
+from ovitraps.lifecycle.selectors import active_ovitraps, is_active, scoped_removal
 from ovitraps.models import Ovitrap, OvitrapReading
 from ovitraps.selectors import accessible_ovitrap, projected_ovitraps, sync_membership
 from ovitraps.services import (
@@ -289,6 +299,12 @@ def _check_void_dependents(ctx: EventContext, target: FieldEvent, ovitrap: Ovitr
             .values_list("pk", flat=True)
         )
     elif target.type == "ovitrap.remove":
+        blockers.extend(
+            {"resource": "removal_resolution", "id": str(identifier)}
+            for identifier in RemovalResolution.objects.filter(
+                organization=ctx.organization, removal__event=target
+            ).values_list("pk", flat=True)
+        )
         # Restoring this identity must not occupy a point already assigned to another trap.
         blockers.extend(
             {"resource": "ovitrap", "id": str(row.client_uuid)}
@@ -317,3 +333,59 @@ def trap_dependents(ovitrap: Ovitrap) -> list[dict[str, str]]:
             .values_list("pk", flat=True)
         )
     return blockers
+
+
+@dataclass(frozen=True)
+class RemovalResolutionRequest:
+    expected_state: str
+    outcome: str
+    reason: str
+
+
+@contextmanager
+def _resolution_lock(member: Membership, identifier: UUID) -> Iterator[RemovalAttempt]:
+    # Generic void owns FieldEvent before Organization: share that order, never invert it.
+    original = scoped_removal(member, identifier)
+    try:
+        with transaction.atomic():
+            set_batch_lock_timeout()
+            FieldEvent.objects.select_for_update(nowait=True, no_key=True).get(
+                pk=original.event_id, organization_id=member.organization_id
+            )
+            Organization.objects.select_for_update(nowait=True, no_key=True).get(
+                pk=member.organization_id
+            )
+            yield scoped_removal(member, identifier)
+            check_deferred_constraints_now()
+    except DatabaseError as error:
+        if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
+            raise RemovalInProgressError from error
+        raise
+
+
+def resolve_removal(
+    member: Membership, identifier: UUID, request: RemovalResolutionRequest
+) -> RemovalResolution:
+    """Append a supervisor decision once, after fresh scope/state checks under shared locks."""
+    with _resolution_lock(member, identifier) as removal:
+        if (
+            request.expected_state != "unrecovered"
+            or removal.recovery_state != "unrecovered"
+            or removal.event.voided_at is not None
+            or removal.event.status != "accepted"
+            or RemovalResolution.objects.filter(removal=removal).exists()
+        ):
+            raise RemovalConflictError
+        return _append_resolution(member, removal, request)
+
+
+def _append_resolution(
+    member: Membership, removal: RemovalAttempt, request: RemovalResolutionRequest
+) -> RemovalResolution:
+    return RemovalResolution.objects.create(
+        organization_id=member.organization_id,
+        created_by=member.user,
+        removal=removal,
+        outcome=request.outcome,
+        reason=validate_void_reason(request.reason, "reason"),
+    )

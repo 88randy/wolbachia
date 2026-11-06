@@ -4,6 +4,7 @@ from typing import ClassVar
 
 from django.db import models
 
+from core.models import ImmutableMixin, OrgScopedModel
 from ovitraps.models import OvitrapRecord
 
 
@@ -93,6 +94,9 @@ class OvitrapIncidentLink(OvitrapRecord):
 
 
 class RemovalAttempt(LifecycleRecord):
+    scope_center_lookup: ClassVar[str] = "ovitrap__sampling_point__block__quadrant__center_id"
+    scope_quadrant_lookup: ClassVar[str] = "ovitrap__sampling_point__block__quadrant_id"
+
     ovitrap = models.ForeignKey(
         "ovitraps.Ovitrap", on_delete=models.PROTECT, related_name="removals"
     )
@@ -112,5 +116,31 @@ class RemovalAttempt(LifecycleRecord):
                     | models.Q(is_recovered=False, recovery_state="unrecovered")
                 ),
                 name="removal_recovery_consistent",
+            )
+        ]
+
+
+class RemovalResolution(ImmutableMixin, OrgScopedModel):
+    """Supervisor disposition of one unrecovered removal; the source remains immutable."""
+
+    removal = models.OneToOneField(
+        RemovalAttempt, on_delete=models.PROTECT, related_name="resolution"
+    )
+    outcome = models.CharField(
+        max_length=15,
+        choices=[("recovered_later", "recovered_later"), ("written_off", "written_off")],
+    )
+    reason = models.TextField()
+    scope_center_lookup: ClassVar[str] = (
+        "removal__ovitrap__sampling_point__block__quadrant__center_id"
+    )
+    scope_quadrant_lookup: ClassVar[str] = "removal__ovitrap__sampling_point__block__quadrant_id"
+
+    class Meta(ImmutableMixin.Meta):
+        app_label = "ovitraps"
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(outcome__in=["recovered_later", "written_off"]),
+                name="removal_resolution_outcome_valid",
             )
         ]
