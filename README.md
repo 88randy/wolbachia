@@ -28,9 +28,15 @@ Root commands:
 | `npm run lint` | ESLint (flat config in `eslint.config.mjs`) on all JS/TS |
 | `npm run format` / `npm run format:check` | Prettier write / check (Markdown and `design/` are excluded) |
 | `npm run typecheck` | `tsc --noEmit` in every workspace that has a `tsconfig.json` (`node scripts/typecheck.mjs <folder>` for one) |
+| `npm run api:generate` | Validate/export OpenAPI and regenerate `packages/api-client`; fixed dev-only settings, no database or Redis needed |
 | `pre-commit run --all-files` | Everything: hygiene, ruff, mypy, ESLint, Prettier, gitleaks |
 
 Python lives in `backend/pyproject.toml` (ruff, mypy); see `backend/README.md`.
+
+API generation disables `.env` reads and overrides caller settings with throwaway
+schema-only values. Its loopback URL placeholders use PostgreSQL port 55432 and
+Redis port 56379, matching the safe local convention; generation opens no database
+or Redis connection. Commit both generated artifacts when the API changes.
 
 Commit messages and PR titles follow Conventional Commits with scope `backend`, `mobile`, `web`, `repo`, `tokens`, `i18n`, `api-client` or `docs` (e.g. `feat(mobile): add login screen`).
 
