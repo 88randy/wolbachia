@@ -105,6 +105,32 @@ class SystemRecord(IncidentRecord):
         ]
 
 
+class AutomaticIncidentOrigin(SystemRecord):
+    """A closed, stable automatic source; never a counterfeit FieldEvent."""
+
+    incident = models.OneToOneField(
+        Incident, on_delete=models.PROTECT, related_name="automatic_origin"
+    )
+    source_kind = models.CharField(
+        max_length=24, choices=[("inventory_condition", "inventory_condition")]
+    )
+    source_id = models.UUIDField()
+    content_hash = models.CharField(max_length=64)
+
+    class Meta(SystemRecord.Meta):
+        constraints = [
+            *SystemRecord.Meta.constraints,
+            models.UniqueConstraint(
+                fields=["organization", "source_kind", "source_id"],
+                name="automatic_incident_source",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(actor_kind="system", created_by__isnull=True),
+                name="automatic_incident_system",
+            ),
+        ]
+
+
 class IncidentEvent(SystemRecord):
     incident = models.ForeignKey(Incident, on_delete=models.PROTECT, related_name="events")
     revision = models.PositiveIntegerField()

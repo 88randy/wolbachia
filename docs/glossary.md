@@ -70,10 +70,21 @@ Rules:
 
 ## Inventory and money-like control
 
+Inventory foundation (#105) retains these distinct facts: `SupplyTypeVersion`
+(supply master revision), `BiologicalProtocolVersion` (named ranges/shelf life and
+reading windows), `LocationVersion` (storage master revision), `LotVersion` (lot
+draft/detail revision), `LotAdmission` (authored opening custody), `Piece` (immutable
+inventory identity), `StockOperation`/`StockMovement` (source and signed ledger leg),
+`ConditionReading` (both clocks and evaluated protocol), `ConditionBreach` (owned
+hold), `ConditionIncidentLink` (once-only incident linkage) and
+`AutomaticIncidentOrigin` (explicit system source). A piece is not implicitly an
+Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
+
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
 | insumo | supply | `/supply-types/`, `supply` | Anything the courier is assigned and consumes. |
 | lote | lot | `/lots/`, `lot` | Lot of a supply (`ReleaseLot` for release lots). |
+| vida útil | shelf life | `shelf_life_seconds` | Explicit elapsed duration from the laid-on local midnight, added in UTC. A calendar `expiry_date` instead ends at its following local midnight; neither supplies a scientific default (#105). |
 | merma | shrinkage | `shrinkage` | Expected or unexplained loss in a reconciliation. |
 | baja | write-off | `/write-offs/`, `write_off` | Removal from stock, with reason and evidence. |
 | conciliación | reconciliation | `/reconciliations/`, `reconciliation` | Assigned vs used vs returned, per courier and day. |

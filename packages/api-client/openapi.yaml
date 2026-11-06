@@ -2416,6 +2416,712 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/locations/:
+    get:
+      operationId: locations_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: center
+        required: false
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: is_insecticide_free
+        required: false
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+      - name: kind
+        required: false
+        in: query
+        schema:
+          type: string
+          enum:
+          - biofactory
+          - warehouse
+          - center
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, created_at. Prefix with - for
+          descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: location__code, name.'
+        schema:
+          type: string
+      tags:
+      - locations
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLocationList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: locations_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - locations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LocationWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/locations/{id}/:
+    get:
+      operationId: locations_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this location version.
+        required: true
+      tags:
+      - locations
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: locations_partial_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this location version.
+        required: true
+      tags:
+      - locations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/PatchedLocationWriteRequest'
+              - type: object
+                required:
+                - expected_revision
+                properties:
+                  expected_revision:
+                    type: integer
+                    minimum: 0
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Location'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/locations/{id}/stock/:
+    get:
+      operationId: locations_stock_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this location version.
+        required: true
+      - in: query
+        name: lot
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: supply
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - locations
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedStockList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lots/:
+    get:
+      operationId: lots_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: center
+        required: false
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: expiry_before
+        required: false
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: expiry_from
+        required: false
+        in: query
+        schema:
+          type: string
+          format: date-time
+      - name: location
+        required: false
+        in: query
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, expiry, created_at. Prefix with
+          - for descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: lot__code, provenance.'
+        schema:
+          type: string
+      - name: status
+        required: false
+        in: query
+        schema:
+          type: string
+          enum:
+          - draft
+          - available
+          - blocked
+      - name: supply
+        required: false
+        in: query
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - lots
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLotList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: lots_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - lots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LotWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lot'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lots/{id}/:
+    get:
+      operationId: lots_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lot version.
+        required: true
+      tags:
+      - lots
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lot'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: lots_partial_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lot version.
+        required: true
+      tags:
+      - lots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/PatchedLotWriteRequest'
+              - type: object
+                required:
+                - expected_revision
+                properties:
+                  expected_revision:
+                    type: integer
+                    minimum: 0
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Lot'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lots/{id}/conditions/:
+    get:
+      operationId: lots_conditions_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: device_time_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: device_time_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: evaluation
+        schema:
+          type: string
+          enum:
+          - breach
+          - normal
+          - unassessed
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lot version.
+        required: true
+      - in: query
+        name: local_date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: ordering
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - lots
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedConditionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: lots_conditions_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this lot version.
+        required: true
+      tags:
+      - lots
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConditionWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Condition'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/me/:
     get:
       operationId: me_retrieve
@@ -5713,6 +6419,293 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/supply-types/:
+    get:
+      operationId: supply_types_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: identity_kind
+        required: false
+        in: query
+        schema:
+          type: string
+          enum:
+          - piece
+          - lot
+      - name: is_active
+        required: false
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+      - name: is_biological
+        required: false
+        in: query
+        schema:
+          type: string
+          enum:
+          - 'true'
+          - 'false'
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, created_at. Prefix with - for
+          descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: supply_type__code, label.'
+        schema:
+          type: string
+      tags:
+      - supply-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplyList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: supply_types_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - supply-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupplyWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/supply-types/{id}/:
+    get:
+      operationId: supply_types_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this supply type version.
+        required: true
+      tags:
+      - supply-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: supply_types_partial_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this supply type version.
+        required: true
+      tags:
+      - supply-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+              - $ref: '#/components/schemas/PatchedSupplyWriteRequest'
+              - type: object
+                required:
+                - expected_revision
+                properties:
+                  expected_revision:
+                    type: integer
+                    minimum: 0
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/supply-types/{id}/deactivate/:
+    post:
+      operationId: supply_types_deactivate_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this supply type version.
+        required: true
+      tags:
+      - supply-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InventoryRevisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Supply'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/users/{id}/revoke-device-sessions/:
     post:
       operationId: users_revoke_device_sessions_create
@@ -6695,6 +7688,124 @@ components:
       required:
       - expected_revision
       - text
+    Condition:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        lot_id:
+          type: string
+          format: uuid
+          readOnly: true
+        lot_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        location_version_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        temperature_c:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+          readOnly: true
+        humidity_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+        local_date:
+          type: string
+          format: date
+          readOnly: true
+        slot:
+          type: integer
+          readOnly: true
+          nullable: true
+        timezone:
+          type: string
+          readOnly: true
+        evaluation:
+          allOf:
+          - $ref: '#/components/schemas/EvaluationEnum'
+          readOnly: true
+        range:
+          allOf:
+          - $ref: '#/components/schemas/Protocol'
+          readOnly: true
+          nullable: true
+        incident:
+          type: string
+          nullable: true
+          readOnly: true
+        pending_incident:
+          type: boolean
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - device_time
+      - evaluation
+      - humidity_pct
+      - id
+      - incident
+      - local_date
+      - location_version_id
+      - lot_id
+      - lot_version_id
+      - pending_incident
+      - range
+      - server_received_at
+      - slot
+      - temperature_c
+      - timezone
+    ConditionWriteRequest:
+      type: object
+      properties:
+        device_time:
+          type: string
+          format: date-time
+        temperature_c:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+        humidity_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+      required:
+      - device_time
+      - humidity_pct
+      - temperature_c
     ContentTypeEnum:
       enum:
       - image/jpeg
@@ -6866,6 +7977,16 @@ components:
       description: |-
         * `iso` - iso
         * `mmwr` - mmwr
+    EvaluationEnum:
+      enum:
+      - normal
+      - breach
+      - unassessed
+      type: string
+      description: |-
+        * `normal` - normal
+        * `breach` - breach
+        * `unassessed` - unassessed
     EventResult:
       type: object
       description: |-
@@ -6977,6 +8098,11 @@ components:
         * `recovered` - recovered
         * `resolved` - resolved
         * `voided` - voided
+    ExpiryBasisEnum:
+      enum:
+      - laid_on
+      type: string
+      description: "* `` - \n* `laid_on` - laid_on"
     FuelLoad:
       type: object
       description: |-
@@ -7243,6 +8369,14 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    IdentityKindEnum:
+      enum:
+      - piece
+      - lot
+      type: string
+      description: |-
+        * `piece` - piece
+        * `lot` - lot
     Import:
       type: object
       description: |-
@@ -7642,6 +8776,45 @@ components:
       required:
       - expected_revision
       - reason
+    InventoryBlocker:
+      type: object
+      properties:
+        reason:
+          type: string
+        unblocked_by_role:
+          type: string
+        link:
+          type: string
+        current_revision:
+          type: integer
+      required:
+      - link
+      - reason
+      - unblocked_by_role
+    InventoryLocationKindEnum:
+      enum:
+      - biofactory
+      - warehouse
+      - center
+      type: string
+      description: |-
+        * `biofactory` - biofactory
+        * `warehouse` - warehouse
+        * `center` - center
+    InventoryLotStatusEnum:
+      type: string
+      enum:
+      - draft
+      - available
+      - blocked
+    InventoryRevisionRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+      required:
+      - expected_revision
     LanguagesEnum:
       enum:
       - es-MX
@@ -7688,6 +8861,147 @@ components:
       required:
       - courier
       - load
+    Location:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        version:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        name:
+          type: string
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/InventoryLocationKindEnum'
+          readOnly: true
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Point
+            coordinates:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+          readOnly: true
+        owner_id:
+          type: string
+          format: uuid
+          readOnly: true
+        is_insecticide_free:
+          type: boolean
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - center
+      - code
+      - created_at
+      - created_by
+      - geometry
+      - id
+      - is_insecticide_free
+      - kind
+      - name
+      - owner_id
+      - quadrant
+      - revision
+      - version
+    LocationWriteRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          $ref: '#/components/schemas/InventoryLocationKindEnum'
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Point
+            coordinates:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+        owner_id:
+          type: string
+          format: uuid
+        is_insecticide_free:
+          type: boolean
+          nullable: true
+      required:
+      - center_id
+      - code
+      - geometry
+      - kind
+      - name
+      - owner_id
     LoginRequest:
       type: object
       description: With `device_id` the login is a mobile one (tokens); without it,
@@ -7730,6 +9044,231 @@ components:
       required:
       - expected_revision
       - logo
+    Lot:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        version:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        supply:
+          type: string
+          format: uuid
+          readOnly: true
+        supply_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        protocol_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        initial_location_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        location_version_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        provenance:
+          type: string
+          readOnly: true
+        species:
+          type: string
+          readOnly: true
+        strain:
+          type: string
+          readOnly: true
+        generation:
+          type: string
+          readOnly: true
+        laid_on:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        estimated_organism_count:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        observations:
+          type: string
+          readOnly: true
+        expiry:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        expiry_date:
+          type: string
+          format: date
+          readOnly: true
+          nullable: true
+        timezone:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/InventoryLotStatusEnum'
+          readOnly: true
+        missing_fields:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        blocked_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/InventoryBlocker'
+          readOnly: true
+        stock_url:
+          type: string
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blocked_by
+      - center
+      - code
+      - created_at
+      - created_by
+      - estimated_organism_count
+      - expiry
+      - expiry_date
+      - generation
+      - id
+      - initial_location_id
+      - laid_on
+      - location_version_id
+      - missing_fields
+      - observations
+      - protocol_id
+      - provenance
+      - quadrant
+      - quantity
+      - revision
+      - species
+      - status
+      - stock_url
+      - strain
+      - supply
+      - supply_version_id
+      - timezone
+      - version
+    LotWriteRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        supply_id:
+          type: string
+          format: uuid
+        supply_version_id:
+          type: string
+          format: uuid
+        protocol_id:
+          type: string
+          format: uuid
+          nullable: true
+        center_id:
+          type: string
+          format: uuid
+        initial_location_id:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          nullable: true
+        provenance:
+          type: string
+          maxLength: 2000
+        species:
+          type: string
+          maxLength: 120
+        strain:
+          type: string
+          maxLength: 120
+        generation:
+          type: string
+          maxLength: 120
+        laid_on:
+          type: string
+          format: date
+          nullable: true
+        estimated_organism_count:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          nullable: true
+        observations:
+          type: string
+          maxLength: 4000
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
+      required:
+      - code
+      - supply_id
     MapManifest:
       type: object
       description: Metadata only; a producer must report missing/failed assets as
@@ -8754,6 +10293,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Center'
+    PaginatedConditionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Condition'
     PaginatedDeviceList:
       type: object
       required:
@@ -8846,6 +10408,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentType'
+    PaginatedLocationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Location'
+    PaginatedLotList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lot'
     PaginatedMembershipList:
       type: object
       required:
@@ -9233,6 +10841,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Shift'
+    PaginatedStockList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Stock'
+    PaginatedSupplyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Supply'
     PasswordResetConfirmRequest:
       type: object
       description: Resolves the link first, so a bad link never reveals the password
@@ -9290,6 +10944,117 @@ components:
           minimum: 0
         requires_photo:
           type: boolean
+    PatchedLocationWriteRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        kind:
+          $ref: '#/components/schemas/InventoryLocationKindEnum'
+        geometry:
+          type: object
+          required:
+          - type
+          - coordinates
+          properties:
+            type:
+              type: string
+              enum:
+              - Point
+            coordinates:
+              type: array
+              items:
+                type: number
+              minItems: 2
+              maxItems: 2
+        owner_id:
+          type: string
+          format: uuid
+        is_insecticide_free:
+          type: boolean
+          nullable: true
+    PatchedLotWriteRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        supply_id:
+          type: string
+          format: uuid
+        supply_version_id:
+          type: string
+          format: uuid
+        protocol_id:
+          type: string
+          format: uuid
+          nullable: true
+        center_id:
+          type: string
+          format: uuid
+        initial_location_id:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          nullable: true
+        provenance:
+          type: string
+          maxLength: 2000
+        species:
+          type: string
+          maxLength: 120
+        strain:
+          type: string
+          maxLength: 120
+        generation:
+          type: string
+          maxLength: 120
+        laid_on:
+          type: string
+          format: date
+          nullable: true
+        estimated_organism_count:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          nullable: true
+        observations:
+          type: string
+          maxLength: 4000
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        expiry_date:
+          type: string
+          format: date
+          nullable: true
     PatchedMotorcycleUpdateRequest:
       type: object
       description: Plate and center can change; code identifies pending schema-1 offline
@@ -9328,6 +11093,43 @@ components:
         support_contact:
           type: string
           maxLength: 200
+    PatchedSupplyWriteRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 24
+        identity_kind:
+          $ref: '#/components/schemas/IdentityKindEnum'
+        is_biological:
+          type: boolean
+        is_chemical:
+          type: boolean
+          nullable: true
+        requires_insecticide_free:
+          type: boolean
+          nullable: true
+        expiry_required:
+          type: boolean
+          nullable: true
+        specification:
+          type: string
+          maxLength: 4000
+        protocol:
+          $ref: '#/components/schemas/ProtocolWriteRequest'
     PatchedTypeConfigurationRequest:
       type: object
       properties:
@@ -9601,6 +11403,141 @@ components:
       - upsert
       type: string
       description: '* `upsert` - upsert'
+    Protocol:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        shelf_life_seconds:
+          type: integer
+          readOnly: true
+          nullable: true
+        expiry_basis:
+          type: string
+          readOnly: true
+        temperature_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        temperature_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        humidity_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        humidity_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          readOnly: true
+          nullable: true
+        reading_windows:
+          readOnly: true
+        required_fields:
+          readOnly: true
+        incident_type_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - expiry_basis
+      - humidity_max
+      - humidity_min
+      - id
+      - incident_type_id
+      - name
+      - reading_windows
+      - required_fields
+      - shelf_life_seconds
+      - temperature_max
+      - temperature_min
+    ProtocolWriteRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          maxLength: 200
+        shelf_life_seconds:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 1
+          format: int64
+          nullable: true
+        expiry_basis:
+          oneOf:
+          - $ref: '#/components/schemas/ExpiryBasisEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        temperature_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+          nullable: true
+        temperature_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+          nullable: true
+        humidity_min:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        humidity_max:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        reading_windows:
+          type: array
+          items:
+            type: array
+            items:
+              type: integer
+              maximum: 1440
+              minimum: 0
+            maxItems: 2
+            minItems: 2
+          maxItems: 2
+        required_fields:
+          type: array
+          items:
+            $ref: '#/components/schemas/RequiredFieldsEnum'
+        incident_type_id:
+          type: string
+          format: uuid
+          nullable: true
     PublicationStateEnum:
       enum:
       - outboxed
@@ -10409,6 +12346,20 @@ components:
       - state
       - timeline
       - type_version
+    RequiredFieldsEnum:
+      enum:
+      - species
+      - strain
+      - generation
+      - laid_on
+      - estimated_organism_count
+      type: string
+      description: |-
+        * `species` - species
+        * `strain` - strain
+        * `generation` - generation
+        * `laid_on` - laid_on
+        * `estimated_organism_count` - estimated_organism_count
     ResourceReferenceKindEnum:
       enum:
       - motorcycle
@@ -11436,6 +13387,169 @@ components:
         * `in_force` - in_force
         * `superseded` - superseded
         * `voided` - voided
+    Stock:
+      type: object
+      properties:
+        lot:
+          type: string
+          format: uuid
+        lot_code:
+          type: string
+        supply:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        unit:
+          type: string
+        source_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - lot
+      - lot_code
+      - piece_id
+      - quantity
+      - source_ids
+      - supply
+      - unit
+    Supply:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        version:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        unit:
+          type: string
+          readOnly: true
+        identity_kind:
+          allOf:
+          - $ref: '#/components/schemas/IdentityKindEnum'
+          readOnly: true
+        is_biological:
+          type: boolean
+          readOnly: true
+        is_chemical:
+          type: boolean
+          readOnly: true
+          nullable: true
+        requires_insecticide_free:
+          type: boolean
+          readOnly: true
+          nullable: true
+        expiry_required:
+          type: boolean
+          readOnly: true
+          nullable: true
+        specification:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        protocol:
+          allOf:
+          - $ref: '#/components/schemas/Protocol'
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - created_by
+      - expiry_required
+      - id
+      - identity_kind
+      - is_active
+      - is_biological
+      - is_chemical
+      - label
+      - protocol
+      - requires_insecticide_free
+      - revision
+      - specification
+      - unit
+      - version
+    SupplyWriteRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        unit:
+          type: string
+          minLength: 1
+          maxLength: 24
+        identity_kind:
+          $ref: '#/components/schemas/IdentityKindEnum'
+        is_biological:
+          type: boolean
+        is_chemical:
+          type: boolean
+          nullable: true
+        requires_insecticide_free:
+          type: boolean
+          nullable: true
+        expiry_required:
+          type: boolean
+          nullable: true
+        specification:
+          type: string
+          maxLength: 4000
+        protocol:
+          $ref: '#/components/schemas/ProtocolWriteRequest'
+      required:
+      - code
+      - identity_kind
+      - is_biological
+      - label
+      - unit
     SyncBatchRequest:
       type: object
       description: |-

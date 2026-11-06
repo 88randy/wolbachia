@@ -35,6 +35,7 @@ INSTALLED_APPS = [
     "ovitraps",
     "scheduling",
     "incidents.apps.IncidentsConfig",
+    "inventory",
 ]
 
 MIDDLEWARE = [
@@ -223,6 +224,8 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "InventoryLocationKindEnum": ["biofactory", "warehouse", "center"],
+        "InventoryLotStatusEnum": ["draft", "available", "blocked"],
         "IncidentStateEnum": ["open", "closed", "voided"],
         "StateEnum": ["authorized", "received", "verified"],
         "CourierChangeActionEnum": ["upsert", "remove"],
@@ -248,6 +251,10 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "recover-condition-incidents": {
+        "task": "inventory.tasks.recover_condition_incidents",
+        "schedule": 60.0,
+    },
     "maintain-scoped-incidents": {
         "task": "incidents.tasks.maintain_incidents",
         "schedule": crontab(minute="*"),

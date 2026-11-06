@@ -601,3 +601,78 @@ uses explicit type configuration. Unknown scope/owner remains pending, never glo
 Keyset recovery pages advance past pending causes before continuing; no delivered
 state, email, push, native screen or notification inbox is claimed. B-07/#49 owns
 delivery. Review acceptance is #113; mobile evidence transport remains #246.
+
+## Inventory foundation (#105 / B-08)
+
+GET/POST /supply-types/, /locations/ and /lots/ plus GET/PATCH detail routes use
+stable UUID identities, organization-unique codes and immutable version/revision
+responses. POST supplies code and explicit data; PATCH requires expected_revision
+and appends a snapshot. POST /supply-types/{id}/deactivate/ requires expected_revision,
+is idempotent and retains historical types. No PUT/DELETE or balance/status mutation
+is registered; unknown operational inputs return 400.
+
+Supplies define label, unit, identity_kind=piece|lot, is_biological/is_chemical,
+expiry_required/requires_insecticide_free, descriptive specification and optional
+named protocol. Protocol includes explicit shelf_life_seconds/expiry_basis=laid_on,
+inclusive temperature/humidity min/max, two ordered nonoverlapping reading_windows
+(minute intervals in 0..1440), required_fields and incident_type_id. No biological,
+scientific, commercial or protocol values are seeded. Missing configuration is
+explicitly nondispatchable; humidity is represented in 0..100 percent.
+
+Locations use actual center_id, optional quadrant_id within that center, kind=
+biofactory|warehouse|center, GeoJSON Point, active same-organization owner Membership
+and nullable is_insecticide_free. Unknown/false storage safety never implies true.
+Biological drafts require species/strain/generation/laid_on/estimated_organism_count
+and real provenance/expiry/location. Incomplete proposed quantity/location stay
+provisional until admission. Once admitted, quantity/location/piece identities cannot
+be overwritten. supply_version_id/protocol_id pins change explicitly; unrelated
+detail revisions preserve them. An expiry date means the next local midnight, with
+original date/timezone retained. Equality at expiry is expired; supplied protocol
+basis/duration bounds explicit expiry. No species lifetime is inferred.
+
+Lot responses include draft|available|blocked, missing_fields, safe blocked_by,
+expiry/provenance and stock_url. Both configured slots of the current organization-
+local day are required, even before the second slot; no yesterday/grace substitution.
+A technical 10,000-piece cap bounds integral Decimal admission/SQL expansion, not
+biology. Stock is SUM of immutable signed movements with actual source operations.
+
+GET /locations/{id}/stock/ requires location.read and lot.read for disclosed rows;
+page-number paging, lot/supply filters, lot__code/piece_id ordering (optional minus),
+stable lot/piece ties. Rows expose quantity/unit, lot/supply/piece and source UUIDs.
+GET/POST /lots/{id}/conditions/ requires lot.read/condition.create and appends
+{device_time,temperature_c,humidity_pct}. Both clocks and exact evaluated lot,
+location/protocol/range/timezone/window are retained. Exact natural-key replay
+(organization,lot,device_time) returns the original; changed measurements conflict.
+Future capture time is 400. Missing named protocol is unassessed, never normal.
+
+A breached reading retains one owned hold and its new explicit automatic adapter
+creates one #104 incident. No fake FieldEvent, borrowed incident.create or delivery
+claim. Missing configured type/terminal keeps measurement+hold pending for bounded
+recovery. Only its linked incident's verified-evidence close clears that hold;
+normal readings and other closes cannot erase it. Incident identity/pending fields
+require current incident.read. No Incident -> Lot lock callback is added.
+
+All lists use page-number paging, scoped exact ?code, server search/order. Supply
+facets: is_active/is_biological/identity_kind; locations: center/kind/is_insecticide_free;
+lots: supply/location/center/status/expiry_from/expiry_before. Supply/location order:
+code|created_at; lots also expiry; id resolves ties. Conditions use local_date,
+evaluation, device_time_from/device_time_before and device_time ordering. Range ends
+are exclusive; no default 'expires soon' threshold. Detail lookup ignores list facets.
+
+Actions default-deny and retain paired center/applicable quadrant scope; foreign/
+out-of-scope references are 404, rechecked under the arbiter.
+Supply-type/protocol masters are explicitly organization-wide configuration; work
+axes do not apply to those known resources. Storage Location/Lot requires an
+actual center, with none/empty selected denied there. A missing center/unknown
+model never becomes organization-wide by omission. Storage placement authorization
+precedes even code-existence lookup. See inventory/README.md for policy sources.
+Seed grants once: admin all, warehouse master create/update plus lot/conditions, supervisor reads/
+lot writes/conditions, entomologist reads/conditions. supply_type.deactivate is
+admin-only by default; custom/revoked/government grants remain unchanged.
+Cookie+CSRF/current pinned bearer inherit existing rules, without final-sync
+entitlement here. Account locks precede Organization NOWAIT NO KEY UPDATE and
+inventory identities; deferred checks share bounded rollback. No I/O in SQL.
+400 has fields; 409 inventory_state_conflict has safe blocked_by reasons;
+429 inventory_in_progress has Retry-After:1. No sync event/result/localization change.
+Real transfer/debit/current-destination authority is #106/#107, not an invented
+route/writer here. Details: ../backend/inventory/README.md.
