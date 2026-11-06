@@ -123,7 +123,7 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | --- | --- | --- | --- |
 | lote de sincronización | sync batch | `events` in `POST /field/sync/` | The events the phone uploads in one request. Never "batch" for supply lots (that is `lot`). |
 | evento de campo | field event | `FieldEvent`, `event`, `/field/sync/` | One immutable record sent by the phone; its id is a UUID generated on the phone. Status `accepted`, `rejected` or `in_review`. |
-| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | What a supervisor must look at: a rejected or in-review field event. Insert-only; decisions arrive with #22. |
+| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | A rejected or in-review field event for supervisor review. Insert-only ingest history; later ReviewDecision records remain separate. |
 
 ## Devices and sessions
 
@@ -200,3 +200,4 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | validación de jornada | shift validation | ShiftDecision | Approve/observe a CLOSED frame, independent from Shift lifecycle. |
 | historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
 | resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |
+| reserva de identidad padre | parent claim | ReviewParentClaim | Immutable typed identity reservation for one source; cancellation does not reassign it or authorize a child. |
