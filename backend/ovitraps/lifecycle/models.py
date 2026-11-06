@@ -66,14 +66,30 @@ class RelocationDecision(OvitrapRecord):
     decision = models.CharField(
         max_length=8, choices=[("approved", "approved"), ("rejected", "rejected")]
     )
+    # Nullable only for retained pre-B33 placeholder rows; INSERT guards require new audit facts.
+    reason = models.TextField(null=True)  # noqa: DJ001 -- retained pre-B33 rows have no historical reason; never fabricate it.
+    revision = models.PositiveIntegerField(null=True)
+    decided_at = models.DateTimeField(null=True)
+    published_point_version = models.ForeignKey(
+        "geography.PointVersion",
+        on_delete=models.PROTECT,
+        null=True,
+        related_name="relocation_decisions",
+    )
 
     class Meta(OvitrapRecord.Meta):
         app_label = "ovitraps"
         constraints = [
+            models.UniqueConstraint(fields=["proposal"], name="relocation_decision_once"),
+            models.UniqueConstraint(
+                fields=["published_point_version"],
+                condition=models.Q(published_point_version__isnull=False),
+                name="relocation_published_version_once",
+            ),
             models.CheckConstraint(
                 condition=models.Q(decision__in=["approved", "rejected"]),
                 name="relocation_decision_valid",
-            )
+            ),
         ]
 
 

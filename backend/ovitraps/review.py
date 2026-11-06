@@ -18,6 +18,7 @@ class OvitrapReviewAdapter(ReviewAdapter):
             "causal_parent_pending",
             "motorcycle_safety_hold",
             "ovitrap_evidence_required",
+            "late_work_after_quadrant_close",
         }
     )
 
@@ -54,10 +55,29 @@ class OvitrapReviewAdapter(ReviewAdapter):
         if point is None:
             return {"ovitrap": {"version": 1, "available": False}}
         observed_capture_inputs(ctx, point)
+        from geography.decisions.capture import observe_epoch
+
+        observe_epoch(ctx, point)
         return dict(ctx.observed_facts)
 
     def inspect_existing(self, source: FieldEvent, ctx: EventContext) -> ExistingEffect:
+        from geography.decisions.capture import capture_epoch
+        from geography.models import SamplingPoint
         from ovitraps.review_inspection import inspect_legacy_capture
+        from reviews.scope import subject_facts
+
+        subjects = subject_facts(ctx.organization, ctx.envelope)
+        point = (
+            None
+            if subjects.resource_id is None
+            else SamplingPoint.objects.filter(
+                organization=ctx.organization, pk=subjects.resource_id
+            )
+            .select_related("block__quadrant")
+            .first()
+        )
+        if point is not None:
+            capture_epoch(ctx, point)
 
         legacy = inspect_legacy_capture(source)
         if legacy.state == "none":

@@ -16,8 +16,10 @@ Package inside the existing ovitraps app. Read ../README.md, ../../field_sync/RE
   frees the point. Voiding replacement restores the old identity by projection only.
 - RelocationProposal stores old/new [longitude, latitude], archived reason/labels,
   opaque evidence and applied rule/version ids. It never publishes PointVersion or
-  changes geometry. RelocationDecision is insert-only read-side storage; B-33 owns its
-  authorized writer. Status defaults pending and derives from nonvoided decisions.
+  changes geometry. B33's authorized RelocationDecision writer appends a separate
+  decision and exact next PointVersion on approval, or a real next-local-day task
+  on rejection. Status derives from decision rows. See
+  ../../geography/decisions/README.md for closure, history and original proof.
 - Existing historical OP03 definitions are reused unchanged: closed_house_weeks_to_relocate
   defaults 2 (1..8); incidents_to_relocate defaults 3 (1..10). `suggest_relocation`
   counts distinct closed-house findings in every one of the latest N local epi weeks,

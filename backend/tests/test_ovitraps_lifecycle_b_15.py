@@ -157,7 +157,7 @@ def test_replacement_retains_point_code_lineage_and_fans_out_once(field):
 
 
 @pytest.mark.django_db
-def test_relocation_is_only_a_replayable_proposal_without_feed_or_geometry_change(field):
+def test_relocation_is_replayable_without_physical_feed_or_geometry_change(field):
     from field_sync.models import CourierChange
     from geography.models import PointVersion
     from ovitraps.lifecycle.models import RelocationProposal
@@ -171,7 +171,8 @@ def test_relocation_is_only_a_replayable_proposal_without_feed_or_geometry_chang
     assert proposal.new_location == sent.payload["proposed_location"]
     assert proposal.event_id == sent.id
     assert list(PointVersion.objects.values("id", "location")) == original
-    assert not CourierChange.objects.exists()
+    assert not CourierChange.objects.exclude(kind="history").exists()
+    assert CourierChange.objects.get(kind="history").resource_type == "history.relocation_proposal"
 
 
 @pytest.mark.django_db
@@ -427,9 +428,24 @@ def test_void_replacement_restores_old_identity_without_mutating_source_or_linea
 @pytest.mark.parametrize("dependent", ["reading", "replacement", "decision", "placement"])
 def test_void_dependency_gates_preserve_source_and_compensation_boundary(field, dependent):
     from field_sync.models import FieldEvent
-    from ovitraps.lifecycle.models import RelocationDecision, RelocationProposal
+    from ovitraps.lifecycle.models import RelocationProposal
     from ovitraps.models import OvitrapVoid
 
+    if dependent == "decision":
+        from geography.models import BlockVersion, QuadrantVersion
+        from tests.test_geography_b_11 import polygon
+
+        field.profile.permission_codes.append("relocation.decide")
+        field.profile.save(update_fields=["permission_codes"])
+        geography = {
+            "organization": field.batch.organization,
+            "created_by": field.batch.user,
+            "geometry": polygon(east=-99.98),
+            "revision": 1,
+            "effective_from": CAPTURED - timedelta(days=30),
+        }
+        QuadrantVersion.objects.create(**geography, quadrant=field.point.block.quadrant)
+        BlockVersion.objects.create(**geography, block=field.point.block)
     ingest(field, envelope(field))
     kind = (
         "relocate"
@@ -439,12 +455,15 @@ def test_void_dependency_gates_preserve_source_and_compensation_boundary(field, 
     sent = lifecycle(field, kind)
     assert ingest(field, sent).status == "accepted"
     if dependent == "decision":
-        RelocationDecision.objects.create(
-            organization=field.batch.organization,
-            created_by=field.batch.user,
-            event=FieldEvent.objects.get(pk=sent.id),
-            proposal=RelocationProposal.objects.get(),
-            decision="approved",
+        from geography.decisions.services import RelocationDecisionRequest, decide_relocation
+        from uploads.access import UploadActor
+
+        decide_relocation(
+            UploadActor(field.batch.user, field.batch.organization),
+            RelocationProposal.objects.get().pk,
+            RelocationDecisionRequest(
+                "approved", "Verified original relocation and physical evidence", 0
+            ),
         )
     elif dependent == "placement":
         assert (

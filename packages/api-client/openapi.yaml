@@ -4987,6 +4987,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/quadrants/{id}/close/:
+    post:
+      operationId: quadrants_close_create
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this quadrant.
+        required: true
+      tags:
+      - quadrants
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RevisionRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuadrantClosure'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/quadrants/{id}/closure/:
+    get:
+      operationId: quadrants_closure_retrieve
+      description: List, retrieve, create and update; there is deliberately no destroy.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this quadrant.
+        required: true
+      tags:
+      - quadrants
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuadrantReadiness'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/quadrants/{id}/versions/:
     get:
       operationId: quadrants_versions_list
@@ -5336,6 +5414,106 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedRelocationList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/relocations/{id}/approve/:
+    post:
+      operationId: relocations_approve_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this relocation proposal.
+        required: true
+      tags:
+      - relocations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelocationDecisionRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelocationDecisionResult'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/relocations/{id}/reject/:
+    post:
+      operationId: relocations_reject_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this relocation proposal.
+        required: true
+      tags:
+      - relocations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RelocationDecisionRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RelocationDecisionResult'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -7344,6 +7522,123 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/third-party-interventions/:
+    get:
+      operationId: third_party_interventions_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: block
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_to
+        schema:
+          type: string
+          format: date
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: type
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - third-party-interventions
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedInterventionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: third_party_interventions_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - third-party-interventions
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InterventionRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Intervention'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/users/{id}/revoke-device-sessions/:
     post:
       operationId: users_revoke_device_sessions_create
@@ -8349,6 +8644,21 @@ components:
       - evidence_ids
       - expected_revision
       - reason
+    ClosureBlocker:
+      type: object
+      properties:
+        reason:
+          type: string
+        permission:
+          type: string
+        id:
+          type: string
+        link:
+          type: string
+      required:
+      - link
+      - permission
+      - reason
     CodeEnum:
       enum:
       - incident_conflict
@@ -8546,88 +8856,15 @@ components:
         * `approved` - approved
         * `observed` - observed
     CourierHistoryEntry:
-      type: object
-      properties:
-        id:
-          type: string
-          format: uuid
-        kind:
-          $ref: '#/components/schemas/CourierHistoryKindEnum'
-        review_item_id:
-          type: string
-          format: uuid
-          nullable: true
-        source_event_id:
-          type: string
-          format: uuid
-          nullable: true
-        shift_id:
-          type: string
-          format: uuid
-          nullable: true
-        decision_kind:
-          $ref: '#/components/schemas/CourierHistoryDecisionKindEnum'
-        revision:
-          type: integer
-          minimum: 1
-        is_terminal:
-          type: boolean
-          nullable: true
-        decision_state:
-          $ref: '#/components/schemas/CourierHistoryDecisionStateEnum'
-        reason:
-          type: string
-        decided_by:
-          type: string
-          format: uuid
-        decided_at:
-          type: string
-          format: date-time
-        subjects:
-          type: array
-          items:
-            $ref: '#/components/schemas/HistorySubject'
-        source_status:
-          nullable: true
-          oneOf:
-          - $ref: '#/components/schemas/SourceStatusEnum'
-          - $ref: '#/components/schemas/NullEnum'
-        source_code:
-          type: string
-          nullable: true
-        effect_state:
-          $ref: '#/components/schemas/CourierHistoryEffectStateEnum'
-        incident_id:
-          type: string
-          format: uuid
-          nullable: true
-        declared_void_target_uuid:
-          type: string
-          format: uuid
-          nullable: true
-        approval_current:
-          type: boolean
-          nullable: true
-      required:
-      - approval_current
-      - decided_at
-      - decided_by
-      - decision_kind
-      - decision_state
-      - declared_void_target_uuid
-      - effect_state
-      - id
-      - incident_id
-      - is_terminal
-      - kind
-      - reason
-      - review_item_id
-      - revision
-      - shift_id
-      - source_code
-      - source_event_id
-      - source_status
-      - subjects
+      oneOf:
+      - $ref: '#/components/schemas/ReviewHistoryEntry'
+      - $ref: '#/components/schemas/RelocationHistoryEntry'
+      discriminator:
+        propertyName: kind
+        mapping:
+          review_decision: '#/components/schemas/ReviewHistoryEntry'
+          shift_validation: '#/components/schemas/ReviewHistoryEntry'
+          relocation_proposal: '#/components/schemas/RelocationHistoryEntry'
     CourierHistoryKindEnum:
       enum:
       - review_decision
@@ -9627,6 +9864,103 @@ components:
       required:
       - expected_revision
       - reason
+    Intervention:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        type:
+          type: string
+          format: uuid
+          readOnly: true
+        type_code:
+          type: string
+          readOnly: true
+        type_label:
+          readOnly: true
+        product:
+          type: string
+          readOnly: true
+        source:
+          type: string
+          readOnly: true
+        blocks:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+        date_from:
+          type: string
+          format: date
+          readOnly: true
+        date_to:
+          type: string
+          format: date
+          readOnly: true
+        other_text:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - blocks
+      - created_at
+      - created_by
+      - date_from
+      - date_to
+      - id
+      - other_text
+      - product
+      - source
+      - type
+      - type_code
+      - type_label
+    InterventionRequestRequest:
+      type: object
+      properties:
+        type:
+          type: string
+          format: uuid
+        product:
+          type: string
+          minLength: 1
+          maxLength: 200
+        source:
+          type: string
+          minLength: 1
+          maxLength: 200
+        blocks:
+          type: array
+          items:
+            type: string
+            format: uuid
+        date_from:
+          type: string
+          format: date
+        date_to:
+          type: string
+          format: date
+        other_text:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - blocks
+      - date_from
+      - date_to
+      - product
+      - source
+      - type
     InventoryBlocker:
       type: object
       properties:
@@ -10812,6 +11146,21 @@ components:
       - supply_id
       - unit
       - unit_version_id
+    NextDayTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        due_date:
+          type: string
+          format: date
+      required:
+      - code
+      - due_date
+      - id
     NullEnum:
       enum:
       - null
@@ -11506,6 +11855,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentType'
+    PaginatedInterventionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Intervention'
     PaginatedLocationList:
       type: object
       required:
@@ -12844,6 +13216,40 @@ components:
       - resource_type
       - resource_version
       - sequence
+    QuadrantClosure:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant_version:
+          type: string
+          format: uuid
+          readOnly: true
+        closed_at:
+          type: string
+          format: date-time
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - closed_at
+      - created_at
+      - created_by
+      - id
+      - quadrant_version
+      - revision
     QuadrantCreateRequest:
       type: object
       description: |-
@@ -12946,6 +13352,38 @@ components:
       required:
       - expected_revision
       - geometry
+    QuadrantReadiness:
+      type: object
+      properties:
+        quadrant_id:
+          type: string
+          format: uuid
+        quadrant_version_id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        is_closed:
+          type: boolean
+        can_close:
+          type: boolean
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClosureBlocker'
+        closure:
+          allOf:
+          - $ref: '#/components/schemas/QuadrantClosure'
+          nullable: true
+      required:
+      - blockers
+      - can_close
+      - closure
+      - is_closed
+      - quadrant_id
+      - quadrant_version_id
+      - revision
     QuadrantReference:
       type: object
       properties:
@@ -12965,6 +13403,12 @@ components:
         revision:
           type: integer
           minimum: 1
+        is_closed:
+          type: boolean
+        closure_id:
+          type: string
+          format: uuid
+          nullable: true
       required:
       - center_id
       - code
@@ -13448,6 +13892,215 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    RelocationDecision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        proposal:
+          type: string
+          format: uuid
+          readOnly: true
+        event:
+          type: string
+          format: uuid
+          readOnly: true
+        decision:
+          allOf:
+          - $ref: '#/components/schemas/RelocationDecisionEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+          nullable: true
+        revision:
+          type: integer
+          readOnly: true
+          nullable: true
+        decided_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        published_point_version:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - decided_at
+      - decision
+      - event
+      - id
+      - proposal
+      - published_point_version
+      - reason
+      - revision
+    RelocationDecisionEnum:
+      enum:
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `approved` - approved
+        * `rejected` - rejected
+    RelocationDecisionRequestRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - expected_revision
+      - reason
+    RelocationDecisionResult:
+      type: object
+      properties:
+        decision:
+          $ref: '#/components/schemas/RelocationDecision'
+        point_version:
+          allOf:
+          - $ref: '#/components/schemas/PointVersion'
+          nullable: true
+        next_day_task:
+          allOf:
+          - $ref: '#/components/schemas/NextDayTask'
+          nullable: true
+        warnings:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - decision
+      - next_day_task
+      - point_version
+      - warnings
+    RelocationHistoryDecision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        decision:
+          $ref: '#/components/schemas/RelocationDecisionEnum'
+        reason:
+          type: string
+          nullable: true
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+        published_point_version:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - decided_at
+      - decision
+      - id
+      - published_point_version
+      - reason
+    RelocationHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/RelocationHistoryEntryKindEnum'
+        proposal_event_id:
+          type: string
+          format: uuid
+        point_id:
+          type: string
+          format: uuid
+        point_code:
+          type: string
+        status:
+          $ref: '#/components/schemas/RelocationHistoryEntryStatusEnum'
+        proposed_location:
+          type: array
+          items:
+            type: number
+            format: double
+          maxItems: 2
+          minItems: 2
+        decision:
+          allOf:
+          - $ref: '#/components/schemas/RelocationHistoryDecision'
+          nullable: true
+        next_day_task:
+          allOf:
+          - $ref: '#/components/schemas/RelocationHistoryTask'
+          nullable: true
+        source_voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorySubject'
+      required:
+      - decision
+      - id
+      - kind
+      - next_day_task
+      - point_code
+      - point_id
+      - proposal_event_id
+      - proposed_location
+      - source_voided_at
+      - status
+      - subjects
+    RelocationHistoryEntryKindEnum:
+      enum:
+      - relocation_proposal
+      type: string
+      description: '* `relocation_proposal` - relocation_proposal'
+    RelocationHistoryEntryStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - pending
+        * `approved` - approved
+        * `rejected` - rejected
+    RelocationHistoryTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        due_date:
+          type: string
+          format: date
+      required:
+      - code
+      - due_date
+      - id
     RemovalResolution:
       type: object
       description: |-
@@ -13999,6 +14652,89 @@ components:
       - legacy_state
       - scope_resolved
       - subjects
+    ReviewHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/CourierHistoryKindEnum'
+        review_item_id:
+          type: string
+          format: uuid
+          nullable: true
+        source_event_id:
+          type: string
+          format: uuid
+          nullable: true
+        shift_id:
+          type: string
+          format: uuid
+          nullable: true
+        decision_kind:
+          $ref: '#/components/schemas/CourierHistoryDecisionKindEnum'
+        revision:
+          type: integer
+          minimum: 1
+        is_terminal:
+          type: boolean
+          nullable: true
+        decision_state:
+          $ref: '#/components/schemas/CourierHistoryDecisionStateEnum'
+        reason:
+          type: string
+        decided_by:
+          type: string
+          format: uuid
+        decided_at:
+          type: string
+          format: date-time
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorySubject'
+        source_status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/SourceStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        source_code:
+          type: string
+          nullable: true
+        effect_state:
+          $ref: '#/components/schemas/CourierHistoryEffectStateEnum'
+        incident_id:
+          type: string
+          format: uuid
+          nullable: true
+        declared_void_target_uuid:
+          type: string
+          format: uuid
+          nullable: true
+        approval_current:
+          type: boolean
+          nullable: true
+      required:
+      - approval_current
+      - decided_at
+      - decided_by
+      - decision_kind
+      - decision_state
+      - declared_void_target_uuid
+      - effect_state
+      - id
+      - incident_id
+      - is_terminal
+      - kind
+      - reason
+      - review_item_id
+      - revision
+      - shift_id
+      - source_code
+      - source_event_id
+      - source_status
+      - subjects
     ReviewItem:
       type: object
       description: |-
@@ -14239,6 +14975,14 @@ components:
       - expected_revision
       - reason
     RevisionRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+      required:
+      - expected_revision
+    RevisionRequestRequest:
       type: object
       properties:
         expected_revision:

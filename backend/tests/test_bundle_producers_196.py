@@ -39,7 +39,11 @@ def pull(batch, cursor):
 def test_new_producers_have_concrete_contracts_and_change_schema_boundary(monkeypatch):
     keys = ("quadrants", "sampling_points", "ovitraps")
     assert producers.SECTION_KEYS[-3:] == keys
-    assert all(producers.PRODUCERS[key].schema_version == 1 for key in keys)
+    assert {key: producers.PRODUCERS[key].schema_version for key in keys} == {
+        "quadrants": 2,
+        "sampling_points": 1,
+        "ovitraps": 1,
+    }
     current = bundle_schema_version()
     monkeypatch.setattr(
         producers,
@@ -349,7 +353,7 @@ def test_quadrant_republish_upserts_resolution_points_and_ovitraps_in_same_scope
     )
     for batch, cursor in zip((field.batch, peer), cursors, strict=True):
         changes = pull(batch, cursor)
-        assert [row["resource_version"] for row in changes.quadrants] == ["2"]
+        assert [row["data"]["revision"] for row in changes.quadrants] == [2]
         assert len(changes.sampling_points) == len(changes.ovitraps) == 1
         point = changes.sampling_points[0]
         assert point["action"] == "upsert"
@@ -474,10 +478,10 @@ def test_geography_creation_and_publication_writers_emit_exact_versions(field):
     publish_block(block, BlockPublication(field.membership, 1, polygon()))
     publish_point(point, PointChange(field.membership, 1, [-99.9951, 20.005]))
     changes = pull(field.batch, before)
-    assert [(row["resource_type"], row["resource_version"]) for row in changes.quadrants] == [
-        ("quadrant", "1"),
-        ("block", "1"),
-        ("block", "2"),
+    assert [(row["resource_type"], row["data"]["revision"]) for row in changes.quadrants] == [
+        ("quadrant", 1),
+        ("block", 1),
+        ("block", 2),
     ]
     assert [(row["resource_id"], row["resource_version"]) for row in changes.sampling_points] == [
         (str(point.pk), "1"),

@@ -1856,6 +1856,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/quadrants/{id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        post: operations["quadrants_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/quadrants/{id}/closure/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description List, retrieve, create and update; there is deliberately no destroy. */
+        get: operations["quadrants_closure_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quadrants/{id}/versions/": {
         parameters: {
             query?: never;
@@ -1946,6 +1980,58 @@ export interface paths {
         get: operations["relocations_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relocations/{id}/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["relocations_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relocations/{id}/reject/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["relocations_reject_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2705,6 +2791,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/third-party-interventions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["third_party_interventions_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["third_party_interventions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/{id}/revoke-device-sessions/": {
         parameters: {
             query?: never;
@@ -3100,6 +3222,12 @@ export interface components {
             reason: string;
             evidence_ids: string[];
         };
+        ClosureBlocker: {
+            reason: string;
+            permission: string;
+            id?: string;
+            link: string;
+        };
         /**
          * @description * `incident_conflict` - incident_conflict
          * @enum {string}
@@ -3195,35 +3323,7 @@ export interface components {
          * @enum {string}
          */
         CourierHistoryEffectStateEnum: "applied_review" | "adopted_legacy" | "discarded" | "incident_open" | "approved" | "observed";
-        CourierHistoryEntry: {
-            /** Format: uuid */
-            id: string;
-            kind: components["schemas"]["CourierHistoryKindEnum"];
-            /** Format: uuid */
-            review_item_id: string | null;
-            /** Format: uuid */
-            source_event_id: string | null;
-            /** Format: uuid */
-            shift_id: string | null;
-            decision_kind: components["schemas"]["CourierHistoryDecisionKindEnum"];
-            revision: number;
-            is_terminal: boolean | null;
-            decision_state: components["schemas"]["CourierHistoryDecisionStateEnum"];
-            reason: string;
-            /** Format: uuid */
-            decided_by: string;
-            /** Format: date-time */
-            decided_at: string;
-            subjects: components["schemas"]["HistorySubject"][];
-            source_status: (components["schemas"]["SourceStatusEnum"] | components["schemas"]["NullEnum"]) | null;
-            source_code: string | null;
-            effect_state: components["schemas"]["CourierHistoryEffectStateEnum"];
-            /** Format: uuid */
-            incident_id: string | null;
-            /** Format: uuid */
-            declared_void_target_uuid: string | null;
-            approval_current: boolean | null;
-        };
+        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"];
         /**
          * @description * `review_decision` - review_decision
          *     * `shift_validation` - shift_validation
@@ -3646,6 +3746,39 @@ export interface components {
         IncidentVoidRequest: {
             expected_revision: number;
             reason: string;
+        };
+        Intervention: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly type: string;
+            readonly type_code: string;
+            readonly type_label: unknown;
+            readonly product: string;
+            readonly source: string;
+            readonly blocks: string[];
+            /** Format: date */
+            readonly date_from: string;
+            /** Format: date */
+            readonly date_to: string;
+            readonly other_text: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        InterventionRequestRequest: {
+            /** Format: uuid */
+            type: string;
+            product: string;
+            source: string;
+            blocks: string[];
+            /** Format: date */
+            date_from: string;
+            /** Format: date */
+            date_to: string;
+            /** @default  */
+            other_text: string;
         };
         InventoryBlocker: {
             reason: string;
@@ -4126,6 +4259,13 @@ export interface components {
             /** Format: uuid */
             readonly created_by: string | null;
         };
+        NextDayTask: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: date */
+            due_date: string;
+        };
         /** @enum {unknown} */
         NullEnum: null;
         OrganizationSettings: {
@@ -4473,6 +4613,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["IncidentType"][];
+        };
+        PaginatedInterventionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Intervention"][];
         };
         PaginatedLocationList: {
             /** @example 123 */
@@ -5144,6 +5299,19 @@ export interface components {
             resource_version: string;
             data: components["schemas"]["QuadrantReference"];
         };
+        QuadrantClosure: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly quadrant_version: string;
+            /** Format: date-time */
+            readonly closed_at: string;
+            readonly revision: number;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -5187,6 +5355,17 @@ export interface components {
             };
             point_resolutions?: components["schemas"]["PointResolutionRequest"][];
         };
+        QuadrantReadiness: {
+            /** Format: uuid */
+            quadrant_id: string;
+            /** Format: uuid */
+            quadrant_version_id: string;
+            revision: number;
+            is_closed: boolean;
+            can_close: boolean;
+            blockers: components["schemas"]["ClosureBlocker"][];
+            closure: components["schemas"]["QuadrantClosure"] | null;
+        };
         QuadrantReference: {
             resource_type: components["schemas"]["ResourceTypeEnum"];
             /** Format: uuid */
@@ -5197,6 +5376,9 @@ export interface components {
             /** Format: uuid */
             quadrant_id: string;
             revision: number;
+            is_closed?: boolean;
+            /** Format: uuid */
+            closure_id?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -5372,6 +5554,93 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        RelocationDecision: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly proposal: string;
+            /** Format: uuid */
+            readonly event: string;
+            readonly decision: components["schemas"]["RelocationDecisionEnum"];
+            readonly reason: string | null;
+            readonly revision: number | null;
+            /** Format: date-time */
+            readonly decided_at: string | null;
+            /** Format: uuid */
+            readonly published_point_version: string | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `approved` - approved
+         *     * `rejected` - rejected
+         * @enum {string}
+         */
+        RelocationDecisionEnum: "approved" | "rejected";
+        RelocationDecisionRequestRequest: {
+            expected_revision: number;
+            reason: string;
+        };
+        RelocationDecisionResult: {
+            decision: components["schemas"]["RelocationDecision"];
+            point_version: components["schemas"]["PointVersion"] | null;
+            next_day_task: components["schemas"]["NextDayTask"] | null;
+            warnings: {
+                [key: string]: unknown;
+            }[];
+        };
+        RelocationHistoryDecision: {
+            /** Format: uuid */
+            id: string;
+            decision: components["schemas"]["RelocationDecisionEnum"];
+            reason: string | null;
+            /** Format: date-time */
+            decided_at: string | null;
+            /** Format: uuid */
+            published_point_version: string | null;
+        };
+        RelocationHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "relocation_proposal";
+            /** Format: uuid */
+            proposal_event_id: string;
+            /** Format: uuid */
+            point_id: string;
+            point_code: string;
+            status: components["schemas"]["RelocationHistoryEntryStatusEnum"];
+            proposed_location: number[];
+            decision: components["schemas"]["RelocationHistoryDecision"] | null;
+            next_day_task: components["schemas"]["RelocationHistoryTask"] | null;
+            /** Format: date-time */
+            source_voided_at: string | null;
+            subjects: components["schemas"]["HistorySubject"][];
+        };
+        /**
+         * @description * `relocation_proposal` - relocation_proposal
+         * @enum {string}
+         */
+        RelocationHistoryEntryKindEnum: "relocation_proposal";
+        /**
+         * @description * `pending` - pending
+         *     * `approved` - approved
+         *     * `rejected` - rejected
+         * @enum {string}
+         */
+        RelocationHistoryEntryStatusEnum: "pending" | "approved" | "rejected";
+        RelocationHistoryTask: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: date */
+            due_date: string;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -5614,6 +5883,39 @@ export interface components {
             scope_resolved: boolean;
             authority_proof_ids: string[];
         };
+        ReviewHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "review_decision" | "shift_validation";
+            /** Format: uuid */
+            review_item_id: string | null;
+            /** Format: uuid */
+            source_event_id: string | null;
+            /** Format: uuid */
+            shift_id: string | null;
+            decision_kind: components["schemas"]["CourierHistoryDecisionKindEnum"];
+            revision: number;
+            is_terminal: boolean | null;
+            decision_state: components["schemas"]["CourierHistoryDecisionStateEnum"];
+            reason: string;
+            /** Format: uuid */
+            decided_by: string;
+            /** Format: date-time */
+            decided_at: string;
+            subjects: components["schemas"]["HistorySubject"][];
+            source_status: (components["schemas"]["SourceStatusEnum"] | components["schemas"]["NullEnum"]) | null;
+            source_code: string | null;
+            effect_state: components["schemas"]["CourierHistoryEffectStateEnum"];
+            /** Format: uuid */
+            incident_id: string | null;
+            /** Format: uuid */
+            declared_void_target_uuid: string | null;
+            approval_current: boolean | null;
+        };
         /**
          * @description A review item for the supervisor's list: what was flagged, why (`code` + `params`) and who
          *     sent it. The event itself (payload, times) comes with the review screens of #22.
@@ -5709,6 +6011,9 @@ export interface components {
             safety_disposition?: components["schemas"]["SafetyDispositionRequestRequest"];
         };
         RevisionRequest: {
+            expected_revision: number;
+        };
+        RevisionRequestRequest: {
             expected_revision: number;
         };
         /** @description Body of the two revoke actions. Everything is optional: an empty body is accepted. */
@@ -10071,6 +10376,78 @@ export interface operations {
             };
         };
     };
+    quadrants_close_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this quadrant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RevisionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuadrantClosure"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    quadrants_closure_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this quadrant. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuadrantReadiness"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     quadrants_versions_list: {
         parameters: {
             query?: {
@@ -10282,6 +10659,82 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedRelocationList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    relocations_approve_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this relocation proposal. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelocationDecisionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelocationDecisionResult"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    relocations_reject_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this relocation proposal. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RelocationDecisionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RelocationDecisionResult"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -11702,6 +12155,83 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedProtocolTypeOptionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    third_party_interventions_list: {
+        parameters: {
+            query?: {
+                block?: string;
+                date_from?: string;
+                date_to?: string;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                type?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedInterventionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    third_party_interventions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InterventionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Intervention"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

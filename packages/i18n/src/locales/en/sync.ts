@@ -13,6 +13,10 @@ export const sync: Record<keyof typeof source, string> = {
     "A supervisor will review this record. You don't need to do anything meanwhile.",
 
   // Per-event and per-batch codes of the sync answer (the API returns codes, never text)
+  "sync.result.lateWorkAfterQuadrantClose":
+    "This capture predates the quadrant closure. A supervisor must verify its historical authority before applying it.",
+  "sync.result.capturedAfterQuadrantClose":
+    "This capture was made after the quadrant closed. It cannot authorize new work there. Contact your supervisor.",
   "sync.result.unsupportedEventType":
     "The server doesn't recognize this type of record. Update the app and try again; if it keeps happening, tell your supervisor.",
   "sync.result.unsupportedSchemaVersion":

@@ -46,6 +46,9 @@ def _usable_rules(values: dict[str, int | float | None]) -> None:
 def capture_context(ctx: EventContext, point: SamplingPoint) -> Capture:
     """Resolve R03 rules and point at device_time; absent GPS/rules cannot pass."""
     version, values, identifiers, previous = observed_capture_inputs(ctx, point)
+    from geography.decisions.capture import capture_epoch
+
+    capture_epoch(ctx, point)
     _usable_rules(values)
     if version is None or version.is_retired:
         raise EventNeedsReview(codes.POINT_UNAVAILABLE)

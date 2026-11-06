@@ -1,5 +1,11 @@
 # scheduling
 
+B33 rejection links a real next-org-local-day check task and actual due-day owner
+through the existing v3 assignment producer. Task identity/provenance is preserved
+when reused. Generation skips a closed current QuadrantVersion; neither a review
+nor a relocation decision silently opens new geography work. See
+../geography/decisions/README.md for the transaction and original-source boundaries.
+
 ## Review integration (#113)
 
 Task completion now requires effective sources (accepted ingest or receipt).

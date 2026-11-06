@@ -196,7 +196,9 @@ added because parent identities are immutable (D7b).
 Courier ovitrap schema 1 adds optional is_retired, default false when absent.
 Existing fields retain their meanings. Resource hashes include outgoing live
 lineage/removal UUIDs; replacement/removal use the same atomic fan-out boundary,
-while relocation proposals emit no geometry or courier changes. See
+while relocation proposals emit no geometry or physical projection changes.
+B33 publishes their typed history through the existing113 producer after the real
+source exists, with its internal publication receipt. See
 ../ovitraps/lifecycle/README.md and ../../docs/sync.md for locks and acceptance map.
 
 ## Independent evidence references (#102)
