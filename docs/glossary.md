@@ -84,6 +84,7 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | --- | --- | --- | --- |
 | insumo | supply | `/supply-types/`, `supply` | Anything the courier is assigned and consumes. |
 | lote | lot | `/lots/`, `lot` | Lot of a supply (`ReleaseLot` for release lots). |
+| vida útil | shelf life | `shelf_life_seconds` | Explicit elapsed duration from the laid-on local midnight, added in UTC. A calendar `expiry_date` instead ends at its following local midnight; neither supplies a scientific default (#105). |
 | merma | shrinkage | `shrinkage` | Expected or unexplained loss in a reconciliation. |
 | baja | write-off | `/write-offs/`, `write_off` | Removal from stock, with reason and evidence. |
 | conciliación | reconciliation | `/reconciliations/`, `reconciliation` | Assigned vs used vs returned, per courier and day. |
