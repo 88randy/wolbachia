@@ -1,3 +1,4 @@
+import { centerQuery, centerIdentity } from "../../centers/center-filter";
 import { unwrap } from "@wolbachia/api-client";
 import type { Schemas } from "@wolbachia/api-client";
 import { orgScopedQueryOptions } from "../../session/org-scoped-query";
@@ -7,24 +8,37 @@ import { coversRecord } from "./permissions";
 import type { GeographyScope } from "./use-w-15";
 export const GEOGRAPHY = "geography";
 export function quadrantListOptions(scope: GeographyScope, state: TableState) {
-  return orgScopedQueryOptions(scope.identity, {
-    key: [GEOGRAPHY, scope.context, "quadrants", state],
+  return orgScopedQueryOptions(centerIdentity(scope.identity, state.filters["center"]), {
+    key: [GEOGRAPHY, scope.context, "quadrants", state, scope.identity.activeCenter ?? null],
     queryFn: async ({ signal }) =>
       unwrap(
         await scope.client.GET("/api/v1/quadrants/", {
-          params: { query: { ...listParams(state), ...state.filters } },
+          params: {
+            query: {
+              ...listParams(state),
+              ...state.filters,
+              ...centerQuery(scope.identity, state.filters["center"]),
+            },
+          },
           signal,
         }),
       ),
   });
 }
 export function quadrantRecordOptions(scope: GeographyScope, code: string) {
-  return orgScopedQueryOptions(scope.identity, {
-    key: [GEOGRAPHY, scope.context, "record", code],
+  return orgScopedQueryOptions(centerIdentity(scope.identity, scope.urlCenter), {
+    key: [
+      GEOGRAPHY,
+      scope.context,
+      "record",
+      code,
+      scope.urlCenter ?? null,
+      scope.identity.activeCenter ?? null,
+    ],
     queryFn: async ({ signal }) => {
       const answer = unwrap(
         await scope.client.GET("/api/v1/quadrants/", {
-          params: { query: { code, page: 1 } },
+          params: { query: { code, page: 1, ...centerQuery(scope.identity, scope.urlCenter) } },
           signal,
         }),
       );

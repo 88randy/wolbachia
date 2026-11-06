@@ -1,0 +1,85 @@
+import type { AreaCatalog } from "../area.ts";
+export const orgAdmin = {
+  "orgAdmin.roles.scope": "Alcance del perfil",
+  "orgAdmin.roles.view": "Vista",
+  "orgAdmin.roles.title": "Perfiles y permisos",
+  "orgAdmin.roles.search": "Buscar perfiles",
+  "orgAdmin.roles.profile": "Perfil",
+  "orgAdmin.roles.permissions": "Permisos",
+  "orgAdmin.roles.edit": "Editar permisos y alcance",
+  "orgAdmin.roles.hint":
+    "Usa las flechas para recorrer los permisos y Enter para editar. El alcance se comparte entre todos los permisos del perfil. Los perfiles de consulta son de solo lectura.",
+  "orgAdmin.roles.granted": "Permitido",
+  "orgAdmin.roles.denied": "Sin permiso",
+  "orgAdmin.roles.readOnly": "Solo lectura",
+  "orgAdmin.members.title": "Alcance de membresías",
+  "orgAdmin.members.user": "Referencia de usuario",
+  "orgAdmin.members.status": "Estado",
+  "orgAdmin.members.active": "Activa",
+  "orgAdmin.members.inactive": "Inactiva",
+  "orgAdmin.members.scope": "Alcance de centros",
+  "orgAdmin.members.edit": "Editar alcance",
+  "orgAdmin.members.blocked":
+    "Membresía inactiva. Una persona administradora debe reactivarla antes de cambiar su alcance.",
+  "orgAdmin.scope.centers": "Centros",
+  "orgAdmin.scope.quadrants": "Cuadrantes",
+  "orgAdmin.scope.mode": "Modo de alcance",
+  "orgAdmin.scope.none": "Sin acceso",
+  "orgAdmin.scope.selected": "Selección explícita",
+  "orgAdmin.scope.all": "Todos",
+  "orgAdmin.scope.pending": "Buscando código. Espera a que termine la búsqueda para guardar.",
+  "orgAdmin.scope.hint":
+    "Una selección vacía niega el acceso en esa dimensión. El alcance del perfil se intersecta con el de la membresía; cambiar el filtro de centro no otorga permisos.",
+  "orgAdmin.scope.code": "Código",
+  "orgAdmin.scope.add": "Agregar código",
+  "orgAdmin.scope.remove": "Quitar referencia",
+  "orgAdmin.scope.unavailable":
+    "Código no disponible en tu alcance. Revisa el código o pide acceso a una persona administradora.",
+  "orgAdmin.revision.current": "Revisión vigente: ",
+  "orgAdmin.revision.refresh": "Consultar revisión vigente",
+  "orgAdmin.revision.compare":
+    "Compara la configuración vigente con tus cambios antes de continuar. Tus cambios se conservan.",
+  "orgAdmin.revision.review": "Ya revisé: usar esta revisión",
+  "orgAdmin.error.lastAdministrator":
+    "Debe permanecer al menos una persona administradora. Tus cambios se conservaron. Otra persona administradora debe conservar los permisos de administración antes de guardar.",
+  "orgAdmin.error.staleRevision":
+    "La configuración cambió. Consulta la revisión vigente y compara tus cambios antes de guardar de nuevo.",
+  "orgAdmin.error.readOnly":
+    "Este perfil está restringido a consulta. Revisa sus permisos con una persona administradora.",
+  "orgAdmin.error.validation":
+    "No pudimos guardar. Revisa los valores, el alcance y el formato de la imagen antes de intentar de nuevo.",
+  "orgAdmin.error.offline":
+    "Sin conexión. Vuelve a conectarte para guardar; tus cambios permanecen en esta pantalla.",
+  "orgAdmin.action.saving": "Guardando…",
+  "orgAdmin.action.saved": "Cambios guardados",
+  "orgAdmin.center.empty": "No hay centros disponibles en tu alcance.",
+  "orgAdmin.center.filter": "Filtro de centro",
+  "orgAdmin.center.all": "Todos los centros autorizados",
+  "orgAdmin.center.choose": "Elige un centro autorizado",
+  "orgAdmin.organization.title": "Organización",
+  "orgAdmin.organization.name": "Nombre",
+  "orgAdmin.organization.country": "País",
+  "orgAdmin.organization.countryReadOnly": "El país es de solo lectura en la configuración actual.",
+  "orgAdmin.organization.timezone": "Zona horaria",
+  "orgAdmin.organization.epiWeek": "Semana epidemiológica",
+  "orgAdmin.organization.iso": "ISO · lunes a domingo",
+  "orgAdmin.organization.mmwr": "MMWR · domingo a sábado",
+  "orgAdmin.organization.languages": "Idiomas",
+  "orgAdmin.organization.spanish": "Español de México",
+  "orgAdmin.organization.english": "English",
+  "orgAdmin.organization.languageRequired": "Selecciona al menos un idioma para guardar.",
+  "orgAdmin.organization.phone": "Teléfono en etiquetas de ovitrampa",
+  "orgAdmin.organization.support": "Contacto de soporte",
+  "orgAdmin.brand.saved": "Logotipo guardado",
+  "orgAdmin.brand.logo": "Logotipo",
+  "orgAdmin.brand.initials": "Iniciales de la organización",
+  "orgAdmin.brand.preview": "Vista previa de etiqueta",
+  "orgAdmin.brand.inUse": "Ovitrampa en uso. No retirar.",
+  "orgAdmin.brand.hint":
+    "El nombre, el logotipo y el teléfono se usan en las nuevas etiquetas. Las etiquetas ya impresas no cambian.",
+  "orgAdmin.brand.formats":
+    "PNG, JPEG o WebP de hasta 1 MB y 1024 × 1024. Todas las imágenes se normalizan a PNG antes de enviar.",
+  "orgAdmin.brand.invalid":
+    "Elige una imagen PNG, JPEG o WebP de hasta 1 MB. Revisa el archivo e intenta de nuevo.",
+  "orgAdmin.brand.upload": "Guardar logotipo",
+} as const satisfies AreaCatalog<"orgAdmin">;

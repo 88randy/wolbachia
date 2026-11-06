@@ -1,3 +1,4 @@
+import { useUrlCenter } from "../../centers/use-url-center";
 import { useGeographyCache } from "./use-geography-cache";
 import { useApiClient } from "../../api/ApiClientProvider";
 import { useMe } from "../../session/use-me";
@@ -13,11 +14,13 @@ export function useGeographyScope() {
   const client = useApiClient();
   const me = useMe();
   const identity = useSessionIdentity();
-  const context = geographyContext(me);
+  const urlCenter = useUrlCenter();
+  const context = geographyContext(me) + "|" + (urlCenter ?? identity.activeCenter ?? "");
   useGeographyCache(context);
   const canRead = hasGeographyAccess(me);
   return {
     client,
+    urlCenter,
     me,
     identity: { ...identity, isSettled: identity.isSettled && canRead },
     context,
@@ -28,4 +31,6 @@ export function useGeographyScope() {
       canRead && me.permissions.includes(QUADRANT_PUBLISH) && me.scope.quadrants.mode === "all",
   };
 }
-export type GeographyScope = ReturnType<typeof useGeographyScope>;
+export type GeographyScope = Omit<ReturnType<typeof useGeographyScope>, "urlCenter"> & {
+  urlCenter?: string;
+};

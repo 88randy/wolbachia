@@ -6,7 +6,10 @@ import type { RefObject } from "react";
  * behind becomes inert, Tab stays inside, and the browser draws the backdrop. Focus goes to
  * `initialFocus` and returns to where it was when the dialog closes (WCAG 2.4.3).
  */
-export function useModalDialog(initialFocus: string): RefObject<HTMLDialogElement | null> {
+export function useModalDialog(
+  initialFocus: string,
+  returnFocusId?: string,
+): RefObject<HTMLDialogElement | null> {
   const dialogRef = useRef<HTMLDialogElement>(null);
   useEffect(() => {
     const dialog = dialogRef.current;
@@ -16,8 +19,12 @@ export function useModalDialog(initialFocus: string): RefObject<HTMLDialogElemen
     dialog.querySelector<HTMLElement>(initialFocus)?.focus();
     return () => {
       dialog.close();
-      if (previous instanceof HTMLElement) previous.focus();
+      if (previous instanceof HTMLElement) {
+        const id = returnFocusId || previous.id;
+        const trigger = id ? document.getElementById(id) : previous;
+        trigger?.focus();
+      }
     };
-  }, [initialFocus]);
+  }, [initialFocus, returnFocusId]);
   return dialogRef;
 }

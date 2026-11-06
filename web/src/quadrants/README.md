@@ -81,3 +81,5 @@ jsdom checks behavior, not physical layout, rendered contrast or WebGL. Docker,
 Playwright and real browser manual focus/contrast/visual checks remain separate
 verification gates. GitHub issue lookup returned 401; the supplied issue/lead
 decisions are the implementation specification, not evidence of live issue state.
+
+Quadrant list/code queries forward the explicit URL center before the active shell center; this only narrows backend grants. Blocks and points retain their quadrant constraint because their generated list contract has no center parameter.
