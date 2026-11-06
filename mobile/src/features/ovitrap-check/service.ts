@@ -31,6 +31,7 @@ interface StartInput {
   readonly isManual?: boolean;
 }
 export interface Snapshot extends StoredCapture {
+  readonly lifecycleTargetId: string | null;
   readonly catalogChanged: boolean;
   readonly isScopeBlocked: boolean;
   readonly isShiftBlocked: boolean;
@@ -77,6 +78,9 @@ export class OvitrapService {
     return {
       ...state,
       canStartCapture: Boolean(shiftId),
+      lifecycleTargetId: state.draft
+        ? await this.#deps.store.lifecycleTargetId(state.draft.ovitrapId)
+        : null,
       isShiftBlocked: !shiftId || Boolean(state.draft && state.draft.shiftId !== shiftId),
       ...availability(state.draft, await this.#deps.store.snapshots()),
       reuse: state.draft ? await this.#deps.store.reuse(state.draft) : [],
@@ -119,8 +123,9 @@ export class OvitrapService {
     assertCaptureIdentity(current, eventId);
     const shiftId = await this.#deps.shiftId();
     if (!shiftId) throw new ShiftBlockedError();
-    if (current.draft?.shiftId === shiftId && !current.event) {
-      assertSameTarget(current.draft, mode, ovitrapId);
+    const pending = await this.#pendingTarget(current, shiftId);
+    if (pending) {
+      assertSameTarget(pending, mode, ovitrapId);
       return this.read();
     }
     const { store, uuid, now } = this.#deps;
@@ -141,16 +146,27 @@ export class OvitrapService {
     if (saved.draft) assertSameTarget(saved.draft, mode, ovitrapId);
     return saved;
   }
+  async #pendingTarget(current: StoredCapture, shiftId: string): Promise<Draft | null> {
+    if (!current.draft || current.draft.shiftId !== shiftId || current.event) return null;
+    const source = await this.#deps.store.lifecycleSource(
+      current.draft.ovitrapId,
+      current.draft.point,
+    );
+    return source.isRetired ? null : current.draft;
+  }
   async #locateDraft(draft: Draft, isManual: boolean): Promise<Draft> {
     const source = await this.#deps.store.projection(draft.ovitrapId);
+    const lifecycle = await this.#deps.store.lifecycleSource(draft.ovitrapId, draft.point);
+    if (lifecycle.isRetired) throw new Error("The physical ovitrap is retired.");
     const point =
+      lifecycle.physical?.point ??
       source?.point ??
       draft.assignment?.ovitraps.find((item) => item.id === draft.ovitrapId)?.point ??
       null;
     return {
       ...draft,
       point,
-      sourceEvidence: source ? [...source.sourceEvidence, ...source.evidence] : [],
+      sourceEvidence: [...captureSourceEvidence(source), ...lifecycle.evidence],
       gps: normalizeGps(await this.#deps.gps.locate()),
       manualCapture: isManual,
     };
@@ -286,6 +302,8 @@ export class OvitrapService {
   }
   async #commit(draft: Draft): Promise<void> {
     if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();
+    const source = await this.#deps.store.lifecycleSource(draft.ovitrapId, draft.point);
+    if (source.isRetired) throw new Error("The physical ovitrap is retired.");
     const event = captureEvent(draft);
     const statements = this.#deps.store.commitStatements(draft);
     if (!draft.replacesEventId) return this.#deps.engine.enqueue(event, statements);
@@ -294,4 +312,8 @@ export class OvitrapService {
       ...statements,
     ]);
   }
+}
+
+function captureSourceEvidence(source: Draft | null): Draft["evidence"] {
+  return source ? [...source.sourceEvidence, ...source.evidence] : [];
 }

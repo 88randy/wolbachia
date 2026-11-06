@@ -1,3 +1,6 @@
+import { createOvitrapLifecycle } from "../features/ovitrap-lifecycle/create-ovitrap-lifecycle.ts";
+import type { LifecycleService } from "../features/ovitrap-lifecycle/service.ts";
+import { courierChangeStatements } from "../features/ovitrap-lifecycle/courier-projections.ts";
 import { getRandomBytes, randomUUID } from "expo-crypto";
 
 import { createOvitrapCheck } from "../features/ovitrap-check/create-ovitrap-check.ts";
@@ -28,6 +31,7 @@ import type { SyncTransport } from "../sync/sync-transport.ts";
 export interface AppServices {
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
+  readonly ovitrapLifecycle: LifecycleService;
   readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
@@ -74,8 +78,12 @@ export async function createServices(): Promise<AppServices> {
   });
   const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
-  const ovitrapCheck = createOvitrapCheck({ db, engine, requests, tokens, shiftOpen });
-  return { ovitrapCheck, kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
+  const captures = createCaptures({ db, engine, requests, tokens, shiftOpen });
+  return { ...captures, kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
+}
+
+function createCaptures(deps: Parameters<typeof createOvitrapCheck>[0]) {
+  return { ovitrapCheck: createOvitrapCheck(deps), ovitrapLifecycle: createOvitrapLifecycle(deps) };
 }
 
 async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
@@ -91,7 +99,7 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
 }
 
 function createEngine(
-  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen" | "ovitrapCheck"> & {
+  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen" | "ovitrapCheck" | "ovitrapLifecycle"> & {
     requests: SessionRequests;
   },
 ): SyncEngine {
@@ -103,6 +111,7 @@ function createEngine(
       deviceId,
       now: () => new Date(),
       transport: lazyTransport(tokens, requests),
+      projectionStatements: courierChangeStatements,
     },
     hasSession: () => tokens.hasSyncSession(),
     hasPendingFinalUpload: tokens.hasPendingFinalUpload,

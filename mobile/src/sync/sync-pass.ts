@@ -17,6 +17,7 @@ export interface SyncPassDeps {
   readonly transport: SyncTransport;
   readonly deviceId: string;
   readonly now: () => Date;
+  readonly projectionStatements?: (changes: SyncResponse["changes"]) => readonly SqlStatement[];
 }
 
 /** State that lives as long as the engine: a `413` shrinks the batch for the following passes too. */
@@ -106,7 +107,13 @@ async function applyAnswer(
   );
   const answered = batch.map((event) => transitionFor(event, response, deps.now()));
   // One transaction: statuses, cursor and versions are saved together or not at all.
-  await deps.outbox.settle([...answered, ...pulled], bookkeeping(response, deps.now()));
+  await deps.outbox.settle(
+    [...answered, ...pulled],
+    [
+      ...bookkeeping(response, deps.now()),
+      ...(deps.projectionStatements?.(response.changes) ?? []),
+    ],
+  );
 }
 
 function eventsTo(

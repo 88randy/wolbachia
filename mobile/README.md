@@ -487,3 +487,75 @@ This adversarial-fix follow-up was verified locally with the commands above.
 GitHub issue access returned HTTP 401; no remote review/CI result is claimed. No commit/push/PR,
 Docker, Playwright, emulator or device qualification was performed. No generated
 stackdump/test-results artifacts were retained.
+
+
+## M-09: replace, relocate, remove (#138)
+
+P15-P17 are entered from the selected point/physical ovitrap in M-08 and implemented
+in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). ADR 121 records the
+owner-supplied decisions. Service/store/ports and `use-m-09` reuse the existing
+M-02 outbox and M-08 GPS/evidence/shift authorization patterns. Migration 7 follows
+migration 6; it retains immutable captures, reserved replacement UUIDs, evidence,
+reasoned void attempts and local relocation decisions. No new queue, HTTP endpoint,
+transport, dependency or generated client edit is introduced.
+
+Saving is one SQLite transaction before success. Replacement keeps the point code
+and exposes the new physical identity to M-08 while retaining lineage. Explicitly
+starting a new M-08 capture archives a pending check whose source was retired;
+its input/evidence is retained. Removal requires a deliberate recovered/unrecovered/
+unconfirmed choice. Relocation remains Proposed and never moves geometry. Closed-house
+suggestions count locally known checks across physical lineage using downloaded OP03
+thresholds; unavailable incident history produces no incident-count suggestion.
+
+Phone saved, server received and review result are distinct. A rejected or pending
+request never claims delivery. Reasoned corrections preserve every source/photo and
+attempt, show each void's delivery/result, and cannot restore a trap over another
+active identity or void a proposal with decisions. M-08 abandoned/removed findings
+use the no-paddle path and an informational backend-incident notice.
+
+**Design mapping/differences:** S09-Ovitrampa.png/source P15-P17, S15-Ingles and
+S16-Accesibilidad were read. The accepted decisions supersede sample pixels: the
+replacement UUID is generated/reserved on the phone rather than scanning an invented
+assigned-stock API; no stock return or compensation is claimed. P16 records a GPS
+proposal rather than placing/moving immediately, and never promises a task tomorrow.
+Only a synced task value is displayed. P17 adds explicit unconfirmed recovery;
+confirmation uses a bottom sheet. All forms require current GPS/photo and catalog
+Other text, use wrapping 56 dp controls/shared tokens and localized copy. Forms are
+continuous scrollable sections rather than duplicating the artwork's five-step
+stock/paddle workflow; final paddle capture remains M-08. Photo removal offers a
+persistent local Undo while the draft is editable; captured evidence is never deleted.
+
+**[ASSUMPTION] integration boundaries:**
+
+- B-33's decision writer and changes-feed producer are absent. `ingestDecision`
+  accepts a typed **local** decision/task projection; its camelCase fields are not
+  a proposed wire contract. No generic `changes.history` row is interpreted as a
+  decision, no approve endpoint exists, rejection never deletes a proposal, and no
+  local task is synthesized. The future producer must add a generated wire schema
+  and decoder at the existing changes/bootstrap boundary.
+- B-15 `is_recovered` is boolean: only recovered sends true. Unrecovered and
+  unconfirmed send false; unconfirmed remains a durable flagged local distinction.
+- GPS, camera and explicit assignment adapters have the same unavailable production
+  defaults as M-08 until the M-01 qualified build supplies them. Missing GPS/photo/
+  authorized point remains incomplete. Evidence UUID/file references use existing
+  ports and transactional attachment references; B-04 upload integration is absent,
+  so no actual photo upload is claimed.
+- Existing B-13 ovitrap/point changes are validated and committed alongside receipt
+  and cursor by the existing sync pass. Optional historical `is_retired` defaults
+  false; retirement and lineage are retained. `courierBundleStatements` stages only
+  downloaded projections for the M-01 bootstrap consumer; it does not fetch bundles
+  or erase drafts/outbox. Full bootstrap/cursor/scope recovery remains the existing
+  integration boundary. Organization routing is the pinned token, never a URL selector.
+- Copy uses runtime-free `packages/i18n` through the existing mobile `useT`/
+  `translate.ts` adapter, exactly as M-08; no additional i18next runtime is added.
+- The manifest's `mobile/e2e/m-09.spec.ts` is intentionally not created: no mobile
+  e2e directory/tooling exists. A real file-backed SQLite close/reopen test proves
+  local restart persistence and original-UUID retry; it is not force-stop/device proof.
+
+Tests and criterion mapping: [feature README](src/features/ovitrap-lifecycle/README.md).
+Native SQLCipher, camera/GPS/navigation, uploads, real API and B-33 feed, TalkBack,
+light/dark layout at 130% on the Galaxy S24 Ultra SM-S928B/Android 16 and the
+arm64/4GB/64GB/Android 13+ profile still require M-01 build/device qualification.
+The Node prop matrix verifies labeled controls, minimum heights, wrapping/scaling
+configuration, tokens/locales and modal actions; it cannot certify native layout,
+focus return, contrast in sunlight or assistive-technology behavior.

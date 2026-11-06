@@ -1,3 +1,6 @@
+import { readPhysicalIdentityState } from "../ovitrap-lifecycle/physical-identity-state.ts";
+import { RETIRED_CAPTURE_DRAFT } from "../ovitrap-lifecycle/retired-draft.ts";
+import { physicalOvitrap } from "../ovitrap-lifecycle/physical-projection.ts";
 import { captureWeek } from "./capture-week.ts";
 import { KvStore } from "../../db/kv-store.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
@@ -48,12 +51,12 @@ export class OvitrapStore {
       {
         sql: `INSERT INTO ovitrap_superseded_draft(event_id, replacement_event_id, draft)
           SELECT json_extract(draft, '$.eventId'), ?, draft FROM ovitrap_draft
-          WHERE slot = 1 AND event_id IS NULL AND json_extract(draft, '$.shiftId') <> ?`,
+          WHERE slot = 1 AND event_id IS NULL AND (json_extract(draft, '$.shiftId') <> ? OR ${RETIRED_CAPTURE_DRAFT})`,
         params: [draft.eventId, draft.shiftId],
       },
       {
         sql: `INSERT INTO ovitrap_draft(slot, draft) VALUES (1, ?) ON CONFLICT(slot) DO UPDATE SET draft = excluded.draft, event_id = NULL
-          WHERE ovitrap_draft.event_id IS NOT NULL OR json_extract(ovitrap_draft.draft, '$.shiftId') <> json_extract(excluded.draft, '$.shiftId')`,
+          WHERE ovitrap_draft.event_id IS NOT NULL OR json_extract(ovitrap_draft.draft, '$.shiftId') <> json_extract(excluded.draft, '$.shiftId') OR ${RETIRED_CAPTURE_DRAFT}`,
         params: [JSON.stringify(draft)],
       },
     ]);
@@ -77,6 +80,32 @@ export class OvitrapStore {
       [id],
     );
     return row ? (JSON.parse(readText(row, "draft")) as Draft) : null;
+  }
+  async lifecycleSource(id: string, point: Draft["point"] = null) {
+    const physical = await physicalOvitrap(this.#db, id);
+    const [row] = await this.#db.query(
+      "SELECT draft FROM lifecycle_capture WHERE kind='replace' AND json_extract(draft,'$.replacementId')=?",
+      [id],
+    );
+    const lifecycle = row
+      ? (JSON.parse(readText(row, "draft")) as { readonly evidence: Draft["evidence"] })
+      : null;
+    const state =
+      physical ?? (await readPhysicalIdentityState(this.#db, { id, pointId: point?.id ?? null }));
+    return { physical, evidence: lifecycle?.evidence ?? [], isRetired: state.isRetired };
+  }
+  async lifecycleTargetId(id: string): Promise<string | null> {
+    const visited = new Set<string>();
+    let current = id;
+    while (!visited.has(current)) {
+      visited.add(current);
+      const physical = await physicalOvitrap(this.#db, current);
+      if (!physical) return null;
+      if (!physical.isRetired) return physical.id;
+      if (!physical.replacedBy) return null;
+      current = physical.replacedBy;
+    }
+    throw new Error("Invalid physical lineage cycle.");
   }
   async repeat(draft: Draft): Promise<OutboxEvent | null> {
     const week = captureWeek(draft);

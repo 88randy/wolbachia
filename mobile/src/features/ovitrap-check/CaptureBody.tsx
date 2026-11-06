@@ -1,3 +1,4 @@
+import { IncidentNotice } from "../ovitrap-lifecycle/IncidentNotice.tsx";
 import { requiresPhoto } from "./validation.ts";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
@@ -14,6 +15,7 @@ export function CaptureBody(props: CaptureProps) {
   const isRepeatBlocked = model.state?.repeat && !draft.replacesEventId;
   return (
     <View>
+      <IncidentNotice finding={draft.finding} />
       {model.state?.repeat ? <RepeatCheck {...props} /> : null}
       {!isRepeatBlocked ? (
         <View>

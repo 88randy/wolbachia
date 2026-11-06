@@ -2,6 +2,77 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.lifecycle.replace": "Sustituir ovitrampa",
+  "mobile.lifecycle.relocate": "Proponer reubicaci?n",
+  "mobile.lifecycle.remove": "Retirar ovitrampa",
+  "mobile.lifecycle.fixedCode":
+    "El folio del punto se conserva. La sustituci?n usa una nueva identidad f?sica.",
+  "mobile.lifecycle.source": "Ovitrampa de origen",
+  "mobile.lifecycle.replacement": "Nueva identidad f?sica",
+  "mobile.lifecycle.proposalOnly":
+    "Se guardar? como propuesta. La ubicaci?n autorizada del punto permanece igual hasta una decisi?n sincronizada.",
+  "mobile.lifecycle.proposedLocation": "Ubicaci?n propuesta (longitud, latitud)",
+  "mobile.lifecycle.closedWeeks": "Semanas consecutivas con casa cerrada (regla descargada):",
+  "mobile.lifecycle.confirmedCount": "Incidencias conocidas (regla descargada):",
+  "mobile.lifecycle.noIncidentHistory":
+    "Sin historial local de incidencias; no se calcula esa sugerencia.",
+  "mobile.lifecycle.inspectHistory":
+    "Revisa el historial antes de proponer. La sugerencia es orientativa.",
+  "mobile.lifecycle.gpsRequired":
+    "Falta GPS. Int?ntalo de nuevo; no se puede guardar sin ubicaci?n.",
+  "mobile.lifecycle.gpsCaptured": "GPS capturado en el tel?fono",
+  "mobile.lifecycle.captureGps": "Capturar ubicaci?n GPS",
+  "mobile.lifecycle.recovery": "?Recuperaste la ovitrampa? Elige una opci?n.",
+  "mobile.lifecycle.recovered": "Recuperada: la llevo de regreso",
+  "mobile.lifecycle.unrecovered": "No recuperada: no la encontr?",
+  "mobile.lifecycle.unconfirmed": "Recuperaci?n sin confirmar",
+  "mobile.lifecycle.recoveryNotice":
+    "La recuperaci?n queda pendiente. Sin confirmar se conserva en el tel?fono y se reporta como no recuperada al servidor.",
+  "mobile.lifecycle.reason": "Motivo del cat?logo descargado",
+  "mobile.lifecycle.chooseReason": "Elegir motivo",
+  "mobile.lifecycle.other": "Otro: describe el motivo (m?ximo 1000 caracteres)",
+  "mobile.lifecycle.incidentNotice":
+    "El servidor vincular? el hallazgo con una incidencia cuando aplique la captura. El tel?fono no crea una incidencia.",
+  "mobile.lifecycle.photoRequired": "Agrega al menos una foto de esta captura antes de guardar.",
+  "mobile.lifecycle.capturePhoto": "Agregar foto de evidencia",
+  "mobile.lifecycle.discardPhoto": "Quitar foto del borrador",
+  "mobile.lifecycle.photoDiscarded": "Foto retirada del borrador. Puedes deshacerlo.",
+  "mobile.lifecycle.undo": "Deshacer",
+  "mobile.lifecycle.reviewAcknowledge":
+    "Entiendo que el GPS, distancia o reglas desactualizadas requieren revisi?n del servidor.",
+  "mobile.lifecycle.download": "Descargar cat?logos y reglas de ciclo de vida",
+  "mobile.lifecycle.adopt": "Revisar y usar cat?logos y reglas descargados",
+  "mobile.lifecycle.begin": "Iniciar captura para este punto",
+  "mobile.lifecycle.loading": "Cargando borrador local?",
+  "mobile.lifecycle.empty":
+    "Inicia la captura desde la ovitrampa seleccionada. Si falta configuraci?n, desc?rgala primero.",
+  "mobile.lifecycle.confirmRemove": "Revisar y confirmar retiro",
+  "mobile.lifecycle.removeConsequence":
+    "El punto quedar? sin esta ovitrampa. Para corregir se agrega una anulaci?n con motivo; la evidencia se conserva.",
+  "mobile.lifecycle.save": "Guardar en el tel?fono",
+  "mobile.lifecycle.incomplete":
+    "Captura incompleta: revisa motivo, Otro, GPS, foto y recuperaci?n. El borrador se conserva.",
+  "mobile.lifecycle.proposed": "Propuesta",
+  "mobile.lifecycle.approved": "Aprobada",
+  "mobile.lifecycle.rejected": "Rechazada",
+  "mobile.lifecycle.reviewAccepted":
+    "Resultado del servidor: aceptado. Revisi?n del supervisor: sin confirmaci?n.",
+  "mobile.lifecycle.reviewRejected":
+    "Resultado del servidor: rechazado. Conserva la evidencia y consulta al supervisor.",
+  "mobile.lifecycle.decisionPending": "Decisi?n del supervisor: pendiente de sincronizar",
+  "mobile.lifecycle.nextTask": "Tarea recibida al sincronizar",
+  "mobile.lifecycle.noTask": "Sin tarea sincronizada; no hay asignaci?n local anticipada.",
+  "mobile.lifecycle.history": "Historial de ciclo de vida y correcciones",
+  "mobile.lifecycle.voided": "Anulaci?n registrada; se conserva el original",
+  "mobile.lifecycle.correctionReason":
+    "Motivo de correcci?n (de 10 caracteres visibles a 1000 caracteres)",
+  "mobile.lifecycle.correct": "Anular con motivo conservando evidencia",
+  "mobile.lifecycle.scopeBlocked":
+    "Este punto ya no est? en tu alcance descargado. El borrador se conserva; consulta al supervisor.",
+  "mobile.lifecycle.noCamera":
+    "La c?mara no est? disponible. Conserva el borrador e intenta de nuevo en un equipo habilitado.",
+  "mobile.lifecycle.noReasons": "Falta el cat?logo de motivos. Desc?rgalo antes de continuar.",
+
   "mobile.ovitrap.pendingDraft":
     "Ya tienes un borrador de otra captura. Continúa ese borrador antes de cambiar de ovitrampa.",
   // M-08: P13, P14 and P21

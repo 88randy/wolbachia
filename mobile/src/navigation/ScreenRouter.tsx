@@ -1,3 +1,4 @@
+import { LifecycleRoute } from "../features/ovitrap-lifecycle/LifecycleRoute.tsx";
 import { OvitrapScreen } from "../features/ovitrap-check/OvitrapScreen.tsx";
 import { ScannerScreen } from "../features/ovitrap-check/ScannerScreen.tsx";
 import { P21Screen } from "../features/ovitrap-check/P21Screen.tsx";
@@ -13,6 +14,10 @@ import { useNavigation } from "./NavigationProvider.tsx";
 import type { Route } from "./routes.ts";
 
 function screenFor(route: Route): ReactNode {
+  if ("ovitrapId" in route) return <LifecycleRoute route={route} />;
+  return mainScreenFor(route);
+}
+function mainScreenFor(route: Exclude<Route, { readonly ovitrapId: string }>): ReactNode {
   switch (route.name) {
     case "ovitrapCapture":
       return <OvitrapScreen />;

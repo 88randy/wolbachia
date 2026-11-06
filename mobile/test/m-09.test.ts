@@ -1,0 +1,962 @@
+import assert from "node:assert/strict";
+import { test } from "node:test";
+import { navigationReducer } from "../src/navigation/routes.ts";
+import { LifecycleService } from "../src/features/ovitrap-lifecycle/service.ts";
+import { LifecycleStore } from "../src/features/ovitrap-lifecycle/store.ts";
+import { saveGate, deliveryState } from "../src/features/ovitrap-lifecycle/domain.ts";
+import { StaleCaptureError } from "../src/features/ovitrap-check/capture-identity.ts";
+import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
+import { createStores, FIXED_NOW } from "./support/factories.ts";
+import { engineFor } from "./support/m-08-harness.ts";
+import { ASSIGNMENT, CATALOG, POINT, RULES, makeDraft } from "./support/m-08-fixtures.ts";
+import type { TestStores } from "./support/factories.ts";
+import type { LifecycleDraft } from "../src/features/ovitrap-lifecycle/types.ts";
+const SOURCE = "44444444-4444-4444-8444-444444444444";
+const PHOTO = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", fileRef: "file:///capture.jpg" };
+const reason = (code: string) => ({
+  code,
+  label_es: code,
+  label_en: code,
+  is_other: code === "other",
+  requires_photo: true,
+});
+let sequence = 0;
+async function harness(local?: TestStores) {
+  const stores = local ?? (await createStores());
+  const capture = new OvitrapStore(stores.db);
+  await capture.saveSnapshots({
+    catalog: CATALOG,
+    rules: RULES,
+    assignment: { ...ASSIGNMENT, ovitraps: [{ id: SOURCE, point: POINT }] },
+  });
+  const store = new LifecycleStore(stores.db);
+  await store.saveConfiguration({
+    catalog: {
+      version: CATALOG.version,
+      replace: [reason("damaged"), reason("other")],
+      relocate: [reason("closed-house"), reason("other")],
+      remove: [reason("abandoned"), reason("other")],
+      voidReasons: [reason("other")],
+    },
+    rules: { ...RULES, closedHouseWeeks: 2, incidents: 3 },
+  });
+  const engine = engineFor(stores);
+  const deps = {
+    store,
+    engine,
+    now: () => FIXED_NOW,
+    uuid: () => `aaaaaaaa-aaaa-4aaa-8aaa-${String(++sequence).padStart(12, "0")}`,
+    gps: { locate: () => Promise.resolve({ lat: 19, lng: -99, accuracy_m: 5 }) },
+    evidence: { capture: () => Promise.resolve(PHOTO) },
+    shiftId: () => Promise.resolve("55555555-5555-4555-8555-555555555555"),
+  };
+  return { ...stores, store, engine, deps, service: new LifecycleService(deps) };
+}
+async function begin(h: Awaited<ReturnType<typeof harness>>, kind: LifecycleDraft["kind"]) {
+  const state = await h.service.start(
+    { kind, ovitrapId: SOURCE, manualCapture: false },
+    (await h.store.read()).draft?.eventId ?? null,
+  );
+  assert.ok(state.draft);
+  return state.draft;
+}
+async function complete(h: Awaited<ReturnType<typeof harness>>, draft: LifecycleDraft) {
+  await h.service.update(
+    {
+      reasonCode:
+        draft.kind === "replace"
+          ? "damaged"
+          : draft.kind === "relocate"
+            ? "closed-house"
+            : "abandoned",
+      recovery: "unrecovered",
+    },
+    draft.eventId,
+  );
+  await h.service.refreshGps(draft.eventId);
+  await h.service.captureEvidence(draft.eventId);
+}
+void test("AC1: replacement retains fixed point code/lineage and reserves fresh physical UUIDs", async () => {
+  const h = await harness();
+  const first = await begin(h, "replace");
+  await complete(h, first);
+  await h.service.save(first.eventId);
+  const projection = await h.store.physical(SOURCE);
+  assert.equal(projection?.isRetired, true);
+  assert.ok(first.replacementId);
+  const replacement = await h.store.physical(first.replacementId);
+  assert.equal(replacement?.point.code, POINT.code);
+  assert.notEqual(replacement.id, SOURCE);
+  assert.equal(replacement.isRetired, false);
+  const next = await h.service.start(
+    { kind: "replace", ovitrapId: first.replacementId, manualCapture: false },
+    first.eventId,
+  );
+  assert.notEqual(next.draft?.replacementId, first.replacementId);
+  const stack = navigationReducer(
+    [{ name: "ovitrapReplace", ovitrapId: SOURCE, manualCapture: false }],
+    {
+      type: "push",
+      route: { name: "ovitrapReplace", ovitrapId: first.replacementId, manualCapture: false },
+    },
+  );
+  assert.equal(stack.length, 2);
+
+  const [event] = await h.outbox.claimPending(10);
+  assert.equal(event?.envelope.payload.replacement_id, first.replacementId);
+  assert.equal(event.envelope.payload.ovitrap_id, SOURCE);
+  assert.ok(next.draft?.replacementId);
+  const reserved = next.draft.replacementId;
+  const ids = [h.deps.uuid(), reserved];
+  const restarted = new LifecycleService({
+    ...h.deps,
+    uuid: () => ids.shift() ?? "invalid",
+    shiftId: () => Promise.resolve("66666666-6666-4666-8666-666666666666"),
+  });
+  await assert.rejects(
+    restarted.start(
+      { kind: "replace", ovitrapId: first.replacementId, manualCapture: false },
+      next.draft.eventId,
+    ),
+  );
+  assert.equal((await h.store.read()).draft?.eventId, next.draft.eventId);
+  const placement = makeDraft({ eventId: h.deps.uuid(), mode: "place", ovitrapId: reserved });
+  await h.store.capture.begin(placement);
+  await assert.rejects(
+    h.outbox.enqueue(captureEvent(placement), h.store.capture.commitStatements(placement)),
+  );
+});
+void test("AC1: offline relocation is Proposed, retains geometry and requires GPS/photo/Other", async () => {
+  const h = await harness();
+  const draft = await begin(h, "relocate");
+  await h.service.update({ reasonCode: "other" }, draft.eventId);
+  await assert.rejects(h.service.save(draft.eventId));
+  await h.service.refreshGps(draft.eventId);
+  await assert.rejects(h.service.save(draft.eventId));
+  await h.service.captureEvidence(draft.eventId);
+  await assert.rejects(h.service.save(draft.eventId));
+  await h.service.update({ otherText: "  Safer shaded entrance  " }, draft.eventId);
+  const saved = await h.service.save(draft.eventId);
+  assert.equal(saved.proposal?.status, "proposed");
+  assert.equal(saved.proposal.nextDayTask, null);
+  assert.deepEqual((await h.store.physical(SOURCE))?.point, POINT);
+  assert.equal(saved.event?.envelope.payload.other_text, "Safer shaded entrance");
+  assert.deepEqual(saved.event.envelope.payload.proposed_location, [-99, 19]);
+  assert.equal(deliveryState(saved.event).server, "pending");
+  assert.ok(saved.draft);
+  assert.equal(saveGate({ ...saved.draft, otherText: "x".repeat(1001) }, FIXED_NOW), "other");
+});
+void test("AC1: removal requires an explicit recovery choice; unconfirmed remains local and sends false", async () => {
+  for (const recovery of ["unrecovered", "unconfirmed", "recovered"] as const) {
+    const h = await harness();
+    const draft = await begin(h, "remove");
+    assert.equal(draft.recovery, null);
+    await complete(h, draft);
+    await h.service.update({ recovery: null }, draft.eventId);
+    await assert.rejects(h.service.save(draft.eventId));
+    await h.service.update({ recovery }, draft.eventId);
+    const saved = await h.service.save(draft.eventId);
+    assert.equal(saved.event?.envelope.payload.is_recovered, recovery === "recovered");
+    assert.equal(saved.draft?.recovery, recovery);
+    assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+  }
+});
+void test("AC2: synced decisions/task and reasoned correction preserve proposal/evidence across service restart", async () => {
+  const h = await harness();
+  const draft = await begin(h, "relocate");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  const decision = {
+    id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    proposalEventId: draft.eventId,
+    status: "rejected" as const,
+    decidedAt: "2026-01-16T12:00:00Z",
+    reason: "Keep current entrance",
+    nextDayTask: {
+      id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+      dueDate: "2026-01-17",
+      code: "synced-task",
+    },
+  };
+  await h.store.ingestDecision(decision);
+  await h.store.ingestDecision(decision);
+  const restarted = new LifecycleService(h.deps);
+  assert.equal((await restarted.read()).proposal?.status, "rejected");
+  assert.deepEqual((await restarted.read()).proposal?.nextDayTask, decision.nextDayTask);
+  await assert.rejects(
+    restarted.correct(
+      { reasonCode: "other", reason: "Reasoned correction of location" },
+      draft.eventId,
+    ),
+  );
+  assert.equal((await h.db.query("SELECT * FROM lifecycle_capture")).length, 1);
+  const second = await harness();
+  const original = await begin(second, "relocate");
+  await complete(second, original);
+  await second.service.save(original.eventId);
+  await second.service.correct(
+    { reasonCode: "other", reason: "Reasoned correction of location" },
+    original.eventId,
+  );
+  const restored = await new LifecycleService(second.deps).read();
+  assert.equal(restored.history[0]?.voidReason, "Reasoned correction of location");
+  assert.deepEqual(restored.history[0].draft.evidence, [PHOTO]);
+  assert.equal(restored.proposal?.status, "proposed");
+  assert.equal(restored.proposal.isVoided, true);
+  const approved = await harness();
+  const proposal = await begin(approved, "relocate");
+  await complete(approved, proposal);
+  await approved.service.save(proposal.eventId);
+  await approved.store.ingestDecision({
+    ...decision,
+    proposalEventId: proposal.eventId,
+    status: "approved",
+    nextDayTask: null,
+  });
+  assert.equal((await approved.service.read()).proposal?.status, "approved");
+  assert.equal((await approved.service.read()).proposal?.nextDayTask, null);
+  assert.deepEqual((await approved.store.physical(SOURCE))?.point, POINT);
+});
+void test("AC3: failed lifecycle transaction retains draft, references and truthfully pending state", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  await complete(h, draft);
+  await h.db.runAtomically([
+    {
+      sql: "CREATE TRIGGER disk_full BEFORE INSERT ON lifecycle_capture BEGIN SELECT RAISE(ABORT, 'full'); END",
+    },
+  ]);
+  await assert.rejects(h.service.save(draft.eventId));
+  assert.equal((await h.store.read()).event, null);
+  assert.equal((await h.store.read()).draft?.eventId, draft.eventId);
+  assert.deepEqual((await h.store.read()).draft?.evidence, [PHOTO]);
+  assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
+  assert.equal((await h.store.physical(SOURCE))?.isRetired, false);
+});
+void test("AC3: every lifecycle command rejects the wrong displayed UUID before write or native effect", async () => {
+  const h = await harness();
+  const draft = await begin(h, "relocate");
+  let effects = 0;
+  const service = new LifecycleService({
+    ...h.deps,
+    gps: {
+      locate: () => {
+        effects++;
+        return Promise.resolve(null);
+      },
+    },
+    evidence: {
+      capture: () => {
+        effects++;
+        return Promise.resolve(null);
+      },
+    },
+  });
+  const stale = "99999999-9999-4999-8999-999999999999";
+  const commands = [
+    () => service.start({ kind: "remove", ovitrapId: SOURCE, manualCapture: true }, stale),
+    () => service.update({ otherText: "bad" }, stale),
+    () => service.refreshGps(stale),
+    () => service.captureEvidence(stale),
+    () => service.removeEvidence(PHOTO.id, stale),
+    () => service.undoEvidence(stale),
+    () => service.adoptSnapshots(stale),
+    () => service.refresh(stale),
+    () => service.save(stale),
+    () => service.correct({ reasonCode: "other", reason: "A reasoned correction" }, stale),
+  ];
+  for (const command of commands) await assert.rejects(command(), StaleCaptureError);
+  assert.equal(effects, 0);
+  assert.deepEqual((await h.store.read()).draft, draft);
+  assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
+});
+
+import { captureEvent } from "../src/features/ovitrap-check/events.ts";
+import { relocationSuggestion } from "../src/features/ovitrap-lifecycle/thresholds.ts";
+import {
+  readLifecycleCatalog,
+  readLifecycleRules,
+} from "../src/features/ovitrap-lifecycle/snapshots.ts";
+void test("AC2: advisory thresholds use delivered values and fixed-point local epi weeks across physical lineage", async () => {
+  const h = await harness();
+  const draft = await begin(h, "relocate");
+  assert.ok(draft.rules);
+  const base = makeDraft({ deviceTime: "2026-01-12T15:00:00Z", finding: "closed-house" });
+  for (const [index, time] of ["2026-01-12T15:00:00Z", "2026-01-05T15:00:00Z"].entries()) {
+    const check = {
+      ...base,
+      deviceTime: time,
+      eventId: h.deps.uuid(),
+      ovitrapId: index ? "99999999-9999-4999-8999-999999999999" : SOURCE,
+    };
+    await h.store.capture.begin(check);
+    await h.outbox.enqueue(captureEvent(check), h.store.capture.commitStatements(check));
+  }
+  assert.deepEqual(await relocationSuggestion(h.db, draft), { closedHouseWeeks: 2 });
+  assert.equal(
+    await relocationSuggestion(h.db, { ...draft, rules: { ...draft.rules, closedHouseWeeks: 3 } }),
+    null,
+  );
+  await h.service.update(
+    { reasonCode: "other", otherText: "Advisory suggestion only" },
+    draft.eventId,
+  );
+  await h.service.refreshGps(draft.eventId);
+  await h.service.captureEvidence(draft.eventId);
+  assert.equal((await h.service.save(draft.eventId)).proposal?.status, "proposed");
+  const raw = {
+    version: "downloaded",
+    catalogs: [
+      { slug: "replacement-reason", items: [reason("custom-reason")] },
+      { slug: "relocation-reason", items: [reason("other")] },
+      { slug: "removal-reason", items: [reason("custom-removal")] },
+    ],
+  };
+  assert.deepEqual(
+    readLifecycleCatalog(raw).replace.map((item) => item.code),
+    ["custom-reason"],
+  );
+  const rules = readLifecycleRules({
+    version: "rules",
+    next_change_at: null,
+    parameters: [
+      { key: "closed_house_weeks_to_relocate", value: 4 },
+      { key: "incidents_to_relocate", value: 7 },
+    ],
+  });
+  assert.deepEqual([rules.closedHouseWeeks, rules.incidents], [4, 7]);
+  assert.equal(
+    readLifecycleRules({ version: "missing", next_change_at: null, parameters: [] })
+      .closedHouseWeeks,
+    null,
+  );
+});
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve, sep } from "node:path";
+import { openTestDatabase } from "./support/sqlite-executor.ts";
+import { KvStore } from "../src/db/kv-store.ts";
+import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
+import { accepted, answer, scriptedTransport, httpFailure } from "./support/scripted-transport.ts";
+import type { SqlExecutor } from "../src/db/sql.ts";
+const storesFor = (db: SqlExecutor) => ({
+  db,
+  kv: new KvStore(db),
+  outbox: new OutboxRepository(db, () => FIXED_NOW),
+});
+void test("AC3: cold SQLite reopen retains lifecycle draft and pending upload; retry sends original UUID once", async () => {
+  const directory = mkdtempSync(join(tmpdir(), "wolbachia-m09-"));
+  assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + sep));
+  const path = join(directory, "phone.sqlite");
+  let phone = await openTestDatabase(path);
+  try {
+    const first = await harness(storesFor(phone.executor));
+    const draft = await begin(first, "remove");
+    await complete(first, draft);
+    phone.close();
+    phone = await openTestDatabase(path);
+    const second = await harness(storesFor(phone.executor));
+    assert.equal((await second.store.read()).draft?.eventId, draft.eventId);
+    const saved = await second.service.save(draft.eventId);
+    assert.equal(deliveryState(saved.event).server, "pending");
+    const denied = scriptedTransport([httpFailure(403, "permission_denied")]);
+    await engineFor(storesFor(phone.executor), denied.transport, true).requestSync();
+    assert.equal(deliveryState((await second.store.read()).event).server, "pending");
+    await second.outbox.claimPending(10);
+    phone.close();
+    phone = await openTestDatabase(path);
+    const third = storesFor(phone.executor);
+    const transport = scriptedTransport([answer([accepted(draft.eventId)]), answer([])]);
+    const engine = engineFor(third, transport.transport, true);
+    await engine.retryNow();
+    await engine.requestSync();
+    assert.deepEqual(
+      transport.requests.flatMap((request) => request.events.map((event) => event.id)),
+      [draft.eventId],
+    );
+    const restored = await new LifecycleStore(third.db).read();
+    assert.equal(deliveryState(restored.event).server, "received");
+    assert.equal(restored.draft?.recovery, "unrecovered");
+    assert.deepEqual(restored.history[0]?.draft.evidence, [PHOTO]);
+  } finally {
+    phone.close();
+    rmSync(directory, { recursive: true });
+  }
+});
+import { LifecycleDraftBuffer } from "../src/features/ovitrap-lifecycle/draft-buffer.ts";
+import { runLifecycleAction } from "../src/features/ovitrap-lifecycle/run-action.ts";
+void test("AC3: stale displayed action cannot flush another draft's buffered input; late GPS cannot adopt it", async () => {
+  const h = await harness();
+  const old = await begin(h, "relocate");
+  const next = { ...old, eventId: h.deps.uuid(), otherText: "new draft" };
+  let release: ((value: { lat: number; lng: number; accuracy_m: number }) => void) | undefined;
+  let entered: () => void = () => {
+    throw new Error("Barrier not initialized");
+  };
+  const ready = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const delayed = new LifecycleService({
+    ...h.deps,
+    gps: {
+      locate: () => {
+        entered();
+        return new Promise((resolve) => {
+          release = resolve;
+        });
+      },
+    },
+  });
+  const pending = delayed.refreshGps(old.eventId);
+  await ready;
+  await h.store.begin(next, old.eventId);
+  assert.ok(release);
+  release({ lat: 20, lng: -100, accuracy_m: 5 });
+  await assert.rejects(pending, StaleCaptureError);
+  assert.equal((await h.store.read()).draft?.gps, null);
+  h.service.draftBuffer.edit(next.eventId, { otherText: "buffer for B" });
+  let notice = "";
+  let actionCount = 0;
+  await runLifecycleAction(
+    {
+      service: h.service,
+      refresh: () => Promise.resolve(),
+      setError: (key) => {
+        notice = key ?? "";
+      },
+    },
+    () => {
+      actionCount++;
+      return h.service.save(old.eventId);
+    },
+    old.eventId,
+  );
+  assert.equal(actionCount, 0);
+  assert.equal(notice, "mobile.ovitrap.staleView");
+  assert.equal((await h.store.read()).draft?.otherText, "new draft");
+  const buffer = new LifecycleDraftBuffer();
+  buffer.edit(old.eventId, { otherText: "wrong" });
+  await assert.rejects(buffer.persist(h.service, next.eventId), StaleCaptureError);
+});
+
+void test("AC3 regression: a draft switched during departure authorization rejects before native ports", async () => {
+  const h = await harness();
+  const original = await begin(h, "relocate");
+  let entered: () => void = () => {
+    throw new Error("Missing barrier");
+  };
+  let release: ((shift: string) => void) | undefined;
+  const waiting = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  let nativeCalls = 0;
+  let checks = 0;
+  const service = new LifecycleService({
+    ...h.deps,
+    shiftId: () => {
+      if (++checks > 1) return Promise.resolve(original.shiftId);
+      entered();
+      return new Promise((resolve) => {
+        release = resolve;
+      });
+    },
+    gps: {
+      locate: () => {
+        nativeCalls++;
+        return Promise.resolve(null);
+      },
+    },
+  });
+  const pending = service.refreshGps(original.eventId);
+  await waiting;
+  await h.store.begin({ ...original, eventId: h.deps.uuid() }, original.eventId);
+  assert.ok(release);
+  release(original.shiftId);
+  await assert.rejects(pending, StaleCaptureError);
+  assert.equal(nativeCalls, 0);
+});
+
+import { hasLocalRecords } from "../src/db/owner-data.ts";
+import {
+  courierChangeStatements,
+  courierBundleStatements,
+} from "../src/features/ovitrap-lifecycle/courier-projections.ts";
+import type { Schemas } from "@wolbachia/api-client";
+function downloadedTrap(id: string, isRetired = false): Schemas["OvitrapBundle"] {
+  return {
+    id,
+    client_uuid: id,
+    code: id,
+    sampling_point_id: POINT.id,
+    point_version: POINT.id,
+    sampling_point_version: 1,
+    version: "v1",
+    placed_at: FIXED_NOW.toISOString(),
+    reading_id: null,
+    finding_code: null,
+    paddle_present: null,
+    has_eggs: null,
+    checked_at: null,
+    is_lagged: null,
+    placement_voided: false,
+    voided: false,
+    voided_resource_type: null,
+    voided_event_id: null,
+    void_reason_code: "",
+    voided_at: null,
+    is_retired: isRetired,
+  };
+}
+void test("AC3 regression: downloaded projections bind owner and resolve new physical UUID at a known authorized point", async () => {
+  const local = await createStores();
+  const trap = downloadedTrap(SOURCE);
+  await local.db.runAtomically(courierBundleStatements({ ovitraps: [trap], sampling_points: [] }));
+  assert.equal(await hasLocalRecords(local.db), true);
+  const h = await harness(local);
+  const next = downloadedTrap("99999999-9999-4999-8999-999999999999");
+  await h.db.runAtomically(
+    courierChangeStatements({
+      ovitraps: [
+        {
+          sequence: 1,
+          action: "upsert",
+          resource_type: "ovitrap",
+          resource_id: next.id,
+          resource_version: next.version,
+          data: next,
+        },
+      ],
+      sampling_points: [],
+    }),
+  );
+  assert.equal((await h.store.physical(next.id))?.point.code, POINT.code);
+});
+void test("AC2 regression: rejected void attempts retain history and do not mark a proposal voided", async () => {
+  const h = await harness();
+  const draft = await begin(h, "relocate");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  await h.service.correct(
+    { reasonCode: "other", reason: "Correcting the proposed entrance" },
+    draft.eventId,
+  );
+  const [row] = await h.db.query("SELECT event_id FROM lifecycle_void");
+  assert.equal(typeof row?.event_id, "string");
+  assert.ok(row);
+  const id = String(row.event_id);
+  await h.outbox.claimPending(10);
+  await h.outbox.settle([
+    { id, action: "reject", result: { code: "void_dependency_conflict", params: {} } },
+  ]);
+  assert.equal((await h.service.read()).proposal?.isVoided, false);
+  await h.service.correct(
+    { reasonCode: "other", reason: "Correcting after supervisor guidance" },
+    draft.eventId,
+  );
+  assert.equal((await h.db.query("SELECT * FROM lifecycle_void")).length, 2);
+});
+void test("AC2 regression: removal correction cannot restore occupancy over a later local placement", async () => {
+  const h = await harness();
+  const draft = await begin(h, "remove");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  const placed = makeDraft({
+    eventId: h.deps.uuid(),
+    mode: "place",
+    ovitrapId: h.deps.uuid(),
+    deviceTime: "2026-01-16T15:00:00Z",
+  });
+  await h.store.capture.begin(placed);
+  await h.outbox.enqueue(captureEvent(placed), h.store.capture.commitStatements(placed));
+  await assert.rejects(
+    h.service.correct(
+      { reasonCode: "other", reason: "Do not restore over a new placement" },
+      draft.eventId,
+    ),
+  );
+  assert.equal((await h.db.query("SELECT * FROM lifecycle_void")).length, 0);
+});
+import { OvitrapService } from "../src/features/ovitrap-check/service.ts";
+void test("AC1 wiring: M08 checks the replacement physical identity and blocks the retired source", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  await complete(h, draft);
+  const check = new OvitrapService({
+    ...h.deps,
+    store: h.store.capture,
+    scanner: { scan: () => Promise.resolve({ status: "unavailable" }) },
+  });
+  const pendingCheck = await check.startCheck(SOURCE, true, null);
+  assert.ok(pendingCheck.draft);
+  await h.service.save(draft.eventId);
+  assert.ok(draft.replacementId);
+  await assert.rejects(check.startCheck(SOURCE, true, pendingCheck.draft.eventId));
+  const state = await check.startCheck(draft.replacementId, true, pendingCheck.draft.eventId);
+  assert.equal(state.draft?.point?.code, POINT.code);
+  assert.deepEqual(state.draft.sourceEvidence, [PHOTO]);
+  const [archived] = await h.db.query(
+    "SELECT draft FROM ovitrap_superseded_draft WHERE event_id=?",
+    [pendingCheck.draft.eventId],
+  );
+  assert.ok(archived);
+  assert.equal(
+    (JSON.parse(String(archived.draft)) as { eventId: string }).eventId,
+    pendingCheck.draft.eventId,
+  );
+});
+
+import { messages } from "@wolbachia/i18n";
+import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
+void test("AC4: P15-P17 localized native props preserve labeled large controls across language/theme/text-scale", async () => {
+  const keys = Object.keys(messages["es-MX"])
+    .filter((key) => key.startsWith("mobile.lifecycle."))
+    .sort();
+  assert.ok(keys.length > 0);
+  assert.deepEqual(
+    keys,
+    Object.keys(messages.en)
+      .filter((key) => key.startsWith("mobile.lifecycle."))
+      .sort(),
+  );
+  const h = await harness();
+  const source = await begin(h, "relocate");
+  await complete(h, source);
+  await h.service.update({ reasonCode: "other", otherText: "visible" }, source.eventId);
+  const matrix = (["es-MX", "en"] as const).flatMap((locale) =>
+    (["light", "dark"] as const).flatMap((scheme) =>
+      [1, 1.3].map((fontScale) => ({ locale, scheme, fontScale })),
+    ),
+  );
+  for (const { locale, scheme, fontScale } of matrix) {
+    const render = componentHarness({ locale, scheme, fontScale });
+    for (const [name, kind] of [
+      ["P15Screen", "replace"],
+      ["P16Screen", "relocate"],
+      ["P17Screen", "remove"],
+    ] as const) {
+      const draft = {
+        ...source,
+        kind,
+        reasonCode: "other",
+        otherText: "visible",
+        evidence: [PHOTO],
+        recovery: "unconfirmed",
+      };
+      const model = {
+        state: { ...(await h.service.read()), draft },
+        isBusy: false,
+        edit: () => undefined,
+        run: () => Promise.resolve(true),
+        service: h.service,
+      };
+      const nodes = render.render(`mobile/src/features/ovitrap-lifecycle/${name}.tsx`, name, {
+        draft,
+        model,
+      });
+      const footer = render.render(
+        "mobile/src/features/ovitrap-lifecycle/LifecycleFooter.tsx",
+        "LifecycleFooter",
+        { draft, model },
+      );
+      const reasonSheet = render.render(
+        "mobile/src/features/ovitrap-lifecycle/CatalogSheet.tsx",
+        "CatalogSheet",
+        {
+          isOpen: true,
+          close: () => undefined,
+          items: draft.catalog?.[kind] ?? [],
+          code: "other",
+          choose: () => undefined,
+        },
+      );
+      assertScreenControls([...nodes, ...footer, ...reasonSheet], locale);
+      const primary =
+        kind === "remove" ? "mobile.lifecycle.confirmRemove" : "mobile.lifecycle.save";
+      assert.ok(footer.some((item) => item.props.accessibilityLabel === messages[locale][primary]));
+    }
+    const sheet = render.render(
+      "mobile/src/features/ovitrap-lifecycle/RemoveSheet.tsx",
+      "RemoveSheet",
+      {
+        isOpen: true,
+        isBusy: false,
+        close: () => undefined,
+        save: () => undefined,
+        draft: source,
+      },
+    );
+    assert.ok(sheet.some((item) => item.props.accessibilityViewIsModal === true));
+    assert.ok(
+      sheet.some(
+        (item) => item.props.accessibilityLabel === messages[locale]["common.actions.cancel"],
+      ),
+    );
+    assert.ok(
+      sheet.some(
+        (item) => item.props.accessibilityLabel === messages[locale]["mobile.lifecycle.remove"],
+      ),
+    );
+  }
+});
+
+function assertScreenControls(
+  nodes: readonly import("./support/m-09-render.ts").RenderNode[],
+  locale: "es-MX" | "en",
+): void {
+  const controls = nodes.filter((item) => ["TextInput", "Pressable"].includes(String(item.type)));
+  assert.ok(controls.length >= 4);
+  for (const control of controls) {
+    assert.equal(typeof control.props.accessibilityLabel, "string");
+    assert.ok(String(control.props.accessibilityLabel).trim());
+    assert.ok(Number(flattenStyle(control.props.style).minHeight) >= 48);
+    assert.equal(control.props.allowFontScaling === false, false);
+  }
+  assert.ok(
+    controls.some(
+      (control) => control.props.accessibilityLabel === messages[locale]["mobile.lifecycle.other"],
+    ),
+  );
+  assert.ok(
+    controls.some(
+      (control) =>
+        control.props.accessibilityLabel === messages[locale]["mobile.lifecycle.captureGps"],
+    ),
+  );
+  assert.ok(
+    nodes
+      .filter((item) => item.type === "Text")
+      .every((item) => item.props.numberOfLines === undefined),
+  );
+}
+
+void test("AC2: a draft started before configuration can adopt later downloaded catalog and rules", async () => {
+  const h = await harness();
+  const config = await h.store.configuration();
+  await h.store.saveConfiguration({ catalog: null, rules: null });
+  const draft = await begin(h, "relocate");
+  await h.store.saveConfiguration(config);
+  assert.equal((await h.service.read()).catalogChanged, true);
+  const adopted = await h.service.adoptSnapshots(draft.eventId);
+  assert.equal(adopted.draft?.catalog?.version, config.catalog?.version);
+  assert.ok(config.rules);
+  await h.store.saveConfiguration({ ...config, rules: { ...config.rules, version: "rules-v2" } });
+  assert.equal((await h.service.read()).catalogChanged, true);
+});
+import { runSyncPass } from "../src/sync/sync-pass.ts";
+void test("AC3 wiring: existing sync commits receipt, cursor and retired/current courier projections together", async () => {
+  const h = await harness();
+  const draft = await begin(h, "replace");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  assert.ok(draft.replacementId);
+  const reply = answer([accepted(draft.eventId)], { cursor: "lifecycle-cursor" });
+  assert.equal(reply.ok, true);
+  const traps = [downloadedTrap(SOURCE, true), downloadedTrap(draft.replacementId)];
+  const response = {
+    ...reply.response,
+    changes: {
+      ...reply.response.changes,
+      ovitraps: traps.map((data, index) => ({
+        sequence: index + 1,
+        action: "upsert" as const,
+        resource_type: "ovitrap",
+        resource_id: data.id,
+        resource_version: data.version,
+        data,
+      })),
+    },
+  };
+  const transport = scriptedTransport([{ ok: true, response }]);
+  await runSyncPass(
+    {
+      ...h,
+      deviceId: SOURCE,
+      now: () => FIXED_NOW,
+      transport: transport.transport,
+      projectionStatements: courierChangeStatements,
+    },
+    { batchSize: 50 },
+  );
+  assert.equal(await h.kv.get("sync_cursor"), "lifecycle-cursor");
+  assert.equal(deliveryState((await h.store.read()).event).server, "received");
+  assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+  assert.equal((await h.store.physical(draft.replacementId))?.isRetired, false);
+  // Older cursor replay cannot undo a newer retirement.
+  await h.db.runAtomically(
+    courierChangeStatements({
+      ovitraps: [
+        {
+          sequence: 1,
+          action: "upsert",
+          resource_type: "ovitrap",
+          resource_id: SOURCE,
+          resource_version: "old",
+          data: downloadedTrap(SOURCE),
+        },
+      ],
+      sampling_points: [],
+    }),
+  );
+  const [row] = await h.db.query("SELECT body FROM lifecycle_courier_projection WHERE id=?", [
+    SOURCE,
+  ]);
+  assert.ok(row);
+  assert.equal((JSON.parse(String(row.body)) as Schemas["OvitrapBundle"]).is_retired, true);
+});
+
+import { prepareCheck } from "./support/m-08-harness.ts";
+const SECOND_SOURCE = "99999999-9999-4999-8999-999999999999";
+const SECOND_POINT = { ...POINT, id: "77777777-7777-4777-8777-777777777777", code: "OV-2" };
+import { PLACEMENT_PREPARATION } from "../src/features/ovitrap-check/domain.ts";
+async function reviewCaptureHarness(mode: "check" | "place" = "check") {
+  const h = await harness();
+  await h.store.capture.saveSnapshots({
+    catalog: CATALOG,
+    rules: RULES,
+    assignment: {
+      ...ASSIGNMENT,
+      points: [POINT, SECOND_POINT],
+      ovitraps: [
+        { id: SOURCE, point: POINT },
+        { id: SECOND_SOURCE, point: SECOND_POINT },
+      ],
+    },
+  });
+  const check = new OvitrapService({
+    ...h.deps,
+    store: h.store.capture,
+    scanner: { scan: () => Promise.resolve({ status: "unavailable" }) },
+  });
+  const state =
+    mode === "place" ? await check.startPlace(null) : await check.startCheck(SOURCE, true, null);
+  assert.ok(state.draft);
+  if (mode === "place")
+    await check.update({ point: POINT, prepared: [...PLACEMENT_PREPARATION] }, state.draft.eventId);
+  else await prepareCheck(check);
+  await check.captureEvidence(state.draft.eventId);
+  return { ...h, check, eventId: state.draft.eventId };
+}
+function pointProjection(isRetired: boolean): Schemas["SamplingPointBundle"] {
+  return {
+    id: POINT.id,
+    code: POINT.code,
+    block_id: POINT.id,
+    quadrant_id: POINT.id,
+    location: [POINT.lng, POINT.lat],
+    is_retired: isRetired,
+    version: 1,
+  };
+}
+async function downloadRetirement(h: TestStores, kind: "trap" | "point", isRetired = true) {
+  const trap = downloadedTrap(SOURCE, isRetired);
+  const point = pointProjection(isRetired);
+  await h.db.runAtomically(
+    courierChangeStatements({
+      ovitraps:
+        kind === "trap"
+          ? [
+              {
+                sequence: 10,
+                action: "upsert",
+                resource_type: "ovitrap",
+                resource_id: SOURCE,
+                resource_version: "retirement",
+                data: trap,
+              },
+            ]
+          : [],
+      sampling_points:
+        kind === "point"
+          ? [
+              {
+                sequence: 10,
+                action: "upsert",
+                resource_type: "sampling_point",
+                resource_id: POINT.id,
+                resource_version: "retirement",
+                data: point,
+              },
+            ]
+          : [],
+    }),
+  );
+}
+const RETIREMENT_CASES = [
+  { kind: "trap", mode: "check" },
+  { kind: "point", mode: "check" },
+  { kind: "point", mode: "place" },
+] as const;
+void test("review 1: downloaded physical or point retirement blocks M08 save and stale transactional capture", async () => {
+  for (const { kind, mode } of RETIREMENT_CASES) {
+    const h = await reviewCaptureHarness(mode);
+    const state = await h.check.read();
+    assert.ok(state.draft);
+    await downloadRetirement(h, kind);
+    await assert.rejects(h.check.save(h.eventId));
+    // Simulate a command that already passed its read-side check before the upsert arrived.
+    await assert.rejects(
+      h.outbox.enqueue(captureEvent(state.draft), h.store.capture.commitStatements(state.draft)),
+    );
+    assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
+    assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
+    assert.deepEqual((await h.store.capture.read()).draft, state.draft);
+  }
+});
+void test("review 2: downloaded retirement supersedes and archives the complete M08 draft atomically", async () => {
+  for (const { kind, mode } of RETIREMENT_CASES) {
+    const h = await reviewCaptureHarness(mode);
+    const before = await h.check.read();
+    assert.ok(before.draft);
+    await downloadRetirement(h, kind);
+    await h.db.runAtomically([
+      {
+        sql: `CREATE TRIGGER fail_supersede BEFORE UPDATE ON ovitrap_draft
+      WHEN json_extract(NEW.draft,'$.eventId')<>json_extract(OLD.draft,'$.eventId')
+      BEGIN SELECT RAISE(ABORT,'storage failure'); END`,
+      },
+    ]);
+    await assert.rejects(h.check.startCheck(SECOND_SOURCE, true, h.eventId));
+    assert.equal((await h.db.query("SELECT * FROM ovitrap_superseded_draft")).length, 0);
+    assert.deepEqual((await h.store.capture.read()).draft, before.draft);
+    await h.db.runAtomically([{ sql: "DROP TRIGGER fail_supersede" }]);
+    const next = await h.check.startCheck(SECOND_SOURCE, true, h.eventId);
+    assert.equal(next.draft?.ovitrapId, SECOND_SOURCE);
+    const [row] = await h.db.query(
+      "SELECT draft,replacement_event_id FROM ovitrap_superseded_draft WHERE event_id=?",
+      [h.eventId],
+    );
+    assert.ok(row);
+    assert.deepEqual(JSON.parse(String(row.draft)), before.draft);
+    assert.equal(row.replacement_event_id, next.draft.eventId);
+    assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
+  }
+});
+void test("review 3: downloaded active state overrides retired assignment fallback before current local effects", async () => {
+  const h = await harness();
+  await h.store.capture.saveSnapshots({
+    catalog: CATALOG,
+    rules: RULES,
+    assignment: { ...ASSIGNMENT, ovitraps: [{ id: SOURCE, point: POINT, isRetired: true }] },
+  });
+  assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+  await downloadRetirement(h, "trap", false);
+  assert.equal((await h.store.physical(SOURCE))?.isRetired, false);
+  const check = new OvitrapService({
+    ...h.deps,
+    store: h.store.capture,
+    scanner: { scan: () => Promise.resolve({ status: "unavailable" }) },
+  });
+  const checked = await check.startCheck(SOURCE, true, null);
+  assert.ok(checked.draft);
+  await prepareCheck(check);
+  await check.save(checked.draft.eventId);
+  const draft = await begin(h, "remove");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+  await h.service.correct(
+    { reasonCode: "other", reason: "Retirement corrected after verification" },
+    draft.eventId,
+  );
+  assert.equal((await h.store.physical(SOURCE))?.isRetired, false);
+});

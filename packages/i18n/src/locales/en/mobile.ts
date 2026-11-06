@@ -2,6 +2,74 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  "mobile.lifecycle.replace": "Replace ovitrap",
+  "mobile.lifecycle.relocate": "Propose relocation",
+  "mobile.lifecycle.remove": "Remove ovitrap",
+  "mobile.lifecycle.fixedCode":
+    "The point code stays fixed. Replacement uses a new physical identity.",
+  "mobile.lifecycle.source": "Source ovitrap",
+  "mobile.lifecycle.replacement": "New physical identity",
+  "mobile.lifecycle.proposalOnly":
+    "This saves a proposal. The authorized point location stays unchanged until a synced decision.",
+  "mobile.lifecycle.proposedLocation": "Proposed location (longitude, latitude)",
+  "mobile.lifecycle.closedWeeks": "Consecutive closed-house weeks (downloaded rule):",
+  "mobile.lifecycle.confirmedCount": "Known incidents (downloaded rule):",
+  "mobile.lifecycle.noIncidentHistory":
+    "No local incident history; that suggestion is unavailable.",
+  "mobile.lifecycle.inspectHistory":
+    "Review the history before proposing. The suggestion is advisory.",
+  "mobile.lifecycle.gpsRequired": "GPS is missing. Try again; a location is required to save.",
+  "mobile.lifecycle.gpsCaptured": "GPS captured on the phone",
+  "mobile.lifecycle.captureGps": "Capture GPS location",
+  "mobile.lifecycle.recovery": "Did you recover the ovitrap? Choose an option.",
+  "mobile.lifecycle.recovered": "Recovered: bringing it back",
+  "mobile.lifecycle.unrecovered": "Unrecovered: could not find it",
+  "mobile.lifecycle.unconfirmed": "Recovery unconfirmed",
+  "mobile.lifecycle.recoveryNotice":
+    "Recovery remains unresolved. Unconfirmed is retained on the phone and reported as unrecovered to the server.",
+  "mobile.lifecycle.reason": "Reason from the downloaded catalog",
+  "mobile.lifecycle.chooseReason": "Choose reason",
+  "mobile.lifecycle.other": "Other: describe the reason (1000 characters maximum)",
+  "mobile.lifecycle.incidentNotice":
+    "The server links the finding to an incident when it applies the capture. The phone does not create an incident.",
+  "mobile.lifecycle.photoRequired": "Add at least one photo for this capture before saving.",
+  "mobile.lifecycle.capturePhoto": "Add evidence photo",
+  "mobile.lifecycle.discardPhoto": "Remove draft photo",
+  "mobile.lifecycle.photoDiscarded": "Photo removed from the draft. You can undo this.",
+  "mobile.lifecycle.undo": "Undo",
+  "mobile.lifecycle.reviewAcknowledge":
+    "I understand that GPS, distance or outdated rules require server review.",
+  "mobile.lifecycle.download": "Download lifecycle catalogs and rules",
+  "mobile.lifecycle.adopt": "Review and use downloaded catalogs and rules",
+  "mobile.lifecycle.begin": "Start capture for this point",
+  "mobile.lifecycle.loading": "Loading local draft?",
+  "mobile.lifecycle.empty":
+    "Start a capture for the selected ovitrap. Download missing configuration first.",
+  "mobile.lifecycle.confirmRemove": "Review and confirm removal",
+  "mobile.lifecycle.removeConsequence":
+    "The point will no longer have this ovitrap. Corrections append a reasoned void; evidence is retained.",
+  "mobile.lifecycle.save": "Save on the phone",
+  "mobile.lifecycle.incomplete":
+    "Capture incomplete: check reason, Other, GPS, photo and recovery. The draft is retained.",
+  "mobile.lifecycle.proposed": "Proposed",
+  "mobile.lifecycle.approved": "Approved",
+  "mobile.lifecycle.rejected": "Rejected",
+  "mobile.lifecycle.reviewAccepted": "Server result: accepted. Supervisor review: unconfirmed.",
+  "mobile.lifecycle.reviewRejected":
+    "Server result: rejected. Keep the evidence and contact your supervisor.",
+  "mobile.lifecycle.decisionPending": "Supervisor decision: awaiting sync",
+  "mobile.lifecycle.nextTask": "Task received through sync",
+  "mobile.lifecycle.noTask": "No synced task; no early local assignment.",
+  "mobile.lifecycle.history": "Lifecycle and correction history",
+  "mobile.lifecycle.voided": "Void recorded; original retained",
+  "mobile.lifecycle.correctionReason":
+    "Correction reason (10 visible characters to 1000 characters)",
+  "mobile.lifecycle.correct": "Void with reason and retain evidence",
+  "mobile.lifecycle.scopeBlocked":
+    "This point is outside your downloaded scope. The draft is retained; contact your supervisor.",
+  "mobile.lifecycle.noCamera": "Camera unavailable. Keep the draft and retry on an enabled device.",
+  "mobile.lifecycle.noReasons": "The reason catalog is missing. Download it before continuing.",
+
   "mobile.ovitrap.pendingDraft":
     "Another capture draft is pending. Resume it before switching ovitraps.",
   // M-08: P13, P14 and P21
