@@ -52,9 +52,11 @@ export async function installMapRuntimeApi(page: Page) {
       scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
     }),
   });
-  await page.route("**/api/v1/quadrants/**", (route) =>
-    route.fulfill({ json: pageOf([QUADRANT]) }),
-  );
+  await page.route("**/api/v1/quadrants/**", (route) => {
+    const isHistory = new URL(route.request().url()).pathname.endsWith("/versions/");
+    const history = QUADRANT.current_version ? [QUADRANT.current_version] : [];
+    return route.fulfill({ json: pageOf(isHistory ? history : [QUADRANT]) });
+  });
   for (const resource of ["blocks", "sampling-points"]) {
     await page.route(`**/api/v1/${resource}/**`, (route) => route.fulfill({ json: pageOf([]) }));
   }

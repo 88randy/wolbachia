@@ -134,5 +134,9 @@ public message/error events while delegating construction/execution. The smoke
 requires a same-origin emitted worker, actual worker replies, intercepted raster
 requests and a real canvas click that changes the polygon draft. It also checks
 the linked attribution. Missing WebGL2 is a failure, never a silent skip; no
-speculative browser flags or runtime allowlist/CSP bypass are added. This smoke is
-**CI-only and unverified until CI runs it**; it was not run locally.
+speculative browser flags or runtime allowlist/CSP bypass are added. The fixture
+answers the quadrant collection and immutable version-history endpoints with
+their distinct response shapes. After an actual CI fixture failure, an authorized
+focused local run passed on Windows/Chromium on 2026-11-06, including the native
+worker and canvas-to-coordinate interaction. This does not qualify physical GPUs
+or the Linux runtime image; the corrected smoke still must pass those CI jobs.
