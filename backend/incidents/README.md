@@ -49,6 +49,18 @@ never borrows a reserved type's roster. A busy cause remains pending while later
 causes and keyset continuations proceed. Duplicate blocker kinds are rejected by
 the shared service/request validator, rather than retained or silently normalized.
 
+After-commit callbacks are named functions: Django 5.2's robust error logger reads
+`__qualname__`, which functools.partial does not provide. A broker failure must be
+logged without changing the already committed ingest result. The immutable cause
+remains pending until recovery publishes its deduplicated intents; no delivery or
+external I/O inside SQL transactions is implied.
+
+Backend CI run 42209050398 recorded 1732 passes, two failures and 93.89% coverage;
+that run is not green. It exposed the callback logging failure and stale literal
+seed expectations. R2 corrects those paths and extends the existing PostgreSQL
+commit/rollback journey with a failed broker and later recovery. Fresh real
+PostgreSQL CI is still required; local diagnostic hooks are not SQL verification.
+
 Official API references: Django 5.2
 https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update and
 https://docs.djangoproject.com/en/5.2/topics/db/transactions/#performing-actions-after-commit;

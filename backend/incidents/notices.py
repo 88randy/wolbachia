@@ -2,7 +2,6 @@
 
 from dataclasses import dataclass
 from datetime import datetime
-from functools import partial
 from typing import Any
 from uuid import UUID
 
@@ -24,9 +23,10 @@ from shifts.models import MotorcycleBlockEvent
 def enqueue_notice(kind: str, identifier: UUID) -> None:
     from incidents.tasks import publish_incident_notices
 
-    transaction.on_commit(
-        partial(publish_incident_notices.delay, kind, str(identifier)), robust=True
-    )
+    def dispatch() -> None:
+        publish_incident_notices.delay(kind, str(identifier))
+
+    transaction.on_commit(dispatch, robust=True)
 
 
 def stored_source(event: FieldEvent) -> None:

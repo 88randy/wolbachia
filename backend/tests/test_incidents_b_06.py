@@ -705,6 +705,7 @@ def test_publication_dispatch_is_after_commit_and_rollback_keeps_no_cause(case, 
     def dispatch(kind, identifier):
         assert not connection.in_atomic_block
         dispatched.append((kind, identifier))
+        raise ConnectionRefusedError("Synthetic unavailable incident broker")
 
     monkeypatch.setattr("incidents.tasks.publish_incident_notices.delay", dispatch)
     with transaction.atomic():
@@ -712,10 +713,17 @@ def test_publication_dispatch_is_after_commit_and_rollback_keeps_no_cause(case, 
         transaction.set_rollback(True)
     assert not dispatched
     assert Incident.objects.count() == 0
-    incident = report(case.actor, case.data)
+    sent = source(case)
+    result = ingest(case.field, sent)
+    assert result.status == "accepted"
+    assert result.code == "accepted"
+    assert FieldEvent.objects.get(pk=sent.id).status == "accepted"
+    incident = Incident.objects.get(source_event_id=sent.id)
     assert dispatched == [("incident_event", str(current_event(incident).pk))]
-    assert publish(*("incident_event", current_event(incident).pk))
-    assert publish(*("incident_event", current_event(incident).pk))
+    assert not NoticePublicationReceipt.objects.exists()
+    assert not IncidentNoticeIntent.objects.exists()
+    assert recover_publications() == 1
+    assert recover_publications() == 0
     assert NoticePublicationReceipt.objects.count() == IncidentNoticeIntent.objects.count() == 1
 
 

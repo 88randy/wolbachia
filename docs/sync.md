@@ -891,4 +891,4 @@ Task dispatch occurs after commit; publication receipts/intents dedupe retries.
 Recovery uses bounded (created_at,id) pages that advance even over pending causes.
 No storage/network/mail under sync locks and no new sync projection is introduced.
 record.void retains linked incident/history; incident closure resolves owned holds
-only and does not compensate other domain facts. See ADR 132 and incidents/README.md.
+only and does not compensate other domain facts. See ADR 133 and incidents/README.md.

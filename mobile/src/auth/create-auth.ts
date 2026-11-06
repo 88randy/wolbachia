@@ -9,6 +9,7 @@ import { AuthController } from "./auth-controller.ts";
 import { loginOnline, refreshOnline } from "./auth-api.ts";
 import type { CredentialStore } from "./credential-store.ts";
 import { SessionRequests } from "./session-requests.ts";
+import { prepareEvidenceSession } from "../attachments/prepare-session.ts";
 
 interface CreateAuthDeps {
   readonly randomBytes: (length: number) => Uint8Array;
@@ -33,6 +34,8 @@ export async function createAuth(deps: CreateAuthDeps) {
     ...(deps.clearSessionData === undefined ? {} : { clearSessionData: deps.clearSessionData }),
     kv: deps.kv,
     hasLocalRecords: () => hasLocalRecords(deps.db),
+    prepareEvidenceSession: (identity) =>
+      prepareEvidenceSession({ ...identity, db: deps.db, deviceId: deps.deviceId }),
     randomBytes: deps.randomBytes,
     now: deps.now,
     login: (username, password) => loginConfigured(deps, { username, password }),

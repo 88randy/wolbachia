@@ -254,6 +254,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "center.read",
     }
     assert by_slug["courier"] == {
+        "incident.read",
+        "incident.create",
         *reader,
         FIELD_EVENT_SYNC,
         FIELD_BOOTSTRAP,
@@ -261,6 +263,10 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "incident.read",
+        "incident.create",
+        "incident.close",
+        "incident.reassign",
         "removal.resolve",
         FIELD_UPLOAD,
         "schedule.read",
@@ -284,6 +290,11 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["community_promoter"] == reader
     assert by_slug["coordinator"] == {
+        "field.upload",
+        "incident.read",
+        "incident.create",
+        "incident.close",
+        "incident.reassign",
         "ovitrap.read",
         "reading.read",
         "relocation.read",
@@ -293,6 +304,11 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "incident.read",
+        "incident.create",
+        "incident.close",
+        "incident.reassign",
+        "incident.manage_type",
         "removal.resolve",
         FIELD_UPLOAD,
         "schedule.read",

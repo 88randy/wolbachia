@@ -24,6 +24,9 @@ interface AuthDeps {
   readonly credentials: CredentialStore;
   readonly kv: Pick<KvStore, "get" | "set">;
   readonly hasLocalRecords: () => Promise<boolean>;
+  readonly prepareEvidenceSession?: (
+    input: Pick<AcceptedLogin, "profile" | "credentials">,
+  ) => Promise<boolean>;
   readonly login: (username: string, password: string) => Promise<LoginResult>;
   readonly fetchRules: () => Promise<unknown>;
   readonly randomBytes: (length: number) => Uint8Array;
@@ -209,13 +212,14 @@ export class AuthController {
     attempt: { gate: number; time: AcceptedLogin["time"]; origin: string },
   ): Promise<void> {
     const verifier = await createVerifier(password, PASSWORD_ITERATIONS, this.#deps.randomBytes);
+    const sessionId = toHex(this.#deps.randomBytes(16));
     const accepted: AcceptedLogin = {
       ...attempt,
-      profile: profileOf(login.me),
+      profile: { ...profileOf(login.me), sessionId, issuer: attempt.origin },
       credentials: {
         status: "active",
         origin: attempt.origin,
-        sessionId: toHex(this.#deps.randomBytes(16)),
+        sessionId,
         pair: { access: login.access, refresh: login.refresh },
         password: verifier,
         pin: null,
@@ -223,13 +227,17 @@ export class AuthController {
         passwordAttempts: 0,
       },
     };
-    await this.#persistLogin(accepted);
+    if (!(await this.#persistLogin(accepted))) return;
     // Optional policy fetch never holds the queue or blocks PIN setup.
     void this.#finishLogin(accepted);
   }
 
-  #persistLogin(accepted: AcceptedLogin): Promise<void> {
+  #persistLogin(accepted: AcceptedLogin): Promise<boolean> {
     return this.#deps.credentials.runExclusive(async (transaction) => {
+      if ((await this.#deps.prepareEvidenceSession?.(accepted)) === false) {
+        this.#publish({ notice: { key: "mobile.login.differentUser" } });
+        return false;
+      }
       await this.#deps.kv.set(PROFILE_KEY, JSON.stringify(accepted.profile));
       await this.#deps.kv.set(RULES_KEY, JSON.stringify(null));
       await this.#deps.kv.set(SESSION_ENDED_KEY, "false");
@@ -246,6 +254,7 @@ export class AuthController {
       await transaction.write(accepted.credentials);
       // A lock only drops this grant. It never cancels the accepted persisted credentials.
       transaction.grantUnlock(accepted.gate);
+      return true;
     });
   }
 
@@ -363,6 +372,7 @@ export class AuthController {
 
 function profileOf(me: Schemas["Me"]): AuthProfile {
   return {
+    userId: me.user.id,
     username: me.user.username,
     firstName: me.user.first_name,
     organization: me.organization,
