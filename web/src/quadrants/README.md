@@ -75,7 +75,7 @@ There is no geography export operation in OpenAPI, so no export is offered.
 | Bilingual light/dark axe checks | `w-15-accessibility.test.tsx` |
 | Add then undo restores the exact exterior and holes | `drawing-controls.test.tsx` |
 | Tile configuration and strict build CSP | `map-security.test.ts` |
-| Real browser R2, focus/reflow at 320 and +30% text | `web/e2e/w-15.spec.ts` (written, intentionally not run) |
+| Real browser R2, focus/reflow at 320 and +30% text, including delayed compact resize notification (#232) | `web/e2e/w-15.spec.ts` |
 
 jsdom checks behavior, not physical layout, rendered contrast or WebGL. Docker,
 Playwright and real browser manual focus/contrast/visual checks remain separate
