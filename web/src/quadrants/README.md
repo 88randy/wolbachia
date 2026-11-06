@@ -71,7 +71,7 @@ There is no geography export operation in OpenAPI, so no export is offered.
 | History, keyboard map/form parity at 1280/1440, dialog focus return | `w-15-accessibility.test.tsx`, independent history paging in recovery tests |
 | Explicit grants, denied/unknown/foreign deep links, scope clearing | `w-15-access.test.tsx`, router area-access tests |
 | Retirement evidence without accidental publication; permitted geometry survives scope changes | `w-15-retention.test.tsx` |
-| Failed write never replayed after reauthentication | `w-15-session.test.tsx` |
+| Retained draft and explicit retry after reauthentication, with unchanged or refreshed permitted scope | `w-15-session.test.tsx` |
 | Bilingual light/dark axe checks | `w-15-accessibility.test.tsx` |
 | Add then undo restores the exact exterior and holes | `drawing-controls.test.tsx` |
 | Tile configuration and strict build CSP | `map-security.test.ts` |
@@ -81,5 +81,12 @@ jsdom checks behavior, not physical layout, rendered contrast or WebGL. Docker,
 Playwright and real browser manual focus/contrast/visual checks remain separate
 verification gates. GitHub issue lookup returned 401; the supplied issue/lead
 decisions are the implementation specification, not evidence of live issue state.
+
+The reauthentication regression holds point revalidation behind a deferred network
+response. Publication stays disabled until it settles, and a permitted scope
+refresh may replace the editor while retaining its draft. Assertions and the
+manual retry therefore locate the current controls rather than retaining DOM
+references across that refresh. Neither reauthentication nor revalidation sends
+the refused publication again.
 
 Quadrant list/code queries forward the explicit URL center before the active shell center; this only narrows backend grants. Blocks and points retain their quadrant constraint because their generated list contract has no center parameter.
