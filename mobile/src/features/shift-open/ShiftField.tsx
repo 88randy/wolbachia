@@ -6,8 +6,9 @@ interface Props {
   readonly value: string;
   readonly onChange: (value: string) => void;
   readonly numeric?: boolean;
+  readonly disabled?: boolean;
 }
-export function ShiftField({ label, value, onChange, numeric = false }: Props) {
+export function ShiftField({ label, value, onChange, numeric = false, disabled = false }: Props) {
   return (
     <View>
       <AppText>{label}</AppText>
@@ -16,7 +17,8 @@ export function ShiftField({ label, value, onChange, numeric = false }: Props) {
         value={value}
         onChangeText={onChange}
         keyboardType={numeric ? "number-pad" : "default"}
-        accessibilityState={{ disabled: false }}
+        editable={!disabled}
+        accessibilityState={{ disabled }}
       />
     </View>
   );

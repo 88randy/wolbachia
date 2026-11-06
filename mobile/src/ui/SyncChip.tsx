@@ -17,6 +17,7 @@ const ICON_SIZE = 20;
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
+    large: { minHeight: 56, minWidth: 56 },
     chip: {
       minHeight: MIN_HEIGHT,
       flexDirection: "row",
@@ -34,7 +35,7 @@ const createStyles = (theme: Theme) =>
  * The sync indicator of the top bar: all sent, N to upload, no signal, or error. It opens the
  * inbox (P28); on the inbox itself it only reports. Its words double as the TalkBack label.
  */
-export function SyncChip() {
+export function SyncChip({ largeTarget = false }: { readonly largeTarget?: boolean }) {
   const styles = useStyles(createStyles);
   const { theme } = useTheme();
   const t = useT();
@@ -52,7 +53,7 @@ export function SyncChip() {
       onPress={() => {
         push({ name: "inbox" });
       }}
-      style={[styles.chip, styles[tone]]}
+      style={[styles.chip, styles[tone], largeTarget ? styles.large : null]}
     >
       <Icon name={icon} color={color} size={ICON_SIZE} />
       <AppText variant="captionStrong" style={{ color }}>
