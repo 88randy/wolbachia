@@ -114,7 +114,10 @@ def proposal(field):
 
 
 def test_approval_appends_same_fixed_code_version_and_preserves_source(field):
+    from django.utils.dateparse import parse_datetime
+
     from field_sync.models import CourierChange
+    from field_sync.producers import get_producer, serialize_payload
     from geography.decisions.producers import proposal_payload
 
     source = proposal(field)
@@ -148,7 +151,8 @@ def test_approval_appends_same_fixed_code_version_and_preserves_source(field):
     history = CourierChange.objects.filter(resource_type="history.relocation_proposal").latest(
         "sequence"
     )
-    assert history.payload == proposal_payload(source)
+    assert history.payload == serialize_payload(get_producer("history"), proposal_payload(source))
+    assert parse_datetime(history.payload["decision"]["decided_at"]) == result.decision.decided_at
     assert history.payload["decision"]["published_point_version"] == str(result.point_version.pk)
     assert "sampling_point.create" not in field.profile.permission_codes
 
@@ -206,7 +210,7 @@ def test_rejection_retries_keep_one_real_local_day_task_owner_and_delivery(field
     )
     assert change.payload["is_completed"] is False
     assert change.courier_id == field.batch.user.pk
-    assert change.payload["due_date"] == task.due_date.isoformat()
+    assert change.payload["date"] == task.due_date.isoformat()
     first = sync_batch(field.batch, [], ChangesCursor())
     replay = sync_batch(field.batch, [], ChangesCursor())
     assert first.changes.history == replay.changes.history
@@ -592,20 +596,20 @@ def test_one_endpoint_default_deny_foreign_org_and_paired_scope(field, api_clien
     payload = {"reason": REASON, "expected_revision": 0}
     denied, _ = make_member(field.batch.organization, ())
     api_client.force_authenticate(denied)
-    assert api_client.post(route, payload).status_code == 403
+    assert api_client.post(route, payload, format="json").status_code == 403
     foreign, _ = make_member(OrganizationFactory(), ("relocation.decide",))
     api_client.force_authenticate(foreign)
-    assert api_client.post(route, payload).status_code == 404
+    assert api_client.post(route, payload, format="json").status_code == 404
     api_client.force_authenticate(field.batch.user)
     for dimension, identifier in (("centers", uuid4()), ("quadrants", uuid4())):
         scoped = all_scope()
         scoped[dimension] = {"mode": "selected", "ids": [str(identifier)]}
         field.profile.scope = scoped
         field.profile.save()
-        assert api_client.post(route, payload).status_code == 404
+        assert api_client.post(route, payload, format="json").status_code == 404
     field.profile.scope = all_scope()
     field.profile.save()
-    response = api_client.post(route, payload)
+    response = api_client.post(route, payload, format="json")
     assert response.status_code == 201, response.data
     assert response.data["point_version"]["version"] == 2
 

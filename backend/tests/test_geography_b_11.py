@@ -400,7 +400,20 @@ def test_exported_geography_contract_matches_live_schema():
         for path in live["paths"]
         if path.startswith(("/api/v1/quadrants/", "/api/v1/blocks/", "/api/v1/sampling-points/"))
     }
-    assert len(paths) == 10
+    assert paths == {
+        "/api/v1/blocks/",
+        "/api/v1/blocks/{id}/",
+        "/api/v1/blocks/{id}/versions/",
+        "/api/v1/blocks/suggestion/",
+        "/api/v1/quadrants/",
+        "/api/v1/quadrants/{id}/",
+        "/api/v1/quadrants/{id}/close/",
+        "/api/v1/quadrants/{id}/closure/",
+        "/api/v1/quadrants/{id}/versions/",
+        "/api/v1/sampling-points/",
+        "/api/v1/sampling-points/{id}/",
+        "/api/v1/sampling-points/{id}/versions/",
+    }
     for path in paths:
         assert exported["paths"][path] == live["paths"][path]
     for component in [

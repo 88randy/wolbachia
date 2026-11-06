@@ -269,6 +269,10 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "relocation.decide",
+        "quadrant.close",
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "location.read",
         "lot.read",
@@ -297,6 +301,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "location.read",
         "lot.read",
@@ -335,6 +341,10 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "relocation.decide",
+        "quadrant.close",
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "supply_type.create",
         "supply_type.update",
