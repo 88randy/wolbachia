@@ -1,32 +1,33 @@
-/* User menu of the top bar: avatar + name on the right, a card below it with the details. */
 .menu {
   position: relative;
   flex: none;
+  min-width: 0;
 }
-
 .button {
   display: inline-flex;
   align-items: center;
   gap: var(--space-1);
-  height: var(--web-control-lg);
-  padding: 0 var(--space-1);
+  min-width: var(--web-control-lg);
+  min-height: var(--web-control-lg);
+  max-width: 100%;
+  padding: var(--space-0-5) var(--space-1);
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text-primary);
   font: inherit;
   font-size: var(--web-type-label-font-size);
   font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
-
 .button:hover,
 .button[aria-expanded="true"] {
-  background: var(--color-background);
+  background: var(--color-surface);
 }
-
 .avatar {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: var(--web-control-md);
@@ -35,46 +36,39 @@
   background: var(--color-tint);
   color: var(--color-action-strong);
   font-size: var(--web-type-label-small-font-size);
-  font-weight: 700;
+  font-weight: 600;
 }
-
 .buttonName {
-  max-width: 10rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
-
 .chevron {
+  flex: none;
   width: var(--web-icon-sm);
   height: var(--web-icon-sm);
+  margin-left: auto;
   color: var(--color-text-secondary);
 }
-
-/* Read by screen readers only: the "User menu" part of the button's name. */
 .hiddenLabel {
   composes: srOnly from "../styles/utilities.module.css";
 }
-
-/*
- * Narrow screens (reflow at 320 CSS px): only the avatar shows. The name is visually hidden, not
- * removed, so the button keeps its accessible name.
- */
-@media (max-width: 40rem) {
-  .chevron {
-    display: none;
-  }
-
-  .buttonName {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-  }
+.menu[data-placement="sidebar"] {
+  width: 100%;
 }
-
+.menu[data-placement="sidebar"] .button {
+  width: 100%;
+  padding-inline: var(--space-0-5);
+}
+.menu[data-collapsed="true"] {
+  width: var(--web-control-xl);
+}
+.menu[data-collapsed="true"] .button {
+  justify-content: center;
+  padding-inline: 0;
+}
+.menu[data-collapsed="true"] .chevron {
+  display: none;
+}
 .panel {
   position: absolute;
   z-index: 10;
@@ -83,66 +77,96 @@
   display: flex;
   flex-direction: column;
   gap: var(--space-1);
-  width: 18rem;
+  width: var(--web-layout-user-menu-width);
   max-width: calc(100vw - var(--space-2));
-  padding: var(--space-1-5);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-md);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-level-1);
+  max-height: calc(100dvh - var(--space-3));
+  overflow: auto;
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-raised);
+  box-shadow: var(--shadow-overlay);
+  animation: enter var(--web-motion-fast) var(--web-motion-easing);
 }
-
+.menu[data-placement="sidebar"] .panel {
+  top: auto;
+  right: auto;
+  bottom: calc(100% + var(--space-1));
+  left: 0;
+}
 .name {
   margin: 0;
   font-weight: 700;
   overflow-wrap: anywhere;
 }
-
 .details {
   display: grid;
-  grid-template-columns: auto 1fr;
+  grid-template-columns: auto minmax(0, 1fr);
   gap: var(--space-0-5) var(--space-1-5);
   margin: 0;
   padding-bottom: var(--space-1);
   border-bottom: 1px solid var(--color-border-soft);
   font-size: var(--web-type-label-font-size);
 }
-
 .details dt {
   color: var(--color-text-secondary);
 }
-
 .details dd {
   margin: 0;
-  font-weight: 600;
+  font-weight: 500;
   overflow-wrap: anywhere;
 }
-
 .item {
   display: flex;
   align-items: center;
   gap: var(--space-1);
   min-height: var(--web-control-lg);
-  padding: 0 var(--space-1);
+  padding: var(--space-1);
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
   color: var(--color-text-primary);
   font: inherit;
   font-size: var(--web-type-label-font-size);
-  font-weight: 600;
+  font-weight: 500;
   text-align: left;
   text-decoration: none;
   cursor: pointer;
 }
-
 .item:hover {
-  background: var(--color-background);
+  background: var(--color-surface-muted);
 }
-
 .itemIcon {
   flex: none;
   width: var(--web-icon-md);
   height: var(--web-icon-md);
   color: var(--color-text-secondary);
+}
+@keyframes enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-1));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (max-width: 40rem) {
+  .chevron {
+    display: none;
+  }
+  .menu[data-placement="topbar"] .buttonName {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
 }

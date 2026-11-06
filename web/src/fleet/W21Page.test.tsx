@@ -65,7 +65,7 @@ describe("W21 motorcycle record", () => {
     opener.focus();
     await userEvent.keyboard("{Enter}");
     expect(document.activeElement).toBe(
-      within(await screen.findByRole("dialog")).getByRole("combobox"),
+      within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancelar" }),
     );
     const reason = await otherReasonField();
     await userEvent.type(reason, `  ${REASON}  `);

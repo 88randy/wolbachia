@@ -1,43 +1,39 @@
-/* White top bar (.tp in web.css): search on the left, notifications and language on the right. */
 .topBar {
   display: flex;
   flex: none;
   align-items: center;
   gap: var(--space-1);
-  height: var(--web-layout-top-bar-height);
-  padding: 0 var(--space-2);
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border-default);
+  min-height: var(--web-layout-top-bar-height);
+  padding: var(--space-1-5) var(--space-3);
+  background: var(--color-background);
 }
-
 .spacer {
   flex: 1;
 }
-
 .search {
   display: flex;
   flex: 1;
   align-items: center;
   gap: var(--space-1);
   min-width: 0;
-  max-width: 32rem;
-  height: var(--web-control-md);
-  padding: 0 var(--space-1-5);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  max-width: var(--web-layout-search-max-width);
+  min-height: var(--web-control-lg);
+  padding: var(--space-1) var(--space-1-5);
+  border: 1px solid transparent;
+  border-radius: var(--radius-full);
   background: var(--color-surface);
   color: var(--color-text-tertiary);
+  font: inherit;
+  font-size: var(--web-type-label-font-size);
+  text-align: left;
+  cursor: pointer;
 }
-
 .search:focus-within {
   border-color: var(--color-action);
   color: var(--color-text-primary);
   outline: var(--web-focus-ring-width) solid var(--color-action);
   outline-offset: var(--web-focus-ring-offset);
-  box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
 }
-
-/* The ring is drawn on the whole field (above), not twice on the inner input. */
 .input {
   flex: 1;
   min-width: 0;
@@ -47,93 +43,110 @@
   font: inherit;
   font-size: var(--web-type-label-font-size);
 }
-
 .input:focus-visible {
   outline: none;
   box-shadow: none;
 }
-
 .input::placeholder {
   color: var(--color-text-tertiary);
 }
-
 .shortcut {
+  margin-left: auto;
   padding: 0 var(--space-0-5);
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-soft);
   border-radius: var(--radius-xs);
   background: var(--color-background);
   color: var(--color-text-secondary);
-  font: inherit;
+  font-family: var(--font-family-mono);
   font-size: var(--web-type-label-small-font-size);
-  font-weight: 600;
+  font-weight: 500;
 }
-
-/* Narrow screens (reflow at 320 CSS px): the keyboard hint is useless there and takes room. */
-@media (max-width: 40rem) {
-  .shortcut {
-    display: none;
-  }
-}
-
 .icon {
   flex: none;
   width: var(--web-icon-sm);
   height: var(--web-icon-sm);
 }
-
 .iconButton {
   display: inline-flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   min-width: var(--web-control-md);
-  height: var(--web-control-md);
-  padding: 0 var(--space-0-5);
+  min-height: var(--web-control-md);
+  padding: var(--space-0-5);
   border: 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-full);
   background: transparent;
   color: var(--color-text-secondary);
   font: inherit;
   font-size: var(--web-type-label-small-font-size);
-  font-weight: 700;
+  font-weight: 500;
   cursor: pointer;
 }
-
 .iconButton:hover {
-  background: var(--color-background);
+  background: var(--color-surface);
 }
-
 .iconButton .icon {
   width: var(--web-icon-md);
   height: var(--web-icon-md);
 }
-
-/* Uses the global focus ring and resolved color-scheme, including the native option popup. */
-.themeSelect {
-  min-width: var(--web-control-md);
+.themeSwitch {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-0-5);
+  min-width: calc(var(--web-control-sm) * 2 + var(--space-0-5));
   min-height: var(--web-control-md);
-  padding: 0 var(--space-0-5);
-  border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font: inherit;
-  font-size: var(--web-type-label-small-font-size);
+  padding: var(--space-0-5);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-full);
+  background: var(--color-surface-muted);
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
-
-/* Keep every control reachable at 320 CSS px; search gets its own full-width row. */
+.sunSymbol,
+.moonSymbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--web-icon-lg);
+  height: var(--web-icon-lg);
+  border-radius: var(--radius-full);
+}
+.sunSymbol svg,
+.moonSymbol svg {
+  width: var(--web-icon-sm);
+  height: var(--web-icon-sm);
+}
+.themeSwitch[aria-checked="false"] .sunSymbol,
+.themeSwitch[aria-checked="true"] .moonSymbol {
+  background: var(--color-surface-raised);
+  color: var(--color-action-strong);
+  box-shadow: var(--shadow-level-1);
+}
+.avatar {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: var(--web-control-lg);
+  height: var(--web-control-lg);
+  border-radius: var(--radius-full);
+  background: var(--color-tint);
+  color: var(--color-action-strong);
+  font-size: var(--web-type-label-small-font-size);
+  font-weight: 600;
+}
 @media (max-width: 40rem) {
   .topBar {
     flex-wrap: wrap;
-    height: auto;
-    min-height: var(--web-layout-top-bar-height);
     padding: var(--space-1);
   }
-
-  .spacer {
+  .spacer,
+  .shortcut {
     display: none;
   }
-
   .search {
     flex-basis: 100%;
     max-width: none;

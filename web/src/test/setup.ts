@@ -40,3 +40,21 @@ declare module "vitest" {
     toHaveNoViolations(): void;
   }
 }
+
+// jsdom has no layout observer or element scrolling; cmdk needs both for its list.
+if (typeof globalThis.ResizeObserver !== "function") {
+  globalThis.ResizeObserver = class {
+    observe() {
+      return undefined;
+    }
+    unobserve() {
+      return undefined;
+    }
+    disconnect() {
+      return undefined;
+    }
+  };
+}
+if (typeof HTMLElement.prototype.scrollIntoView !== "function") {
+  HTMLElement.prototype.scrollIntoView = () => undefined;
+}

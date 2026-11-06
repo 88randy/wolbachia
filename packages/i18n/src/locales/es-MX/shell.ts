@@ -15,10 +15,7 @@ export const shell = {
   "shell.language.toEnglish": "ES: cambiar idioma a inglés",
   "shell.language.toSpanish": "EN: cambiar idioma a español",
 
-  "shell.theme.label": "Tema",
-  "shell.theme.light": "Claro",
-  "shell.theme.dark": "Oscuro",
-  "shell.theme.system": "Sistema",
+  "shell.theme.dark": "Tema oscuro",
 
   // Web shell: sidebar groups and areas (one entry per area of web/README.md)
   "shell.group.operation": "Operación",

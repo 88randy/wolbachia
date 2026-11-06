@@ -1,5 +1,7 @@
 /**
- * Every custom property of the design CSS files must map to a token with the same value.
+ * Every historical design CSS property must still map to an existing token.
+ * Issue #202 + the approved preview replace CSS value equality as the visual source of truth.
+ * Keeping name coverage catches removed or orphaned semantic roles without freezing old values.
  * Sources: design/mobile/source/codequim.css (baseline) and design/web/source/web.css.
  *
  * Not covered here: web.control, web.focus, web.typography, radius.xs, radius.full and spacing.
@@ -9,7 +11,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
-import { normalizeCssValue, parseCustomProperties } from "./helpers/css-parser.ts";
+import { parseCustomProperties } from "./helpers/css-parser.ts";
 import type { CustomProperties } from "./helpers/css-parser.ts";
 import {
   darkContext,
@@ -33,26 +35,24 @@ const MIN_WEB_ROOT_PROPERTIES = 40;
 const mobileMapping: TokenMapping = { ...sharedMapping, ...mobileOnlyMapping };
 const webMapping: TokenMapping = { ...sharedMapping, ...webOnlyMapping };
 
-/** Lists unmapped properties and properties whose token value differs from the CSS value. */
+/** Lists unmapped historical properties; resolving the path rejects missing/non-leaf tokens. */
 function findProblems(
   properties: CustomProperties,
   mapping: TokenMapping,
   context: object,
 ): string[] {
-  return Object.entries(properties).flatMap(([name, cssValue]) => {
+  return Object.keys(properties).flatMap((name) => {
     const path = mapping[name];
     if (path === undefined) {
       return [`--${name}: no token mapped`];
     }
-    const tokenValue = resolveCssValue(context, path);
-    return tokenValue === normalizeCssValue(cssValue)
-      ? []
-      : [`--${name}: CSS ${cssValue} but ${path} is ${tokenValue}`];
+    resolveCssValue(context, path);
+    return [];
   });
 }
 
 void describe("codequim.css maps to tokens", () => {
-  void test(":root values match the light theme and shared scales", () => {
+  void test(":root names cover the light theme and shared scales", () => {
     const rootProperties = parseCustomProperties(codequimCss, ":root");
 
     const problems = findProblems(rootProperties, mobileMapping, lightContext);
@@ -75,7 +75,7 @@ void describe("codequim.css maps to tokens", () => {
     assert.deepEqual(problems, []);
   });
 
-  void test(".x130 values match the 130 % type scale", () => {
+  void test(".x130 names cover the 130 % type scale", () => {
     const scaleProperties = parseCustomProperties(codequimCss, ".x130");
 
     const problems = findProblems(scaleProperties, mobileScale130Mapping, lightContext);
@@ -86,7 +86,7 @@ void describe("codequim.css maps to tokens", () => {
 });
 
 void describe("web.css maps to tokens", () => {
-  void test(":root values match the light theme and web-only tokens", () => {
+  void test(":root names cover the light theme and web-only tokens", () => {
     const rootProperties = parseCustomProperties(webCss, ":root");
 
     const problems = findProblems(rootProperties, webMapping, lightContext);

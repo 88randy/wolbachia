@@ -17,7 +17,7 @@ export function FleetList() {
   return (
     <section className={classNames(page.page, styles.content)}>
       <FleetListHeader onAdd={dialog.open} />
-      <p className={styles.hint}>{t("fleet.page.gaps")}</p>
+
       <p role="status">{dialog.isSaved ? t("fleet.action.saved") : ""}</p>
       <FleetTable />
       {dialog.isAdding && can(MOTORCYCLE_MANAGE) && (

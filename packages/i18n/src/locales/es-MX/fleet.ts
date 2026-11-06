@@ -8,6 +8,7 @@ export const fleet = {
   "fleet.column.plate": "Placa",
   "fleet.column.status": "Estado",
   "fleet.status.available": "Disponible",
+  "fleet.status.blockedShort": "Bloqueada",
   "fleet.status.blocked": "Fuera de servicio / Bloqueada",
   "fleet.status.voided": "Anulada",
   "fleet.reason.severeCheck": "Revisión con falla grave",

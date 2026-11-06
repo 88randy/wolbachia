@@ -1,56 +1,53 @@
 import type { RowData } from "@tanstack/react-table";
 import { DataTableContent } from "./DataTableContent";
-import { Pager } from "./Pager";
 import { SelectedRowsBar } from "./SelectedRowsBar";
-import { TableStatus } from "./TableStatus";
+import { TableToolbar } from "./TableToolbar";
+import { TableFooter } from "./TableFooter";
 import styles from "./data-table.module.css";
 import type {
   DataTableColumn,
   RowSelectionConfig,
   TableController,
   TableData,
+  TablePresentation,
   VoidInfo,
 } from "./table-types";
 import { useDataTable } from "./use-data-table";
 import { useSortText } from "./use-sort-text";
-
-export interface DataTableProps<Row extends RowData> {
-  /** Accessible name of the table (read by screen readers, not drawn). */
+export interface DataTableProps<Row extends RowData> extends TablePresentation<Row> {
   caption: string;
   columns: readonly DataTableColumn<Row>[];
   getRowId: (row: Row) => string;
-  /** The address-bar state and its actions (`useTableUrlState`). */
   controller: TableController;
   data: TableData<Row>;
-  /** Marks a row as voided: it is struck through and shows badge, reason and author. */
   voidOf?: (row: Row) => VoidInfo | null;
   selection?: RowSelectionConfig<Row>;
 }
-
-/**
- * The shared list table (#29). It only draws what the server returned for the address in the
- * URL: sorting, filtering and paging are requests, never work done on a full dataset in the
- * browser. Semantic `<table>`, native buttons and checkboxes, live regions for the result count
- * and the sort state, and no meaning carried by color alone.
- */
+/** Server-owned rows, with optional grouping/details and no client-side reordering. */
 export function DataTable<Row extends RowData>(props: DataTableProps<Row>) {
-  const { caption, columns, getRowId, controller, data, voidOf, selection } = props;
+  const { caption, columns, getRowId, controller, data, voidOf, selection, ...presentation } =
+    props;
   const isSelectable = selection && (selection.isSelectable ?? (() => true));
   const table = useDataTable({ columns, rows: data.rows, getRowId, isSelectable });
   const sortText = useSortText(controller.state.sort, columns);
   return (
-    <div className={styles.wrap} aria-busy={data.isFetching}>
+    <div
+      className={styles.wrap}
+      aria-busy={data.isFetching}
+      data-embedded={presentation.embedded || undefined}
+      data-density={presentation.density ?? "comfortable"}
+    >
+      <TableToolbar
+        density={presentation.density}
+        onDensityChange={presentation.onDensityChange}
+        refreshing={data.isFetching && !data.isLoading}
+      />
       <SelectedRowsBar table={table} selection={selection} />
-      <DataTableContent {...{ caption, table, columns, controller, data, voidOf, selection }} />
-      <div className={styles.footer}>
-        <TableStatus
-          paging={data.paging}
-          rowCount={data.rows.length}
-          isFetching={data.isFetching}
-          sortText={sortText}
-        />
-        {data.paging !== undefined && <Pager paging={data.paging} controller={controller} />}
-      </div>
+      <DataTableContent
+        {...{ caption, table, columns, controller, data, voidOf, selection }}
+        {...presentation}
+      />
+      <TableFooter data={data} controller={controller} sortText={sortText} />
     </div>
   );
 }

@@ -1,160 +1,113 @@
-/* Public pages (W1 and the reset screens): navy brand panel on the left, the card on the right. */
+/* Public pages share the soft canvas and raised surfaces of the back office. */
 .layout {
   display: flex;
+  gap: var(--space-3);
   min-height: 100%;
+  min-width: 0;
+  padding: var(--space-3);
   background: var(--color-background);
 }
-
 .brandPanel {
   display: flex;
   flex: none;
   flex-direction: column;
-  gap: var(--space-2-5);
-  width: 27.5rem;
-  padding: var(--space-6);
-  background: var(--color-navy);
-  color: var(--web-sidebar-text);
+  gap: var(--space-3);
+  width: min(40%, calc(var(--space-6) * 9));
+  min-width: 0;
+  padding: var(--space-4);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-card);
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
 }
-
 .brand {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
   font-size: var(--web-type-body-font-size);
   font-weight: 700;
+  overflow-wrap: anywhere;
 }
-
 .mark {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: center;
   width: var(--web-control-xl);
   height: var(--web-control-xl);
-  border-radius: var(--radius-md);
+  border-radius: var(--radius-full);
   background: var(--color-action);
   color: var(--color-on-action);
   font-weight: 700;
 }
-
 .brandCopy {
   display: flex;
   flex-direction: column;
   gap: var(--space-1-5);
-  margin-top: auto;
+  margin-block: auto;
 }
-
 .eyebrow {
   margin: 0;
-  color: var(--web-sidebar-group-text);
-  font-size: var(--web-type-label-small-font-size);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--web-type-caption-font-size);
+  letter-spacing: var(--web-type-mono-letter-spacing);
 }
-
 .headline {
   margin: 0;
   font-size: var(--web-type-title-font-size);
   line-height: var(--web-type-title-line-height);
-  font-weight: 800;
+  font-weight: 700;
+  overflow-wrap: anywhere;
 }
-
 .tagline,
 .standards {
   margin: 0;
+  color: var(--color-text-secondary);
 }
-
 .standards {
-  color: var(--web-sidebar-group-text);
-  font-size: var(--web-type-label-small-font-size);
+  font-size: var(--web-type-caption-font-size);
 }
-
 .main {
   display: flex;
   flex: 1;
   align-items: center;
   justify-content: center;
   min-width: 0;
-  padding: var(--space-6) var(--space-3);
-}
-
-.card {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-  width: 100%;
-  max-width: 25rem;
   padding: var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-default);
-  border-radius: var(--radius-lg);
 }
-
-.cardHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1);
+.card {
+  width: 100%;
+  max-width: calc(var(--space-6) * 9);
+  min-width: 0;
 }
-
-.title {
-  margin: 0;
-  font-size: var(--web-type-title-font-size);
-  line-height: var(--web-type-title-line-height);
-  font-weight: 700;
-}
-
 .languageSwitch {
-  border: 1px solid var(--color-border-default);
+  border: 1px solid var(--color-border-strong);
 }
-
 .linkButton {
   align-self: center;
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--web-control-sm);
   padding: var(--space-0-5) var(--space-1);
   color: var(--color-action-strong);
   font-size: var(--web-type-label-font-size);
   font-weight: 600;
   text-decoration: none;
 }
-
 .linkButton:hover {
   text-decoration: underline;
 }
-
 .note {
   margin: 0;
   color: var(--color-text-secondary);
-  font-size: var(--web-type-label-small-font-size);
+  font-size: var(--web-type-caption-font-size);
   text-align: center;
 }
-
 .body {
   margin: 0;
   color: var(--color-text-secondary);
 }
-
-/* Narrow screens (reflow at 320 CSS px): the brand shrinks to a header strip above the card. */
-@media (max-width: 56rem) {
-  .layout {
-    flex-direction: column;
-  }
-
-  .brandPanel {
-    width: auto;
-    padding: var(--space-2) var(--space-3);
-  }
-
-  .brandCopy {
-    display: none;
-  }
-
-  .main {
-    align-items: flex-start;
-    padding: var(--space-3) var(--space-2);
-  }
-}
-
-/* Organization choice: radio rows that read as cards; the whole row is the click target. */
 .options {
   display: flex;
   flex-direction: column;
@@ -164,32 +117,51 @@
   padding: 0;
   border: 0;
 }
-
 .option {
   display: flex;
   align-items: center;
   gap: var(--space-1-5);
   min-height: var(--web-control-xl);
+  min-width: 0;
   padding: var(--space-1) var(--space-1-5);
   border: 1px solid var(--color-border-strong);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-inner);
   background: var(--color-surface);
   font-weight: 600;
   cursor: pointer;
 }
-
+.option span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 .option:has(:checked) {
   border-color: var(--color-action);
   background: var(--color-tint);
 }
-
 .option:has(:focus-visible) {
   outline: var(--web-focus-ring-width) solid var(--color-action);
   outline-offset: var(--web-focus-ring-offset);
   box-shadow: 0 0 0 var(--web-focus-ring-halo-spread) var(--web-focus-ring-halo-color);
 }
-
 .option input:focus-visible {
   outline: none;
   box-shadow: none;
+}
+@media (max-width: 56rem) {
+  .layout {
+    flex-direction: column;
+    padding: var(--space-2);
+    gap: var(--space-2);
+  }
+  .brandPanel {
+    width: auto;
+    padding: var(--space-2);
+  }
+  .brandCopy {
+    display: none;
+  }
+  .main {
+    align-items: flex-start;
+    padding: 0;
+  }
 }

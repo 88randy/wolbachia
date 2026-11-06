@@ -181,7 +181,7 @@ test.describe("password reset", () => {
     await page.goto("/reset-password#uid=MQ&token=set-password-link");
     await expect(page).toHaveURL(/\/reset-password$/); // neither token nor fragment is left in the bar
     expect(page.url()).not.toContain("set-password-link");
-    await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
+    await page.getByLabel("Contraseña nueva", { exact: true }).fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
 
@@ -209,7 +209,7 @@ test.describe("password reset", () => {
     });
     await expect(page).toHaveURL(/\/reset-password$/);
     expect(page.url()).not.toContain("second-link");
-    await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
+    await page.getByLabel("Contraseña nueva", { exact: true }).fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
 
@@ -229,7 +229,7 @@ test.describe("password reset", () => {
 
     await page.goto("/reset-password/MQ/set-password-link");
     await expect(page).toHaveURL(/\/reset-password$/);
-    await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
+    await page.getByLabel("Contraseña nueva", { exact: true }).fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
 
@@ -254,7 +254,7 @@ test.describe("password reset", () => {
     await mockApi(page, { me: null, resetConfirm: "invalid-link" });
 
     await page.goto("/reset-password#uid=MQ&token=old-link");
-    await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
+    await page.getByLabel("Contraseña nueva", { exact: true }).fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
 
@@ -269,12 +269,12 @@ test.describe("password reset", () => {
     await mockApi(page, { me: null, resetConfirm: "too-common" });
 
     await page.goto("/reset-password#uid=MQ&token=set-password-link");
-    await page.getByLabel("Contraseña nueva").fill(E2E_PASSWORD);
+    await page.getByLabel("Contraseña nueva", { exact: true }).fill(E2E_PASSWORD);
     await page.getByLabel("Confirma la contraseña").fill(E2E_PASSWORD);
     await page.getByRole("button", { name: "Guardar contraseña" }).click();
 
     await expect(page.getByText("Esa contraseña es muy común. Elige otra.")).toBeVisible();
-    await expect(page.getByLabel("Contraseña nueva")).toBeFocused();
+    await expect(page.getByLabel("Contraseña nueva", { exact: true })).toBeFocused();
   });
 });
 

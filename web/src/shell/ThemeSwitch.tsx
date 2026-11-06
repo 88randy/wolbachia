@@ -1,28 +1,32 @@
+import { Moon, Sun } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { isThemePreference } from "../theme/theme";
 import { useTheme } from "../theme/use-theme";
-import utilities from "../styles/utilities.module.css";
+import { useResolvedTheme } from "../theme/use-resolved-theme";
+import { getResolvedTheme } from "../theme/resolved-theme";
 import styles from "./TopBar.module.css";
 
-/** Native, keyboard-accessible theme preference selector beside the language switch. */
+/** One control: System follows until the first explicit light/dark toggle. */
 export function ThemeSwitch() {
   const { t } = useTranslation();
-  const { preference, setPreference } = useTheme();
+  const { setPreference } = useTheme();
+  const theme = useResolvedTheme();
   return (
-    <label>
-      <span className={utilities.srOnly}>{t("shell.theme.label")}</span>
-      <select
-        className={styles.themeSelect}
-        value={preference}
-        onChange={(event) => {
-          const next = event.currentTarget.value;
-          if (isThemePreference(next)) setPreference(next);
-        }}
-      >
-        <option value="light">{t("shell.theme.light")}</option>
-        <option value="dark">{t("shell.theme.dark")}</option>
-        <option value="system">{t("shell.theme.system")}</option>
-      </select>
-    </label>
+    <button
+      type="button"
+      role="switch"
+      className={styles.themeSwitch}
+      aria-label={t("shell.theme.dark")}
+      aria-checked={theme === "dark"}
+      onClick={() => {
+        setPreference(getResolvedTheme() === "dark" ? "light" : "dark");
+      }}
+    >
+      <span className={styles.sunSymbol} aria-hidden="true">
+        <Sun strokeWidth={1.5} />
+      </span>
+      <span className={styles.moonSymbol} aria-hidden="true">
+        <Moon strokeWidth={1.5} />
+      </span>
+    </button>
   );
 }

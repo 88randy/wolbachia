@@ -1,3 +1,4 @@
+import { classNames } from "../styles/class-names";
 import { useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type { DataTableColumn } from "../data-table/table-types";
@@ -21,7 +22,7 @@ const IDENTITY_COLUMNS: Column[] = [
     id: "code",
     headerKey: "catalogs.table.code",
     cell: (item) => (
-      <span className={item.is_active ? styles.code : styles.struck}>{item.code}</span>
+      <span className={classNames(styles.code, !item.is_active && styles.struck)}>{item.code}</span>
     ),
   },
 ];
@@ -48,7 +49,7 @@ export function useCatalogColumns(): Column[] {
         id: "created",
         headerKey: "catalogs.table.created",
         cell: (item) => (
-          <span className={item.is_active ? undefined : styles.struck}>
+          <span className={classNames(styles.timestamp, !item.is_active && styles.struck)}>
             {formatDate(item.created_at)} ·{" "}
             {item.created_by_username ?? t("catalogs.table.unknownAuthor")}
           </span>

@@ -96,3 +96,7 @@ npm test               # node:test
 
 The sync area includes every registered ovitrap placement/check result code;
 rules.param.maxGpsAccuracyM labels the new versioned accuracy threshold.
+
+Issue #202 adds ui (shared controls and feedback), analytics (KPIs/charts and
+relative-time labels) and refresh (shell commands/table presentation and the
+dev-only style preview) in both locales.

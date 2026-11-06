@@ -1,8 +1,8 @@
-import { useTranslation } from "react-i18next";
+import { useState } from "react";
 import { classNames } from "../styles/class-names";
-import utilities from "../styles/utilities.module.css";
 import type { NavGroup } from "./nav-items";
 import styles from "./Sidebar.module.css";
+import { SidebarGroupHeading } from "./SidebarGroupHeading";
 import { SidebarNavItem } from "./SidebarNavItem";
 
 interface SidebarGroupProps {
@@ -10,21 +10,29 @@ interface SidebarGroupProps {
   collapsed: boolean;
 }
 
-/** A heading (when the group has one) and its list of links. */
+/** Named groups retain visible icon links when the full navigation is collapsed. */
 export function SidebarGroup({ group, collapsed }: SidebarGroupProps) {
-  const { t } = useTranslation();
+  const [isExpanded, setIsExpanded] = useState(true);
   const headingId = `nav-group-${group.id}`;
+  const listId = `${headingId}-items`;
   return (
     <div className={styles.group}>
-      {group.headingKey ? (
-        <p
-          id={headingId}
-          className={classNames(collapsed ? utilities.srOnly : styles.groupHeading)}
-        >
-          {t(group.headingKey)}
-        </p>
-      ) : null}
-      <ul className={styles.list} aria-labelledby={group.headingKey ? headingId : undefined}>
+      <SidebarGroupHeading
+        headingId={headingId}
+        listId={listId}
+        headingKey={group.headingKey}
+        collapsed={collapsed}
+        isExpanded={isExpanded}
+        onToggle={() => {
+          setIsExpanded((open) => !open);
+        }}
+      />
+      <ul
+        id={listId}
+        className={classNames(styles.list, group.headingKey && !collapsed && styles.tree)}
+        aria-labelledby={group.headingKey ? headingId : undefined}
+        hidden={!collapsed && !isExpanded}
+      >
         {group.areas.map((area) => (
           <SidebarNavItem key={area.id} area={area} collapsed={collapsed} />
         ))}

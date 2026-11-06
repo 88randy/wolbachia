@@ -47,3 +47,172 @@ Typography: Inter with tabular figures in both.
 2. Aliases: one semantic token per role (`strong` and `info` share a value but stay separate roles). Accepted.
 3. Chart colors c2 / c4: **[PENDING]** client approval; provisional until then.
 4. Radius and spacing snapping above: proposal, applied in #17 unless the client objects.
+
+## Visual refresh #202
+
+Issue #202 and the owner-approved preview are the visual source of truth (decision
+123). **The owner approved Step 1**; Step 2 now applies the shared look to existing screens, with the owner-requested single top-bar theme switch. Visual/e2e execution remains a CI/review check. Sections 1–5 above record the
+historical comparison. `design/mobile/source/codequim.css` and
+`design/web/source/web.css` stay unchanged as history. The design-CSS test retains
+complete variable-name-to-token coverage, not equality with historical values.
+
+### Palette and contrast
+
+`background` is the cool canvas; a separate `canvas` alias would duplicate its
+role. `surface` is the main card, `surfaceMuted` a quiet widget body, and
+`surfaceRaised` the nested card. Web navigation sits on `background`; `chrome`
+remains unchanged for the mobile top bar. Hairlines separate related content;
+input borders use `border.default`, not the decorative `border.soft`.
+
+| Role | Previous light / dark | New light / dark |
+|---|---|---|
+| `background` | #F4F6FA / #0B1630 | #EEF0F2 / #181B20 |
+| `surface` | #FFFFFF / #13244A | #FFFFFF / #22262D |
+| `surfaceMuted` | — | #F1F3F5 / #2B3038 |
+| `surfaceRaised` | — | #FFFFFF / #303640 |
+| `text.primary` | #0A1A3F / #F2F5FB | #20252D / #F1F3F5 |
+| `text.secondary` | #3A4664 / #B7C1D6 | #4B5563 / #CBD1D8 |
+| `text.tertiary` | #586380 / #A3AFC8 | #596470 / #AFB8C3 |
+| `border.default` | #C9D0DE / #2E4170 | #7A8490 / #7E8997 |
+| `border.strong` | #7C869E / #8391B2 | #737D88 / #929DAA |
+| `border.soft` | #E4E8EF / #1F3260 | #DDE2E7 / #3B424D |
+| Sidebar text | #C9D3EA / #C9D3EA | #4B5563 / #CBD1D8 |
+| Sidebar active bg / text | historical translucent navy chrome | #FFFFFF / #20252D (light), #303640 / #F1F3F5 (dark) |
+| Chart series 1 | #1A5DFF / #7FA4FF | unchanged, references `action` directly |
+| Chart series 2 | #D9620B / #FFA25C | #B85C25 / #E9A56F |
+| Chart context series 3 | #0B6B35 / #5FD08F | #6D7885 / #AFB8C3 |
+| Positive delta | — | #147044 / #79D5A0 |
+| Negative delta | — | #AD3D2F / #FFAC9E |
+| Scrollbar track | — | #EEF0F2 / #181B20 |
+| Scrollbar thumb / hover | — | #BCC3CB / #6D7885 (light), #58636F / #929DAA (dark) |
+
+The Codequim blue `action` stays the single primary accent (D2). The owner may
+change it at preview time: edit the semantic theme role once; chart series 1
+references it. Warm orange is chart series 2 and warning emphasis. Series 2 and 4
+remain **PROVISIONAL**, pending client palette approval (#17). Map and index band
+colors retain their domain meaning.
+
+WCAG relative-luminance ratios (unrounded values are asserted in
+`packages/tokens/test/contrast.test.ts`):
+
+| Foreground / background | Light | Dark |
+|---|---:|---:|
+| Primary / surface | 15.40:1 | 13.65:1 |
+| Secondary / surface | 7.56:1 | 9.87:1 |
+| Tertiary / surface | 6.03:1 | 7.57:1 |
+| Weakest text across background, surface, muted and raised | 5.28:1 | 6.06:1 |
+| Action link / weakest shared surface | 4.53:1 | 5.01:1 |
+| Status success fg / bg | 5.84:1 | 6.55:1 |
+| Status warning fg / bg | 6.09:1 | 7.88:1 |
+| Status critical fg / bg | 5.90:1 | 6.33:1 |
+| Status info fg / bg | 6.25:1 | 6.47:1 |
+| Status neutral fg / bg | 8.22:1 | 7.90:1 |
+| Positive / negative delta on surface | 6.12 / 6.03:1 | 8.56 / 8.42:1 |
+| Sidebar active text / active background | 15.40:1 | 10.93:1 |
+| Strong border / surface | 4.18:1 | 5.51:1 |
+| Input border / surface | 3.80:1 | 4.27:1 |
+| Scrollbar thumb hover / track | 3.93:1 | 6.27:1 |
+| Scrollbar thumb hover / surface | 4.49:1 | 5.51:1 |
+
+### Scales and interaction decisions
+
+- D1: Inter remains the UI font. Self-hosted JetBrains Mono latin 400/500 supplies
+  numbers, dates, codes, headers and pills through `font.mono` and
+  `--font-family-mono`; neither font uses a CDN.
+- Radius: existing scale retained; `card=20`, `inner=14`, `full=9999`. Shadows:
+  `level1` keeps its React Native shape; `card` is `0 8px 32px rgba(20,30,40,.04)`;
+  `overlay` is `0 16px 48px rgba(12,20,32,.14)`. In dark mode these diffuse shadows
+  are nearly invisible; semantic borders carry the edges.
+- KPI type is 28/34; mono labels and captions are 12 px with `0.06em` header
+  spacing. No minimum type size changed. Base spacing remains the 8 px grid.
+- D3: Radix unstyled primitives and cmdk share accessible overlay behavior.
+  Existing native-dialog screen logic stays intact; Step 2 uses the shared dialog appearance.
+- D4: in-house pixel splitter: default 248, min 200, max 360, collapsed 64, keyboard
+  step 16 px. Compact breakpoint remains 768; wide rail breakpoint is 1280.
+- D5: one token-driven 6 px scrollbar, standard thin scrollbar plus Safari
+  fallback; hover/focus uses the tested stronger thumb.
+- Motion: 150 ms fast, 200 ms normal, ease-out entry and ease-in exit; consumers
+  animate opacity/transform only and disable animation for reduced motion.
+- D6: no native alert/confirm/prompt; ESLint `no-alert` is an error for web.
+- D7: dev-only `/harness/style-preview.html`, with `?theme=dark` and `?lang=en`;
+  no production route. The owner approved Step 1 and authorized Step 2.
+
+### Approved rollout audit (Step 2)
+
+The owner approved the Step 1 preview and authorized the existing-screen rollout.
+Decision **123** applies; no API, permission, query, mutation or draft contract changes.
+
+| Area | Shared presentation applied / retained |
+|---|---|
+| Shell | One top-bar sun/moon switch; System follows live OS appearance until the first explicit choice. Sidebar keeps its user menu and collapse control. |
+| Login, forgot/reset password, organization selection | AuthLayout uses Card; brand panel, canvas and form surfaces use both theme palettes. Existing field validation and submission flow remain. |
+| Phones | Existing FilterBar/DataTable supply loading, error, empty and table surfaces; PhoneStatusBadge uses StatusPill. |
+| Rule parameters | Initial CardSkeleton; summary, new-version form and history Cards; history DataTable embedded in its Card; StatusPill/Button; failed refresh keeps existing data and draft with an inline Retry notice. |
+| Catalogs | Shaped initial skeleton; scoped EmptyState/ErrorState and refresh notice; StatusPill/Button. Empty index offers Retry because no create-catalog API exists. Permission-gated item creation stays intact. |
+| Fleet | Shared Card/EmptyState/ErrorState and initial skeleton; StatusPill/Button; record summaries retain void reason/author and all permission guards. |
+| States and void | Shared Cards and actionable error/empty states; native dialog styling retained. Void confirmation initially focuses Cancel; invalid selection still receives focus after submit. |
+| Preview | Unbroken pills/relative times; visible named row actions; a one-row title/actions/period header; labeled size/state button matrices; two-column compact and one-column narrow KPI layout. Wide content scrolls in named, keyboard-scrollable regions. |
+
+Definition-of-done exceptions: existing native dialogs, validation rules and submission
+flows are retained as explicitly requested; existing reversible deactivation
+confirmation is not redesigned into an Undo flow in this visual-only rollout.
+Configuration errors describe repairing build configuration rather than offering
+a Retry that cannot fix it. The owner-requested top-bar theme switch supersedes
+the skill's footer placement. No new optimistic mutations or screen features
+are introduced. Contrast, keyboard/state regressions and tokens-only styling
+are automated checks; rendered light/dark screenshots, 320/390/768/1280/1440 px
+geometry, 200% zoom and +30% text remain visual review checks, not assertions
+that a jsdom test can establish. Playwright is reserved for CI in this task.
+
+Integration compatibility: the geography block-column helper now accepts i18next's concrete TFunction type instead of expanding ReturnType of the generic useTranslation overload. This avoids excessive type instantiation with the merged locale catalog; its rendered columns, handlers and permissions are unchanged.
+
+Session draft regression: the read-only command trigger cannot hold a draft. The expiry fixture now fills the actual rule-version reason textarea, and unit/e2e assertions check its value during expiry and after reauthentication, plus focus return. A local definition snapshot keeps the mounted editor scoped to user, organization and parameter while the session is blocked and its data is revalidated. It never repopulates query caches. Changed identity, revoked access and client-side revalidation failures discard the retained editor; transient failures retain the draft with Retry. Unit tests cover these boundaries and the interval before expiry is announced; the updated e2e journey is reserved for CI.
+
+
+### Button interaction states: adversarial correction
+
+Opacity-based hover faded primary text below AA (reported light ratio 4.255:1).
+Buttons now change only an opaque background through semantic
+`web.*.button.{primary,secondary,tertiary,ghost}.{hover,pressed}` tokens, retaining
+the corresponding text foreground. Press movement remains optional under
+`prefers-reduced-motion`; immediate state colors apply in both motion modes.
+
+| Variant / foreground | Light hover / pressed | Dark hover / pressed | Contrast hover / pressed, light; dark |
+|---|---|---|---|
+| Primary / `onAction` | #0044E6 / #0038BD | #9DBBFF / #B8CEFF | 7.07 / 9.13; 8.91 / 10.80 |
+| Secondary / `actionStrong` | #DDE7FF / #CEDDFF | #243D70 / #2D477D | 5.71 / 5.19; 5.56 / 4.76 |
+| Tertiary / primary text | #F1F3F5 / #E2E7EC | #2B3038 / #39424D | >= 4.5:1 in both states and themes |
+| Ghost / secondary text | #F1F3F5 / #E2E7EC | #2B3038 / #39424D | >= 4.5:1 in both states and themes |
+| Destructive tint / critical text | #FAD8D8 / #F5CACA | #57212A / #642630 | 5.24 / 4.68; 5.59 / 4.97 |
+| Danger solid / `onAction` | #991118 / #800E14 | #FFA3A3 / #FFBABA | 8.58 / 10.55; 8.94 / 10.54 |
+
+The contrast regression checks the four variants and both existing destructive
+modifiers in their base and interaction states,
+plus disabled text. The web style guard rejects fractional opacity in hover,
+pressed and disabled control selectors, so future CSS cannot silently invalidate
+the token pairs. The opacity audit found no other fractional interaction state on
+a text-bearing control; remaining uses are the modal backdrop, skeleton shimmer,
+enter/exit transitions, the chart inspection slider and the decorative resize
+line. Busy-button placeholder text stays hidden only while its in-button spinner
+and accessible progress label replace it.
+
+ConfirmActions and VoidDialogActions retain their existing public API and
+critical meaning. Their modifier variables override the shared button's separate
+variant fallbacks for base background, foreground, hover and pressed states;
+there is no reliance on stylesheet import order or selector specificity. A CSS
+wiring regression verifies both modifiers consume the tested palettes. The
+remaining Button class overrides are layout-only (`SubmitButton`) or unavailable
+states (`MotorcycleActionButton`, `VoidVersionButton`), whose `aria-disabled`
+state excludes hover and press; they keep the tested disabled pair. Links and
+raw buttons consuming shared button classes add no color overrides.
+
+### Shell modal ownership: adversarial correction
+
+Shell overlays share one modal slot. Every invocation (Ctrl/Cmd+K, ?, click,
+search typing or a controlled open) checks the same rule: the session is known,
+not expired and not signed out, and there is no open native dialog, Radix dialog
+or ARIA modal. Blocking/expiring the session clears the slot. Shell portals
+unmount immediately, so an exit animation cannot retain hideOthers or a focus
+scope over the visible native modal. Focus restoration yields to that modal.
+Regression tests cover both opening orders, keyboard input in reauthentication,
+resuming a verified session without reopening help, and the sign-out boundary.

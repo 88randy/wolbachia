@@ -1,0 +1,22 @@
+import type { ui as esMX } from "../es-MX/ui.ts";
+export const ui: Record<keyof typeof esMX, string> = {
+  "ui.actions.more": "More actions",
+  "ui.actions.createFirst": "Create the first record",
+  "ui.actions.clearFilters": "Clear filters",
+  "ui.actions.details": "View details",
+  "ui.actions.undo": "Undo",
+  "ui.actions.review": "Review",
+  "ui.actions.dismiss": "Dismiss notice",
+  "ui.states.refreshing": "Updating…",
+  "ui.states.noData": "There are no records yet. Create the first one to get started.",
+  "ui.states.noResults": "No records match these filters. Clear them to see more records.",
+  "ui.states.loadError": "We could not load this section. Retry to refresh it.",
+  "ui.details.code": "Code",
+  "ui.details.requestId": "Request ID",
+  "ui.preview.centerSouth": "South Center",
+  "ui.preview.feedback": "Status and notices",
+  "ui.preview.undoHint": "You hid this metric. Restore it with Undo in the notification.",
+  "ui.preview.voided": "Demo void recorded",
+  "ui.toast.label": "Notifications",
+  "ui.toast.blocking": "Notifications that need attention",
+};

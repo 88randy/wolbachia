@@ -5,7 +5,7 @@ import type { CatalogItem } from "./catalogs-query";
 import { moveItem } from "./catalog-reorder";
 import type { CatalogEditor } from "./use-catalog-editor";
 import { CatalogActionButton } from "./CatalogActionButton";
-import styles from "./catalogs.module.css";
+
 interface Props {
   editor: CatalogEditor;
   item: CatalogItem;
@@ -25,7 +25,8 @@ export function CatalogMoveButton({ editor, item, direction }: Props) {
   });
   return (
     <CatalogActionButton
-      className={styles.action}
+      variant="ghost"
+      size="sm"
       isFocusableWhenBlocked
       reason={isBlocked ? reason : undefined}
       aria-label={label}

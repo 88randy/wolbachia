@@ -95,7 +95,7 @@ The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only f
 | `i18n/` | i18next fed by `@wolbachia/i18n` (typed keys, `{param}`), `useLanguage` |
 | `theme/` | Light/Dark/System preference, System by default; resolved light/dark `data-theme` on `<html>` before the first render; System follows live `prefers-color-scheme` changes |
 | `router/` | code-based TanStack Router routes: public routes, the guarded layout and one placeholder per area (`areas.ts`, each with its `requiredPermissions`); `guards.ts`, `safe-redirect.ts` |
-| `shell/` | skip link, sidebar (232 px, 64 px collapsed), top bar, offline banner |
+| `shell/` | skip link, sidebar (248 px by default, resizable, 64 px collapsed), top bar, offline banner |
 | `states/` | placeholder, not found, route error, loading skeleton, configuration error |
 | `styles/` | global CSS, shared CSS modules, `no-style-literals.test.ts` |
 | `storage/` | `localStorage` wrapper that never throws (preferences are conveniences) |
@@ -110,8 +110,8 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 ### What the shell does today
 
 - Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists only the areas the user may open (see "Session, guards and permissions"); a group with no visible area loses its heading.
-- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), a native Light/Dark/System selector beside it, and the user menu. The backend-scoped center selector is a remembered filter; see W65/W68 (#147) below.
-- The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. An explicit Light/Dark choice removes the system listener. The selector uses the shared focus ring and 32 px control token; narrow top bars put search on its own row so all controls remain reachable.
+- Top bar slots: search (Ctrl+K / Cmd+K opens the command palette; hint in the field), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), one sun/moon dark-theme switch on the right; the user menu stays in the sidebar footer. The backend-scoped center selector is a remembered filter; see W65/W68 (#147) below.
+- The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. Until the first toggle, the switch announces the resolved System appearance and follows live system changes. Space, Enter or a click selects the opposite resolved theme and stores an explicit Light/Dark preference, removing the system listener. The switch uses the shared focus ring and a target larger than 24 px; narrow top bars put search on its own row so all controls remain reachable.
 - Below 768 px (`web.layout.compactBreakpoint`) the sidebar stays collapsed, so the page reflows at 320 CSS px without two-axis scroll (WCAG 1.4.10; e2e checks it). Each page sets its own `document.title` ("<page> · Wolbachia", WCAG 2.4.2).
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
@@ -277,3 +277,71 @@ Inactive items are hidden unless `include_deactivated=true`; configuration is de
 after confirmation and can be reactivated, rather than voided. The boolean `in_use` is
 shown with an accessible icon/text badge. The usage count, authorship and atomic reorder
 remain follow-up #182. Other free-text validation belongs to consumer screens and mobile.
+
+## Visual refresh #202: shared components and approval preview
+
+Source of truth: issue #202 plus the owner's approved Step 1 preview (decision 123).
+Historical design CSS is retained. Step 1 provides the approved tokens and
+shared components. Step 2 applies them to existing screens without changing behavior.
+
+Run npm run dev -w @wolbachia/web, then open /harness/style-preview.html.
+Use ?theme=dark, ?lang=en, or both. This separate dev-only Vite entry uses the
+real shell, in-memory history and a fake API with domain demo records. It is
+neither a production route nor a production build entry. Preview query themes
+do not overwrite the saved theme preference. The owner approved Step 1 with one
+theme control in the top bar; regression review targets 1440/1280/768/390/320 px.
+
+Shared components:
+- src/ui/: buttons, cards/menus, folder tabs, status pills, notices/banner,
+  tooltips, Radix dialog/sheet/irreversible confirmation, queued actionable
+  toasts, delayed skeletons, empty/error/refreshing states.
+- src/analytics/: linked KPI cells with spoken signed deltas, relative time
+  in the organization time zone, SVG trend/mini-bar charts and equivalent tables.
+- src/forms/: labeled text/select/search and blur-first validation.
+- src/shell/: permission-filtered command palette (Ctrl/Cmd+K), help (?),
+  canvas sidebar with user menu and persistent width; the single sun/moon switch
+  lives in the top bar.
+- DataTable retains its previous API. Optional groupOf, renderDetail, rowActions,
+  density, onDensityChange and embedded add grouped headings, accessible expansion,
+  focus-visible row actions and controlled comfortable/compact density.
+  The embedded option omits the outer table frame when a parent Card supplies it.
+  These options never sort, filter or aggregate server-owned records.
+
+The sidebar separator supports ArrowLeft/ArrowRight (16px), Home/End (200/360px),
+Enter (collapse) and double-click (reset 248px). Compact mode changes appearance
+without overwriting desktop preferences. Width storage is validated and clamped.
+System remains the stored default until the first explicit toggle. The top-bar
+switch follows the live resolved appearance; there is no separate System picker.
+Global scrollbars and existing native-dialog surfaces use the same tokens; native dialog logic is unchanged.
+
+Primitives: [Radix Dialog](https://www.radix-ui.com/primitives/docs/components/dialog),
+[Tabs](https://www.radix-ui.com/primitives/docs/components/tabs) and
+[cmdk](https://github.com/dip/cmdk), using the exact already-installed versions.
+Fonts are self-hosted Inter and latin 400/500 JetBrains Mono. Codequim blue remains
+the action/focus accent; chart orange remains provisional until owner approval.
+The preview demonstrates skeleton, empty/no-results, scoped error with details,
+partial, refreshing and Undo states. Native alert/confirm/prompt is forbidden.
+
+Focused verification (one worker; no Playwright on this host):
+npx vitest run --maxWorkers=1 --pool=threads src/shell src/data-table src/styles src/ui src/forms src/analytics src/theme.
+If host memory cannot sustain multiple forks, run the same test files individually.
+
+On this low-memory Windows host, npm/fork startup can fail before tests start.
+From web/, the installed CLI can run without the npm wrapper:
+node ../node_modules/vitest/vitest.mjs run --maxWorkers=1 --pool=threads TEST_FILE.
+This still runs Vitest with one worker; no packages or project settings change.
+Pool behavior: https://vitest.dev/config/pool.
+
+The shell command palette and shortcut help share one modal slot (#202 review).
+Their invocation gate excludes open native/Radix/ARIA modals and blocked,
+expired or signed-out sessions. Shell portals unmount immediately on dismissal;
+focus restoration never overrides another active modal. Tests cover both modal
+opening orders and reauthentication focus without timer-based waits.
+
+The session-expiry regression uses a real rule-version reason draft, including
+value retention during and after reauthentication. A local, identity-scoped
+parameter definition keeps that editor mounted while organization queries are
+cleared and revalidated; it never restores query-cache entries. A changed user,
+organization, parameter or authorization boundary clears the old draft. Transient
+revalidation failures preserve it with Retry. The e2e session fixture checks the
+same real field; its screenshots and browser journey are run in CI.

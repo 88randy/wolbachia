@@ -40,7 +40,7 @@ export function VoidReasonSelect({ form }: { form: VoidForm }) {
 function useSelectFocus(form: VoidForm) {
   const input = useRef<HTMLSelectElement>(null);
   useEffect(() => {
-    if (!form.isCatalogBlocked) input.current?.focus();
+    if (form.hasSelectionError) input.current?.focus();
   }, [form.isCatalogBlocked, form.hasSelectionError]);
   return {
     ref: input,

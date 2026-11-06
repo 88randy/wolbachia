@@ -3,7 +3,7 @@ import type { CatalogItem } from "./catalogs-query";
 import { useCatalogEditorContext } from "./catalog-editor-context";
 import { CatalogMoveButton } from "./CatalogMoveButton";
 import { CatalogActionButton } from "./CatalogActionButton";
-import styles from "./catalogs.module.css";
+
 /** The permission that allows label edits also allows sort edits. */
 export function CatalogEditActions({ item }: { item: CatalogItem }) {
   const { t } = useTranslation();
@@ -11,7 +11,8 @@ export function CatalogEditActions({ item }: { item: CatalogItem }) {
   return (
     <>
       <CatalogActionButton
-        className={styles.action}
+        variant="ghost"
+        size="sm"
         reason={editor.write.isBusy ? t("catalogs.actions.busy") : undefined}
         onClick={() => {
           editor.setError(null);

@@ -1,8 +1,7 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
-import buttons from "../styles/button.module.css";
-import { classNames } from "../styles/class-names";
+import { Button } from "../ui/Button";
 import styles from "./fleet.module.css";
 interface Props {
   label: MessageKey;
@@ -14,13 +13,9 @@ export function MotorcycleActionButton({ label, reason, onClick }: Props) {
   const id = useId();
   return (
     <div className={styles.content}>
-      <button
-        type="button"
-        className={classNames(
-          buttons.button,
-          buttons.secondary,
-          reason !== undefined && styles.unavailable,
-        )}
+      <Button
+        variant="secondary"
+        className={reason !== undefined ? styles.unavailable : undefined}
         aria-disabled={reason !== undefined}
         aria-describedby={reason === undefined ? undefined : id}
         onClick={() => {
@@ -28,7 +23,7 @@ export function MotorcycleActionButton({ label, reason, onClick }: Props) {
         }}
       >
         {t(label)}
-      </button>
+      </Button>
       {reason !== undefined && (
         <p id={id} className={styles.hint}>
           {t(reason)}
