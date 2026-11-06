@@ -19,6 +19,7 @@ export function PermissionCells({ profile, codes, onEdit }: Props) {
       {codes.map((permission) => (
         <PermissionCell
           key={permission}
+          profileId={profile.id}
           permission={permission}
           label={label}
           isGranted={profile.permissions.includes(permission)}

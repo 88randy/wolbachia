@@ -1,3 +1,4 @@
+import { CENTER_FILTER } from "../../centers/center-filter";
 import type { TableQueryConfig, TableState } from "../../data-table/table-types";
 export const PAGE_SIZE = 25;
 export const QUADRANT_TABLE: TableQueryConfig = {
@@ -7,7 +8,7 @@ export const QUADRANT_TABLE: TableQueryConfig = {
   sortableIds: ["code", "created_at"],
   supportsVoided: false,
   filters: [
-    { key: "center", kind: "text", labelKey: "geography.field.center", maxLength: 36 },
+    CENTER_FILTER,
     { key: "search", kind: "text", labelKey: "geography.field.search", maxLength: 100 },
   ],
 };
@@ -17,6 +18,7 @@ export const RECORD_TABLE: TableQueryConfig = {
   sortableIds: [],
   supportsVoided: false,
   filters: [
+    CENTER_FILTER,
     {
       key: "view",
       kind: "select",

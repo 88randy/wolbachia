@@ -22,6 +22,7 @@ export function RolesTable() {
         <ScopeDialog
           target={{ kind: "role", record: table.editing }}
           codes={table.codes}
+          returnFocusId={table.returnFocusId}
           onClose={table.close}
           onSaved={table.saved}
         />

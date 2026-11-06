@@ -68,8 +68,7 @@ for (const language of LANGUAGES) {
       await page.setViewportSize({ width: 320, height: 800 });
       await page.goto("/settings/roles");
       const cell = page.getByRole("button", {
-        name: `${language === "en" ? "Team" : "Equipo"}: role.update`,
-        exact: true,
+        name: new RegExp(`^${language === "en" ? "Team" : "Equipo"}: role.update `),
       });
       await expect(cell).toBeVisible();
       await expectNoAxeViolations(page);

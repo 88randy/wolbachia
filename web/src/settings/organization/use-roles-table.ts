@@ -21,9 +21,11 @@ export function useRolesTable() {
     rolesOptions({ client: useApiClient(), identity: useSessionIdentity() }, controller.state),
   );
   const [editing, setEditing] = useState<Profile | null>(null);
+  const [returnFocusId, setReturnFocusId] = useState<string | undefined>();
   const [isSaved, setSaved] = useState(false);
   const codes = permissionCodes(me.permissions, query.data?.results ?? []);
   const columns = useRoleColumns(codes, (profile) => {
+    setReturnFocusId(document.activeElement?.id);
     setEditing(profile);
     setSaved(false);
   });
@@ -35,5 +37,5 @@ export function useRolesTable() {
     setSaved(true);
   };
   const rows = pageTableData(query, controller.state.page, ADMIN_PAGE_SIZE);
-  return { controller, columns, codes, editing, close, saved, isSaved, rows };
+  return { controller, columns, codes, returnFocusId, editing, close, saved, isSaved, rows };
 }

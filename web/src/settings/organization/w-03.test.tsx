@@ -1,10 +1,13 @@
+import * as meQuery from "../../session/me-query";
+import { sessionState } from "../../session/session-revision";
+import { reconcileSession } from "../../session/session-reconcile";
 import { messages } from "@wolbachia/i18n";
 import type { Profile } from "./use-w-03";
 import { isSessionKnown } from "../../session/session-revision";
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
-import { afterEach, beforeEach, describe, expect, test } from "vitest";
+import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { endSessionExpiry } from "../../session/session-events";
 import { ME_QUERY_KEY } from "../../session/me-key";
 import { centerStorageKey, writeCenter } from "../../centers/center-selection";
@@ -80,6 +83,7 @@ beforeEach(() => {
   document.cookie = "csrftoken=test-csrf; path=/";
 });
 afterEach(() => {
+  vi.restoreAllMocks();
   endSessionExpiry();
   document.cookie = "csrftoken=; Max-Age=0; path=/";
 });
@@ -95,11 +99,14 @@ describe("W-03", () => {
       })),
     ];
     const { api, user } = await open("/settings/roles", ME, profiles);
-    const cell = await screen.findByRole("button", { name: "Equipo: role.update" });
+    const cell = await screen.findByRole("button", { name: /^Equipo: role.update / });
+    const denied = screen.getByRole("button", { name: "Equipo: center.read Sin permiso" });
+    for (const button of [cell, denied])
+      expect(button.getAttribute("aria-label")).toContain(button.textContent.trim());
     cell.focus();
     await user.keyboard("{ArrowDown}");
     expect(document.activeElement).toBe(
-      screen.getByRole("button", { name: "Equipo dos: role.update" }),
+      screen.getByRole("button", { name: /^Equipo dos: role.update / }),
     );
     await user.keyboard("{ArrowUp}{Enter}");
     const dialog = screen.getByRole("dialog");
@@ -122,7 +129,13 @@ describe("W-03", () => {
     expect(within(dialog).getByText(/Revisión vigente: 3/)).toBeDefined();
     expect(centerMode.value).toBe("none");
     expect(cell.getAttribute("aria-pressed")).toBe("true");
-    expect(screen.queryByRole("button", { name: "Consulta: role.update" })).toBeNull();
+    expect(cell.isConnected).toBe(false);
+    fireEvent(dialog, new Event("cancel", { bubbles: true, cancelable: true }));
+    expect(document.activeElement).toBe(
+      screen.getByRole("button", { name: /^Equipo: role.update / }),
+    );
+    expect(document.activeElement?.isConnected).toBe(true);
+    expect(screen.queryByRole("button", { name: /^Consulta: role.update / })).toBeNull();
   });
   test("settings timezone/epi week roundtrip and invalid logo", async () => {
     const { api, user, app } = await open("/settings/organization");
@@ -159,7 +172,7 @@ test("a refused write is never replayed after reauthentication, and the retained
   api.setRoute("POST /api/v1/auth/login/", () =>
     Response.json({ me: ME, server_time: "2026-11-05T12:00:00Z" }),
   );
-  await user.click(await screen.findByRole("button", { name: "Equipo: role.update" }));
+  await user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
   const editor = screen.getByRole("dialog");
   await user.click(within(editor).getByRole("checkbox", { name: "role.update" }));
   await user.click(within(editor).getByRole("button", { name: "Guardar" }));
@@ -191,7 +204,7 @@ test("concurrent permission edits require an explicit refresh and review without
   api.setRoute("GET /api/v1/roles/00000000-0000-4000-8000-000000000001/", () =>
     Response.json({ ...ROLE, revision: 7 }),
   );
-  await user.click(await screen.findByRole("button", { name: "Equipo: role.update" }));
+  await user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
   const dialog = screen.getByRole("dialog");
   await user.click(within(dialog).getByRole("checkbox", { name: "role.update" }));
   await user.click(within(dialog).getByRole("button", { name: "Guardar" }));
@@ -295,7 +308,7 @@ test("membership scope resolves unknown and foreign center codes identically and
 
 test("a center-scope change clears old configuration results and reloads the permitted global route", async () => {
   const { api, app } = await open();
-  await screen.findByRole("button", { name: "Equipo: role.update" });
+  await screen.findByRole("button", { name: /^Equipo: role.update / });
   const [previous] = app.queryClient.getQueriesData({
     predicate: (query) => query.queryKey[4] === "roles",
   });
@@ -310,8 +323,8 @@ test("a center-scope change clears old configuration results and reloads the per
   await act(async () => {
     await app.queryClient.invalidateQueries({ queryKey: ME_QUERY_KEY });
   });
-  await screen.findByRole("button", { name: "Equipo vigente: role.update" });
-  expect(screen.queryByRole("button", { name: "Equipo: role.update" })).toBeNull();
+  await screen.findByRole("button", { name: /^Equipo vigente: role.update / });
+  expect(screen.queryByRole("button", { name: /^Equipo: role.update / })).toBeNull();
   expect(app.queryClient.getQueryData(oldKey)).toBeUndefined();
   expect(screen.queryByRole("heading", { name: "No tienes acceso a esta sección" })).toBeNull();
 });
@@ -327,7 +340,7 @@ test("draft fields remain locked until the saved change finishes session verific
     Response.json(ROLE),
   );
   api.setRoute("GET /api/v1/me/", () => pending);
-  await user.click(await screen.findByRole("button", { name: "Equipo: role.update" }));
+  await user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
   const editor = screen.getByRole("dialog");
   await user.click(within(editor).getByRole("button", { name: "Guardar" }));
   await waitFor(() => {
@@ -421,7 +434,7 @@ async function openScopeSearch(center = CENTER_B) {
   );
   for (const center of [CENTER_A, CENTER_B])
     context.api.setRoute(`GET /api/v1/centers/${center.id}/`, () => Response.json(center));
-  await context.user.click(await screen.findByRole("button", { name: "Equipo: role.update" }));
+  await context.user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
   const centers = within(screen.getByRole("group", { name: "Centros" }));
   await centers.findByRole("button", { name: /Quitar referencia: C-A/ });
   await context.user.click(centers.getByRole("textbox"));
@@ -494,7 +507,7 @@ test("a delegated administrator can revoke a checked permission they cannot gran
   const { api, user } = await open("/settings/roles", ME, [
     { ...ROLE, permissions: [...ROLE.permissions, "motorcycle.unblock"] },
   ]);
-  await user.click(await screen.findByRole("button", { name: "Equipo: motorcycle.unblock" }));
+  await user.click(await screen.findByRole("button", { name: /^Equipo: motorcycle.unblock / }));
   const dialog = within(screen.getByRole("dialog"));
   const checkbox = dialog.getByRole<HTMLInputElement>("checkbox", { name: "motorcycle.unblock" });
   expect(checkbox.disabled).toBe(false);
@@ -618,5 +631,139 @@ test.each([
         name: messages["es-MX"][scenario.title],
       }),
     ).toBeNull();
+  },
+);
+
+async function openPendingAdminWrite(kind: "role" | "membership" | "organization") {
+  const setup = await open(kind === "organization" ? "/settings/organization" : "/settings/roles");
+  const member = {
+    id: "focus-member",
+    user: ME.user.id,
+    profiles: [ROLE.id],
+    scope: SCOPE,
+    is_active: true,
+    revision: 6,
+    created_at: "2026-11-01T00:00:00Z",
+    created_by: null,
+  };
+  if (kind === "membership") {
+    setup.api.setRoute("GET /api/v1/memberships/", () => Response.json(page([member])));
+    await setup.user.selectOptions(
+      await screen.findByRole("combobox", { name: "Vista" }),
+      "memberships",
+    );
+    await setup.user.click(await screen.findByRole("button", { name: "Editar alcance" }));
+  } else if (kind === "role")
+    await setup.user.click(await screen.findByRole("button", { name: /^Equipo: role.update / }));
+  else await screen.findByRole("textbox", { name: "Zona horaria" });
+  const write = deferredResponse();
+  const method = kind === "organization" ? "PATCH" : kind === "role" ? "PUT" : "POST";
+  const endpoint =
+    kind === "organization"
+      ? "/api/v1/organization/"
+      : kind === "role"
+        ? `/api/v1/roles/${ROLE.id}/permissions/`
+        : "/api/v1/memberships/focus-member/change-scope/";
+  const reply =
+    kind === "organization"
+      ? { ...ORGANIZATION, revision: 5 }
+      : kind === "role"
+        ? { ...ROLE, revision: 4 }
+        : { ...member, revision: 7 };
+  setup.api.setRoute(`${method} ${endpoint}`, () => write.promise);
+  return { ...setup, write, method, reply };
+}
+
+test.each([
+  { kind: "role", hasPassiveError: false },
+  { kind: "membership", hasPassiveError: false },
+  { kind: "organization", hasPassiveError: false },
+  { kind: "role", hasPassiveError: true },
+] as const)(
+  "a committed $kind write waits for focus verification and a fresh post-write identity (passive error: $hasPassiveError)",
+  async ({ kind, hasPassiveError }) => {
+    const { api, app, user, write, method, reply } = await openPendingAdminWrite(kind);
+    const focus = deferredResponse();
+    const passive = deferredResponse();
+    const fresh = deferredResponse();
+    const replies = [focus.promise, passive.promise, fresh.promise];
+    api.setRoute("GET /api/v1/me/", () => {
+      const next = replies.shift();
+      if (!next) throw new Error("Unexpected identity request");
+      return next;
+    });
+    let markPassiveSettled!: () => void;
+    const passiveSettled = new Promise<void>((resolve) => {
+      markPassiveSettled = resolve;
+    });
+    const original = meQuery.fetchMeCommitted;
+    vi.spyOn(meQuery, "fetchMeCommitted").mockImplementation(async (deps, request) => {
+      try {
+        return await original(deps, request);
+      } finally {
+        if (!request?.token) markPassiveSettled();
+      }
+    });
+    const client = app.router.options.context.client;
+    await user.click(screen.getByRole("button", { name: "Guardar" }));
+    await waitFor(() => {
+      expect(api.requests.some((request) => request.method === method)).toBe(true);
+    });
+    act(() => {
+      window.dispatchEvent(new Event("focus"));
+    });
+    const verifying = reconcileSession(app.queryClient, client, "verify");
+    try {
+      await waitFor(() => {
+        expect(api.requests.filter((request) => request.path === "/api/v1/me/")).toHaveLength(2);
+      });
+      await act(async () => {
+        write.resolve(Response.json(reply));
+        await write.promise;
+      });
+      await waitFor(() => {
+        expect(api.requests.filter((request) => request.path === "/api/v1/me/")).toHaveLength(3);
+      });
+      await act(async () => {
+        passive.resolve(hasPassiveError ? apiError(503, "unavailable") : Response.json(ME));
+        await passiveSettled;
+      });
+      expect(sessionState()).toBe("reconciling");
+      await act(async () => {
+        focus.resolve(Response.json(ME));
+        await verifying;
+      });
+      await waitFor(() => {
+        expect(api.requests.filter((request) => request.path === "/api/v1/me/")).toHaveLength(4);
+      });
+      const updated = { ...ME, organization: { ...ME.organization, name: "Fresh after write" } };
+      await act(async () => {
+        fresh.resolve(Response.json(updated));
+        await fresh.promise;
+      });
+      await waitFor(() => {
+        expect(isSessionKnown()).toBe(true);
+      });
+      await screen.findByText("Cambios guardados");
+      if (kind !== "organization") expect(screen.queryByRole("dialog")).toBeNull();
+      else
+        await waitFor(() => {
+          expect(
+            screen.getByRole("button", { name: "Guardar" }).getAttribute("aria-disabled"),
+          ).toBe("false");
+        });
+      expect(app.queryClient.getQueryData<typeof ME>(ME_QUERY_KEY)?.organization?.name).toBe(
+        "Fresh after write",
+      );
+      expect(api.requests.filter((request) => request.method === method)).toHaveLength(1);
+    } finally {
+      await act(async () => {
+        write.resolve(Response.json(reply));
+        passive.resolve(Response.json(ME));
+        focus.resolve(Response.json(ME));
+        fresh.resolve(Response.json(ME));
+        await verifying;
+      });
+    }
   },
 );

@@ -10,11 +10,15 @@ interface Props {
   codes: string[];
   onClose: () => void;
   onSaved: () => void;
+  returnFocusId?: string | undefined;
 }
-export function ScopeDialog({ target, codes, onClose, onSaved }: Props) {
+export function ScopeDialog({ target, codes, onClose, onSaved, returnFocusId }: Props) {
   const { t } = useTranslation();
   const id = useId();
-  const ref = useModalDialog("input:not(:disabled), select:not(:disabled), button:not(:disabled)");
+  const ref = useModalDialog(
+    "input:not(:disabled), select:not(:disabled), button:not(:disabled)",
+    returnFocusId,
+  );
   const editor = useScopeEditor(target, onSaved);
   return (
     <dialog
