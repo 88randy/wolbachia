@@ -127,4 +127,5 @@ from ovitraps.lifecycle.models import (  # noqa: E402, F401
     RelocationDecision,
     RelocationProposal,
     RemovalAttempt,
+    RemovalResolution,
 )

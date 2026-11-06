@@ -254,6 +254,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, FIELD_BOOTSTRAP, MOTORCYCLE_READ}
     assert by_slug["supervisor"] == {
+        "removal.resolve",
         "schedule.read",
         "schedule.manage",
         "ovitrap.read",
@@ -284,6 +285,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "removal.resolve",
         "schedule.read",
         "schedule.manage",
         "risk_import.apply",
@@ -519,6 +521,8 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
         ("admin", "quadrant.publish"),
         ("coordinator", "sampling_point.create"),
         ("supervisor", "quadrant.read"),
+        ("admin", "removal.resolve"),
+        ("supervisor", "removal.resolve"),
     ],
 )
 def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_existed(
@@ -550,6 +554,8 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
         ("admin", "quadrant.publish"),
         ("coordinator", "sampling_point.create"),
         ("supervisor", "quadrant.read"),
+        ("admin", "removal.resolve"),
+        ("supervisor", "removal.resolve"),
     ],
 )
 def test_a_sync_code_an_admin_revoked_is_not_granted_again(slug: str, code: str) -> None:

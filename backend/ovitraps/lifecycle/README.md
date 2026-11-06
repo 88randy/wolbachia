@@ -30,7 +30,7 @@ Package inside the existing ovitraps app. Read ../README.md, ../../field_sync/RE
   it for abandoned/removed findings; removals/history expose it too. No incident app/FK
   is invented. B-06 can adopt its UUID. Unrecovered removals are exposed by
   has_unresolved_removal(organization, quadrant_id, point=...) for future closure.
-  An explicit physical-recovery resolution writer is outside this issue.
+  #217 adds the explicit recovery resolution writer documented below.
 - Attachments and inventory are absent. Evidence remains opaque, unverified UUID
   strings (at most 100), preserved exactly; no upload status or stock effects are
   invented. Lifecycle capture with no evidence reviews as ovitrap_evidence_required.
@@ -153,3 +153,63 @@ PostgreSQL service/endpoint/barrier tests, unique/deferred constraints, SQL guar
 migration forward/reverse and CI remain unverified. Use the lead's isolated
 Postgres, never host 5432. Evidence IDs remain unverified by explicit lead decision,
 not an attachment/storage guarantee; physical recovery resolution is a follow-up.
+
+## Resolve an unrecovered removal (#217)
+
+RemovalResolution is an insert-only, one-to-one supervisor fact referencing a
+specific RemovalAttempt. It stores outcome=recovered_later|written_off, normalized
+reason, author and server timestamp. Both outcomes require the existing reason
+minimum (default 10 visible characters, maximum 1000); no new catalog or business
+threshold is introduced. Source archived reason choices/labels need not still be
+active: resolution neither reevaluates nor overwrites capture evidence. Original
+recovery_state, incident link, FieldEvent status/clocks/payload and history remain.
+Physical history adds effects.resolution; its recovery_state is still the original.
+
+POST /api/v1/ovitrap-removals/{removal_id}/resolve/ requires removal.resolve and
+{expected_state,outcome,reason}. The explicit expected state can be unrecovered,
+recovered, resolved or voided; only current unrecovered can transition. Foreign or
+ungranted removal IDs are indistinguishable 404 before locks. Any stale expectation,
+already recovered/voided source or existing resolution is 409 removal_state_conflict.
+Success is 201 {id,removal,outcome,reason,created_by,created_at}. No GET/PUT/PATCH/
+DELETE/void action is added for the immutable decision. Existing physical history
+already exposes removal_id and source recovery/void state for the supervisor.
+
+Concurrency rule: scope-check the removal first; source FieldEvent NOWAIT NO KEY
+UPDATE -> Organization NOWAIT NO KEY UPDATE -> fresh membership/paired-scope and
+state checks -> append -> deferred constraint checks -> commit. Generic record.void
+already holds the source FieldEvent before Organization, so no inverse lock is
+introduced. The source arbitrates double/void resolution; Organization serializes
+new removals and configuration. No explicit account locks, courier feed or network
+I/O is needed. Reuse sync's bounded lock timeout; source/organization contention,
+lock waits and deadlocks return 429 removal_in_progress with Retry-After: 1 and
+rollback. Deferred constraints are checked inside that error mapping. One-to-one
+uniqueness and migration 0004's reversible UPDATE/DELETE guard protect the audit;
+there is no data backfill or new app/dependency.
+
+A resolution is retained as an OP16 dependent: later record.void of its removal
+returns existing ovitrap_void_blocked with its safe resolution ID. A void that wins
+first instead makes resolution stale. No compensation or history deletion is
+invented. has_unresolved_removal excludes only resolved removal rows; a later
+unrecovered physical identity at the same point remains a blocker. The selector
+has NO implemented quadrant-closure caller in this baseline; actual closure and
+incidents remain separate B-33/#104 work. No sync producer/event contract changes.
+
+Seeded admin/supervisor get removal.resolve once through the established seed;
+custom profiles, revoked grants and existing tenants stay unchanged until an
+explicit seed_organization_defaults --apply. Migration 0004 is schema/guards only.
+
+Tests live in tests/test_removal_resolution_217.py; existing seed-profile coverage
+is updated in place. PostgreSQL cases are collected locally and run in real CI;
+collection does not verify transactions, constraints or migrations.
+
+| Criterion / invariant | Test (test_ prefix omitted) |
+| --- | --- |
+| Both outcomes clear selector blocker, original source/evidence preserved, explicit author and history audit, endpoint 201 | resolve_clears_only_the_removal_blocker_and_preserves_audited_source (two outcomes) |
+| Another unrecovered physical identity remains a blocker | another_physical_removal_at_same_point_remains_a_blocker |
+| Stale expectation, double, voided and recovered reject with 409/no new fact | stale_or_ineligible_removal_returns_409_without_another_resolution (four states) |
+| Org + both scope dimensions + paired grants + default deny before locking/validation | resolution_endpoint_default_denies_and_hides_foreign_scope (five restrictions) |
+| Archived source reason is retained; resolved source cannot be voided | resolution_retains_archived_reason_and_blocks_void_as_a_dependent |
+| Raw SQL cannot update/delete audit facts | database_guard_preserves_resolution_audit (two statements) |
+| Deferred-check contention rolls back the inserted resolution and maps retry | deferred_constraint_contention_rolls_back_resolution_and_maps_retry |
+| Actual source/organization arbitration against double resolution, void and new removal | resolution_serializes_with_double_resolution_void_and_new_removal (three cases, two connections and Event barrier; bounded lock timeout is the behavior under test) |
+| Existing reason-normalizer wiring and concrete expected-state/audit schema | resolution_requires_an_auditable_visible_normalized_reason; resolution_openapi_exposes_expected_state_and_immutable_audit (DB-free; core owns the normalizer's individual cases) |

@@ -2660,6 +2660,56 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/ovitrap-removals/{id}/resolve/:
+    post:
+      operationId: ovitrap_removals_resolve_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this removal attempt.
+        required: true
+      tags:
+      - ovitrap-removals
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RemovalResolutionRequestRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RemovalResolution'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/ovitraps/:
     get:
       operationId: ovitraps_list
@@ -5897,6 +5947,18 @@ components:
       - id
       - point
       - point_version
+    ExpectedStateEnum:
+      enum:
+      - unrecovered
+      - recovered
+      - resolved
+      - voided
+      type: string
+      description: |-
+        * `unrecovered` - unrecovered
+        * `recovered` - recovered
+        * `resolved` - resolved
+        * `voided` - voided
     FuelLoad:
       type: object
       description: |-
@@ -6937,6 +6999,14 @@ components:
       - slug
       - support_contact
       - timezone
+    OutcomeEnum:
+      enum:
+      - recovered_later
+      - written_off
+      type: string
+      description: |-
+        * `recovered_later` - recovered_later
+        * `written_off` - written_off
     Ovitrap:
       type: object
       description: |-
@@ -8770,6 +8840,62 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    RemovalResolution:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        removal:
+          type: string
+          format: uuid
+          readOnly: true
+        outcome:
+          allOf:
+          - $ref: '#/components/schemas/OutcomeEnum'
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - id
+      - outcome
+      - reason
+      - removal
+    RemovalResolutionRequestRequest:
+      type: object
+      properties:
+        expected_state:
+          $ref: '#/components/schemas/ExpectedStateEnum'
+        outcome:
+          $ref: '#/components/schemas/OutcomeEnum'
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - expected_state
+      - outcome
+      - reason
     ResourceTypeEnum:
       enum:
       - quadrant

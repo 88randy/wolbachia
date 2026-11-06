@@ -1039,6 +1039,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ovitrap-removals/{id}/resolve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["ovitrap_removals_resolve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/ovitraps/": {
         parameters: {
             query?: never;
@@ -2203,6 +2229,14 @@ export interface components {
             readonly created_at: string;
         };
         /**
+         * @description * `unrecovered` - unrecovered
+         *     * `recovered` - recovered
+         *     * `resolved` - resolved
+         *     * `voided` - voided
+         * @enum {string}
+         */
+        ExpectedStateEnum: "unrecovered" | "recovered" | "resolved" | "voided";
+        /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
          *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
@@ -2614,6 +2648,12 @@ export interface components {
             readonly logo_url: string | null;
             revision: number;
         };
+        /**
+         * @description * `recovered_later` - recovered_later
+         *     * `written_off` - written_off
+         * @enum {string}
+         */
+        OutcomeEnum: "recovered_later" | "written_off";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3476,6 +3516,31 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        RemovalResolution: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly removal: string;
+            readonly outcome: components["schemas"]["OutcomeEnum"];
+            readonly reason: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        RemovalResolutionRequestRequest: {
+            expected_state: components["schemas"]["ExpectedStateEnum"];
+            outcome: components["schemas"]["OutcomeEnum"];
+            reason: string;
         };
         /**
          * @description * `quadrant` - quadrant
@@ -6125,6 +6190,44 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["OrganizationSettings"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    ovitrap_removals_resolve_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this removal attempt. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RemovalResolutionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RemovalResolution"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

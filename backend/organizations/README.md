@@ -275,3 +275,8 @@ come from one SQL snapshot; this path performs no further profile queries.
 Supplying profiles preserves the same scope intersection and government clamp,
 and still rejects inactive/foreign profiles. Ordinary callers retain their existing
 profile-loading path. No new Organization lock is acquired below a courier lock.
+
+#217 adds removal.resolve to seeded admin/supervisor through the existing once-only
+permission seed. Existing organizations opt in with seed_organization_defaults --apply;
+custom profiles and later revocations remain unchanged. The resolution migration
+adds no tenant data or automatic permission backfill.
