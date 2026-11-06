@@ -9,9 +9,9 @@ export interface AssignedTask {
   readonly date: string;
   readonly risk: "high" | "normal";
   readonly version: string;
-  /** [ASSUMPTION] Optional enrichment from the future sampling-point projection (#196). */
   readonly block_code?: string;
   readonly quadrant_id: string;
+  /** Coordinates are joined from the current authorized sampling-point projection (#196/#221). */
   readonly lat?: number;
   readonly lng?: number;
   readonly reference?: string;

@@ -83,11 +83,15 @@ export class DayBundleService {
   async #refresh(force: boolean): Promise<void> {
     const write = this.captureProjectionWriter();
     const cached = await this.read();
-    const answer = await this.#deps.transport(force ? null : (cached.meta?.bundle_version ?? null));
+    const requiresBody = force || (await this.#deps.store.needsSamplingPointBootstrap());
+    const answer = await this.#deps.transport(
+      requiresBody ? null : (cached.meta?.bundle_version ?? null),
+    );
     if (answer.kind === "revoked") return this.clearSessionData();
     if (answer.kind === "unchanged") {
       return write(() => {
-        if (force || cached.meta === null) throw new Error("Bootstrap recovery requires a body.");
+        if (requiresBody || cached.meta === null)
+          throw new Error("Bootstrap recovery requires a body.");
         return Promise.resolve();
       });
     }

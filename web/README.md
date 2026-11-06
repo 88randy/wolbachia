@@ -165,7 +165,7 @@ Screenshots of the shell (light, dark, es-MX, en, collapsed, offline) and of the
 
 ### Stack
 
-Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md). **Installed so far:** React 19, Vite 8, TanStack Router, TanStack Query, React Hook Form, i18next + react-i18next, Zod, Lucide icons, Inter (self-hosted with `@fontsource/inter`, no CDN: privacy, CSP and a working app without internet), Vitest + Testing Library + jest-axe, Playwright + `@axe-core/playwright`. TanStack Query 5.105.3, React Hook Form 7.91.0 and `@hookform/resolvers` 7.0.2 (all MIT) came with #28; TanStack Table 9.3.1 (MIT, `@tanstack/react-table` plus `@tanstack/table-core`; `@tanstack/react-store` was already installed by the router) came with #29; Recharts and MapLibre are added by the issues that first use them. TypeScript is the root version (6.0.3).
+Decided in spike #27, see [`docs/adr/0001-web-stack.md`](../docs/adr/0001-web-stack.md). **Installed so far:** React 19, Vite 8, TanStack Router, TanStack Query, React Hook Form, i18next + react-i18next, Zod, Lucide icons, Inter (self-hosted with `@fontsource/inter`, no CDN: privacy, CSP and a working app without internet), Vitest + Testing Library + jest-axe, Playwright + `@axe-core/playwright`. TanStack Query 5.105.3, React Hook Form 7.91.0 and `@hookform/resolvers` 7.0.2 (all MIT) came with #28; TanStack Table 9.3.1 (MIT, `@tanstack/react-table` plus `@tanstack/table-core`; `@tanstack/react-store` was already installed by the router) came with #29. Geography uses MapLibre GL JS 6.4.1 (BSD-3-Clause) and react-map-gl 8.1.3 (MIT); the #225 security/major-version rationale and verification limits live in [`src/quadrants/README.md`](src/quadrants/README.md#maplibre-6-compatibility-and-attribution-security-225). TypeScript is the root version (6.0.3).
 
 ### Build and deploy
 
@@ -212,8 +212,8 @@ history dialog uses history_page without changing the background list page.
 
 ### Lazy map dependencies and provenance
 
-Exact runtime pins: react-map-gl **8.0.4** (published 2025-04-16) and maplibre-gl
-**5.6.2** (published 2025-08-06), verified with npm registry metadata on 2026-11-05;
+Exact runtime pins: react-map-gl **8.1.3** (published 2026-09-02) and maplibre-gl
+**6.4.1** (published 2026-08-18), verified with npm registry metadata on 2026-11-06;
 both exceed the two-week age requirement. react-map-gl is the vis.gl maintained
 React binding; MapLibre GL JS is the MapLibre maintained renderer (MIT and BSD-3-Clause,
 respectively). These implement accepted decision 23, instead of a new map stack or
@@ -221,8 +221,11 @@ hand-written WebGL renderer. Only react-map-gl/maplibre is imported, inside the
 lazy map module; no Mapbox renderer/token is used. The coordinate/list path has
 no renderer dependency. References: [react-map-gl installation](https://visgl.github.io/react-map-gl/docs/get-started),
 [MapLibre API](https://maplibre.org/maplibre-gl-js/docs/API/classes/Map/),
-[npm react-map-gl](https://www.npmjs.com/package/react-map-gl/v/8.0.4),
-[npm maplibre-gl](https://www.npmjs.com/package/maplibre-gl/v/5.6.2).
+[npm react-map-gl](https://www.npmjs.com/package/react-map-gl/v/8.1.3),
+[npm maplibre-gl](https://www.npmjs.com/package/maplibre-gl/v/6.4.1).
+The #225 upgrade keeps the same renderer/binding and uses the upstream adapter's
+v6 support. Its ESM worker, WebGL2 requirement and attribution/security boundaries
+are documented in the [quadrants README](src/quadrants/README.md#maplibre-6-compatibility-and-attribution-security-225).
 
 ### Tiles, attribution and production migration
 
