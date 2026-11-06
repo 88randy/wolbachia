@@ -728,7 +728,7 @@ No npm ci/install, Docker, Playwright or Expo build was run for this review.
 ## M-09: replace, relocate, remove (#138)
 
 P15-P17 are entered from the selected point/physical ovitrap in M-08 and implemented
-in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). ADR 124 records the
+in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). ADR 125 records the
 owner-supplied decisions. Service/store/ports and `use-m-09` reuse the existing
 M-02 outbox and M-08 GPS/evidence/shift authorization patterns. Migration 9 follows
 master migrations 7–8; it retains immutable captures, reserved replacement UUIDs, evidence,
@@ -801,7 +801,7 @@ focus return, contrast in sunlight or assistive-technology behavior.
 ### M-09 master integration
 
 Lifecycle migrations are 9–11 after master's released M-06 migrations 7–8; the
-accepted M-09 decision is ADR 124. `DayStore` applies lifecycle bootstrap and delta
+accepted M-09 decision is ADR 125. `DayStore` applies lifecycle bootstrap and delta
 sections through the existing `DayBundleService` projection gate and transaction.
 Revocation rejects stale writers and removes downloaded physical/point projections
 plus M-08 assignment authorization, while retaining drafts, events and evidence.
@@ -814,7 +814,7 @@ force-stop, native SQLCipher/upload, TalkBack, light/dark layout or 130% text on
 MO01 device profiles. B-33's real decision/task producer remains unavailable.
 
 
-M-09 scope/reactivation hardening (ADR 125, migration 11): bootstrap atomically
+M-09 scope/reactivation hardening (ADR 126, migration 11): bootstrap atomically
 narrows current capture authorization while retaining each draft's historical copy.
 SQLite insertion guards protect M-08/M-09 saves and lifecycle corrections against
 revocation after preflight. A durable receipt ledger retains acknowledged local

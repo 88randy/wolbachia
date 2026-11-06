@@ -11,7 +11,7 @@ Implementation plan (owner-supplied issue and accepted lead decisions):
    SQL guards arbitrate other service instances. Native continuations revalidate.
 4. Add P15-P17 hooks/screens, point-context routes, accessible bottom-sheet confirmation,
    reversible photo Undo, shared tokens and es-MX/en messages.
-5. Document ADR 124, design differences, acceptance map and verification limits; run
+5. Document ADR 125, design differences, acceptance map and verification limits; run
    root lint/typecheck/format and the configured mobile suite. No commit/push/Docker.
 
 No new queue, transport, dependency or invented B-33 wire contract.
@@ -191,7 +191,7 @@ verification remain outside this local run. No commit or push was performed.
 ## Integration with current master
 
 Master's released migrations 7–8 remain unchanged and ordered before lifecycle
-migrations 9–11. ADR 124 is the next free decision after master's ADR 123.
+migrations 9–11. ADR 125 follows master's ADR 124; scope/reconciliation is ADR 126.
 The schema-8 upgrade regression keeps M-06 retained assignments, original outbox
 UUIDs and the existing INSERT enrollment trigger working after the upgrade.
 
@@ -211,7 +211,7 @@ matrix remain UNVERIFIED. B-33 decision/task ingestion remains a typed local sea
 there is no merged decision producer to certify its real-API journey.
 
 
-## Scope authority and acknowledged-effect reconciliation (ADR 125)
+## Scope authority and acknowledged-effect reconciliation (ADR 126)
 
 Migration 11 makes current scope an insertion invariant for M-08 captures, M-09
 captures and lifecycle voids. The only current capture authorization is the live
