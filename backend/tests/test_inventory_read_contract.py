@@ -228,6 +228,7 @@ def test_owner_final_query_rechecks_current_revocations_and_omits_new_raw_scopes
 def movement_request(context, values):
     raw = APIRequestFactory().get("/", values)
     request = Request(raw)
+    request.auth = None
     request.user = context.actor.user
     request.organization = context.actor.organization
     return request
