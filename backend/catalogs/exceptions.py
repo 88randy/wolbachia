@@ -26,4 +26,4 @@ class ProtectedOtherItemError(OtherItemLockedError):
 class CatalogVersionConflictError(DomainError):
     code = "catalog_version_conflict"
     status_code = HTTPStatus.CONFLICT
-    default_detail = "The catalog changed since this reorder was planned."
+    default_detail = "The catalog changed since this action was planned."

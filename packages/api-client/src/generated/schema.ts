@@ -3112,6 +3112,9 @@ export interface components {
             readonly is_open: boolean;
             readonly version: number;
         };
+        CatalogAvailabilityRequest: {
+            version?: number;
+        };
         /** @description Read shape of an item. `is_active` and `is_other` change only through their own rules. */
         CatalogItem: {
             readonly protected: boolean;
@@ -7483,7 +7486,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CatalogAvailabilityRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {
@@ -7518,7 +7525,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["CatalogAvailabilityRequest"];
+            };
+        };
         responses: {
             200: {
                 headers: {

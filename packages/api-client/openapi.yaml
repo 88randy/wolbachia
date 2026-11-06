@@ -933,6 +933,11 @@ paths:
         required: true
       tags:
       - catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogAvailabilityRequest'
       security:
       - cookieAuth: []
       - bearerAuth: []
@@ -976,6 +981,11 @@ paths:
         required: true
       tags:
       - catalogs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CatalogAvailabilityRequest'
       security:
       - cookieAuth: []
       - bearerAuth: []
@@ -8306,6 +8316,12 @@ components:
       - label_es
       - slug
       - version
+    CatalogAvailabilityRequest:
+      type: object
+      properties:
+        version:
+          type: integer
+          minimum: 0
     CatalogItem:
       type: object
       description: Read shape of an item. `is_active` and `is_other` change only through
