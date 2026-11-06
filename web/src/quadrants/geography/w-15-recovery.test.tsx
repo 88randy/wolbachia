@@ -4,8 +4,13 @@ import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Schemas } from "@wolbachia/api-client";
 import type { RecordedRequest } from "../../test/fake-api";
 import { geographyContext } from "./permissions";
-import { controlledRead, currentRead, consumeRead, queryFor } from "./geography-read-test-helpers";
-import type { ControlledRead, ReadKind } from "./geography-read-test-helpers";
+import {
+  controlledRead,
+  currentRead,
+  consumeRead,
+  queryFor,
+} from "../../test/geography-read-test-helpers";
+import type { ControlledRead, ReadKind } from "../../test/geography-read-test-helpers";
 import { apiError } from "../../test/fake-api";
 import {
   ALLOWED,

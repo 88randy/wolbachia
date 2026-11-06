@@ -6,8 +6,13 @@ import type { RecordedRequest } from "../../test/fake-api";
 import { fakePassword } from "../../test/fake-credentials";
 import { currentRevision } from "../../session/session-revision";
 import { geographyContext } from "./permissions";
-import { controlledRead, currentRead, queryFor, consumeRead } from "./geography-read-test-helpers";
-import type { ControlledRead, ReadKind } from "./geography-read-test-helpers";
+import {
+  controlledRead,
+  currentRead,
+  queryFor,
+  consumeRead,
+} from "../../test/geography-read-test-helpers";
+import type { ControlledRead, ReadKind } from "../../test/geography-read-test-helpers";
 import {
   ALLOWED,
   QUADRANT_ID,

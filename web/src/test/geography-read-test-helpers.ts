@@ -1,9 +1,16 @@
 import { act, waitFor } from "@testing-library/react";
 import { expect } from "vitest";
 import type { Query, QueryClient } from "@tanstack/react-query";
-import type { RecordedRequest } from "../../test/fake-api";
-import { currentRevision } from "../../session/session-revision";
-import { ALLOWED, QUADRANT_ID, pageOf, point, quadrant, version } from "./geography-test-helpers";
+import type { RecordedRequest } from "./fake-api";
+import { currentRevision } from "../session/session-revision";
+import {
+  ALLOWED,
+  QUADRANT_ID,
+  pageOf,
+  point,
+  quadrant,
+  version,
+} from "../quadrants/geography/geography-test-helpers";
 
 function barrier() {
   let release!: () => void;

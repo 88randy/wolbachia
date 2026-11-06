@@ -4,8 +4,13 @@ import { describe, expect, test, vi } from "vitest";
 import type { QueryClient } from "@tanstack/react-query";
 import type { RecordedRequest } from "../../test/fake-api";
 import { geographyContext } from "./permissions";
-import { controlledRead, currentRead, queryFor, consumeRead } from "./geography-read-test-helpers";
-import type { ControlledRead, ReadKind } from "./geography-read-test-helpers";
+import {
+  controlledRead,
+  currentRead,
+  queryFor,
+  consumeRead,
+} from "../../test/geography-read-test-helpers";
+import type { ControlledRead, ReadKind } from "../../test/geography-read-test-helpers";
 import { makeVoidReasonItems } from "../../test/fake-api";
 import {
   ALLOWED,

@@ -152,7 +152,7 @@ or the Linux runtime image; the corrected smoke still must pass those CI jobs.
 
 A completed `/me/` refetch identifies the session; it does not imply that the
 current scope's resource body has been accepted or its editor has rendered.
-`geography-read-test-helpers.ts` shares the existing reauthentication controls
+`web/src/test/geography-read-test-helpers.ts` shares the existing reauthentication controls
 with retention coverage. Each held response belongs to one actual request,
 context and epoch, and separates delivery/body consumption. Only one unconsumed,
 non-aborted current request and one matching current-revision query qualify.
