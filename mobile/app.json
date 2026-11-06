@@ -24,6 +24,7 @@
       ]
     },
     "plugins": [
+      "./plugins/with-secure-store-commit",
       "./plugins/with-debug-lan-cleartext",
       "@maplibre/maplibre-react-native",
       "expo-location",

@@ -106,7 +106,8 @@ jobs:
         env:
           CI: "1"
         run: |
-          [ -d android ] || npm run prebuild
+          npm run prebuild
+          node native/secure-store/patch.cjs verify
           # React Native skips bundling the JavaScript in debug builds and expects Metro. Phones in the
           # field tests are offline, so the debug APK must carry its own bundle: no debuggable variants.
           sed -i 's|^\s*// debuggableVariants = .*|    debuggableVariants = []|' android/app/build.gradle
@@ -128,6 +129,19 @@ jobs:
         with:
           # Open-source GitHub Actions cache; the default "enhanced" provider is a commercial service.
           cache-provider: basic
+      - name: Verify failed SecureStore commits through the native setter
+        working-directory: ${{ env.APP_DIR }}/android
+        run: |
+          chmod +x gradlew
+          node ../native/secure-store/ci-proof.cjs
+      - name: Upload native SecureStore regression evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: secure-store-commit-${{ env.HEAD_SHA }}
+          path: build/secure-store-commit/
+          retention-days: 14
+          if-no-files-found: error
       - name: Build debug APK
         working-directory: ${{ env.APP_DIR }}/android
         run: |
@@ -140,6 +154,16 @@ jobs:
           APK=$(ls ./*.apk)
           # The JavaScript bundle must be inside the APK (no Metro on the phone).
           unzip -l "$APK" | grep -q 'assets/index.android.bundle'
+          # Verify the built APK contains the patched native rejection, not Expo's precompiled AAR.
+          python - "$APK" <<'PY'
+          import sys
+          import zipfile
+          marker = b"Could not save the encrypted item to disk. The device may be out of storage or the app data directory may not be writable"
+          with zipfile.ZipFile(sys.argv[1]) as apk:
+              dex = [name for name in apk.namelist() if name.startswith("classes") and name.endswith(".dex")]
+              if not any(marker in apk.read(name) for name in dex):
+                  raise SystemExit("The APK is missing the patched SecureStore rejection")
+          PY
           ls -l "$APK"
           echo "path=$PWD/$(basename "$APK")" >> "$GITHUB_OUTPUT"
           echo "short_sha=${HEAD_SHA::7}" >> "$GITHUB_OUTPUT"
