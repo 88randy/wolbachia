@@ -26,7 +26,13 @@ def setup_field():
     profile = ProfileFactory(
         organization=organization,
         scope=all_scope(),
-        permission_codes=["field_event.sync", "ovitrap.read", "reading.read", "catalog.read"],
+        permission_codes=[
+            "field_event.sync",
+            "field.upload",
+            "ovitrap.read",
+            "reading.read",
+            "catalog.read",
+        ],
     )
     membership.profiles.add(profile)
     center = Center.objects.create(organization=organization, code="C-111", name="Test center")

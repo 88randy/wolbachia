@@ -213,3 +213,14 @@ collection does not verify transactions, constraints or migrations.
 | Deferred-check contention rolls back the inserted resolution and maps retry | deferred_constraint_contention_rolls_back_resolution_and_maps_retry |
 | Actual source/organization arbitration against double resolution, void and new removal | resolution_serializes_with_double_resolution_void_and_new_removal (three cases, two connections and Event barrier; bounded lock timeout is the behavior under test) |
 | Existing reason-normalizer wiring and concrete expected-state/audit schema | resolution_requires_an_auditable_visible_normalized_reason; resolution_openapi_exposes_expected_state_and_immutable_audit (DB-free; core owns the normalizer's individual cases) |
+
+## Verified capture evidence (#102)
+
+Replace/relocate/remove require UploadVerification owned by the capturing user/device
+and unbound or bound to that exact event UUID. Sorted Upload NOWAIT locks follow
+existing lifecycle locks and precede effects/feed; no file/network I/O runs here.
+Pending or other-source evidence uses existing ovitrap_evidence_required review.
+Post-_store binds evidence independently of effects. Late finalize preserves the
+original verdict; #113 owns acceptance. RemovalResolution's source FieldEvent →
+Organization rule is unchanged. Existing B-15/#217 tests now provide verified facts;
+their resolution races/OP16 blocker stay meaningful. See ../../uploads/README.md.

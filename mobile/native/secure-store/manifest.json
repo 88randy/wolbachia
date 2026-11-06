@@ -24,7 +24,7 @@
       "target": "android/src/test/java/expo/modules/securestore/SecureStoreCommitIntegrationTest.kt",
       "payload": "SecureStoreCommitIntegrationTest.kt",
       "original": null,
-      "patched": "b35ceb6c7d131597e826fb4a585d932eddc5cef35426970de5e9e2c5fe83ffdd"
+      "patched": "393bfdfb7c996e60e43c68b374df641a8b44d8c34ca603b17ac5994095a75aea"
     },
     {
       "target": "android/src/test/resources/robolectric.properties",

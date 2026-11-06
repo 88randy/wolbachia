@@ -72,6 +72,10 @@ read-only, restore permission in `finally`, and assert disk bytes, decrypted pri
 value, rejection and retry. Null/delete paths affected by the backport are also
 checked. No skipped case counts as passing evidence.
 
+The test provider uses Android's numeric-version
+[Provider constructor](https://developer.android.com/reference/java/security/Provider).
+The host JDK's string-version overload is unavailable in the Android compile API.
+
 `ci-proof.cjs` refuses to run outside `debug-apk` CI. Its negative control restores
 only the original module source and runs the real-setter regression. RED is valid
 only when exactly that test fails with JUnit's missing-WriteException assertion;

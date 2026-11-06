@@ -2,6 +2,16 @@
 
 One English name per domain term across backend, mobile and web. Spanish appears only in user-facing text (`packages/i18n`) and when talking with the client. Code, API routes, DB fields, events and logs use the **English name** below.
 
+## Private evidence (#102)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| carga de evidencia | evidence upload | Upload, upload_id | Private tenant-scoped identity; optional client_id preserves offline UUID. |
+| autorización temporal de carga | upload lease | UploadLease, Upload-Lease | Append-only 15-minute authenticated PUT authorization. |
+| recibo de bytes originales | upload source | UploadSource, sha256 | Immutable private original object; never served. |
+| verificación de evidencia | upload verification | UploadVerification, verified_at | Sanitized image plus its separate SHA-256; no parent authority implied. |
+| vínculo de evidencia | attachment link | AttachmentLink, context | One immutable authorized source/fault binding per upload. |
+
 Rules:
 
 - Add a row here **before** introducing a new domain term in code. If a term is missing, open an issue or add it in the PR that needs it, and flag it for review.

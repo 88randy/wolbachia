@@ -144,7 +144,7 @@ private class SecureStoreFixture {
 /** Test-only provider: no device keystore, credentials or native/React runtime initialization. */
 private class TestKeyStore : KeyStore(
   TestKeyStoreSpi(),
-  object : Provider("WolbachiaTest", "1.0", "Ephemeral test AES key") {},
+  object : Provider("WolbachiaTest", 1.0, "Ephemeral test AES key") {},
   "WolbachiaTest"
 ) {
   init { load(null, null) }
