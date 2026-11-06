@@ -19,13 +19,13 @@ interface SnapshotOptions extends ParameterResult {
   isBlocked: boolean;
 }
 const HTTP_UNAUTHORIZED = 401;
-const HTTP_SERVER_ERROR = 500;
+/** Answers that mean the user may no longer see this parameter: the draft is discarded. */
+const HTTP_ACCESS_LOST: readonly number[] = [403, 404];
+/** Transient failures (network, 429, 5xx, other 4xx) keep the draft; access loss drops it. */
 function canRetainParameter(error: Error | null, isBlocked: boolean): boolean {
-  return (
-    !(error instanceof ApiError) ||
-    error.status >= HTTP_SERVER_ERROR ||
-    (isBlocked && error.status === HTTP_UNAUTHORIZED)
-  );
+  if (!(error instanceof ApiError)) return true;
+  if (error.status === HTTP_UNAUTHORIZED) return isBlocked;
+  return !HTTP_ACCESS_LOST.includes(error.status);
 }
 function nextSnapshot(
   options: SnapshotOptions,

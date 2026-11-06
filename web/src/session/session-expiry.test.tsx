@@ -213,7 +213,7 @@ describe("session expiry: re-authentication over the current page", () => {
     expect(draft.value).toBe("borrador sin guardar");
     expect(document.activeElement).toBe(draft);
   });
-  test.each(["server", "network"] as const)(
+  test.each(["server", "network", "throttled"] as const)(
     "a %s failure after reauthentication keeps the draft through Retry",
     async (failure) => {
       const { app, api } = await openParameterPage({
@@ -225,6 +225,7 @@ describe("session expiry: re-authentication over the current page", () => {
       await userEvent.type(draft, "borrador sin guardar");
       api.setRoute(PARAMETER_ROUTE, () => {
         if (failure === "network") throw new TypeError("Failed to fetch");
+        if (failure === "throttled") return apiError(429, "throttled");
         return apiError(500, "server_error");
       });
       await failMutation(app, new ApiError(401));
