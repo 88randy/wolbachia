@@ -20,6 +20,11 @@ import {
 import type { Page } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 const small = { width: 320, height: 700 };
+async function attachInventoryScreenshot(page: Page, name: string, fullPage = false) {
+  const path = test.info().outputPath(name + ".png");
+  await page.screenshot({ path, fullPage });
+  await test.info().attach(name, { path, contentType: "image/png" });
+}
 async function increaseText(page: Page) {
   await page.evaluate(() => {
     const root = document.documentElement;
@@ -210,14 +215,12 @@ for (const language of LANGUAGES) {
           dialogOpacity: getComputedStyle(dialog).opacity,
         };
       });
-      const colorsPath = `../backend/.pytest_cache/151-${language}-${theme}-focus.json`;
+      const colorsPath = test.info().outputPath(`151-${language}-${theme}-focus.json`);
       await writeFile(colorsPath, JSON.stringify(focusColors));
       await test
         .info()
         .attach("focused-field-colors", { path: colorsPath, contentType: "application/json" });
-      await page.screenshot({
-        path: `../backend/.pytest_cache/151-${language}-${theme}-focus.png`,
-      });
+      await attachInventoryScreenshot(page, `151-${language}-${theme}-focus`);
       await expectNoHorizontalScroll(page);
       await expectNoAxeViolations(page);
       await page.keyboard.press("Tab");
@@ -246,17 +249,11 @@ for (const language of LANGUAGES) {
         await expectNoAxeViolations(page);
         if (path === "/inventory/lots/LOT-01") await expectAdoptionKeyboard(page, language);
       }
-      await page.screenshot({
-        path: `../backend/.pytest_cache/151-${language}-${theme}-320.png`,
-        fullPage: true,
-      });
+      await attachInventoryScreenshot(page, `151-${language}-${theme}-320`, true);
       for (const width of [1280, 1440]) {
         await page.setViewportSize({ width, height: 800 });
         await expectNoHorizontalScroll(page);
-        await page.screenshot({
-          path: `../backend/.pytest_cache/151-${language}-${theme}-${String(width)}.png`,
-          fullPage: true,
-        });
+        await attachInventoryScreenshot(page, `151-${language}-${theme}-${String(width)}`, true);
       }
       const mapMarker = page.getByRole("link", { name: "Synthetic store", exact: false });
       const otherMarker = page.getByRole("link", { name: "Other store", exact: false });
@@ -266,14 +263,13 @@ for (const language of LANGUAGES) {
         await expectContainedMarker(page);
         await mapMarker.focus();
         await expect(mapMarker).toBeFocused();
-        await page.screenshot({
-          path: `../backend/.pytest_cache/151-${language}-${theme}-${String(width)}-map-first.png`,
-        });
+        await attachInventoryScreenshot(
+          page,
+          `151-${language}-${theme}-${String(width)}-map-first`,
+        );
         await page.keyboard.press("Tab");
         await expect(otherMarker).toBeFocused();
-        await page.screenshot({
-          path: `../backend/.pytest_cache/151-${language}-${theme}-${String(width)}-map.png`,
-        });
+        await attachInventoryScreenshot(page, `151-${language}-${theme}-${String(width)}-map`);
         await page.keyboard.press("Shift+Tab");
         await expect(mapMarker).toBeFocused();
       }
