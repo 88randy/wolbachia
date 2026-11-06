@@ -13,9 +13,15 @@ from shifts.services import (
     void_motorcycle,
 )
 from tests.factories import MotorcycleFactory, ShiftFactory, UserFactory
+from tests.fleet_support import grant_fleet_scope
 from tests.sync_support import run_in_threads
 
 pytestmark = [pytest.mark.django_db, pytest.mark.usefixtures("void_catalog")]
+
+
+@pytest.fixture
+def make_member(make_member):
+    return lambda *args, **kwargs: grant_fleet_scope(make_member(*args, **kwargs))
 
 
 def test_voided_motorcycle_codes_stay_reserved_against_reuse(org_a):
