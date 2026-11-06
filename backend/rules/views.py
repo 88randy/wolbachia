@@ -9,7 +9,9 @@ from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from core.filters import CodeLookupFilter
 from core.snapshots import IF_NONE_MATCH_PARAMETER, snapshot_response
+from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.views import OrgScopedViewSetMixin
 from core.void_reason import VoidSerializer
 from rules.models import RuleParameter, RuleParameterVersion
@@ -21,6 +23,7 @@ from rules.permissions import (
 )
 from rules.selectors import build_rules_snapshot, list_parameters_with_current, list_versions
 from rules.serializers import (
+    ParameterFilterSerializer,
     RuleParameterSerializer,
     RuleParameterVersionCreateSerializer,
     RuleParameterVersionSerializer,
@@ -45,13 +48,27 @@ class RuleParameterViewSet(
     lookup_field = "key"
     lookup_value_regex = KEY_REGEX
     required_permissions = {"list": RULE_PARAMETER_READ, "retrieve": RULE_PARAMETER_READ}
+    filter_backends = [CodeLookupFilter, TableSearchFilter, TableOrderingFilter]
+    search_fields = ["key"]
+    ordering_fields = ["key", "unit", "value_type", "effective_from"]
+    ordering_aliases = {"effective_from": "current_effective_from"}
+    ordering = ["key"]
 
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return RuleParameter.objects.none()
         # Organization isolation: the selector filters by organization (it does not go through
         # the mixin's `for_org`), so any queryset built here must keep doing so.
-        return list_parameters_with_current(self.request.organization, timezone.now())  # type: ignore[attr-defined]
+        queryset = list_parameters_with_current(self.request.organization, timezone.now())  # type: ignore[attr-defined]
+        if self.action == "list":
+            query = ParameterFilterSerializer(data=self.request.query_params)
+            query.is_valid(raise_exception=True)
+            queryset = queryset.filter(**query.validated_data)
+        return queryset
+
+    @extend_schema(parameters=[ParameterFilterSerializer])
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
 
 class RulesSnapshotViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
@@ -86,6 +103,10 @@ class RuleParameterVersionViewSet(
 
     queryset = RuleParameterVersion.objects.all()
     serializer_class = RuleParameterVersionSerializer
+    filter_backends = [CodeLookupFilter, TableSearchFilter, TableOrderingFilter]
+    search_fields = ["reason"]
+    ordering_fields = ["effective_from", "created_at", "value"]
+    ordering = ["-effective_from", "-created_at"]
     http_method_names = ["get", "post", "head", "options"]
     required_permissions = {
         "list": RULE_PARAMETER_VERSION_READ,
@@ -109,7 +130,12 @@ class RuleParameterVersionViewSet(
             query = VersionFilterSerializer(data=self.request.query_params.dict())
             query.is_valid(raise_exception=True)
             include_voided = query.validated_data["include_voided"] == "true"
-        return list_versions(self.get_parameter(), timezone.now(), include_voided=include_voided)
+        queryset = list_versions(
+            self.get_parameter(), timezone.now(), include_voided=include_voided
+        )
+        if self.action == "list" and (version_status := query.validated_data.get("status")):
+            queryset = queryset.filter(**{"status": version_status})
+        return queryset
 
     def get_serializer_class(self) -> type[serializers.BaseSerializer[Any]]:
         if self.action == "create":

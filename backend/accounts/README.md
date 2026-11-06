@@ -2,6 +2,19 @@
 
 Users and authentication (issue #4): login, token pairs, device sessions, revocation, password reset. Read [`../README.md`](../README.md#authentication-4) and the rows "Auth endpoints", "Tokens", "Devices and revocation" of [`docs/api-conventions.md`](../../docs/api-conventions.md) first.
 
+## Device table queries (#224)
+
+`GET /devices/` searches label, serial, app_version and last_user.username;
+username matching requires a membership in the device's organization (including
+historical/inactive membership). The selector annotates this restricted search
+source without expanding the device queryset. Sorting supports label, serial,
+app_version, last_seen_at and created_at, with an ascending id tie-breaker before
+pagination. Existing is_revoked/user filters and -created_at,id default remain;
+user still means any historical scoped session. Details/revocation do not apply
+list search/ordering. Exact queries: [configuration table contract](../../docs/api-conventions.md#configuration-table-queries-224).
+Evidence: `tests/test_table_queries_224.py` covers later-page matches, stable
+ascending/descending ordering and foreign device/user search isolation.
+
 | Module | What lives there |
 | --- | --- |
 | `services.py` | Login (`verify_credentials`, `authenticate_user`), `start_device_session`, `reset_password` |

@@ -2,6 +2,17 @@
 
 Versioned rule parameters per organization: the thresholds the app shows but never decides (50 m from the point, 10 km/h speed lock...). Issue #3. Contract: [`docs/api-conventions.md`](../../docs/api-conventions.md) (rows "Rule parameters" and "Field snapshots").
 
+## Server table queries (#224)
+
+Parameter lists search `key`, filter `unit`/`value_type` and order by
+`key`, `unit`, `value_type` or projected `effective_from`. History searches `reason`,
+filters its existing `status` annotation and orders by `effective_from`,
+`created_at` or numeric `value`. Existing `include_voided=false` remains the default;
+status never expands visibility. Sorting resolves ties with `id`; defaults,
+detail/write behavior and field snapshots are preserved. Exact query values,
+pagination and error semantics: [configuration table contract](../../docs/api-conventions.md#configuration-table-queries-224).
+Focused evidence: `tests/test_table_queries_224.py` parameter and rule-history cases.
+
 ## Rules of this app
 
 - No threshold is hard-coded anywhere else: code reads it from here. Sync handlers can resolve values at an event's `device_time` from the existing historical selector; receipt-time clock-skew evaluation is the explicit exception (R03). This does not claim every future handler already uses it.
