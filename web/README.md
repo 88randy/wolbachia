@@ -310,6 +310,11 @@ Shared components:
 The sidebar separator supports ArrowLeft/ArrowRight (16px), Home/End (200/360px),
 Enter (collapse) and double-click (reset 248px). Compact mode changes appearance
 without overwriting desktop preferences. Width storage is validated and clamped.
+Native CSS also constrains the sidebar to its compact token width at the 768px
+compact breakpoint, before React receives the media-query change (#232). The
+W22-W24 browser journey holds that notification while checking narrow reflow,
+then releases it and verifies that the compact controls update. This prevents
+the theme switch from extending the document by 4px during a desktop-to-phone resize.
 System remains the stored default until the first explicit toggle. The top-bar
 switch follows the live resolved appearance; there is no separate System picker.
 Global scrollbars and existing native-dialog surfaces use the same tokens; native dialog logic is unchanged.
