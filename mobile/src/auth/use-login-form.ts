@@ -10,6 +10,7 @@ export function useLoginForm() {
   const fields = useLoginFields(auth.getSnapshot().profile?.username ?? "");
   const panels = useLoginPanels();
   const canConfigureServer = useServerProvisioning();
+  const isCleanupRetry = auth.getSnapshot().notice?.key === "mobile.login.cleanupFailed";
   const action = useAuthAction();
   const submit = () => {
     action.run(async () => {
@@ -25,7 +26,11 @@ export function useLoginForm() {
     ...panels,
     ...action,
     canConfigureServer,
-    isBusy: action.isBusy || isFinalUploadPending,
+    isBusy: action.isBusy || (isFinalUploadPending && !isCleanupRetry),
+    isCleanupRetry,
+    retryCleanup: () => {
+      action.run(auth.retrySessionDataCleanup);
+    },
     submit,
   };
 }

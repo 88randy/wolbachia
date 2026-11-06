@@ -724,3 +724,39 @@ Local verification: ESLint, Prettier check and mobile typecheck pass; mobile tes
 pass 214/214 and i18n tests pass 13/13. An earlier simultaneous verification run
 exhausted process memory; the required mobile command passes when run separately.
 No npm ci/install, Docker, Playwright or Expo build was run for this review.
+
+
+## Session-data cleanup recovery (#222)
+
+ADR 128 defines the cleanup fence. `AuthController.retrySessionDataCleanup` joins
+one in-flight attempt and releases pending authentication/unlock access only after
+the clear actually succeeds for the same session, origin and status. A rejected
+clear or an old completion leaves that fence closed; it never restores a grant or
+replays login/captured writes. Existing session-end journals and final-upload
+receipt ordering are unchanged.
+
+Boot retries the same path after loading credentials. A cleanup failure is handled
+as a fenced P1 notice with Retry rather than an unusable boot screen; credential or
+profile storage-read failures still propagate normally. The optional `beforeSync`
+port runs in the existing serialized worker before credential/server/connectivity
+gates, so the next sync can retry local cleanup even offline without a session.
+The worker's existing storage backoff handles repeat failures. No new queue exists.
+
+P1 reuses its existing full-width action for cleanup Retry without requiring a
+connection or filled credentials. A retry tap only retries cleanup. The inline
+critical notice remains visible offline in es-MX/en, and successful cleanup dismisses
+only its own notice. No new layout, tokens, dependencies or native dialogs were added.
+S01/P1 and S14 supplied the error/primary-action references; this cleanup state is
+an issue-required addition to the artwork.
+
+| Criterion/invariant | Regression in `test/session-data-recovery.test.ts` |
+| --- | --- |
+| Failed clear then successful boot retry resets the gate; restart failure stays retryable | `boot retry after a failed clear releases login only after actual success` |
+| Repeated failures, offline/no-session/server recovery, dedup across sync/boot/manual retry, no auto-login and retained outbox | `offline sync retries failures before session/server gates and joins boot/manual retry without replay` |
+| An old completion cannot expose a replacement session; current-context retry can recover | `an old successful clear cannot release a replacement session's data fence` |
+
+The tests use actual Node SQLite transactions, injected storage failure and deferred
+barriers. They verify logical recovery and preserved immutable event references;
+Android force-stop, SQLCipher/SecureStore disk behavior, native P1 layout, TalkBack
+and 130% text still require the qualified build/device workflow. No native build,
+phone, API, Docker or database service is required for this fix.

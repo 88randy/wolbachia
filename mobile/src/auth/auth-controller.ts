@@ -45,6 +45,8 @@ export class AuthController {
   readonly #unlock: LocalUnlock;
   #isBusy = false;
   #isSessionDataPending = false;
+  #isUnlocking = false;
+  #sessionDataClear: Promise<void> | null = null;
   #context: AuthContext = {
     profile: null,
     rules: readAuthRules(null),
@@ -76,6 +78,7 @@ export class AuthController {
   };
 
   load(): Promise<void> {
+    if (!this.#deps.credentials.isSessionActive()) this.#isSessionDataPending = true;
     return this.#deps.credentials
       .runExclusive(async (transaction) => {
         const profile = await this.#deps.kv.get(PROFILE_KEY);
@@ -92,9 +95,47 @@ export class AuthController {
           rules: readAuthRules(isRulesSnapshot(parsed) ? parsed : null),
         });
       })
-      .then(async () => {
-        if (!this.#deps.credentials.isSessionActive()) await this.#deps.clearSessionData?.();
+      .then(() => this.#restoreSessionData());
+  }
+
+  async #restoreSessionData(): Promise<void> {
+    if (!this.#deps.credentials.isSessionActive()) this.#isSessionDataPending = true;
+    try {
+      await this.retrySessionDataCleanup();
+    } catch {
+      // Cleanup already published its error. Boot keeps the fenced P1 retry action usable.
+      this.#refreshSnapshot();
+    }
+  }
+
+  /** Joins cleanup already in flight; retries a failed clear without replaying auth or captured work. */
+  retrySessionDataCleanup = (): Promise<void> => {
+    if (!this.#isSessionDataPending || this.#isUnlocking) return Promise.resolve();
+    if (this.#sessionDataClear !== null) return this.#sessionDataClear;
+    const current = this.#deps.credentials.getSnapshot();
+    const attempt = Promise.resolve()
+      .then(() => this.#clearSessionData(current))
+      .finally(() => {
+        if (this.#sessionDataClear === attempt) this.#sessionDataClear = null;
       });
+    this.#sessionDataClear = attempt;
+    return attempt;
+  };
+
+  async #clearSessionData(expected: Credentials): Promise<void> {
+    try {
+      await this.#deps.clearSessionData?.();
+      if (!sameSessionContext(expected, this.#deps.credentials.getSnapshot()))
+        throw new Error("Session changed during local data cleanup.");
+      this.#isSessionDataPending = false;
+      this.#publish({
+        notice:
+          this.#context.notice?.key === "mobile.login.cleanupFailed" ? null : this.#context.notice,
+      });
+    } catch (error) {
+      this.#publish({ notice: { key: "mobile.login.cleanupFailed" } });
+      throw error;
+    }
   }
 
   /** Connectivity is an external input; it cannot mutate credentials or the derived UI phase. */
@@ -259,6 +300,7 @@ export class AuthController {
     if (this.#snapshot.phase !== "locked" || this.#isSessionDataPending) return Promise.resolve();
     // Guard before credential writes can publish pair=null. A replacement login must await cleanup.
     this.#isSessionDataPending = true;
+    this.#isUnlocking = true;
     const gate = this.#deps.credentials.unlockGate();
     return this.#unlock
       .attempt(secret, kind, (isAccepted, transaction) => {
@@ -274,7 +316,8 @@ export class AuthController {
         } else this.#publish({ notice: { key: "mobile.unlock.wrongSecret" } });
       })
       .finally(async () => {
-        if (!this.#deps.credentials.isSessionActive()) await this.#deps.clearSessionData?.();
+        this.#isUnlocking = false;
+        if (!this.#deps.credentials.isSessionActive()) return this.retrySessionDataCleanup();
         this.#isSessionDataPending = false;
         this.#refreshSnapshot();
       })
@@ -282,7 +325,11 @@ export class AuthController {
   }
 
   canUseBiometrics(): boolean {
-    return this.#snapshot.phase === "locked" && this.#unlock.canUseBiometrics();
+    return (
+      !this.#isSessionDataPending &&
+      this.#snapshot.phase === "locked" &&
+      this.#unlock.canUseBiometrics()
+    );
   }
   biometricGate(): number {
     return this.#deps.credentials.unlockGate();
@@ -295,11 +342,14 @@ export class AuthController {
   }
 
   #deriveSnapshot(): AuthSnapshot {
-    return deriveAuthSnapshot({
+    const snapshot = deriveAuthSnapshot({
       credentials: this.#deps.credentials.getSnapshot(),
-      isUnlocked: this.#deps.credentials.isUnlocked(),
+      isUnlocked: this.#deps.credentials.isUnlocked() && !this.#isSessionDataPending,
       context: this.#context,
     });
+    return this.#context.notice?.key === "mobile.login.cleanupFailed"
+      ? { ...snapshot, notice: this.#context.notice }
+      : snapshot;
   }
   #publish(patch: Partial<AuthContext>): void {
     this.#context = { ...this.#context, ...patch };
@@ -321,4 +371,12 @@ function profileOf(me: Schemas["Me"]): AuthProfile {
 }
 function isCurrentSession(current: Credentials, sessionId: string | null): boolean {
   return current.status === "active" && current.sessionId === sessionId && current.pair !== null;
+}
+
+function sameSessionContext(previous: Credentials, current: Credentials): boolean {
+  return (
+    previous.sessionId === current.sessionId &&
+    previous.origin === current.origin &&
+    previous.status === current.status
+  );
 }
