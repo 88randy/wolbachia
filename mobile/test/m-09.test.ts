@@ -344,7 +344,7 @@ const storesFor = (db: SqlExecutor) => ({
   kv: new KvStore(db),
   outbox: new OutboxRepository(db, () => FIXED_NOW),
 });
-void test("AC3: cold SQLite reopen retains lifecycle draft and pending upload; retry sends original UUID once", async () => {
+void test("AC3: cold SQLite reopen retains lifecycle draft and interrupted outbox send; retry sends original UUID once", async () => {
   const directory = mkdtempSync(join(tmpdir(), "wolbachia-m09-"));
   assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + sep));
   const path = join(directory, "phone.sqlite");
@@ -378,6 +378,27 @@ void test("AC3: cold SQLite reopen retains lifecycle draft and pending upload; r
     assert.equal(deliveryState(restored.event).server, "received");
     assert.equal(restored.draft?.recovery, "unrecovered");
     assert.deepEqual(restored.history[0]?.draft.evidence, [PHOTO]);
+    phone.close();
+    phone = await openTestDatabase(path);
+    const reopened = new LifecycleStore(phone.executor);
+    assert.equal((await reopened.physical(SOURCE))?.isRetired, true);
+    await new DayStore(phone.executor).applyChanges({
+      assignments: [],
+      map_manifests: [],
+      sampling_points: [],
+      has_more: false,
+      ovitraps: [
+        {
+          sequence: 1,
+          action: "upsert",
+          resource_type: "ovitrap",
+          resource_id: SOURCE,
+          resource_version: "server-void-after-receipt",
+          data: downloadedTrap(SOURCE),
+        },
+      ],
+    });
+    assert.equal((await reopened.physical(SOURCE))?.isRetired, false);
   } finally {
     phone.close();
     rmSync(directory, { recursive: true });
@@ -743,7 +764,7 @@ void test("AC2: a draft started before configuration can adopt later downloaded 
   assert.equal((await h.service.read()).catalogChanged, true);
 });
 import { runSyncPass } from "../src/sync/sync-pass.ts";
-void test("AC3 wiring: existing sync commits receipt, cursor and retired/current courier projections together", async () => {
+void test("AC3 wiring: existing sync applies retired/current projections before receipt and cursor advancement", async () => {
   const h = await harness();
   const draft = await begin(h, "replace");
   await complete(h, draft);
@@ -773,7 +794,11 @@ void test("AC3 wiring: existing sync commits receipt, cursor and retired/current
       deviceId: SOURCE,
       now: () => FIXED_NOW,
       transport: transport.transport,
-      projectionStatements: courierChangeStatements,
+      ...new DayBundleService({
+        store: new DayStore(h.db),
+        now: () => FIXED_NOW,
+        transport: () => Promise.reject(new Error("Unexpected bootstrap")),
+      }).syncHooks(),
     },
     { batchSize: 50 },
   );
@@ -808,8 +833,8 @@ import { prepareCheck } from "./support/m-08-harness.ts";
 const SECOND_SOURCE = "99999999-9999-4999-8999-999999999999";
 const SECOND_POINT = { ...POINT, id: "77777777-7777-4777-8777-777777777777", code: "OV-2" };
 import { PLACEMENT_PREPARATION } from "../src/features/ovitrap-check/domain.ts";
-async function reviewCaptureHarness(mode: "check" | "place" = "check") {
-  const h = await harness();
+async function reviewCaptureHarness(mode: "check" | "place" = "check", local?: TestStores) {
+  const h = await harness(local);
   await h.store.capture.saveSnapshots({
     catalog: CATALOG,
     rules: RULES,
@@ -931,6 +956,11 @@ void test("review 2: downloaded retirement supersedes and archives the complete 
     assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
   }
 });
+async function currentRetirement(db: SqlExecutor): Promise<boolean> {
+  const physical = await new LifecycleStore(db).physical(SOURCE);
+  assert.ok(physical);
+  return physical.isRetired;
+}
 void test("review 3: downloaded active state overrides retired assignment fallback before current local effects", async () => {
   const h = await harness();
   await h.store.capture.saveSnapshots({
@@ -938,9 +968,9 @@ void test("review 3: downloaded active state overrides retired assignment fallba
     rules: RULES,
     assignment: { ...ASSIGNMENT, ovitraps: [{ id: SOURCE, point: POINT, isRetired: true }] },
   });
-  assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+  assert.equal(await currentRetirement(h.db), true);
   await downloadRetirement(h, "trap", false);
-  assert.equal((await h.store.physical(SOURCE))?.isRetired, false);
+  assert.equal(await currentRetirement(h.db), false);
   const check = new OvitrapService({
     ...h.deps,
     store: h.store.capture,
@@ -953,10 +983,247 @@ void test("review 3: downloaded active state overrides retired assignment fallba
   const draft = await begin(h, "remove");
   await complete(h, draft);
   await h.service.save(draft.eventId);
-  assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+  assert.equal(await currentRetirement(h.db), true);
+  const day = new DayStore(h.db);
+  const page = (sequence: number, isRetired: boolean, hasMore: boolean) =>
+    day.applyChanges({
+      assignments: [],
+      map_manifests: [],
+      sampling_points: [],
+      has_more: hasMore,
+      ovitraps: [
+        {
+          sequence,
+          action: "upsert",
+          resource_type: "ovitrap",
+          resource_id: SOURCE,
+          resource_version: String(sequence),
+          data: downloadedTrap(SOURCE, isRetired),
+        },
+      ],
+    });
+  await page(11, false, true); // Older feed pages never override pending local removal.
+  assert.equal(await currentRetirement(h.db), true);
+  await h.outbox.claimPending(10);
+  await h.outbox.settle([{ id: draft.eventId, action: "accept" }]);
+  await page(12, false, true);
+  assert.equal(await currentRetirement(h.db), true);
+  await page(13, true, true);
+  assert.equal(await currentRetirement(h.db), true);
+  await day.applyChanges({
+    assignments: [],
+    map_manifests: [],
+    ovitraps: [],
+    sampling_points: [],
+    has_more: false,
+  });
+  assert.equal(await currentRetirement(h.db), true);
+  await page(14, false, false); // A later server void reactivates an acknowledged removal.
+  assert.equal(await currentRetirement(h.db), false);
   await h.service.correct(
     { reasonCode: "other", reason: "Retirement corrected after verification" },
     draft.eventId,
   );
-  assert.equal((await h.store.physical(SOURCE))?.isRetired, false);
+  assert.equal(await currentRetirement(h.db), false);
+  await h.outbox.claimPending(10);
+  const [voidRow] = await h.db.query("SELECT event_id FROM lifecycle_void");
+  assert.ok(voidRow);
+  await h.outbox.settle([{ id: String(voidRow.event_id), action: "accept" }]);
+  await h.db.runAtomically(
+    courierBundleStatements({
+      ovitraps: [downloadedTrap(SOURCE, true)],
+      sampling_points: [pointProjection(false)],
+    }),
+  );
+  assert.equal(await currentRetirement(h.db), true);
+});
+
+import { DayStore } from "../src/features/day/store.ts";
+import { RemoteSessionEnded } from "../src/auth/session-requests.ts";
+import { DayBundleService } from "../src/features/day/bundle-service.ts";
+import { DatabaseSync } from "node:sqlite";
+import { migrate } from "../src/db/migrations.ts";
+import { databaseExecutor } from "./support/sqlite-executor.ts";
+import { makeEnvelope } from "./support/factories.ts";
+void test("AC3 integration: bootstrap retirement and revocation share the projection gate while retaining lifecycle evidence", async () => {
+  const h = await harness();
+  const draft = await begin(h, "relocate");
+  await complete(h, draft);
+  await h.service.save(draft.eventId);
+  const pending = await begin(h, "remove");
+  await complete(h, pending);
+  const historical = (await h.store.read()).draft;
+  let hasScope = true;
+  const bundle = new DayBundleService({
+    store: new DayStore(h.db),
+    now: () => FIXED_NOW,
+    transport: () =>
+      Promise.resolve({
+        kind: "bundle",
+        body: {
+          bundle_version: "bootstrap-lifecycle",
+          schema_version: "schema-1",
+          scope_revision: "scope-1",
+          next_change_at: null,
+          map_manifest_ready: false,
+          assignments: [],
+          map_manifests: [],
+          cursor: "bootstrap-lifecycle-cursor",
+          ovitraps: hasScope ? [downloadedTrap(SOURCE, true)] : [],
+          sampling_points: hasScope ? [pointProjection(false)] : [],
+        },
+      }),
+  });
+  await bundle.refresh();
+  assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+  assert.equal((await h.service.read()).isScopeBlocked, false);
+  hasScope = false;
+  await bundle.refresh();
+  assert.equal(await h.kv.get("sync_cursor"), "bootstrap-lifecycle-cursor");
+  assert.equal((await h.service.read()).isScopeBlocked, true);
+  assert.equal((await h.store.capture.snapshots()).assignment?.points.length ?? 0, 0);
+  assert.deepEqual((await h.store.read()).draft, historical);
+  await assert.rejects(h.service.save(pending.eventId));
+  assert.equal((await h.db.query("SELECT id FROM outbox_event")).length, 1);
+  const lateHooks = bundle.syncHooks();
+  await bundle.clearSessionData();
+  assert.equal((await h.db.query("SELECT * FROM lifecycle_courier_projection")).length, 0);
+  assert.equal((await h.store.capture.snapshots()).assignment, null);
+  assert.ok(lateHooks.applyProjectionChanges);
+  const lateReply = answer([]);
+  assert.equal(lateReply.ok, true);
+  await assert.rejects(
+    lateHooks.applyProjectionChanges({
+      ...lateReply.response.changes,
+      ovitraps: [
+        {
+          sequence: 1,
+          action: "upsert",
+          resource_type: "ovitrap",
+          resource_id: SOURCE,
+          resource_version: "late",
+          data: downloadedTrap(SOURCE),
+        },
+      ],
+      sampling_points: [],
+    }),
+    RemoteSessionEnded,
+  );
+  assert.equal((await h.db.query("SELECT * FROM lifecycle_courier_projection")).length, 0);
+  const retained = await h.store.read();
+  assert.equal(retained.event, null);
+  assert.deepEqual((await h.store.capture.event(draft.eventId))?.envelope.id, draft.eventId);
+  assert.equal(deliveryState(await h.store.capture.event(draft.eventId)).server, "pending");
+  assert.deepEqual(retained.draft?.evidence, [PHOTO]);
+  assert.deepEqual(retained.history[0]?.draft.evidence, [PHOTO]);
+});
+
+void test("AC3 upgrade: master schema 8 retains M06 assignments and event enrollment through lifecycle migrations", async () => {
+  const database = new DatabaseSync(":memory:");
+  const db = databaseExecutor(database);
+  try {
+    await assert.rejects(
+      migrate({
+        ...db,
+        runAtomically: (statements) => {
+          if (statements.some(({ sql }) => sql === "PRAGMA user_version = 9"))
+            return Promise.reject(new Error("Upgrade paused at released schema 8"));
+          return db.runAtomically(statements);
+        },
+      }),
+      /released schema 8/,
+    );
+    const local = storesFor(db);
+    const original = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
+    await local.outbox.enqueue(original);
+    const payload = JSON.stringify({ id: "retained-task", ovitrap_id: SOURCE });
+    await db.runAtomically([
+      {
+        sql: `INSERT INTO day_assignment(id,version,payload,retained_payload,kept,retained_event_ids)
+      VALUES('retained-task','1',?,?,1,?)`,
+        params: [payload, payload, JSON.stringify([original.id])],
+      },
+    ]);
+    await migrate(db);
+    const [version] = await db.query("PRAGMA user_version");
+    assert.equal(version?.user_version, 11);
+    const [assignment] = await db.query(
+      "SELECT retained_payload,retained_event_ids FROM day_assignment",
+    );
+    assert.equal(assignment?.retained_payload, payload);
+    assert.equal(assignment.retained_event_ids, JSON.stringify([original.id]));
+    const next = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
+    await local.outbox.enqueue(next);
+    const [enrolled] = await db.query("SELECT retained_event_ids FROM day_assignment");
+    assert.equal(enrolled?.retained_event_ids, JSON.stringify([original.id, next.id]));
+    assert.equal((await local.outbox.claimPending(10)).length, 2);
+  } finally {
+    database.close();
+  }
+});
+
+type ScopeRaceAction = "m08-save" | "m09-save" | "m09-correct";
+async function prepareScopeRace(
+  db: SqlExecutor,
+  action: ScopeRaceAction,
+): Promise<() => Promise<unknown>> {
+  if (action === "m08-save") {
+    const capture = await reviewCaptureHarness("check", storesFor(db));
+    return () => capture.check.save(capture.eventId);
+  }
+  const h = await harness(storesFor(db));
+  const draft = await begin(h, "relocate");
+  await complete(h, draft);
+  if (action === "m09-correct") await h.service.save(draft.eventId);
+  return action === "m09-save"
+    ? () => h.service.save(draft.eventId)
+    : () =>
+        h.service.correct(
+          { reasonCode: "other", reason: "Correction interrupted by scope revocation" },
+          draft.eventId,
+        );
+}
+void test("review scope race: revoke before the SQLite boundary rejects M08/M09 captures and lifecycle correction atomically", async () => {
+  for (const action of ["m08-save", "m09-save", "m09-correct"] as const) {
+    const base = await createStores();
+    let isArmed = false;
+    let entered: () => void = () => {
+      throw new Error("Missing entry barrier");
+    };
+    let release: () => void = () => {
+      throw new Error("Missing release barrier");
+    };
+    const ready = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const resume = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const db: SqlExecutor = {
+      ...base.db,
+      runAtomically: async (statements) => {
+        if (
+          isArmed &&
+          statements.some(({ sql }) =>
+            /INSERT INTO (lifecycle_capture|lifecycle_void|ovitrap_capture)/.test(sql),
+          )
+        ) {
+          isArmed = false;
+          entered();
+          await resume;
+        }
+        await base.db.runAtomically(statements);
+      },
+    };
+    const run = await prepareScopeRace(db, action);
+    const before = await base.db.query("SELECT id FROM outbox_event");
+    isArmed = true;
+    const pending = run();
+    await ready;
+    await new DayStore(base.db).revoke();
+    release();
+    await assert.rejects(pending);
+    assert.deepEqual(await base.db.query("SELECT id FROM outbox_event"), before);
+    assert.equal((await base.db.query("SELECT event_id FROM lifecycle_void")).length, 0);
+  }
 });

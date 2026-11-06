@@ -1,35 +1,35 @@
 import { useId } from "react";
-import type { ComponentPropsWithoutRef } from "react";
+import { Button } from "../ui/Button";
+import type { ButtonProps } from "../ui/Button";
 import styles from "./catalogs.module.css";
-interface Props extends ComponentPropsWithoutRef<"button"> {
+interface Props extends ButtonProps {
   reason: string | undefined;
   isFocusableWhenBlocked?: boolean;
 }
-/** State blockers are visible and associated with the control, including for touch and keyboard. */
-export function CatalogActionButton({
-  reason,
-  isFocusableWhenBlocked = false,
-  onClick,
-  children,
-  ...button
-}: Props) {
+/** State blockers remain visible and associated with the same keyboard/touch control. */
+export function CatalogActionButton(props: Props) {
+  const { reason, isFocusableWhenBlocked = false, ...button } = props;
   const reasonId = useId();
   const isBlocked = reason !== undefined;
+  const blocked = {
+    disabled: isBlocked && !isFocusableWhenBlocked,
+    "aria-disabled": isBlocked,
+    "aria-describedby": isBlocked ? reasonId : undefined,
+    title: reason,
+  };
   return (
     <span className={styles.blockedAction}>
-      <button
-        type="button"
+      <Button
         {...button}
-        disabled={isBlocked && !isFocusableWhenBlocked}
-        aria-disabled={isBlocked}
-        aria-describedby={isBlocked ? reasonId : undefined}
-        title={reason}
+        {...blocked}
+        variant={props.variant ?? "ghost"}
+        size={props.size ?? "sm"}
         onClick={(event) => {
-          if (!isBlocked) onClick?.(event);
+          if (!isBlocked) props.onClick?.(event);
         }}
       >
-        {children}
-      </button>
+        {props.children}
+      </Button>
       <span id={reasonId} hidden={!isBlocked} className={styles.blockedReason}>
         {reason}
       </span>

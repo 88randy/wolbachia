@@ -5,8 +5,8 @@ import type { Me } from "./me";
  * codes come from `GET /me/`, the union of the user's active profiles: profile names are never
  * used to decide anything. A user with no active organization has no permissions.
  *
- * Scope (centers, quadrants) is not checked here: its meaning is [PENDING backend] (an empty
- * list may mean "whole organization" or "nothing"). The server enforces scope on every request.
+ * This checks the action code only. Explicit none/selected/all scope is intersected by the
+ * owning screen and backend; an empty selected scope never means all.
  */
 export function can(me: Pick<Me, "permissions">, permission: string): boolean {
   return me.permissions.includes(permission);

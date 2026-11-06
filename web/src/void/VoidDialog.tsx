@@ -42,13 +42,13 @@ function keepOpenWhileBusy(dialog: HTMLDialogElement, isBusy: boolean, onCancel:
 /**
  * The shared "Void with reason" modal (#32). Mount it to open it, unmount it to close it. It is a
  * native modal `<dialog>`: the page behind is inert, Tab stays inside, and focus returns to the
- * button that opened it. It starts on the reason field; Escape and Cancel give up, unless a
+ * button that opened it. It starts on Cancel; Escape and Cancel give up, unless a
  * request is in flight. Nothing here deletes anything: the server stores who, when and why.
  */
 export function VoidDialog({ record, limits, submit, onVoided, onCancel }: VoidDialogProps) {
   const { t } = useTranslation();
   const titleId = useId();
-  const dialogRef = useModalDialog(REASON_FIELD);
+  const dialogRef = useModalDialog("[data-void-cancel]");
   const form = useVoidForm({ limits, submit, onVoided });
   return (
     <dialog

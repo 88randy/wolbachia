@@ -1,3 +1,6 @@
+import { ORGANIZATION_READ, ROLE_READ } from "../settings/organization/permissions";
+import { W65Page } from "../settings/organization/W65Page";
+import { W68Page } from "../settings/organization/W68Page";
 import { W22Page } from "../quadrants/geography/W22Page";
 import { W23Page } from "../quadrants/geography/W23Page";
 import { CatalogsPage } from "../catalogs/CatalogsPage";
@@ -186,6 +189,25 @@ const notFoundRoute = createRoute({
   component: NotFoundState,
 });
 
+const organizationRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/organization",
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, ORGANIZATION_READ);
+  },
+  component: W68Page,
+  errorComponent: AreaErrorState,
+});
+const rolesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/settings/roles",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("settings", context.me, ROLE_READ);
+  },
+  component: W65Page,
+  errorComponent: AreaErrorState,
+});
 const catalogsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/settings/catalogs",
@@ -219,6 +241,8 @@ const routeTree = rootRoute.addChildren([
     catalogRoute,
     motorcyclesRoute,
     motorcycleRoute,
+    organizationRoute,
+    rolesRoute,
     phonesRoute,
     ruleParametersRoute,
     ruleParameterRoute,

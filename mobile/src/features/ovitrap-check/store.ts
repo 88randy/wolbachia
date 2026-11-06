@@ -1,3 +1,4 @@
+import { CAPTURE_SCOPE_AVAILABLE } from "../ovitrap-lifecycle/current-scope.ts";
 import { readPhysicalIdentityState } from "../ovitrap-lifecycle/physical-identity-state.ts";
 import { RETIRED_CAPTURE_DRAFT } from "../ovitrap-lifecycle/retired-draft.ts";
 import { physicalOvitrap } from "../ovitrap-lifecycle/physical-projection.ts";
@@ -38,9 +39,10 @@ export class OvitrapStore {
     return row ? toOutboxEvent(row) : null;
   }
   async snapshots(): Promise<Snapshots> {
-    const saved = await this.#kv.get("ovitrap_snapshots");
-    return saved
-      ? (JSON.parse(saved) as Snapshots)
+    const [row] = await this.#db.query(`SELECT CASE WHEN ${CAPTURE_SCOPE_AVAILABLE} THEN value
+      ELSE json_set(value,'$.assignment',json('null')) END AS value FROM kv WHERE key='ovitrap_snapshots'`);
+    return row
+      ? (JSON.parse(readText(row, "value")) as Snapshots)
       : { catalog: null, rules: null, assignment: null };
   }
   async saveSnapshots(snapshots: Snapshots): Promise<void> {

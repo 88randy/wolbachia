@@ -1,3 +1,7 @@
+import { ui } from "./ui.ts";
+import { analytics } from "./analytics.ts";
+import { refresh } from "./refresh.ts";
+import { orgAdmin } from "./orgAdmin.ts";
 import { geography } from "./geography.ts";
 import { catalogs } from "./catalogs.ts";
 /**
@@ -18,6 +22,10 @@ import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const esMX = {
+  ...ui,
+  ...analytics,
+  ...refresh,
+  ...orgAdmin,
   ...geography,
   ...catalogs,
   ...fleet,

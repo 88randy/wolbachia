@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). P1/P2 login and local unlock are #7 (decision 119); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
+> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Day list/offline map/navigation P9-P10 (#135) is aligned to scheduling assignments v2 (#109); native/device qualification is pending. P1/P2 login and local unlock are #7 (decision 116); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
 
 ## Rules
 
@@ -26,9 +26,10 @@ src/config/            API address rule and settings, build-time variables
 src/db/                SqlExecutor, migrations, key-value store, op-sqlite adapter
 src/outbox/            event envelope, state machine, outbox repository
 src/sync/              sync pass, failure table, backoff, engine, chip and inbox models
-src/navigation/        typed stack and the screen router
+src/navigation/        typed stack, screen router and durable geo navigation adapter
 src/screens/           Home shell, Inbox (P28), Settings (partial P31)
 src/features/shift-open/ P3-P7, durable draft/local shift, catalog/map/photo ports
+src/features/day/        P9-P10, bundle projections, local work overlay, location/map ports
 src/ui/, src/theme/    components and Codequim theme (tokens from packages/tokens)
 src/i18n/              `t(key, params)` over packages/i18n (area `mobile`)
 test/                  Node tests; support/ has the in-memory SQLite and a scripted transport
@@ -219,7 +220,7 @@ Verified API references: [OP-SQLite installation](https://op-engineering.github.
 Design mapping: `S02-Inicio` = P3 home / P4 motorcycle; `S03-Moto` = P5 safety
 checklist / P6 odometer / P7 maps; `S04-Insumos` = P8 supply reception (#134,
 excluded). The route `openShift` restores its internal step. Home shows the real
-local shift and its upload outcome; the day view P9 remains #8. Four preparation
+local shift and its upload outcome; the day view P9 is delivered under M-06 #135. Four preparation
 steps replace the board's five because P8 is excluded. No assignment or motorcycle
 availability is invented when B-05/bootstrap data is absent.
 
@@ -487,15 +488,250 @@ This adversarial-fix follow-up was verified locally with the commands above.
 GitHub issue access returned HTTP 401; no remote review/CI result is claimed. No commit/push/PR,
 Docker, Playwright, emulator or device qualification was performed. No generated
 stackdump/test-results artifacts were retained.
+## M-06: day list, offline map and navigation (#135)
 
+Design mapping: `S05-Dia.png` / `S05-Dia.dc.html`: P9 risk-ordered list,
+closed-house revisit section, completed day, offline/error states and point detail;
+P10 full-screen map, missing-map alternative and location freshness. Routes `day`
+and `map` enter from the local open-shift card. Selection and the last navigation
+outcome/time live in SQLite `kv`, so returning/resuming or reopening Day restores
+the same locally assigned point. A compare-and-set prevents a late launch outcome
+from restoring a cleared selection or overwriting a newer point. Detail has status/action/distance, navigation,
+recent history, reference and scanner hint. Gasoline/scanner/incident bottom actions,
+emergency and closing-shift actions are owned by other issues and omitted. The
+navigation button says "How to get there", without claiming a specific navigator.
+
+- Migration **5** appends downloaded assignment/map projections and singleton bundle
+  metadata. Full bootstrap stages validated rows in memory and commits the entire
+  replacement plus its cursor in one SQLite transaction. A shared network turn serializes the entire sync pass against bootstrap; short
+  projection turns also arbitrate current-assignment navigation against revocation.
+  Cached reads and capture do not wait on this network turn. Delta SQL conflict guards retain
+  stable resource/version deduplication and remove tombstones; bootstrap restores
+  every present resource authoritatively, including equal versions. Delta writes precede
+  cursor settlement; a failed write cannot advance the cursor. Replaying after a
+  failed settlement is safe. `invalid_cursor` releases the original events, obtains
+  bootstrap **without If-None-Match**, installs its cursor and resends the same UUIDs.
+- Projection writes never alter drafts, immutable outbox envelopes or attachments.
+  Pending/sending/error/in-review work is matched **inside** the projection write
+  transaction. A changed/removed task keeps its original point/ownership visible
+  with "Kept: pending work" and a notice listing affected point codes. The newest
+  server payload is staged separately from the retained view; after pending work
+  is received, migration 8's enrolled event UUIDs stop justifying the retained
+  view. An INSERT-only trigger enrolls extra captures made while that view is still
+  visible; later captures cannot resurrect it. Receipt settlement never writes
+  downloaded projections. The next projection write discards obsolete retention. Revoked
+  session/scope download access clears projections, saved map preparation/navigation
+  and the cursor, retaining unsent evidence. Expired auth/network failures keep cache.
+- The single tolerant parser follows `backend/scheduling/courier_feed.py`'s
+  `AssignmentProducerSerializer` (#109 assignments v2): common fields are
+  `{id, kind, quadrant_id, courier, revision}`; tasks add
+  `{code, point, action, date, category, source, protocol, target}`. Local names map
+  code to point_code (the producer's human task code includes :action:YYYY-MM-DD),
+  point to point_id, revision to version, and category=high to
+  high risk; medium/low/null/unknown are normal for ordering. Allocation rows with
+  kind=quadrant_assignment are intentionally ignored for the task list and never
+  count as unreadable, in bootstrap or deltas. Malformed task rows are counted.
+  **[ASSUMPTION: future points projection #196]** coordinates, block code,
+  reference, history and ovitrap linkage are optional enrichment; no location is
+  invented. Unlocated tasks remain in the list with an explanation, no distance,
+  map marker or How to get there action. The real producer supplies only
+  place/check; closed-house/relocate states in the design await capture/point data.
+  Delta numeric versions are ordered numerically; opaque versions deduplicate by equality
+  and ordered change sequence. Bootstrap authoritatively restores present resources and removes missing ids.
+- **[ASSUMPTION]** #9 captures reference `payload.task_id` or `payload.ovitrap_id`.
+  `LocalWorkOverlay` is a replaceable port over the existing outbox. Explicit task ids
+  take precedence. Completion fallback uses the same ISO capture date/action
+  **[ASSUMPTION]** until downloaded organization timezone metadata is published;
+  evening local-time capture may therefore remain uncounted without a task id.
+  Pending retention conservatively matches the ovitrap regardless of date, so
+  this uncertainty never drops recoverable work from the list. Day progress
+  uses local captured work plus removal of tasks from the server projection
+  **[ASSUMPTION]**: assignments v2 publishes no completion/status field and capture
+  completion currently needs a bootstrap refresh (see scheduling README).
+  Phone-saved and server-received text
+  remain separate; the existing `SyncChip` opens the inbox with actual delivery/review
+  outcomes. Neither an error nor a pending upload implies server delivery/review.
+  No new capture queue, upload transport, ping producer or server lookup was added.
+- Bootstrap uses `packages/api-client`, validates `unknown` at the runtime object
+  boundary (generated response incorrectly says array) and sends the stored bundle
+  version as a quoted ETag. 304 preserves cache. Open/reconnect/foreground/due-time
+  triggers refresh while cached list/point actions remain usable. Local map
+  verification is published before HTTP starts, including a stalled transport.
+  A response from a replacement session or changed issuer is discarded; legitimate
+  bearer rotation through SessionRequests remains valid.
+- Foreground `expo-location` runs only while Day/Map is mounted, the app is active
+  and a local shift is open. Background/unmount stops subscriptions, including
+  late permission/watch completions. No local fix is persisted or uploaded.
+  **[ASSUMPTION]** display freshness is 60 s, independently of MO08 upload pings;
+  stale/denied/unavailable fixes never produce distances. Weak accuracy is labelled
+  only with a downloaded `max_gps_accuracy_m` rule; otherwise show age/accuracy.
+- M-04 `MapPreparationSource` and saved `verifiedAssets` own file preparation.
+  P10 rechecks local file readability, PMTiles v3/MVT header, size and SHA-256 before
+  mounting MapLibre. Matching manifests supply quadrant coverage. Missing/corrupt/
+  oversized files or renderer failure show the list alternative and verification
+  retry. **[ASSUMPTION]** SHA-256 uses whole-file Expo Crypto with a **32 MiB technical
+  verification cap** to bound memory until native streaming is qualified on the
+  low-resource profile; larger maps fail closed with the list alternative.
+- Local style sources are exclusively `pmtiles://file:///...`, with Protomaps earth,
+  landuse, water, roads and buildings using shared theme tokens. No OfflineManager,
+  demo/public tiles, HTTP tiles/styles/glyphs/sprites or spike imports are used.
+  **[ASSUMPTION]** licensed archives use the spike's Protomaps v4 layers. Fonts/glyphs
+  for tile labels are not bundled: tile text labels are intentionally absent; the
+  app's bundled Inter markers show folio plus color/icon/text status. Attribution
+  **© OpenStreetMap contributors** remains visible. Maps have no ScrollView/FlatList
+  parent, preserving pinch/pan gestures.
+- Production map download is **blocked: no download URL in the manifest contract**.
+  The preparation port remains unavailable; no production downloader was invented.
+  Real map journey evidence requires licensed assets supplied through M-04's port.
+- `NavigationLauncher` validates finite/range coordinates, formats six decimals
+  and percent-encodes only the point code into a `geo:` URI. Android Linking checks
+  a handler before launch; absent/denied/invalid outcomes give localized alternatives
+  and selectable coordinates/reference. Package visibility declares ACTION_VIEW/geo
+  plus optional Organic Maps visibility. Device Owner allowlisting is deployment
+  configuration; `launched` means Linking resolved, not that navigation/return was
+  qualified. A failed local state write is never reported as success.
+- AppText, wrapping layouts, theme tokens, runtime-free shared es-MX/en catalogs,
+  existing mobile translation adapter and 56 dp controls are reused. Auth/session composition follows master #7 (decision 116); the native
+  i18next migration remains separate work. No additional i18n runtime was introduced.
+
+### Dependencies and primary references
+
+Only mobile workspace dependencies were added; exact versions match the validated
+spike: `@maplibre/maplibre-react-native` **11.5.1** for the native local PMTiles
+renderer; `expo-location` **58.0.20** for foreground permission/fixes;
+`expo-file-system` **58.0.13** for local file/header/bytes verification. Expo and
+MapLibre maintain these packages. Reusing these proved APIs avoids a second native
+map or file stack. Minimum Expo MapLibre/location and Android package-query plugins
+are registered; existing blocked permissions are unchanged. No background permission.
+
+References: [MapLibre local PMTiles and offline-pack limitations](https://maplibre.org/maplibre-native/android/examples/data/PMTiles/),
+[Expo foreground location](https://docs.expo.dev/versions/latest/sdk/location/),
+[Expo filesystem](https://docs.expo.dev/versions/latest/sdk/filesystem/),
+[React Native Linking](https://reactnative.dev/docs/linking),
+[Android package visibility](https://developer.android.com/training/package-visibility/declaring).
+The installed package declarations and #64 source were also checked for these versions.
+
+### Acceptance evidence
+
+`test/m-06.test.ts`, Node runner over actual SQLite SQL, maps to #135:
+
+| Acceptance checkbox | Evidence / limit |
+|---|---|
+| Airplane cold-start list/map | New service reads cached assignments/risk/manifests with failing transport; pure coverage verifies licensed local asset. Native rendering/airplane force-stop remains UNVERIFIED |
+| Assignment delta / GPS-independent list / navigation | Upsert/remove/version guards retain pending work and original ownership, including a second capture after staged payload adoption; cursor stays unchanged on projection failure; GPS denied/unavailable/stale produces no distances; launcher present/absent/denied/invalid and durable selection |
+| Offline/restart wiring / truthful delivery | Invalid-cursor recovery bootstraps unconditionally and resends original UUID; outbox remains the only queue; transactional storage failure rolls back cache; revocation retains unsent evidence |
+| Accessibility matrix | Native implementation present; TalkBack, 130% text, light/dark and es-MX/en on qualified devices remain UNVERIFIED |
+
+There is no mobile e2e harness: **do not infer real-API e2e from Node fixtures**;
+`mobile/e2e/m-06.spec.ts` is intentionally not added. APK CI/typecheck cover native
+integration only when run; this task does not run Expo builds, Playwright or Docker.
+Real Organic Maps navigation/return and Device Owner dedicated-mode allowlist return
+are **UNVERIFIED**. The #64 S24 result qualifies only that spike build, not this app
+or Organic Maps. Galaxy S24 Ultra SM-S928B/Android 16 and the separate arm64/4 GB/
+64 GB/Android 13+ profile, storage/performance and complete accessibility matrix are
+**UNVERIFIED**. Fixture contracts need reconciliation with merged producers and the
+current GitHub issue inventory before publication (the task supplies issue text;
+no authenticated inventory lookup was available).
+
+
+### Adversarial review regressions (#135)
+
+- A successful final upload carrying `X-Session-Revoked: true` propagates through
+  both sync transports. Its empty typed sections do not refresh projections. Sync
+  settles the returned event results first, then
+  clears downloaded assignments/manifests, saved map preparation, navigation state
+  and cursor using the same serialized revocation hook. It stops with sign-in
+  required instead of sending another batch. Acknowledged and unsent outbox
+  envelopes remain intact; clearing access never deletes evidence.
+- Bootstrap is an authoritative replacement: every resource present is restored,
+  including an equal-version resource previously hidden by an empty bootstrap.
+  Only deltas use the resource-version deduplication guard. Repeating a bootstrap
+  while a newer server payload is staged keeps the original pending-work view.
+- Empty manifest version/checksum, zero size and `licensed=false` are persisted
+  reported unavailable states. They replace prior asset metadata and invalidate
+  coverage immediately; any declared unavailable asset prevents map readiness,
+  even when another asset is still verified. The missing-map/coverage messages
+  and list alternative remain usable. Structurally malformed manifests reject
+  bootstrap/delta application before writes or cursor advancement.
+
+Deterministic regressions in `test/m-06.test.ts` cover final-upload transport plus
+outbox retention, same-version bootstrap restoration, repeated staged bootstrap,
+all four unavailable-manifest signals alongside another valid asset, and malformed
+manifest cursor retention. These use SQLite and a scripted API-client transport,
+with no timing sleeps. The native/API/device UNVERIFIED limits above are unchanged.
+
+### Master #7 integration and field UI standard
+
+The #135 merge retains master's encrypted database, CredentialStore, SessionRequests,
+identity-pinned origin and final-upload lifecycle (decision 116; M-06 is decision
+122). Bootstrap uses `tokens.getOrigin()` and the 401 refresh wrapper, retains ETag/
+304 handling, and checks session identity/origin rather than access-token equality.
+The scoped sync adapter delegates refresh/final upload to master's transport and
+guards both queued requests and late responses against a replacement session/origin. Ordinary locked sessions
+keep their offline assignments and map preparation. Foreground local fixes and
+automatic day refresh run only with the auth gate unlocked. The screen model is
+keyed by session identity, so a failed replacement-session read cannot expose an
+old in-memory assignment snapshot; an ordinary lock keeps the same cache.
+
+Auth end's durable journal normally awaits downloaded-data cleanup using the short
+projection gate; it never reacquires the network gate held by SessionRequests.
+For a 200 carrying X-Session-Revoked, the integration hook only invalidates writers
+and visible memory first. Sync persists all per-event receipts before physical
+cleanup, then erases the credential pair only after cleanup succeeds. A failed
+cleanup retains the receipt and pair, sets day_cleanup_pending, and retries before
+the next bootstrap/sync pass; the durable auth-ended journal also retries at boot.
+Boot reconciles ended/missing sessions, and password credential erasure also clears
+downloaded projections before another login is permitted. Cleanup removes assigned/map projections, navigation state
+and cursor while preserving drafts and outbox evidence. An active POST returning
+after logout settles evidence but cannot restore projections/cursor; master's real
+final POST still follows. Final results are durable before projection cleanup and
+`completeSession` credential erasure. Revocation also invalidates captured local
+writers, so late map preparation progress, final metadata saves or file inspection
+cannot recreate downloaded state, including a scope revocation that keeps the same
+session identity.
+
+P9/P10 follow `.claude/skills/ui-ux-standards/SKILL.md` sections 3/4/12/13: local
+reads show motion-free row/card or map skeletons, never an empty-state flash or a
+spinner. Static shapes deliberately avoid shimmer/battery cost on field devices.
+Refresh is single-flight, keeps the last snapshot/map visible and shows an Updating
+chip. Read/refresh/map/action errors keep separate retry actions, optional real API
+error-code details and the useful list. Empty assignments offer Refresh; completed
+work offers Back to home (shift closing belongs to its own issue). Buttons keep
+56 dp targets, shared tokens, AppText and es-MX/en copy. No Alert.alert, haptic
+package, new dependency or optimistic audit claim was added.
+
+`test/m-06.test.ts` adds deterministic session refresh/logout/final-upload/boot/lock
+regressions and deferred load/refresh/error/retry/stale-read UI-model tests. These
+are pure controller/SQLite/API-client checks, not native rendering certification.
+Light/dark, 130% text, TalkBack, reduced-motion presentation and actual navigation
+return remain UNVERIFIED on devices; no Docker, Playwright or Expo build is run.
+
+### Second adversarial review
+
+`test/m-06.test.ts` adds deterministic regressions mapping to all four findings:
+
+| Finding | Regression evidence |
+| --- | --- |
+| Real scheduling producer | Serializer-shaped bootstrap/delta fixtures include allocation and null-category task rows; no unreadable noise, fabricated distances, markers or navigation eligibility |
+| Final acknowledgement survives cleanup failure | A retained task plus projection UPDATE/DELETE failures still settles the original UUID/result before cleanup; restart retries, and a final receipt upgrades concurrently pending ordinary cleanup |
+| Same-session scope revocation clears visible memory | Ready-map snapshot invalidates synchronously despite failed reload; an active-session offline restart also hides pending-cleanup projections and routing |
+| Retained payload cannot reappear | Extra capture during retention stays enrolled; after both original UUIDs are received, another capture cannot restore the old view |
+
+The native/device accessibility and navigation qualifications above remain
+UNVERIFIED. These regressions use SQLite and controlled promises, never sleeps.
+
+Local verification: ESLint, Prettier check and mobile typecheck pass; mobile tests
+pass 214/214 and i18n tests pass 13/13. An earlier simultaneous verification run
+exhausted process memory; the required mobile command passes when run separately.
+No npm ci/install, Docker, Playwright or Expo build was run for this review.
 
 ## M-09: replace, relocate, remove (#138)
 
 P15-P17 are entered from the selected point/physical ovitrap in M-08 and implemented
-in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). ADR 121 records the
+in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). ADR 124 records the
 owner-supplied decisions. Service/store/ports and `use-m-09` reuse the existing
-M-02 outbox and M-08 GPS/evidence/shift authorization patterns. Migration 7 follows
-migration 6; it retains immutable captures, reserved replacement UUIDs, evidence,
+M-02 outbox and M-08 GPS/evidence/shift authorization patterns. Migration 9 follows
+master migrations 7–8; it retains immutable captures, reserved replacement UUIDs, evidence,
 reasoned void attempts and local relocation decisions. No new queue, HTTP endpoint,
 transport, dependency or generated client edit is introduced.
 
@@ -540,12 +776,13 @@ persistent local Undo while the draft is editable; captured evidence is never de
   authorized point remains incomplete. Evidence UUID/file references use existing
   ports and transactional attachment references; B-04 upload integration is absent,
   so no actual photo upload is claimed.
-- Existing B-13 ovitrap/point changes are validated and committed alongside receipt
-  and cursor by the existing sync pass. Optional historical `is_retired` defaults
-  false; retirement and lineage are retained. `courierBundleStatements` stages only
-  downloaded projections for the M-01 bootstrap consumer; it does not fetch bundles
-  or erase drafts/outbox. Full bootstrap/cursor/scope recovery remains the existing
-  integration boundary. Organization routing is the pinned token, never a URL selector.
+- Existing B-13 ovitrap/point sections are validated inside the M-06 DayStore
+  bootstrap/delta/revocation gate. Bootstrap replaces downloads and its cursor
+  atomically; deltas apply before receipt/cursor advancement, and replay is
+  idempotent. Revocation clears downloaded physical/point state and M-08 assignment
+  authorization while retaining drafts/outbox/evidence. Existing invalid-cursor
+  recovery bootstraps before retry. Optional historical `is_retired` defaults false.
+  Organization routing is the pinned token, never a URL selector.
 - Copy uses runtime-free `packages/i18n` through the existing mobile `useT`/
   `translate.ts` adapter, exactly as M-08; no additional i18next runtime is added.
 - The manifest's `mobile/e2e/m-09.spec.ts` is intentionally not created: no mobile
@@ -559,3 +796,32 @@ arm64/4GB/64GB/Android 13+ profile still require M-01 build/device qualification
 The Node prop matrix verifies labeled controls, minimum heights, wrapping/scaling
 configuration, tokens/locales and modal actions; it cannot certify native layout,
 focus return, contrast in sunlight or assistive-technology behavior.
+
+
+### M-09 master integration
+
+Lifecycle migrations are 9–11 after master's released M-06 migrations 7–8; the
+accepted M-09 decision is ADR 124. `DayStore` applies lifecycle bootstrap and delta
+sections through the existing `DayBundleService` projection gate and transaction.
+Revocation rejects stale writers and removes downloaded physical/point projections
+plus M-08 assignment authorization, while retaining drafts, events and evidence.
+The upgrade regression preserves retained M-06 assignments and capture enrollment.
+
+The live GitHub issue was read successfully during this integration. The existing
+cold-start regression closes/reopens a real temporary SQLite file and later retries
+the original pending UUID once. Node/disc evidence does not certify Android
+force-stop, native SQLCipher/upload, TalkBack, light/dark layout or 130% text on the
+MO01 device profiles. B-33's real decision/task producer remains unavailable.
+
+
+M-09 scope/reactivation hardening (ADR 125, migration 11): bootstrap atomically
+narrows current capture authorization while retaining each draft's historical copy.
+SQLite insertion guards protect M-08/M-09 saves and lifecycle corrections against
+revocation after preflight. A durable receipt ledger retains acknowledged local
+physical effects through lagging pages; only a drained newer identity projection or
+serialized authoritative bootstrap reconciles them. Pending effects still overlay
+downloads, and later authoritative server voids can reactivate acknowledged identities.
+The feature README maps the deterministic scope-race, bootstrap, pagination and
+real-file restart regressions. Incident thresholds remain configured but cannot form
+a real journey until downloaded incident history is connected; native/API limits
+remain UNVERIFIED.

@@ -4,7 +4,7 @@ import type { CatalogItem } from "./catalogs-query";
 import { changeAvailability } from "./use-catalog-editor";
 import { useCatalogEditorContext } from "./catalog-editor-context";
 import { CatalogActionButton } from "./CatalogActionButton";
-import styles from "./catalogs.module.css";
+
 /** Reactivation is direct; deactivation opens plain confirmation. Limits remain visible. */
 export function CatalogAvailabilityButton({ item }: { item: CatalogItem }) {
   const { t } = useTranslation();
@@ -15,7 +15,8 @@ export function CatalogAvailabilityButton({ item }: { item: CatalogItem }) {
   const reason = t(isAtLimit ? "catalogs.error.limit" : "catalogs.actions.busy");
   return (
     <CatalogActionButton
-      className={styles.action}
+      variant="ghost"
+      size="sm"
       reason={isBlocked ? reason : undefined}
       onClick={() => {
         editor.setError(null);

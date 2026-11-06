@@ -1,4 +1,5 @@
-import type { Schemas } from "@wolbachia/api-client";
+import { replaceCaptureScope } from "./current-scope.ts";
+import { reconcileIdentityEffects } from "./identity-effects.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readChange, readOvitrap, readPoint } from "./courier-validation.ts";
 interface Projection {
@@ -22,23 +23,35 @@ function changeStatement(value: unknown, kind: "ovitrap" | "sampling_point"): Sq
   if (change.id !== body.id) throw new Error("Courier resource identity mismatch.");
   return statement({ ...change, kind, body });
 }
+function section(input: unknown, key: "ovitraps" | "sampling_points"): readonly unknown[] {
+  if (!input || typeof input !== "object" || Array.isArray(input))
+    throw new Error("Invalid courier sections.");
+  const rows = (input as Record<string, unknown>)[key];
+  if (rows === undefined) return []; // Older B-13 payloads predate these additive sections.
+  if (!Array.isArray(rows)) throw new Error("Invalid courier section.");
+  return rows;
+}
 /** Existing B-13 schemas only; no relocation producer/wire schema exists. */
-export function courierChangeStatements(
-  changes: Pick<Schemas["Changes"], "ovitraps" | "sampling_points">,
-): readonly SqlStatement[] {
+export function courierChangeStatements(changes: unknown): readonly SqlStatement[] {
+  const isDrained =
+    typeof changes === "object" &&
+    changes !== null &&
+    "has_more" in changes &&
+    changes.has_more === false;
   return [
-    ...changes.ovitraps.map((change) => changeStatement(change, "ovitrap")),
-    ...changes.sampling_points.map((change) => changeStatement(change, "sampling_point")),
+    ...section(changes, "ovitraps").map((change) => changeStatement(change, "ovitrap")),
+    ...section(changes, "sampling_points").map((change) =>
+      changeStatement(change, "sampling_point"),
+    ),
+    ...(isDrained ? [reconcileIdentityEffects(false)] : []),
   ];
 }
-/** Replaces downloaded projections only; the M-01 bootstrap consumer owns calling this boundary. */
-export function courierBundleStatements(
-  bundle: Pick<Schemas["Bootstrap"], "ovitraps" | "sampling_points">,
-): readonly SqlStatement[] {
-  const traps = bundle.ovitraps
+/** Replaces downloaded projections only inside the existing DayStore bootstrap transaction. */
+export function courierBundleStatements(bundle: unknown): readonly SqlStatement[] {
+  const traps = section(bundle, "ovitraps")
     .map((value) => readOvitrap(value))
     .map((body) => ({ kind: "ovitrap", id: body.id, version: body.version, sequence: 0, body }));
-  const points = bundle.sampling_points
+  const points = section(bundle, "sampling_points")
     .map((value) => readPoint(value))
     .map((body) => ({
       kind: "sampling_point",
@@ -50,6 +63,11 @@ export function courierBundleStatements(
   return [
     { sql: "DELETE FROM lifecycle_courier_projection" },
     ...[...traps, ...points].map(statement),
+    replaceCaptureScope(
+      points.map((point) => point.id),
+      traps.map((trap) => trap.id),
+    ),
+    reconcileIdentityEffects(true),
   ];
 }
 export async function courierPhysical(db: SqlExecutor, id: string) {

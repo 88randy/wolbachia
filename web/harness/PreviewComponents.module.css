@@ -1,0 +1,186 @@
+.gallery {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+  margin-top: var(--space-5);
+}
+.gallery > h2 {
+  margin: 0;
+  color: var(--color-text-primary);
+  font-size: var(--web-type-title-font-size);
+  line-height: var(--web-type-title-line-height);
+}
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--space-3);
+  min-width: 0;
+}
+.stack {
+  display: grid;
+  gap: var(--space-2);
+  min-width: 0;
+}
+.row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--space-1-5);
+  min-width: 0;
+}
+.label {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-caption-font-size);
+}
+.sectionTitle {
+  margin: 0 0 var(--space-1);
+  font-size: var(--web-type-body-font-size);
+  font-weight: 600;
+}
+.strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+.number {
+  font-family: var(--font-family-mono);
+  font-size: var(--web-type-kpi-value-font-size);
+  line-height: var(--web-type-kpi-value-line-height);
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+}
+.stat {
+  min-height: calc(var(--space-6) * 1.5);
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: var(--space-2);
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-inner);
+}
+.stat small {
+  color: var(--web-delta-positive);
+  font-family: var(--font-family-mono);
+  font-size: var(--web-type-caption-font-size);
+}
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-6) * 3)), 1fr));
+  gap: var(--space-1-5);
+}
+.swatch {
+  display: grid;
+  grid-template-rows: calc(var(--space-6) * 1.5) auto;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.swatchColor {
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-inner);
+  background: var(--preview-swatch);
+}
+.swatchName {
+  font-family: var(--font-family-mono);
+  font-size: var(--web-type-caption-font-size);
+  color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
+}
+.typeSample {
+  margin: 0;
+  font-size: var(--preview-type-size);
+  line-height: normal;
+  overflow-wrap: anywhere;
+}
+.typeName {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-family-mono);
+  font-size: var(--web-type-caption-font-size);
+}
+.mono {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+}
+.shape {
+  display: grid;
+  place-items: center;
+  min-width: var(--space-6);
+  min-height: var(--space-6);
+  padding: var(--space-2);
+  border: 1px solid var(--color-border-soft);
+  background: var(--color-surface-raised);
+  border-radius: var(--preview-radius, var(--radius-inner));
+  box-shadow: var(--preview-shadow, none);
+  font-family: var(--font-family-mono);
+  font-size: var(--web-type-caption-font-size);
+  color: var(--color-text-secondary);
+}
+.scroll {
+  max-height: calc(var(--space-6) * 4);
+  overflow: auto;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-inner);
+  background: var(--color-surface-muted);
+}
+.scrollContent {
+  min-width: calc(var(--space-6) * 15);
+  padding: var(--space-2);
+}
+.scrollLine {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-6);
+  min-height: var(--web-control-lg);
+  border-bottom: 1px solid var(--color-border-soft);
+  font-family: var(--font-family-mono);
+  font-size: var(--web-type-caption-font-size);
+}
+
+.gallery,
+.grid,
+.stack,
+.swatches,
+.swatch {
+  max-width: 100%;
+}
+.mono {
+  overflow-wrap: anywhere;
+}
+.catalogWide {
+  grid-column: 1 / -1;
+}
+.buttonMatrixScroll {
+  min-width: 0;
+  max-width: 100%;
+  overflow: auto;
+}
+.buttonMatrix {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: var(--web-type-caption-font-size);
+}
+.buttonMatrix caption {
+  text-align: start;
+  font-weight: 600;
+  padding-block: var(--space-1);
+}
+.buttonMatrix th,
+.buttonMatrix td {
+  padding: var(--space-1);
+  text-align: start;
+  border-bottom: 1px solid var(--color-border-soft);
+  white-space: nowrap;
+}
+.buttonMatrix th {
+  font-family: var(--font-family-mono);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+}
+@media (min-width: 64rem) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}

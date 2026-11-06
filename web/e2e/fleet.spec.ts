@@ -72,7 +72,12 @@ for (const language of LANGUAGES) {
       await unblock.focus();
       await page.keyboard.press("Enter");
       const dialog = page.getByRole("dialog");
-      await expect(dialog.getByRole("combobox")).toBeFocused();
+      await expect(
+        dialog.getByRole("button", {
+          name: language === "en" ? "Cancel" : "Cancelar",
+          exact: true,
+        }),
+      ).toBeFocused();
       await dialog.getByRole("combobox").selectOption("other");
       await expectNoAxeViolations(page);
       await dialog.getByRole("textbox").fill("Repair checked and documented");

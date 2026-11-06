@@ -4,13 +4,13 @@ const ASSIGNED_IDENTITY = `SELECT json_extract(item.value,'$.point.id') AS point
   COALESCE(json_extract(item.value,'$.isRetired'),0) AS is_retired
   FROM kv CROSS JOIN json_each(kv.value,'$.assignment.ovitraps') item
   WHERE kv.key='ovitrap_snapshots' AND json_extract(item.value,'$.id')=(SELECT id FROM identity) LIMIT 1`;
-const LOCAL_RETIREMENT = `SELECT 1 FROM lifecycle_capture c JOIN outbox_event e ON e.id=c.event_id
-  WHERE c.ovitrap_id=(SELECT id FROM identity) AND c.kind IN ('replace','remove')
-  AND e.local_status NOT IN ('rejected','in_review') AND NOT EXISTS
-  (SELECT 1 FROM lifecycle_void v JOIN outbox_event ve ON ve.id=v.event_id
-   WHERE v.target_event_id=c.event_id AND ve.local_status NOT IN ('rejected','in_review'))`;
+const LOCAL_EFFECT = `SELECT effect.is_retired FROM lifecycle_identity_effect effect JOIN outbox_event e ON e.id=effect.event_id
+  LEFT JOIN lifecycle_receipt receipt ON receipt.event_id=effect.event_id AND receipt.ovitrap_id=effect.ovitrap_id
+  WHERE effect.ovitrap_id=(SELECT id FROM identity) AND e.local_status NOT IN ('rejected','in_review')
+    AND (e.local_status<>'sent' OR COALESCE(receipt.is_reconciled,0)=0)
+  ORDER BY e.seq DESC LIMIT 1`;
 /** Single current-state rule for reads and transactional guards. Expressions are trusted SQL, never user values.
- * Downloaded physical state replaces assignment fallback; downloaded point retirement and current local effects apply.
+ * Unreconciled local effects overlay downloaded state; point retirement always blocks. Receipt provenance survives restart.
  */
 export function physicalIdentityStateSql({
   idSql,
@@ -27,13 +27,11 @@ export function physicalIdentityStateSql({
       (SELECT json_extract(draft,'$.point.id') FROM ovitrap_capture WHERE ovitrap_id=(SELECT id FROM identity) ORDER BY rowid LIMIT 1),
       (SELECT point_id FROM lifecycle_capture WHERE kind='replace' AND json_extract(draft,'$.replacementId')=(SELECT id FROM identity) ORDER BY rowid LIMIT 1),
       ${pointIdSql}) AS id)
-    SELECT CASE WHEN EXISTS (${LOCAL_RETIREMENT}) OR
-      CASE WHEN EXISTS (SELECT 1 FROM downloaded)
-        THEN COALESCE((SELECT json_extract(body,'$.is_retired') OR json_extract(body,'$.placement_voided') FROM downloaded),0)
-        ELSE COALESCE((SELECT is_retired FROM assigned),0) END
-      OR EXISTS (SELECT 1 FROM lifecycle_courier_projection p JOIN resolved_point point ON p.id=point.id
-        WHERE p.kind='sampling_point' AND json_extract(p.body,'$.is_retired')=1)
-      THEN 1 ELSE 0 END)`;
+    SELECT CASE WHEN EXISTS (SELECT 1 FROM lifecycle_courier_projection p JOIN resolved_point point ON p.id=point.id
+      WHERE p.kind='sampling_point' AND json_extract(p.body,'$.is_retired')=1) THEN 1
+      ELSE COALESCE((${LOCAL_EFFECT}),
+        (SELECT json_extract(body,'$.is_retired') OR json_extract(body,'$.placement_voided') FROM downloaded),
+        (SELECT is_retired FROM assigned),0) END)`;
 }
 
 /** Read the shared predicate with draft point context, including a not-yet-placed physical UUID. */

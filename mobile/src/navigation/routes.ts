@@ -8,6 +8,8 @@ export type Route =
       readonly ovitrapId: string;
       readonly manualCapture: boolean;
     }
+  | { readonly name: "day" }
+  | { readonly name: "map" }
   | { readonly name: "ovitrapCapture" }
   | { readonly name: "ovitrapScanner"; readonly target: "ovitrap" | "bag" }
   | { readonly name: "invalidOvitrapCode"; readonly target: "ovitrap" | "bag" }

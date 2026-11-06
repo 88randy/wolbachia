@@ -1,10 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { useCan } from "../session/use-can";
-import { classNames } from "../styles/class-names";
+
 import { ACTIVE_LIMIT } from "./catalog-domain";
 import type { CatalogEditor } from "./use-catalog-editor";
 import { CatalogActionButton } from "./CatalogActionButton";
-import buttons from "../styles/button.module.css";
+
 /** Permission hides the control; catalog limits and loading explain why it is unavailable. */
 export function CatalogAddButton({ editor, isReady }: { editor: CatalogEditor; isReady: boolean }) {
   const { t } = useTranslation();
@@ -19,7 +19,8 @@ export function CatalogAddButton({ editor, isReady }: { editor: CatalogEditor; i
       : "catalogs.page.loading";
   return (
     <CatalogActionButton
-      className={classNames(buttons.button, buttons.primary)}
+      variant="primary"
+      size="md"
       reason={isBlocked ? t(reasonKey) : undefined}
       onClick={() => {
         editor.setError(null);

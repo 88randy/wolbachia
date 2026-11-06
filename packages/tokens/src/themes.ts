@@ -1,5 +1,5 @@
 /**
- * Semantic color themes (light and dark) derived from `design/mobile/source/codequim.css`.
+ * Semantic color themes (light and dark) refreshed by issue #202; historical design CSS preserves the original palette.
  * Names describe the role of a color, never its hue. Two roles that share a value
  * today (`actionStrong` and `status.info.fg`) stay separate so one can change alone.
  */
@@ -31,7 +31,11 @@ export interface ThemeColors {
   readonly background: ColorValue;
   /** Cards, sheets and any raised surface. */
   readonly surface: ColorValue;
-  /** Persistent navigation chrome: mobile top bar and web sidebar. */
+  /** Nested raised content within a muted card. */
+  readonly surfaceRaised: ColorValue;
+  /** Quiet widget bodies, table hover and skeleton base. */
+  readonly surfaceMuted: ColorValue;
+  /** Historical mobile top-bar chrome; web navigation now uses the canvas. */
   readonly chrome: ColorValue;
   /** Emergency button and emergency-only emphasis. */
   readonly emergency: ColorValue;
@@ -71,13 +75,15 @@ export const lightTheme: Theme = {
     onAction: "#FFFFFF",
     navy: "#0A1A3F",
     tint: "#EBF1FF",
-    background: "#F4F6FA",
+    background: "#EEF0F2",
     surface: "#FFFFFF",
+    surfaceRaised: "#FFFFFF",
+    surfaceMuted: "#F1F3F5",
     chrome: "#0A1A3F",
     emergency: "#C40F1E",
-    text: { primary: "#0A1A3F", secondary: "#3A4664", tertiary: "#586380" },
-    border: { default: "#C9D0DE", strong: "#7C869E", soft: "#E4E8EF" },
-    disabled: { background: "#E4E8EF" },
+    text: { primary: "#20252D", secondary: "#4B5563", tertiary: "#596470" },
+    border: { default: "#7A8490", strong: "#737D88", soft: "#DDE2E7" },
+    disabled: { background: "#E8ECEF" },
     status: {
       success: { fg: "#0B6B35", bg: "#E3F5EA" },
       warning: { fg: "#8A4B00", bg: "#FFF1D6" },
@@ -97,19 +103,21 @@ export const darkTheme: Theme = {
     onAction: "#0A1A3F",
     navy: "#0A1A3F",
     tint: "#1C3266",
-    background: "#0B1630",
-    surface: "#13244A",
+    background: "#181B20",
+    surface: "#22262D",
+    surfaceRaised: "#303640",
+    surfaceMuted: "#2B3038",
     chrome: "#060E22",
     emergency: "#E0303F",
-    text: { primary: "#F2F5FB", secondary: "#B7C1D6", tertiary: "#A3AFC8" },
-    border: { default: "#2E4170", strong: "#8391B2", soft: "#1F3260" },
-    disabled: { background: "#22345C" },
+    text: { primary: "#F1F3F5", secondary: "#CBD1D8", tertiary: "#AFB8C3" },
+    border: { default: "#7E8997", strong: "#929DAA", soft: "#3B424D" },
+    disabled: { background: "#2B3038" },
     status: {
       success: { fg: "#5FD08F", bg: "#123A2A" },
       warning: { fg: "#FFB547", bg: "#3A2A0E" },
       critical: { fg: "#FF8A8A", bg: "#4A1A22" },
       info: { fg: "#9DBBFF", bg: "#1C3266" },
-      neutral: { fg: "#B7C1D6", bg: "#22345C" },
+      neutral: { fg: "#CBD1D8", bg: "#303640" },
     },
   },
 };

@@ -8,6 +8,7 @@ export const STORAGE_KEYS = {
   language: "wolbachia.language",
   theme: "wolbachia.theme",
   sidebarCollapsed: "wolbachia.sidebarCollapsed",
+  sidebarWidth: "wolbachia.sidebarWidth",
   /** Slug of the organization chosen by a multi-organization user; cleared on sign-out. */
   organization: "wolbachia.organization",
 } as const;

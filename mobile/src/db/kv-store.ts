@@ -31,6 +31,20 @@ export class KvStore {
     await this.#db.runAtomically([setStatement(key, value)]);
   }
 
+  /** Compare-and-set prevents late native results from restoring a newer/removed selection. */
+  async compareAndSet(entry: {
+    readonly key: string;
+    readonly expected: string;
+    readonly value: string;
+  }): Promise<void> {
+    await this.#db.runAtomically([
+      {
+        sql: "UPDATE kv SET value=? WHERE key=? AND value=?",
+        params: [entry.value, entry.key, entry.expected],
+      },
+    ]);
+  }
+
   async remove(key: string): Promise<void> {
     await this.#db.runAtomically([removeStatement(key)]);
   }

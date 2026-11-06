@@ -1,3 +1,4 @@
+import { InlineNotice } from "../ui/InlineNotice";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
@@ -32,9 +33,9 @@ export function CatalogItems({ catalog }: { catalog: Catalog }) {
           editor={editor}
           isReady={query.data !== undefined && query.error === null}
         />
-        <p className={styles.note}>
+        <InlineNotice tone="info">
           {t(catalog.is_open ? "catalogs.page.open" : "catalogs.page.closed")}
-        </p>
+        </InlineNotice>
         <CatalogTable items={tableItems} />
       </div>
     </CatalogEditorContext>

@@ -29,16 +29,9 @@ Full inventory with states: [`docs/web-screens.md`](../docs/web-screens.md). End
 
 ## Profiles
 
-Decided: **Supervisor**, **Entomologist**, **Promoter**, **Admin**.
+B-01 defines nine seeded profile bundles: courier, supervisor, entomologist, community promoter, admin, coordinator, warehouse, regulatory and government. W65 renders the backend projections as data and never branches on profile names. Government has a read-only portal boundary; the fixed-profile projection gap is documented in the W-03 section.
 
-The design also uses these profiles. **[PENDING]** Decide whether each one is its own profile or a permission set inside one of the four:
-
-- **Coordinator:** a supervisor of supervisors; receives escalations.
-- **Warehouse:** inventory and dispatch.
-- **Regulatory:** permits, ARCO, data transfers, retention.
-- **Government (external, read-only):** public portal only.
-
-Rules that do not depend on that decision:
+Shared permission rules:
 
 - A user only sees data of their own organization (`organization_id` comes from the session, never from the URL or the request body).
 - What a user can do comes from `GET /api/v1/me/` (permissions + scope). The UI hides what the user cannot see, and disables (with the reason and who can unblock it) what is blocked.
@@ -102,7 +95,7 @@ The web port is bound to `127.0.0.1:${WEB_PORT:-5173}`. Start the stack **only f
 | `i18n/` | i18next fed by `@wolbachia/i18n` (typed keys, `{param}`), `useLanguage` |
 | `theme/` | Light/Dark/System preference, System by default; resolved light/dark `data-theme` on `<html>` before the first render; System follows live `prefers-color-scheme` changes |
 | `router/` | code-based TanStack Router routes: public routes, the guarded layout and one placeholder per area (`areas.ts`, each with its `requiredPermissions`); `guards.ts`, `safe-redirect.ts` |
-| `shell/` | skip link, sidebar (232 px, 64 px collapsed), top bar, offline banner |
+| `shell/` | skip link, sidebar (248 px by default, resizable, 64 px collapsed), top bar, offline banner |
 | `states/` | placeholder, not found, route error, loading skeleton, configuration error |
 | `styles/` | global CSS, shared CSS modules, `no-style-literals.test.ts` |
 | `storage/` | `localStorage` wrapper that never throws (preferences are conveniences) |
@@ -117,8 +110,8 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 ### What the shell does today
 
 - Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists only the areas the user may open (see "Session, guards and permissions"); a group with no visible area loses its heading.
-- Top bar slots: search (Ctrl+K / Cmd+K focuses it, hint in the field; no backend yet), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), a native Light/Dark/System selector beside it, and the user menu. The center selector is **[PENDING]**: `scope.centers` are plain strings and there is no centers endpoint.
-- The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. An explicit Light/Dark choice removes the system listener. The selector uses the shared focus ring and 32 px control token; narrow top bars put search on its own row so all controls remain reachable.
+- Top bar slots: search (Ctrl+K / Cmd+K opens the command palette; hint in the field), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), one sun/moon dark-theme switch on the right; the user menu stays in the sidebar footer. The backend-scoped center selector is a remembered filter; see W65/W68 (#147) below.
+- The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. Until the first toggle, the switch announces the resolved System appearance and follows live system changes. Space, Enter or a click selects the opposite resolved theme and stores an explicit Light/Dark preference, removing the system listener. The switch uses the shared focus ring and a target larger than 24 px; narrow top bars put search on its own row so all controls remain reachable.
 - Below 768 px (`web.layout.compactBreakpoint`) the sidebar stays collapsed, so the page reflows at 320 CSS px without two-axis scroll (WCAG 1.4.10; e2e checks it). Each page sets its own `document.title` ("<page> · Wolbachia", WCAG 2.4.2).
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
 - Not found and route errors render inside the shell, with a way home (and retry).
@@ -160,12 +153,12 @@ Built in #28 (decisions 77 to 81 in `docs/decisions.md`). Backend contract: `doc
 - **Reset-link formats (#58, decision 83).** The emailed link keeps `uid` and `token` in the URL fragment, which browsers never send, so no nginx, TLS proxy or log aggregator sees them. `ResetPasswordPage` reads the fragment once with `URLSearchParams` (`auth/reset-link.ts`: one `uid` and one `token`, each `[A-Za-z0-9_-]{1,128}`), keeps the values in memory and replaces the address bar with `/reset-password` before any request. The same happens for every later fragment (a second link pasted into the same tab is a hash-only navigation: the credentials are replaced and the form starts over); a missing or malformed fragment shows the invalid-link state. Neither value is logged. **Old path format** `/reset-password/{uid}/{token}` (emails sent before #58) is still served by `LegacyResetPasswordPage` for one token lifetime (`PASSWORD_RESET_TIMEOUT`, 3600 s). Note dated 2026-11-04: it can be removed 1 hour after the first production deploy of #58, tracked in #62 (route `legacyResetPasswordRoute` in `router/router.tsx`, `LegacyResetPasswordPage`, its tests, and the `location /reset-password/` block in `nginx/default.conf`). CI checks that the nginx log of the e2e run holds no reset token.
 - **Session state** is the `["me"]` query (`session/me-query.ts`): fresh for 60 s, refetched on window focus and on guarded navigations after that, so a permission changed by an administrator reaches the navigation. There is no custom auth context.
 - **Guards** (`router/guards.ts`, `beforeLoad`): no session (`401`) goes to `/login?redirect=<path>`; `403 no_active_membership` goes to `/login?notice=no-membership`; no active organization goes to `/select-organization`; an area whose permissions are not met throws `ForbiddenError` and its error component renders the "no permission" state inside the shell. `safeRedirect` accepts only internal paths (not `//host`, backslashes, schemes, control characters or `/login`).
-- **Permissions.** `can(me, permission)` and `useCan()` look only at the permission codes of `GET /me/`, never at profile names. Each area in `router/areas.ts` has `requiredPermissions`: a list of codes (at least one), `[]` for every member (Home), or `"pending"` until its issue defines a code. `router/area-access.test.ts` lists the pending areas; the issue that builds an area replaces its `"pending"` and removes it from that list. **[PENDING backend]** scope (`centers`, `quadrants`): whether an empty list means "whole organization" or "nothing" is not defined, so `can()` takes no scope argument and the server enforces scope on every request.
+- **Permissions.** `can(me, permission)` and `useCan()` look only at the permission codes of `GET /me/`, never at profile names. Each area in `router/areas.ts` has `requiredPermissions`: a list of codes (at least one), `[]` for every member (Home), or `"pending"` until its issue defines a code. `router/area-access.test.ts` lists the pending areas; the issue that builds an area replaces its `"pending"` and removes it from that list. B-01 defines explicit `none|selected|all` modes in both dimensions; an empty selected scope denies access. `can()` intentionally checks the action code only. W65/W68 navigation and queries also require a nonempty explicit center grant; the backend enforces paired action/object scope on every request.
 - **Organization.** A multi-organization user chooses on `/select-organization` (not in the design, built with the sign-in layout). The slug is kept in memory and `localStorage` (`wolbachia.organization`), travels only as the `X-Organization` header (never in a URL or body), is forgotten when the server refuses it and is cleared on sign-out. Choosing one drops the cache of the previous organization and refetches `/me/`.
 - **Sign-in.** The CSRF cookie is requested when the page opens and again before submit if missing; a `403 permission_denied` refreshes it and retries once. All credential failures read the same; the remaining attempts are not shown (the API does not provide them); a `429` shows the wait in minutes from `Retry-After`.
 - **Sign-out** posts `/auth/logout/` (CSRF), clears the slug and the query cache and goes to `/login`. If the server cannot be reached the user stays signed in and is told.
 - **Session expiry.** Any `401` after sign-in (from any query or mutation) opens a modal re-authentication dialog over the page (native `<dialog>`; username read-only; Escape does not dismiss it), so drafts survive. After signing in again the active queries are refetched; the failed request is not repeated. A mid-session `403 no_active_membership` forgets the organization and re-runs the guards. **[PENDING backend]** the session is a fixed 12 h (`AUTH_WEB_SESSION_AGE_SECONDS`) and no expiry or keep-alive is exposed, so the design's "your session closes in 0:58 / Stay signed in" banner and its "30 min idle" copy are not built.
-- **Not built (no endpoints) [PENDING]:** the 2FA second step and the first-time privacy-notice acceptance of W1; "Request access" and the error reference number of the global states; the organization logo (`logo_url` may live on S3, which the CSP `img-src 'self' data:` blocks).
+- **Not built (no endpoints) [PENDING]:** the 2FA second step and the first-time privacy-notice acceptance of W1; "Request access" and the error reference number of the global states. W68 supports only the authenticated same-origin raster logo; remote URLs fall back to initials.
 - **Tests.** Unit tests use `src/test/fake-api.ts` (a fake `fetch` keyed by method and path; `makeMe()`, `apiError()`) and `renderApp({ path, me, fetch })`. Passwords in tests are `fakePassword()` (`pw-for-<uuid>`, generated at runtime: the secret scan only allows its fake-password exception under `backend/tests/`). End-to-end tests fake the API with `page.route` (`e2e/fixtures/mock-api.ts`, no MSW) and run axe (WCAG 2.2 AA) on every screen and state in light and dark, es-MX and en (`e2e/auth-a11y.spec.ts`).
 
 Screenshots of the shell (light, dark, es-MX, en, collapsed, offline) and of the #28 screens (sign-in in four combinations; sign-in error and lockout, forgot and reset password, organization selection, no permission, user menu and the re-authentication dialog): [`docs/screenshots/`](docs/screenshots/). Regenerate the #28 ones with `E2E_SCREENSHOTS=1 npm run e2e -w @wolbachia/web -- screenshots`.
@@ -196,9 +189,18 @@ Design canvas (desktop design system, W1–W71, 10 clickable journeys): Wolbachi
 - All queries and invalidation live in `src/fleet/fleet-query.ts`, under one ROOT and user/organization-scoped identity. When #83 lands, only that file needs the shared helper. Context changes drop old queries and remount drafts/dialogs; abort signals and session revision guards discard late answers before session reports or invalidation. Writes are explicit attempts and never replay after reauthentication.
 - Unblock and void reuse `VoidDialog`/`submitVoid` and `/me/` void limits, including visible-character counting, normalized trimmed reasons, focus/return and preserved evidence after conflicts. A forked, dialog-local i18next resource store changes action wording without changing global translations. `motorcycle_not_blocked`, `motorcycle_in_use` and `already_voided` stay in the dialog and refresh the record. Refreshing or failed refreshes withhold readiness badges and disable record actions; Retry is explicit.
 - Create uses React Hook Form/Zod (code up to 50, optional plate up to 20); `duplicate_code` focuses the code field and preserves the draft. No API generation, generated-file edits or new dependencies.
-- Follow-ups: B-05 (#103) center filtering, odometer/next-service data, services/responsibility/fuel/incident history and source links, comparable efficiency intervals/advisory and fault-specific inspection/clearance; plate PATCH UI. The existing unblock endpoint clears the single backend-recorded block, not an invented individual-fault endpoint.
+- Follow-ups: B-05 (#103) odometer/next-service data, services/responsibility/fuel/incident history and source links, comparable efficiency intervals/advisory and fault-specific inspection/clearance; plate PATCH UI. The existing unblock endpoint clears the single backend-recorded block, not an invented individual-fault endpoint.
 - Verification: component journeys live in `src/fleet/*.test.tsx`; the session suite uses deferred responses for identity/organization isolation and an expired-write reauthentication journey. `e2e/fleet.spec.ts` covers browser wiring, modal keyboard focus, axe and 320 CSS px in es-MX/en and light/dark; it must run in an environment with Playwright available. Component axe cannot establish browser contrast, native modal trapping or visual reflow.
 
+### W65/W68 organization, roles and scope (#147)
+
+`/settings/organization` and `/settings/roles` require their exact read permissions. These organization-global resources do not require a center grant; none/empty dimensional scopes restrict center-bound resources only. Navigation, settings links and query enablement follow the same action-only rule. Configuration writes use `expected_revision`, preserve refused drafts and require explicit review on conflicts. Nine profile bundles are backend data; consultation-only/empty bundles are conservatively read-only. Membership scope uses the generated change-scope action. Scope is shared per bundle; the UI never invents per-action scope payloads.
+
+The shell center selector consumes backend-scoped centers across all server pages, offers all only for an explicit all grant, and remembers its filter per user id + organization slug through safe storage. Changing it cancels/removes org query results, changes their context keys and clears URL filters/chips. Invalid remembered ids are removed after list validation. A changed `/me/` permission/scope projection changes the session authorization identity through the existing controller, drops old results and rechecks deep links. The selector never writes grants. Organization-global B-01 resources remain unfiltered. Quadrant and motorcycle list/code queries pass the explicit URL center first, otherwise the active center, otherwise omit the parameter. Blocks and sampling points do not declare a center parameter and retain their parent quadrant constraint. Backend scope remains authoritative.
+
+Branding accepts PNG/JPEG/WebP; browser raster decoding normalizes all three formats, including grayscale/indexed PNG, to the bounded RGB/RGBA PNG currently accepted by B-01. Only the same-origin authenticated raster endpoint is loaded, via the generated client (organization header + cookie); CSP permits its PNG data URL. Missing/unsafe logos show initials. Country is read-only, as the update contract omits it. Revision history/effective timestamps, exports, voiding and tenant creation are absent from this contract.
+
+See [W-03 README](src/settings/organization/README.md) for the fixed-profile metadata/catalog gaps, design deviations, criterion-to-test map and local verification limits. `e2e/w-03.spec.ts` is one wiring journey across language/theme combinations, reserved for CI.
 
 ## W22-W24 geography (#157)
 
@@ -275,3 +277,71 @@ Inactive items are hidden unless `include_deactivated=true`; configuration is de
 after confirmation and can be reactivated, rather than voided. The boolean `in_use` is
 shown with an accessible icon/text badge. The usage count, authorship and atomic reorder
 remain follow-up #182. Other free-text validation belongs to consumer screens and mobile.
+
+## Visual refresh #202: shared components and approval preview
+
+Source of truth: issue #202 plus the owner's approved Step 1 preview (decision 123).
+Historical design CSS is retained. Step 1 provides the approved tokens and
+shared components. Step 2 applies them to existing screens without changing behavior.
+
+Run npm run dev -w @wolbachia/web, then open /harness/style-preview.html.
+Use ?theme=dark, ?lang=en, or both. This separate dev-only Vite entry uses the
+real shell, in-memory history and a fake API with domain demo records. It is
+neither a production route nor a production build entry. Preview query themes
+do not overwrite the saved theme preference. The owner approved Step 1 with one
+theme control in the top bar; regression review targets 1440/1280/768/390/320 px.
+
+Shared components:
+- src/ui/: buttons, cards/menus, folder tabs, status pills, notices/banner,
+  tooltips, Radix dialog/sheet/irreversible confirmation, queued actionable
+  toasts, delayed skeletons, empty/error/refreshing states.
+- src/analytics/: linked KPI cells with spoken signed deltas, relative time
+  in the organization time zone, SVG trend/mini-bar charts and equivalent tables.
+- src/forms/: labeled text/select/search and blur-first validation.
+- src/shell/: permission-filtered command palette (Ctrl/Cmd+K), help (?),
+  canvas sidebar with user menu and persistent width; the single sun/moon switch
+  lives in the top bar.
+- DataTable retains its previous API. Optional groupOf, renderDetail, rowActions,
+  density, onDensityChange and embedded add grouped headings, accessible expansion,
+  focus-visible row actions and controlled comfortable/compact density.
+  The embedded option omits the outer table frame when a parent Card supplies it.
+  These options never sort, filter or aggregate server-owned records.
+
+The sidebar separator supports ArrowLeft/ArrowRight (16px), Home/End (200/360px),
+Enter (collapse) and double-click (reset 248px). Compact mode changes appearance
+without overwriting desktop preferences. Width storage is validated and clamped.
+System remains the stored default until the first explicit toggle. The top-bar
+switch follows the live resolved appearance; there is no separate System picker.
+Global scrollbars and existing native-dialog surfaces use the same tokens; native dialog logic is unchanged.
+
+Primitives: [Radix Dialog](https://www.radix-ui.com/primitives/docs/components/dialog),
+[Tabs](https://www.radix-ui.com/primitives/docs/components/tabs) and
+[cmdk](https://github.com/dip/cmdk), using the exact already-installed versions.
+Fonts are self-hosted Inter and latin 400/500 JetBrains Mono. Codequim blue remains
+the action/focus accent; chart orange remains provisional until owner approval.
+The preview demonstrates skeleton, empty/no-results, scoped error with details,
+partial, refreshing and Undo states. Native alert/confirm/prompt is forbidden.
+
+Focused verification (one worker; no Playwright on this host):
+npx vitest run --maxWorkers=1 --pool=threads src/shell src/data-table src/styles src/ui src/forms src/analytics src/theme.
+If host memory cannot sustain multiple forks, run the same test files individually.
+
+On this low-memory Windows host, npm/fork startup can fail before tests start.
+From web/, the installed CLI can run without the npm wrapper:
+node ../node_modules/vitest/vitest.mjs run --maxWorkers=1 --pool=threads TEST_FILE.
+This still runs Vitest with one worker; no packages or project settings change.
+Pool behavior: https://vitest.dev/config/pool.
+
+The shell command palette and shortcut help share one modal slot (#202 review).
+Their invocation gate excludes open native/Radix/ARIA modals and blocked,
+expired or signed-out sessions. Shell portals unmount immediately on dismissal;
+focus restoration never overrides another active modal. Tests cover both modal
+opening orders and reauthentication focus without timer-based waits.
+
+The session-expiry regression uses a real rule-version reason draft, including
+value retention during and after reauthentication. A local, identity-scoped
+parameter definition keeps that editor mounted while organization queries are
+cleared and revalidated; it never restores query-cache entries. A changed user,
+organization, parameter or authorization boundary clears the old draft. Transient
+revalidation failures preserve it with Retry. The e2e session fixture checks the
+same real field; its screenshots and browser journey are run in CI.

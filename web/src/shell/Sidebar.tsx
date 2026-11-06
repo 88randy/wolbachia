@@ -7,15 +7,12 @@ import styles from "./Sidebar.module.css";
 import { SidebarBrand } from "./SidebarBrand";
 import { SidebarGroup } from "./SidebarGroup";
 import { SidebarToggle } from "./SidebarToggle";
-
+import { UserMenu } from "./UserMenu";
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
-  /** False on small screens, where the sidebar is always collapsed. */
   canToggle: boolean;
 }
-
-/** Left navigation: the areas the user may open, grouped, with a collapse button. */
 export function Sidebar({ collapsed, onToggle, canToggle }: SidebarProps) {
   const { t } = useTranslation();
   const me = useMe();
@@ -27,7 +24,10 @@ export function Sidebar({ collapsed, onToggle, canToggle }: SidebarProps) {
           <SidebarGroup key={group.id} group={group} collapsed={collapsed} />
         ))}
       </nav>
-      {canToggle ? <SidebarToggle collapsed={collapsed} onToggle={onToggle} /> : null}
+      <footer className={styles.footer}>
+        {canToggle && <SidebarToggle collapsed={collapsed} onToggle={onToggle} />}
+        <UserMenu placement="sidebar" collapsed={collapsed} />
+      </footer>
     </div>
   );
 }

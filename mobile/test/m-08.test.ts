@@ -1022,6 +1022,11 @@ void test("regression: retry after a post-begin read failure never saves the pre
     },
   };
   const target = "99999999-9999-4999-8999-999999999999";
+  await h.store.saveSnapshots({
+    catalog: CATALOG,
+    rules: RULES,
+    assignment: { ...ASSIGNMENT, ovitraps: [{ id: target, point: POINT }] },
+  });
   assert.equal(
     await runCaptureAction(
       commands,

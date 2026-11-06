@@ -1,47 +1,31 @@
-import type { MouseEvent } from "react";
 import { useTranslation } from "react-i18next";
-import buttons from "../styles/button.module.css";
-import { classNames } from "../styles/class-names";
+import { Button } from "../ui/Button";
 import styles from "./void-dialog.module.css";
-
 interface VoidDialogActionsProps {
   isBusy: boolean;
   isBlocked: boolean;
   onCancel: () => void;
 }
-
-/**
- * Cancel (outlined) and the destructive confirmation. While busy both are `aria-disabled`, not
- * `disabled`, so keyboard focus is not lost, a second press sends nothing and the dialog cannot
- * be left while the server may still void the record.
- */
+/** A pending confirmation retains its width and focus and refuses a second submission. */
 export function VoidDialogActions({ isBusy, isBlocked, onCancel }: VoidDialogActionsProps) {
   const { t } = useTranslation();
-  function ignoreWhileBusy(event: MouseEvent) {
-    if (isBusy) event.preventDefault();
-  }
   function cancel() {
     if (!isBusy) onCancel();
   }
   return (
     <div className={styles.actions}>
-      <button
-        type="button"
-        className={classNames(buttons.button, buttons.secondary)}
-        aria-disabled={isBusy}
-        onClick={cancel}
-      >
+      <Button variant="secondary" aria-disabled={isBusy} onClick={cancel} data-void-cancel>
         {t("common.actions.cancel")}
-      </button>
-      <button
+      </Button>
+      <Button
         type="submit"
         disabled={isBlocked}
-        className={classNames(buttons.button, styles.danger)}
-        aria-disabled={isBusy}
-        onClick={ignoreWhileBusy}
+        className={styles.danger}
+        loading={isBusy}
+        aria-label={isBusy ? t("voiding.dialog.busy") : undefined}
       >
-        {isBusy ? t("voiding.dialog.busy") : t("voiding.dialog.confirm")}
-      </button>
+        {t("voiding.dialog.confirm")}
+      </Button>
     </div>
   );
 }

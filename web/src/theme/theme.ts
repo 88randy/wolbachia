@@ -1,3 +1,4 @@
+import { applyResolvedTheme } from "./resolved-theme";
 import { readStored, STORAGE_KEYS } from "../storage/safe-storage";
 
 export type ThemeName = "light" | "dark";
@@ -28,12 +29,12 @@ export function applyTheme(preference: ThemePreference): void {
   stopFollowingSystem?.();
   stopFollowingSystem = undefined;
   if (preference !== "system" || typeof window.matchMedia !== "function") {
-    document.documentElement.dataset["theme"] = preference === "dark" ? "dark" : "light";
+    applyResolvedTheme(preference === "dark" ? "dark" : "light");
     return;
   }
   const query = window.matchMedia(DARK_SCHEME_QUERY);
   const updateTheme = () => {
-    document.documentElement.dataset["theme"] = query.matches ? "dark" : "light";
+    applyResolvedTheme(query.matches ? "dark" : "light");
   };
   query.addEventListener("change", updateTheme);
   stopFollowingSystem = () => {

@@ -10,7 +10,7 @@ import type { SqlExecutor, SqlRow, SqlValue } from "../../src/db/sql.ts";
 export async function createTestDatabase(): Promise<SqlExecutor> {
   return (await openTestDatabase(":memory:")).executor;
 }
-/** A closable adapter for the single M-04 durability test; ordinary tests remain in memory. */
+/** A closable adapter for file-backed durability tests; ordinary tests remain in memory. */
 export async function openTestDatabase(path: string) {
   const database = new DatabaseSync(path);
   const executor = databaseExecutor(database);
@@ -22,7 +22,7 @@ export async function openTestDatabase(path: string) {
     },
   };
 }
-function databaseExecutor(database: DatabaseSync): SqlExecutor {
+export function databaseExecutor(database: DatabaseSync): SqlExecutor {
   const executor: SqlExecutor = {
     query(sql: string, params: readonly SqlValue[] = []) {
       const rows = database.prepare(sql).all(...params) as SqlRow[];

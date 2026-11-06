@@ -50,3 +50,12 @@ user or organization on the same slug dismisses a ready draft, sends no POST, an
 shows previous rows while loading. Domain sort/schema/outcome cases, app-level
 permission/confirmation/session/pagination/refetch regressions, and `web/e2e/catalogs.spec.ts`
 for the mocked keyboard journey and axe in both locales/themes. API types come from the generated #182 contract.
+
+Visual refresh #202: the catalog index uses a shaped `CardSkeleton`; its no-catalog
+state offers retry because this screen has no catalog-creation API. Item loading,
+empty and error states remain owned by the shared `DataTable`, with the existing
+permission-gated Add action above it. Refresh errors keep cached content and drafts
+visible in `InlineNotice`. Statuses use `StatusPill`; action and native-dialog
+buttons use the shared `Button`, including in-button submission progress. Codes and
+timestamps use the mono token. Link tabs retain their URL semantics; native dialog
+focus, validation, confirmation and submission logic are unchanged.

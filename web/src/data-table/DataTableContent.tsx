@@ -7,12 +7,13 @@ import type {
   DataTableColumn,
   RowSelectionConfig,
   TableController,
+  TablePresentation,
   TableData,
   VoidInfo,
 } from "./table-types";
 import type { DataTableFeatures } from "./use-data-table";
 
-interface DataTableContentProps<TRow extends RowData> {
+interface DataTableContentProps<TRow extends RowData> extends TablePresentation<TRow> {
   caption: string;
   table: ReactTable<DataTableFeatures, TRow>;
   columns: readonly DataTableColumn<TRow>[];
@@ -46,7 +47,7 @@ export function DataTableContent<TRow extends RowData>(props: DataTableContentPr
       <TableError error={data.error} onRetry={data.refetch} onFirstPage={firstPageOf(controller)} />
     );
   }
-  if (data.isLoading) return <TableLoading />;
+  if (data.isLoading) return <TableLoading columns={grid.columns.length} />;
   if (data.rows.length === 0) {
     return (
       <TableEmpty

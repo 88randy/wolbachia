@@ -1,3 +1,4 @@
+import { web } from "@wolbachia/tokens";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test } from "./fixtures/test";
 import type { Page } from "@playwright/test";
@@ -7,7 +8,7 @@ import { mockApi } from "./fixtures/mock-api";
 // Keys of the preferences the app stores in the browser (see src/storage/safe-storage.ts).
 const THEME_KEY = "wolbachia.theme";
 const LANGUAGE_KEY = "wolbachia.language";
-const EXPANDED_WIDTH = 232;
+const EXPANDED_WIDTH = web.layout.sidebarWidth;
 const COLLAPSED_WIDTH = 64;
 const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 
@@ -31,7 +32,7 @@ async function sidebarWidth(page: Page): Promise<number> {
 }
 
 test.describe("shell layout", () => {
-  test("sidebar is 232 px, collapses to 64 px and remembers it", async ({ page }) => {
+  test("sidebar uses its default width, collapses to 64 px and remembers it", async ({ page }) => {
     await openShell(page);
     expect(await sidebarWidth(page)).toBe(EXPANDED_WIDTH);
 
@@ -43,12 +44,12 @@ test.describe("shell layout", () => {
     await expect(page.getByRole("link", { name: "Incidentes" })).toBeVisible();
   });
 
-  test("the top bar is 56 px high", async ({ page }) => {
+  test("the top bar reserves its token height for accessible controls", async ({ page }) => {
     await openShell(page);
 
     const topBar = await page.getByRole("banner").boundingBox();
 
-    expect(Math.round(topBar?.height ?? 0)).toBe(56);
+    expect(Math.round(topBar?.height ?? 0)).toBeGreaterThanOrEqual(web.layout.topBarHeight);
   });
 
   test("an unknown address shows not found inside the shell", async ({ page }) => {
@@ -165,12 +166,12 @@ test.describe("keyboard", () => {
     expect(outline).toEqual({ width: "2px", style: "solid" });
   });
 
-  test("Ctrl+K focuses the search", async ({ page }) => {
+  test("Ctrl+K opens the command palette and focuses its search", async ({ page }) => {
     await openShell(page);
 
     await page.keyboard.press("Control+K");
 
-    await expect(page.getByRole("searchbox", { name: "Buscar" })).toBeFocused();
+    await expect(page.getByRole("dialog").getByRole("combobox", { name: "Buscar" })).toBeFocused();
   });
 });
 
@@ -193,6 +194,21 @@ test.describe("states and language", () => {
   });
 });
 
+test("the single top-bar theme switch persists a keyboard choice across reload", async ({
+  page,
+}) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await openShell(page);
+  const control = page.getByRole("switch", { name: "Tema oscuro" });
+  await expect(control).toHaveCount(1);
+  await expect(control).toHaveAttribute("aria-checked", "true");
+
+  await control.press("Space");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(control).toHaveAttribute("aria-checked", "false");
+  expect(await page.evaluate((key) => localStorage.getItem(key), THEME_KEY)).toBe("light");
+});
 test.describe("accessibility (axe, WCAG 2.2 AA)", () => {
   for (const theme of ["light", "dark"]) {
     for (const language of ["es-MX", "en"]) {

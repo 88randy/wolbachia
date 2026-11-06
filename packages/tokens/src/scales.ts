@@ -10,6 +10,8 @@ export const radius = {
   md: 12,
   lg: 16,
   xl: 20,
+  card: 20,
+  inner: 14,
   /** Large enough to make any box a pill or a circle. */
   full: 9999,
 } as const;
@@ -75,6 +77,10 @@ export const font = {
   cssStack: "Inter, Roboto, system-ui, sans-serif",
   /** Digits keep a fixed width so counts and times align. CSS `font-variant-numeric`. */
   tabularFigures: "tabular-nums",
+  mono: {
+    family: "JetBrains Mono",
+    cssStack: '"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace',
+  },
 } as const;
 
 /** A single drop shadow in a form both React Native and CSS can use. */
@@ -89,6 +95,8 @@ export interface ShadowToken {
 export const shadow = {
   /** Cards and raised controls (`--sh-1`). */
   level1: { offsetX: 0, offsetY: 1, blur: 2, color: "rgba(10, 26, 63, 0.08)" },
+  card: { offsetX: 0, offsetY: 8, blur: 32, color: "rgba(20, 30, 40, 0.04)" },
+  overlay: { offsetX: 0, offsetY: 16, blur: 48, color: "rgba(12, 20, 32, 0.14)" },
 } as const satisfies Record<string, ShadowToken>;
 
 /** Formats a shadow as a CSS `box-shadow` value. */
