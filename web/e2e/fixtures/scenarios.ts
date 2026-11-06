@@ -283,8 +283,10 @@ export const scenarios: Scenario[] = [
         window.localStorage.setItem("wolbachia.organization", "norte");
       });
       await page.goto("/");
-      await page.locator("button[aria-controls=user-menu-panel]").click();
-      await expect(page.locator("#user-menu-panel")).toBeVisible();
+      const menuButton = page.getByRole("button", { name: /Menú de usuario|User menu/ });
+      await menuButton.click();
+      const panelId = await menuButton.getAttribute("aria-controls");
+      await expect(page.locator(`[id="${panelId ?? ""}"]`)).toBeVisible();
     },
   },
   {
