@@ -1,5 +1,6 @@
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { useState } from "react";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { OvitrapEntry } from "./OvitrapEntry.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
@@ -27,12 +28,12 @@ export function ScannerScreen({ target }: { readonly target: "ovitrap" | "bag" }
         largeTargets
         title={t(target === "bag" ? "mobile.ovitrap.scanBag" : "mobile.ovitrap.scan")}
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {model.errorKey ? <Notice tone="warning" icon="alert" message={t(model.errorKey)} /> : null}
         <ShiftAction label={t("mobile.ovitrap.scan")} disabled={isBusy} onPress={actions.scan} />
         <ScannerForm code={code} setCode={setCode} isBusy={isBusy} enter={actions.enter} />
         <OvitrapEntry isAllowed={canCapture} labelKey="mobile.ovitrap.resume" />
-      </ScrollView>
+      </AppScrollView>
     </View>
   );
 }

@@ -1,5 +1,6 @@
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { SnapshotNotices } from "./SnapshotNotices.tsx";
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { ScreenHeader } from "../../ui/ScreenHeader.tsx";
@@ -17,7 +18,7 @@ export function OvitrapScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader largeTargets title={t("mobile.ovitrap.open")} subtitle={draft?.point?.code} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {model.errorKey ? (
           <Notice tone="critical" icon="alert" message={t(model.errorKey)} />
         ) : null}
@@ -28,7 +29,7 @@ export function OvitrapScreen() {
         ) : draft && !model.state?.isShiftBlocked ? (
           <CaptureBody model={model} draft={draft} />
         ) : null}
-      </ScrollView>
+      </AppScrollView>
     </View>
   );
 }

@@ -1,4 +1,4 @@
-import { ScrollView } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
 
 import type { AuthSnapshot } from "../../auth/auth-controller.ts";
 import type { useUnlockForm } from "../../auth/use-unlock-form.ts";
@@ -26,7 +26,7 @@ export function UnlockContent({
       ? "mobile.unlock.createTitle"
       : "mobile.unlock.greeting";
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <AppText variant="h1" style={styles.centered}>
         {t(title, { name: snapshot.profile?.firstName ?? "" })}
       </AppText>
@@ -36,6 +36,6 @@ export function UnlockContent({
       ) : (
         <PinUnlock snapshot={snapshot} form={form} />
       )}
-    </ScrollView>
+    </AppScrollView>
   );
 }
