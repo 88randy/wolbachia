@@ -12,6 +12,7 @@ out with `EventHandler.checks_shift=False`) is checked here by the sync pipeline
 """
 
 from accounts.models import User
+from field_sync.codes import MOTORCYCLE_SAFETY_HOLD
 from field_sync.envelope import EventEnvelope
 from field_sync.exceptions import EventNeedsReview, EventRejected
 from organizations.models import Organization
@@ -30,6 +31,19 @@ def check_event_shift(
     shift = Shift.objects.for_org(organization).filter(pk=shift_id, courier=user).first()
     if shift is None:
         raise EventRejected(SHIFT_NOT_OPEN, {"shift_id": str(shift_id)})
+    from fleet.selectors import active_blocks
+    from incidents.selectors import active_blockers
+    from reviews.safety import has_pending_severe
+
+    if (
+        has_pending_severe(shift.motorcycle_id)
+        or shift.motorcycle.is_blocked
+        or active_blocks(shift.motorcycle)
+        or active_blockers(organization)
+        .filter(resource_kind="motorcycle", resource_id=shift.motorcycle_id, kind="dispatch")
+        .exists()
+    ):
+        return EventNeedsReview(MOTORCYCLE_SAFETY_HOLD, {"shift_id": str(shift_id)})
     if shift.status == ShiftStatus.OPEN:
         return None
     closed_at = shift.closed_at_device

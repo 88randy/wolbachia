@@ -2,10 +2,13 @@ from datetime import datetime, time, timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from core.exceptions import FieldValidationError
 from core.serializers import OrgScopedModelSerializer
+from reviews.detail_serializers import ShiftValidationSerializer
+from reviews.serializers import ShiftDecisionSerializer
 from shifts.models import MotorcycleCheck, Shift, ShiftStatus
 from shifts.selectors import ShiftFilters
 
@@ -49,6 +52,25 @@ class ShiftSerializer(OrgScopedModelSerializer):
             "created_at",
         ]
         read_only_fields = fields
+
+
+class ShiftDetailSerializer(ShiftSerializer):
+    validation = serializers.SerializerMethodField()
+    validation_timeline = serializers.SerializerMethodField()
+
+    class Meta(ShiftSerializer.Meta):
+        fields = [*ShiftSerializer.Meta.fields, "validation", "validation_timeline"]
+        read_only_fields = fields
+
+    @extend_schema_field(ShiftValidationSerializer)
+    def get_validation(self, obj: Shift) -> dict[str, Any]:
+        from shifts.validation import validation_projection
+
+        return validation_projection(obj)
+
+    @extend_schema_field(ShiftDecisionSerializer(many=True))
+    def get_validation_timeline(self, obj: Shift) -> list[dict[str, Any]]:
+        return list(ShiftDecisionSerializer(obj.decisions.order_by("revision"), many=True).data)
 
 
 class ShiftFilterSerializer(serializers.Serializer[Any]):

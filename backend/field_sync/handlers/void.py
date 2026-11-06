@@ -10,7 +10,7 @@ from typing import Any
 from rest_framework.exceptions import ValidationError
 
 from core.exceptions import AlreadyVoidedError
-from core.services import void_validated_record
+from core.services import void_locked_record
 from core.void_reason import VOID_REASON_CODE_UNKNOWN, VoidSerializer, resolve_void_reason
 from field_sync.codes import (
     ALREADY_VOIDED,
@@ -74,10 +74,16 @@ def apply_void(ctx: EventContext, data: dict[str, Any]) -> None:
         raise EventRejected(code, params) from None
     if not choice.is_active:
         raise EventNeedsReview(VOID_REASON_CODE_DEACTIVATED)
-    if ctx.review_code is not None:
+    if ctx.review_code is not None and not ctx.acknowledges(ctx.review_code):
         return
+    from reviews.safety import has_pending_severe_source
+
+    if has_pending_severe_source(target.pk):
+        from field_sync.codes import CAUSAL_PARENT_PENDING
+
+        raise EventNeedsReview(CAUSAL_PARENT_PENDING)
     try:
-        voided = void_validated_record(target, ctx.user, choice)
+        voided = void_locked_record(target, ctx.user, choice)
     except AlreadyVoidedError:
         raise EventRejected(ALREADY_VOIDED) from None
     target_handler = get_handler(target.type, target.schema_version)
@@ -86,6 +92,8 @@ def apply_void(ctx: EventContext, data: dict[str, Any]) -> None:
 
 
 def register_void_handler() -> None:
+    from reviews.void_adapter import VoidReviewAdapter
+
     register(
         EventHandler(
             VOID_EVENT_TYPE,
@@ -100,5 +108,6 @@ def register_void_handler() -> None:
                 VOID_REASON_CODE_DEACTIVATED,
             ),
             checks_shift=False,
+            review_adapter=VoidReviewAdapter(),
         )
     )

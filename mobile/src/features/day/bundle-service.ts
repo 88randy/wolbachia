@@ -83,7 +83,7 @@ export class DayBundleService {
   async #refresh(force: boolean): Promise<void> {
     const write = this.captureProjectionWriter();
     const cached = await this.read();
-    const requiresBody = force || (await this.#deps.store.needsSamplingPointBootstrap());
+    const requiresBody = force || (await this.#deps.store.needsBootstrap());
     const answer = await this.#deps.transport(
       requiresBody ? null : (cached.meta?.bundle_version ?? null),
     );

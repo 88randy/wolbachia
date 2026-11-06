@@ -38,7 +38,7 @@ def accessible_point(ctx: EventContext, identifier: UUID) -> SamplingPoint:
     points = SamplingPoint.objects.filter(organization=ctx.organization).select_related(
         "block__quadrant__center"
     )
-    visible = filter_by_effective_scope(points, sync_membership(ctx), FIELD_EVENT_SYNC)
+    visible = event_scoped(points, ctx)
     point = visible.select_for_update(no_key=True, of=("self",)).filter(pk=identifier).first()
     if point is None:
         raise EventRejected(POINT_INACCESSIBLE)
@@ -47,11 +47,7 @@ def accessible_point(ctx: EventContext, identifier: UUID) -> SamplingPoint:
 
 def accessible_ovitrap(ctx: EventContext, identifier: UUID) -> Ovitrap:
     # Read scoped first; the common domain lock always precedes all descendant locks.
-    visible = filter_by_effective_scope(
-        Ovitrap.objects.filter(organization=ctx.organization),
-        sync_membership(ctx),
-        FIELD_EVENT_SYNC,
-    )
+    visible = event_scoped(Ovitrap.objects.filter(organization=ctx.organization), ctx)
     ovitrap = visible.filter(client_uuid=identifier).first()
     if ovitrap is None:
         raise EventRejected(OVITRAP_INACCESSIBLE)
@@ -62,6 +58,14 @@ def accessible_ovitrap(ctx: EventContext, identifier: UUID) -> Ovitrap:
     if locked.event.voided_at is not None:
         raise EventRejected(OVITRAP_INACCESSIBLE)
     return cast(Ovitrap, locked)
+
+
+def event_scoped(rows: QuerySet[Any], ctx: EventContext) -> QuerySet[Any]:
+    if ctx.review_authorization is not None:
+        from organizations.selectors import filter_by_scope
+
+        return filter_by_scope(rows, ctx.review_authorization.historical_scope, FIELD_EVENT_SYNC)
+    return filter_by_effective_scope(rows, sync_membership(ctx), FIELD_EVENT_SYNC)
 
 
 def filter_records(  # noqa: PLR0913 -- query and its authorization context

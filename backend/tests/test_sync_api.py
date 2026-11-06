@@ -316,12 +316,29 @@ def test_in_a_final_upload_the_final_upload_status_beats_clock_skew_and_rejectio
     ]
 
 
-def test_a_final_upload_handler_sees_why_the_event_will_be_reviewed(phone: Phone) -> None:
+def test_a_final_upload_handler_sees_why_the_event_will_be_reviewed(
+    phone: Phone, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import replace
+
+    from field_sync.registry import HANDLERS
+
+    observed = []
+    handler = HANDLERS[("test.context_probe", 1)]
+
+    def observe(ctx, data):
+        observed.append(ctx.review_code)
+        return handler.apply(ctx, data)
+
+    monkeypatch.setitem(HANDLERS, ("test.context_probe", 1), replace(handler, apply=observe))
     revoke(phone)
 
-    phone.sync([event(type="test.context_probe")])
+    response = phone.sync([event(type="test.context_probe")])
 
-    assert Widget.objects.filter(name="review:final_upload_after_revoke").count() == 1
+    assert response.status_code == 200
+    assert observed == ["final_upload_after_revoke"]
+    assert response.data["results"][0]["status"] == "in_review"
+    assert Widget.objects.count() == 0
 
 
 def test_a_normal_request_leaves_the_review_code_empty_for_handlers(phone: Phone) -> None:

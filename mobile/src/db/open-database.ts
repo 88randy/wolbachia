@@ -5,12 +5,8 @@ import { getRandomBytes } from "expo-crypto";
 
 import { nativeSecrets } from "../auth/native-secrets.ts";
 import { openEncryptedDatabase } from "./encrypted-database.ts";
-import { migrate } from "./migrations.ts";
+import { prepareDatabase } from "./prepare-database.ts";
 import type { SqlExecutor, SqlRow, SqlStatement, SqlValue } from "./sql.ts";
-
-// WAL keeps readers (the UI) from waiting on a writer (the sync pass); FULL syncs every commit so a
-// captured event survives a battery pull or a crash. Same settings the #1 spike measured.
-const DURABILITY_PRAGMAS = ["PRAGMA journal_mode = WAL", "PRAGMA synchronous = FULL"] as const;
 
 function toTuple(statement: SqlStatement): SQLBatchTuple {
   // A tuple without parameters is `[sql]`: with `[sql, []]` the library cannot tell one empty
@@ -44,7 +40,6 @@ export async function openDatabase(): Promise<SqlExecutor> {
     randomBytes: getRandomBytes,
     open: (options) => new OpSqliteExecutor(open(options)),
   });
-  for (const pragma of DURABILITY_PRAGMAS) await executor.query(pragma);
-  await migrate(executor);
+  await prepareDatabase(executor);
   return executor;
 }

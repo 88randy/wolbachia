@@ -1,6 +1,7 @@
 """`POST /api/v1/field/sync/`: the phone's one endpoint for uploading events and pulling changes."""
 
 from typing import Any
+from uuid import UUID
 
 from django.conf import settings
 from drf_spectacular.utils import OpenApiParameter, OpenApiTypes, extend_schema
@@ -93,6 +94,8 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
             sent_at=data["sent_at"],
             received_at=received_at,
             is_final_upload=self.is_final_upload,
+            observed_session_id=session.pk,
+            observed_pair_id=self._observed_pair(request),
         )
         outcome = sync_batch(batch, self._envelopes(data), cursor)
         body = {"server_time": server_now(), "results": outcome.results, "changes": outcome.changes}
@@ -105,6 +108,12 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
         if retry_after:
             response["Retry-After"] = str(max(retry_after))
         return response
+
+    @staticmethod
+    def _observed_pair(request: Request) -> UUID | None:
+        from uploads.access import actor_from_request
+
+        return actor_from_request(request).pair_id
 
     @staticmethod
     def _envelopes(data: dict[str, Any]) -> list[EventEnvelope]:

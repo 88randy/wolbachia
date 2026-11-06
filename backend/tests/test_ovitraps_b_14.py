@@ -159,7 +159,7 @@ def test_review_capture_creates_no_operational_effects(field, overrides, expecte
             gps=GpsFix(20.005, overrides.get("longitude", -99.99), overrides.get("accuracy", 5)),
         )
     if overrides.get("missing_rules"):
-        monkeypatch.setattr("field_sync.registry.EventContext.rules_at", lambda self, at: {})
+        monkeypatch.setattr("ovitraps.capture.rule_snapshot", lambda ctx: ({}, {}))
     if overrides.get("review"):
         field.batch = replace(field.batch, is_final_upload=True)
         expected = "final_upload_after_revoke"

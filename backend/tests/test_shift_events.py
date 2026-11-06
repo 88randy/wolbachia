@@ -275,7 +275,7 @@ def test_a_shift_id_that_already_exists_cannot_be_reused(
     assert result["params"]["fields"] == {"shift_id": ["already_used"]}
 
 
-def test_a_severe_check_opens_the_shift_blocks_the_motorcycle_and_goes_to_review(
+def test_a_severe_check_retains_a_derived_hold_without_operational_effects(
     phone: Phone, motorcycle: Motorcycle, check_items: dict[str, CatalogItem]
 ) -> None:
     checks = [*all_ok_checks()[:2], {"item": "lights", "result": "severe"}]
@@ -286,18 +286,13 @@ def test_a_severe_check_opens_the_shift_blocks_the_motorcycle_and_goes_to_review
     motorcycle.refresh_from_db()
     assert status_and_code(result) == ("in_review", "severe_check")
     assert result["params"] == {"motorcycle_code": "M-03"}
-    assert (motorcycle.is_blocked, motorcycle.blocked_reason) == (True, "severe_check")
-    audit = MotorcycleBlockEvent.objects.get(motorcycle=motorcycle)
-    assert (audit.action, audit.blocked_reason, audit.reason) == (
-        "block",
-        "severe_check",
-        "severe_check",
-    )
-    assert audit.field_event_id == uuid.UUID(sent["id"])
-    assert audit.created_by == phone.user
-    assert audit.organization == phone.organization
-    assert MotorcycleCheck.objects.filter(result=CheckResult.SEVERE).count() == 1
-    assert Shift.objects.count() == 1
+    from reviews.safety import has_pending_severe
+
+    assert not motorcycle.is_blocked
+    assert not MotorcycleBlockEvent.objects.filter(motorcycle=motorcycle).exists()
+    assert not MotorcycleCheck.objects.filter(result=CheckResult.SEVERE).exists()
+    assert not Shift.objects.filter(opened_event_id=sent["id"]).exists()
+    assert has_pending_severe(motorcycle.pk)
 
 
 def test_later_opens_with_a_motorcycle_blocked_by_a_severe_check_are_rejected(
@@ -314,10 +309,10 @@ def test_later_opens_with_a_motorcycle_blocked_by_a_severe_check_are_rejected(
     result = only_result(other.sync([open_event("M-03")]))
 
     assert status_and_code(result) == ("rejected", "motorcycle_blocked")
-    assert result["params"] == {"reason": "severe_check"}
+    assert result["params"] == {"reason": "pending_severe_review"}
 
 
-def test_an_open_below_the_last_odometer_of_the_motorcycle_goes_to_review_but_opens(
+def test_an_open_below_the_last_odometer_retains_review_without_opening(
     org_a: Organization,
     make_member: MemberFactory,
     motorcycle: Motorcycle,
@@ -337,10 +332,10 @@ def test_an_open_below_the_last_odometer_of_the_motorcycle_goes_to_review_but_op
 
     assert status_and_code(result) == ("in_review", "odometer_decreased")
     assert result["params"] == {"previous_km": 12_480, "odometer_km": 12_380}
-    assert Shift.objects.filter(courier=courier.user, status=ShiftStatus.OPEN).count() == 1
+    assert not Shift.objects.filter(courier=courier.user, status=ShiftStatus.OPEN).exists()
 
 
-def test_an_open_event_with_a_skewed_clock_is_in_review_but_applied(
+def test_an_open_event_with_a_skewed_clock_has_no_effect(
     phone: Phone, motorcycle: Motorcycle, check_items: dict[str, CatalogItem]
 ) -> None:
     configure_clock_skew(phone.organization)
@@ -349,7 +344,7 @@ def test_an_open_event_with_a_skewed_clock_is_in_review_but_applied(
     response = phone.sync([open_event("M-03")], sent_at=sent_at)
 
     assert status_and_code(response.data["results"][0]) == ("in_review", "clock_skew")
-    assert Shift.objects.count() == 1
+    assert not Shift.objects.exists()
 
 
 # --- shift.close ----------------------------------------------------------------------------
@@ -382,7 +377,7 @@ def test_replaying_a_close_returns_the_same_result(phone: Phone) -> None:
     assert second == first
 
 
-def test_a_close_below_the_open_odometer_closes_the_shift_and_goes_to_review(
+def test_a_close_below_the_open_odometer_retains_the_open_frame_for_review(
     phone: Phone,
 ) -> None:
     shift = ShiftFactory(
@@ -394,7 +389,7 @@ def test_a_close_below_the_open_odometer_closes_the_shift_and_goes_to_review(
     shift.refresh_from_db()
     assert status_and_code(result) == ("in_review", "odometer_decreased")
     assert result["params"] == {"previous_km": 12_000, "odometer_km": 11_900}
-    assert (shift.status, shift.odometer_close_km) == (ShiftStatus.CLOSED, 11_900)
+    assert (shift.status, shift.odometer_close_km) == (ShiftStatus.OPEN, None)
 
 
 def test_closing_twice_with_different_events_is_rejected_the_second_time(phone: Phone) -> None:

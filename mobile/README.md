@@ -175,6 +175,21 @@ mobile/package.json sets "op-sqlite": {"sqlcipher": true}. The installed Android
 
 The key is 32 Expo random bytes encoded as hex and held in Keystore-backed SecureStore without user-auth binding so sync runs while locked. When missing, generate a candidate IN MEMORY. Open with name/encryptionKey, require nonempty PRAGMA cipher_version, then actually read SELECT count(*) FROM sqlite_master. Only then save the fresh key; only after saving run durability pragmas/migrations. An existing encrypted file with another key fails the real read; its candidate is never saved and nothing is deleted. SecureStore save failure stops boot before migrations/writes. No file-system dependency or plaintext fallback.
 
+After those existing encrypted-open/key checks, #266 performs a read-only structural
+lineage preflight BEFORE OUR WAL/FULL configuration and migrations. Public migrate
+also checks the same profiles. Profiles derive from the actual released migration
+arrays1–11; user_version, a points table or mutable bootstrap flags alone never
+establish compatibility. Empty0 and complete canonical prefixes continue normally;
+unmerged M09 families, future versions and incomplete/mixed objects fail closed.
+See [db/README](src/db/README.md) for the bounded comparison and exact fixtures.
+
+UnsupportedDatabaseLineageError retains the original database and reaches the
+existing localized storage-failure/support screen; only its name is logged. Keep
+the retained file and contact support. No reset, uninstall, guessed version or
+automatic conversion is a recovery step. This boundary covers OUR SQL calls;
+native open/SQLCipher physical behavior remains UNRUN and is not certified by
+ordinary Node SQLite or APK compilation.
+
 Biometrics are a UI gate, NOT a key unwrap. The database key and credentials are Keystore-bound but not user-auth-bound. Hardware, enrollment and strong Class 3 enrollment are required. Native authentication requests strong biometrics and disables device-credential fallback.
 ## Verification and assumptions (#7)
 
@@ -209,7 +224,7 @@ Biometrics are a UI gate, NOT a key unwrap. The database key and credentials are
 
 **[ASSUMPTION]** PBKDF2 costs (1000 PIN / 10000 password; pure JS, measured 4.5 s for 20000 iterations under `node --jitless`) need S24 Ultra calibration. The local-password limit of 5 is a lead-selected assumption. Native SQLCipher read failures, Keystore durability/atomic replacement, strong-enrollment reporting, cancel behavior, safe areas, TalkBack and 130% text need APK/device checks. No Android build or Docker run was performed.
 
-**Known native limitation / [ASSUMPTION] durability:** the installed expo-secure-store 58.0.2 Android SecureStoreModule.kt calls saveEncryptedItem without checking its returned SharedPreferences.commit() boolean (non-null writes). A resolved JavaScript setItemAsync therefore does not prove a successful disk commit. A failed commit could lose the last attempt-counter increment, token/status replacement or database-key save after a crash; a read-back cannot establish disk durability. The TypeScript ordering and retry tests cover rejected promises, not this silent native failure. Proposed follow-up issue: make the Android adapter reject commit() == false, add a native disk-failure regression, and validate counter/key recovery on the S24 Ultra. This needs a native/upstream patch; #7 does not change native code or add patch-package.
+**Android secure-write handling (#210):** expo-secure-store is pinned to 58.0.2 with a guarded source backport of [Expo PR #52131](https://github.com/expo/expo/pull/52131), fixing [upstream issue #48988](https://github.com/expo/expo/issues/48988). The Android prebuild plugin verifies the installed version and exact source/test hashes, rejects partial/drifted packages, and applies the official failed-commit rejection and previous-value restoration. Expo autolinking explicitly builds this package from source; a prebuilt AAR would bypass the fix. Rebuild the APK after changing the patch. Login/PIN already propagate rejected secure writes to recoverable in-app storage feedback; the controller cannot advance until the write succeeds, and retry preserves prior credentials. A same-process read-back still cannot establish disk durability. See [native patch provenance and verification](native/secure-store/README.md). The existing debug-apk CI job requires a real-setter permissions-failure RED/GREEN regression and the patched native rejection inside the APK. JVM evidence, JS state tests, JS/native bridge runtime and hardware storage/keystore recovery are separate checks; the latter two require Android runtime evidence and are not certified by Node tests.
 
 Design additions without supplied artwork: PIN enter/confirm creation, P1 server setup, throttling/device-deactivation/generic errors and the keep-working action. The S01 logo stays a placeholder. Password reset only shows the supervisor instruction sheet; there is no logout UI.
 
@@ -540,21 +555,24 @@ navigation button says "How to get there", without claiming a specific navigator
   place/check; closed-house/relocate states in the design await capture/point data.
   Delta numeric versions are ordered numerically; opaque versions deduplicate by equality
   and ordered change sequence. Bootstrap authoritatively restores present resources and removes missing ids.
-- **[ASSUMPTION]** #9 captures reference `payload.task_id` or `payload.ovitrap_id`.
-  `LocalWorkOverlay` is a replaceable port over the existing outbox. Explicit task ids
-  take precedence. Completion fallback uses the same ISO capture date/action
-  **[ASSUMPTION]** until downloaded organization timezone metadata is published;
-  evening local-time capture may therefore remain uncounted without a task id.
-  Pending retention conservatively matches the ovitrap regardless of date, so
-  this uncertainty never drops recoverable work from the list. Day progress
-  uses local captured work plus removal of tasks from the server projection
-  Assignments v3 now publishes `is_completed` (#212), but the mobile parser still
-  ignores it; consuming that completion contract remains the separate #229
-  follow-up. #221 does not change local completion policy.
-  Phone-saved and server-received text
-  remain separate; the existing `SyncChip` opens the inbox with actual delivery/review
-  outcomes. Neither an error nor a pending upload implies server delivery/review.
-  No new capture queue, upload transport, ping producer or server lookup was added.
+- Assignments v3 `is_completed` alone controls list/map/progress (#229): exact
+  true completes, false reopens immediately, absent legacy data remains UNKNOWN.
+  Completion can change without an ownership revision increment. Current row
+  authority stays separate from any older retained capture context. Local
+  pending/sent/in_review/rejected events never count as authoritative completion
+  or supervisor review; receipt and outstanding phone work can coexist.
+  `LocalWorkOverlay` reads actual immutable M08 capture provenance because real
+  M08 envelopes have no task_id and v3 tasks have no ovitrap_id. Delivery joins
+  only a unique point/action/captured organization-local date. Missing timezone,
+  origin or ambiguous identity stays unlinked in outbox/P28; explicit legacy
+  task IDs keep precedence. Existing retained-event enrollment stays unchanged.
+  No envelope, captured JSON, file reference or assignment snapshot is rewritten.
+  Migration 11 requires a committed unconditional bootstrap even if a parser-
+  stripped old cache still has a valid ETag/cursor; offline/304/deltas/restart and
+  rollback cannot clear readiness. Full empty/legacy responses clear it once,
+  preserving UNKNOWN where no authoritative bit exists. The existing SyncChip
+  opens actual delivery/review details. No queue, receipt floor, producer, backend
+  lookup or upload transport is added. See `src/features/day/README.md`.
 - Bootstrap uses `packages/api-client`, validates `unknown` at the runtime object
   boundary (generated response incorrectly says array) and sends the stored bundle
   version as a quoted ETag when the local projection is ready. Migration 9 records
@@ -848,3 +866,42 @@ barriers. They verify logical recovery and preserved immutable event references;
 Android force-stop, SQLCipher/SecureStore disk behavior, native P1 layout, TalkBack
 and 130% text still require the qualified build/device workflow. No native build,
 phone, API, Docker or database service is required for this fix.
+
+## Private evidence transport (#246)
+
+M-08 now copies a port-supplied capture URI into exclusive private document storage,
+checks bounded original JPEG/PNG bytes and SHA-256, and retains a proven issuer /
+organization UUID / User UUID / device owner in an additive file journal. Migration
+10 is provisional after canonical 1–9 on the #102 base; released SQL is unchanged.
+The original evidence UUID and event envelope never change after capture. Legacy
+references without original ownership provenance are retained locally, not assigned
+by username or a fresh Me response. A pre-login SQL CAS arbitrates owner activation
+with adopted-only reservations, including a rejected SecureStore write and retry.
+
+The existing SyncEngine owns recovery, one file chain per turn, Retry and backoff.
+Normal events with any declared evidence wait for verified finalize; SQL selection
+runs before claim/LIMIT and propagates only related attachment blocking. Unrelated
+JSON and pulls proceed first. Only Save-enrolled declarations can upload; adopted
+or cancelled/Undo photos remain local. Lost PUT/finalize replies resume the same
+UUID through renew. Actual sent/in-review receipts allow typed field_event binding;
+a late/lost binding response never accepts review or changes an event. Final JSON
+retains receipt-before-cleanup as an explicit exception, with no byte/binding calls
+under final-upload capability. P28 displays file errors/pending references separately
+and its existing Try now wakes the same engine.
+
+Tests in attachments.test.ts and attachment-transport.test.ts use real temporary
+files, file-backed SQLite close/reopen, barriers and the actual generated API client
+with scripted HTTP responses. They prove file bytes/hash, immutable ownership,
+restart/replay/linking, selection fairness, unrelated receipts and stale-context
+refusal. They do not execute a live #102 backend or certify native storage/network.
+
+The native capture port still returns unavailable: [#253](https://github.com/88randy/wolbachia/issues/253)
+is an implementation dependency, not merely device qualification. The productive
+#138 bridge remains pending explicit serial integration, including migration
+lineage and its current physical/scope authority; no lifecycle module is copied
+here. Generic lifecycle payload/dependency shapes are covered separately. Actual
+B-33 decisions/tasks remain [#126](https://github.com/88randy/wolbachia/issues/126).
+Owner-authorized Android force-stop, SQLCipher/private-file persistence, camera,
+GPS, real uploads/API, TalkBack/130%/light-dark/es-MX-en and both device profiles
+remain UNVERIFIED under #138/#130. A Node test or debug-apk does not substitute for
+those journeys. See src/attachments/README.md and ADR 132 (provisional).

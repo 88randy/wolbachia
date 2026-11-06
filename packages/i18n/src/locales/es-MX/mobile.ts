@@ -166,10 +166,10 @@ export const mobile = {
   "mobile.day.open": "Ver puntos del día",
   "mobile.day.list": "Lista",
   "mobile.day.map": "Mapa",
-  "mobile.day.progress": "{reviewed} de {total} puntos revisados",
+  "mobile.day.progress": "{completed} de {total} tareas completadas",
   "mobile.day.pending": "Pendientes · Alto Riesgo primero",
   "mobile.day.closedSection": "Casas cerradas por volver hoy",
-  "mobile.day.reviewedSection": "Puntos revisados",
+  "mobile.day.completedSection": "Tareas completadas",
   "mobile.day.empty":
     "No tienes puntos asignados guardados. Cuando haya señal, actualiza la lista.",
   "mobile.day.ready":
@@ -184,12 +184,15 @@ export const mobile = {
   "mobile.day.kept": "Conservado: trabajo pendiente",
   "mobile.day.highRisk": "Alto Riesgo",
   "mobile.day.pendingStatus": "Pendiente hoy",
-  "mobile.day.doneStatus": "Revisado",
+  "mobile.day.doneStatus": "Completada",
   "mobile.day.closedStatus": "Casa cerrada · volver",
   "mobile.day.relocateStatus": "Por reubicar",
   "mobile.day.unknownStatus": "Estado por confirmar",
   "mobile.day.phoneSaved": "Guardado en el teléfono",
   "mobile.day.serverReceived": "Recibido por el servidor · revisión aparte",
+  "mobile.day.receiptRejected":
+    "Captura rechazada. Consulta el detalle en la bandeja de pendientes.",
+  "mobile.day.captureInReview": "Captura en revisión del servidor",
   "mobile.day.reviewUnconfirmed": "Revisión del servidor sin confirmar",
   "mobile.day.place": "Colocar",
   "mobile.day.check": "Revisar",
@@ -348,6 +351,10 @@ export const mobile = {
   "mobile.inbox.onPhone": "En el teléfono · {count}",
   "mobile.inbox.sent": "Enviados · {count}",
   "mobile.inbox.tryNow": "Intentar ahora",
+  "mobile.inbox.evidencePending":
+    "Referencias de fotos pendientes: {count}. Esto no confirma la recepción del registro.",
+  "mobile.inbox.evidenceError":
+    "Algunas referencias de fotos siguen incompletas. Usa Intentar ahora; si el archivo no está disponible, contacta a tu coordinador.",
   "mobile.inbox.empty": "No hay registros todavía. Lo que captures aparecerá aquí.",
   "mobile.inbox.groupTitle": "{count} · {label}",
   "mobile.inbox.timeRange": "{from} a {to}",

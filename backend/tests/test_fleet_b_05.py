@@ -25,6 +25,7 @@ from shifts.models import MotorcycleBlockEvent, Shift
 from tests.factories import MotorcycleFactory
 from tests.shift_support import close_event, make_check_items, open_event
 from tests.sync_support import event, make_phone, run_in_threads
+from tests.uploads_support import verified_upload
 
 pytestmark = pytest.mark.django_db
 
@@ -89,16 +90,25 @@ def test_fuel_intervals_keep_capture_and_close(org_a, make_member, km, status):
     answer = phone.sync([capture])
     retry = phone.sync([capture])
     assert answer.data["results"] == retry.data["results"]
-    row = FuelLoad.objects.get(event_id=capture["id"])
-    assert FuelLoad.objects.filter(event_id=capture["id"]).count() == 1
-    assert row.efficiency_status == status
-    assert row.provisional == (status == "review")
-    assert row.efficiency_km_l == Decimal(km - 12000) / 100
-    assert row.receipt_pending
-    assert row.rule_provenance
-    assert row.threshold_min == 15
-    assert row.threshold_max == 60
-    assert row.event.status == ("in_review" if status == "review" else "accepted")
+    if status == "ok":
+        row = FuelLoad.objects.get(event_id=capture["id"])
+        assert FuelLoad.objects.filter(event_id=capture["id"]).count() == 1
+        assert row.efficiency_status == status
+        assert not row.provisional
+        assert row.efficiency_km_l == Decimal(km - 12000) / 100
+        assert row.receipt_pending
+        assert row.rule_provenance
+        assert row.threshold_min == 15
+        assert row.threshold_max == 60
+        assert row.event.status == "accepted"
+    else:
+        from reviews.models import ReviewSourceSnapshot
+
+        assert not FuelLoad.objects.filter(event_id=capture["id"]).exists()
+        facts = ReviewSourceSnapshot.objects.get(source_event_id=capture["id"]).facts["owner"]
+        assert facts["fuel_assessment"]["efficiency_status"] == "review"
+        assert Decimal(facts["fuel_assessment"]["efficiency_km_l"]) == Decimal(km - 12000) / 100
+        assert facts["fuel"]["thresholds"]["rule_provenance"]
     if status == "review":
         probe = fuel(shift_id, motorcycle.code, 12030)
         assert phone.sync([probe]).data["results"][0]["status"] == "accepted"
@@ -136,15 +146,13 @@ def test_decreased_or_pre_reviewed_fuel_never_enters_metrics(org_a, make_member,
         overrides["sent_at"] = (timezone.now() + timedelta(days=1)).isoformat()
     result = phone.sync([capture], **overrides).data["results"][0]
     assert result["code"] == review_code
-    row = FuelLoad.objects.get(event_id=capture["id"])
-    assert row.odometer_km == km
-    assert row.provisional
+    assert not FuelLoad.objects.filter(event_id=capture["id"]).exists()
     assert motorcycle_metrics(motorcycle)["latest_efficiency"] is None
     assert motorcycle_metrics(motorcycle)["latest_odometer"] == 12000
     foreign_moto = MotorcycleFactory(organization=org_a)
     mismatch = phone.sync([fuel(shift_id, foreign_moto.code, 12001)]).data["results"][0]
     assert mismatch["code"] == "fuel_motorcycle_mismatch"
-    assert FuelLoad.objects.count() == 1
+    assert FuelLoad.objects.count() == 0
 
 
 def make_fault(motorcycle, user):
@@ -167,7 +175,8 @@ def test_clearance_requires_grant_evidence_and_revision(org_a, make_member):
     user, _ = make_member(org_a, ["motorcycle.read"])
     motorcycle = MotorcycleFactory(organization=org_a)
     fault = make_fault(motorcycle, user)
-    request = ClearanceRequest(fault.pk, [uuid.uuid4()], "Inspection completed", 0)
+    evidence = verified_upload(org_a, user, fault=fault)
+    request = ClearanceRequest(fault.pk, [evidence.public_id], "Inspection completed", 0)
     with pytest.raises(Http404):
         clear_fault(motorcycle, user, request)
     admin, _ = make_member(org_a, ["motorcycle.service_clear"])
@@ -292,7 +301,8 @@ def test_clearance_races_with_use_without_losing_other_blocks(org_a, make_member
         make_phone(make_member, org_a, codes=("field_event.sync",)),
         make_phone(make_member, org_a, codes=("field_event.sync",)),
     )
-    request = ClearanceRequest(fault.pk, [uuid.uuid4()], "Inspection completed", 0)
+    evidence = verified_upload(org_a, reviewer, fault=fault)
+    request = ClearanceRequest(fault.pk, [evidence.public_id], "Inspection completed", 0)
     # run_in_threads uses a barrier and separate DB connections; all contenders take Motorcycle.
     answers = run_in_threads(
         lambda: clear_fault(motorcycle, reviewer, request),

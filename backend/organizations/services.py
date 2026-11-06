@@ -201,7 +201,6 @@ def effective_scope(
     ):
         return EffectiveScope(())
     member_scope = safe_scope(membership.scope)
-    grants = []
     if profiles is None:
         profiles = list_active_profiles(membership)
     else:
@@ -210,6 +209,12 @@ def effective_scope(
             for profile in profiles
             if profile.is_active and profile.organization_id == membership.organization_id
         ]
+    return fold_profile_scope(member_scope, profiles)
+
+
+def fold_profile_scope(member_scope: WorkScope, profiles: list[Profile]) -> EffectiveScope:
+    """Fold caller-validated active profiles, from current or complete historical facts."""
+    grants = []
     if any(getattr(profile, "slug", "") == "government" for profile in profiles):
         profiles = [profile for profile in profiles if profile.slug == "government"]
     for profile in profiles:
@@ -310,6 +315,9 @@ def _has_administrator(organization: Organization) -> bool:
 def _preserve_administrator(organization: Organization, had_administrator: bool) -> None:
     if had_administrator and not _has_administrator(organization):
         raise LastAdministratorError
+    from incidents.configuration import preserve_terminal_owners
+
+    preserve_terminal_owners(organization)
 
 
 def _append_revision(  # noqa: PLR0913 -- audited target, kind, snapshot and actor
@@ -331,6 +339,7 @@ def _append_revision(  # noqa: PLR0913 -- audited target, kind, snapshot and act
 
 def _profile_snapshot(profile: Profile) -> dict[str, Any]:
     return {
+        "slug": profile.slug,
         "permissions": sorted(profile.permission_codes),
         "scope": profile.scope,
         "is_active": profile.is_active,

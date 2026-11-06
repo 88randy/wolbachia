@@ -12,7 +12,7 @@ import { buildDay, mapTasks } from "../src/features/day/domain.ts";
 import { createStores, FIXED_NOW, makeEnvelope } from "./support/factories.ts";
 import type { TestStores } from "./support/factories.ts";
 import { hasLocalRecords } from "../src/db/owner-data.ts";
-import { migrate } from "../src/db/migrations.ts";
+import { migrate, SCHEMA_VERSION } from "../src/db/migrations.ts";
 const TASK_ID = "11111111-1111-4111-8111-111111111111";
 const POINT_ID = "22222222-2222-4222-8222-222222222222";
 const QUADRANT_ID = "33333333-3333-4333-8333-333333333333";
@@ -253,9 +253,19 @@ void test("task locations: schema 8 upgrade keeps normal refresh unconditional t
     const evidence = makeEnvelope({ payload: { task_id: TASK_ID } });
     await h.outbox.enqueue(evidence);
     await h.db.query("DROP TABLE day_sampling_point");
+    // The helper opens the current schema; remove post-8 additions to model an actual old DB.
+    await h.db.runAtomically(
+      [
+        "DROP TABLE attachment_event",
+        "DROP TABLE attachment_file",
+        "DROP TABLE attachment_context",
+        "DROP INDEX outbox_pending_physical",
+        "DROP INDEX ovitrap_evidence_uuid",
+      ].map((sql) => ({ sql })),
+    );
     await h.db.query("PRAGMA user_version=8");
     await migrate(h.db);
-    assert.equal((await h.db.query("PRAGMA user_version"))[0]?.user_version, 9);
+    assert.equal((await h.db.query("PRAGMA user_version"))[0]?.user_version, SCHEMA_VERSION);
     assert.equal((await h.store.read()).tasks[0]?.task.id, TASK_ID);
     let service = recoveryService(h.store);
     await assert.rejects(service.refresh(), /requires a body/);
