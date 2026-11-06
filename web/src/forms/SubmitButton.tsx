@@ -14,6 +14,7 @@ export function SubmitButton({ label, busyLabel, isBusy }: SubmitButtonProps) {
       <Button
         type="submit"
         loading={isBusy}
+        aria-disabled={isBusy}
         aria-label={isBusy ? busyLabel : undefined}
         className={styles.submit}
         aria-describedby={isBusy ? statusId : undefined}
