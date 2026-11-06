@@ -66,35 +66,53 @@ for (const language of LANGUAGES) {
       await unblock.focus();
       await page.keyboard.press("Enter");
       const dialog = page.getByRole("dialog");
-      await expect(
-        dialog.getByRole("button", {
-          name: language === "en" ? "Cancel" : "Cancelar",
-          exact: true,
-        }),
-      ).toBeFocused();
+      const cancel = dialog.getByRole("button", {
+        name: language === "en" ? "Cancel" : "Cancelar",
+        exact: true,
+      });
+      const confirm = dialog.getByRole("button", {
+        name: language === "en" ? "Unblock" : "Desbloquear",
+        exact: true,
+      });
+      await expect(cancel).toBeFocused();
       await expect(dialog.getByRole("combobox")).toHaveCount(0);
       const reason = dialog.getByRole("textbox");
       await expect(reason).toHaveAttribute("required", "");
+      await expect(confirm).toBeDisabled();
+      // Native modality must reject background focus; browser chrome is outside the page's trap.
+      await page
+        .getByRole("link", {
+          name: language === "en" ? "Back to motorcycles" : "Volver a motos",
+          includeHidden: true,
+          exact: true,
+        })
+        .evaluate((element) => {
+          element.focus();
+        });
+      await expect(cancel).toBeFocused();
+      expect(await dialog.evaluate((element) => element.matches(":modal"))).toBe(true);
       await page.keyboard.press("Shift+Tab");
       await expect(reason).toBeFocused();
       await page.keyboard.press("Tab");
-      await expect(
-        dialog.getByRole("button", {
-          name: language === "en" ? "Cancel" : "Cancelar",
-          exact: true,
-        }),
-      ).toBeFocused();
-      await page.keyboard.press("Tab");
+      await expect(cancel).toBeFocused();
+      // HTML sequential navigation may leave the final control for browser chrome; test in-page neighbors.
+      await page.keyboard.press("Shift+Tab");
       await expect(reason).toBeFocused();
       await page.keyboard.press("Escape");
       await expect(dialog).toHaveCount(0);
       await expect(unblock).toBeFocused();
       await page.keyboard.press("Enter");
+      await expect(cancel).toBeFocused();
       await expectNoAxeViolations(page);
-      await dialog.getByRole("textbox").fill("Repair checked and documented");
-      await dialog
-        .getByRole("button", { name: language === "en" ? "Unblock" : "Desbloquear" })
-        .click();
+      await page.keyboard.press("Shift+Tab");
+      await expect(reason).toBeFocused();
+      await reason.fill("Repair checked and documented");
+      await expect(confirm).toBeEnabled();
+      await page.keyboard.press("Tab");
+      await expect(cancel).toBeFocused();
+      await page.keyboard.press("Tab");
+      await expect(confirm).toBeFocused();
+      await page.keyboard.press("Enter");
       await expect(dialog).toHaveCount(0);
       await expect(
         page.getByText(language === "en" ? "Available" : "Disponible", { exact: true }),
