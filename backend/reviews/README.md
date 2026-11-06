@@ -183,3 +183,10 @@ real frame after effect/receipt. No old FK is filled, no UUID coincidence grants
 access, and no late locks/general fault/config listeners are added. Repeated
 noncurrent payloads are deduplicated under the original courier lock; original
 approval/history and lifecycle remain immutable.
+
+#126 extends this same history producer to schema2 with relocation_proposal;
+the review/shift branch retains its fields. Current real proposal/point subjects
+authorize changes/bootstrap before paging. Only late_work_after_quadrant_close is
+added to OvitrapReviewAdapter's reviewable codes; postclosure capture cannot gain
+retroactive authority. The owner retains original epoch/assignment/closure identity
+alongside selected point/rules/speed facts. See ../geography/decisions/README.md.

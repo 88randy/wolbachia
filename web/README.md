@@ -146,6 +146,24 @@ Decision 88 in `docs/decisions.md`; backend contract in `docs/api-conventions.md
 - **Late-void session fixture (#262).** An epoch change or disappearance of the write's busy button proves neither current catalog nor history readiness. The opening helper observes initial parameter publication and creation/publication of its dependent history/catalog queries before using the dialog controls. The dialog's catalog observer must finish mounting and any resulting read must publish successfully and become idle before selecting Other; a cached success sampled before that mount decision is insufficient. The existing `VersionHistory` regression announces an actual cross-tab session change, holds its `/me/`, history and reason-catalog requests separately, and observes the controller's accepted identity and the exact current actor/org/revision queries. It accepts the current history first, settles the old POST while the current catalog remains held, then accepts the catalog body and checks the current dialog's full reason and selection. The stale answer must neither publish success/error, close the retained dialog, replay the POST nor add a history invalidation/read: exactly the initial history read plus the legitimate session restart are expected. A catalog-unavailable alert belongs to its own read boundary; these controlled orders do not establish the cause of a historical CI failure. Keep legitimate catalog loading/failure/retry cases intact.
 - **Not built (out of the design or the API):** regional override and region tabs (per organization, decision 42), the "Default" and "Origin" columns, the "Affects" text and the epi week of the date (no data in the API), the side panel (the form is on the parameter's page) and the notice to supervisors after saving.
 
+### Inventory workspace (W8–W11, #151)
+
+`/inventory` links to the permitted supply, lot and location workspaces. W8 provides
+named catalog/protocol configuration and revisioned deactivation; W9/W10 provide
+server-filtered lots, incomplete drafts, completion/admission and exact retained
+configuration; W11 provides real owner/placement choices, geometry, stock, signed
+ledger links and an equivalent map/list page. The generated #105/#270 contract is
+the authority. Scientific defaults, UUID product inputs, balance edits and dispatch
+writers are absent; “View dispatch requirements” explains actual server blockers.
+
+All reads use the existing organization/session query boundary. Fresh record and
+action reads precede restoring private drafts; 409 review, uncertain delivery and
+Retry-After require explicit action and never replay writes. Existing #202
+primitives/tokens provide both themes and locales. See
+[`src/inventory/README.md`](src/inventory/README.md) for routes, write/default
+boundaries, MapLibre fallback and the criterion-to-test map. Browser fixtures use
+synthetic snapshots; backend SQL/authorization proof remains owned by #270.
+
 ### Session, guards and permissions
 
 Built in #28 (decisions 77 to 81 in `docs/decisions.md`). Backend contract: `docs/api-conventions.md` (rows `GET /me/`, "Auth endpoints", "Error codes (#4)", "Login protection") and `packages/api-client`.

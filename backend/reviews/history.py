@@ -21,7 +21,7 @@ from reviews.models import (
 from reviews.scope import subject_facts
 
 
-def _publish(  # noqa: PLR0913 -- durable cause, actual recipient and typed payload
+def publish_history(  # noqa: PLR0913 -- durable cause, actual recipient and typed payload
     cause_kind: str, cause: OrgScopedModel, courier: User, payload: dict[str, Any]
 ) -> None:
     version = snapshot_hash(payload)
@@ -100,7 +100,7 @@ def publish_review_decision(decision: ReviewDecision, source: FieldEvent) -> Non
         else str(original_source_envelope(source).voids_event_id),
         "approval_current": None,
     }
-    _publish("review_decision", decision, decision.review_item.courier, payload)
+    publish_history("review_decision", decision, decision.review_item.courier, payload)
 
 
 def publish_shift_decision(decision: ShiftDecision, *, cause: OrgScopedModel | None = None) -> None:
@@ -147,7 +147,7 @@ def publish_shift_decision(decision: ShiftDecision, *, cause: OrgScopedModel | N
         )
         if latest_version == snapshot_hash(payload):
             return
-    _publish(
+    publish_history(
         "shift_validation" if cause is None else "shift_review_invalidated",
         decision if cause is None else cause,
         shift.courier,

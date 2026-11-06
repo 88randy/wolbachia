@@ -13,6 +13,12 @@ from rest_framework.response import Response
 from core.filters import CodeLookupFilter
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSet
+from geography.decisions.closure import close_quadrant, readiness
+from geography.decisions.serializers import (
+    QuadrantClosureSerializer,
+    QuadrantReadinessSerializer,
+    RevisionRequestSerializer,
+)
 from geography.history import (
     PointHistoryQuerySerializer,
     RevisionHistoryQuerySerializer,
@@ -20,7 +26,12 @@ from geography.history import (
     filter_version_history,
 )
 from geography.models import Block, Quadrant, SamplingPoint
-from geography.permissions import QUADRANT_PUBLISH, QUADRANT_READ, SAMPLING_POINT_CREATE
+from geography.permissions import (
+    QUADRANT_CLOSE,
+    QUADRANT_PUBLISH,
+    QUADRANT_READ,
+    SAMPLING_POINT_CREATE,
+)
 from geography.selectors import block_suggestion, get_quadrant
 from geography.serializers import (
     BlockCreateSerializer,
@@ -61,6 +72,7 @@ from geography.services import (
 )
 from organizations.models import Center, Membership
 from organizations.selectors import filter_by_effective_scope
+from uploads.access import actor_from_request
 
 
 class GeographyViewSet(OrgScopedViewSet):
@@ -125,6 +137,8 @@ class QuadrantViewSet(GeographyViewSet):
         "create": QUADRANT_PUBLISH,
         "versions": QUADRANT_READ,
         "publish_version": QUADRANT_PUBLISH,
+        "closure": QUADRANT_CLOSE,
+        "close": QUADRANT_CLOSE,
     }
 
     def get_queryset(self) -> QuerySet[Any]:
@@ -140,6 +154,26 @@ class QuadrantViewSet(GeographyViewSet):
             get_object_or_404(visible, pk=center)
             queryset = queryset.filter(center_id=center)
         return queryset
+
+    @extend_schema(responses=QuadrantReadinessSerializer, filters=False)
+    @action(detail=True, methods=["get"])
+    def closure(self, request: Request, pk: str | None = None) -> Response:
+        return Response(
+            QuadrantReadinessSerializer(
+                readiness(actor_from_request(request), self.get_object())
+            ).data
+        )
+
+    @extend_schema(request=RevisionRequestSerializer, responses={201: QuadrantClosureSerializer})
+    @action(detail=True, methods=["post"])
+    def close(self, request: Request, pk: str | None = None) -> Response:
+        quadrant = self.get_object()
+        payload = RevisionRequestSerializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        row = close_quadrant(
+            actor_from_request(request), quadrant.pk, payload.validated_data["expected_revision"]
+        )
+        return Response(QuadrantClosureSerializer(row).data, status=201)
 
     @extend_schema(request=QuadrantCreateSerializer, responses={201: QuadrantSerializer})
     def create(self, request: Request, *args: object, **kwargs: object) -> Response:

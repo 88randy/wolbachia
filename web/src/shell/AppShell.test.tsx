@@ -34,13 +34,15 @@ describe("landmarks", () => {
 describe("sidebar navigation", () => {
   test("lists every area as a link inside lists", async () => {
     await renderApp({
-      me: makeMe({ permissions: ["catalog.read", "motorcycle.read", "quadrant.read"] }),
+      me: makeMe({
+        permissions: ["catalog.read", "motorcycle.read", "quadrant.read", "supply_type.read"],
+      }),
     });
     const nav = screen.getByRole("navigation", { name: "Navegación principal" });
 
     const links = within(nav).getAllByRole("link");
 
-    expect(links).toHaveLength(AREAS.length);
+    expect(links).toHaveLength(13);
     expect(links.map((link) => link.getAttribute("href"))).toEqual(AREAS.map((area) => area.path));
   });
 
@@ -56,7 +58,8 @@ describe("sidebar navigation", () => {
     expect(hrefs).not.toContain("/settings");
     expect(hrefs).not.toContain("/fleet");
     expect(hrefs).not.toContain("/quadrants");
-    expect(hrefs).toHaveLength(AREAS.length - 3);
+    expect(hrefs).not.toContain("/inventory");
+    expect(hrefs).toHaveLength(9);
   });
 
   test("groups the areas under headings", async () => {
@@ -76,7 +79,7 @@ describe("sidebar navigation", () => {
   });
 
   test("home is current only at the root, not on every page", async () => {
-    await renderApp({ path: "/inventory" });
+    await renderApp({ path: "/inventory", me: makeMe({ permissions: ["lot.read"] }) });
 
     expect(screen.getByRole("link", { name: "Inicio" }).getAttribute("aria-current")).toBeNull();
   });

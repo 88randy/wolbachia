@@ -1,7 +1,13 @@
+from functools import partial
+
 import pytest
 
 from catalogs import services
-from catalogs.exceptions import CatalogItemLimitError, OtherItemLockedError
+from catalogs.exceptions import (
+    CatalogItemLimitError,
+    CatalogVersionConflictError,
+    OtherItemLockedError,
+)
 from catalogs.models import MAX_SORT
 from catalogs.selectors import build_catalog_snapshot
 from catalogs.services import (
@@ -171,6 +177,74 @@ def test_deactivating_twice_is_harmless() -> None:
     item = CatalogItemFactory(is_active=False)
 
     assert deactivate_catalog_item(item, UserFactory()).is_active is False
+
+
+@pytest.mark.parametrize("is_active", [False, True])
+def test_matching_availability_version_writes_once_and_preserves_no_op_audit(is_active):
+    catalog = CatalogFactory(revision=10)
+    item = CatalogItemFactory(catalog=catalog, is_active=not is_active)
+    author = UserFactory()
+
+    def change(actor, version):
+        if is_active:
+            return activate_catalog_item(item, version=version)
+        return deactivate_catalog_item(item, actor, version=version)
+
+    written = change(author, 10)
+    audit = (written.deactivated_at, written.deactivated_by_id, written.updated_at)
+    repeated = change(UserFactory(), 11)
+
+    assert written.is_active == repeated.is_active == is_active
+    assert written.catalog.revision == repeated.catalog.revision == 11
+    assert (repeated.deactivated_at, repeated.deactivated_by_id, repeated.updated_at) == audit
+    item.refresh_from_db()
+    catalog.refresh_from_db()
+    assert (item.is_active, catalog.revision) == (is_active, 11)
+
+
+@pytest.mark.parametrize("is_active", [False, True])
+@pytest.mark.parametrize("is_no_op", [False, True])
+def test_stale_availability_version_rejects_before_mutation_or_no_op(is_active, is_no_op):
+    catalog = CatalogFactory(revision=10)
+    item = CatalogItemFactory(catalog=catalog, is_active=is_active if is_no_op else not is_active)
+    before = (item.is_active, item.deactivated_at, item.deactivated_by_id, item.updated_at)
+    change = (
+        partial(activate_catalog_item, item)
+        if is_active
+        else partial(deactivate_catalog_item, item, UserFactory())
+    )
+
+    with pytest.raises(CatalogVersionConflictError):
+        change(version=9)
+
+    item.refresh_from_db()
+    catalog.refresh_from_db()
+    assert (item.is_active, item.deactivated_at, item.deactivated_by_id, item.updated_at) == before
+    assert catalog.revision == 10
+
+
+def test_conditional_undo_cannot_replace_another_editors_aba_change():
+    catalog = CatalogFactory(revision=10)
+    item = CatalogItemFactory(catalog=catalog)
+    first_editor, later_editor = UserFactory.create_batch(2)
+    own_write = deactivate_catalog_item(item, first_editor, version=10)
+    undo_version = own_write.catalog.revision
+    activate_catalog_item(item)
+    later = deactivate_catalog_item(item, later_editor)
+
+    with pytest.raises(CatalogVersionConflictError):
+        activate_catalog_item(item, version=undo_version)
+
+    item.refresh_from_db()
+    catalog.refresh_from_db()
+    assert undo_version == 11
+    assert catalog.revision == 13
+    assert item.is_active is False
+    assert (item.deactivated_at, item.deactivated_by_id, item.updated_at) == (
+        later.deactivated_at,
+        later_editor.pk,
+        later.updated_at,
+    )
 
 
 def test_snapshot_lists_only_active_items_in_display_order() -> None:

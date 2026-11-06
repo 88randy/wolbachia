@@ -130,6 +130,12 @@ def test_rule_values_and_version_ids_are_the_same_observation_retained_before_re
     version = SimpleNamespace(pk=uuid4(), is_retired=False, location=[-99.99, 20.005])
     monkeypatch.setattr("ovitraps.capture.point_version_at", lambda *_args: version)
     monkeypatch.setattr("ovitraps.capture._speed_reference", lambda *_args: None)
+
+    def closed_epoch(ctx, _point):
+        assert ctx.observed_facts["ovitrap"]["point_version_id"] == str(version.pk)
+        raise EventNeedsReview("late_work_after_quadrant_close")
+
+    monkeypatch.setattr("geography.decisions.capture.capture_epoch", closed_epoch)
     context = SimpleNamespace(
         organization=object(),
         review_authorization=None,
@@ -141,8 +147,9 @@ def test_rule_values_and_version_ids_are_the_same_observation_retained_before_re
         acknowledges=lambda _code: False,
         rules_at=lambda _at: {"max_distance_to_point_m": 200},
     )
-    with pytest.raises(EventNeedsReview):
+    with pytest.raises(EventNeedsReview) as signal:
         capture_context(context, SimpleNamespace(pk=uuid4()))
+    assert signal.value.code == "late_work_after_quadrant_close"
     captured = context.observed_facts["ovitrap"]
     assert captured["rules"]["max_distance_to_point_m"] == 50
     assert captured["rule_version_ids"] == {key: str(value) for key, value in selected_ids.items()}

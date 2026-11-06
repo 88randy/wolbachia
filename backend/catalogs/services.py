@@ -41,6 +41,15 @@ class CatalogItemSpec:
     requires_photo: bool = False
 
 
+@dataclass(frozen=True)
+class CatalogAvailabilityChange:
+    """Availability intent; an omitted version preserves unconditional callers."""
+
+    is_active: bool
+    version: int | None = None
+    user: User | None = None
+
+
 def _next_sort(catalog: Catalog) -> int:
     """One after the highest `sort` of the regular items ("Other" is always listed last)."""
     highest = CatalogItem.objects.filter(catalog=catalog, is_active=True, is_other=False).aggregate(
@@ -104,32 +113,34 @@ def update_catalog_item(item: CatalogItem, changes: Mapping[str, object]) -> Cat
     return locked
 
 
-def deactivate_catalog_item(item: CatalogItem, user: User) -> CatalogItem:
+def deactivate_catalog_item(
+    item: CatalogItem, user: User, *, version: int | None = None
+) -> CatalogItem:
     """Hide an item from new records (writes CatalogItem). Old records keep showing it.
 
     Raises `OtherItemLockedError` (409) for the fixed "Other (specify)" item.
     """
-    return _set_item_active(item, is_active=False, user=user)
+    return _set_item_active(item, CatalogAvailabilityChange(False, version, user))
 
 
-def activate_catalog_item(item: CatalogItem) -> CatalogItem:
+def activate_catalog_item(item: CatalogItem, *, version: int | None = None) -> CatalogItem:
     """Make a deactivated item available again (writes CatalogItem)."""
-    return _set_item_active(item, is_active=True)
+    return _set_item_active(item, CatalogAvailabilityChange(True, version))
 
 
-def _set_item_active(
-    item: CatalogItem, *, is_active: bool, user: User | None = None
-) -> CatalogItem:
+def _set_item_active(item: CatalogItem, change: CatalogAvailabilityChange) -> CatalogItem:
     with transaction.atomic():
         catalog, locked = _lock_item(item)
-        if locked.is_other and not is_active:
+        if change.version is not None and catalog.revision != change.version:
+            raise CatalogVersionConflictError
+        if locked.is_other and not change.is_active:
             raise OtherItemLockedError
-        if locked.is_active != is_active:
-            if is_active:
+        if locked.is_active != change.is_active:
+            if change.is_active:
                 _ensure_room_for_an_active_item(catalog)
-            locked.is_active = is_active
-            locked.deactivated_at = None if is_active else timezone.now()
-            locked.deactivated_by = None if is_active else user
+            locked.is_active = change.is_active
+            locked.deactivated_at = None if change.is_active else timezone.now()
+            locked.deactivated_by = None if change.is_active else change.user
             locked.save(
                 update_fields=["is_active", "deactivated_at", "deactivated_by", "updated_at"]
             )
@@ -142,6 +153,8 @@ def _lock_item(item: CatalogItem) -> tuple[Catalog, CatalogItem]:
     catalog_id = CatalogItem.objects.values_list("catalog_id", flat=True).get(pk=item.pk)
     catalog = Catalog.objects.select_for_update().get(pk=catalog_id)
     locked = CatalogItem.objects.select_for_update().get(pk=item.pk, catalog=catalog)
+    # Preserve this write's revision when serialization happens after the lock is released.
+    locked.catalog = catalog
     return catalog, locked
 
 

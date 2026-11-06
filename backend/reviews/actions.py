@@ -173,6 +173,9 @@ def decide_review(
                 open_review_incident(actor, item, decision, request.evidence_ids)
             publish_review_decision(decision, source)
             publish_source_shift_invalidation(source, cause=decision)
+            from geography.decisions.producers import stored_source
+
+            stored_source(source, cause=decision)
     return decision
 
 

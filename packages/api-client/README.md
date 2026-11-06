@@ -4,6 +4,22 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#126 adds approve/reject relocation decisions, observational quadrant readiness,
+atomic epoch closure and separate intervention.read/create routes. The single typed
+CourierHistoryEntry is a discriminated union of its retained review/shift branch
+and relocation_proposal, shared by changes/bootstrap. Task links refer to real
+ScheduledTask identities/owners. DecisionEnum keeps its existing geography choices;
+RelocationDecisionEnum is explicit. See ../../backend/geography/decisions/README.md
+for temporal proof, immutable sources and verification boundaries.
+
+#280 adds an optional nonnegative `version` to the existing catalog-item activate
+and deactivate POST bodies. Omitting the body/version remains supported. A stale
+precondition returns `409 catalog_version_conflict`, including a stale no-op.
+Successful write responses carry their exact write-time `catalog_version`; use
+that returned version for conditional Undo rather than a later read. Integer
+catalog revisions are distinct from field snapshot content hashes. See the
+[catalog contract](../../backend/catalogs/README.md#conditional-availability-280).
+
 #113 adds page-number review queue/detail, immutable accept/void/open-incident
 decisions, optional source-bound safety disposition and CLOSED-shift approve/
 observe. Source ingest/provenance remain separate from current decision state.

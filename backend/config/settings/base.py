@@ -226,6 +226,8 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "ModeEnum": ["none", "selected", "all"],
         "ReviewDecisionActionEnum": ["accept", "void", "open_incident"],
+        "RelocationDecisionEnum": ["approved", "rejected"],
+        "DecisionEnum": ["keep", "move", "remove"],
         "ReviewDecisionStateEnum": ["pending", "accepted", "voided"],
         "ShiftValidationKindEnum": ["approve", "observe"],
         "CourierHistoryKindEnum": ["review_decision", "shift_validation"],
