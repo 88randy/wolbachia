@@ -15,6 +15,13 @@
   align-items: center;
   width: var(--web-layout-sidebar-collapsed-width);
 }
+/* Native sizing must precede the matchMedia notification that updates the React controls.
+   This query matches web.layout.compactBreakpoint; CSS media queries cannot read variables. */
+@media (max-width: 768px) {
+  .sidebar {
+    width: var(--web-layout-sidebar-collapsed-width);
+  }
+}
 .brand {
   display: flex;
   flex: none;
