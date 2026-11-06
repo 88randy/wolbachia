@@ -263,6 +263,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "supply_type.read",
+        "location.read",
+        "lot.read",
+        "lot.create",
+        "lot.update",
+        "condition.create",
         "incident.read",
         "incident.create",
         "incident.close",
@@ -283,12 +289,29 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "supply_type.read",
+        "location.read",
+        "lot.read",
+        "condition.create",
         *reader,
         "reading.read",
         "schedule.read",
         "risk_import.apply",
     }
     assert by_slug["community_promoter"] == reader
+    assert by_slug["warehouse"] == {
+        *reader,
+        "supply_type.read",
+        "supply_type.create",
+        "supply_type.update",
+        "location.read",
+        "location.create",
+        "location.update",
+        "lot.read",
+        "lot.create",
+        "lot.update",
+        "condition.create",
+    }
     assert by_slug["coordinator"] == {
         "field.upload",
         "incident.read",
@@ -304,6 +327,17 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "supply_type.read",
+        "supply_type.create",
+        "supply_type.update",
+        "supply_type.deactivate",
+        "location.read",
+        "location.create",
+        "location.update",
+        "lot.read",
+        "lot.create",
+        "lot.update",
+        "condition.create",
         "incident.read",
         "incident.create",
         "incident.close",
@@ -576,6 +610,31 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
     profile.refresh_from_db()
     assert code in profile.permission_codes
     assert code in profile.seeded_permission_codes
+
+
+def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government_boundary():
+    organization = create_organization(SPEC)
+    warehouse = Profile.objects.get(organization=organization, slug="warehouse")
+    warehouse.permission_codes = [
+        code for code in warehouse.permission_codes if code != "lot.update"
+    ]
+    warehouse.save(update_fields=["permission_codes"])
+    custom = Profile.objects.create(
+        organization=organization,
+        slug="custom-inventory",
+        label_es="Prueba",
+        label_en="Synthetic",
+        permission_codes=["lot.read"],
+    )
+    seed_default_permission_codes(organization)
+    warehouse.refresh_from_db()
+    custom.refresh_from_db()
+    assert "lot.update" not in warehouse.permission_codes
+    assert "supply_type.deactivate" not in warehouse.permission_codes
+    assert custom.permission_codes == ["lot.read"]
+    assert Profile.objects.get(organization=organization, slug="government").permission_codes == [
+        "portal.read"
+    ]
 
 
 @pytest.mark.parametrize(

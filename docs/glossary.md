@@ -70,6 +70,16 @@ Rules:
 
 ## Inventory and money-like control
 
+Inventory foundation (#105) retains these distinct facts: `SupplyTypeVersion`
+(supply master revision), `BiologicalProtocolVersion` (named ranges/shelf life and
+reading windows), `LocationVersion` (storage master revision), `LotVersion` (lot
+draft/detail revision), `LotAdmission` (authored opening custody), `Piece` (immutable
+inventory identity), `StockOperation`/`StockMovement` (source and signed ledger leg),
+`ConditionReading` (both clocks and evaluated protocol), `ConditionBreach` (owned
+hold), `ConditionIncidentLink` (once-only incident linkage) and
+`AutomaticIncidentOrigin` (explicit system source). A piece is not implicitly an
+Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
+
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
 | insumo | supply | `/supply-types/`, `supply` | Anything the courier is assigned and consumes. |

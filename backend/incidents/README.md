@@ -66,3 +66,17 @@ https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update an
 https://docs.djangoproject.com/en/5.2/topics/db/transactions/#performing-actions-after-commit;
 drf-spectacular's polymorphic schema helper source:
 https://github.com/tfranzel/drf-spectacular/blob/master/drf_spectacular/utils.py.
+
+## Biological condition sources (#105)
+
+automatic.py is a new closed producer adapter, distinct from human IncidentCapture.
+It consumes a persisted breached ConditionReading, explicit type and source scope
+under inventory's already-held Organization arbiter. AutomaticIncidentOrigin pins
+the reading UUID/hash, exact incident/type and explicit system actor. It neither
+borrows human incident.create nor fabricates a FieldEvent source FK or uploaded
+photo evidence. The configured type must permit zero report photos and explicitly
+own exactly lot_dispatch, while preserving its real verified-evidence close requirement.
+Unavailable type/terminal leaves inventory's durable hold pending for recovery.
+Closing derives that one hold's resolution; there is no Incident -> Lot locking
+callback. Existing human/source-evidence checks, fleet default list, escalation,
+publication and read/download policies retain their current interfaces.
