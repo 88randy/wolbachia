@@ -22,10 +22,16 @@ from shifts.models import (
 )
 from tests.conftest import MemberFactory
 from tests.factories import MotorcycleFactory, ShiftFactory
+from tests.fleet_support import grant_fleet_scope
 from tests.shift_support import all_ok_checks, close_event, make_check_items, open_event
 from tests.sync_support import Phone, configure_clock_skew, event, make_phone
 
 pytestmark = pytest.mark.django_db
+
+
+@pytest.fixture
+def make_member(make_member):
+    return lambda *args, **kwargs: grant_fleet_scope(make_member(*args, **kwargs))
 
 
 @pytest.fixture

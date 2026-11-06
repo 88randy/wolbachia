@@ -21,11 +21,17 @@ from tests.factories import (
     ShiftFactory,
     UserFactory,
 )
+from tests.fleet_support import grant_fleet_scope
 from tests.shift_support import make_check_items, open_event
 from tests.sync_support import event, make_phone, run_in_threads, second_device_of
 from tests.testapp.models import Widget
 
 pytestmark = pytest.mark.django_db(transaction=True)
+
+
+@pytest.fixture
+def make_member(make_member):
+    return lambda *args, **kwargs: grant_fleet_scope(make_member(*args, **kwargs))
 
 
 @pytest.fixture
