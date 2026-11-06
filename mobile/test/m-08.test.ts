@@ -86,7 +86,7 @@ void test("AC2: reuse bounds, visible correction reasons and route tap measureme
   assert.equal(measureCheckTaps("normal"), 10);
 });
 
-import { harness, prepareCheck, currentEventId } from "./support/m-08-harness.ts";
+import { harness, prepareCheck, currentEventId, publishSnapshots } from "./support/m-08-harness.ts";
 import { POINT, RULES } from "./support/m-08-fixtures.ts";
 import { saveGate } from "../src/features/ovitrap-check/validation.ts";
 
@@ -414,7 +414,7 @@ void test("AC2: correction transaction failure keeps original lineage and eviden
 
 void test("AC2: offline use consumes cached reuse eligibility before another capture can offer a third reuse", async () => {
   const h = await harness();
-  await h.store.saveSnapshots({
+  await publishSnapshots(h.store, {
     catalog: CATALOG,
     rules: RULES,
     assignment: { ...ASSIGNMENT, reuse: [{ id: "paddle-1", reuses: 1, isEligible: true }] },
@@ -427,7 +427,7 @@ void test("AC2: offline use consumes cached reuse eligibility before another cap
   await prepareCheck(h.service);
   await h.service.update({ reuseId: "paddle-1" }, await currentEventId(h.store));
   await h.service.save(await currentEventId(h.store));
-  await h.store.saveSnapshots({
+  await publishSnapshots(h.store, {
     catalog: CATALOG,
     rules: RULES,
     assignment: {
@@ -457,7 +457,7 @@ void test("AC1: an old source photo cannot satisfy current visit evidence and hi
       item.code === "fine" ? { ...item, requires_photo: true } : item,
     ),
   };
-  await h.store.saveSnapshots({ catalog, rules: RULES, assignment: ASSIGNMENT });
+  await h.store.saveSnapshots({ catalog, rules: RULES });
   await h.service.startCheck(
     "44444444-4444-4444-8444-444444444444",
     true,
@@ -485,7 +485,6 @@ void test("AC1: an old source photo cannot satisfy current visit evidence and hi
   await h.store.saveSnapshots({
     catalog: { ...CATALOG, version: "catalog-v2", findings: [] },
     rules: RULES,
-    assignment: ASSIGNMENT,
   });
   const saved = await h.service.save(await currentEventId(h.store));
   assert.equal(saved.event?.envelope.catalog_version, "catalog-v1");
@@ -501,7 +500,7 @@ void test("AC3: a revoked downloaded assignment blocks capture without losing it
     await currentEventId(h.store),
   );
   await prepareCheck(h.service);
-  await h.store.saveSnapshots({ catalog: CATALOG, rules: RULES, assignment: null });
+  await publishSnapshots(h.store, { catalog: CATALOG, rules: RULES, assignment: null });
   assert.equal((await h.service.read()).isScopeBlocked, true);
   await assert.rejects(h.service.save(await currentEventId(h.store)));
   assert.equal((await h.service.read()).draft?.bagCode, "B-TEST");
@@ -637,7 +636,7 @@ void test("regression: November 5 and 12 under the W45 package are different cap
 
 void test("regression: missing organization week configuration blocks explicitly without guessing W45", async () => {
   const h = await harness();
-  await h.store.saveSnapshots({
+  await publishSnapshots(h.store, {
     catalog: CATALOG,
     rules: RULES,
     assignment: { ...ASSIGNMENT, organization: undefined },
@@ -1022,7 +1021,7 @@ void test("regression: retry after a post-begin read failure never saves the pre
     },
   };
   const target = "99999999-9999-4999-8999-999999999999";
-  await h.store.saveSnapshots({
+  await publishSnapshots(h.store, {
     catalog: CATALOG,
     rules: RULES,
     assignment: { ...ASSIGNMENT, ovitraps: [{ id: target, point: POINT }] },

@@ -68,3 +68,31 @@ cleanup, never an unbound UI command; historical events remain immutable.
 | Stale action shows its localized notice, reloads B at `point`, and a fresh service resumes B correctly | Same end-to-end local regression, using the production confirmation command and notification observer |
 
 No new dependencies, sync envelope changes or native layout changes.
+
+## Current assignment ownership (#138, ADR 132)
+
+`snapshot-authority.ts` owns every current-assignment write. `saveSnapshots`
+updates catalog/rules only, preserving the assignment and its private revision
+from the row that exists when SQLite executes the statement. An incoming
+`Snapshots.assignment`, including one read before a network wait, cannot restore
+authorization. Runtime configuration refresh does not copy a previous assignment.
+
+A genuinely authoritative assignment provider uses `assignmentAuthority` before
+its network awaits and `publishSnapshots` afterwards, under the existing pinned
+session/origin fence. One conditional `UPSERT ... RETURNING` checks that revision,
+publishes the context and advances the revision atomically. It also refuses to
+grant points currently marked unavailable by the canonical point cache. A failed
+CAS throws `StaleAssignmentAuthorityError` without changing authority, drafts or
+outbox. No success is reported for a stale publication.
+
+Bootstrap narrowing, canonical point invalidation and revocation use the same
+revision protocol in their projection transaction. They advance even from an
+absent/null assignment, preventing an old provider result from exploiting a
+null-to-null change. An absent configuration is represented with valid null
+catalog/rules/assignment fields. `snapshots()` hides the private revision metadata;
+no API, schema migration, queue or native UI flow is added.
+
+The existing M-09 capture/void barrier regression now includes late configuration
+and authoritative publication for all three projection changes. The storage ABA
+group covers absent/null configuration, and fixture setup publishes explicit
+downloaded context through the real CAS instead of a raw snapshot overwrite.

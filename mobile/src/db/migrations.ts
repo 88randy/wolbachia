@@ -6,6 +6,8 @@ import {
 import { physicalIdentityStateSql } from "../features/ovitrap-lifecycle/physical-identity-state.ts";
 import type { SqlExecutor, SqlStatement } from "./sql.ts";
 import { readInteger } from "./sql.ts";
+import { KV_KEYS } from "./kv-store.ts";
+import { assertCanonicalMigrationLineage } from "./migration-lineage.ts";
 
 /**
  * Schema of the phone's database. Each entry is one migration; the position (1-based) is the
@@ -125,6 +127,11 @@ const MIGRATIONS: readonly (readonly string[])[] = [
     `UPDATE day_assignment SET retained_event_ids=(${ENROLLED_RETAINED_EVENTS}) WHERE retained_payload IS NOT NULL`,
     "UPDATE day_assignment SET retained_payload=NULL,kept=0 WHERE retained_payload IS NOT NULL AND retained_event_ids='[]' AND removed=0",
     ENROLL_VISIBLE_CAPTURE,
+  ],
+  [
+    `CREATE TABLE day_sampling_point(id TEXT PRIMARY KEY NOT NULL,version INTEGER NOT NULL,
+      sequence INTEGER NOT NULL DEFAULT 0,payload TEXT,removed INTEGER NOT NULL DEFAULT 0 CHECK(removed IN (0,1)))`,
+    `INSERT INTO kv(key,value) VALUES('${KV_KEYS.daySamplingPointsBootstrapPending}','true')`,
   ],
   [
     `CREATE TABLE lifecycle_courier_projection (kind TEXT NOT NULL, id TEXT NOT NULL, version TEXT NOT NULL, sequence INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY(kind,id))`,
@@ -291,6 +298,7 @@ export const SCHEMA_VERSION = MIGRATIONS.length;
 export async function migrate(db: SqlExecutor): Promise<void> {
   const rows = await db.query("PRAGMA user_version");
   const current = rows[0] === undefined ? 0 : readInteger(rows[0], "user_version");
+  await assertCanonicalMigrationLineage(db, current);
   for (const [index, statements] of MIGRATIONS.entries()) {
     const version = index + 1;
     if (version <= current) continue;

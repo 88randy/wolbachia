@@ -4,14 +4,14 @@ Implementation plan (owner-supplied issue and accepted lead decisions):
 
 1. Test lifecycle identity/transactions, proposal-only geometry, recovery, feedback,
    correction and restart in `mobile/test/m-09.test.ts` using real SQLite/M-02.
-2. Add migration 9 after master migrations 7–8: durable singleton draft, immutable captures,
+2. Append migration 10 after master canonical migrations 1–9: durable singleton draft, immutable captures,
    evidence references, physical lineage, reasoned voids and local decisions.
 3. Implement domain, pinned snapshots, store/ports/service and UUID-bound draft buffer.
    Every command validates displayed identity inside the serialized writer before effects;
    SQL guards arbitrate other service instances. Native continuations revalidate.
 4. Add P15-P17 hooks/screens, point-context routes, accessible bottom-sheet confirmation,
    reversible photo Undo, shared tokens and es-MX/en messages.
-5. Document ADR 125, design differences, acceptance map and verification limits; run
+5. Document ADR 131, design differences, acceptance map and verification limits; run
    root lint/typecheck/format and the configured mobile suite. No commit/push/Docker.
 
 No new queue, transport, dependency or invented B-33 wire contract.
@@ -47,7 +47,7 @@ M-08 placements, lifecycle replacements and current downloaded identities.
 
 ## Acceptance map
 
-All issue-specific tests are in `mobile/test/m-09.test.ts` (23 test cases). There is
+All issue-specific tests are in `mobile/test/m-09.test.ts` (26 test cases). There is
 no new mobile e2e infrastructure. Each test protects one criterion or a distinct
 integration/concurrency invariant; no framework-only snapshot tests were added.
 
@@ -70,7 +70,10 @@ integration/concurrency invariant; no framework-only snapshot tests were added.
 | AC1 M-08 integration, retired-source archive and current evidence | M08 checks the replacement physical identity and blocks the retired source |
 | AC3 M-02 sync wiring applies projections before receipt/cursor advancement | existing sync applies retired/current projections before receipt and cursor advancement |
 | AC3 bootstrap/revocation retains drafts, outbox and evidence, and rejects stale writers | bootstrap retirement and revocation share the projection gate |
-| AC3 additive upgrade preserves released M-06 assignments and capture enrollment | master schema 8 retains M06 assignments and event enrollment |
+| AC3 canonical upgrades preserve M-06 and point-cache readiness | canonical master schemas 8 and 9 retain M06 enrollment and point-cache readiness |
+| AC3 intermediate receipt backfill preserves immutable history | intermediate lifecycle schema 11 backfills acknowledged retirement without changing captured evidence |
+| AC3 incompatible draft lineage is rejected before writes, preserving QA data | conflicting unmerged draft schemas 9 to 11 fail before writes and retain their original data |
+| AC3 late configuration/publication cannot restore narrowed authority, including absent/null ABA | review scope race; review authority ABA |
 | AC4 localized P15-P17 forms/footer/reason/removal-sheet host props | P15-P17 localized native props preserve labeled large controls |
 
 The last test compiles the actual component modules using the installed root
@@ -153,12 +156,12 @@ following a server void. Without that projection the assignment remains fallback
 Downloaded point retirement and current effective local replace/remove events then
 apply; rejected/in-review lifecycle events and voids never create applied effects.
 
-M-08 resolves that state before saving. Migration 10 replaces both capture insertion
+M-08 resolves that state before saving. Migration 11 replaces both capture insertion
 guards and the active-identity view with the same SQL function, so an upsert arriving
 after a read-side check still rolls back the whole capture/outbox transaction.
 `RETIRED_CAPTURE_DRAFT` uses the same predicate for both archive and slot replacement
 inside the existing single transaction. No current retirement rule is duplicated in
-JavaScript or in a separate begin/archive condition. Migration 9 stays unchanged.
+JavaScript or in a separate begin/archive condition. The initial lifecycle migration, now 10, retains its approved SQL.
 
 | Reproduced review issue | Deterministic regression in `mobile/test/m-09.test.ts` |
 | --- | --- |
@@ -190,18 +193,21 @@ verification remain outside this local run. No commit or push was performed.
 
 ## Integration with current master
 
-Master's released migrations 7–8 remain unchanged and ordered before lifecycle
-migrations 9–11. ADR 125 follows master's ADR 124; scope/reconciliation is ADR 126.
-The schema-8 upgrade regression keeps M-06 retained assignments, original outbox
-UUIDs and the existing INSERT enrollment trigger working after the upgrade.
+Master canonical migrations 1–9 remain byte-for-byte unchanged and ordered before
+lifecycle migrations 10–12. Provisional ADRs 131/132 reserve space for pending lead
+integration decisions 129/130 without renumbering canonical ADRs 125–128.
+Canonical schemas 8 and 9 upgrade to 12 while retaining M-06 assignments, enrollment,
+original event UUIDs and #221 point-cache readiness. A real intermediate schema 11
+upgrade verifies receipt backfill while preserving acknowledged capture/evidence.
 
 DayStore owns bootstrap, delta and revoke SQL for downloaded lifecycle projections.
 Its existing DayBundleService gates serialize bootstrap/sync and reject captured
 writers after revocation. There is no second projection writer after that gate.
 Revocation also clears M-08 assignment authorization, without removing captured
 or pending draft input, immutable envelopes, evidence references or correction history.
-Missing additive sections are an empty collection for older B-13 payloads; malformed
-present sections fail before cursor advancement. No API contract was changed.
+Missing additive sections are an empty collection for older B-13 payloads. Invalid
+change envelopes reject before cursor advancement; a malformed known point follows
+#221 canonical invalidation. No API contract was changed.
 
 The existing cold-reopen test uses a real temporary SQLite file, closes and reopens
 it twice, retains an interrupted sending event and its photo references, and retries the exact
@@ -211,9 +217,29 @@ matrix remain UNVERIFIED. B-33 decision/task ingestion remains a typed local sea
 there is no merged decision producer to certify its real-API journey.
 
 
-## Scope authority and acknowledged-effect reconciliation (ADR 126)
+### Older unmerged draft lineage is not a supported upgrade
 
-Migration 11 makes current scope an insertion invariant for M-08 captures, M-09
+Before any migration transaction, versions 9–11 with lifecycle capture/draft
+tables but no canonical `day_sampling_point` cache are refused by
+`UnmergedLifecycleDraftError`. These versions belonged to earlier unmerged #138
+builds; they cannot be identified as canonical solely by `user_version`. A
+canonical schema 9 with the point cache present continues through 10–12 normally.
+No automatic reset, deletion, renumbering repair or compatibility bridge is run.
+The refusal retains the old version, draft/evidence references and original outbox
+rows. The grouped SQLite regression exercises the demonstrated schema signatures;
+it does not certify upgrading historical draft APK files.
+
+The error propagates through `openDatabase` / `createServices` into the existing
+failed boot state. P1 is not reached. `BootScreen` uses
+`mobile.boot.storageFailed`: "No se pudo abrir el almacenamiento del teléfono.
+Cierra y abre la app; si sigue igual, avisa a soporte." There is no new UI flow or
+reset action. Reopening cannot repair an incompatible lineage; support must retain
+its database for an explicit future data-preserving migration. No QA database or
+phone was opened, reset or changed during this requalification.
+
+## Scope authority and acknowledged-effect reconciliation (ADR 132)
+
+Migration 12 makes current scope an insertion invariant for M-08 captures, M-09
 captures and lifecycle voids. The only current capture authorization is the live
 `ovitrap_snapshots.assignment`, hidden while durable cleanup is pending. A full
 bootstrap intersects its known point/physical context with the explicit downloaded
@@ -222,6 +248,29 @@ context stays unavailable rather than receiving invented week or shift settings.
 Draft JSON retains the original assignment, catalog/rules, timestamps and evidence
 as historical context. Revocation and commit arbitration both happen inside SQLite;
 a stale preflight read cannot authorize a later insert after scope was removed.
+
+The canonical #221 sampling-point parser and SQL are the point authority for both
+day locations and M-09's existing projection mirror. Bootstrap uses the same
+validated point collection. Delta writes update the canonical cache first, then
+mirror only its resulting row inside the same transaction. Older/equal point
+versions cannot reactivate a retired mirror merely because their sequence is newer.
+Known-identity invalidation removes its mirror and narrows current capture scope;
+it never fabricates retirement or falls back to a retained task/draft grant.
+Malformed envelopes still reject the transaction. The existing causal scope-race
+test checks M-08/M-09 capture and lifecycle void at the actual SQLite boundary
+after revocation, bootstrap narrowing or point invalidation, retaining drafts and
+original event UUIDs even after a late snapshot write.
+
+All assignment writers share M-08's `snapshot-authority.ts` protocol.
+Configuration-only `saveSnapshots` preserves the current assignment in SQL; it
+never writes the caller's assignment copy. An authoritative provider captures a
+durable authority token before network awaits and publishes with the existing
+session fence plus an atomic CAS. Bootstrap, invalidation, revoke and publication
+advance that private revision inside their own transaction, including absent/null
+authority. Stale publication throws explicitly without changing current authority
+or pending data. A known unavailable canonical point cannot be reauthorized even
+by a fresh assignment token. Snapshots consumers still see valid configuration
+and no private revision metadata. Capture/void/receipt guard SQL stays unchanged.
 
 Physical state overlays the latest unreconciled local effect in outbox sequence
 order, including void effects on both replacement identities. Downloaded point
@@ -236,8 +285,13 @@ feed is drained, older pages cannot undo a locally acknowledged removal. An
 existing serialized bootstrap can reconcile accepted effects using its included
 identities regardless of local sequence reset. Pending/sending/error effects remain
 overlays through bootstrap and restart. The source events/evidence never change.
-Migration 11 rebuilds schema-10 identity guards/view so existing installations also
+Migration 12 rebuilds schema-11 identity guards/view so existing installations also
 use this rule; it does not depend on rerunning an earlier migration.
+
+The #203 visual draft remains unmerged and is not imported during integration.
+Any future wrapper must preserve displayed-draft UUID binding, footer actions,
+form values and the truthful delivery states. This does not qualify that wrapper
+or replace native accessibility/device evidence.
 
 The existing reactivation regression now covers pending overlay, accepted results
 with lagging pages, full drainage, later server void and authoritative bootstrap.

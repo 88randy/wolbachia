@@ -10,6 +10,8 @@ import type { SyncSnapshot } from "./sync-snapshot.ts";
 
 export interface SyncEngineDeps {
   readonly pass: SyncPassDeps;
+  /** Local readiness recovery runs inside the same loop even offline or without a session. */
+  readonly beforeSync?: () => Promise<void>;
   /** True while a securely stored session exists. Without one nothing is sent. */
   readonly hasSession: () => boolean;
   /** Authoritative persisted level; notifications are hints, never the work queue. */
@@ -139,6 +141,7 @@ export class SyncEngine {
       while (shouldRun) {
         this.#again = false;
         this.#hinted = false;
+        await this.#deps.beforeSync?.();
         await this.#recoverPending();
         await this.#runOnce();
         const hasFinalUpload =

@@ -1,11 +1,17 @@
-import { CAPTURE_SCOPE_AVAILABLE } from "../ovitrap-lifecycle/current-scope.ts";
+import {
+  AUTHORITY_REVISION,
+  CAPTURE_SCOPE_AVAILABLE,
+  configurationStatement,
+  assignmentPublication,
+  StaleAssignmentAuthorityError,
+} from "./snapshot-authority.ts";
+import type { AssignmentAuthority } from "./snapshot-authority.ts";
 import { readPhysicalIdentityState } from "../ovitrap-lifecycle/physical-identity-state.ts";
 import { RETIRED_CAPTURE_DRAFT } from "../ovitrap-lifecycle/retired-draft.ts";
 import { physicalOvitrap } from "../ovitrap-lifecycle/physical-projection.ts";
 import { captureWeek } from "./capture-week.ts";
-import { KvStore } from "../../db/kv-store.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
-import { readText } from "../../db/sql.ts";
+import { readInteger, readText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
 import type { OutboxEvent } from "../../outbox/outbox-event.ts";
 import type { Assignment, Catalog, Draft, Rules } from "./types.ts";
@@ -21,10 +27,8 @@ export interface StoredCapture {
 /** SQLite is the only source of saved status; local projections retain every captured version. */
 export class OvitrapStore {
   readonly #db: SqlExecutor;
-  readonly #kv: KvStore;
   constructor(db: SqlExecutor) {
     this.#db = db;
-    this.#kv = new KvStore(db);
   }
   async read(): Promise<StoredCapture> {
     const [row] = await this.#db.query("SELECT draft, event_id FROM ovitrap_draft WHERE slot = 1");
@@ -39,14 +43,28 @@ export class OvitrapStore {
     return row ? toOutboxEvent(row) : null;
   }
   async snapshots(): Promise<Snapshots> {
-    const [row] = await this.#db.query(`SELECT CASE WHEN ${CAPTURE_SCOPE_AVAILABLE} THEN value
-      ELSE json_set(value,'$.assignment',json('null')) END AS value FROM kv WHERE key='ovitrap_snapshots'`);
+    const [row] = await this.#db
+      .query(`SELECT json_remove(CASE WHEN ${CAPTURE_SCOPE_AVAILABLE} THEN value
+      ELSE json_set(value,'$.assignment',json('null')) END,'$.authorityRevision') AS value FROM kv WHERE key='ovitrap_snapshots'`);
     return row
       ? (JSON.parse(readText(row, "value")) as Snapshots)
       : { catalog: null, rules: null, assignment: null };
   }
-  async saveSnapshots(snapshots: Snapshots): Promise<void> {
-    await this.#kv.set("ovitrap_snapshots", JSON.stringify(snapshots));
+  /** Refresh only configuration; stale assignment fields supplied by an old caller are ignored. */
+  async saveSnapshots(snapshots: Pick<Snapshots, "catalog" | "rules">): Promise<void> {
+    await this.#db.runAtomically([configurationStatement(snapshots)]);
+  }
+  async assignmentAuthority(): Promise<AssignmentAuthority> {
+    const [row] = await this.#db.query(
+      `SELECT ${AUTHORITY_REVISION} AS revision FROM kv WHERE key='ovitrap_snapshots'`,
+    );
+    return { revision: row ? readInteger(row, "revision") : 0 };
+  }
+  /** A truly authoritative provider must publish using the token captured before its asynchronous work. */
+  async publishSnapshots(snapshots: Snapshots, authority: AssignmentAuthority): Promise<void> {
+    const statement = assignmentPublication(snapshots, authority);
+    const rows = await this.#db.query(statement.sql, statement.params);
+    if (rows.length === 0) throw new StaleAssignmentAuthorityError();
   }
   async begin(draft: Draft): Promise<void> {
     await this.#db.runAtomically([

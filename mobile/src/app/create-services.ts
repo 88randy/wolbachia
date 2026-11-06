@@ -62,7 +62,7 @@ export async function createServices(): Promise<AppServices> {
     credentials: tokens,
     requests,
   } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
-  const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests }, bundle);
+  const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests, auth }, bundle);
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
   const captures = createCaptures({ db, engine, requests, tokens, shiftOpen });
@@ -101,11 +101,14 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
   return { credentials, server };
 }
 
-type EngineDependencies = Pick<AppServices, "kv" | "outbox" | "server" | "deviceId" | "tokens"> & {
+type EngineDependencies = Pick<
+  AppServices,
+  "kv" | "outbox" | "server" | "deviceId" | "tokens" | "auth"
+> & {
   readonly requests: SessionRequests;
 };
 function createEngine(deps: EngineDependencies, bundle: DayBundleService): SyncEngine {
-  const { kv, outbox, server, deviceId, tokens, requests } = deps;
+  const { kv, outbox, server, deviceId, tokens, requests, auth } = deps;
   return new SyncEngine({
     pass: {
       outbox,
@@ -115,6 +118,7 @@ function createEngine(deps: EngineDependencies, bundle: DayBundleService): SyncE
       transport: createScopedSyncTransport({ tokens, requests }),
       ...bundle.syncHooks(),
     },
+    beforeSync: auth.retrySessionDataCleanup,
     hasSession: () => tokens.hasSyncSession(),
     hasPendingFinalUpload: tokens.hasPendingFinalUpload,
     hasServer: () => (tokens.hasSyncSession() ? tokens.getOrigin() : server.baseUrl()) !== null,

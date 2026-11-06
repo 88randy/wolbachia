@@ -345,7 +345,13 @@ There is no egg-count input, draft field or event payload field.
   location/scope review notice. P13 only offers downloaded assignment points.
   Missing assignment/version/epi week blocks saving; an explicitly lost or narrowed
   downloaded assignment blocks new capture while retaining drafts/outbox.
-- Catalog/rules download uses `packages/api-client` and saves snapshots atomically.
+- Catalog/rules download uses `packages/api-client` and saves configuration
+  atomically without rewriting the current assignment. A genuinely authoritative
+  assignment provider captures a durable authority token before network awaits
+  and publishes through a conditional SQL CAS plus the existing session fence.
+  Bootstrap narrowing, point invalidation, revoke and publication advance that
+  revision in the same transaction, including absent/null authority. Stale writes
+  retain drafts/outbox and fail explicitly; no previous assignment copy is replayed.
   Drafts pin catalog labels, hashes, assignment version/week configuration, GPS including
   accuracy, shift and capture time. New catalogs warn without clearing old answers.
   Explicit adoption refuses to discard a retired captured choice's historical label.
@@ -523,7 +529,7 @@ navigation button says "How to get there", without claiming a specific navigator
   session/scope download access clears projections, saved map preparation/navigation
   and the cursor, retaining unsent evidence. Expired auth/network failures keep cache.
 - The single tolerant parser follows `backend/scheduling/courier_feed.py`'s
-  `AssignmentProducerSerializer` (#109 assignments v2): common fields are
+  `AssignmentProducerSerializer` (#109 assignments v2, #212 v3): common fields are
   `{id, kind, quadrant_id, courier, revision}`; tasks add
   `{code, point, action, date, category, source, protocol, target}`. Local names map
   code to point_code (the producer's human task code includes :action:YYYY-MM-DD),
@@ -531,10 +537,12 @@ navigation button says "How to get there", without claiming a specific navigator
   high risk; medium/low/null/unknown are normal for ordering. Allocation rows with
   kind=quadrant_assignment are intentionally ignored for the task list and never
   count as unreadable, in bootstrap or deltas. Malformed task rows are counted.
-  **[ASSUMPTION: future points projection #196]** coordinates, block code,
-  reference, history and ovitrap linkage are optional enrichment; no location is
-  invented. Unlocated tasks remain in the list with an explanation, no distance,
-  map marker or How to get there action. The real producer supplies only
+  The existing #196 `sampling_points` projection supplies coordinates by the
+  `task.point` UUID and matching quadrant (#221). Inline or retained task GPS is
+  not current location authority. Block code, reference, history and ovitrap
+  linkage remain optional enrichment. Missing, retired, malformed or out-of-scope
+  points leave tasks listed without distance, map marker or How to get there
+  action. The real producer supplies only
   place/check; closed-house/relocate states in the design await capture/point data.
   Delta numeric versions are ordered numerically; opaque versions deduplicate by equality
   and ordered change sequence. Bootstrap authoritatively restores present resources and removes missing ids.
@@ -546,15 +554,21 @@ navigation button says "How to get there", without claiming a specific navigator
   Pending retention conservatively matches the ovitrap regardless of date, so
   this uncertainty never drops recoverable work from the list. Day progress
   uses local captured work plus removal of tasks from the server projection
-  **[ASSUMPTION]**: assignments v2 publishes no completion/status field and capture
-  completion currently needs a bootstrap refresh (see scheduling README).
+  Assignments v3 now publishes `is_completed` (#212), but the mobile parser still
+  ignores it; consuming that completion contract remains the separate #229
+  follow-up. #221 does not change local completion policy.
   Phone-saved and server-received text
   remain separate; the existing `SyncChip` opens the inbox with actual delivery/review
   outcomes. Neither an error nor a pending upload implies server delivery/review.
   No new capture queue, upload transport, ping producer or server lookup was added.
 - Bootstrap uses `packages/api-client`, validates `unknown` at the runtime object
   boundary (generated response incorrectly says array) and sends the stored bundle
-  version as a quoted ETag. 304 preserves cache. Open/reconnect/foreground/due-time
+  version as a quoted ETag when the local projection is ready. Migration 9 records
+  durable pending bootstrap readiness for the new point cache. Normal refresh
+  omits the ETag and rejects 304 while pending, preserving the existing cursor
+  and outbox across failures/restart. Only a successful transactional bundle
+  replacement clears readiness; valid-cursor sync does not replace a full body.
+  Once ready, 304 preserves cache. Open/reconnect/foreground/due-time
   triggers refresh while cached list/point actions remain usable. Local map
   verification is published before HTTP starts, including a stalled transport.
   A response from a replacement session or changed issuer is discarded; legitimate
@@ -725,13 +739,49 @@ pass 214/214 and i18n tests pass 13/13. An earlier simultaneous verification run
 exhausted process memory; the required mobile command passes when run separately.
 No npm ci/install, Docker, Playwright or Expo build was run for this review.
 
+
+## Session-data cleanup recovery (#222)
+
+ADR 128 defines the cleanup fence. `AuthController.retrySessionDataCleanup` joins
+one in-flight attempt and releases pending authentication/unlock access only after
+the clear actually succeeds for the same session, origin and status. A rejected
+clear or an old completion leaves that fence closed; it never restores a grant or
+replays login/captured writes. Existing session-end journals and final-upload
+receipt ordering are unchanged.
+
+Boot retries the same path after loading credentials. A cleanup failure is handled
+as a fenced P1 notice with Retry rather than an unusable boot screen; credential or
+profile storage-read failures still propagate normally. The optional `beforeSync`
+port runs in the existing serialized worker before credential/server/connectivity
+gates, so the next sync can retry local cleanup even offline without a session.
+The worker's existing storage backoff handles repeat failures. No new queue exists.
+
+P1 reuses its existing full-width action for cleanup Retry without requiring a
+connection or filled credentials. A retry tap only retries cleanup. The inline
+critical notice remains visible offline in es-MX/en, and successful cleanup dismisses
+only its own notice. No new layout, tokens, dependencies or native dialogs were added.
+S01/P1 and S14 supplied the error/primary-action references; this cleanup state is
+an issue-required addition to the artwork.
+
+| Criterion/invariant | Regression in `test/session-data-recovery.test.ts` |
+| --- | --- |
+| Failed clear then successful boot retry resets the gate; restart failure stays retryable | `boot retry after a failed clear releases login only after actual success` |
+| Repeated failures, offline/no-session/server recovery, dedup across sync/boot/manual retry, no auto-login and retained outbox | `offline sync retries failures before session/server gates and joins boot/manual retry without replay` |
+| An old completion cannot expose a replacement session; current-context retry can recover | `an old successful clear cannot release a replacement session's data fence` |
+
+The tests use actual Node SQLite transactions, injected storage failure and deferred
+barriers. They verify logical recovery and preserved immutable event references;
+Android force-stop, SQLCipher/SecureStore disk behavior, native P1 layout, TalkBack
+and 130% text still require the qualified build/device workflow. No native build,
+phone, API, Docker or database service is required for this fix.
+
 ## M-09: replace, relocate, remove (#138)
 
 P15-P17 are entered from the selected point/physical ovitrap in M-08 and implemented
-in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). ADR 125 records the
+in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). ADR 131 records the
 owner-supplied decisions. Service/store/ports and `use-m-09` reuse the existing
-M-02 outbox and M-08 GPS/evidence/shift authorization patterns. Migration 9 follows
-master migrations 7–8; it retains immutable captures, reserved replacement UUIDs, evidence,
+M-02 outbox and M-08 GPS/evidence/shift authorization patterns. Migration 10 follows
+master canonical migrations 1–9; it retains immutable captures, reserved replacement UUIDs, evidence,
 reasoned void attempts and local relocation decisions. No new queue, HTTP endpoint,
 transport, dependency or generated client edit is introduced.
 
@@ -800,8 +850,8 @@ focus return, contrast in sunlight or assistive-technology behavior.
 
 ### M-09 master integration
 
-Lifecycle migrations are 9–11 after master's released M-06 migrations 7–8; the
-accepted M-09 decision is ADR 125. `DayStore` applies lifecycle bootstrap and delta
+Lifecycle migrations are 10–12 after master's canonical migrations 1–9; the
+accepted M-09 decision is ADR 131. `DayStore` applies lifecycle bootstrap and delta
 sections through the existing `DayBundleService` projection gate and transaction.
 Revocation rejects stale writers and removes downloaded physical/point projections
 plus M-08 assignment authorization, while retaining drafts, events and evidence.
@@ -814,7 +864,7 @@ force-stop, native SQLCipher/upload, TalkBack, light/dark layout or 130% text on
 MO01 device profiles. B-33's real decision/task producer remains unavailable.
 
 
-M-09 scope/reactivation hardening (ADR 126, migration 11): bootstrap atomically
+M-09 scope/reactivation hardening (ADR 132, migration 12): bootstrap atomically
 narrows current capture authorization while retaining each draft's historical copy.
 SQLite insertion guards protect M-08/M-09 saves and lifecycle corrections against
 revocation after preflight. A durable receipt ledger retains acknowledged local

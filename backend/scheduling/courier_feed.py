@@ -11,13 +11,26 @@ from rest_framework import serializers
 
 from accounts.models import Device, User
 from core.snapshots import snapshot_hash
-from field_sync.envelope import BatchContext
+from field_sync.envelope import BatchContext, EventEnvelope
+from field_sync.models import FieldEvent
 from field_sync.producers import ProducerContext
-from field_sync.services import ChangeInput, append_courier_change, lock_courier_batches
+from field_sync.services import (
+    ChangeInput,
+    FanoutPublisher,
+    append_courier_change,
+    lock_courier_batches,
+)
+from geography.models import SamplingPoint
 from organizations.models import Membership, Organization
 from scheduling.csv_import import SOURCES
 from scheduling.models import AssignmentVersion, ScheduledTask
-from scheduling.selectors import courier_current_rows, task_query, task_rows, week_start
+from scheduling.selectors import (
+    completion_task_rows,
+    courier_current_rows,
+    task_query,
+    task_rows,
+    week_start,
+)
 
 TASK_FIELDS = (
     "code",
@@ -28,6 +41,7 @@ TASK_FIELDS = (
     "source",
     "protocol",
     "target",
+    "is_completed",
 )
 ROW_FIELDS = ("id", "quadrant_id", "courier", "revision")
 SCOPE_FIELDS = ("organization_id", "center_id", "quadrant_id")
@@ -53,6 +67,7 @@ class AssignmentProducerSerializer(serializers.Serializer[Any]):
         max_length=80, allow_blank=True, allow_null=True, required=False
     )
     target = serializers.IntegerField(min_value=1, required=False)
+    is_completed = serializers.BooleanField(required=False)
 
     def to_internal_value(self, data: Any) -> dict[str, Any]:  # noqa: ANN401 -- DRF boundary
         if isinstance(data, dict) and set(data) - set(self.fields) - set(SCOPE_FIELDS):
@@ -137,23 +152,41 @@ def lock_couriers(
     return batches
 
 
-def _append_change(batch: BatchContext, row: dict[str, Any], action: str) -> None:
+def _change_input(row: dict[str, Any], action: str) -> ChangeInput:
     # Content versions also change when risk provenance changes without a new owner.
     payload = {
         key: value for key, value in row.items() if key not in {"organization_id", "center_id"}
     }
-    append_courier_change(
-        batch,
-        ChangeInput(
-            kind="assignments",
-            resource_type=row["kind"],
-            resource_id=row["id"],
-            resource_version=snapshot_hash(payload),
-            scope={"center_id": row["center_id"], "quadrant_id": row["quadrant_id"]},
-            action=action,
-            payload=payload if action == "upsert" else {},
-        ),
+    return ChangeInput(
+        kind="assignments",
+        resource_type=row["kind"],
+        resource_id=row["id"],
+        resource_version=snapshot_hash(payload),
+        scope={"center_id": row["center_id"], "quadrant_id": row["quadrant_id"]},
+        action=action,
+        payload=payload if action == "upsert" else {},
     )
+
+
+def _append_change(batch: BatchContext, row: dict[str, Any], action: str) -> None:
+    append_courier_change(batch, _change_input(row, action))
+
+
+def emit_task_completion(
+    point: SamplingPoint, event: EventEnvelope | FieldEvent, emit: FanoutPublisher
+) -> None:
+    """Publish to each current, authorized owner inside the effect's locked transaction.
+
+    A validated capture's envelope precedes FieldEvent insertion, so include that pending
+    effect explicitly. Void receives the original stored event after its void marker and
+    recomputes completion from remaining effects, never from the correcting event's date.
+    """
+    for row in completion_task_rows(point, event):
+        if row["courier"]:
+            payload = task_payload(row)
+            if isinstance(event, EventEnvelope):
+                payload["is_completed"] = True
+            emit(_change_input(payload, "upsert"), courier_id=UUID(row["courier"]))
 
 
 def append_assignment_changes(

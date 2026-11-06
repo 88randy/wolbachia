@@ -13,6 +13,7 @@ export function authNoticePresentation(key: MessageKey): { tone: NoticeTone; ico
     "mobile.unlock.wrongSecret",
     "mobile.login.deviceRevoked",
     "mobile.storage.actionFailed",
+    "mobile.login.cleanupFailed",
   ].includes(key);
   return { tone: isCritical ? "critical" : "warning", icon: "alert" };
 }
@@ -21,6 +22,7 @@ export function loginNotice(
   snapshot: Pick<AuthSnapshot, "notice" | "isOnline">,
   error: LoginNotice | null,
 ): LoginNotice | null {
+  if (snapshot.notice?.key === "mobile.login.cleanupFailed") return snapshot.notice;
   if (error !== null) return error;
   if (snapshot.notice?.key === "mobile.login.sessionEnded") return snapshot.notice;
   return snapshot.isOnline ? snapshot.notice : { key: "mobile.login.noSignal" };

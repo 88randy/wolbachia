@@ -3,11 +3,12 @@ import { test } from "node:test";
 import { navigationReducer } from "../src/navigation/routes.ts";
 import { LifecycleService } from "../src/features/ovitrap-lifecycle/service.ts";
 import { LifecycleStore } from "../src/features/ovitrap-lifecycle/store.ts";
+import { StaleAssignmentAuthorityError } from "../src/features/ovitrap-check/snapshot-authority.ts";
 import { saveGate, deliveryState } from "../src/features/ovitrap-lifecycle/domain.ts";
 import { StaleCaptureError } from "../src/features/ovitrap-check/capture-identity.ts";
 import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { createStores, FIXED_NOW } from "./support/factories.ts";
-import { engineFor } from "./support/m-08-harness.ts";
+import { engineFor, publishSnapshots } from "./support/m-08-harness.ts";
 import { ASSIGNMENT, CATALOG, POINT, RULES, makeDraft } from "./support/m-08-fixtures.ts";
 import type { TestStores } from "./support/factories.ts";
 import type { LifecycleDraft } from "../src/features/ovitrap-lifecycle/types.ts";
@@ -24,7 +25,7 @@ let sequence = 0;
 async function harness(local?: TestStores) {
   const stores = local ?? (await createStores());
   const capture = new OvitrapStore(stores.db);
-  await capture.saveSnapshots({
+  await publishSnapshots(capture, {
     catalog: CATALOG,
     rules: RULES,
     assignment: { ...ASSIGNMENT, ovitraps: [{ id: SOURCE, point: POINT }] },
@@ -335,7 +336,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve, sep } from "node:path";
 import { openTestDatabase } from "./support/sqlite-executor.ts";
-import { KvStore } from "../src/db/kv-store.ts";
+import { KV_KEYS, KvStore } from "../src/db/kv-store.ts";
 import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
 import { accepted, answer, scriptedTransport, httpFailure } from "./support/scripted-transport.ts";
 import type { SqlExecutor } from "../src/db/sql.ts";
@@ -835,7 +836,7 @@ const SECOND_POINT = { ...POINT, id: "77777777-7777-4777-8777-777777777777", cod
 import { PLACEMENT_PREPARATION } from "../src/features/ovitrap-check/domain.ts";
 async function reviewCaptureHarness(mode: "check" | "place" = "check", local?: TestStores) {
   const h = await harness(local);
-  await h.store.capture.saveSnapshots({
+  await publishSnapshots(h.store.capture, {
     catalog: CATALOG,
     rules: RULES,
     assignment: {
@@ -874,7 +875,7 @@ function pointProjection(isRetired: boolean): Schemas["SamplingPointBundle"] {
 }
 async function downloadRetirement(h: TestStores, kind: "trap" | "point", isRetired = true) {
   const trap = downloadedTrap(SOURCE, isRetired);
-  const point = pointProjection(isRetired);
+  const point = { ...pointProjection(isRetired), version: 2 };
   await h.db.runAtomically(
     courierChangeStatements({
       ovitraps:
@@ -898,7 +899,7 @@ async function downloadRetirement(h: TestStores, kind: "trap" | "point", isRetir
                 action: "upsert",
                 resource_type: "sampling_point",
                 resource_id: POINT.id,
-                resource_version: "retirement",
+                resource_version: String(point.version),
                 data: point,
               },
             ]
@@ -917,6 +918,21 @@ void test("review 1: downloaded physical or point retirement blocks M08 save and
     const state = await h.check.read();
     assert.ok(state.draft);
     await downloadRetirement(h, kind);
+    if (kind === "point") {
+      await h.db.runAtomically(
+        courierChangeStatements({
+          sampling_points: [1, 2].map((version) => ({
+            sequence: 10 + version,
+            action: "upsert",
+            resource_type: "sampling_point",
+            resource_id: POINT.id,
+            resource_version: String(version),
+            data: { ...pointProjection(false), version },
+          })),
+        }),
+      );
+      assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+    }
     await assert.rejects(h.check.save(h.eventId));
     // Simulate a command that already passed its read-side check before the upsert arrived.
     await assert.rejects(
@@ -963,7 +979,7 @@ async function currentRetirement(db: SqlExecutor): Promise<boolean> {
 }
 void test("review 3: downloaded active state overrides retired assignment fallback before current local effects", async () => {
   const h = await harness();
-  await h.store.capture.saveSnapshots({
+  await publishSnapshots(h.store.capture, {
     catalog: CATALOG,
     rules: RULES,
     assignment: { ...ASSIGNMENT, ovitraps: [{ id: SOURCE, point: POINT, isRetired: true }] },
@@ -1043,7 +1059,7 @@ import { RemoteSessionEnded } from "../src/auth/session-requests.ts";
 import { DayBundleService } from "../src/features/day/bundle-service.ts";
 import { DatabaseSync } from "node:sqlite";
 import { migrate } from "../src/db/migrations.ts";
-import { databaseExecutor } from "./support/sqlite-executor.ts";
+import { databaseExecutor, migrateThrough } from "./support/sqlite-executor.ts";
 import { makeEnvelope } from "./support/factories.ts";
 void test("AC3 integration: bootstrap retirement and revocation share the projection gate while retaining lifecycle evidence", async () => {
   const h = await harness();
@@ -1118,47 +1134,145 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
   assert.deepEqual(retained.history[0]?.draft.evidence, [PHOTO]);
 });
 
-void test("AC3 upgrade: master schema 8 retains M06 assignments and event enrollment through lifecycle migrations", async () => {
+async function seedCanonicalPointCache(local: TestStores, sourceVersion: number): Promise<void> {
+  if (sourceVersion !== 9) return;
+  await local.db.runAtomically([
+    {
+      sql: "INSERT INTO day_sampling_point(id,version,payload) VALUES(?,1,?)",
+      params: [POINT.id, JSON.stringify(pointProjection(false))],
+    },
+  ]);
+  await local.kv.remove(KV_KEYS.daySamplingPointsBootstrapPending);
+}
+void test("AC3 upgrade: canonical master schemas 8 and 9 retain M06 enrollment and point-cache readiness through lifecycle migrations", async () => {
+  for (const sourceVersion of [8, 9]) {
+    const database = new DatabaseSync(":memory:");
+    const db = databaseExecutor(database);
+    try {
+      await migrateThrough(db, sourceVersion);
+      const local = storesFor(db);
+      const original = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
+      await local.outbox.enqueue(original);
+      const payload = JSON.stringify({ id: "retained-task", ovitrap_id: SOURCE });
+      await db.runAtomically([
+        {
+          sql: `INSERT INTO day_assignment(id,version,payload,retained_payload,kept,retained_event_ids)
+      VALUES('retained-task','1',?,?,1,?)`,
+          params: [payload, payload, JSON.stringify([original.id])],
+        },
+      ]);
+      await seedCanonicalPointCache(local, sourceVersion);
+      await migrate(db);
+      const [version] = await db.query("PRAGMA user_version");
+      assert.equal(version?.user_version, 12);
+      const [assignment] = await db.query(
+        "SELECT retained_payload,retained_event_ids FROM day_assignment",
+      );
+      assert.equal(assignment?.retained_payload, payload);
+      assert.equal(assignment.retained_event_ids, JSON.stringify([original.id]));
+      const next = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
+      await local.outbox.enqueue(next);
+      const [enrolled] = await db.query("SELECT retained_event_ids FROM day_assignment");
+      assert.equal(enrolled?.retained_event_ids, JSON.stringify([original.id, next.id]));
+      assert.equal((await local.outbox.claimPending(10)).length, 2);
+      const points = await db.query("SELECT payload FROM day_sampling_point");
+      assert.deepEqual(
+        points.map((point) => point.payload),
+        sourceVersion === 9 ? [JSON.stringify(pointProjection(false))] : [],
+      );
+      assert.equal(await new DayStore(db).needsSamplingPointBootstrap(), sourceVersion === 8);
+    } finally {
+      database.close();
+    }
+  }
+});
+
+void test("AC3 upgrade: intermediate lifecycle schema 11 backfills acknowledged retirement without changing captured evidence", async () => {
   const database = new DatabaseSync(":memory:");
   const db = databaseExecutor(database);
   try {
-    await assert.rejects(
-      migrate({
-        ...db,
-        runAtomically: (statements) => {
-          if (statements.some(({ sql }) => sql === "PRAGMA user_version = 9"))
-            return Promise.reject(new Error("Upgrade paused at released schema 8"));
-          return db.runAtomically(statements);
-        },
-      }),
-      /released schema 8/,
-    );
-    const local = storesFor(db);
-    const original = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
-    await local.outbox.enqueue(original);
-    const payload = JSON.stringify({ id: "retained-task", ovitrap_id: SOURCE });
+    await migrateThrough(db, 10);
+    const h = await harness(storesFor(db));
+    const original = makeEnvelope({ type: "ovitrap.remove", payload: { ovitrap_id: SOURCE } });
+    await h.outbox.enqueue(original);
+    const draft = JSON.stringify({
+      eventId: original.id,
+      ovitrapId: SOURCE,
+      point: POINT,
+      kind: "remove",
+      evidence: [PHOTO],
+    });
     await db.runAtomically([
+      { sql: "INSERT INTO lifecycle_draft(slot,draft) VALUES(1,?)", params: [draft] },
       {
-        sql: `INSERT INTO day_assignment(id,version,payload,retained_payload,kept,retained_event_ids)
-      VALUES('retained-task','1',?,?,1,?)`,
-        params: [payload, payload, JSON.stringify([original.id])],
+        sql: "INSERT INTO lifecycle_capture(event_id,ovitrap_id,point_id,kind,draft) VALUES(?,?,?,'remove',?)",
+        params: [original.id, SOURCE, POINT.id, draft],
+      },
+      {
+        sql: "INSERT INTO lifecycle_evidence(event_id,evidence_id,file_ref) VALUES(?,?,?)",
+        params: [original.id, PHOTO.id, PHOTO.fileRef],
+      },
+      {
+        sql: "UPDATE outbox_event SET local_status='sent',result_code='accepted' WHERE id=?",
+        params: [original.id],
       },
     ]);
+    await migrateThrough(db, 11);
+    const evidence = await db.query("SELECT * FROM lifecycle_evidence");
     await migrate(db);
-    const [version] = await db.query("PRAGMA user_version");
-    assert.equal(version?.user_version, 11);
-    const [assignment] = await db.query(
-      "SELECT retained_payload,retained_event_ids FROM day_assignment",
-    );
-    assert.equal(assignment?.retained_payload, payload);
-    assert.equal(assignment.retained_event_ids, JSON.stringify([original.id]));
-    const next = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
-    await local.outbox.enqueue(next);
-    const [enrolled] = await db.query("SELECT retained_event_ids FROM day_assignment");
-    assert.equal(enrolled?.retained_event_ids, JSON.stringify([original.id, next.id]));
-    assert.equal((await local.outbox.claimPending(10)).length, 2);
+    assert.equal((await db.query("PRAGMA user_version"))[0]?.user_version, 12);
+    const [receipt] = await db.query("SELECT * FROM lifecycle_receipt");
+    assert.equal(receipt?.event_id, original.id);
+    assert.equal(receipt.ovitrap_id, SOURCE);
+    assert.equal(receipt.is_reconciled, 0);
+    assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
+    assert.equal((await db.query("SELECT draft FROM lifecycle_capture"))[0]?.draft, draft);
+    assert.deepEqual(await db.query("SELECT * FROM lifecycle_evidence"), evidence);
+    assert.equal((await db.query("SELECT id FROM outbox_event"))[0]?.id, original.id);
   } finally {
     database.close();
+  }
+});
+
+void test("AC3 upgrade: conflicting unmerged draft schemas 9 to 11 fail before writes and retain their original data", async () => {
+  for (const draftVersion of [9, 10, 11]) {
+    const database = new DatabaseSync(":memory:");
+    const db = databaseExecutor(database);
+    try {
+      await (draftVersion === 11 ? migrate(db) : migrateThrough(db, draftVersion + 1));
+      const local = storesFor(db);
+      const original = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
+      await local.outbox.enqueue(original);
+      const retained = JSON.stringify({ eventId: original.id, evidence: [PHOTO] });
+      await db.runAtomically([
+        { sql: "INSERT INTO lifecycle_draft(slot,draft) VALUES(1,?)", params: [retained] },
+        { sql: "DROP TABLE day_sampling_point" },
+        { sql: "DELETE FROM kv WHERE key=?", params: [KV_KEYS.daySamplingPointsBootstrapPending] },
+        { sql: `PRAGMA user_version=${String(draftVersion)}` },
+      ]);
+      const before = await db.query("SELECT * FROM outbox_event");
+      let migrationWrites = 0;
+      await assert.rejects(
+        migrate({
+          ...db,
+          runAtomically: (statements) => {
+            migrationWrites += 1;
+            return db.runAtomically(statements);
+          },
+        }),
+        /Unmerged lifecycle draft database/,
+      );
+      assert.equal(migrationWrites, 0);
+      assert.equal((await db.query("PRAGMA user_version"))[0]?.user_version, draftVersion);
+      assert.deepEqual(await db.query("SELECT * FROM outbox_event"), before);
+      assert.equal((await db.query("SELECT draft FROM lifecycle_draft"))[0]?.draft, retained);
+      assert.equal(
+        (await db.query("SELECT name FROM sqlite_master WHERE name='day_sampling_point'")).length,
+        0,
+      );
+    } finally {
+      database.close();
+    }
   }
 });
 
@@ -1183,8 +1297,43 @@ async function prepareScopeRace(
           draft.eventId,
         );
 }
-void test("review scope race: revoke before the SQLite boundary rejects M08/M09 captures and lifecycle correction atomically", async () => {
-  for (const action of ["m08-save", "m09-save", "m09-correct"] as const) {
+const SCOPE_CHANGES = ["point", "bootstrap", "revoke"] as const;
+type ScopeChange = (typeof SCOPE_CHANGES)[number];
+const NARROWED_BUNDLE = {
+  bundle_version: "narrowed",
+  schema_version: "schema-1",
+  scope_revision: "scope-2",
+  next_change_at: null,
+  map_manifest_ready: false,
+  cursor: "narrowed-cursor",
+  assignments: [],
+  map_manifests: [],
+  sampling_points: [],
+  ovitraps: [],
+};
+async function changeCurrentScope(db: SqlExecutor, change: ScopeChange): Promise<void> {
+  const projections = new DayStore(db);
+  if (change === "point")
+    return projections.applyChanges({
+      sampling_points: [
+        {
+          action: "upsert",
+          sequence: 2,
+          resource_type: "sampling_point",
+          resource_id: POINT.id,
+          resource_version: "2",
+          data: { ...pointProjection(false), version: 2, location: [] },
+        },
+      ],
+    });
+  if (change === "bootstrap") return projections.replace(NARROWED_BUNDLE, FIXED_NOW);
+  return projections.revoke();
+}
+const SCOPE_RACE_CASES = (["m08-save", "m09-save", "m09-correct"] as const).flatMap((action) =>
+  SCOPE_CHANGES.map((scopeChange) => ({ action, scopeChange })),
+);
+void test("review scope race: late configuration or assignment publication cannot restore M08/M09 authority at commit", async () => {
+  for (const { action, scopeChange } of SCOPE_RACE_CASES) {
     const base = await createStores();
     let isArmed = false;
     let entered: () => void = () => {
@@ -1216,14 +1365,63 @@ void test("review scope race: revoke before the SQLite boundary rejects M08/M09 
       },
     };
     const run = await prepareScopeRace(db, action);
+    const snapshots = new OvitrapStore(base.db);
+    const oldSnapshot = await snapshots.snapshots();
+    const oldAuthority = await snapshots.assignmentAuthority();
     const before = await base.db.query("SELECT id FROM outbox_event");
+    const draftsBefore = await base.db.query(
+      "SELECT 'M08' AS kind,draft FROM ovitrap_draft UNION ALL SELECT 'M09',draft FROM lifecycle_draft",
+    );
     isArmed = true;
     const pending = run();
     await ready;
-    await new DayStore(base.db).revoke();
-    release();
+    await changeCurrentScope(base.db, scopeChange);
+    try {
+      await snapshots.saveSnapshots(oldSnapshot);
+      await assert.rejects(
+        snapshots.publishSnapshots(oldSnapshot, oldAuthority),
+        StaleAssignmentAuthorityError,
+      );
+    } finally {
+      release();
+    }
     await assert.rejects(pending);
     assert.deepEqual(await base.db.query("SELECT id FROM outbox_event"), before);
+    assert.deepEqual(
+      await base.db.query(
+        "SELECT 'M08' AS kind,draft FROM ovitrap_draft UNION ALL SELECT 'M09',draft FROM lifecycle_draft",
+      ),
+      draftsBefore,
+    );
     assert.equal((await base.db.query("SELECT event_id FROM lifecycle_void")).length, 0);
+  }
+});
+
+const EMPTY_AUTHORITY_CASES = [false, true].flatMap((hasConfiguration) =>
+  SCOPE_CHANGES.map((scopeChange) => ({ hasConfiguration, scopeChange })),
+);
+void test("review authority ABA: absent or null snapshots reject pre-change assignment publication and keep configuration valid", async () => {
+  for (const { hasConfiguration, scopeChange } of EMPTY_AUTHORITY_CASES) {
+    const local = await createStores();
+    const store = new OvitrapStore(local.db);
+    if (hasConfiguration) await store.saveSnapshots({ catalog: null, rules: null });
+    const authority = await store.assignmentAuthority();
+    const original = makeEnvelope();
+    await local.outbox.enqueue(original);
+    await changeCurrentScope(local.db, scopeChange);
+    assert.deepEqual(await store.snapshots(), { catalog: null, rules: null, assignment: null });
+    const oldSnapshot = { catalog: CATALOG, rules: RULES, assignment: ASSIGNMENT };
+    await store.saveSnapshots(oldSnapshot);
+    await assert.rejects(
+      store.publishSnapshots(oldSnapshot, authority),
+      StaleAssignmentAuthorityError,
+    );
+    assert.deepEqual(await store.snapshots(), { catalog: CATALOG, rules: RULES, assignment: null });
+    if (scopeChange === "point")
+      await assert.rejects(
+        store.publishSnapshots(oldSnapshot, await store.assignmentAuthority()),
+        StaleAssignmentAuthorityError,
+      );
+    assert.equal((await local.outbox.claimPending(1))[0]?.envelope.id, original.id);
   }
 });

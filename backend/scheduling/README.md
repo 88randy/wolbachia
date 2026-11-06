@@ -88,10 +88,10 @@ optimization, screens, deployment or review acceptance is added.
    coordinate with existing ovitrap effect writers. No User/Device/Session/Token
    locks, storage, network or mail are taken under these locks; any future account
    integration must preserve User -> Device -> DeviceSession -> TokenPair first.
-10. SchedulingConfig.ready registers one assignments v2 BundleProducer. Its flat
+10. SchedulingConfig.ready registers one assignments v3 BundleProducer (#212). Its flat
     rows have kind=quadrant_assignment|task, stable id (quadrant/task UUID), quadrant_id,
     courier and revision. Tasks add code, point, action, date, category, source,
-    protocol and target; no completion state or egg counts. Bootstrap uses the active
+    protocol, target and is_completed; no egg counts. Bootstrap uses the active
     courier membership and captured permission/paired scope, including every owned
     task due on/after the current epi-week start with no upper bound. Each task uses
     its own week's risk provenance. organization_id and
@@ -136,13 +136,19 @@ no account locks or network/storage/mail occur beneath them. The one documented
 courier BatchContext helper has device=cast(Device, None): producer lock/append
 APIs use only organization/user and planning has no sending device.
 
-Completion is derived from captures/voids, whose handlers emit no scheduling
-CourierChange. The assignments v2 payload therefore omits is_completed; GET
-/schedule/ still exposes it. A former owner's phone can retain a stale pending
-task until the next bootstrap/full resync refreshes projections. Capture is
-always revalidated server-side (one active reading per physical ovitrap/local
-epi week), and reassignment still rejects completed tasks. Producer v2 changes
-the bundle schema_version; bootstrap must replace the old projection.
+Completion retains the existing point/action/local-date projection used by GET
+/schedule/. Accepted place/check effects and voids publish assignments v3 task
+upserts inside their operational savepoint (#212), using the shared fan-out locks.
+The current explicit task owner receives its change only if already included in
+the captured active paired field.bootstrap scope. Capturing courier and quadrant
+allocation do not transfer a task, and no other courier receives its payload.
+A pending accepted capture explicitly completes the task before FieldEvent insert;
+void recalculates against remaining active effects using the original capture date.
+In_review captures/voids have no effects or task publication. Content versions
+include is_completed; replay appends nothing, failure rolls back effects/feeds.
+Producer v3 invalidates prior cursor/schema boundaries; bootstrap must replace the
+old projection. Immutable historical v2 payloads and event ingest status/evidence
+remain untouched. Capture/reassignment validation and original ownership stay intact.
 
 
 ## API
@@ -188,7 +194,7 @@ check generation atomically (409 revisit_rule_not_configured).
 | Future tasks already covered by bootstrap cursor | test_bootstrap_includes_future_tasks_before_cursor_covers_them |
 | One weekly check, active/voided reading and changed-rule replay | test_generation_checks_once_per_epi_week_and_stops_after_real_reading; test_week_reading_suppresses_generation_only_until_voided; test_regeneration_keeps_one_check_when_future_revisit_rules_change |
 | Scope denial precedes policy/revision errors | test_scope_loss_hides_import_even_when_week_policy_changes |
-| Completion excluded from feed, retained in schedule | test_task_feed_never_claims_completion_from_a_schedule_row; test_completed_tasks_abort_entire_reassignment_and_unassigned_tasks_are_explicit |
+| Completion shared by feed and schedule | test_task_feed_preserves_completion_from_the_schedule_projection; test_completed_tasks_abort_entire_reassignment_and_unassigned_tasks_are_explicit |
 | Offline own/scope isolation | test_bootstrap_assignments_contains_only_own_in_scope_planning_rows |
 | Feed ownership and allocation revocation | test_reassignment_delivers_remove_and_upsert_with_contiguous_sequences; test_assignment_change_revokes_quadrant_without_moving_existing_tasks |
 | Courier contention/retry | test_busy_affected_courier_returns_retryable_429_without_partial_writes |
@@ -200,6 +206,21 @@ check generation atomically (409 revisit_rule_not_configured).
 Default profile grant expectations in test_seed_defaults.py are updated in place;
 existing seed tests protect once-only grants/revocations without duplicated cases.
 Seed-count assertions already derive len(DEFAULT_PARAMETER_SEEDS), now 15.
+
+### Task completion feed (#212)
+
+Additional cases live in tests/test_task_completion_212.py; no new tables, events,
+task actions or dependencies. The existing B-13 schema-boundary regression covers
+cursor invalidation, and the updated B-12 serializer cases require task completion
+while rejecting task fields on quadrant assignments.
+
+| Criterion / invariant | Regression (test_ prefix omitted) |
+| --- | --- |
+| Courier A completes courier B's task; void reopens; bootstrap agrees; replay is idempotent; local date and immutable source evidence | other_courier_receives_completed_and_reopened_task_once (place/check) |
+| Voiding one capture preserves completion from another active same-date effect | void_keeps_task_complete_when_another_same_date_placement_remains |
+| Review capture, void of review and reviewed void have no completion effects | review_capture_and_review_void_do_not_change_task_completion (place/check) |
+| Owner must have one paired bootstrap grant and active membership | task_completion_does_not_leak_to_an_unauthorized_owner (unpaired_scope/inactive/sync_only) |
+| Real owner-lock contention rolls back capture/void, both feeds and source marker; same UUID retries | busy_task_owner_rolls_back_effect_and_feed_until_same_uuid_retry (capture/void; Event barrier, two DB connections) |
 
 ## Verified APIs (no added dependencies)
 

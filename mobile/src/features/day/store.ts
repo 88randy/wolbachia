@@ -2,7 +2,8 @@ import {
   courierBundleStatements,
   courierChangeStatements,
 } from "../ovitrap-lifecycle/courier-projections.ts";
-import { VISIBLE_ASSIGNMENTS } from "./pending-work.ts";
+import { revokeCaptureScope } from "../ovitrap-lifecycle/current-scope.ts";
+import { LOCATED_ASSIGNMENTS } from "./task-locations.ts";
 import { setStatement, removeStatement, KV_KEYS } from "../../db/kv-store.ts";
 import { readText } from "../../db/sql.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
@@ -42,7 +43,7 @@ export class DayStore {
   }
   async read(): Promise<DayCache> {
     const [tasks, manifests, meta] = await Promise.all([
-      this.#db.query(VISIBLE_ASSIGNMENTS),
+      this.#db.query(LOCATED_ASSIGNMENTS),
       this.#db.query("SELECT payload FROM day_map_manifest WHERE removed=0"),
       this.#db.query("SELECT payload FROM day_bundle_meta WHERE slot=1"),
     ]);
@@ -70,6 +71,7 @@ export class DayStore {
         params: [JSON.stringify(bundle.meta)],
       },
       ...courierBundleStatements(body),
+      removeStatement(KV_KEYS.daySamplingPointsBootstrapPending),
       setStatement(KV_KEYS.syncCursor, bundle.cursor),
     ];
     await this.#db.runAtomically(statements);
@@ -101,6 +103,13 @@ export class DayStore {
   async markCleanupPending(): Promise<void> {
     await this.#db.runAtomically([setStatement("day_cleanup_pending", "true")]);
   }
+  /** An upgraded cache needs a complete point section even when its ETag/cursor remain valid. */
+  async needsSamplingPointBootstrap(): Promise<boolean> {
+    const rows = await this.#db.query("SELECT value FROM kv WHERE key=?", [
+      KV_KEYS.daySamplingPointsBootstrapPending,
+    ]);
+    return rows[0]?.value === "true";
+  }
   async needsCleanup(): Promise<boolean> {
     const rows = await this.#db.query("SELECT value FROM kv WHERE key='day_cleanup_pending'");
     return rows[0]?.value === "true";
@@ -111,9 +120,8 @@ export class DayStore {
       { sql: "DELETE FROM day_map_manifest" },
       { sql: "DELETE FROM day_bundle_meta" },
       { sql: "DELETE FROM lifecycle_courier_projection" },
-      {
-        sql: `UPDATE kv SET value=json_set(value,'$.assignment',json('null')) WHERE key='ovitrap_snapshots'`,
-      },
+      revokeCaptureScope(),
+      { sql: "DELETE FROM day_sampling_point" },
       removeStatement("day_navigation"),
       removeStatement("shift_open_map"),
       removeStatement(KV_KEYS.syncCursor),

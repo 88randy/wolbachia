@@ -1,4 +1,7 @@
 import { replaceCaptureScope } from "./current-scope.ts";
+import { courierPointChanges } from "./courier-point-projections.ts";
+import { parseSamplingPoints } from "../day/sampling-point-parser.ts";
+import { replaceSamplingPoints } from "../day/sampling-point-statements.ts";
 import { reconcileIdentityEffects } from "./identity-effects.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readChange, readOvitrap, readPoint } from "./courier-validation.ts";
@@ -17,11 +20,11 @@ function statement(input: Projection): SqlStatement {
     params: [input.kind, input.id, input.version, input.sequence, JSON.stringify(input.body)],
   };
 }
-function changeStatement(value: unknown, kind: "ovitrap" | "sampling_point"): SqlStatement {
-  const change = readChange(value, kind);
-  const body = kind === "ovitrap" ? readOvitrap(change.body) : readPoint(change.body);
+function changeStatement(value: unknown): SqlStatement {
+  const change = readChange(value, "ovitrap");
+  const body = readOvitrap(change.body);
   if (change.id !== body.id) throw new Error("Courier resource identity mismatch.");
-  return statement({ ...change, kind, body });
+  return statement({ ...change, kind: "ovitrap", body });
 }
 function section(input: unknown, key: "ovitraps" | "sampling_points"): readonly unknown[] {
   if (!input || typeof input !== "object" || Array.isArray(input))
@@ -39,10 +42,8 @@ export function courierChangeStatements(changes: unknown): readonly SqlStatement
     "has_more" in changes &&
     changes.has_more === false;
   return [
-    ...section(changes, "ovitraps").map((change) => changeStatement(change, "ovitrap")),
-    ...section(changes, "sampling_points").map((change) =>
-      changeStatement(change, "sampling_point"),
-    ),
+    ...section(changes, "ovitraps").map(changeStatement),
+    ...courierPointChanges(section(changes, "sampling_points")),
     ...(isDrained ? [reconcileIdentityEffects(false)] : []),
   ];
 }
@@ -51,17 +52,17 @@ export function courierBundleStatements(bundle: unknown): readonly SqlStatement[
   const traps = section(bundle, "ovitraps")
     .map((value) => readOvitrap(value))
     .map((body) => ({ kind: "ovitrap", id: body.id, version: body.version, sequence: 0, body }));
-  const points = section(bundle, "sampling_points")
-    .map((value) => readPoint(value))
-    .map((body) => ({
-      kind: "sampling_point",
-      id: body.id,
-      version: String(body.version),
-      sequence: 0,
-      body,
-    }));
+  const validPoints = parseSamplingPoints(section(bundle, "sampling_points"));
+  const points = validPoints.map((body) => ({
+    kind: "sampling_point",
+    id: body.id,
+    version: String(body.version),
+    sequence: 0,
+    body,
+  }));
   return [
     { sql: "DELETE FROM lifecycle_courier_projection" },
+    ...replaceSamplingPoints(validPoints),
     ...[...traps, ...points].map(statement),
     replaceCaptureScope(
       points.map((point) => point.id),

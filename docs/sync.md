@@ -101,7 +101,7 @@ A failed request leaves nothing behind (and gives a final upload back).
 | `rejected` | `void_reason_code_unknown` | `{fields: {reason_code: ["void_reason_code_unknown"]}, voids_event_id}` | Code not found in the target organization's `void-reason` catalog (also foreign codes or a missing catalog) |
 | `rejected` | `already_voided` | `{voids_event_id}` | The event to void is already voided |
 | `rejected` | `shift_already_open` | `{shift_id}` | `shift.open` while the courier already has an open shift (the phone shows that one) |
-| `rejected` | `motorcycle_unknown` | `{}` | `shift.open` names a motorcycle code the organization does not have |
+| `rejected` | `motorcycle_unknown` | `{}` | `shift.open` names an unknown, foreign, voided or out-of-scope motorcycle |
 | `rejected` | `motorcycle_blocked` | `{reason}` | The motorcycle is blocked (`severe_check`, `service_overdue` or `out_of_service`) |
 | `rejected` | `motorcycle_in_use` | `{}` | The motorcycle is in another open shift (a motorcycle is in at most one open shift; checked after `motorcycle_blocked`) |
 | `rejected` | `odometer_out_of_range` | `{odometer_km, max_km}` | The odometer is above 999 999 km |
@@ -264,6 +264,22 @@ Rules for handlers: keep row locks short: the batch runs under `SET LOCAL lock_t
 
 ### Shifts (#68)
 
+**Motorcycle authorization (#201).** `shift.open` requires the current paired
+`field_event.sync` grant for the motorcycle's center; `motorcycle.read` and
+`motorcycle.manage` are not required and never widen that grant. An unassigned
+motorcycle (`center = null`) requires an explicit all-center sync grant. Quadrant
+scope is inapplicable and cannot substitute for center scope. Unknown, foreign,
+voided and out-of-scope motorcycles all return `motorcycle_unknown` with empty
+params before blocked/in-use state is examined. A non-locking lookup and current
+scope check reject an unavailable motorcycle before waiting for its row lock, so
+contention on an out-of-scope motorcycle cannot turn that answer into a revealing
+`429 sync_in_progress`. An authorized candidate is then row-locked and its current
+center and grants are rechecked. Each scope check captures active membership and
+profiles in one SQL statement through the shared selectors, without a configuration
+row lock. The locked recheck is the final authorization snapshot, including on a
+final upload; a downloaded bundle or the event's capture time never supplies
+authority. Scope changes committed before that snapshot apply to pending events.
+
 A shift is the courier's day. The phone generates the shift UUID and sends it as the envelope `shift_id` of `shift.open`; every later event of that day carries the same `shift_id`. `GET /shifts/` and `GET /shifts/{id}/` (permission `shift.read`: supervisor, admin) read the result; see `api-conventions.md`.
 
 **`shift.open`** (schema 1): `shift_id` required; payload `{motorcycle_code: str, odometer_km: int, checks: [{item: str, result: "ok"|"minor"|"severe", note?: str}], note?: str}`. `item` is the `code` of an active item of the closed catalog `motorcycle-check-item`, at most once each; the list may be empty (the checklist is configured per organization, so the server does not require every item). Rejections in this order: `invalid_payload` (shape, unknown or repeated checklist item, missing or reused `shift_id`), `motorcycle_unknown`, `odometer_out_of_range`, `shift_already_open`, `motorcycle_blocked`, `motorcycle_in_use`. The field codes inside `invalid_payload` `params.fields` are: `checks: ["unknown_item"]` (an item that is not an active item of `motorcycle-check-item`), `checks: ["duplicate_item"]` (the same item twice), `shift_id: ["required"]` (missing) and `shift_id: ["already_used"]` (the id belongs to a shift already, also one inserted by a concurrent batch of another courier, also of another organization: one answer for all). When a `severe` line and a decreased odometer coincide, `severe_check` wins and the decrease is not reported separately. A `severe` line opens the shift, blocks the motorcycle and lands `in_review` (`severe_check`); later opens with that motorcycle are `motorcycle_blocked`. An open below the highest odometer (open or close reading of any shift) ever recorded for the motorcycle in the organization opens the shift `in_review` (`odometer_decreased`). The reference is the maximum because an odometer only goes up: it needs no ordering of shifts (events of one batch share their receipt time and the phone's clock cannot be trusted).
@@ -310,10 +326,9 @@ like shift.open schema 1. Requires the pipeline's field_event.sync permission an
 the courier's open shift on the matching motorcycle, without motorcycle.manage.
 Unknown/foreign motorcycles return motorcycle_unknown without disclosing existence.
 Existing shift_not_open, odometer_decreased and invalid_payload codes also apply.
-[ASSUMPTION] Center scope/default-deny apply to the admin REST API. Field capture
-retains #68 shift ownership semantics: a courier restricted to center A can still
-open a center B motorcycle and capture fuel in that shift. Scoping field capture
-requires a follow-up issue; shift.open/close semantics are unchanged here.
+Center scope/default-deny apply to the admin REST API and, since #201, to
+`shift.open` as documented above. Fuel capture retains its existing open-shift
+ownership rule; #201 does not change `fuel.load` or `shift.close` semantics.
 
 | Code | Status | Meaning |
 | --- | --- | --- |
@@ -402,14 +417,14 @@ reuse still returns ovitrap_identity_used; no new sync code is added.
 
 ## Scheduling integration boundary (#109, B-12)
 
-SchedulingConfig.ready registers the assignments v2 producer. Bootstrap returns
+SchedulingConfig.ready registers the assignments v3 producer (#212). Bootstrap returns
 one flat list of kind=quadrant_assignment and kind=task rows, filtered by active
 courier membership, organization and captured permission/paired center/quadrant
 scope. IDs are stable quadrant/task UUIDs. Common fields are id, kind, quadrant_id,
 courier, revision; tasks add code, point, action, date, category, source, protocol
-and target. Include every owned task due on/after the current organization epi-week
+target and is_completed. Quadrant-assignment rows never carry task fields. Include every owned task due on/after the current organization epi-week
 start, with no upper bound, so the bootstrap cursor cannot skip future upserts.
-Risk provenance resolves at each task's own week. No completion state or egg counts.
+Risk provenance resolves at each task's own week. No egg counts are published.
 Organization/center metadata is checked before serialization and is not exposed.
 
 change_assignment emits allocation remove/upsert (existing tasks retain ownership);
@@ -422,12 +437,33 @@ Resource types are quadrant_assignment/task, scope is {center_id,quadrant_id}, a
 resource_version hashes the payload, including risk provenance. Retryable scheduling
 contention is 429 scheduling_in_progress, Retry-After: 1; replays append no extra rows.
 No field events/result codes, capture timestamps or review acceptance (#22) change.
-Capture/void handlers emit no scheduling CourierChange, so assignments v2 omits
-is_completed; GET /schedule/ retains it. A former owner's phone may retain a stale
-pending task until the next bootstrap/full resync refreshes projections. Capture
-is revalidated server-side; duplicate physical-ovitrap/local-week readings are
-rejected and completed tasks cannot be reassigned. Producer v2 changes the bundle
-schema_version and requires replacing the prior projection through bootstrap.
+Accepted ovitrap.place/check and their accepted voids append task upserts in the
+same savepoint as their effects. Completion retains GET /schedule/ semantics:
+an active operational placement/reading at the same sampling point, action and
+organization-local due date completes a task, regardless of the capturing courier.
+Current explicit task ownership determines the recipient; quadrant allocation and
+the capture's author do not transfer it. Only that owner, if active and included
+in the fan-out's captured paired field.bootstrap scope, receives the task payload.
+No unrelated authorized courier receives another courier's task.
+
+Publication rule: acquire the shared organization lock and every existing fan-out
+recipient try-lock before effects; append under those locks through commit. The
+accepted capture's operational row exists before its FieldEvent is inserted, so
+its pending effect explicitly completes matching tasks. A void uses the ORIGINAL
+capture's local date and recomputes completion after the source void marker; it
+reopens a task only when no matching active effect remains. Doubtful in_review
+captures/voids and voided reviews without operational effects publish nothing.
+Replayed UUIDs append nothing, and failures roll back source markers, effects and
+both ovitrap/task feeds together. The existing User -> Device -> DeviceSession ->
+TokenPair order and generic void-target lock are preserved; no network occurs
+under these locks. Contention remains retryable 429 sync_in_progress.
+
+The task's content-hash resource_version includes is_completed; ownership revisions
+and original FieldEvent status/evidence stay unchanged. Producer v3 changes the
+bundle schema_version and scope_revision, invalidating prior cursors before ingest.
+Clients must bootstrap and atomically replace their old projections; immutable
+historical v2 feed payloads are retained, never backfilled. Duplicate physical-
+ovitrap/local-week readings remain rejected and completed tasks cannot be reassigned.
 See [ADR 117 lead decisions](../backend/scheduling/README.md).
 
 ## Bootstrap and projection recovery (B-13, #110)

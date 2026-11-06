@@ -28,6 +28,7 @@ async function download(deps: Dependencies, store: OvitrapStore): Promise<void> 
   const session = deps.tokens.getSnapshot();
   if (baseUrl === null || deps.tokens.getAccessToken() === undefined)
     throw new Error("Snapshots need a server and session.");
+  const authority = deps.assignments ? await store.assignmentAuthority() : null;
   const client = createMobileApiClient({ baseUrl, tokens: deps.tokens });
   const signal = AbortSignal.timeout(30_000);
   const catalog = readCatalog(
@@ -36,10 +37,10 @@ async function download(deps: Dependencies, store: OvitrapStore): Promise<void> 
   const rules = readRules(
     unwrap(await deps.requests.run(() => client.GET("/api/v1/field/rules/", { signal }))),
   );
-  const previous = await store.snapshots();
-  const assignment = deps.assignments ? await deps.assignments.read() : previous.assignment;
+  const assignment = deps.assignments ? await deps.assignments.read() : null;
   requireSession(deps.tokens, session);
-  await store.saveSnapshots({ catalog, rules, assignment });
+  if (authority !== null) return store.publishSnapshots({ catalog, rules, assignment }, authority);
+  await store.saveSnapshots({ catalog, rules });
 }
 function requireSession(tokens: Dependencies["tokens"], session: Credentials): void {
   const current = tokens.getSnapshot();

@@ -6,6 +6,7 @@ export async function hasLocalRecords(db: SqlExecutor): Promise<boolean> {
     UNION ALL SELECT 1 FROM shift_open_state
     UNION ALL SELECT 1 FROM lifecycle_courier_projection
     UNION ALL SELECT 1 FROM lifecycle_draft
-    UNION ALL SELECT 1 FROM ovitrap_draft LIMIT 1`);
+    UNION ALL SELECT 1 FROM ovitrap_draft
+    UNION ALL SELECT 1 FROM day_sampling_point LIMIT 1`);
   return rows.length > 0;
 }

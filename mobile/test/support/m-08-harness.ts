@@ -1,4 +1,5 @@
 import { OvitrapStore } from "../../src/features/ovitrap-check/store.ts";
+import type { Snapshots } from "../../src/features/ovitrap-check/store.ts";
 import { OvitrapService } from "../../src/features/ovitrap-check/service.ts";
 import { SyncEngine } from "../../src/sync/sync-engine.ts";
 import { createStores, FIXED_NOW, FIXED_DEVICE_ID } from "./factories.ts";
@@ -65,9 +66,14 @@ export async function harness(
   const local = stores ?? (await createStores());
   const engine = engineFor(local);
   const store = new OvitrapStore(local.db);
-  await store.saveSnapshots({ catalog: CATALOG, rules: RULES, assignment: ASSIGNMENT });
+  await publishSnapshots(store, { catalog: CATALOG, rules: RULES, assignment: ASSIGNMENT });
   const service = serviceFor({ store, engine }, overrides);
   return { ...local, engine, store, service };
+}
+/** Explicit downloaded fixture context still uses the production authority CAS, never a raw KV replacement. */
+export async function publishSnapshots(store: OvitrapStore, snapshots: Snapshots): Promise<void> {
+  const authority = await store.assignmentAuthority();
+  await store.publishSnapshots(snapshots, authority);
 }
 export async function prepareCheck(service: OvitrapService): Promise<void> {
   await service.update(
