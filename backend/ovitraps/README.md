@@ -238,7 +238,7 @@ writes no operational effects. Voids append corrections and preserve dependents.
 Existing historical OP03 rules are reused unchanged. Catalog seeds add only missing
 relocation reasons and abandoned/removed findings. No inventory/attachment/incident
 app is introduced: evidence is opaque and one unique authored incident-link marker
-is available for B-06. The future closure gate reads has_unresolved_removal; explicit
-recovery resolution remains a follow-up. Courier schema 1 gains optional is_retired
+is available for B-06. The future closure gate reads has_unresolved_removal; #217
+adds explicit append-only recovery resolution (see lifecycle/README.md). Courier schema 1 gains optional is_retired
 and revision hashes include lineage/removal event UUIDs; replace/remove fan out,
 relocate does not. No original FieldEvent ingest status or geometry is rewritten.

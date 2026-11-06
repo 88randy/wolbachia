@@ -802,7 +802,12 @@ Replacement creates a new physical identity at the same fixed point plus lineage
 removed/replaced identities stay searchable. Removal retires the identity; accepted
 abandoned/removed findings and unrecovered removals reserve one incident-link marker
 per physical trap via constraint+savepoint. No incident app or stock effects exist.
-Unrecovered state is available to the future closure gate until explicit resolution.
+Unrecovered state is available to the future closure selector until explicit
+supervisor resolution (#217, POST /ovitrap-removals/{id}/resolve/). A resolution
+clears only its removal's blocker and remains a retained dependent that blocks
+source void using ovitrap_void_blocked. Recovery/event/evidence and unique incident
+markers remain immutable; physical history exposes the independent resolution.
+No new sync event, courier projection or implemented quadrant-closure route exists.
 Voids use record.void, normalize 10..1000 text and append OvitrapVoid. Dependents on
 new replacement identities/proposals or competing placement after removal block the
 void with safe scoped IDs and preserve every source/dependent row.

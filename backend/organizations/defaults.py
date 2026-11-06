@@ -22,7 +22,7 @@ from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from geography.permissions import GEOGRAPHY_WRITE_CODES, QUADRANT_READ
 from organizations.models import Organization, Profile
-from ovitraps.permissions import READ_CODES, READING_READ
+from ovitraps.permissions import OVITRAP_REMOVAL_RESOLVE, READ_CODES, READING_READ
 from reviews.permissions import REVIEW_ITEM_READ
 from rules.permissions import (
     RULE_PARAMETER_READ,
@@ -38,6 +38,7 @@ from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UN
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    OVITRAP_REMOVAL_RESOLVE,
     SCHEDULE_READ,
     SCHEDULE_MANAGE,
     RISK_IMPORT_APPLY,
@@ -76,6 +77,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    OVITRAP_REMOVAL_RESOLVE,
     SCHEDULE_READ,
     SCHEDULE_MANAGE,
     *READ_CODES,

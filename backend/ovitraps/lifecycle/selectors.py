@@ -23,8 +23,10 @@ from ovitraps.lifecycle.models import (
     RelocationDecision,
     RelocationProposal,
     RemovalAttempt,
+    RemovalResolution,
 )
 from ovitraps.models import Ovitrap, OvitrapReading
+from ovitraps.permissions import OVITRAP_REMOVAL_RESOLVE
 from rules.seeds import DEFAULT_PARAMETER_SEEDS
 from rules.selectors import get_values_in_force
 
@@ -78,14 +80,42 @@ def is_active(ovitrap: Ovitrap) -> bool:
 def has_unresolved_removal(
     organization: Organization, quadrant_id: UUID | None = None, *, point: UUID | None = None
 ) -> bool:
-    """Closure gate until a future explicit resolution writer exists; voids compensate retirement."""
+    """Future closure boundary: only live, unrecovered and unresolved removals block."""
     _, rows = retirement_rows(organization)
-    rows = rows.filter(is_recovered=False)
+    rows = rows.filter(is_recovered=False, resolution__isnull=True)
     if quadrant_id is not None:
         rows = rows.filter(ovitrap__sampling_point__block__quadrant_id=quadrant_id)
     if point is not None:
         rows = rows.filter(ovitrap__sampling_point_id=point)
     return rows.exists()
+
+
+def scoped_removal(member: Membership, identifier: UUID) -> RemovalAttempt:
+    """Authorize before any source/domain lock; refresh membership on every call."""
+    current = (
+        Membership.objects.select_related("user", "organization")
+        .filter(
+            pk=member.pk,
+            organization_id=member.organization_id,
+            is_active=True,
+            user__is_active=True,
+            organization__is_active=True,
+        )
+        .first()
+    )
+    if current is None:
+        raise NotFound
+    rows = RemovalAttempt.objects.filter(organization=current.organization).select_related(
+        "event", "ovitrap__sampling_point__block__quadrant"
+    )
+    removal = (
+        filter_by_effective_scope(rows, current, OVITRAP_REMOVAL_RESOLVE)
+        .filter(pk=identifier)
+        .first()
+    )
+    if removal is None:
+        raise NotFound
+    return cast(RemovalAttempt, removal)
 
 
 def relocation_thresholds(values: dict[str, int | float | None]) -> tuple[int, int] | None:
@@ -243,7 +273,7 @@ def _history_effects(ovitrap: Ovitrap) -> dict[UUID, dict[str, Any]]:
             "evaluated_rules": row.evaluated_rules,
             "reason_label": row.reason_label,
         }
-    for row in RemovalAttempt.objects.filter(
+    for row in RemovalAttempt.objects.select_related("resolution").filter(
         **common, ovitrap__sampling_point_id=ovitrap.sampling_point_id
     ):
         effects[row.event_id] = {
@@ -253,6 +283,7 @@ def _history_effects(ovitrap: Ovitrap) -> dict[UUID, dict[str, Any]]:
             "rule_version_ids": row.rule_version_ids,
             "evaluated_rules": row.evaluated_rules,
             "reason_label": row.reason_label,
+            "resolution": _resolution_history(getattr(row, "resolution", None)),
         }
     for row in relocation_proposals(ovitrap.organization).filter(
         ovitrap__sampling_point_id=ovitrap.sampling_point_id
@@ -267,6 +298,18 @@ def _history_effects(ovitrap: Ovitrap) -> dict[UUID, dict[str, Any]]:
             "reason_label": row.reason_label,
         }
     return effects
+
+
+def _resolution_history(resolution: RemovalResolution | None) -> dict[str, Any] | None:
+    if resolution is None:
+        return None
+    return {
+        "id": str(resolution.pk),
+        "outcome": resolution.outcome,
+        "reason": resolution.reason,
+        "created_by": str(resolution.created_by_id),
+        "created_at": resolution.created_at.isoformat(),
+    }
 
 
 def _history_entry(

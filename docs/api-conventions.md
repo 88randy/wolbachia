@@ -428,6 +428,37 @@ not a new HTTP correction route. HTTP validation keeps code/detail/fields (400).
 OP03 uses the existing versioned 2 weeks (1..8) / 3 incidents (1..10), counting local
 epi weeks and fixed-point incident markers. Suggestions are advisory. Voids require
 normalized 10..1000 visible-character text and preserve lifecycle/decision dependents.
-No stock compensation exists in this baseline. Explicit unrecovered-resolution and
-quadrant closure writers remain follow-ups. ADR 120 and backend/ovitraps/lifecycle/
+No stock compensation exists in this baseline. Quadrant closure writers remain
+follow-ups. ADR 120 and backend/ovitraps/lifecycle/
 README.md document SQL guards, lock order and the acceptance map.
+
+## Unrecovered removal resolution (#217)
+
+POST /api/v1/ovitrap-removals/{removal UUID}/resolve/ requires removal.resolve.
+The UUID is the removal_id retained in physical history, never a physical-trap
+UUID or organization selector. Request: {expected_state,outcome,reason}.
+expected_state is explicit: unrecovered|recovered|resolved|voided; only a still
+unrecovered, unvoided accepted source with no existing resolution can resolve.
+Any different expectation, recovered/voided source or double resolution returns
+409 removal_state_conflict with no new row. Outcome is recovered_later|written_off;
+both require the existing normalized reason minimum (default 10 visible characters,
+maximum 1000). No new catalog: archived source choices/labels remain evidence and
+may be inactive when the supervisor records the independent resolution.
+
+201 returns {id,removal,outcome,reason,created_by,created_at}. The one-to-one
+insert-only row is the audit fact; the original removal/event/incident marker is
+untouched. Existing physical history adds effects.resolution (null or the audit
+fields); recovery_state remains the original capture's state. Only the resolved
+removal stops contributing to has_unresolved_removal. Another unrecovered removal
+at the same point still blocks. Actual quadrant closure remains an external B-33
+follow-up; no closure or incident endpoint is introduced.
+
+Permission is granted once to seeded admin/supervisor; custom profiles and revoked
+grants are retained. Organization AND paired center/quadrant scope apply before
+lookup/locking (foreign or out-of-scope=404). State and scope are rechecked inside
+the transaction. Source FieldEvent NOWAIT NO KEY UPDATE precedes Organization
+NOWAIT NO KEY UPDATE, matching generic void's inherited order; no later account
+locks or external I/O. Contention/deferred-FK lock waits/deadlocks roll back and
+return 429 removal_in_progress, Retry-After: 1. Resolution is a retained dependent:
+later source void uses existing ovitrap_void_blocked with a safe resolution ID.
+No new sync event, result code or courier payload is added. ADR 128 is provisional.
