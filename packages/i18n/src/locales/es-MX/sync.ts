@@ -99,4 +99,8 @@ export const sync = {
     "El desplazamiento necesita revisión. Tu supervisor revisará la captura.",
   "sync.result.ovitrapVoidBlocked":
     "Hay lecturas vinculadas a esta colocación. Consulta a tu supervisor para corregirlas.",
+  "sync.result.ovitrapStaleIdentity":
+    "La identidad física cambió. Tu supervisor revisará la captura sin perder la evidencia.",
+  "sync.result.ovitrapEvidenceRequired":
+    "Falta evidencia fotográfica. Tu supervisor revisará la captura; conserva los archivos pendientes.",
 } as const satisfies AreaCatalog<"sync">;

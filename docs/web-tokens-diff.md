@@ -51,7 +51,7 @@ Typography: Inter with tabular figures in both.
 ## Visual refresh #202
 
 Issue #202 and the owner-approved preview are the visual source of truth (decision
-118). **The owner approved Step 1**; Step 2 now applies the shared look to existing screens, with the owner-requested single top-bar theme switch. Visual/e2e execution remains a CI/review check. Sections 1–5 above record the
+122). **The owner approved Step 1**; Step 2 now applies the shared look to existing screens, with the owner-requested single top-bar theme switch. Visual/e2e execution remains a CI/review check. Sections 1–5 above record the
 historical comparison. `design/mobile/source/codequim.css` and
 `design/web/source/web.css` stay unchanged as history. The design-CSS test retains
 complete variable-name-to-token coverage, not equality with historical values.
@@ -140,7 +140,7 @@ WCAG relative-luminance ratios (unrounded values are asserted in
 ### Approved rollout audit (Step 2)
 
 The owner approved the Step 1 preview and authorized the existing-screen rollout.
-Decision **118** applies; no API, permission, query, mutation or draft contract changes.
+Decision **122** applies; no API, permission, query, mutation or draft contract changes.
 
 | Area | Shared presentation applied / retained |
 |---|---|

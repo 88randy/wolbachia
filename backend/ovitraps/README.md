@@ -180,3 +180,55 @@ passed without warnings and produced no schema diff: public UUID wire types are
 unchanged. git diff --check passed. Read-only review found no remaining concrete
 issue in the identity correction. Database application, unique constraints and
 concurrent PostgreSQL enforcement were not executed; Docker remains blocked.
+
+
+## Courier projection (#196)
+
+apps.ready registers the ovitraps bundle producer at schema 1. The typed row
+contains identity, immutable placement point_version, current sampling_point_version,
+placed_at and latest NON-voided check by (device_time, event_id), with boolean
+has_eggs and nullable state when no reading remains. No numeric egg/lab data,
+other courier identity, GPS trail or free-text void reason is downloaded.
+
+Place/check/on_void emit upserts to EVERY active in-scope field.bootstrap member,
+using the one field_sync fan-out helper inside the sync savepoint. Existing actor
+locks are skipped; other try-lock contention rolls back effects/feed with 429.
+The pending FieldEvent is not inserted yet, so placement uses its EventContext
+and a check overlays the pending reading only if its device-time order is newer.
+Historical backdated checks still advance the append-only lifecycle version.
+The version is a stable SHA-256 of placement UUID/void state, reading/void revision
+counts and current point version, shared by bundle and feed resource_version.
+
+A correction is never remove: placement_voided identifies a voided placement;
+voided/voided_resource_type/voided_event_id/void_reason_code/voided_at retain the
+latest tombstone. voided_event_id references FieldEvent, reading_id references
+OvitrapReading. A reading correction recomputes the previous live check, while a
+later replacement preserves correction history. Voided placements remain in the
+bundle. A point publication upserts affected ovitraps without rewriting placement
+provenance. Parent identities are immutable (D7b), so scope loss uses cursor
+revision -> invalid_cursor -> bootstrap, without a scope-remove writer.
+
+Findings, egg paddle types, void choices and required rule keys already belong
+to existing catalog/rules snapshots; no configuration producer is added. See
+../../docs/sync.md for the bound [ASSUMPTION], lock order, exact fields and migration.
+Tests: ../tests/test_bundle_producers_196.py covers fan-out, once-only pulls/replay,
+placement/reading tombstones, fallback to earlier checks, isolation and query bound.
+
+
+## Lifecycle (#112, B-15 / ADR 120)
+
+lifecycle/ is part of this app, imported by models.py and registered by apps.ready.
+See [lifecycle/README.md](lifecycle/README.md) for the full decisions, invariant/lock
+order, boundaries and criterion-to-test map. Replacement preserves the fixed point
+and inserts physical lineage; relocation is proposal-only; removal retires the trap.
+Active selectors/placement occupancy derive from nonvoided lineage/removal. Exact
+code lookups include retired identities unless status is explicit. New event review
+writes no operational effects. Voids append corrections and preserve dependents.
+
+Existing historical OP03 rules are reused unchanged. Catalog seeds add only missing
+relocation reasons and abandoned/removed findings. No inventory/attachment/incident
+app is introduced: evidence is opaque and one unique authored incident-link marker
+is available for B-06. The future closure gate reads has_unresolved_removal; explicit
+recovery resolution remains a follow-up. Courier schema 1 gains optional is_retired
+and revision hashes include lineage/removal event UUIDs; replace/remove fan out,
+relocate does not. No original FieldEvent ingest status or geometry is rewritten.

@@ -1,5 +1,6 @@
 """Atomic sync effects. Caller owns the sync savepoint and account/courier locks."""
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
@@ -9,16 +10,24 @@ from rest_framework.exceptions import ValidationError
 
 from core.void_reason import validate_void_reason
 from field_sync.codes import INVALID_PAYLOAD
-from field_sync.exceptions import EventRejected
+from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
+from field_sync.projection_serializers import OvitrapBundleSerializer
 from field_sync.registry import EventContext
-from field_sync.services import rejection_params
+from field_sync.services import ChangeInput, FanoutScope, fanout_courier_changes, rejection_params
+from geography.models import PointVersion, SamplingPoint
 from organizations.models import Organization
 from ovitraps import codes
 from ovitraps.capture import Capture, capture_context, epi_week
 from ovitraps.findings import CatalogChoice, validate_choices
 from ovitraps.models import Bag, Ovitrap, OvitrapReading, OvitrapVoid, PlacementAttempt
-from ovitraps.selectors import accessible_ovitrap, accessible_point
+from ovitraps.selectors import (
+    accessible_ovitrap,
+    accessible_point,
+    latest_check_with_pending,
+    ovitrap_row,
+    projected_ovitraps,
+)
 
 
 @dataclass(frozen=True)
@@ -43,11 +52,14 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
         organization=ctx.organization, client_uuid=payload["ovitrap_id"]
     ).exists():
         raise EventRejected(codes.IDENTITY_USED)
-    if Ovitrap.objects.filter(sampling_point=point, event__voided_at__isnull=True).exists():
-        raise EventRejected(codes.POINT_OCCUPIED)
     capture = capture_context(ctx, point)
+    from ovitraps.lifecycle.selectors import active_ovitraps
+
+    if active_ovitraps(ctx.organization).filter(sampling_point=point).exists():
+        raise EventRejected(codes.POINT_OCCUPIED)
+    scope = point_fanout_scope(point)
     try:
-        with transaction.atomic():
+        with transaction.atomic(), fanout_courier_changes(scope) as emit:
             ovitrap = Ovitrap.objects.create(
                 client_uuid=payload["ovitrap_id"],
                 organization=ctx.organization,
@@ -66,6 +78,11 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
                 evaluated_rules=capture.rules,
                 rule_version_ids=capture.version_ids,
             )
+            ovitrap.sampling_point_version = (
+                point.versions.order_by("-version").values_list("version", flat=True).first()
+            )
+            ovitrap.event = FieldEvent(id=ctx.envelope.id, device_time=ctx.envelope.device_time)
+            emit_ovitrap(ovitrap, emit)
     except IntegrityError as error:
         if (
             getattr(getattr(error.__cause__, "diag", None), "constraint_name", "")
@@ -79,6 +96,10 @@ def check_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
     """Append a reading and its optional bag together; void a weekly reading before correcting it."""
     lock_organization(ctx)
     ovitrap = accessible_ovitrap(ctx, payload["ovitrap_id"])
+    from ovitraps.lifecycle.selectors import is_active
+
+    if not is_active(ovitrap):
+        raise EventNeedsReview(codes.STALE_IDENTITY)
     if ctx.envelope.device_time < ovitrap.event.device_time:
         raise EventRejected(codes.OVITRAP_INACCESSIBLE)
     finding, paddle = validate_choices(ctx, payload)
@@ -93,9 +114,19 @@ def check_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
     ):
         raise EventRejected(codes.BAG_CODE_USED)
     capture = capture_context(ctx, ovitrap.sampling_point)
-    reading = _create_reading(ctx, payload, ReadingCapture(ovitrap, capture, finding, paddle, week))
-    if payload["bag_code"] is not None:
-        _create_bag(ctx, reading, payload["bag_code"])
+    with fanout_courier_changes(point_fanout_scope(ovitrap.sampling_point)) as emit:
+        reading = _create_reading(
+            ctx, payload, ReadingCapture(ovitrap, capture, finding, paddle, week)
+        )
+        from ovitraps.lifecycle.services import INCIDENT_FINDINGS, incident_link
+
+        if finding.historical["code"] in INCIDENT_FINDINGS:
+            incident_link(ctx, ovitrap)
+        if payload["bag_code"] is not None:
+            _create_bag(ctx, reading, payload["bag_code"])
+        projected = projected_ovitraps(ctx.organization).get(pk=ovitrap.pk)
+        projected.latest_check = latest_check_with_pending(projected, reading, ctx.envelope)
+        emit_ovitrap(projected, emit)
 
 
 def _create_reading(
@@ -174,16 +205,32 @@ def void_ovitrap_event(ctx: EventContext, target: FieldEvent) -> None:
     if target.type == "ovitrap.place":
         ovitrap = Ovitrap.objects.filter(organization=ctx.organization, event=target).first()
         if ovitrap is not None:
-            blockers = OvitrapReading.objects.filter(ovitrap=ovitrap).order_by("id")
-            if blockers.exists():
-                raise EventRejected(
-                    codes.VOID_BLOCKED,
-                    {
-                        "blocked_by": [
-                            {"resource": "reading", "id": str(row.pk)} for row in blockers
-                        ]
-                    },
-                )
+            from ovitraps.lifecycle.services import trap_dependents
+
+            if blockers := trap_dependents(ovitrap):
+                raise EventRejected(codes.VOID_BLOCKED, {"blocked_by": blockers})
+    ovitrap = _void_target_ovitrap(ctx, target)
+    if ovitrap is None:
+        _append_ovitrap_void(ctx, target, reason)
+        return
+    with fanout_courier_changes(point_fanout_scope(ovitrap.sampling_point)) as emit:
+        _append_ovitrap_void(ctx, target, reason)
+        emit_ovitrap(projected_ovitraps(ctx.organization).get(pk=ovitrap.pk), emit)
+
+
+def _void_target_ovitrap(ctx: EventContext, target: FieldEvent) -> Ovitrap | None:
+    """Reviewed events may have no operational row; retain their existing correction history."""
+    if target.type == "ovitrap.place":
+        return Ovitrap.objects.filter(organization=ctx.organization, event=target).first()
+    reading = (
+        OvitrapReading.objects.select_related("ovitrap")
+        .filter(organization=ctx.organization, event=target)
+        .first()
+    )
+    return None if reading is None else reading.ovitrap
+
+
+def _append_ovitrap_void(ctx: EventContext, target: FieldEvent, reason: str) -> None:
     OvitrapVoid.objects.create(
         organization=ctx.organization,
         created_by=ctx.user,
@@ -192,3 +239,33 @@ def void_ovitrap_event(ctx: EventContext, target: FieldEvent) -> None:
         reason=reason,
         reason_code=target.void_reason_code,
     )
+
+
+def point_fanout_scope(point: SamplingPoint) -> FanoutScope:
+    return FanoutScope(point.organization, point.block.quadrant.center_id, point.block.quadrant_id)
+
+
+def emit_ovitrap(ovitrap: Ovitrap, emit: Callable[[ChangeInput], None]) -> None:
+    raw = ovitrap_row(ovitrap)
+    serializer = OvitrapBundleSerializer(data=raw)
+    serializer.is_valid(raise_exception=True)
+    payload = dict(serializer.data)
+    emit(
+        ChangeInput(
+            kind="ovitraps",
+            resource_type="ovitrap",
+            resource_id=str(ovitrap.client_uuid),
+            resource_version=payload["version"],
+            scope={"center_id": raw["center_id"], "quadrant_id": raw["quadrant_id"]},
+            action="upsert",
+            payload=payload,
+        )
+    )
+
+
+def emit_point_ovitraps(version: PointVersion, emit: Callable[[ChangeInput], None]) -> None:
+    """A point revision changes location/retirement; preserve immutable placement provenance."""
+    for ovitrap in projected_ovitraps(version.organization).filter(
+        sampling_point_id=version.point_id
+    ):
+        emit_ovitrap(ovitrap, emit)

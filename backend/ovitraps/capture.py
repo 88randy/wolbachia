@@ -79,7 +79,13 @@ def _check_speed(ctx: EventContext, rules: dict[str, Any]) -> None:
         FieldEvent.objects.filter(
             organization=ctx.organization,
             created_by=ctx.user,
-            type__in=("ovitrap.place", "ovitrap.check"),
+            type__in=(
+                "ovitrap.place",
+                "ovitrap.check",
+                "ovitrap.replace",
+                "ovitrap.relocate",
+                "ovitrap.remove",
+            ),
             status="accepted",
             voided_at__isnull=True,
             device_time__lte=ctx.envelope.device_time,

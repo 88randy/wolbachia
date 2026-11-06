@@ -46,3 +46,16 @@ describe("areas still waiting for a permission code", () => {
     expect(pendingAreaIds()).not.toContain("settings");
   });
 });
+
+test.each(["organization.read", "role.read"])(
+  "settings navigation needs %s without requiring a center grant",
+  (permission) => {
+    for (const mode of ["none", "selected"] as const) {
+      const me = makeMe({
+        permissions: [permission],
+        scope: { centers: { mode, ids: [] }, quadrants: { mode: "none", ids: [] } },
+      });
+      expect(canOpenArea(me, area("settings"))).toBe(true);
+    }
+  },
+);

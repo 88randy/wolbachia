@@ -15,7 +15,11 @@ POINT_UNAVAILABLE = "ovitrap_point_version_unavailable"
 TOO_FAR = "ovitrap_too_far"
 SPEED_ANOMALY = "ovitrap_speed_anomaly"
 VOID_BLOCKED = "ovitrap_void_blocked"
+STALE_IDENTITY = "ovitrap_stale_identity"
+EVIDENCE_REQUIRED = "ovitrap_evidence_required"
 CODES = (
+    STALE_IDENTITY,
+    EVIDENCE_REQUIRED,
     POINT_INACCESSIBLE,
     OVITRAP_INACCESSIBLE,
     IDENTITY_USED,

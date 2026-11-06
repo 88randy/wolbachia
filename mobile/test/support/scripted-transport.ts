@@ -55,6 +55,9 @@ export function answer(
         eligibility: [],
         history: [],
         map_manifests: [],
+        quadrants: [],
+        sampling_points: [],
+        ovitraps: [],
       },
     },
   };

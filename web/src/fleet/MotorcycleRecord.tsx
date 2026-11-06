@@ -5,10 +5,14 @@ import { NotFoundState } from "../states/NotFoundState";
 import { fleetRecordOptions } from "./fleet-query";
 import { FleetRecordState } from "./FleetRecordState";
 import { MotorcycleScreen } from "./MotorcycleScreen";
-export function MotorcycleRecord({ code }: { code: string }) {
+interface Props {
+  code: string;
+  urlCenter?: string | undefined;
+}
+export function MotorcycleRecord({ code, urlCenter }: Props) {
   const client = useApiClient();
   const identity = useSessionIdentity();
-  const query = useQuery(fleetRecordOptions({ client, identity }, code));
+  const query = useQuery(fleetRecordOptions({ client, identity, urlCenter }, code));
   const retry = () => {
     void query.refetch();
   };

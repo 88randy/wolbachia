@@ -1091,6 +1091,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ovitraps/{id}/history/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["ovitraps_history_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/quadrant-assignments/": {
         parameters: {
             query?: never;
@@ -1224,6 +1250,32 @@ export interface paths {
          *     `APIView`s do not have.
          */
         get: operations["readings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/relocations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["relocations_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1938,6 +1990,9 @@ export interface components {
                 [key: string]: unknown;
             }[];
             map_manifests: components["schemas"]["MapManifest"][];
+            quadrants: components["schemas"]["QuadrantReference"][];
+            sampling_points: components["schemas"]["SamplingPointBundle"][];
+            ovitraps: components["schemas"]["OvitrapBundle"][];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -2041,6 +2096,9 @@ export interface components {
             eligibility: components["schemas"]["ProducerChange"][];
             history: components["schemas"]["ProducerChange"][];
             map_manifests: components["schemas"]["ProducerChange"][];
+            quadrants: components["schemas"]["QuadrantChange"][];
+            sampling_points: components["schemas"]["SamplingPointChange"][];
+            ovitraps: components["schemas"]["OvitrapChange"][];
         };
         /**
          * @description * `ok` - Ok
@@ -2056,6 +2114,12 @@ export interface components {
             reason: string;
             expected_revision: number;
         };
+        /**
+         * @description * `upsert` - upsert
+         *     * `remove` - remove
+         * @enum {string}
+         */
+        CourierChangeActionEnum: "upsert" | "remove";
         /**
          * @description * `keep` - keep
          *     * `move` - move
@@ -2211,6 +2275,30 @@ export interface components {
         };
         Health: {
             status: string;
+        };
+        HistoryEntry: {
+            /** Format: uuid */
+            event_id: string;
+            type: string;
+            /** Format: date-time */
+            device_time: string;
+            /** Format: date-time */
+            server_received_at: string;
+            point_code: string;
+            /** Format: uuid */
+            author: string | null;
+            /** Format: date-time */
+            voided_at: string | null;
+            void_reason: string;
+            void_reason_code: string;
+            /** Format: uuid */
+            void_event_id: string | null;
+            ingest_status: string;
+            rules_version: string;
+            catalog_version: string;
+            gps: unknown;
+            payload: unknown;
+            effects: unknown;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -2510,6 +2598,8 @@ export interface components {
             /** Format: uuid */
             center?: string | null;
         };
+        /** @enum {unknown} */
+        NullEnum: null;
         OrganizationSettings: {
             /** Format: uuid */
             id: string;
@@ -2536,6 +2626,8 @@ export interface components {
             /** Format: uuid */
             readonly id: string;
             readonly code: string;
+            readonly is_retired: boolean;
+            readonly suggest_relocation: boolean;
             /** Format: uuid */
             readonly sampling_point: string;
             readonly point_code: string;
@@ -2568,6 +2660,54 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        OvitrapBundle: {
+            /** @default false */
+            is_retired: boolean;
+            version: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            client_uuid: string;
+            code: string;
+            /** Format: uuid */
+            sampling_point_id: string;
+            /** Format: uuid */
+            point_version: string;
+            sampling_point_version: number;
+            /** Format: date-time */
+            placed_at: string;
+            /** Format: uuid */
+            reading_id: string | null;
+            finding_code: string | null;
+            paddle_present: boolean | null;
+            has_eggs: boolean | null;
+            /** Format: date-time */
+            checked_at: string | null;
+            is_lagged: boolean | null;
+            placement_voided: boolean;
+            voided: boolean;
+            voided_resource_type: (components["schemas"]["VoidedResourceTypeEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: uuid */
+            voided_event_id: string | null;
+            void_reason_code: string;
+            /** Format: date-time */
+            voided_at: string | null;
+        };
+        OvitrapChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["OvitrapBundle"];
+        };
+        OvitrapHistory: {
+            /** Format: uuid */
+            ovitrap: string;
+            point_code: string;
+            suggest_relocation: boolean;
+            entries: components["schemas"]["HistoryEntry"][];
         };
         /** @enum {string} */
         OvitrapLifecycleStatusEnum: "active" | "voided";
@@ -2848,6 +2988,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Reading"][];
         };
+        PaginatedRelocationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Relocation"][];
+        };
         PaginatedResponsibilityLetterList: {
             /** @example 123 */
             count: number;
@@ -3049,7 +3204,7 @@ export interface components {
         };
         ProducerChange: {
             sequence: number;
-            action: components["schemas"]["ProducerChangeActionEnum"];
+            action: components["schemas"]["CourierChangeActionEnum"];
             resource_type: string;
             resource_id: string;
             resource_version: string;
@@ -3057,12 +3212,6 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /**
-         * @description * `upsert` - upsert
-         *     * `remove` - remove
-         * @enum {string}
-         */
-        ProducerChangeActionEnum: "upsert" | "remove";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3088,6 +3237,11 @@ export interface components {
             expected_revision: number;
         };
         /**
+         * @description * `upsert` - upsert
+         * @enum {string}
+         */
+        ProjectionUpsertActionEnum: "upsert";
+        /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
          *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
@@ -3106,6 +3260,14 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        QuadrantChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["QuadrantReference"];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -3133,6 +3295,17 @@ export interface components {
                 coordinates: number[][][];
             };
             point_resolutions?: components["schemas"]["PointResolutionRequest"][];
+        };
+        QuadrantReference: {
+            resource_type: components["schemas"]["ResourceTypeEnum"];
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id: string;
+            revision: number;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -3185,6 +3358,8 @@ export interface components {
             /** Format: uuid */
             readonly finding: string;
             readonly finding_code: string;
+            /** Format: uuid */
+            readonly incident_link: string | null;
             readonly finding_label: unknown;
             readonly other_text: string;
             readonly paddle_present: boolean;
@@ -3250,6 +3425,64 @@ export interface components {
             /** Format: date-time */
             server_time: string;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Relocation: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly code: string;
+            /** Format: uuid */
+            readonly ovitrap: string;
+            /** Format: uuid */
+            readonly point: string;
+            readonly point_code: string;
+            /** Format: uuid */
+            readonly point_version: string;
+            readonly old_location: unknown;
+            readonly new_location: unknown;
+            readonly reason_code: string;
+            readonly reason_label: unknown;
+            readonly other_text: string;
+            readonly evidence_ids: unknown;
+            readonly evaluated_rules: unknown;
+            readonly rule_version_ids: unknown;
+            /** Format: uuid */
+            readonly event_id: string;
+            /** Format: date-time */
+            readonly device_time: string;
+            /** Format: date-time */
+            readonly server_received_at: string;
+            readonly rules_version: string;
+            readonly catalog_version: string;
+            readonly manual_capture: boolean;
+            readonly gps: {
+                lat?: number;
+                lng?: number;
+                accuracy_m?: number | null;
+            } | null;
+            readonly status: string;
+            /** Format: date-time */
+            readonly voided_at: string | null;
+            readonly void_reason: string;
+            readonly void_reason_code: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `quadrant` - quadrant
+         *     * `block` - block
+         * @enum {string}
+         */
+        ResourceTypeEnum: "quadrant" | "block";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3444,6 +3677,26 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        SamplingPointBundle: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            block_id: string;
+            /** Format: uuid */
+            quadrant_id: string;
+            location: number[];
+            is_retired: boolean;
+            version: number;
+        };
+        SamplingPointChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["SamplingPointBundle"];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -3753,6 +4006,12 @@ export interface components {
             /** @default  */
             reason: string;
         };
+        /**
+         * @description * `placement` - placement
+         *     * `reading` - reading
+         * @enum {string}
+         */
+        VoidedResourceTypeEnum: "placement" | "reading";
         WebLoginResponse: {
             me: components["schemas"]["Me"];
             /** Format: date-time */
@@ -5927,6 +6186,39 @@ export interface operations {
             };
         };
     };
+    ovitraps_history_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvitrapHistory"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     quadrant_assignments_list: {
         parameters: {
             query?: {
@@ -6270,6 +6562,54 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Reading"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    relocations_list: {
+        parameters: {
+            query?: {
+                code?: string;
+                include_voided?: boolean;
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                ovitrap?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                point?: string;
+                /**
+                 * @description * `pending` - pending
+                 *     * `approved` - approved
+                 *     * `rejected` - rejected
+                 */
+                status?: "pending" | "approved" | "rejected";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRelocationList"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

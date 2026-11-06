@@ -86,7 +86,11 @@ describe("geography permission and scope isolation", () => {
       app.queryClient
         .getQueryCache()
         .getAll()
-        .some((query) => JSON.stringify(query.state.data).includes("OLD-PRIVATE")),
+        .some(
+          (query) =>
+            query.state.data !== undefined &&
+            JSON.stringify(query.state.data).includes("OLD-PRIVATE"),
+        ),
     ).toBe(false);
     await act(async () => {
       late.release(pageOf([{ ...quadrant(), code: "LATE-PRIVATE" }]));

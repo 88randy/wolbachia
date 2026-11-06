@@ -6,7 +6,9 @@ from rest_framework import serializers
 from rest_framework.exceptions import ErrorDetail
 
 MAX_REFERENCES = 100
-NO_PADDLE_FINDINGS = frozenset({"closed-house", "absent", "missing", "destroyed"})
+NO_PADDLE_FINDINGS = frozenset(
+    {"closed-house", "absent", "missing", "destroyed", "abandoned", "removed"}
+)
 
 
 class StrictPayloadSerializer(serializers.Serializer[Any]):
