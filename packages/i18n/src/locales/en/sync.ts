@@ -102,4 +102,12 @@ export const sync: Record<keyof typeof source, string> = {
     "The physical identity changed. Your supervisor will review the capture and retain its evidence.",
   "sync.result.ovitrapEvidenceRequired":
     "Photo evidence is missing. Your supervisor will review the capture; keep pending files.",
+  "sync.result.incidentConfigurationUnavailable":
+    "The incident type or accountable owner needs configuration. Your supervisor will review the capture.",
+  "sync.result.incidentScopeUnavailable":
+    "The incident has no verified work scope. Keep its evidence for supervisor review.",
+  "sync.result.incidentInaccessible":
+    "The incident reference is unavailable in your authorized work scope.",
+  "sync.result.incidentEvidenceRequired":
+    "Verified incident evidence is missing. Keep pending files; this capture needs review.",
 };

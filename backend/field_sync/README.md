@@ -186,3 +186,10 @@ late metadata binds explicitly to that exact declaration. Sorted Upload NOWAIT
 locks precede required evidence effects. No file/network I/O, extra account/domain
 lock, review acceptance or source rewrite is introduced. Existing 429 rollback and
 final-upload/session-end boundaries remain intact. See ../uploads/README.md.
+
+#104 registers incident.report/emergency.accident v1. Existing review_code is checked
+before operational writes. _store adds an after-commit critical-source callback
+after actual FieldEvent/ReviewItem/evidence linkage; a review callback produces only
+a scoped audit intent, never an Incident/owner/blocker. Immutable committed causes
+support keyset recovery after callback/broker loss. No delivery or #113 acceptance
+is asserted; current final-upload entitlement/session ordering remains unchanged.

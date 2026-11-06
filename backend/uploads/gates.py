@@ -34,6 +34,7 @@ def require_event_evidence(ctx: EventContext, references: list[str]) -> None:
         created_by=ctx.user,
         device=ctx.device,
         type=ctx.envelope.type,
+        shift_id=ctx.envelope.shift_id,
         payload=ctx.envelope.payload,
     )
     actor = UploadActor(ctx.user, ctx.organization, ctx.device.pk)

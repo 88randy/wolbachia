@@ -178,3 +178,12 @@ Sorted Upload NOWAIT locks follow Motorcycle; no new account/Organization/FieldE
 lock or storage I/O occurs below it. Pending/foreign/unbound/other-fault evidence
 returns 409 motorcycle_evidence_not_ready and rolls back. Later finalize permits a
 fresh authorized clearance. See ../uploads/README.md and its integration test map.
+
+## Single incident facade (#104)
+
+The incidents app owns the single /incidents/ router registration and retains the
+fleet-incident basename. Unqualified GET and kind=fleet reuse this app's existing
+list queryset, Incident serializer, permission, filters and ordering. Rich reported
+incidents require kind=reported; they do not replace MotorcycleBlockEvent history
+or clear inspection faults. Severe block creation publishes its existing immutable
+audit cause after commit; B-07 owns delivery. No fleet safety rule changes.

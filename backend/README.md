@@ -268,3 +268,11 @@ uploads/ authorizes authenticated local PUT leases and certifies sanitized JPEG/
 Its private_uploads/ root is separate from MEDIA/static and ignored by git. See
 uploads/README.md for binding authority, lock matrix, current consumer gates and
 the mobile transport/final-upload capability limits (#246).
+
+## Scoped incidents (#104)
+
+incidents/ adds immutable type versions, decisions, owned holds and finite named
+escalation, plus an after-commit durable B-07 producer/recovery task. There remains
+one /incidents/ facade: GET defaults to the unchanged fleet contract; kind=reported
+selects rich incidents. See incidents/README.md for explicit roster/SLA requirements,
+lock order, private #102 evidence and external #49/#113/#246 boundaries.

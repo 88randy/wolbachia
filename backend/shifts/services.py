@@ -289,7 +289,7 @@ def _block_motorcycle(motorcycle: Motorcycle, ctx: EventContext) -> None:
     motorcycle.blocked_reason = BlockedReason.SEVERE_CHECK
     motorcycle.revision += 1
     motorcycle.save(update_fields=["is_blocked", "blocked_reason", "revision"])
-    MotorcycleBlockEvent.objects.create(
+    block_event = MotorcycleBlockEvent.objects.create(
         organization_id=motorcycle.organization_id,
         created_by=ctx.user,
         motorcycle=motorcycle,
@@ -298,6 +298,9 @@ def _block_motorcycle(motorcycle: Motorcycle, ctx: EventContext) -> None:
         reason=SEVERE_CHECK,
         field_event_id=ctx.envelope.id,
     )
+    from incidents.notices import enqueue_notice
+
+    enqueue_notice("severe_fault", block_event.pk)
 
 
 @contextmanager

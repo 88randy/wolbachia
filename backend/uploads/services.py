@@ -94,6 +94,8 @@ def _authorize_existing_link(actor: UploadActor, upload: Upload) -> None:
             AttachmentTarget("field_event", link.field_event_id)
             if link.field_event_id
             else AttachmentTarget("motorcycle_fault", link.fault_id)
+            if link.fault_id
+            else AttachmentTarget("incident", link.incident_id)
         )
         authorize_target(actor, target, upload)
 
@@ -106,7 +108,11 @@ def _bind(actor: UploadActor, upload: Upload, target: AttachmentTarget | None) -
         upload=upload,
         defaults={"organization": actor.organization, "created_by": actor.user, **parent},
     )
-    identifier = existing.field_event_id if target.kind == "field_event" else existing.fault_id
+    identifier = {
+        "field_event": existing.field_event_id,
+        "motorcycle_fault": existing.fault_id,
+        "incident": existing.incident_id,
+    }[target.kind]
     if identifier != target.identifier:
         raise UploadConflictError("upload_already_bound")
 

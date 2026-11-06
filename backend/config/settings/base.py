@@ -34,6 +34,7 @@ INSTALLED_APPS = [
     "fleet",
     "ovitraps",
     "scheduling",
+    "incidents.apps.IncidentsConfig",
 ]
 
 MIDDLEWARE = [
@@ -222,6 +223,8 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "IncidentStateEnum": ["open", "closed", "voided"],
+        "StateEnum": ["authorized", "received", "verified"],
         "CourierChangeActionEnum": ["upsert", "remove"],
         "ProjectionUpsertActionEnum": ["upsert"],
         "EventStatusEnum": "field_sync.models.EventStatus",
@@ -245,6 +248,10 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "maintain-scoped-incidents": {
+        "task": "incidents.tasks.maintain_incidents",
+        "schedule": crontab(minute="*"),
+    },
     "prune-ended-token-pairs": {
         "task": "accounts.tasks.prune_ended_token_pairs",
         "schedule": crontab(hour=3, minute=30),

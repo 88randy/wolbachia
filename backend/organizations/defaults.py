@@ -21,6 +21,13 @@ from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from geography.permissions import GEOGRAPHY_WRITE_CODES, QUADRANT_READ
+from incidents.permissions import (
+    INCIDENT_CLOSE,
+    INCIDENT_CREATE,
+    INCIDENT_READ,
+    INCIDENT_REASSIGN,
+    MANAGEMENT_CODES,
+)
 from organizations.models import Organization, Profile
 from ovitraps.permissions import OVITRAP_REMOVAL_RESOLVE, READ_CODES, READING_READ
 from reviews.permissions import REVIEW_ITEM_READ
@@ -39,6 +46,7 @@ from uploads.limits import FIELD_UPLOAD
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    *MANAGEMENT_CODES,
     OVITRAP_REMOVAL_RESOLVE,
     FIELD_UPLOAD,
     SCHEDULE_READ,
@@ -72,6 +80,8 @@ ADMIN_CODES = (
     MOTORCYCLE_SERVICE_CLEAR,
 )
 COURIER_CODES = (
+    INCIDENT_READ,
+    INCIDENT_CREATE,
     FIELD_UPLOAD,
     *READ_ONLY_CODES,
     FIELD_EVENT_SYNC,
@@ -80,6 +90,10 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    INCIDENT_READ,
+    INCIDENT_CREATE,
+    INCIDENT_CLOSE,
+    INCIDENT_REASSIGN,
     OVITRAP_REMOVAL_RESOLVE,
     FIELD_UPLOAD,
     SCHEDULE_READ,
@@ -100,7 +114,16 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "entomologist": (*READ_ONLY_CODES, READING_READ, SCHEDULE_READ, RISK_IMPORT_APPLY),
     "community_promoter": READ_ONLY_CODES,
     "admin": ADMIN_CODES,
-    "coordinator": (*READ_ONLY_CODES, *GEOGRAPHY_WRITE_CODES, *READ_CODES),
+    "coordinator": (
+        *READ_ONLY_CODES,
+        *GEOGRAPHY_WRITE_CODES,
+        *READ_CODES,
+        FIELD_UPLOAD,
+        INCIDENT_READ,
+        INCIDENT_CREATE,
+        INCIDENT_CLOSE,
+        INCIDENT_REASSIGN,
+    ),
     "warehouse": READ_ONLY_CODES,
     "regulatory": READ_ONLY_CODES,
     "government": ("portal.read",),

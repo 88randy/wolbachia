@@ -4,14 +4,12 @@ from rest_framework.routers import DefaultRouter
 from fleet.views import (
     ClearanceViewSet,
     FuelLoadViewSet,
-    IncidentViewSet,
     LetterViewSet,
     ServiceViewSet,
 )
 
 router = DefaultRouter()
 router.register("fuel-loads", FuelLoadViewSet, basename="fuel-load")
-router.register("incidents", IncidentViewSet, basename="fleet-incident")
 urlpatterns = [
     path(
         "motorcycles/<uuid:pk>/clear-fault/",

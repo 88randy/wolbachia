@@ -83,13 +83,17 @@ class AttachmentLink(EvidenceRecord):
         on_delete=models.PROTECT,
         related_name="attachments",
     )
+    incident = models.ForeignKey(
+        "incidents.Incident", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
 
     class Meta(EvidenceRecord.Meta):
         constraints = [
             models.CheckConstraint(
                 condition=(
-                    models.Q(field_event__isnull=False, fault__isnull=True)
-                    | models.Q(field_event__isnull=True, fault__isnull=False)
+                    models.Q(field_event__isnull=False, fault__isnull=True, incident__isnull=True)
+                    | models.Q(field_event__isnull=True, fault__isnull=False, incident__isnull=True)
+                    | models.Q(field_event__isnull=True, fault__isnull=True, incident__isnull=False)
                 ),
                 name="attachment_exactly_one_parent",
             )

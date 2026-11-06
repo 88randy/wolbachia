@@ -138,3 +138,16 @@ https://pillow.readthedocs.io/en/stable/reference/ImageOps.html,
 https://pillow.readthedocs.io/en/stable/handbook/image-file-formats.html#png,
 https://docs.djangoproject.com/en/5.2/topics/signing/,
 https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update.
+
+## Incident parents (#104)
+
+The closed registry also supports incident and declared incident.report / emergency.accident
+source references. The new nullable AttachmentLink.incident FK participates in the
+same exactly-one-parent constraint and immutable OneToOne identity. A closure can
+consume only this incident's bound evidence or its own unique source event's evidence;
+unbound owned files bind atomically under sorted Upload NO KEY UPDATE locks. A
+different parent's binding is never reused. No storage or sanitizer is duplicated.
+Downloads require current incident.read and paired parent scope; in_review-only
+sources also require review_item.read. Source void keeps authorized history readable.
+Finalization takes no Incident/Organization/source row lock and grants no durable
+parent access. Both source/metadata arrival orders retain original ingest semantics.

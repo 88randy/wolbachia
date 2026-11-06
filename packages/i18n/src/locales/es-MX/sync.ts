@@ -103,4 +103,12 @@ export const sync = {
     "La identidad física cambió. Tu supervisor revisará la captura sin perder la evidencia.",
   "sync.result.ovitrapEvidenceRequired":
     "Falta evidencia fotográfica. Tu supervisor revisará la captura; conserva los archivos pendientes.",
+  "sync.result.incidentConfigurationUnavailable":
+    "El tipo de incidente o su responsable requiere configuración. Tu supervisor revisará la captura.",
+  "sync.result.incidentScopeUnavailable":
+    "El incidente no tiene un ámbito de trabajo verificado. Conserva la evidencia para revisión.",
+  "sync.result.incidentInaccessible":
+    "La referencia del incidente no está disponible dentro de tu ámbito autorizado.",
+  "sync.result.incidentEvidenceRequired":
+    "Falta evidencia verificada del incidente. Conserva los archivos pendientes; la captura requiere revisión.",
 } as const satisfies AreaCatalog<"sync">;

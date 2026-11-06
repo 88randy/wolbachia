@@ -442,6 +442,9 @@ class EventProcessor:
         from uploads.linking import record_event_links
 
         record_event_links(event)
+        from incidents.notices import stored_source
+
+        stored_source(event)
 
     def _event_fields(self, envelope: EventEnvelope, outcome: Verdict) -> dict[str, Any]:
         batch, gps = self.batch, envelope.gps

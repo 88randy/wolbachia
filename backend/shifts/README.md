@@ -43,3 +43,9 @@ and field-catalog snapshot stay unchanged; PATCH now accepts plate and center.
 Severe blocks, PATCH and unblock advance revision. fleet handles nested history,
 fuel and named clear-fault routes; see ../fleet/README.md. A named clearance locks
 the same Motorcycle as shift.open and never removes another active blocker.
+# B-06 critical producer (#104)
+
+The existing severe-check MotorcycleBlockEvent is enqueued as a minimal notice cause
+after commit. Its original status/flags/audit remain authoritative and are not
+duplicated into a reported Incident. Publication checks current scope and appends
+deduplicated B-07 intents; no broker/mail/storage I/O runs under Motorcycle locks.

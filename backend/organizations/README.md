@@ -285,3 +285,12 @@ adds no tenant data or automatic permission backfill.
 fault-clearance/field-capture callers. Existing tenants use the same explicit
 seed_organization_defaults --apply path. Custom profiles and later revocations are
 preserved; the uploads migration adds no tenant data or permission backfill.
+
+#104 grants incident read/create to seeded courier; read/create/close/reassign to
+supervisor/coordinator; manage_type plus these actions to admin. Coordinator gains
+field.upload for the actual close-evidence caller. The existing once-only seed
+preserves custom profiles and revoked permissions; no automatic tenant backfill.
+Existing Organization-serialized assign_profiles/update_profile/update_membership
+also preserve current configured terminals and open cases' effective terminal
+paired scope. Historical versions alone do not prevent retiring a former owner.
+There is no new personnel/duty-roster CRUD or late User row lock.
