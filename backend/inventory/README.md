@@ -142,3 +142,80 @@ Verified primitives: [Django row locking](https://docs.djangoproject.com/en/5.2/
 [PostgreSQL locks](https://www.postgresql.org/docs/18/explicit-locking.html#LOCKING-ROWS),
 [Django ArrayAgg](https://docs.djangoproject.com/en/5.2/ref/contrib/postgres/aggregates/#arrayagg),
 [Python zoneinfo](https://docs.python.org/3.13/library/zoneinfo.html).
+
+## Inventory read contracts (#270)
+
+`GET /locations/{id}/movements/` returns actual individual signed ledger legs,
+not the stock aggregation or a reconstructed operation. Parent and legs require
+current location.read; each real lot also requires current lot.read. Filters are
+lot/supply/operation UUID, piece=UUID|none, exact unit, created_at_from (inclusive)
+and created_at_before (exclusive). Reference eligibility precedes filtering,
+count and paging. An operation selects only its visible legs. Order by
+created_at|lot_code|quantity (optional minus), default -created_at, with id tie.
+Rows retain operation/line/lot/supply/location/piece ids and codes, signed Decimal
+quantity, exact unit/unit_version_id, actual lot_admission source UUID and actual
+created_at/nullable created_by User reference. No generic source-detail route is
+implied. #106/#107 still own future source kinds and custody writers.
+
+Three paginated form choices require the actual creating/updating action:
+
+- `/locations/owner-options/`: create requires center and quadrant=UUID|none;
+  update requires only location. Resolve and authorize the real immutable pair
+  and active Center first. Results contain membership_id and display label only.
+  Search/order use that label (label|-label, membership UUID tie); full name falls
+  back to username and duplicate eligible labels include username.
+- `/locations/placement-options/`: action=location.create plus center returns
+  permitted real Quadrants and explicit center_only. action=lot.create plus center
+  returns permitted real Locations and center_only_draft. A lot create sends
+  initial_location_id (quadrant derived by the writer), or only center_id for a
+  center-only draft; LotWrite never accepts quadrant_id. Update accepts only lot,
+  derives immutable placement and revalidates its active Center. Before admission,
+  choices match that actual pair, with clear allowed only for a center-only Lot.
+  After admission, only the exact retained Location reference is returned readonly.
+  Search uses actual code; stable kind/code/id ordering precedes paging. The
+  discriminator distinguishes quadrant/center_only/location/center_only_draft;
+  only lot choices include location_id and is_read_only.
+- `/supply-types/protocol-incident-type-options/`: no supply requires
+  supply_type.create; supply=UUID requires supply_type.update on that org master.
+  Active latest_types return only incident_type_version_id, code and label,
+  searched by code/label and ordered code/id. The returned version UUID, not the
+  CatalogItem UUID, is ProtocolWrite.incident_type_id. Empty configuration remains
+  empty; no new terminal eligibility policy or broad incident.read grant is added.
+
+Owner eligibility discovers only DISTINCT raw Membership/Profile scope columns
+(ordering cleared), then reuses safe_scope and contains for the whole shape,
+including an inapplicable axis. JSON null/malformed/none never inherit. The final
+lazy SQL query rechecks current tenant/activity and exact raw membership scope,
+Exists of the SAME assigned active same-org location.read Profile with eligible
+raw scope, and NOT Exists any active assigned same-org government Profile.
+Labels/count/page follow that predicate; no Member/User roster or per-member
+effective_scope evaluation is loaded. Revocations are visible on final evaluation;
+new undiscovered raw scopes can be omitted until refresh. Writers still revalidate.
+Cost is O(D) distinct scopes and parameters, worst case D approaches N; no silent
+cap/truncation or broader fallback exists. Material parameter/cardinality limits
+need a measured follow-up, not a new parallel JSON/UUID authorization grammar.
+
+Lot reads include exact supply_version (including its retained protocol),
+admission_id or null, and exact location_version_id projection
+{id,location_id,code,name} or null. These are authorized by lot.read and do not
+require current location.read or expose current geometry/owner/safety/stock.
+Protocol.incident_type retains the exact version's minimal id/code/label.
+Location.owner_label exposes the already authorized owner's current display name.
+
+Lot blocked_by facets match evaluate_lot's current blockers, including drafts:
+supply_type_inactive, lot_expired, protocol_not_configured,
+storage_safety_not_configured, insecticide_free_required, condition_slot_missing,
+condition_breach. expiry_from_date/expiry_before_date are organization-local day
+starts, inclusive/exclusive; same-bound date+instant mixtures and inverted ranges
+are 400. Existing instant facets and status stay available; no implicit threshold.
+
+Unknown/foreign/out-of-scope references share 404; missing action is 403; invalid
+query shape/range is coded 400 validation_error. Empty options is 200 empty page.
+No read locks, writes, grants, defaults, migrations or policy changes are introduced.
+The grouped test_inventory_read_contract.py cases cover PG parity, late revocation,
+pagination, real admissions/provenance, exact pins, blocker/date SQL and one HTTP
+boundary. Local pure/ORM-compilation checks do not establish PostgreSQL execution;
+real focused PostgreSQL and full backend CI/coverage remain required before closure.
+Read primitives: [Exists](https://docs.djangoproject.com/en/5.2/ref/models/expressions/#exists-subqueries),
+[DISTINCT](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#distinct),
+[UNION](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#union).

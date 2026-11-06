@@ -6,7 +6,7 @@ from uuid import UUID
 from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -25,23 +25,35 @@ from inventory.masters import (
     revise_supply_type,
 )
 from inventory.models import ConditionReading, LocationVersion, LotVersion, SupplyTypeVersion
+from inventory.option_selectors import owner_options, placement_options, protocol_type_options
 from inventory.schema import InventoryAutoSchema
-from inventory.selectors import latest_versions, location_stock, lot_versions
+from inventory.selectors import latest_versions, location_movements, location_stock, lot_versions
 from inventory.serializers import (
     ConditionSerializer,
     ConditionWriteSerializer,
     InventoryRevisionSerializer,
     LocationSerializer,
     LocationWriteSerializer,
+    LotPlacementOptionSerializer,
     LotSerializer,
     LotWriteSerializer,
+    MovementSerializer,
+    OwnerOptionQuerySerializer,
+    OwnerOptionSerializer,
+    PlacementOptionQuerySerializer,
+    PlacementOptionSerializer,
+    ProtocolTypeOptionQuerySerializer,
+    ProtocolTypeOptionSerializer,
+    QuadrantPlacementOptionSerializer,
     StockSerializer,
     SupplySerializer,
     SupplyWriteSerializer,
 )
 from inventory.services import LotChange, revise_lot
 from inventory.table_filters import (
+    MOVEMENT_FACETS,
     InventoryTableFilter,
+    filter_movements,
     nested_order,
     nested_parameters,
     require_relation,
@@ -56,7 +68,30 @@ class InventoryVersionViewSet(
     queryset: QuerySet[Any] = SupplyTypeVersion.objects.none()
     schema = InventoryAutoSchema()
     required_permissions: dict[str, str] = {}
+    option_values: dict[str, Any]
     http_method_names = ["get", "post", "patch", "head", "options"]
+
+    def get_permissions(self) -> list[Any]:
+        option_queries = {
+            "owner_options": OwnerOptionQuerySerializer,
+            "placement_options": PlacementOptionQuerySerializer,
+            "protocol_incident_type_options": ProtocolTypeOptionQuerySerializer,
+        }
+        if self.action in option_queries and self.request.user.is_authenticated:
+            payload = option_queries[self.action](data=self.request.query_params.dict())
+            payload.is_valid(raise_exception=True)
+            self.option_values = dict(payload.validated_data)
+            permission = self._option_permission()
+            self.required_permissions = {**self.required_permissions, self.action: permission}
+        return list(super().get_permissions())
+
+    def _option_permission(self) -> str:
+        if self.action == "owner_options":
+            return "location.update" if "location" in self.option_values else "location.create"
+        if self.action == "protocol_incident_type_options":
+            return "supply_type.update" if "supply" in self.option_values else "supply_type.create"
+        return "lot.update" if "lot" in self.option_values else str(self.option_values["action"])
+
     filter_backends = [
         CodeLookupFilter,
         InventoryTableFilter,
@@ -75,9 +110,12 @@ class InventoryVersionViewSet(
         permission = self.required_permissions[self.action]
         if self.queryset.model is LotVersion:
             return lot_versions(actor, permission)
-        return scoped_inventory(
+        query = scoped_inventory(
             latest_versions(self.queryset.model, self.parent_field), actor, permission
         ).select_related(self.parent_field.removesuffix("_id"))
+        if self.queryset.model is LocationVersion:
+            return query.select_related("owner__user")
+        return query.select_related("protocol__incident_type")
 
     def get_object(self) -> Any:  # noqa: ANN401 -- DRF's parent method returns a heterogeneous model
         try:
@@ -113,6 +151,7 @@ class SupplyTypeViewSet(InventoryVersionViewSet):
         "create": "supply_type.create",
         "partial_update": "supply_type.update",
         "deactivate": "supply_type.deactivate",
+        "protocol_incident_type_options": "supply_type.create",
     }
     code_lookup_field = "supply_type__code"
     search_fields = ["supply_type__code", "label"]
@@ -122,6 +161,18 @@ class SupplyTypeViewSet(InventoryVersionViewSet):
         "is_biological": "is_biological",
         "identity_kind": "identity_kind",
     }
+
+    @extend_schema(
+        parameters=[ProtocolTypeOptionQuerySerializer],
+        responses=ProtocolTypeOptionSerializer(many=True),
+        filters=False,
+    )
+    @action(detail=False, methods=["get"], url_path="protocol-incident-type-options")
+    def protocol_incident_type_options(self, request: Request) -> Response:
+        query = protocol_type_options(actor_from_request(request), self.option_values)
+        return self.get_paginated_response(
+            ProtocolTypeOptionSerializer(self.paginate_queryset(query), many=True).data
+        )
 
     @extend_schema(request=SupplyWriteSerializer, responses={201: SupplySerializer})
     def create(self, request: Request) -> Response:
@@ -158,6 +209,9 @@ class LocationViewSet(InventoryVersionViewSet):
         "create": "location.create",
         "partial_update": "location.update",
         "stock": "location.read",
+        "movements": "location.read",
+        "owner_options": "location.create",
+        "placement_options": "location.create",
     }
     code_lookup_field = "location__code"
     search_fields = ["location__code", "name"]
@@ -167,6 +221,55 @@ class LocationViewSet(InventoryVersionViewSet):
         "kind": "kind",
         "is_insecticide_free": "is_insecticide_free",
     }
+
+    @extend_schema(
+        parameters=[OwnerOptionQuerySerializer],
+        responses=OwnerOptionSerializer(many=True),
+        filters=False,
+    )
+    @action(detail=False, methods=["get"], url_path="owner-options")
+    def owner_options(self, request: Request) -> Response:
+        query = owner_options(actor_from_request(request), self.option_values)
+        return self.get_paginated_response(
+            OwnerOptionSerializer(self.paginate_queryset(query), many=True).data
+        )
+
+    @extend_schema(
+        parameters=[PlacementOptionQuerySerializer],
+        responses=PolymorphicProxySerializer(
+            component_name="PlacementOption",
+            serializers={
+                "quadrant": QuadrantPlacementOptionSerializer,
+                "center_only": QuadrantPlacementOptionSerializer,
+                "location": LotPlacementOptionSerializer,
+                "center_only_draft": LotPlacementOptionSerializer,
+            },
+            resource_type_field_name="kind",
+            many=True,
+        ),
+        filters=False,
+    )
+    @action(detail=False, methods=["get"], url_path="placement-options")
+    def placement_options(self, request: Request) -> Response:
+        query = placement_options(actor_from_request(request), self.option_values)
+        return self.get_paginated_response(
+            PlacementOptionSerializer(self.paginate_queryset(query), many=True).data
+        )
+
+    @extend_schema(
+        parameters=nested_parameters(MOVEMENT_FACETS),
+        responses=MovementSerializer(many=True),
+        filters=False,
+    )
+    @action(detail=True, methods=["get"])
+    def movements(self, request: Request, pk: str | None = None) -> Response:
+        current = self.get_object()
+        query = filter_movements(
+            location_movements(actor_from_request(request), current.location), request
+        )
+        return self.get_paginated_response(
+            MovementSerializer(self.paginate_queryset(query), many=True).data
+        )
 
     @extend_schema(request=LocationWriteSerializer, responses={201: LocationSerializer})
     def create(self, request: Request) -> Response:
@@ -223,6 +326,9 @@ class LotViewSet(InventoryVersionViewSet):
         "status": "computed_status",
         "expiry_from": "expires_at__gte",
         "expiry_before": "expires_at__lt",
+        "expiry_from_date": "expires_at__gte",
+        "expiry_before_date": "expires_at__lt",
+        "blocked_by": "blocked_by",
     }
 
     @extend_schema(request=LotWriteSerializer, responses={201: LotSerializer})

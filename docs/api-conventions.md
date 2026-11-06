@@ -676,3 +676,49 @@ inventory identities; deferred checks share bounded rollback. No I/O in SQL.
 429 inventory_in_progress has Retry-After:1. No sync event/result/localization change.
 Real transfer/debit/current-destination authority is #106/#107, not an invented
 route/writer here. Details: ../backend/inventory/README.md.
+
+### Inventory read additions (#270)
+
+All new lists use standard count/next/previous/results page-number pagination,
+current tenant/action authority and scoped filtering before count/page. Missing
+actions return 403; missing/foreign/out-of-scope references share 404. Invalid
+query shapes, bounds and values return coded 400 validation_error. No write,
+grant, model, default or custody workflow is added.
+
+| GET route | Input and boundary | Projection |
+| --- | --- | --- |
+| /locations/{id}/movements/ | Current location.read parent/placement plus lot.read for each real lot; lot/supply/operation UUID, piece=UUID\|none, exact unit, inclusive created_at_from and exclusive created_at_before; ordering=created_at\|lot_code\|quantity, optional minus, default -created_at, id tie. Scoped operation filters never expand foreign legs. | id, operation_id, line_number, lot_id, lot_code, supply_id, location_id, location_code, piece_id, signed Decimal quantity, unit, unit_version_id, source_kind=lot_admission, actual source_id, created_at, nullable created_by User reference. |
+| /locations/owner-options/ | Create: center + quadrant=UUID\|none under location.create. Update: location only under location.update; derive immutable placement. Active actual Center required in both modes. search and ordering=label\|-label, membership UUID tie. | membership_id, label only; full name with username fallback, duplicate eligible labels disambiguated with username. |
+| /locations/placement-options/ | Closed create modes: action=location.create\|lot.create + center. Update: lot only, derives lot.update and actual immutable pair; overrides refused. Active Center required. Search actual code, stable kind/code/id ties. | location.create: kind=quadrant\|center_only, quadrant_id, code. lot modes: kind=location\|center_only_draft, location_id, code, quadrant_id, is_read_only. Admitted lots expose only exact retained readonly Location. |
+| /supply-types/protocol-incident-type-options/ | No supply: supply_type.create; supply=UUID: supply_type.update on actual org master, even when work axes are none. Search code/label, code/id order. | Active configured latest_types: incident_type_version_id, code, label; version UUID is the accepted ProtocolWrite.incident_type_id. No incident.read or new terminal policy. |
+
+Location create maps its choice to center_id/quadrant_id. Lot create maps a real
+Location to initial_location_id, deriving quadrant server-side, or sends center_id
+only for a center-only draft. LotWrite never accepts quadrant_id. Lot update
+choices match its original actual pair; only a center-only draft can clear location.
+The existing writer revalidates all choices when saving.
+
+Owner eligibility uses DISTINCT raw scope values with the shared whole-shape
+safe_scope/contains normalizer, then a lazy SQL predicate requiring eligible raw
+membership scope AND the SAME assigned active same-org location.read Profile's
+eligible raw scope, excluding any active same-org government binding. Count/page
+follow eligibility. No full membership/user roster or second authorization grammar
+is introduced. Final evaluation sees revocations; new raw scopes may wait until
+refresh. O(D) distinct scopes/binds can approach N; values are never capped or
+broadened. See inventory/README.md for the cost and PostgreSQL verification gate.
+
+Additive Lot.supply_version is the exact pinned Supply projection, including its
+protocol; admission_id is the real admission UUID or null. Lot.location_version
+is exactly {id,location_id,code,name} from its retained location_version_id or null.
+These labels belong to lot.read, even without current location.read; current
+Location geometry/owner/safety/stock remains separately authorized. Protocol adds
+incident_type={incident_type_version_id,code,label}|null from its exact retained FK.
+Location adds owner_label under location.read. Existing fields remain unchanged.
+
+Lot blocked_by accepts supply_type_inactive|lot_expired|protocol_not_configured|
+storage_safety_not_configured|insecticide_free_required|condition_slot_missing|
+condition_breach, matching current evaluate_lot facts before paging, including
+drafts. expiry_from_date/expiry_before_date (YYYY-MM-DD) resolve organization-local
+day starts inclusive/exclusive, including DST. They cannot mix with the same-bound
+expiry_from/expiry_before instant; inverted resolved bounds are refused. Existing
+instant facets/orders/status remain; no implicit expires-soon threshold exists.

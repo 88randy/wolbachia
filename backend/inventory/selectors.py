@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
+    BooleanField,
     Case,
     CharField,
     Exists,
@@ -56,7 +57,13 @@ def current_lot(lot: Lot) -> LotVersion:
     return cast(
         LotVersion,
         lot.versions.select_related(
-            "supply_version", "protocol", "initial_location", "lot__organization"
+            "supply_version__supply_type",
+            "supply_version__protocol__incident_type",
+            "protocol__incident_type",
+            "initial_location",
+            "location_version__location",
+            "lot__organization",
+            "lot__admission",
         ).order_by("-revision")[0],
     )
 
@@ -166,6 +173,21 @@ def location_stock(actor: UploadActor, location: Location) -> QuerySet[Any]:
     return result
 
 
+def location_movements(actor: UploadActor, location: Location) -> QuerySet[StockMovement]:
+    require_scope(actor, "location.read", location)
+    visible = scoped_inventory(Lot.objects.all(), actor, "lot.read")
+    return scoped_inventory(
+        StockMovement.objects.filter(
+            location=location,
+            lot__in=visible,
+            operation__organization=actor.organization,
+            operation__admission__organization=actor.organization,
+        ),
+        actor,
+        "location.read",
+    ).select_related("lot", "location", "operation", "unit_version")
+
+
 def lot_versions(actor: UploadActor, permission: str) -> QuerySet[Any]:
     """Safety annotation supports server status/expiry filters before page-number paging."""
     from zoneinfo import ZoneInfo
@@ -196,6 +218,19 @@ def lot_versions(actor: UploadActor, permission: str) -> QuerySet[Any]:
         _slot0=Exists(readings.filter(slot=0)),
         _slot1=Exists(readings.filter(slot=1)),
         _held=Exists(holds),
+        _ready=Case(
+            When(_protocol_configured(), then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField(),
+        ),
+    )
+    query = query.annotate(
+        **{
+            f"blocker_{name}": Case(
+                When(predicate, then=Value(True)), default=Value(False), output_field=BooleanField()
+            )
+            for name, predicate in blocker_predicates(now).items()
+        }
     )
     result: QuerySet[Any] = query.annotate(
         computed_status=Case(
@@ -209,8 +244,13 @@ def lot_versions(actor: UploadActor, permission: str) -> QuerySet[Any]:
         "lot__center",
         "lot__organization",
         "supply_version",
+        "supply_version__supply_type",
+        "supply_version__protocol__incident_type",
         "protocol",
+        "protocol__incident_type",
         "initial_location",
+        "location_version__location",
+        "lot__admission",
     )
     return result
 
@@ -247,8 +287,8 @@ def _metadata_complete() -> Q:
     return base & expiry & (Q(supply_version__is_biological=False) | biology)
 
 
-def _blocked(now: datetime) -> Q:
-    configured = Q(
+def _protocol_configured() -> Q:
+    return Q(
         protocol__name__gt="",
         protocol__shelf_life_seconds__gt=0,
         protocol__expiry_basis="laid_on",
@@ -258,11 +298,28 @@ def _blocked(now: datetime) -> Q:
         protocol__humidity_max__isnull=False,
         protocol__reading_windows__0__isnull=False,
         protocol__reading_windows__1__isnull=False,
+        protocol__reading_windows__2__isnull=True,
     )
-    safe = Q(supply_version__requires_insecticide_free=False) | Q(
-        supply_version__requires_insecticide_free=True, _safe=True
-    )
-    biology = Q(supply_version__is_biological=True) & (
-        ~configured | ~safe | Q(_slot0=False) | Q(_slot1=False)
-    )
-    return Q(_active=False) | Q(expires_at__lte=now) | Q(_held=True) | biology
+
+
+def blocker_predicates(now: datetime) -> dict[str, Q]:
+    biology = Q(supply_version__is_biological=True)
+    return {
+        "supply_type_inactive": Q(_active=False),
+        "lot_expired": Q(expires_at__lte=now),
+        "protocol_not_configured": biology & Q(_ready=False),
+        "storage_safety_not_configured": biology
+        & Q(supply_version__requires_insecticide_free__isnull=True),
+        "insecticide_free_required": biology
+        & Q(supply_version__requires_insecticide_free=True)
+        & (Q(_safe=False) | Q(_safe__isnull=True)),
+        "condition_slot_missing": biology & (Q(_slot0=False) | Q(_slot1=False)),
+        "condition_breach": Q(_held=True),
+    }
+
+
+def _blocked(now: datetime) -> Q:
+    predicate = Q(pk__in=[])
+    for reason in blocker_predicates(now):
+        predicate |= Q(**{f"blocker_{reason}": True})
+    return predicate

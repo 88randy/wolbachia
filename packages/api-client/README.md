@@ -12,6 +12,13 @@ reading slots are required. Unknown protocols/safety data remain nondispatchable
 No transfer, stock writer, label or courier assignment contract is fabricated.
 See ../../backend/inventory/README.md for queries, codes and integration limits.
 
+#270 adds paginated real movement provenance and action-scoped owner, placement
+and protocol incident-type version choices. Lot reads retain exact supply/location
+snapshots and admission identity; blocker/calendar-date facets execute server-side.
+Use generated discriminated placement choices and their existing write-payload
+mapping; no LotWrite quadrant_id, broad permission or transfer API is introduced.
+Both artifacts are generated from backend source; never edit them manually.
+
 #102 adds private upload authorization/renewal/finalization, raw authenticated PUT
 and sanitized private downloads. The returned PUT url is relative; Upload-Lease
 and authentication are both required. Download responses are binary, not JSON.
