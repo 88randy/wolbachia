@@ -118,3 +118,8 @@ docs/           Decisiones (ADR), contratos y notas
 - (security) `Referrer-Policy: strict-origin-when-cross-origin` sigue filtrando la ruta completa en el mismo origen. Los tokens nunca van en paths de URL (#28; el reset por fragment queda en #58).
 - (infra) Cada agente usa solo el Postgres del compose del proyecto, con su propio nombre de proyecto compose y un puerto único desde 55432 hacia arriba (el siguiente libre), nunca el 5432, que pertenece a otro proyecto.
 - (proceso) Los revisores ya usados se reanudan con SendMessage: conservan contexto y sus confirmaciones son más rápidas. Los agentes nuevos se cargan solo al iniciar sesión (ver arriba).
+- (schema) Database-free API export uses fixed, nonconnecting loopback placeholders and disabled dotenv reads; regenerate from backend source twice after contract integration, never hand-edit generated clients (#228, #224).
+- (mobile) A valid server ETag/cursor does not hydrate a newly added local projection. Persist bootstrap readiness until a full body and cursor commit atomically; network errors, 304 and restart must retain recovery (#221).
+- (tests) Bind cancellation to the exact started request, query the current DOM after replacement and create a fresh Response per request. A controlled regression does not establish an unreproduced historical CI cause (#235, #242).
+- (tooling) Keep durable patches, proof manifests and commit-message files outside node_modules: npm ci removes that directory, including ignored temporary files (#217 integration).
+- (planning) Check live issue contracts against actual missing interfaces. An OPEN umbrella acceptance issue alone does not prove a dependency is blocked; preserve existing route consumers when expanding a domain (#102/#104/#105 audit).
