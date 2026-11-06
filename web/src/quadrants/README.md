@@ -147,3 +147,43 @@ their distinct response shapes. After an actual CI fixture failure, an authorize
 focused local run passed on Windows/Chromium on 2026-11-06, including the native
 worker and canvas-to-coordinate interaction. This does not qualify physical GPUs
 or the Linux runtime image; the corrected smoke still must pass those CI jobs.
+
+## Authoritative geography fixture readiness (#258)
+
+A completed `/me/` refetch identifies the session; it does not imply that the
+current scope's resource body has been accepted or its editor has rendered.
+`web/src/test/geography-read-test-helpers.ts` shares the existing reauthentication controls
+with retention coverage. Each held response belongs to one actual request,
+context and epoch, and separates delivery/body consumption. Only one unconsumed,
+non-aborted current request and one matching current-revision query qualify.
+`consumeRead` awaits body consumption and an observable query-cache completion promise
+inside `act`; normal asynchronous DOM queries follow outside that scope. The promise
+checks the actual query success/idle and epoch without nesting `waitFor` inside `act`
+or changing the React act-environment flag. Original publication/payload assertions remain.
+Responses are fresh per request; completed or aborted reads cannot satisfy a
+later visit to the same context. No global last-request lookup or session write.
+
+Retention's existing journey now exercises two permitted scope transitions with
+polygon and removal evidence, revokes access while an older lookup is pending,
+settles that obsolete response without exposing content or writing, and restores
+published geometry with no denied evidence after current reads finish. The two
+reauthentication variants keep pending publication disabled and still require
+exactly the original refused request plus one explicit manual retry with the same
+payload. Test counts are unchanged. Access-list coverage already waits for its
+new scoped DOM before releasing its obsolete read; block reauthentication keeps
+its same-context controls and observes its operation-specific readiness. Neither
+was changed without a demonstrated boundary violation.
+
+The controlled RED proves a legitimate pending-body window after `/me/`; it does
+not establish the cause of an earlier CI run. Diagnostic in-memory negative
+controls disable the module transform cache and must fail at premature readiness,
+lost retention and denied-draft resurrection boundaries. Production authentication,
+authorization, geometry, query and dependency sources remain unchanged.
+
+The conflict-refresh recovery journey uses the same controls with its actual record
+revision3 and current validation-points request. It verifies that the conflict remains
+while either body is pending, then consumes both accepted queries and checks current
+DOM/evidence before one explicit publication with expected revision3 and exact geometry
+and resolutions. A literal fake Response is cloned by the common fake API; no consumed-
+response defect is claimed. The other recovery cases already await their relevant new
+projection/operation/URL evidence and are unchanged without a demonstrated violation.

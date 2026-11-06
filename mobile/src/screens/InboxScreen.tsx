@@ -14,6 +14,7 @@ import { Button } from "../ui/Button.tsx";
 import { ScreenHeader } from "../ui/ScreenHeader.tsx";
 import { InboxLists } from "./inbox/InboxLists.tsx";
 import { InboxNoticeBanner } from "./inbox/InboxNoticeBanner.tsx";
+import { EvidenceNotice } from "./inbox/EvidenceNotice.tsx";
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
@@ -54,6 +55,7 @@ export function InboxScreen() {
       <ScrollView contentContainerStyle={styles.content}>
         {errorKey !== null && <Notice tone="critical" icon="alert" message={t(errorKey)} />}
         <InboxNoticeBanner snapshot={snapshot} />
+        <EvidenceNotice />
         <InboxLists model={model} />
       </ScrollView>
       <View style={[styles.footer, { paddingBottom: insets.bottom + spacing[2.5] }]}>

@@ -100,6 +100,7 @@ export class SyncEngine {
 
   /** "Intentar ahora": parked events go back to the queue and a pass starts at once, even offline. */
   async retryNow(): Promise<void> {
+    await this.#deps.pass.attachments?.retryNow?.();
     await this.#deps.pass.outbox.retryParked();
     this.#cancelRetry?.();
     this.#cancelRetry = null;
@@ -167,6 +168,7 @@ export class SyncEngine {
   async #recoverPending(): Promise<void> {
     if (!this.#isRecoveryPending) return;
     await this.#deps.pass.outbox.recoverInterrupted();
+    await this.#deps.pass.attachments?.recoverInterrupted();
     await this.#refresh({ lastSyncAt: await this.#deps.pass.kv.get(KV_KEYS.lastSyncAt) });
     this.#isRecoveryPending = false;
   }

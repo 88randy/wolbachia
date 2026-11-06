@@ -1,4 +1,5 @@
 import { LOCATED_ASSIGNMENTS } from "./task-locations.ts";
+import { INVALIDATE_ATTACHMENTS } from "../../attachments/schema.ts";
 import { samplingPointChange, replaceSamplingPoints } from "./sampling-point-statements.ts";
 import { setStatement, removeStatement, KV_KEYS } from "../../db/kv-store.ts";
 import { readText } from "../../db/sql.ts";
@@ -55,6 +56,7 @@ export class DayStore {
   async replace(body: unknown, now: Date): Promise<void> {
     const bundle = parseBundle(body, now);
     const statements: SqlStatement[] = [
+      INVALIDATE_ATTACHMENTS,
       removeMissingTasks(bundle.tasks.map((task) => task.id)),
       ...bundle.tasks.map((task) => upsertTask(task)),
       {
@@ -85,6 +87,7 @@ export class DayStore {
     const statements = [...tasks, ...manifests, ...points].filter(
       (entry): entry is SqlStatement => entry !== null,
     );
+    if (tasks.length || points.length) statements.unshift(INVALIDATE_ATTACHMENTS);
     const unreadable = tasks.filter((entry) => entry === null).length;
     statements.push({
       sql: "UPDATE day_bundle_meta SET payload=json_set(payload,'$.unreadable_rows',json_extract(payload,'$.unreadable_rows')+?)",
@@ -113,6 +116,7 @@ export class DayStore {
   }
   async revoke(): Promise<void> {
     await this.#db.runAtomically([
+      INVALIDATE_ATTACHMENTS,
       { sql: "DELETE FROM day_assignment" },
       { sql: "DELETE FROM day_map_manifest" },
       { sql: "DELETE FROM day_bundle_meta" },

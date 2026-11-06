@@ -12,6 +12,8 @@ import { OvitrapService } from "./service.ts";
 import { readCatalog, readRules } from "./snapshots.ts";
 import { OvitrapStore } from "./store.ts";
 import type { Assignment, EvidencePort, GpsPort, ScannerPort } from "./types.ts";
+import type { Attachments } from "../../attachments/create-attachments.ts";
+import { captureConfiguration } from "../../attachments/capture-configuration.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly shiftOpen: Pick<ShiftOpenService, "read">;
@@ -21,6 +23,7 @@ interface Dependencies {
   readonly gps?: GpsPort;
   readonly scanner?: ScannerPort;
   readonly evidence?: EvidencePort;
+  readonly attachments?: Attachments;
   readonly assignments?: { read(): Promise<Assignment | null> };
 }
 async function download(deps: Dependencies, store: OvitrapStore): Promise<void> {
@@ -60,7 +63,7 @@ export function createOvitrapCheck(deps: Dependencies): OvitrapService {
     uuid: randomUUID,
     gps: deps.gps ?? { locate: () => Promise.resolve(null) },
     scanner: deps.scanner ?? { scan: () => Promise.resolve({ status: "unavailable" }) },
-    evidence: deps.evidence ?? { capture: () => Promise.resolve(null) },
+    ...captureConfiguration({ port: deps.evidence, store, attachments: deps.attachments }),
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
     refresh: () => download(deps, store),
   });
