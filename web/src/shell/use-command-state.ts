@@ -1,29 +1,35 @@
 import { useCallback, useState } from "react";
-/** A new invocation resets search; typing into the shell transfers the first character. */
-export function useCommandState() {
-  const [isPaletteOpen, setPaletteOpen] = useState(false);
-  const [isHelpOpen, setHelpOpen] = useState(false);
+import { useShellOverlay } from "./use-shell-overlay";
+/** A permitted invocation resets search or transfers the first typed character. */
+function useCommandSearch(open: ReturnType<typeof useShellOverlay>["open"]) {
   const [query, setQuery] = useState("");
+  const openSearch = useCallback(
+    (next: string) => {
+      if (open("palette")) setQuery(next);
+    },
+    [open],
+  );
   const openPalette = useCallback(() => {
-    setQuery("");
-    setPaletteOpen(true);
-  }, []);
-  const openSearch = useCallback((next: string) => {
-    setQuery(next);
-    setPaletteOpen(true);
-  }, []);
+    openSearch("");
+  }, [openSearch]);
+  return { query, setQuery, openSearch, openPalette };
+}
+export function useCommandState() {
+  const { overlay, open, setOpen } = useShellOverlay();
+  const search = useCommandSearch(open);
   const openHelp = useCallback(() => {
-    setHelpOpen(true);
-  }, []);
+    open("help");
+  }, [open]);
   return {
-    isPaletteOpen,
-    setPaletteOpen,
-    isHelpOpen,
-    setHelpOpen,
-    query,
-    setQuery,
-    openPalette,
-    openSearch,
+    ...search,
+    isPaletteOpen: overlay === "palette",
+    isHelpOpen: overlay === "help",
+    setPaletteOpen: (next: boolean) => {
+      setOpen("palette", next);
+    },
+    setHelpOpen: (next: boolean) => {
+      setOpen("help", next);
+    },
     openHelp,
   };
 }

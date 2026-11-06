@@ -223,8 +223,10 @@
   cursor: pointer;
 }
 .destructive {
-  background: var(--color-status-critical-bg);
-  color: var(--color-status-critical-fg);
+  --button-background: var(--color-status-critical-bg);
+  --button-foreground: var(--color-status-critical-fg);
+  --button-hover-background: var(--web-button-destructive-tint-hover);
+  --button-pressed-background: var(--web-button-destructive-tint-pressed);
   border-color: var(--color-status-critical-fg);
 }
 .state {

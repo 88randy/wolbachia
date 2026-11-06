@@ -60,8 +60,23 @@ export interface IndexBandColors {
   readonly emergency: ColorValue;
 }
 
+/** Button feedback colors preserve text contrast without fading the control. */
+export interface ButtonStateColors {
+  readonly hover: ColorValue;
+  readonly pressed: ColorValue;
+}
+
 /** Web-only colors of one theme. */
 export interface WebThemeColors {
+  readonly button: {
+    readonly primary: ButtonStateColors;
+    readonly secondary: ButtonStateColors;
+    readonly tertiary: ButtonStateColors;
+    readonly ghost: ButtonStateColors;
+    readonly destructiveTint: ButtonStateColors;
+    readonly dangerSolid: ButtonStateColors;
+  };
+
   readonly sidebar: SidebarColors;
   readonly overlay: { readonly backdrop: ColorValue };
   readonly banner: BannerColors;
@@ -80,7 +95,25 @@ export interface WebThemeColors {
   };
 }
 
+const lightNeutralButtonStates: ButtonStateColors = {
+  hover: lightTheme.color.surfaceMuted,
+  pressed: "#E2E7EC",
+};
+const darkNeutralButtonStates: ButtonStateColors = {
+  hover: darkTheme.color.surfaceMuted,
+  pressed: "#39424D",
+};
+
 const lightWebColors: WebThemeColors = {
+  button: {
+    primary: { hover: lightTheme.color.actionStrong, pressed: "#0038BD" },
+    secondary: { hover: "#DDE7FF", pressed: "#CEDDFF" },
+    tertiary: lightNeutralButtonStates,
+    ghost: lightNeutralButtonStates,
+    destructiveTint: { hover: "#FAD8D8", pressed: "#F5CACA" },
+    dangerSolid: { hover: "#991118", pressed: "#800E14" },
+  },
+
   sidebar: {
     text: "#4B5563",
     hover: "#F1F3F5",
@@ -107,6 +140,15 @@ const lightWebColors: WebThemeColors = {
 };
 
 const darkWebColors: WebThemeColors = {
+  button: {
+    primary: { hover: darkTheme.color.actionStrong, pressed: "#B8CEFF" },
+    secondary: { hover: "#243D70", pressed: "#2D477D" },
+    tertiary: darkNeutralButtonStates,
+    ghost: darkNeutralButtonStates,
+    destructiveTint: { hover: "#57212A", pressed: "#642630" },
+    dangerSolid: { hover: "#FFA3A3", pressed: "#FFBABA" },
+  },
+
   sidebar: {
     text: "#CBD1D8",
     hover: "#2B3038",

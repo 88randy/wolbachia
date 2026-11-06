@@ -69,6 +69,35 @@ for (const [name, theme, colors] of [
     }
   });
 
+  void test(`${name}: every button interaction state keeps AA text contrast`, () => {
+    const variants = [
+      { role: "primary", foreground: theme.color.onAction, base: theme.color.action },
+      { role: "secondary", foreground: theme.color.actionStrong, base: theme.color.tint },
+      { role: "tertiary", foreground: theme.color.text.primary, base: theme.color.surface },
+      { role: "ghost", foreground: theme.color.text.secondary, base: theme.color.surface },
+      {
+        role: "destructiveTint",
+        foreground: theme.color.status.critical.fg,
+        base: theme.color.status.critical.bg,
+      },
+      {
+        role: "dangerSolid",
+        foreground: theme.color.onAction,
+        base: theme.color.status.critical.fg,
+      },
+    ] as const;
+    for (const { role, foreground, base } of variants) {
+      for (const [state, background] of Object.entries({ base, ...colors.button[role] })) {
+        assertContrast({ foreground, background, label: `${name} ${role} ${state}` });
+      }
+    }
+    assertContrast({
+      foreground: theme.color.text.secondary,
+      background: theme.color.disabled.background,
+      label: `${name} disabled button`,
+    });
+  });
+
   void test(`${name}: controls, focus and hovered scrollbars have visible edges`, () => {
     const controls = [theme.color.border.strong, theme.color.border.default, theme.color.action];
     for (const foreground of controls) {

@@ -153,8 +153,8 @@ Decision **118** applies; no API, permission, query, mutation or draft contract 
 | States and void | Shared Cards and actionable error/empty states; native dialog styling retained. Void confirmation initially focuses Cancel; invalid selection still receives focus after submit. |
 | Preview | Unbroken pills/relative times; visible named row actions; a one-row title/actions/period header; labeled size/state button matrices; two-column compact and one-column narrow KPI layout. Wide content scrolls in named, keyboard-scrollable regions. |
 
-Definition-of-done exceptions: existing native dialogs and existing form/draft
-logic are retained as explicitly requested; existing reversible deactivation
+Definition-of-done exceptions: existing native dialogs, validation rules and submission
+flows are retained as explicitly requested; existing reversible deactivation
 confirmation is not redesigned into an Undo flow in this visual-only rollout.
 Configuration errors describe repairing build configuration rather than offering
 a Retry that cannot fix it. The owner-requested top-bar theme switch supersedes
@@ -166,4 +166,53 @@ that a jsdom test can establish. Playwright is reserved for CI in this task.
 
 Integration compatibility: the geography block-column helper now accepts i18next's concrete TFunction type instead of expanding ReturnType of the generic useTranslation overload. This avoids excessive type instantiation with the merged locale catalog; its rendered columns, handlers and permissions are unchanged.
 
-Session e2e adaptation: the shell search is now a read-only command-palette trigger. The expiry fixture focuses it instead of filling a dummy draft, and checks the route, focus return and palette availability after reauthentication. It no longer claims to prove form-draft persistence through session expiry. Existing form/draft and organization-cache logic is retained; restoring a real record-form draft after that cache is cleared is outside this visual rollout and has not been verified here.
+Session draft regression: the read-only command trigger cannot hold a draft. The expiry fixture now fills the actual rule-version reason textarea, and unit/e2e assertions check its value during expiry and after reauthentication, plus focus return. A local definition snapshot keeps the mounted editor scoped to user, organization and parameter while the session is blocked and its data is revalidated. It never repopulates query caches. Changed identity, revoked access and client-side revalidation failures discard the retained editor; transient failures retain the draft with Retry. Unit tests cover these boundaries and the interval before expiry is announced; the updated e2e journey is reserved for CI.
+
+
+### Button interaction states: adversarial correction
+
+Opacity-based hover faded primary text below AA (reported light ratio 4.255:1).
+Buttons now change only an opaque background through semantic
+`web.*.button.{primary,secondary,tertiary,ghost}.{hover,pressed}` tokens, retaining
+the corresponding text foreground. Press movement remains optional under
+`prefers-reduced-motion`; immediate state colors apply in both motion modes.
+
+| Variant / foreground | Light hover / pressed | Dark hover / pressed | Contrast hover / pressed, light; dark |
+|---|---|---|---|
+| Primary / `onAction` | #0044E6 / #0038BD | #9DBBFF / #B8CEFF | 7.07 / 9.13; 8.91 / 10.80 |
+| Secondary / `actionStrong` | #DDE7FF / #CEDDFF | #243D70 / #2D477D | 5.71 / 5.19; 5.56 / 4.76 |
+| Tertiary / primary text | #F1F3F5 / #E2E7EC | #2B3038 / #39424D | >= 4.5:1 in both states and themes |
+| Ghost / secondary text | #F1F3F5 / #E2E7EC | #2B3038 / #39424D | >= 4.5:1 in both states and themes |
+| Destructive tint / critical text | #FAD8D8 / #F5CACA | #57212A / #642630 | 5.24 / 4.68; 5.59 / 4.97 |
+| Danger solid / `onAction` | #991118 / #800E14 | #FFA3A3 / #FFBABA | 8.58 / 10.55; 8.94 / 10.54 |
+
+The contrast regression checks the four variants and both existing destructive
+modifiers in their base and interaction states,
+plus disabled text. The web style guard rejects fractional opacity in hover,
+pressed and disabled control selectors, so future CSS cannot silently invalidate
+the token pairs. The opacity audit found no other fractional interaction state on
+a text-bearing control; remaining uses are the modal backdrop, skeleton shimmer,
+enter/exit transitions, the chart inspection slider and the decorative resize
+line. Busy-button placeholder text stays hidden only while its in-button spinner
+and accessible progress label replace it.
+
+ConfirmActions and VoidDialogActions retain their existing public API and
+critical meaning. Their modifier variables override the shared button's separate
+variant fallbacks for base background, foreground, hover and pressed states;
+there is no reliance on stylesheet import order or selector specificity. A CSS
+wiring regression verifies both modifiers consume the tested palettes. The
+remaining Button class overrides are layout-only (`SubmitButton`) or unavailable
+states (`MotorcycleActionButton`, `VoidVersionButton`), whose `aria-disabled`
+state excludes hover and press; they keep the tested disabled pair. Links and
+raw buttons consuming shared button classes add no color overrides.
+
+### Shell modal ownership: adversarial correction
+
+Shell overlays share one modal slot. Every invocation (Ctrl/Cmd+K, ?, click,
+search typing or a controlled open) checks the same rule: the session is known,
+not expired and not signed out, and there is no open native dialog, Radix dialog
+or ARIA modal. Blocking/expiring the session clears the slot. Shell portals
+unmount immediately, so an exit animation cannot retain hideOthers or a focus
+scope over the visible native modal. Focus restoration yields to that modal.
+Regression tests cover both opening orders, keyboard input in reauthentication,
+resuming a verified session without reopening help, and the sign-out boundary.

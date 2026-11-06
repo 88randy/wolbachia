@@ -329,3 +329,17 @@ From web/, the installed CLI can run without the npm wrapper:
 node ../node_modules/vitest/vitest.mjs run --maxWorkers=1 --pool=threads TEST_FILE.
 This still runs Vitest with one worker; no packages or project settings change.
 Pool behavior: https://vitest.dev/config/pool.
+
+The shell command palette and shortcut help share one modal slot (#202 review).
+Their invocation gate excludes open native/Radix/ARIA modals and blocked,
+expired or signed-out sessions. Shell portals unmount immediately on dismissal;
+focus restoration never overrides another active modal. Tests cover both modal
+opening orders and reauthentication focus without timer-based waits.
+
+The session-expiry regression uses a real rule-version reason draft, including
+value retention during and after reauthentication. A local, identity-scoped
+parameter definition keeps that editor mounted while organization queries are
+cleared and revalidated; it never restores query-cache entries. A changed user,
+organization, parameter or authorization boundary clears the old draft. Transient
+revalidation failures preserve it with Retry. The e2e session fixture checks the
+same real field; its screenshots and browser journey are run in CI.

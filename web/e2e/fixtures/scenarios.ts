@@ -66,18 +66,22 @@ const RULES = [
   },
 ];
 
+export const SESSION_SCENARIO_OPTIONS: MockApiOptions = { me: RULES_ME, rules: RULES };
+export const SESSION_PAGE_PATH = SPEED;
+export const SESSION_DRAFT_SELECTOR = "#rule-version-reason";
+
 const SESSION_MS = 61_000; // just over how long /me/ counts as fresh (60 s)
 
 /**
- * Opens Home, lets the session "expire" on the server and moves the clock past the freshness of
+ * Opens a rule-version form draft, lets the session "expire" on the server and moves the clock past the freshness of
  * /me/. Coming back to the tab refetches it, which is a 401 after the user was signed in.
  */
 export async function expireWhileWorking(page: Page, api: MockApi): Promise<void> {
   await page.clock.install();
-  await page.goto("/");
+  await page.goto(SESSION_PAGE_PATH);
   await page.clock.resume();
-  await expect(page.getByRole("main")).toBeVisible();
-  await page.locator("#global-search").focus();
+  await expect(page.locator(SESSION_DRAFT_SELECTOR)).toBeVisible();
+  await page.locator(SESSION_DRAFT_SELECTOR).fill("borrador sin guardar");
   api.expireSession();
   await page.clock.fastForward(SESSION_MS);
   await page.evaluate(() => {
@@ -285,7 +289,7 @@ export const scenarios: Scenario[] = [
   },
   {
     name: "re-authentication dialog",
-    api: {},
+    api: SESSION_SCENARIO_OPTIONS,
     reach: async (page, api) => {
       await expireWhileWorking(page, api);
       await expect(page.getByRole("dialog")).toBeVisible();

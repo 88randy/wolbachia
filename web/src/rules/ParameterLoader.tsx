@@ -9,6 +9,7 @@ import { parameterQueryOptions } from "./rules-query";
 import { ParameterScreen } from "./ParameterScreen";
 import { ParameterRefreshState } from "./ParameterRefreshState";
 import { ParameterLoadFailed } from "./ParameterLoadFailed";
+import { useRetainedParameter } from "./use-retained-parameter";
 const HTTP_NOT_FOUND = 404;
 /** A refresh failure keeps the mounted form and its draft; only the first load is replaced. */
 export function ParameterLoader({ parameterKey }: { parameterKey: string }) {
@@ -16,12 +17,13 @@ export function ParameterLoader({ parameterKey }: { parameterKey: string }) {
   const identity = useSessionIdentity();
   const query = useQuery(parameterQueryOptions(client, identity, parameterKey));
   const { error } = query;
+  const view = useRetainedParameter(identity, parameterKey, query);
   const retry = () => void query.refetch();
-  if (query.data !== undefined) {
+  if (view.parameter !== undefined) {
     const notice = (
       <ParameterRefreshState error={error} onRetry={retry} isFetching={query.isFetching} />
     );
-    return <ParameterScreen parameter={query.data} notice={notice} />;
+    return <ParameterScreen key={view.scope} parameter={view.parameter} notice={notice} />;
   }
   if (error instanceof ApiError && error.status === HTTP_NOT_FOUND) return <NotFoundState />;
   if (error !== null) return <ParameterLoadFailed error={error} onRetry={retry} />;

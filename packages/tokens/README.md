@@ -112,3 +112,19 @@ that role, so an owner-approved accent change has one semantic edit per theme.
 all shared surfaces, status pairs, deltas, sidebar active states, input/strong
 borders, focus and hovered scrollbars in both themes. Minimums are 4.5:1 for text
 and 3:1 for UI. See `docs/web-tokens-diff.md` for measured ratios and D1–D7.
+
+
+### Button interaction contrast (#202 adversarial review)
+
+`web.light/dark.button.{primary,secondary,tertiary,ghost,destructiveTint,dangerSolid}.{hover,pressed}`
+provides opaque feedback backgrounds as `--web-button-*-*`. Foregrounds keep
+their semantic roles (`onAction`, `actionStrong`, primary/secondary text);
+hover and press never fade text. Tertiary and ghost share neutral state values.
+Reduced motion disables movement, not the immediate color feedback.
+`test/contrast.test.ts` checks base, hover, pressed and disabled text pairs in
+both themes; CSS-variable coverage checks every interaction background.
+The existing confirm and void modifiers use `destructiveTint` (critical text on
+pale critical fill) and `dangerSolid` (`onAction` on critical fill). Shared CSS
+resolves modifier custom properties before separate variant fallbacks for base,
+text, hover and pressed colors, so CSS import order cannot mix red text with a
+blue interaction background. The web style regression guards this wiring.

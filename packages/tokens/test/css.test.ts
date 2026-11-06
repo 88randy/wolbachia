@@ -44,6 +44,7 @@ const THEMED_PREFIXES = [
   "web-delta",
   "web-scrollbar",
   "web-overlay",
+  "web-button-",
 ];
 
 function isThemed(name: string): boolean {
@@ -114,6 +115,18 @@ void describe("renderTokensCss", () => {
       "web-delta-positive",
       "web-chart-grid",
       "web-overlay-backdrop",
+      "web-button-primary-hover",
+      "web-button-primary-pressed",
+      "web-button-secondary-hover",
+      "web-button-secondary-pressed",
+      "web-button-tertiary-hover",
+      "web-button-tertiary-pressed",
+      "web-button-ghost-hover",
+      "web-button-ghost-pressed",
+      "web-button-destructive-tint-hover",
+      "web-button-destructive-tint-pressed",
+      "web-button-danger-solid-hover",
+      "web-button-danger-solid-pressed",
     ]) {
       assert.ok(light[name], `${name} missing in light`);
       assert.ok(dark[name], `${name} missing in dark`);

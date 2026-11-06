@@ -31,22 +31,37 @@
   flex: none;
 }
 .primary {
-  background: var(--color-action);
-  color: var(--color-on-action);
+  --button-variant-hover-background: var(--web-button-primary-hover);
+  --button-variant-pressed-background: var(--web-button-primary-pressed);
+  background: var(--button-background, var(--color-action));
+  color: var(--button-foreground, var(--color-on-action));
 }
 .secondary {
-  background: var(--color-tint);
-  color: var(--color-action-strong);
+  --button-variant-hover-background: var(--web-button-secondary-hover);
+  --button-variant-pressed-background: var(--web-button-secondary-pressed);
+  background: var(--button-background, var(--color-tint));
+  color: var(--button-foreground, var(--color-action-strong));
 }
 .tertiary {
-  background: var(--color-surface);
-  color: var(--color-text-primary);
+  --button-variant-hover-background: var(--web-button-tertiary-hover);
+  --button-variant-pressed-background: var(--web-button-tertiary-pressed);
+  background: var(--button-background, var(--color-surface));
+  color: var(--button-foreground, var(--color-text-primary));
   border-color: var(--color-border-strong);
 }
 .ghost {
-  background: transparent;
-  color: var(--color-text-secondary);
+  --button-variant-hover-background: var(--web-button-ghost-hover);
+  --button-variant-pressed-background: var(--web-button-ghost-pressed);
+  background: var(--button-background, transparent);
+  color: var(--button-foreground, var(--color-text-secondary));
 }
+.button:hover:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--button-hover-background, var(--button-variant-hover-background));
+}
+.button:active:not(:disabled):not([aria-disabled="true"]) {
+  background: var(--button-pressed-background, var(--button-variant-pressed-background));
+}
+
 .sm {
   min-height: var(--web-control-sm);
 }
@@ -79,12 +94,7 @@
 }
 @media (prefers-reduced-motion: no-preference) {
   .button {
-    transition:
-      transform var(--web-motion-fast) var(--web-motion-easing),
-      opacity var(--web-motion-fast) var(--web-motion-easing);
-  }
-  .button:hover:not(:disabled):not([aria-disabled="true"]) {
-    opacity: 0.88;
+    transition: transform var(--web-motion-fast) var(--web-motion-easing);
   }
   .button:active:not(:disabled):not([aria-disabled="true"]) {
     transform: translateY(1px);

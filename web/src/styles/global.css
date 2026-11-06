@@ -94,9 +94,7 @@ dialog[open]::backdrop {
 @media (prefers-reduced-motion: no-preference) {
   button,
   a {
-    transition:
-      opacity var(--web-motion-fast) var(--web-motion-easing),
-      transform var(--web-motion-fast) var(--web-motion-easing);
+    transition: transform var(--web-motion-fast) var(--web-motion-easing);
   }
   button:active:not(:disabled) {
     transform: translateY(calc(var(--space-0-5) / 4));

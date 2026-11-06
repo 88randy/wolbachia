@@ -1,23 +1,29 @@
 import { expect, test } from "./fixtures/test";
 import { E2E_PASSWORD, mockApi } from "./fixtures/mock-api";
-import { expireWhileWorking } from "./fixtures/scenarios";
+import {
+  expireWhileWorking,
+  SESSION_SCENARIO_OPTIONS,
+  SESSION_PAGE_PATH,
+  SESSION_DRAFT_SELECTOR,
+} from "./fixtures/scenarios";
 
 test.describe("session expiry", () => {
-  test("a 401 after sign-in asks for the password over the page and keeps the current route", async ({
+  test("a 401 after sign-in asks for the password over the page and keeps the real rule draft", async ({
     page,
   }) => {
-    const api = await mockApi(page, { login: "ok" });
+    const api = await mockApi(page, { ...SESSION_SCENARIO_OPTIONS, login: "ok" });
     await expireWhileWorking(page, api);
 
     const dialog = page.getByRole("dialog", { name: "Tu sesión terminó" });
     await expect(dialog).toBeVisible();
     await expect(dialog.getByLabel("Usuario")).toHaveValue("ana.supervisora");
     await expect(dialog.getByLabel("Contraseña", { exact: true })).toBeFocused();
-    expect(new URL(page.url()).pathname).toBe("/");
+    expect(new URL(page.url()).pathname).toBe(SESSION_PAGE_PATH);
+    await expect(page.locator(SESSION_DRAFT_SELECTOR)).toHaveValue("borrador sin guardar");
   });
 
   test("focus stays inside the dialog and Escape does not close it", async ({ page }) => {
-    const api = await mockApi(page);
+    const api = await mockApi(page, SESSION_SCENARIO_OPTIONS);
     await expireWhileWorking(page, api);
     const dialog = page.getByRole("dialog", { name: "Tu sesión terminó" });
     await expect(dialog).toBeVisible();
@@ -39,7 +45,7 @@ test.describe("session expiry", () => {
   });
 
   test("pressing Escape twice, with nothing typed, leaves the dialog open", async ({ page }) => {
-    const api = await mockApi(page);
+    const api = await mockApi(page, SESSION_SCENARIO_OPTIONS);
     await expireWhileWorking(page, api);
     const dialog = page.getByRole("dialog", { name: "Tu sesión terminó" });
     await expect(dialog).toBeVisible();
@@ -52,7 +58,7 @@ test.describe("session expiry", () => {
   });
 
   test("signing in again closes it and returns focus to where the user was", async ({ page }) => {
-    const api = await mockApi(page);
+    const api = await mockApi(page, SESSION_SCENARIO_OPTIONS);
     await expireWhileWorking(page, api);
     const dialog = page.getByRole("dialog", { name: "Tu sesión terminó" });
     await expect(dialog).toBeVisible();
@@ -61,13 +67,14 @@ test.describe("session expiry", () => {
     await page.keyboard.press("Enter");
 
     await expect(dialog).toBeHidden();
-    await expect(page.locator("#global-search")).toBeFocused();
+    await expect(page.locator(SESSION_DRAFT_SELECTOR)).toBeFocused();
+    await expect(page.locator(SESSION_DRAFT_SELECTOR)).toHaveValue("borrador sin guardar");
     await page.keyboard.press("Control+K");
     await expect(page.getByRole("dialog").getByRole("combobox", { name: "Buscar" })).toBeFocused();
   });
 
   test("a wrong password is explained and the dialog stays", async ({ page }) => {
-    const api = await mockApi(page, { login: "invalid" });
+    const api = await mockApi(page, { ...SESSION_SCENARIO_OPTIONS, login: "invalid" });
     await expireWhileWorking(page, api);
     const dialog = page.getByRole("dialog", { name: "Tu sesión terminó" });
 
@@ -81,7 +88,7 @@ test.describe("session expiry", () => {
   });
 
   test("Sign out from the dialog goes to sign-in", async ({ page }) => {
-    const api = await mockApi(page);
+    const api = await mockApi(page, SESSION_SCENARIO_OPTIONS);
     await expireWhileWorking(page, api);
 
     await page.getByRole("dialog").getByRole("button", { name: "Cerrar sesión" }).click();

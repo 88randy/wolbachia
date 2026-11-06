@@ -65,4 +65,47 @@ describe("web/src style literals", () => {
 
     expect(offenders).toEqual([]);
   });
+
+  test("hover, pressed and disabled controls keep their text opaque", () => {
+    const offenders = files
+      .filter((file) => file.endsWith(".css"))
+      .flatMap((file) => {
+        const css = readFileSync(file, "utf8").replace(BLOCK_COMMENT, "");
+        return [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].flatMap((rule) => {
+          const selector = rule[1] ?? "";
+          if (!/:(?:hover|active|disabled)\b|\[aria-disabled\b/.test(selector)) return [];
+          const opacity = rule[2]?.match(/\bopacity\s*:\s*([^;]+)/)?.[1];
+          return opacity !== undefined && Number(opacity.trim()) !== 1
+            ? [`${file}: ${selector.trim()}`]
+            : [];
+        });
+      });
+
+    expect(offenders).toEqual([]);
+  });
+
+  test("destructive buttons keep their own feedback palette regardless of CSS import order", () => {
+    const buttons = readFileSync(join(SRC_DIR, "styles/button.module.css"), "utf8");
+    for (const state of ["hover", "pressed"]) {
+      expect(buttons).toContain(
+        `background: var(--button-${state}-background, var(--button-variant-${state}-background))`,
+      );
+    }
+    for (const [file, selector, role, background, foreground] of [
+      ["ui/ui.module.css", ".destructive", "destructive-tint", "bg", "status-critical-fg"],
+      ["void/void-dialog.module.css", ".actions .danger", "danger-solid", "fg", "on-action"],
+    ] as const) {
+      const css = readFileSync(join(SRC_DIR, file), "utf8").replace(BLOCK_COMMENT, "");
+      const rule = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(
+        (match) => match[1]?.trim() === selector,
+      )?.[2];
+      expect(rule).toContain(`--button-background: var(--color-status-critical-${background})`);
+      expect(rule).toContain(`--button-foreground: var(--color-${foreground})`);
+      for (const state of ["hover", "pressed"]) {
+        expect(rule).toContain(`--button-${state}-background: var(--web-button-${role}-${state})`);
+      }
+    }
+    expect(buttons).toContain("background: var(--button-background, var(--color-action))");
+    expect(buttons).toContain("color: var(--button-foreground, var(--color-on-action))");
+  });
 });

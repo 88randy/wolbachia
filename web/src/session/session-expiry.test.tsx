@@ -4,7 +4,7 @@ import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { apiError, createFakeApi, makeMe, noContent } from "../test/fake-api";
+import { apiError, createFakeApi, makeMe, makeOrganization, noContent } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
 import { renderApp } from "../test/render-app";
@@ -13,12 +13,21 @@ import {
   getOrganizationSlug,
   setOrganizationSlug,
 } from "./organization-slug";
-import { endSessionExpiry, isSessionExpired } from "./session-events";
+import { endSessionExpiry, isSessionExpired, markSessionExpired } from "./session-events";
+import {
+  ADMIN,
+  openParameterPage,
+  PARAMETER_PATH,
+  PARAMETER_ROUTE,
+  makeParameter,
+} from "../test/rules-fixtures";
 
 const ME = "GET /api/v1/me/";
 const LOGIN = "POST /api/v1/auth/login/";
 const LOGOUT = "POST /api/v1/auth/logout/";
 const PASSWORD = fakePassword();
+import { begin, commitSignedOut, leaveKnown } from "./session-controller";
+import { invalidateRuleParameters } from "../rules/rules-query";
 
 beforeEach(() => {
   endSessionExpiry();
@@ -51,7 +60,7 @@ type App = Awaited<ReturnType<typeof openShell>>["app"];
 async function failQuery(app: App, error: ApiError) {
   await act(async () => {
     await app.queryClient
-      .query({ queryKey: ["probe", Math.random()], queryFn: () => Promise.reject(error) })
+      .query({ queryKey: ["probe", "expiry"], queryFn: () => Promise.reject(error) })
       .catch(() => undefined);
   });
 }
@@ -64,10 +73,17 @@ async function failMutation(app: App, error: ApiError) {
   });
 }
 
+async function finishReauthentication() {
+  await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+  await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+  await vi.waitFor(() => {
+    expect(screen.queryByRole("dialog", { name: "Tu sesión terminó" })).toBeNull();
+  });
+}
 describe("session expiry: re-authentication over the current page", () => {
   test("a 401 on a query opens the dialog and the page stays as it was", async () => {
     const { app } = await openShell();
-    await userEvent.type(screen.getByRole("searchbox", { name: "Buscar" }), "ejemplo");
+    screen.getByRole("searchbox", { name: "Buscar" }).focus();
 
     await failQuery(app, new ApiError(401));
 
@@ -77,18 +93,219 @@ describe("session expiry: re-authentication over the current page", () => {
     expect(app.router.state.location.pathname).toBe("/");
   });
 
-  test("a 401 on a mutation keeps the draft: what was typed is still there", async () => {
-    const { app } = await openShell();
-    const draft = screen.getByRole("searchbox", { name: "Buscar" });
+  test("a 401 on a mutation keeps a real rule draft during and after reauthentication", async () => {
+    const { app } = await openParameterPage({
+      routes: {
+        [LOGIN]: Response.json({ me: ADMIN, server_time: "2026-11-04T12:00:00Z" }),
+      },
+    });
+    const draft = await screen.findByLabelText<HTMLTextAreaElement>(/Motivo del cambio/);
     await userEvent.type(draft, "borrador sin guardar");
 
     await failMutation(app, new ApiError(401));
 
-    await screen.findByRole("dialog");
-    expect(screen.getByRole("searchbox", { hidden: true, name: "Buscar" })).toBe(draft);
-    expect((draft as HTMLInputElement).value).toBe("borrador sin guardar");
+    await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+    expect(screen.getByLabelText<HTMLTextAreaElement>(/Motivo del cambio/).value).toBe(
+      "borrador sin guardar",
+    );
+    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await vi.waitFor(() => {
+      expect(screen.queryByRole("dialog", { name: "Tu sesión terminó" })).toBeNull();
+    });
+    expect(screen.getByLabelText<HTMLTextAreaElement>(/Motivo del cambio/).value).toBe(
+      "borrador sin guardar",
+    );
+    expect(app.router.state.location.pathname).toBe(PARAMETER_PATH);
+    expect(document.activeElement).toBe(screen.getByLabelText(/Motivo del cambio/));
   });
 
+  test.each(["user", "organization"] as const)(
+    "a draft is discarded when reauthentication changes the %s",
+    async (change) => {
+      const replacement =
+        change === "user"
+          ? {
+              ...ADMIN,
+              user: { ...ADMIN.user, id: crypto.randomUUID(), username: "bea.supervisora" },
+            }
+          : {
+              ...ADMIN,
+              organization: makeOrganization("sur", "Región Sur"),
+              organizations: [{ slug: "sur", name: "Región Sur" }],
+            };
+      let hasReauthenticated = false;
+      const { app } = await openParameterPage({
+        routes: {
+          [ME]: () => Response.json(hasReauthenticated ? replacement : ADMIN),
+          [LOGIN]: () => {
+            hasReauthenticated = true;
+            return Response.json({ me: replacement, server_time: "2026-11-04T12:00:00Z" });
+          },
+        },
+      });
+      await userEvent.type(
+        await screen.findByLabelText(/Motivo del cambio/),
+        "borrador privado anterior",
+      );
+      await failMutation(app, new ApiError(401));
+      await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+      await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+      await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+      await vi.waitFor(() => {
+        expect(screen.queryByRole("dialog", { name: "Tu sesión terminó" })).toBeNull();
+      });
+      expect((await screen.findByLabelText<HTMLTextAreaElement>(/Motivo del cambio/)).value).toBe(
+        "",
+      );
+    },
+  );
+  test("a rule draft stays mounted after cache removal before expiry is announced", async () => {
+    const { app } = await openParameterPage();
+    const draft = await screen.findByLabelText<HTMLTextAreaElement>(/Motivo del cambio/);
+    await userEvent.type(draft, "borrador sin guardar");
+    await act(async () => {
+      await leaveKnown(app.queryClient);
+    });
+    expect(screen.getByLabelText(/Motivo del cambio/)).toBe(draft);
+    expect(draft.value).toBe("borrador sin guardar");
+    act(() => {
+      markSessionExpired();
+    });
+    await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+    expect(screen.getByLabelText(/Motivo del cambio/)).toBe(draft);
+  });
+
+  test("confirmed sign-out discards a draft while the old shell is still mounted", async () => {
+    const { app, api } = await openParameterPage();
+    const draft = await screen.findByLabelText<HTMLTextAreaElement>(/Motivo del cambio/);
+    await userEvent.type(draft, "borrador privado anterior");
+    api.setRoute(ME, apiError(401, "not_authenticated"));
+    act(() => {
+      const token = begin(app.queryClient, "leave");
+      commitSignedOut(app.queryClient, token);
+    });
+    expect(draft.isConnected).toBe(false);
+    expect(screen.queryByLabelText(/Motivo del cambio/)).toBeNull();
+  });
+  test("a 401 from the edited parameter keeps its draft across reauthentication", async () => {
+    let shouldExpire = false;
+    const { app } = await openParameterPage({
+      routes: {
+        [PARAMETER_ROUTE]: () =>
+          shouldExpire ? apiError(401, "not_authenticated") : Response.json(makeParameter()),
+        [LOGIN]: () => {
+          shouldExpire = false;
+          return Response.json({ me: ADMIN, server_time: "2026-11-04T12:00:00Z" });
+        },
+      },
+    });
+    const draft = await screen.findByLabelText<HTMLTextAreaElement>(/Motivo del cambio/);
+    await userEvent.type(draft, "borrador sin guardar");
+    shouldExpire = true;
+    await act(async () => {
+      await invalidateRuleParameters(app.queryClient);
+    });
+    await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+    expect(screen.getByLabelText(/Motivo del cambio/)).toBe(draft);
+    await finishReauthentication();
+    expect(screen.getByLabelText(/Motivo del cambio/)).toBe(draft);
+    expect(draft.value).toBe("borrador sin guardar");
+    expect(document.activeElement).toBe(draft);
+  });
+  test.each(["server", "network"] as const)(
+    "a %s failure after reauthentication keeps the draft through Retry",
+    async (failure) => {
+      const { app, api } = await openParameterPage({
+        routes: {
+          [LOGIN]: Response.json({ me: ADMIN, server_time: "2026-11-04T12:00:00Z" }),
+        },
+      });
+      const draft = await screen.findByLabelText<HTMLTextAreaElement>(/Motivo del cambio/);
+      await userEvent.type(draft, "borrador sin guardar");
+      api.setRoute(PARAMETER_ROUTE, () => {
+        if (failure === "network") throw new TypeError("Failed to fetch");
+        return apiError(500, "server_error");
+      });
+      await failMutation(app, new ApiError(401));
+      await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+      await finishReauthentication();
+      expect(await screen.findByText(/No pudimos actualizar/)).toBeDefined();
+      expect(screen.getByLabelText(/Motivo del cambio/)).toBe(draft);
+      expect(draft.value).toBe("borrador sin guardar");
+      api.setRoute(PARAMETER_ROUTE, () => Response.json(makeParameter({ value: 75 })));
+      await userEvent.click(screen.getByRole("button", { name: "Reintentar" }));
+      await screen.findByText("75 metros");
+      await vi.waitFor(() => {
+        expect(screen.queryByText(/No pudimos actualizar/)).toBeNull();
+      });
+      expect(screen.getByLabelText(/Motivo del cambio/)).toBe(draft);
+      expect(draft.value).toBe("borrador sin guardar");
+    },
+  );
+  test.each([403, 404])(
+    "a retained editor is removed when revalidation answers %s",
+    async (status) => {
+      let hasReauthenticated = false;
+      const { app } = await openParameterPage({
+        routes: {
+          [PARAMETER_ROUTE]: () =>
+            hasReauthenticated
+              ? apiError(status, status === 404 ? "not_found" : "permission_denied")
+              : Response.json(makeParameter()),
+          [LOGIN]: () => {
+            hasReauthenticated = true;
+            return Response.json({ me: ADMIN, server_time: "2026-11-04T12:00:00Z" });
+          },
+        },
+      });
+      await userEvent.type(
+        await screen.findByLabelText(/Motivo del cambio/),
+        "borrador privado anterior",
+      );
+      await failMutation(app, new ApiError(401));
+      await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+      await finishReauthentication();
+      await vi.waitFor(() => {
+        expect(screen.queryByLabelText(/Motivo del cambio/)).toBeNull();
+      });
+      if (status === 404)
+        expect(
+          await screen.findByRole("heading", { name: "No encontramos esta página" }),
+        ).toBeDefined();
+      else expect(await screen.findByRole("alert")).toBeDefined();
+    },
+  );
+
+  test.each(["rule_parameter.read", "rule_parameter_version.create"])(
+    "a retained draft is removed when %s is revoked",
+    async (permission) => {
+      const replacement = {
+        ...ADMIN,
+        permissions: ADMIN.permissions.filter((entry) => entry !== permission),
+      };
+      let hasReauthenticated = false;
+      const { app } = await openParameterPage({
+        routes: {
+          [ME]: () => Response.json(hasReauthenticated ? replacement : ADMIN),
+          [LOGIN]: () => {
+            hasReauthenticated = true;
+            return Response.json({ me: replacement, server_time: "2026-11-04T12:00:00Z" });
+          },
+        },
+      });
+      await userEvent.type(
+        await screen.findByLabelText(/Motivo del cambio/),
+        "borrador privado anterior",
+      );
+      await failMutation(app, new ApiError(401));
+      await screen.findByRole("dialog", { name: "Tu sesión terminó" });
+      await finishReauthentication();
+      await vi.waitFor(() => {
+        expect(screen.queryByLabelText(/Motivo del cambio/)).toBeNull();
+      });
+    },
+  );
   test("shows the username read-only and puts focus on the password", async () => {
     const { app } = await openShell();
 
