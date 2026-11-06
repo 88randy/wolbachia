@@ -4,6 +4,55 @@ info:
   version: 1.0.0
   description: Single API for the mobile app and the web (see docs/api-conventions.md).
 paths:
+  /api/v1/attachments/{id}/download/:
+    get:
+      operationId: attachments_download_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this upload.
+        required: true
+      tags:
+      - attachments
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/auth/csrf/:
     get:
       operationId: auth_csrf_retrieve
@@ -1401,6 +1450,197 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SyncResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/uploads/:
+    post:
+      operationId: field_uploads_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - field
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EvidenceUploadRequestRequest'
+        required: true
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadAuthorization'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/uploads/{id}/content/:
+    put:
+      operationId: field_uploads_content_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: Upload-Lease
+        schema:
+          type: string
+        required: true
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this upload.
+        required: true
+      tags:
+      - field
+      requestBody:
+        content:
+          image/jpeg:
+            schema:
+              type: string
+              format: binary
+          image/png:
+            schema:
+              type: string
+              format: binary
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/uploads/{id}/finalize/:
+    post:
+      operationId: field_uploads_finalize_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this upload.
+        required: true
+      tags:
+      - field
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UploadFinalizeRequest'
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadStatus'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/field/uploads/{id}/renew/:
+    post:
+      operationId: field_uploads_renew_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this upload.
+        required: true
+      tags:
+      - field
+      security:
+      - bearerAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UploadRenewal'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -5016,6 +5256,25 @@ components:
       - revision
       - schedule_revision
       - valid_from
+    AttachmentTargetKindEnum:
+      enum:
+      - field_event
+      - motorcycle_fault
+      type: string
+      description: |-
+        * `field_event` - field_event
+        * `motorcycle_fault` - motorcycle_fault
+    AttachmentTargetRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/AttachmentTargetKindEnum'
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
+      - kind
     Bag:
       type: object
       description: |-
@@ -5774,6 +6033,14 @@ components:
       - expected_revision
       - fault_id
       - reason
+    ContentTypeEnum:
+      enum:
+      - image/jpeg
+      - image/png
+      type: string
+      description: |-
+        * `image/jpeg` - image/jpeg
+        * `image/png` - image/png
     CourierChangeActionEnum:
       enum:
       - upsert
@@ -5901,6 +6168,28 @@ components:
         * `accepted` - Accepted
         * `rejected` - Rejected
         * `in_review` - In Review
+    EvidenceUploadRequestRequest:
+      type: object
+      properties:
+        content_type:
+          $ref: '#/components/schemas/ContentTypeEnum'
+        size_bytes:
+          type: integer
+          maximum: 10485760
+          minimum: 1
+        sha256:
+          type: string
+          minLength: 1
+          pattern: ^[0-9a-fA-F]{64}$
+        client_id:
+          type: string
+          format: uuid
+        context:
+          $ref: '#/components/schemas/AttachmentTargetRequest'
+      required:
+      - content_type
+      - sha256
+      - size_bytes
     ExcludedPointResolution:
       type: object
       description: |-
@@ -6687,6 +6976,11 @@ components:
       - profiles
       - scope
       - user
+    MethodEnum:
+      enum:
+      - PUT
+      type: string
+      description: '* `PUT` - PUT'
     MobileLoginResponse:
       type: object
       properties:
@@ -9859,6 +10153,16 @@ components:
       - distance_m
       - minimum_m
       - point
+    StateEnum:
+      enum:
+      - authorized
+      - received
+      - verified
+      type: string
+      description: |-
+        * `authorized` - authorized
+        * `received` - received
+        * `verified` - verified
     StatusEnum:
       enum:
       - scheduled
@@ -10080,6 +10384,69 @@ components:
         * `week` - Weeks
         * `count` - Count
         * `km_l` - Kilometers Per Liter
+    UploadAuthorization:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - headers
+      - method
+      - upload_id
+      - url
+    UploadFinalizeRequest:
+      type: object
+      properties:
+        context:
+          $ref: '#/components/schemas/AttachmentTargetRequest'
+    UploadRenewal:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/StateEnum'
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        upload_id:
+          type: string
+          format: uuid
+        url:
+          type: string
+        method:
+          $ref: '#/components/schemas/MethodEnum'
+        headers:
+          type: object
+          additionalProperties:
+            type: string
+        expires_at:
+          type: string
+          format: date-time
+      required:
+      - expires_at
+      - headers
+      - id
+      - method
+      - state
+      - upload_id
+      - url
+      - verified_at
     UploadRequestRequest:
       type: object
       properties:
@@ -10102,6 +10469,22 @@ components:
       - sha256
       - size
       - upload_id
+    UploadStatus:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        state:
+          $ref: '#/components/schemas/StateEnum'
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - id
+      - state
+      - verified_at
     ValueTypeEnum:
       enum:
       - integer

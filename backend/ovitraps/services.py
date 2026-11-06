@@ -117,6 +117,13 @@ def check_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
         raise EventRejected(codes.BAG_CODE_USED)
     capture = capture_context(ctx, ovitrap.sampling_point)
     with fanout_courier_changes(point_fanout_scope(ovitrap.sampling_point)) as emit:
+        if any(
+            choice is not None and choice.historical.get("requires_photo")
+            for choice in (finding, paddle)
+        ):
+            from uploads.gates import require_event_evidence
+
+            require_event_evidence(ctx, payload["evidence_ids"])
         reading = _create_reading(
             ctx, payload, ReadingCapture(ovitrap, capture, finding, paddle, week)
         )

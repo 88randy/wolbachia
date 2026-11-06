@@ -81,6 +81,14 @@ test("W63: add, edit, keyboard reorder, cancel a drag, deactivate with Undo", as
   await page.keyboard.press("ArrowUp");
   await page.keyboard.press("Escape");
   await expect(handle).toBeFocused();
+  await page.keyboard.press("Space");
+  await page.keyboard.press("ArrowUp");
+  await ordering.click();
+  await ordering.selectOption("-code");
+  await expect(handle).toHaveAttribute("aria-pressed", "false");
+  await expect(ordering).toBeFocused();
+  await ordering.selectOption("");
+  await expect(handle).toHaveAttribute("aria-disabled", "false");
   await handle.dragTo(page.getByRole("button", { name: "Reordenar: Rociado" }));
   await expect(rows.nth(1)).toContainText("Actualizada");
   await page.getByRole("button", { name: "Deshacer", exact: true }).click();

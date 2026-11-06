@@ -224,6 +224,16 @@ to existing catalog/rules snapshots; no configuration producer is added. See
 Tests: ../tests/test_bundle_producers_196.py covers fan-out, once-only pulls/replay,
 placement/reading tombstones, fallback to earlier checks, isolation and query bound.
 
+## Verified evidence (#102, supersedes opaque-reference-only readiness)
+
+Original evidence_ids remain immutable provenance. Check gains optional evidence_ids
+default []; archived finding/paddle requires_photo metadata decides its gate. Lifecycle
+replace/relocate/remove always require verified owned evidence. Sorted Upload NOWAIT
+locks precede effects; post-_store linkage binds each UUID to a single source. Pending
+bytes retain ovitrap_evidence_required review. Later finalize never changes that result
+or applies effects. Optional placement references gain no new gate. See ../uploads/README.md
+and #246 for the separate missing mobile transport/check serialization.
+
 
 ## Lifecycle (#112, B-15 / ADR 120)
 

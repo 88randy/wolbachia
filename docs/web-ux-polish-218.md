@@ -29,7 +29,7 @@ Server-side values, totals and paging are used without changing map or publicati
 
 ## URL and reorder safety
 
-Decisions 131 and 132 are provisional until integration. Shared SortSelect exposes all
+Decisions 132 and 133 are provisional until integration. Shared SortSelect exposes all
 public sort fields in both directions, including fields outside the visible columns.
 Column headings retain the sort indicator and aria-sort. Text filters apply on Enter/Apply;
 chips and Clear filters update the URL and reset only their own table's page.
@@ -88,13 +88,14 @@ is instantaneous, including reduced motion. Existing switch and focus primitives
 | W24 visible resource filters leave map/validation reads unfiltered | resource-filters tests |
 | Filter/sort/chip/clear URL state, retained rows on refresh error | table-state and DataTable tests |
 | Cancel/Save order, equal geometry and busy protection | DialogFooter tests; geometry in browser journey |
-| Axe, filters, successful pointer/keyboard drag and Undo in real DOM | Updated catalog e2e journey; CI only in this round |
+| Axe, filters, successful pointer/keyboard drag and Undo in real DOM | Updated catalog e2e journey; focused local CI-regression exception below |
 
 The exact commands, exit codes, causal RED and source manifests are in the ignored
-web/test-results handoff. Independent code, security and adversarial review approved the
-combined source. The orchestrator's full suite passed all 1,068 tests across 114 files;
-the subsequent #247 integration changed documentation only. Global hooks and CI remain
-publication gates; owner LIVE approval is required before merge.
+web/test-results handoff. Before this CI follow-up, independent code, security and
+adversarial review approved the combined source and the orchestrator's full suite passed
+all 1,068 tests across 114 files; subsequent #247 integration changed documentation only.
+This CI-regression delta requires its own review and final checks. Global hooks and CI
+remain publication gates; owner LIVE approval is required before merge.
 
 ## Local review
 
@@ -102,10 +103,18 @@ Start npm run dev -w @wolbachia/web -- --host 127.0.0.1 --port 5218 --strictPort
 /harness/ux-preview.html?path=/settings/catalogs/intervention-type. Add theme=dark and
 lang=en. The separate dev entry uses real routes with synthetic in-memory server fixtures,
 makes no API network calls, resets on reload and is absent from the production entry.
-No preview process is currently claimed to be running. The fixtures implement the visible
+No preview process is currently running. The fixtures implement the visible
 availability/search/order/page examples; they are not evidence of backend correctness.
 
 The owner's feedback PNG directory was unavailable. Versioned W20/W62/W63/W65/W68 PNGs,
 source HTML and the approved #202 kit were inspected. MiMenu was read only for handle-based
-drag/icon patterns; no branding or client records were copied. Local Playwright, Docker,
-physical devices and real-browser visual/contrast checks are not part of this round.
+drag/icon patterns; no branding or client records were copied. Docker, physical devices and the broad browser visual/contrast matrix remain unverified
+locally. After actual CI failures at PR249 head1dd28b9, an authorized local Chromium
+exception reproduced the ambiguous submit selector in all four rule-form locale/theme
+cases and the W63 Escape-focus failure. The scoped fixture and guarded instant focus
+restoration pass those five cases with one worker and zero retries, including W63
+ordering-reset focus, subsequent pointer drop and Undo. This is not a full browser run.
+The later CI unit failure in the canonical W15 still-permitted reauthentication case
+was not reproduced with its original fixture. A temporary exact-response/scope probe
+showed the legitimate record-loading DOM fence; it does not establish the historical
+CI cause. The canonical test and production session implementation remain unchanged.

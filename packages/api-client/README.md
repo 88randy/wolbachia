@@ -4,6 +4,12 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#102 adds private upload authorization/renewal/finalization, raw authenticated PUT
+and sanitized private downloads. The returned PUT url is relative; Upload-Lease
+and authentication are both required. Download responses are binary, not JSON.
+No mobile transport is implemented here (#246). See ../../backend/uploads/README.md
+for optional client_id/context and the unbound staging/readiness distinction.
+
 Removal resolution (#217) adds the typed POST /ovitrap-removals/{id}/resolve/
 request (explicit expected_state, recovered_later|written_off, reason) and the
 insert-only audit response. Physical history retains its original capture state

@@ -75,3 +75,18 @@ the page and query mounted; previous rows are placeholders only under orgScopedQ
 All controls are blocked until the target snapshot is verified. Row edit/availability actions
 use icon buttons with translated tooltips. Search, facets and sorting use the real #224 contract.
 See `docs/web-ux-polish-218.md` for the capability inventory and synthetic live preview.
+
+Keyboard drag focus is an intent owned by the originating handle and resetKey. Instant
+Feedback cleanup can blur a moved table row. use-reorder-focus waits for the public live
+manager operation to become idle (dragend is an immutable pre-cleanup snapshot), then
+restores only the same connected handle when focus is still on body. Inert content,
+changed context, unmount and a subsequent focused control retire that intent. Pointer
+operations do not restore keyboard focus. The official instant-animation callback was
+verified but restored unconditionally after a filter reset, so it is not used. The W63
+browser journey covers Escape focus, changing ordering during drag without focus theft,
+and the subsequent pointer reorder/Undo. Reduced-motion feedback remains instant.
+
+The focusin choice retires keyboard intent immediately, including when that control is
+removed before cleanup finishes and focus falls back to body. It cannot revive the old
+grip intent. Completion, context reset, unmount and a new drag release both the document
+listener and any pending frame; the final activeElement alone is not sufficient evidence.

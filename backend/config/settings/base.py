@@ -27,6 +27,7 @@ INSTALLED_APPS = [
     "catalogs",
     "rules",
     "field_sync",
+    "uploads",
     "reviews",
     "shifts",
     "geography.apps.GeographyConfig",
@@ -75,6 +76,7 @@ USE_TZ = True
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+UPLOADS_PRIVATE_ROOT = BASE_DIR / "private_uploads"
 
 # Cookies: the web uses the Django session cookie + CSRF token (decision 9).
 SESSION_COOKIE_HTTPONLY = True
