@@ -1,7 +1,7 @@
 import uuid
 
 from django.contrib.auth.tokens import default_token_generator
-from django.db.models import Exists, OuterRef, QuerySet
+from django.db.models import Case, CharField, Exists, F, OuterRef, QuerySet, Value, When
 from django.utils.encoding import force_str
 from django.utils.http import urlsafe_base64_decode
 
@@ -32,6 +32,20 @@ def list_devices(
 def users_of_organization(organization: Organization) -> QuerySet[User]:
     """Users with a membership (active or not) in the organization: admins act on all of them."""
     return User.objects.filter(memberships__organization=organization).order_by("username", "pk")
+
+
+def with_searchable_device_user(devices: QuerySet[Device]) -> QuerySet[Device]:
+    """Only same-organization historical members can supply a username search match."""
+    member = User.objects.filter(
+        pk=OuterRef("last_user_id"), memberships__organization_id=OuterRef("organization_id")
+    )
+    return devices.annotate(
+        searchable_username=Case(
+            When(Exists(member), then=F("last_user__username")),
+            default=Value(""),
+            output_field=CharField(),
+        )
+    )
 
 
 def find_user_for_password_reset(uid: str, token: str) -> User:

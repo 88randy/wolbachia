@@ -437,6 +437,21 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: created_by
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: effective_from_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: effective_from_from
+        schema:
+          type: string
+          format: date-time
       - in: path
         name: id
         schema:
@@ -444,6 +459,32 @@ paths:
           format: uuid
         description: A UUID string identifying this block.
         required: true
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - revision
+          - effective_from
+          - created_at
+          - created_by
+          - -revision
+          - -effective_from
+          - -created_at
+          - -created_by
+          type: string
+          default: -revision
+          minLength: 1
+        description: |-
+          One ordering field, optional - for descending; ties use id ascending.
+
+          * `revision` - revision
+          * `effective_from` - effective_from
+          * `created_at` - created_at
+          * `created_by` - created_by
+          * `-revision` - -revision
+          * `-effective_from` - -effective_from
+          * `-created_at` - -created_at
+          * `-created_by` - -created_by
       - name: page
         required: false
         in: query
@@ -456,6 +497,11 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: revision
+        schema:
+          type: integer
+          minimum: 1
       tags:
       - blocks
       security:
@@ -564,6 +610,13 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: slug, label_es, label_en. Prefix with
+          - for descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -576,6 +629,12 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: slug, label_es, label_en.'
+        schema:
+          type: string
       tags:
       - catalogs
       security:
@@ -612,6 +671,25 @@ paths:
           type: string
           pattern: ^[\w-]+$
         required: true
+      - in: query
+        name: is_active
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, label_es, label_en, sort, created_at,
+          usage_count. Prefix with - for descending. Unsupported or blank terms return
+          400. Ties use id ascending.'
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -624,6 +702,12 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: code, label_es, label_en.'
+        schema:
+          type: string
       tags:
       - catalogs
       security:
@@ -1031,6 +1115,14 @@ paths:
         schema:
           type: boolean
           nullable: true
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: label, serial, app_version, last_seen_at,
+          created_at. Prefix with - for descending. Unsupported or blank terms return
+          400. Ties use id ascending.'
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -1043,6 +1135,13 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: label, serial, app_version,
+          last_user.username (same organization).'
+        schema:
+          type: string
       - in: query
         name: user
         schema:
@@ -3021,6 +3120,21 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: created_by
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: effective_from_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: effective_from_from
+        schema:
+          type: string
+          format: date-time
       - in: path
         name: id
         schema:
@@ -3028,6 +3142,32 @@ paths:
           format: uuid
         description: A UUID string identifying this quadrant.
         required: true
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - revision
+          - effective_from
+          - created_at
+          - created_by
+          - -revision
+          - -effective_from
+          - -created_at
+          - -created_by
+          type: string
+          default: -revision
+          minLength: 1
+        description: |-
+          One ordering field, optional - for descending; ties use id ascending.
+
+          * `revision` - revision
+          * `effective_from` - effective_from
+          * `created_at` - created_at
+          * `created_by` - created_by
+          * `-revision` - -revision
+          * `-effective_from` - -effective_from
+          * `-created_at` - -created_at
+          * `-created_by` - -created_by
       - name: page
         required: false
         in: query
@@ -3040,6 +3180,11 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: revision
+        schema:
+          type: integer
+          minimum: 1
       tags:
       - quadrants
       security:
@@ -3753,6 +3898,14 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: key, unit, value_type, effective_from.
+          Prefix with - for descending. Unsupported or blank terms return 400. Ties
+          use id ascending.'
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -3765,6 +3918,46 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: key.'
+        schema:
+          type: string
+      - in: query
+        name: unit
+        schema:
+          enum:
+          - m
+          - km_h
+          - s
+          - min
+          - day
+          - week
+          - count
+          - km_l
+          type: string
+          minLength: 1
+        description: |-
+          * `m` - Meters
+          * `km_h` - Kilometers Per Hour
+          * `s` - Seconds
+          * `min` - Minutes
+          * `day` - Days
+          * `week` - Weeks
+          * `count` - Count
+          * `km_l` - Kilometers Per Liter
+      - in: query
+        name: value_type
+        schema:
+          enum:
+          - integer
+          - decimal
+          type: string
+          minLength: 1
+        description: |-
+          * `integer` - Integer
+          * `decimal` - Decimal
       tags:
       - rule-parameters
       security:
@@ -3846,6 +4039,14 @@ paths:
         description: |-
           * `true` - true
           * `false` - false
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: effective_from, created_at, value. Prefix
+          with - for descending. Unsupported or blank terms return 400. Ties use id
+          ascending.'
+        schema:
+          type: string
       - name: page
         required: false
         in: query
@@ -3864,6 +4065,27 @@ paths:
           type: string
           pattern: ^[a-z][a-z0-9_]*$
         required: true
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: reason.'
+        schema:
+          type: string
+      - in: query
+        name: status
+        schema:
+          enum:
+          - scheduled
+          - in_force
+          - superseded
+          - voided
+          type: string
+          minLength: 1
+        description: |-
+          * `scheduled` - scheduled
+          * `in_force` - in_force
+          * `superseded` - superseded
+          * `voided` - voided
       tags:
       - rule-parameters
       security:
@@ -4186,6 +4408,21 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: created_by
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: effective_from_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: effective_from_from
+        schema:
+          type: string
+          format: date-time
       - in: path
         name: id
         schema:
@@ -4193,6 +4430,47 @@ paths:
           format: uuid
         description: A UUID string identifying this sampling point.
         required: true
+      - in: query
+        name: is_retired
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - version
+          - effective_from
+          - created_at
+          - created_by
+          - is_retired
+          - -version
+          - -effective_from
+          - -created_at
+          - -created_by
+          - -is_retired
+          type: string
+          default: -version
+          minLength: 1
+        description: |-
+          One ordering field, optional - for descending; ties use id ascending.
+
+          * `version` - version
+          * `effective_from` - effective_from
+          * `created_at` - created_at
+          * `created_by` - created_by
+          * `is_retired` - is_retired
+          * `-version` - -version
+          * `-effective_from` - -effective_from
+          * `-created_at` - -created_at
+          * `-created_by` - -created_by
+          * `-is_retired` - -is_retired
       - name: page
         required: false
         in: query
@@ -4205,6 +4483,11 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: version
+        schema:
+          type: integer
+          minimum: 1
       tags:
       - sampling-points
       security:

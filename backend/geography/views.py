@@ -13,6 +13,12 @@ from rest_framework.response import Response
 from core.filters import CodeLookupFilter
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSet
+from geography.history import (
+    PointHistoryQuerySerializer,
+    RevisionHistoryQuerySerializer,
+    VersionHistoryQuerySerializer,
+    filter_version_history,
+)
 from geography.models import Block, Quadrant, SamplingPoint
 from geography.permissions import QUADRANT_PUBLISH, QUADRANT_READ, SAMPLING_POINT_CREATE
 from geography.selectors import block_suggestion, get_quadrant
@@ -66,6 +72,9 @@ class GeographyViewSet(OrgScopedViewSet):
     ordering = ["code", "id"]
     search_fields = ["code"]
     query_serializer_class = GeographyQuerySerializer
+    history_query_serializer_class: type[VersionHistoryQuerySerializer] = (
+        RevisionHistoryQuerySerializer
+    )
 
     @property
     def membership(self) -> Membership:
@@ -90,7 +99,10 @@ class GeographyViewSet(OrgScopedViewSet):
         return dict(query.validated_data)
 
     def _history(self, versions: QuerySet[Any], serializer: type[Any]) -> Response:
-        page = self.paginate_queryset(versions)
+        query = self.history_query_serializer_class(data=self.request.query_params)
+        query.is_valid(raise_exception=True)
+        filtered = filter_version_history(versions, query.validated_data)
+        page = self.paginate_queryset(filtered)
         return self.get_paginated_response(serializer(page, many=True).data)
 
     @extend_schema(parameters=[GeographyQuerySerializer])
@@ -142,7 +154,11 @@ class QuadrantViewSet(GeographyViewSet):
             QuadrantSerializer(quadrant, context={"written_version": version}).data, status=201
         )
 
-    @extend_schema(responses=QuadrantVersionSerializer(many=True), filters=False)
+    @extend_schema(
+        parameters=[RevisionHistoryQuerySerializer],
+        responses=QuadrantVersionSerializer(many=True),
+        filters=False,
+    )
     @action(detail=True, methods=["get"])
     def versions(self, request: Request, pk: str | None = None) -> Response:
         quadrant = self.get_object()
@@ -208,7 +224,11 @@ class BlockViewSet(GeographyViewSet):
             BlockSerializer(block, context={"written_version": version}).data, status=201
         )
 
-    @extend_schema(responses=BlockVersionSerializer(many=True), filters=False)
+    @extend_schema(
+        parameters=[RevisionHistoryQuerySerializer],
+        responses=BlockVersionSerializer(many=True),
+        filters=False,
+    )
     @action(detail=True, methods=["get"])
     def versions(self, request: Request, pk: str | None = None) -> Response:
         return self._history(
@@ -244,6 +264,7 @@ class BlockViewSet(GeographyViewSet):
 @extend_schema_view(list=extend_schema(parameters=[SamplingPointQuerySerializer]))
 class SamplingPointViewSet(GeographyViewSet):
     query_serializer_class = SamplingPointQuerySerializer
+    history_query_serializer_class = PointHistoryQuerySerializer
     queryset = SamplingPoint.objects.select_related("block__quadrant__center").all()
     serializer_class = SamplingPointSerializer
     required_permissions = {
@@ -288,7 +309,11 @@ class SamplingPointViewSet(GeographyViewSet):
             status=201,
         )
 
-    @extend_schema(responses=PointVersionSerializer(many=True), filters=False)
+    @extend_schema(
+        parameters=[PointHistoryQuerySerializer],
+        responses=PointVersionSerializer(many=True),
+        filters=False,
+    )
     @action(detail=True, methods=["get"])
     def versions(self, request: Request, pk: str | None = None) -> Response:
         return self._history(

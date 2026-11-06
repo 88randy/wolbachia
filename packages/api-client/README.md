@@ -4,6 +4,12 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+Configuration table query parameters (#224) come from the backend's explicit
+allowlists, including rule facets/history status, catalog item availability,
+device search/ordering and geography version-history filters. Use the generated
+operation query types and [server contract](../../docs/api-conventions.md#configuration-table-queries-224);
+clients keep search/sort/filter state in the URL and send it before paging.
+
 ## Use
 
 ```ts

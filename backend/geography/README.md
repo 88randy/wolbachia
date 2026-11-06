@@ -4,6 +4,18 @@ B-11 (#108): scoped, versioned quadrants, blocks and sampling points. Read
 ../README.md, ../organizations/README.md (scope, Center and lock order) and
 ../../docs/api-conventions.md first. No web, fleet or deployment work. Courier projection effects from #196 are described below.
 
+## Version-history tables (#224)
+
+Authorized quadrant/block histories filter revision, author and effective-time
+bounds; sampling point histories filter version, author, time bounds and retired
+state. Explicit ordering uses only immutable version fields; defaults remain
+-revision/-version, and id resolves ties before paging. Identity-list filters are
+unchanged. No geometry search, void state or mutation is introduced. Query
+serializers and the scoped history query helper live in `history.py`.
+Exact allowlists/bounds/errors: [configuration table contract](../../docs/api-conventions.md#configuration-table-queries-224).
+Evidence: the three history cases in `tests/test_table_queries_224.py` exercise
+ordering/filtering before pagination and reject foreign parents with those queries.
+
 ## Geometry and decisions
 
 Owner decisions applied: no django.contrib.gis/GDAL/PostGIS. Store GeoJSON in
