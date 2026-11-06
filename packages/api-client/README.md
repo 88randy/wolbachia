@@ -4,6 +4,20 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#105 adds supply-types, locations/stock and lots/conditions. Resource ids remain
+stable master/lot UUIDs; version is the exact immutable snapshot UUID. PATCH uses
+expected_revision. Lot supply_version_id/protocol_id pins change explicitly;
+quantity is initial custody input, never a writable balance. Both current local
+reading slots are required. Unknown protocols/safety data remain nondispatchable.
+No transfer, stock writer, label or courier assignment contract is fabricated.
+See ../../backend/inventory/README.md for queries, codes and integration limits.
+
+#102 adds private upload authorization/renewal/finalization, raw authenticated PUT
+and sanitized private downloads. The returned PUT url is relative; Upload-Lease
+and authentication are both required. Download responses are binary, not JSON.
+No mobile transport is implemented here (#246). See ../../backend/uploads/README.md
+for optional client_id/context and the unbound staging/readiness distinction.
+
 Removal resolution (#217) adds the typed POST /ovitrap-removals/{id}/resolve/
 request (explicit expected_state, recovered_later|written_off, reason) and the
 insert-only audit response. Physical history retains its original capture state

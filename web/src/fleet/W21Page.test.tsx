@@ -2,8 +2,16 @@ import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { axe } from "jest-axe";
 import { describe, expect, test } from "vitest";
-import { apiError } from "../test/fake-api";
-import { GET, LIST, motorcycle, openFleet, otherReasonField, pageOf } from "./fleet-test-helpers";
+import { apiError, makeMe } from "../test/fake-api";
+import {
+  ALLOWED,
+  GET,
+  LIST,
+  motorcycle,
+  openFleet,
+  otherReasonField,
+  pageOf,
+} from "./fleet-test-helpers";
 const RECORD = `${LIST}/M-03`;
 const UNBLOCK = `POST /api/v1/motorcycles/${motorcycle().id}/unblock/`;
 const VOID = `POST /api/v1/motorcycles/${motorcycle().id}/void/`;
@@ -53,6 +61,10 @@ describe("W21 motorcycle record", () => {
     let current = motorcycle();
     const { api } = await openFleet({
       path: RECORD,
+      me: makeMe({
+        ...ALLOWED,
+        limits: { ...ALLOWED.limits, void_reason_min_length: 15, void_reason_max_length: 75 },
+      }),
       routes: {
         [GET]: () => pageOf([current]),
         [UNBLOCK]: () => {
@@ -67,42 +79,71 @@ describe("W21 motorcycle record", () => {
     expect(document.activeElement).toBe(
       within(await screen.findByRole("dialog")).getByRole("button", { name: "Cancelar" }),
     );
-    const reason = await otherReasonField();
+    expect(within(screen.getByRole("dialog")).queryByRole("combobox")).toBeNull();
+    const dialog = within(screen.getByRole("dialog"));
+    const reason = dialog.getByRole<HTMLTextAreaElement>("textbox", { name: /Motivo y evidencia/ });
+    const confirm = dialog.getByRole<HTMLButtonElement>("button", { name: "Desbloquear" });
+    expect(reason.required).toBe(true);
+    expect(reason.maxLength).toBe(75);
+    const description = (reason.getAttribute("aria-describedby") ?? "")
+      .split(" ")
+      .map((id) => document.getElementById(id)?.textContent)
+      .join(" ");
+    expect(description).toContain("al menos 15 caracteres");
+    expect(confirm.disabled).toBe(true);
+    await userEvent.type(reason, `${"a".repeat(14)}\u200b`);
+    expect(confirm.disabled).toBe(true);
+    await userEvent.clear(reason);
     await userEvent.type(reason, `  ${REASON}  `);
+    expect(confirm.disabled).toBe(false);
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
     );
     await screen.findByText("Disponible");
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(document.activeElement).toBe(opener);
+    expect(api.requests.filter(({ method }) => method === "POST")).toHaveLength(1);
     expect(api.requests.find(({ method }) => method === "POST")?.body).toEqual({ reason: REASON });
+    expect(api.requests.some(({ path }) => path.includes("/catalogs/void-reason/"))).toBe(false);
   });
-  test("a concurrent unblock reports immediately, retains evidence and refreshes the state", async () => {
-    let release: (reply: Response) => void = () => undefined;
-    const refreshed = new Promise<Response>((resolve) => {
-      release = resolve;
-    });
-    let reads = 0;
-    await openFleet({
-      path: RECORD,
-      routes: {
-        [GET]: () => (++reads === 1 ? pageOf() : refreshed),
-        [UNBLOCK]: apiError(409, "motorcycle_not_blocked"),
-      },
-    });
-    await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
-    await userEvent.type(await otherReasonField(), REASON);
-    await userEvent.click(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
-    );
-    expect((await within(screen.getByRole("dialog")).findByRole("alert")).textContent).toContain(
-      "ya está desbloqueada",
-    );
-    expect(screen.getByRole<HTMLTextAreaElement>("textbox").value).toBe(REASON);
-    release(pageOf([motorcycle({ is_blocked: false, blocked_reason: "" })]));
-    await screen.findByText("Disponible");
-    expect(screen.getByRole<HTMLTextAreaElement>("textbox").value).toBe(REASON);
-  });
+  test.each([
+    [403, "permission_denied", "permiso"],
+    [404, "not_found", "No encontramos"],
+    [409, "motorcycle_not_blocked", "ya está desbloqueada"],
+    [409, "motorcycle_inspection_required", "inspección"],
+    [409, "unexpected_conflict", "No pudimos completar"],
+  ] as const)(
+    "unblock refusal %s/%s retains evidence and conflicts refresh state",
+    async (status, code, message) => {
+      let release: (reply: Response) => void = () => undefined;
+      const refreshed = new Promise<Response>((resolve) => {
+        release = resolve;
+      });
+      let reads = 0;
+      await openFleet({
+        path: RECORD,
+        routes: {
+          [GET]: () => (++reads === 1 ? pageOf() : refreshed),
+          [UNBLOCK]: apiError(status, code),
+        },
+      });
+      await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
+      await userEvent.type(within(screen.getByRole("dialog")).getByRole("textbox"), REASON);
+      await userEvent.click(
+        within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
+      );
+      expect((await within(screen.getByRole("dialog")).findByRole("alert")).textContent).toContain(
+        message,
+      );
+      expect(screen.getByRole<HTMLTextAreaElement>("textbox").value).toBe(REASON);
+      expect(document.activeElement).toBe(within(screen.getByRole("dialog")).getByRole("alert"));
+      if (status === 409) {
+        release(pageOf([motorcycle({ is_blocked: false, blocked_reason: "" })]));
+        await screen.findByText("Disponible");
+      }
+      expect(screen.getByRole<HTMLTextAreaElement>("textbox").value).toBe(REASON);
+    },
+  );
 
   test("void in an open shift keeps the dialog and evidence and refreshes the record", async () => {
     let reads = 0;

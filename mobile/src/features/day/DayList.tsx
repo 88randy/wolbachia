@@ -7,7 +7,7 @@ export function DayList({ model }: { readonly model: M06Model }) {
       <DayProgress model={model} />
       <TaskSection title="mobile.day.pending" model={model} rows={model.pendingTasks} />
       <TaskSection title="mobile.day.closedSection" model={model} rows={model.closedTasks} />
-      <TaskSection title="mobile.day.reviewedSection" model={model} rows={model.reviewedTasks} />
+      <TaskSection title="mobile.day.completedSection" model={model} rows={model.completedTasks} />
     </>
   );
 }

@@ -29,6 +29,7 @@ coverage/
 
 # Django runtime artifacts
 backend/media/
+backend/private_uploads/
 backend/schema.yml
 
 # Playwright

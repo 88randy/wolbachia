@@ -302,9 +302,36 @@ Schema version stays **1**: **[ASSUMPTION]** no production phone uses the old re
 
 `GET /api/v1/review-items/` (permission `review_item.read`: supervisor, admin). Cursor paging (newest first), filters `?kind=rejected|in_review` and `?code=`. Each item: `{id, event_id, event_type, kind, code, params, courier, device, created_at}`. A `ReviewItem` is created in the same savepoint as every rejected or in-review event. Decisions (accept, void, open an incident) are #22.
 
-## Uploads (deferred sketch, not implemented)
+## Private evidence uploads (#102)
 
-Photos are not part of #5. The first epic that needs them (#9 relocation or #11 incidents) adds presigned uploads. **Sketch, non-binding, [PENDING that epic]:** `POST /api/v1/field/uploads/` with `{content_type, size_bytes, sha256}` answers `{upload_id, url, method: "PUT", headers, expires_at}`; the phone `PUT`s the bytes straight to object storage (never through the API), then references `upload_id` in an event payload; the handler checks that the upload exists and belongs to the organization. It needs `boto3` or `django-storages`, MinIO in `compose.yaml` and bucket settings (production Spaces: #18).
+`POST /api/v1/field/uploads/` accepts `{content_type,size_bytes,sha256}` and optional
+`client_id`/typed `context`, returning `{upload_id,url,method:"PUT",headers,expires_at}`.
+This delivery uses authenticated private LOCAL PUT leases for 15 minutes, not S3.
+JPEG/PNG only, <=10 MiB and 25 MP; finalization verifies actual size/type/original
+hash, strips metadata with Pillow and records a separate sanitized-object hash.
+Renew retains the public ID/phone file. Bytes/sanitization never run under sync locks.
+
+An offline evidence UUID remains immutable: supply it as client_id when authorizing.
+Three-field authorization stays private/unbound and grants no parent access.
+After verification, an incoming event may consume its own unbound evidence under
+the Upload lock; post-_store creates its exact source binding in the SAME event
+transaction. Fault clearance instead requires an existing exact-fault binding.
+Post-_store linkage survives in_review independently of operational
+effects; late metadata can bind the same retained UUID. Finalized-first evidence is
+locked before required effects and bound after source insertion. Late finalize never
+accepts review or rewrites ingest payload/status/clocks/provenance (#113).
+
+Actual gates: lifecycle replace/relocate/remove; check when the exact archived
+finding/paddle requires_photo flag is true; fleet clear_fault for its exact fault.
+Check adds optional evidence_ids default []. Pending files use existing
+ovitrap_evidence_required (already translated); no new sync code. Optional placement
+and fuel references do not gain a new gate or automatic status change. Downloads
+recheck CURRENT parent read/history access and return sanitized private no-store
+bytes; void alone does not hide authorized history. Upload byte endpoints reject
+the special revoked final-upload entitlement: retain local files and reauthorize
+under a valid session. Existing bounded JSON final-sync ordering is unchanged.
+Mobile transport/check serialization is #246; no native upload claim. Full contract,
+HTTP codes and lock matrix: api-conventions.md and ../backend/uploads/README.md.
 
 ## Pending
 
@@ -822,3 +849,46 @@ a retired upsert; proposal emits nothing. Courier schema 1 adds optional is_reti
 (default false for old payloads) without changing existing field meanings. Version
 hashes include nonvoided lineage/removal event UUIDs; pending source handling keeps
 feed and subsequent bootstrap consistent. Details: ADR 120 and lifecycle/README.md.
+
+## Scoped incident capture (#104 / B-06)
+
+`incident.report` v1 payload is `{type_id, description, evidence_ids?: UUID[],
+resource_ref?: {kind: motorcycle|ovitrap_marker, id},
+scope?: {center_id, quadrant_id?}}`. `type_id` pins an immutable
+IncidentTypeVersion UUID, not the stable CatalogItem. `emergency.accident` v1
+uses `{description, gps?: {lat,lng}, evidence_ids?: UUID[], resource_ref?, scope?}`
+and the explicitly configured critical emergency-accident type. GPS is evidence,
+never an authorization/scope inference. Evidence defaults to an empty list.
+
+Scope derives from a typed resource, an explicit validated center/quadrant, or the
+sender's named shift motorcycle. Supplied resource and scope must agree. Original
+minimal captures without unambiguous scope remain reviewable private evidence;
+they do not create an Incident. Each source requires current incident.create AND
+field_event.sync with paired scope. Type configuration pins the SLA, chain,
+severity and evidence requirements; no sample-screen defaults are invented.
+
+| Code | Verdict / client consequence |
+| --- | --- |
+| `incident_configuration_unavailable` | In review: missing/ineligible named terminal, inactive or unavailable configuration. A stale offline version never falls back to unrelated global owners. |
+| `incident_scope_unavailable` | In review: no verified work scope. Keep capture/evidence for authorized review. |
+| `incident_inaccessible` | Rejected: unknown, foreign or unauthorized reference; no existence disclosure. |
+| `incident_evidence_required` | In review: missing/unfinished/other-case required photo evidence. Keep local files and retry their independent upload. |
+
+Existing review_code (clock/final upload/shift) wins before operational writes.
+New in_review captures have no Incident, owner, blocker or escalation effects.
+After immutable FieldEvent/ReviewItem insertion, declared #102 upload UUIDs can
+bind independently of operational readiness, in either arrival order. Later
+finalization never accepts/replays the event or changes its original status.
+Authorized acceptance remains #113. Current parent read/history policy controls
+private downloads, including authorized voided history; review-only source reads
+also require current review_item.read in that exact scope.
+
+Committed critical emergency sources can produce minimal, scoped **audit** intents
+referencing ReviewItem even while in_review; this does not assert an operational
+incident or delivery. Missing scope stays pending, never broadcast. Committed
+IncidentEvent and severe MotorcycleBlockEvent are the other concrete B-07 causes.
+Task dispatch occurs after commit; publication receipts/intents dedupe retries.
+Recovery uses bounded (created_at,id) pages that advance even over pending causes.
+No storage/network/mail under sync locks and no new sync projection is introduced.
+record.void retains linked incident/history; incident closure resolves owned holds
+only and does not compensate other domain facts. See ADR 133 and incidents/README.md.

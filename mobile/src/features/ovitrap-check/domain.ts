@@ -84,6 +84,7 @@ export function checkPayload(draft: Draft): Record<string, unknown> {
     paddle_type: normalized.paddleType,
     is_lagged: normalized.isLagged,
     bag_code: normalized.bagCode || null,
+    evidence_ids: normalized.evidence.map((item) => item.id),
     ...(needsOther(normalized) ? { other_text: normalized.otherText.trim() } : {}),
   };
 }

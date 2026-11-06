@@ -119,6 +119,9 @@ def apply_lifecycle(ctx: EventContext, payload: dict[str, Any]) -> None:
         capture = capture_context(ctx, ovitrap.sampling_point)
         if not payload["evidence_ids"]:
             raise EventNeedsReview(codes.EVIDENCE_REQUIRED)
+        from uploads.gates import require_event_evidence
+
+        require_event_evidence(ctx, payload["evidence_ids"])
         resolved = LifecycleCapture(ovitrap, capture, reason)
         _append_lifecycle(ctx, payload, resolved)
         if emit is not None:

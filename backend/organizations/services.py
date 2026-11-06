@@ -310,6 +310,9 @@ def _has_administrator(organization: Organization) -> bool:
 def _preserve_administrator(organization: Organization, had_administrator: bool) -> None:
     if had_administrator and not _has_administrator(organization):
         raise LastAdministratorError
+    from incidents.configuration import preserve_terminal_owners
+
+    preserve_terminal_owners(organization)
 
 
 def _append_revision(  # noqa: PLR0913 -- audited target, kind, snapshot and actor

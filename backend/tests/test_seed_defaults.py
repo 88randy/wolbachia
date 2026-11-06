@@ -32,6 +32,7 @@ from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS, seed_default_rule_parameters
 from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
 from tests.factories import OrganizationFactory
+from uploads.limits import FIELD_UPLOAD
 
 pytestmark = pytest.mark.django_db
 
@@ -252,9 +253,28 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "organization.read",
         "center.read",
     }
-    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, FIELD_BOOTSTRAP, MOTORCYCLE_READ}
+    assert by_slug["courier"] == {
+        "incident.read",
+        "incident.create",
+        *reader,
+        FIELD_EVENT_SYNC,
+        FIELD_BOOTSTRAP,
+        MOTORCYCLE_READ,
+        FIELD_UPLOAD,
+    }
     assert by_slug["supervisor"] == {
+        "supply_type.read",
+        "location.read",
+        "lot.read",
+        "lot.create",
+        "lot.update",
+        "condition.create",
+        "incident.read",
+        "incident.create",
+        "incident.close",
+        "incident.reassign",
         "removal.resolve",
+        FIELD_UPLOAD,
         "schedule.read",
         "schedule.manage",
         "ovitrap.read",
@@ -269,13 +289,35 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "supply_type.read",
+        "location.read",
+        "lot.read",
+        "condition.create",
         *reader,
         "reading.read",
         "schedule.read",
         "risk_import.apply",
     }
     assert by_slug["community_promoter"] == reader
+    assert by_slug["warehouse"] == {
+        *reader,
+        "supply_type.read",
+        "supply_type.create",
+        "supply_type.update",
+        "location.read",
+        "location.create",
+        "location.update",
+        "lot.read",
+        "lot.create",
+        "lot.update",
+        "condition.create",
+    }
     assert by_slug["coordinator"] == {
+        "field.upload",
+        "incident.read",
+        "incident.create",
+        "incident.close",
+        "incident.reassign",
         "ovitrap.read",
         "reading.read",
         "relocation.read",
@@ -285,7 +327,24 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "supply_type.read",
+        "supply_type.create",
+        "supply_type.update",
+        "supply_type.deactivate",
+        "location.read",
+        "location.create",
+        "location.update",
+        "lot.read",
+        "lot.create",
+        "lot.update",
+        "condition.create",
+        "incident.read",
+        "incident.create",
+        "incident.close",
+        "incident.reassign",
+        "incident.manage_type",
         "removal.resolve",
+        FIELD_UPLOAD,
         "schedule.read",
         "schedule.manage",
         "risk_import.apply",
@@ -348,7 +407,10 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
         "catalog.read",
         "center.read",
         "field.bootstrap",
+        "field.upload",
         "field_event.sync",
+        "incident.create",
+        "incident.read",
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
@@ -369,7 +431,10 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
         "catalog.read",
         "center.read",
         "field.bootstrap",
+        "field.upload",
         "field_event.sync",
+        "incident.create",
+        "incident.read",
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
@@ -399,6 +464,9 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     assert plan.grants == {
         "courier": (
+            "incident.read",
+            "incident.create",
+            "field.upload",
             "rule_parameter.read",
             "organization.read",
             "center.read",
@@ -507,6 +575,9 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
 @pytest.mark.parametrize(
     ("slug", "code"),
     [
+        ("courier", FIELD_UPLOAD),
+        ("supervisor", FIELD_UPLOAD),
+        ("admin", FIELD_UPLOAD),
         ("courier", FIELD_EVENT_SYNC),
         ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),
@@ -541,9 +612,37 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
     assert code in profile.seeded_permission_codes
 
 
+def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government_boundary():
+    organization = create_organization(SPEC)
+    warehouse = Profile.objects.get(organization=organization, slug="warehouse")
+    warehouse.permission_codes = [
+        code for code in warehouse.permission_codes if code != "lot.update"
+    ]
+    warehouse.save(update_fields=["permission_codes"])
+    custom = Profile.objects.create(
+        organization=organization,
+        slug="custom-inventory",
+        label_es="Prueba",
+        label_en="Synthetic",
+        permission_codes=["lot.read"],
+    )
+    seed_default_permission_codes(organization)
+    warehouse.refresh_from_db()
+    custom.refresh_from_db()
+    assert "lot.update" not in warehouse.permission_codes
+    assert "supply_type.deactivate" not in warehouse.permission_codes
+    assert custom.permission_codes == ["lot.read"]
+    assert Profile.objects.get(organization=organization, slug="government").permission_codes == [
+        "portal.read"
+    ]
+
+
 @pytest.mark.parametrize(
     ("slug", "code"),
     [
+        ("courier", FIELD_UPLOAD),
+        ("supervisor", FIELD_UPLOAD),
+        ("admin", FIELD_UPLOAD),
         ("courier", FIELD_EVENT_SYNC),
         ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),

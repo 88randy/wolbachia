@@ -358,7 +358,7 @@ void test("Regression: historical or explicitly different-task work cannot compl
     location: { kind: "denied" },
     now: FIXED_NOW,
   });
-  assert.equal(day.reviewed, 0);
+  assert.equal(day.completed, 0);
   await store.applyChanges({ assignments: [change("remove", 2)] });
   assert.equal((await store.read()).tasks.length, 0);
 });
@@ -1191,6 +1191,9 @@ void test("UI state: a local read failure stays scoped and retry distinguishes n
   await fixture.store.replace(bundle(), FIXED_NOW);
   await fixture.outbox.enqueue(makeEnvelope({ payload: { task_id: "task-1" } }));
   await view.load();
+  assert.equal(dayViewPhase(view.getSnapshot()), "content");
+  await fixture.store.replace(bundle([task({ is_completed: true })]), FIXED_NOW);
+  await view.load();
   assert.equal(dayViewPhase(view.getSnapshot()), "complete");
 });
 void test("Merge session: an active POST returning after logout settles evidence without resurrecting projections before the final POST", async () => {
@@ -1546,7 +1549,7 @@ void test("Review2 producer: real bootstrap and delta rows preserve unlocated ta
   assert.ok(day.tasks.every((entry) => entry.distanceM === null));
   assert.equal(mapTasks(day.tasks).length, 0);
   assert.ok(day.tasks.every((entry) => !hasCoordinates(entry.task)));
-  assert.equal(day.reviewed, 0);
+  assert.equal(day.completed, 0);
   await fixture.service.applyProjectionChanges({
     assignments: [{ ...change("remove", 5), resource_type: "task", resource_id: row.id }],
   });

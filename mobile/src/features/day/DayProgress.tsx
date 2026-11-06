@@ -8,7 +8,7 @@ export function DayProgress({ model }: { readonly model: M06Model }) {
     <>
       <DayEmptyState model={model} />
       <AppText>
-        {t("mobile.day.progress", { reviewed: model.reviewed, total: model.total })}
+        {t("mobile.day.progress", { completed: model.completed, total: model.total })}
       </AppText>
     </>
   );

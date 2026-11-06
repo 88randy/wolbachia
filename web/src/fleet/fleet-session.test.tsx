@@ -3,15 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { describe, expect, test } from "vitest";
 import { makeMe, makeOrganization, apiError } from "../test/fake-api";
 import { fakePassword } from "../test/fake-credentials";
-import {
-  ALLOWED,
-  GET,
-  LIST,
-  motorcycle,
-  openFleet,
-  otherReasonField,
-  pageOf,
-} from "./fleet-test-helpers";
+import { ALLOWED, GET, LIST, motorcycle, openFleet, pageOf } from "./fleet-test-helpers";
 
 function deferred() {
   let release: (reply: Response) => void = () => undefined;
@@ -71,10 +63,20 @@ describe("fleet session isolation", () => {
       routes: { [`POST /api/v1/motorcycles/${motorcycle().id}/unblock/`]: () => late.promise },
     });
     await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
-    await userEvent.type(await otherReasonField(), "Private inspection evidence");
+    await userEvent.type(
+      within(screen.getByRole("dialog")).getByRole("textbox"),
+      "Private inspection evidence",
+    );
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
     );
+    const busyDialog = within(screen.getByRole("dialog"));
+    await userEvent.click(busyDialog.getByRole("button", { name: "Desbloqueando…" }));
+    await userEvent.click(busyDialog.getByRole("button", { name: "Cancelar" }));
+    expect(screen.getByRole("dialog")).toBeDefined();
+    expect(
+      api.requests.filter(({ method, path }) => method === "POST" && path.endsWith("/unblock/")),
+    ).toHaveLength(1);
     const next = makeMe({
       permissions: ["motorcycle.read"],
       user: { ...ALLOWED.user, id: "another-user" },
@@ -118,11 +120,16 @@ describe("fleet session isolation", () => {
     });
     document.cookie = "csrftoken=test-csrf; path=/";
     await userEvent.click(await screen.findByRole("button", { name: "Desbloquear" }));
-    await userEvent.type(await otherReasonField(), "Repair checked and recorded");
+    await userEvent.type(
+      within(screen.getByRole("dialog")).getByRole("textbox"),
+      "Repair checked and recorded",
+    );
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Desbloquear" }),
     );
     const password = await screen.findByLabelText("Contraseña");
+    expect(screen.queryByRole("dialog", { name: "Desbloquear M-03" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: /Motivo y evidencia/ })).toBeNull();
     await userEvent.type(password, fakePassword());
     await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
     await waitFor(() => {

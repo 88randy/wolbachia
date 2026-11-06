@@ -439,6 +439,12 @@ class EventProcessor:
         event = FieldEvent.objects.create(**self._event_fields(envelope, outcome))
         if outcome.status != EventStatus.ACCEPTED:
             create_review_item(event)
+        from uploads.linking import record_event_links
+
+        record_event_links(event)
+        from incidents.notices import stored_source
+
+        stored_source(event)
 
     def _event_fields(self, envelope: EventEnvelope, outcome: Verdict) -> dict[str, Any]:
         batch, gps = self.batch, envelope.gps

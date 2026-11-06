@@ -5,6 +5,8 @@ import type { Schemas } from "@wolbachia/api-client";
 
 import { AuthController } from "../src/auth/auth-controller.ts";
 import type { LoginResult } from "../src/auth/auth-api.ts";
+import { CredentialStore } from "../src/auth/credential-store.ts";
+import type { SecretStorage } from "../src/auth/secret-storage.ts";
 import { ShiftOpenStore } from "../src/features/shift-open/store.ts";
 import { createStores, makeEnvelope, FIXED_NOW } from "./support/factories.ts";
 import { makeCredentials, deferred } from "./support/auth-fakes.ts";
@@ -12,9 +14,12 @@ import { makeCredentials, deferred } from "./support/auth-fakes.ts";
 async function harness(
   login: () => Promise<LoginResult>,
   fetchRules: () => Promise<unknown> = () => Promise.reject(new Error("offline")),
+  storage?: (original: SecretStorage) => SecretStorage,
 ) {
   const stores = await createStores();
   const secrets = await makeCredentials();
+  const credentials = storage ? new CredentialStore(storage(secrets.secrets)) : secrets.credentials;
+  if (storage) await credentials.load();
   await stores.kv.set(
     "session_profile",
     JSON.stringify({
@@ -26,14 +31,14 @@ async function harness(
   );
   const auth = new AuthController({
     ...stores,
-    credentials: secrets.credentials,
+    credentials,
     login,
     fetchRules,
     randomBytes,
     now: () => FIXED_NOW.getTime(),
   });
   await auth.load();
-  return { ...stores, ...secrets, auth };
+  return { ...stores, ...secrets, credentials, auth };
 }
 
 function loginResponse(): Schemas["MobileLoginResponse"] {
@@ -192,6 +197,61 @@ void it("accepts online login despite a failed rules fetch, creates a PIN, and u
   await auth.unlock("2846", "pin");
   assert.equal(auth.getSnapshot().phase, "unlocked");
   assert.equal(loginCalls, 1);
+});
+
+void it("a refused login credential write preserves prior credentials and stays on login until a successful retry", async () => {
+  let refuseWrite = false;
+  const h = await harness(
+    () => Promise.resolve({ ok: true, origin: "https://example.invalid", login: loginResponse() }),
+    undefined,
+    (original) => ({
+      ...original,
+      set: (key, value) =>
+        refuseWrite ? Promise.reject(new Error("Secure commit refused")) : original.set(key, value),
+    }),
+  );
+  await h.auth.endSession();
+  await h.credentials.finishEndedSession(h.credentials.getSnapshot().sessionId);
+  const previous = h.credentials.getSnapshot();
+  const persisted = new Map(h.secrets.values);
+  h.auth.setOnline(true);
+  refuseWrite = true;
+  await assert.rejects(h.auth.login("courier-test", randomUUID()), /Secure commit refused/);
+  assert.equal(h.auth.getSnapshot().phase, "login");
+  assert.equal(h.credentials.isUnlocked(), false);
+  assert.deepEqual(h.credentials.getSnapshot(), previous);
+  assert.deepEqual(h.secrets.values, persisted);
+  refuseWrite = false;
+  await h.auth.login("courier-test", randomUUID());
+  assert.equal(h.auth.getSnapshot().phase, "createPin");
+  assert.notEqual(h.credentials.getSnapshot().pair, null);
+});
+
+void it("a refused PIN credential write preserves the login and stays on PIN setup until a successful retry", async () => {
+  let refuseWrite = false;
+  const h = await harness(
+    () => Promise.resolve({ ok: true, origin: "https://example.invalid", login: loginResponse() }),
+    undefined,
+    (original) => ({
+      ...original,
+      set: (key, value) =>
+        refuseWrite ? Promise.reject(new Error("Secure commit refused")) : original.set(key, value),
+    }),
+  );
+  await h.auth.endSession();
+  await h.credentials.finishEndedSession(h.credentials.getSnapshot().sessionId);
+  h.auth.setOnline(true);
+  await h.auth.login("courier-test", randomUUID());
+  const previous = h.credentials.getSnapshot();
+  const persisted = new Map(h.secrets.values);
+  refuseWrite = true;
+  await assert.rejects(h.auth.createPin("2846"), /Secure commit refused/);
+  assert.equal(h.auth.getSnapshot().phase, "createPin");
+  assert.deepEqual(h.credentials.getSnapshot(), previous);
+  assert.deepEqual(h.secrets.values, persisted);
+  refuseWrite = false;
+  assert.equal(await h.auth.createPin("2846"), true);
+  assert.equal(h.auth.getSnapshot().phase, "unlocked");
 });
 
 async function endForTest(auth: AuthController, reason: string): Promise<void> {

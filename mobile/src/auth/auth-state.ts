@@ -5,6 +5,9 @@ import type { Credentials } from "./credential-store.ts";
 import type { LoginNotice } from "./login-error.ts";
 
 export interface AuthProfile {
+  readonly userId?: string;
+  readonly sessionId?: string;
+  readonly issuer?: string;
   readonly username: string;
   readonly firstName: string;
   readonly organization: Schemas["Me"]["organization"];

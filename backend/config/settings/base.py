@@ -27,12 +27,15 @@ INSTALLED_APPS = [
     "catalogs",
     "rules",
     "field_sync",
+    "uploads",
     "reviews",
     "shifts",
     "geography.apps.GeographyConfig",
     "fleet",
     "ovitraps",
     "scheduling",
+    "incidents.apps.IncidentsConfig",
+    "inventory",
 ]
 
 MIDDLEWARE = [
@@ -75,6 +78,7 @@ USE_TZ = True
 
 MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
+UPLOADS_PRIVATE_ROOT = BASE_DIR / "private_uploads"
 
 # Cookies: the web uses the Django session cookie + CSRF token (decision 9).
 SESSION_COOKIE_HTTPONLY = True
@@ -220,6 +224,10 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "InventoryLocationKindEnum": ["biofactory", "warehouse", "center"],
+        "InventoryLotStatusEnum": ["draft", "available", "blocked"],
+        "IncidentStateEnum": ["open", "closed", "voided"],
+        "StateEnum": ["authorized", "received", "verified"],
         "CourierChangeActionEnum": ["upsert", "remove"],
         "ProjectionUpsertActionEnum": ["upsert"],
         "EventStatusEnum": "field_sync.models.EventStatus",
@@ -243,6 +251,14 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "recover-condition-incidents": {
+        "task": "inventory.tasks.recover_condition_incidents",
+        "schedule": 60.0,
+    },
+    "maintain-scoped-incidents": {
+        "task": "incidents.tasks.maintain_incidents",
+        "schedule": crontab(minute="*"),
+    },
     "prune-ended-token-pairs": {
         "task": "accounts.tasks.prune_ended_token_pairs",
         "schedule": crontab(hour=3, minute=30),

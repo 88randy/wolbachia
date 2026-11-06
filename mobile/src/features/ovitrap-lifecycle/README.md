@@ -4,14 +4,14 @@ Implementation plan (owner-supplied issue and accepted lead decisions):
 
 1. Test lifecycle identity/transactions, proposal-only geometry, recovery, feedback,
    correction and restart in `mobile/test/m-09.test.ts` using real SQLite/M-02.
-2. Append migration 10 after master canonical migrations 1–9: durable singleton draft, immutable captures,
+2. Append migration 12 after released canonical migrations 1–11: durable singleton draft, immutable captures,
    evidence references, physical lineage, reasoned voids and local decisions.
 3. Implement domain, pinned snapshots, store/ports/service and UUID-bound draft buffer.
    Every command validates displayed identity inside the serialized writer before effects;
    SQL guards arbitrate other service instances. Native continuations revalidate.
 4. Add P15-P17 hooks/screens, point-context routes, accessible bottom-sheet confirmation,
    reversible photo Undo, shared tokens and es-MX/en messages.
-5. Document ADR 131, design differences, acceptance map and verification limits; run
+5. Document the unmerged #138 decision draft, design differences, acceptance map and verification limits; run
    root lint/typecheck/format and the configured mobile suite. No commit/push/Docker.
 
 No new queue, transport, dependency or invented B-33 wire contract.
@@ -47,7 +47,8 @@ M-08 placements, lifecycle replacements and current downloaded identities.
 
 ## Acceptance map
 
-All issue-specific tests are in `mobile/test/m-09.test.ts` (26 test cases). There is
+Domain integration tests are in `mobile/test/m-09.test.ts`; complete source-derived
+lineage refusal controls are in `mobile/test/database-lineage.test.ts`. There is
 no new mobile e2e infrastructure. Each test protects one criterion or a distinct
 integration/concurrency invariant; no framework-only snapshot tests were added.
 
@@ -71,8 +72,8 @@ integration/concurrency invariant; no framework-only snapshot tests were added.
 | AC3 M-02 sync wiring applies projections before receipt/cursor advancement | existing sync applies retired/current projections before receipt and cursor advancement |
 | AC3 bootstrap/revocation retains drafts, outbox and evidence, and rejects stale writers | bootstrap retirement and revocation share the projection gate |
 | AC3 canonical upgrades preserve M-06 and point-cache readiness | canonical master schemas 8 and 9 retain M06 enrollment and point-cache readiness |
-| AC3 intermediate receipt backfill preserves immutable history | intermediate lifecycle schema 11 backfills acknowledged retirement without changing captured evidence |
-| AC3 incompatible draft lineage is rejected before writes, preserving QA data | conflicting unmerged draft schemas 9 to 11 fail before writes and retain their original data |
+| AC3 intermediate receipt backfill preserves immutable history | schema13 to14 backfills sent replacement/removal/void receipts and preserves provenance through cold reopen |
+| AC3 incompatible draft lineage is rejected before OUR writes, preserving retained data | all seven pinned unmerged lineages (database-lineage.test.ts), including the real8/9–11/10–12 SQL shapes |
 | AC3 late configuration/publication cannot restore narrowed authority, including absent/null ABA | review scope race; review authority ABA |
 | AC4 localized P15-P17 forms/footer/reason/removal-sheet host props | P15-P17 localized native props preserve labeled large controls |
 
@@ -156,7 +157,7 @@ following a server void. Without that projection the assignment remains fallback
 Downloaded point retirement and current effective local replace/remove events then
 apply; rejected/in-review lifecycle events and voids never create applied effects.
 
-M-08 resolves that state before saving. Migration 11 replaces both capture insertion
+M-08 resolves that state before saving. Migration 13 replaces both capture insertion
 guards and the active-identity view with the same SQL function, so an upsert arriving
 after a read-side check still rolls back the whole capture/outbox transaction.
 `RETIRED_CAPTURE_DRAFT` uses the same predicate for both archive and slot replacement
@@ -193,12 +194,12 @@ verification remain outside this local run. No commit or push was performed.
 
 ## Integration with current master
 
-Master canonical migrations 1–9 remain byte-for-byte unchanged and ordered before
-lifecycle migrations 10–12. Provisional ADRs 131/132 reserve space for pending lead
-integration decisions 129/130 without renumbering canonical ADRs 125–128.
-Canonical schemas 8 and 9 upgrade to 12 while retaining M-06 assignments, enrollment,
-original event UUIDs and #221 point-cache readiness. A real intermediate schema 11
-upgrade verifies receipt backfill while preserving acknowledged capture/evidence.
+Released canonical migrations1–11 remain unchanged and ordered before lifecycle
+migrations12–14. Old unmerged ADR text is retained only in the ignored root handoff;
+no canonical ADR number is reserved or rewritten. Canonical schemas8/9 upgrade to14
+while retaining M-06 assignments/enrollment, UUIDs and #221 point-cache readiness.
+The actual intermediate13→14 file/reopen fixture checks sent replacement/remove/
+void receipt floors and complete retained capture/evidence/envelope provenance.
 
 DayStore owns bootstrap, delta and revoke SQL for downloaded lifecycle projections.
 Its existing DayBundleService gates serialize bootstrap/sync and reject captured
@@ -237,9 +238,9 @@ reset action. Reopening cannot repair an incompatible lineage; support must reta
 its database for an explicit future data-preserving migration. No QA database or
 phone was opened, reset or changed during this requalification.
 
-## Scope authority and acknowledged-effect reconciliation (ADR 132)
+## Scope authority and acknowledged-effect reconciliation (the unmerged #138 decision draft)
 
-Migration 12 makes current scope an insertion invariant for M-08 captures, M-09
+Migration 14 makes current scope an insertion invariant for M-08 captures, M-09
 captures and lifecycle voids. The only current capture authorization is the live
 `ovitrap_snapshots.assignment`, hidden while durable cleanup is pending. A full
 bootstrap intersects its known point/physical context with the explicit downloaded
@@ -285,7 +286,7 @@ feed is drained, older pages cannot undo a locally acknowledged removal. An
 existing serialized bootstrap can reconcile accepted effects using its included
 identities regardless of local sequence reset. Pending/sending/error effects remain
 overlays through bootstrap and restart. The source events/evidence never change.
-Migration 12 rebuilds schema-11 identity guards/view so existing installations also
+Migration 14 rebuilds schema-13 identity guards/view so existing installations also
 use this rule; it does not depend on rerunning an earlier migration.
 
 The #203 visual draft remains unmerged and is not imported during integration.
@@ -303,8 +304,27 @@ for M-08 save, M-09 save and M-09 correction; each rolls back the entire new wri
 No timer wait or duplicate e2e layer was added. The M-08 fixtures now explicitly
 assign their known physical UUIDs rather than saving unknown UUIDs with no point.
 
-Incident-threshold rules can be downloaded, but incident history is not connected
-to a merged mobile producer. Only locally known fixed-point closed-house weeks drive
-suggestions today. A real incident-threshold journey depends on that backend/history
-integration and remains UNVERIFIED; no incident count, authority or task is invented.
+Incident-threshold rules can be downloaded, and canonical B15 already computes the
+fixed-point OvitrapIncidentLink advisory through suggest_relocation. Its HTTP read
+requires existing ovitrap.read; the courier feed and M09 do not yet consume markers
+or that advisory. Only locally known fixed-point closed-house weeks drive mobile
+suggestions today. The missing B15 read/feed/consumer integration is UNVERIFIED;
+general Incident104/catalog status is not the counter authority. No count/task is invented.
 Native/device/API/B-04/B-33 qualification limits above remain unchanged.
+
+## Limited master preparation after266
+
+Released canonical1–11 remain exact; the unchanged initial/physical/receipt arrays
+append as12–14. The same complete structural preflight protects direct migrate and
+prepareDatabase before OUR WAL/FULL. All seven actual old M09 lineages remain
+unsupported; no data repair or conversion occurs. Native open/SQLCipher physical
+effects remain UNRUN. The old unmerged ADR text is retained in an ignored draft;
+root will serialize any future canonical decisions without editing ADRs1–137.
+
+Canonical229 completion/bootstrap and246 private-journal invalidation compose in
+the same projection transactions with current assignment CAS and receipt overlays.
+There is one canonical Attachments instance. Lifecycle's private evidence adapter,
+native acquisition253 and real126 feedback are NOT implemented in this phase.
+The runtime acquisition port remains honestly unavailable and no draft is saved
+successfully without its required inputs. PR219 remains DRAFT / Refs138; API/native,
+MO01, force-stop, TalkBack and full138 acceptance remain unmet.

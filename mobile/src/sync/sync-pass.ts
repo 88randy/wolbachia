@@ -1,4 +1,5 @@
 import { KV_KEYS, removeStatement, setStatement } from "../db/kv-store.ts";
+import type { EvidenceSelection } from "../attachments/evidence-eligibility.ts";
 import type { KvStore } from "../db/kv-store.ts";
 import type { SqlStatement } from "../db/sql.ts";
 import type { OutboxEvent } from "../outbox/outbox-event.ts";
@@ -17,6 +18,13 @@ import type {
 export const SYNC_BATCH_SIZE = 50;
 
 export interface SyncPassDeps {
+  readonly attachments?: {
+    selection(): Promise<EvidenceSelection>;
+    recoverInterrupted(): Promise<void>;
+    advanceOne(): Promise<boolean>;
+    nextRetryDelayMs(): Promise<number | null>;
+    retryNow?(): Promise<void>;
+  };
   readonly outbox: OutboxRepository;
   readonly kv: KvStore;
   readonly transport: SyncTransport;
@@ -287,16 +295,41 @@ async function sendBatch(context: PassContext, batch: readonly OutboxEvent[]): P
 async function runPass(deps: SyncPassDeps, state: PassState): Promise<PassOutcome> {
   const context: PassContext = { deps, state, cursorReset: false };
   let pull = true;
+  let hasAttemptedFile = false;
   for (;;) {
-    const batch = await deps.outbox.claimPending(state.batchSize);
-    if (batch.length === 0 && !pull) {
-      const delayMs = await deps.outbox.nextRetryDelayMs();
-      return delayMs === null ? { kind: "idle" } : quotaWaitOutcome(delayMs);
-    }
+    const selection = await deps.attachments?.selection();
+    const batch = await deps.outbox.claimPending(state.batchSize, selection);
+    const isDrained = batch.length === 0 && !pull;
+    const progressed = await advanceAttachment(deps, isDrained && !hasAttemptedFile);
+    hasAttemptedFile ||= isDrained;
+    if (progressed) continue;
+    if (isDrained) return pendingOutcome(deps);
     const step = await sendBatch(context, batch);
     if (step.next === "stop") return step.outcome;
     pull = step.pull;
   }
+}
+function advanceAttachment(
+  deps: SyncPassDeps,
+  shouldAttempt: boolean,
+): Promise<boolean | undefined> {
+  return shouldAttempt && deps.attachments !== undefined
+    ? deps.attachments.advanceOne()
+    : Promise.resolve(false);
+}
+
+async function pendingOutcome(deps: SyncPassDeps): Promise<PassOutcome> {
+  const selection = await deps.attachments?.selection();
+  const delayMs = await deps.outbox.nextRetryDelayMs(selection);
+  const fileDelay = (await deps.attachments?.nextRetryDelayMs()) ?? null;
+  if (fileDelay !== null)
+    return {
+      kind: "retry",
+      delayMs: delayMs === null ? fileDelay : Math.min(delayMs, fileDelay),
+      countsAsFailure: false,
+      code: "attachment_pending",
+    };
+  return delayMs === null ? { kind: "idle" } : quotaWaitOutcome(delayMs);
 }
 
 /** The optional shared turn prevents an in-flight sync answer from superseding a newer bootstrap/revocation. */

@@ -1,4 +1,6 @@
 import type { SqlExecutor, SqlRow, SqlStatement, SqlValue } from "../db/sql.ts";
+import { eligibleClaim, eligibleRetry } from "../attachments/evidence-eligibility.ts";
+import type { EvidenceSelection } from "../attachments/evidence-eligibility.ts";
 import { readInteger } from "../db/sql.ts";
 import {
   readResult,
@@ -96,7 +98,11 @@ export class OutboxRepository {
   }
 
   /** Takes up to `limit` pending events, oldest first, and marks them `sending`. */
-  async claimPending(limit: number): Promise<readonly OutboxEvent[]> {
+  async claimPending(
+    limit: number,
+    selection?: EvidenceSelection,
+  ): Promise<readonly OutboxEvent[]> {
+    if (selection !== undefined) return this.#claimEligible(limit, selection);
     const rows = await this.#db.query(
       `SELECT * FROM outbox_event WHERE local_status = 'pending'
        AND (retry_at IS NULL OR retry_at <= ?) ORDER BY seq LIMIT ?`,
@@ -104,6 +110,17 @@ export class OutboxRepository {
     );
     await this.settle(rows.map((row) => ({ id: idOf(row), action: "claim" as const })));
     return rows.map((row) => ({ ...toOutboxEvent(row), status: "sending" as const }));
+  }
+
+  async #claimEligible(
+    limit: number,
+    selection: EvidenceSelection,
+  ): Promise<readonly OutboxEvent[]> {
+    const state = applyOutboxAction({ status: "pending", attempts: 0 }, "claim");
+    if (state?.status !== "sending") throw new Error("Invalid claim transition.");
+    const statement = eligibleClaim({ selection, limit, now: this.#now().toISOString() });
+    const rows = await this.#db.query(statement.sql, statement.params);
+    return [...rows].sort((left, right) => Number(left.seq) - Number(right.seq)).map(toOutboxEvent);
   }
 
   /**
@@ -122,11 +139,15 @@ export class OutboxRepository {
     await this.#db.runAtomically([...updates, ...extra]);
   }
 
-  /** Wait until the earliest quota-limited event is eligible; zero means it became due after claiming. */
-  async nextRetryDelayMs(): Promise<number | null> {
-    const [row] = await this.#db.query(
-      "SELECT MIN(retry_at) AS retry_at FROM outbox_event WHERE local_status = 'pending' AND retry_at IS NOT NULL",
-    );
+  /** Earliest retry among claim-eligible events; future retries are included before taking MIN. */
+  async nextRetryDelayMs(selection?: EvidenceSelection): Promise<number | null> {
+    const statement =
+      selection === undefined
+        ? {
+            sql: "SELECT MIN(retry_at) AS retry_at FROM outbox_event WHERE local_status = 'pending' AND retry_at IS NOT NULL",
+          }
+        : eligibleRetry(selection);
+    const [row] = await this.#db.query(statement.sql, statement.params);
     const retryAt = row?.retry_at;
     return typeof retryAt === "string"
       ? Math.max(0, Date.parse(retryAt) - this.#now().getTime())

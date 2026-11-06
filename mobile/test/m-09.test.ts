@@ -347,7 +347,7 @@ const storesFor = (db: SqlExecutor) => ({
 });
 void test("AC3: cold SQLite reopen retains lifecycle draft and interrupted outbox send; retry sends original UUID once", async () => {
   const directory = mkdtempSync(join(tmpdir(), "wolbachia-m09-"));
-  assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + sep));
+  assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + sep + "wolbachia-m09-"));
   const path = join(directory, "phone.sqlite");
   let phone = await openTestDatabase(path);
   try {
@@ -402,6 +402,7 @@ void test("AC3: cold SQLite reopen retains lifecycle draft and interrupted outbo
     assert.equal((await reopened.physical(SOURCE))?.isRetired, false);
   } finally {
     phone.close();
+    assert.ok(resolve(directory).startsWith(resolve(tmpdir()) + sep + "wolbachia-m09-"));
     rmSync(directory, { recursive: true });
   }
 });
@@ -1069,6 +1070,12 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
   const pending = await begin(h, "remove");
   await complete(h, pending);
   const historical = (await h.store.read()).draft;
+  const generation = async () =>
+    Number(
+      (await h.db.query("SELECT generation FROM attachment_context WHERE slot=1"))[0]?.generation,
+    );
+  const beforeBootstrap = await generation();
+  assert.equal(await h.kv.get(KV_KEYS.dayCompletionBootstrapPending), "true");
   let hasScope = true;
   const bundle = new DayBundleService({
     store: new DayStore(h.db),
@@ -1091,6 +1098,9 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
       }),
   });
   await bundle.refresh();
+  assert.equal(await generation(), beforeBootstrap + 1);
+  assert.equal(await h.kv.get(KV_KEYS.dayCompletionBootstrapPending), null);
+  assert.equal(await h.kv.get(KV_KEYS.daySamplingPointsBootstrapPending), null);
   assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
   assert.equal((await h.service.read()).isScopeBlocked, false);
   hasScope = false;
@@ -1103,6 +1113,7 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
   assert.equal((await h.db.query("SELECT id FROM outbox_event")).length, 1);
   const lateHooks = bundle.syncHooks();
   await bundle.clearSessionData();
+  assert.equal(await generation(), beforeBootstrap + 3);
   assert.equal((await h.db.query("SELECT * FROM lifecycle_courier_projection")).length, 0);
   assert.equal((await h.store.capture.snapshots()).assignment, null);
   assert.ok(lateHooks.applyProjectionChanges);
@@ -1164,7 +1175,7 @@ void test("AC3 upgrade: canonical master schemas 8 and 9 retain M06 enrollment a
       await seedCanonicalPointCache(local, sourceVersion);
       await migrate(db);
       const [version] = await db.query("PRAGMA user_version");
-      assert.equal(version?.user_version, 12);
+      assert.equal(version?.user_version, SCHEMA_VERSION);
       const [assignment] = await db.query(
         "SELECT retained_payload,retained_event_ids FROM day_assignment",
       );
@@ -1180,100 +1191,46 @@ void test("AC3 upgrade: canonical master schemas 8 and 9 retain M06 enrollment a
         points.map((point) => point.payload),
         sourceVersion === 9 ? [JSON.stringify(pointProjection(false))] : [],
       );
-      assert.equal(await new DayStore(db).needsSamplingPointBootstrap(), sourceVersion === 8);
-    } finally {
-      database.close();
-    }
-  }
-});
-
-void test("AC3 upgrade: intermediate lifecycle schema 11 backfills acknowledged retirement without changing captured evidence", async () => {
-  const database = new DatabaseSync(":memory:");
-  const db = databaseExecutor(database);
-  try {
-    await migrateThrough(db, 10);
-    const h = await harness(storesFor(db));
-    const original = makeEnvelope({ type: "ovitrap.remove", payload: { ovitrap_id: SOURCE } });
-    await h.outbox.enqueue(original);
-    const draft = JSON.stringify({
-      eventId: original.id,
-      ovitrapId: SOURCE,
-      point: POINT,
-      kind: "remove",
-      evidence: [PHOTO],
-    });
-    await db.runAtomically([
-      { sql: "INSERT INTO lifecycle_draft(slot,draft) VALUES(1,?)", params: [draft] },
-      {
-        sql: "INSERT INTO lifecycle_capture(event_id,ovitrap_id,point_id,kind,draft) VALUES(?,?,?,'remove',?)",
-        params: [original.id, SOURCE, POINT.id, draft],
-      },
-      {
-        sql: "INSERT INTO lifecycle_evidence(event_id,evidence_id,file_ref) VALUES(?,?,?)",
-        params: [original.id, PHOTO.id, PHOTO.fileRef],
-      },
-      {
-        sql: "UPDATE outbox_event SET local_status='sent',result_code='accepted' WHERE id=?",
-        params: [original.id],
-      },
-    ]);
-    await migrateThrough(db, 11);
-    const evidence = await db.query("SELECT * FROM lifecycle_evidence");
-    await migrate(db);
-    assert.equal((await db.query("PRAGMA user_version"))[0]?.user_version, 12);
-    const [receipt] = await db.query("SELECT * FROM lifecycle_receipt");
-    assert.equal(receipt?.event_id, original.id);
-    assert.equal(receipt.ovitrap_id, SOURCE);
-    assert.equal(receipt.is_reconciled, 0);
-    assert.equal((await h.store.physical(SOURCE))?.isRetired, true);
-    assert.equal((await db.query("SELECT draft FROM lifecycle_capture"))[0]?.draft, draft);
-    assert.deepEqual(await db.query("SELECT * FROM lifecycle_evidence"), evidence);
-    assert.equal((await db.query("SELECT id FROM outbox_event"))[0]?.id, original.id);
-  } finally {
-    database.close();
-  }
-});
-
-void test("AC3 upgrade: conflicting unmerged draft schemas 9 to 11 fail before writes and retain their original data", async () => {
-  for (const draftVersion of [9, 10, 11]) {
-    const database = new DatabaseSync(":memory:");
-    const db = databaseExecutor(database);
-    try {
-      await (draftVersion === 11 ? migrate(db) : migrateThrough(db, draftVersion + 1));
-      const local = storesFor(db);
-      const original = makeEnvelope({ payload: { ovitrap_id: SOURCE } });
-      await local.outbox.enqueue(original);
-      const retained = JSON.stringify({ eventId: original.id, evidence: [PHOTO] });
-      await db.runAtomically([
-        { sql: "INSERT INTO lifecycle_draft(slot,draft) VALUES(1,?)", params: [retained] },
-        { sql: "DROP TABLE day_sampling_point" },
-        { sql: "DELETE FROM kv WHERE key=?", params: [KV_KEYS.daySamplingPointsBootstrapPending] },
-        { sql: `PRAGMA user_version=${String(draftVersion)}` },
-      ]);
-      const before = await db.query("SELECT * FROM outbox_event");
-      let migrationWrites = 0;
-      await assert.rejects(
-        migrate({
-          ...db,
-          runAtomically: (statements) => {
-            migrationWrites += 1;
-            return db.runAtomically(statements);
-          },
-        }),
-        /Unmerged lifecycle draft database/,
-      );
-      assert.equal(migrationWrites, 0);
-      assert.equal((await db.query("PRAGMA user_version"))[0]?.user_version, draftVersion);
-      assert.deepEqual(await db.query("SELECT * FROM outbox_event"), before);
-      assert.equal((await db.query("SELECT draft FROM lifecycle_draft"))[0]?.draft, retained);
       assert.equal(
-        (await db.query("SELECT name FROM sqlite_master WHERE name='day_sampling_point'")).length,
-        0,
+        await local.kv.get(KV_KEYS.daySamplingPointsBootstrapPending),
+        sourceVersion === 8 ? "true" : null,
       );
+      assert.equal(await new DayStore(db).needsBootstrap(), true);
     } finally {
       database.close();
     }
   }
+});
+
+import { createLineageFixture } from "./support/lineage-fixtures.ts";
+import { CANONICAL_MIGRATIONS, SCHEMA_VERSION } from "../src/db/migrations.ts";
+import { seedLifecycleUpgrade, retainedLifecycleFacts } from "./support/lifecycle-upgrade.ts";
+void test("AC3 upgrade: schema13 to14 backfills sent replacement/removal/void receipts and preserves provenance through cold reopen", async (test) => {
+  const fixture = await createLineageFixture(test, {
+    migrations: CANONICAL_MIGRATIONS,
+    version: 12,
+  });
+  const expected = await seedLifecycleUpgrade(fixture.executor);
+  await migrateThrough(fixture.executor, 13);
+  const before = await retainedLifecycleFacts(fixture.executor);
+  await migrate(fixture.executor);
+  assert.equal(
+    (await fixture.executor.query("PRAGMA user_version"))[0]?.user_version,
+    SCHEMA_VERSION,
+  );
+  assert.deepEqual(await retainedLifecycleFacts(fixture.executor), before);
+  const receipts = await fixture.executor.query("SELECT * FROM lifecycle_receipt ORDER BY rowid");
+  assert.deepEqual(
+    receipts.map((row) => ({ ...row })),
+    expected,
+  );
+  const reopened = fixture.reopen();
+  await migrate(reopened);
+  assert.deepEqual(await retainedLifecycleFacts(reopened), before);
+  assert.deepEqual(
+    await reopened.query("SELECT * FROM lifecycle_receipt ORDER BY rowid"),
+    receipts,
+  );
 });
 
 type ScopeRaceAction = "m08-save" | "m09-save" | "m09-correct";

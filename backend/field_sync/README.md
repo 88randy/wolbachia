@@ -176,3 +176,20 @@ Existing fields retain their meanings. Resource hashes include outgoing live
 lineage/removal UUIDs; replacement/removal use the same atomic fan-out boundary,
 while relocation proposals emit no geometry or courier changes. See
 ../ovitraps/lifecycle/README.md and ../../docs/sync.md for locks and acceptance map.
+
+## Independent evidence references (#102)
+
+_store calls the evidence-only link hook after inserting the actual verdict. Raw
+capture UUIDs remain on immutable FieldEvent even without bytes/metadata or when
+review prevents effects. Existing owned metadata binds after source insertion;
+late metadata binds explicitly to that exact declaration. Sorted Upload NOWAIT
+locks precede required evidence effects. No file/network I/O, extra account/domain
+lock, review acceptance or source rewrite is introduced. Existing 429 rollback and
+final-upload/session-end boundaries remain intact. See ../uploads/README.md.
+
+#104 registers incident.report/emergency.accident v1. Existing review_code is checked
+before operational writes. _store adds an after-commit critical-source callback
+after actual FieldEvent/ReviewItem/evidence linkage; a review callback produces only
+a scoped audit intent, never an Incident/owner/blocker. Immutable committed causes
+support keyset recovery after callback/broker loss. No delivery or #113 acceptance
+is asserted; current final-upload entitlement/session ordering remains unchanged.

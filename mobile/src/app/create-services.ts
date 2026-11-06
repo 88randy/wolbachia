@@ -27,9 +27,13 @@ import { OutboxRepository } from "../outbox/outbox-repository.ts";
 import { getOrCreateDeviceId } from "../sync/device-id.ts";
 import { SyncEngine } from "../sync/sync-engine.ts";
 import { createScopedSyncTransport } from "../sync/scoped-sync-transport.ts";
+import { createAttachments } from "../attachments/create-attachments.ts";
+import { attachmentSyncHooks } from "../attachments/sync-hooks.ts";
+import type { Attachments } from "../attachments/create-attachments.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly attachments: Attachments;
   readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
@@ -62,11 +66,13 @@ export async function createServices(): Promise<AppServices> {
     credentials: tokens,
     requests,
   } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
-  const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests, auth }, bundle);
+  const attachments = createAttachments({ db, auth, tokens, deviceId, requests });
+  const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
+  const engine = createEngine(shared, bundle);
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
-  const captures = createCaptures({ db, engine, requests, tokens, shiftOpen });
-  return { ...captures, kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen, day };
+  const captures = createCaptures({ db, engine, requests, tokens, shiftOpen, attachments });
+  return { ...shared, ...captures, engine, shiftOpen, day };
 }
 
 function createCaptures(deps: Parameters<typeof createOvitrapCheck>[0]) {
@@ -103,7 +109,7 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
 
 type EngineDependencies = Pick<
   AppServices,
-  "kv" | "outbox" | "server" | "deviceId" | "tokens" | "auth"
+  "kv" | "outbox" | "server" | "deviceId" | "tokens" | "auth" | "attachments"
 > & {
   readonly requests: SessionRequests;
 };
@@ -111,6 +117,7 @@ function createEngine(deps: EngineDependencies, bundle: DayBundleService): SyncE
   const { kv, outbox, server, deviceId, tokens, requests, auth } = deps;
   return new SyncEngine({
     pass: {
+      attachments: attachmentSyncHooks(deps.attachments),
       outbox,
       kv,
       deviceId,
@@ -123,12 +130,13 @@ function createEngine(deps: EngineDependencies, bundle: DayBundleService): SyncE
     hasPendingFinalUpload: tokens.hasPendingFinalUpload,
     hasServer: () => (tokens.hasSyncSession() ? tokens.getOrigin() : server.baseUrl()) !== null,
     random: Math.random,
-    schedule: (callback, delayMs) => {
-      const handle = setTimeout(callback, delayMs);
-      return () => {
-        clearTimeout(handle);
-      };
-    },
+    schedule: scheduleSync,
     report: logEngineError,
   });
+}
+function scheduleSync(callback: () => void, delayMs: number): () => void {
+  const handle = setTimeout(callback, delayMs);
+  return () => {
+    clearTimeout(handle);
+  };
 }

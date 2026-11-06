@@ -45,7 +45,8 @@ class VoidableQuerySet(OrgScopedQuerySet):
 class OrgScopedModel(models.Model):
     """Row-level isolation: every business table carries `organization` (indexed, required).
 
-    `created_by` is null only for seed data created by management commands.
+    `created_by` is null for seed data, or explicitly constrained system-authored
+    incident facts (which also retain actor_kind and policy_version).
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

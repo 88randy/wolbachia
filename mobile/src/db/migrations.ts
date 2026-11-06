@@ -5,9 +5,10 @@ import {
 } from "../features/ovitrap-lifecycle/identity-effects.ts";
 import { physicalIdentityStateSql } from "../features/ovitrap-lifecycle/physical-identity-state.ts";
 import type { SqlExecutor, SqlStatement } from "./sql.ts";
-import { readInteger } from "./sql.ts";
 import { KV_KEYS } from "./kv-store.ts";
-import { assertCanonicalMigrationLineage } from "./migration-lineage.ts";
+import { ATTACHMENT_SCHEMA } from "../attachments/schema.ts";
+import { schemaProfiles } from "./schema-profile.ts";
+import { inspectSchemaLineage } from "./schema-lineage.ts";
 
 /**
  * Schema of the phone's database. Each entry is one migration; the position (1-based) is the
@@ -133,6 +134,8 @@ const MIGRATIONS: readonly (readonly string[])[] = [
       sequence INTEGER NOT NULL DEFAULT 0,payload TEXT,removed INTEGER NOT NULL DEFAULT 0 CHECK(removed IN (0,1)))`,
     `INSERT INTO kv(key,value) VALUES('${KV_KEYS.daySamplingPointsBootstrapPending}','true')`,
   ],
+  ATTACHMENT_SCHEMA,
+  [`INSERT INTO kv(key,value) VALUES('${KV_KEYS.dayCompletionBootstrapPending}','true')`],
   [
     `CREATE TABLE lifecycle_courier_projection (kind TEXT NOT NULL, id TEXT NOT NULL, version TEXT NOT NULL, sequence INTEGER NOT NULL, body TEXT NOT NULL, PRIMARY KEY(kind,id))`,
     `CREATE TABLE lifecycle_guard (slot INTEGER PRIMARY KEY CHECK(slot = 1), value INTEGER NOT NULL CHECK(value = 1))`,
@@ -294,11 +297,17 @@ const MIGRATIONS: readonly (readonly string[])[] = [
 /** Highest schema version this build knows. */
 export const SCHEMA_VERSION = MIGRATIONS.length;
 
+/** @internal Released statements are also the sole source of structural prefix profiles. */
+export const CANONICAL_MIGRATIONS = MIGRATIONS;
+const LINEAGE_PROFILES = schemaProfiles(MIGRATIONS);
+
+export function assertCanonicalDatabaseLineage(db: SqlExecutor): Promise<number> {
+  return inspectSchemaLineage(db, LINEAGE_PROFILES);
+}
+
 /** Applies the migrations the database has not seen yet, each one atomically with its version. */
 export async function migrate(db: SqlExecutor): Promise<void> {
-  const rows = await db.query("PRAGMA user_version");
-  const current = rows[0] === undefined ? 0 : readInteger(rows[0], "user_version");
-  await assertCanonicalMigrationLineage(db, current);
+  const current = await assertCanonicalDatabaseLineage(db);
   for (const [index, statements] of MIGRATIONS.entries()) {
     const version = index + 1;
     if (version <= current) continue;
