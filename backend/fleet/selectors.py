@@ -6,6 +6,7 @@ from typing import Any
 from django.db.models import Max
 
 from fleet.models import EfficiencyStatus, FuelLoad, InspectionClearance, ServiceRecord
+from reviews.effect_receipts import effective_effects
 from shifts.models import Motorcycle, MotorcycleBlockEvent
 
 
@@ -34,11 +35,13 @@ def active_blocks(motorcycle: Motorcycle) -> list[MotorcycleBlockEvent]:
 
 
 def highest_fleet_km(motorcycle: Motorcycle) -> int | None:
-    fuel = FuelLoad.objects.filter(
-        organization_id=motorcycle.organization_id,
-        motorcycle=motorcycle,
-        provisional=False,
-        event__voided_at__isnull=True,
+    fuel = effective_effects(
+        FuelLoad.objects.filter(
+            organization_id=motorcycle.organization_id,
+            motorcycle=motorcycle,
+            event__voided_at__isnull=True,
+        ),
+        "event",
     ).aggregate(km=Max("odometer_km"))["km"]
     service = ServiceRecord.objects.filter(
         organization_id=motorcycle.organization_id, motorcycle=motorcycle, voided_at__isnull=True
@@ -62,11 +65,13 @@ def motorcycle_metrics(motorcycle: Motorcycle) -> dict[str, Any]:
     fuel = (
         None
         if motorcycle._state.adding
-        else FuelLoad.objects.filter(
-            organization_id=motorcycle.organization_id,
-            motorcycle=motorcycle,
-            provisional=False,
-            event__voided_at__isnull=True,
+        else effective_effects(
+            FuelLoad.objects.filter(
+                organization_id=motorcycle.organization_id,
+                motorcycle=motorcycle,
+                event__voided_at__isnull=True,
+            ),
+            "event",
         ).first()
     )
     interval_km = None if service is None else service.service_interval_km

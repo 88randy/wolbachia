@@ -32,7 +32,8 @@ import logging
 import math
 from collections.abc import Iterator
 from contextlib import contextmanager
-from dataclasses import dataclass, field
+from copy import deepcopy
+from dataclasses import dataclass, field, replace
 from datetime import UTC, date, datetime, time, timedelta
 from functools import partial
 from typing import Any, Protocol, Self
@@ -99,6 +100,8 @@ from field_sync.selectors import (
     scope_revision,
 )
 from organizations.models import Organization
+from reviews.contracts import HandlerPreparation
+from reviews.dependencies import BatchCandidates, classify_dependencies
 from reviews.services import create_review_item
 
 logger = logging.getLogger(__name__)
@@ -114,6 +117,8 @@ class Verdict:
     status: EventStatus
     code: str = ACCEPTED_CODE
     params: dict[str, Any] = field(default_factory=dict)
+    observed_codes: tuple[str, ...] = ()
+    owner_facts: dict[str, Any] = field(default_factory=dict)
 
     @classmethod
     def from_signal(cls, status: EventStatus, signal: EventSignal) -> Self:
@@ -131,6 +136,7 @@ class PreparedEvent:
     handler: EventHandler
     data: dict[str, Any]
     shift_signal: EventNeedsReview | None = None
+    causal: HandlerPreparation = field(default_factory=HandlerPreparation)
 
 
 @dataclass(frozen=True)
@@ -290,7 +296,9 @@ def ingest_batch(batch: BatchContext, envelopes: list[EventEnvelope]) -> list[Ev
 
     Returns one result per event in request order. Call it inside `sync_batch`'s transaction.
     """
-    processor = EventProcessor(batch, build_clock_policy(batch))
+    processor = EventProcessor(
+        batch, build_clock_policy(batch), BatchCandidates.from_envelopes(envelopes)
+    )
     by_index = {
         envelope.index: processor.process(envelope)
         for envelope in sorted(envelopes, key=lambda item: (item.device_time, item.id))
@@ -301,9 +309,12 @@ def ingest_batch(batch: BatchContext, envelopes: list[EventEnvelope]) -> list[Ev
 class EventProcessor:
     """Processes the events of one batch (one instance per batch; it keeps no event state)."""
 
-    def __init__(self, batch: BatchContext, clock: ClockPolicy) -> None:
+    def __init__(
+        self, batch: BatchContext, clock: ClockPolicy, candidates: BatchCandidates | None = None
+    ) -> None:
         self.batch = batch
         self.clock = clock
+        self.candidates = candidates or BatchCandidates()
 
     def process(self, envelope: EventEnvelope) -> EventResult:
         stored = find_stored_event(envelope.id)
@@ -329,12 +340,13 @@ class EventProcessor:
             serializer.is_valid(raise_exception=True)
         except ValidationError as error:
             raise EventRejected(INVALID_PAYLOAD, rejection_params(error)) from None
+        causal = classify_dependencies(self.batch, envelope, self.candidates)
         shift_signal = (
             run_envelope_checks(organization, self.batch.user, envelope)
-            if handler.checks_shift
+            if handler.checks_shift and causal.pending_code is None
             else None
         )
-        return PreparedEvent(handler, dict(serializer.validated_data), shift_signal)
+        return PreparedEvent(handler, dict(serializer.validated_data), shift_signal, causal)
 
     @staticmethod
     def _check_envelope(envelope: EventEnvelope) -> None:
@@ -357,11 +369,73 @@ class EventProcessor:
     # --- accepted and in-review events ------------------------------------------------------
 
     def _accept(self, envelope: EventEnvelope, prepared: PreparedEvent) -> EventResult:
+        from reviews.boundaries import prepare_ingest
+
+        initial_signal = (
+            self._final_upload_signal()
+            or prepared.shift_signal
+            or self.clock.review_signal(envelope.device_time)
+        )
         try:
-            with transaction.atomic():
-                outcome = self._apply(envelope, prepared)
-                self._store(envelope, outcome)
+            with (
+                transaction.atomic(),
+                prepare_ingest(
+                    self.batch,
+                    envelope,
+                    prepared.handler,
+                    prepared.data,
+                    self.candidates,
+                    None if initial_signal is None else initial_signal.code,
+                ) as retained,
+            ):
+                if retained.pending_code:
+                    signal = self._final_upload_signal() or EventNeedsReview(retained.pending_code)
+                    observed = tuple(
+                        dict.fromkeys(
+                            (
+                                signal.code,
+                                retained.pending_code,
+                                *((initial_signal.code,) if initial_signal is not None else ()),
+                            )
+                        )
+                    )
+                    outcome = Verdict(EventStatus.IN_REVIEW, signal.code, signal.params, observed)
+                    retained = replace(
+                        retained,
+                        owner_facts={
+                            **retained.owner_facts,
+                            **self._capture_observations(envelope, prepared),
+                        },
+                    )
+                else:
+                    if prepared.handler.checks_shift:
+                        prepared = replace(
+                            prepared,
+                            shift_signal=run_envelope_checks(
+                                self.batch.organization, self.batch.user, envelope
+                            ),
+                        )
+                    with transaction.atomic():
+                        outcome = self._apply(envelope, prepared)
+                        observations = self._capture_observations(
+                            envelope, prepared, outcome.owner_facts
+                        )
+                        if outcome.status == EventStatus.IN_REVIEW:
+                            transaction.set_rollback(True)
+                    retained = replace(
+                        retained,
+                        owner_facts={**retained.owner_facts, **observations, **outcome.owner_facts},
+                    )
+                retained = replace(retained, observed_codes=outcome.observed_codes)
+                self._store(envelope, outcome, retained)
         except IntegrityError as error:
+            constraint = getattr(getattr(error.__cause__, "diag", None), "constraint_name", None)
+            if constraint == "review_shift_parent_identity":
+                raise EventRejected(
+                    INVALID_PAYLOAD, {"fields": {"shift_id": ["already_used"]}}
+                ) from None
+            if constraint == "review_physical_parent_identity":
+                raise EventRejected("ovitrap_identity_used") from None
             return self._replay_after_conflict(envelope, error)
         return outcome.result_for(envelope)
 
@@ -384,8 +458,39 @@ class EventProcessor:
             handler_signal = needs_review
         signal = final_upload or handler_signal or prepared.shift_signal or clock
         if signal is None:
-            return Verdict(EventStatus.ACCEPTED)
-        return Verdict.from_signal(EventStatus.IN_REVIEW, signal)
+            return Verdict(EventStatus.ACCEPTED, owner_facts=deepcopy(context.observed_facts))
+        observed = tuple(
+            dict.fromkeys(
+                item.code
+                for item in (final_upload, handler_signal, prepared.shift_signal, clock)
+                if item is not None
+            )
+        )
+        return Verdict(
+            EventStatus.IN_REVIEW,
+            signal.code,
+            signal.params,
+            observed,
+            deepcopy(context.observed_facts),
+        )
+
+    def _capture_observations(
+        self,
+        envelope: EventEnvelope,
+        prepared: PreparedEvent,
+        observed_facts: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        if prepared.handler.review_adapter is None:
+            return {}
+        ctx = EventContext(
+            self.batch.organization,
+            self.batch.user,
+            self.batch.device,
+            envelope,
+            self.batch.received_at,
+            observed_facts={} if observed_facts is None else observed_facts,
+        )
+        return prepared.handler.review_adapter.capture_observations(ctx, prepared.data)
 
     def _final_upload_signal(self) -> EventNeedsReview | None:
         if not self.batch.is_final_upload:
@@ -434,11 +539,17 @@ class EventProcessor:
 
     # --- storing ----------------------------------------------------------------------------
 
-    def _store(self, envelope: EventEnvelope, outcome: Verdict) -> None:
+    def _store(
+        self, envelope: EventEnvelope, outcome: Verdict, prepared: HandlerPreparation | None = None
+    ) -> None:
         """Insert the event and, unless it is plainly accepted, its review item (writes both)."""
         event = FieldEvent.objects.create(**self._event_fields(envelope, outcome))
         if outcome.status != EventStatus.ACCEPTED:
             create_review_item(event)
+        if prepared is not None:
+            from reviews.source_store import store_source_facts
+
+            store_source_facts(self.batch, envelope, event, prepared)
         from uploads.linking import record_event_links
 
         record_event_links(event)
@@ -470,12 +581,27 @@ class EventProcessor:
             "rules_version": envelope.rules_version,
             "catalog_version": envelope.catalog_version,
             "manual_capture": envelope.manual_capture,
-            "voids_event_id": None if is_rejected else envelope.voids_event_id,
+            "voids_event_id": None if is_rejected else self._persisted_void_target(envelope),
             "status": outcome.status,
             "status_code": outcome.code,
             "status_params": outcome.params,
             "is_final_upload": batch.is_final_upload,
         }
+
+    def _persisted_void_target(self, envelope: EventEnvelope) -> UUID | None:
+        identifier = envelope.voids_event_id
+        if identifier is None:
+            return None
+        if (
+            FieldEvent.objects.filter(
+                pk=identifier, organization=self.batch.organization, created_by=self.batch.user
+            )
+            .exclude(status="rejected")
+            .exclude(type=VOID_EVENT_TYPE)
+            .exists()
+        ):
+            return identifier
+        return None
 
     # --- idempotency ------------------------------------------------------------------------
 
@@ -491,6 +617,13 @@ class EventProcessor:
                 batch.device.pk,
             )
             return EventResult(envelope.id, EventStatus.REJECTED, EVENT_ID_CONFLICT)
+        if envelope.type == VOID_EVENT_TYPE:
+            from reviews.models import ReviewSourceSnapshot
+            from reviews.source_identity import same_envelope
+
+            snapshot = ReviewSourceSnapshot.objects.filter(source_event_id=envelope.id).first()
+            if snapshot is not None and not same_envelope(snapshot.original_envelope, envelope):
+                return EventResult(envelope.id, EventStatus.REJECTED, EVENT_ID_CONFLICT)
         if stored.payload_sha256 != envelope.payload_info.sha256:
             logger.warning(
                 "Event id reused with other content: event=%s organization=%s device=%s",

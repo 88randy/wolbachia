@@ -219,7 +219,9 @@ def test_a_partial_batch_keeps_the_valid_events_and_leaves_no_trace_of_the_inval
     assert ReviewItem.objects.filter(field_event_id=bad["id"], kind="rejected").count() == 1
 
 
-def test_a_handler_that_asks_for_review_keeps_its_writes_and_lands_in_review(phone: Phone) -> None:
+def test_a_handler_that_asks_for_review_rolls_back_writes_and_retains_its_source(
+    phone: Phone,
+) -> None:
     sent = event(type="test.needs_review", payload={"text": "look at me"})
 
     response = phone.sync([sent])
@@ -232,7 +234,7 @@ def test_a_handler_that_asks_for_review_keeps_its_writes_and_lands_in_review(pho
             "params": {"text": "look at me"},
         }
     ]
-    assert Widget.objects.filter(name="written-before-review").count() == 1
+    assert Widget.objects.count() == 0
     item = ReviewItem.objects.get(field_event_id=sent["id"])
     assert (item.kind, item.code, item.params) == (
         "in_review",

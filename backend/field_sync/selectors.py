@@ -207,9 +207,16 @@ def _change_scope_filter(ctx: ProducerContext) -> Q:
 
 
 def list_courier_changes(ctx: ProducerContext, after: int) -> tuple[list[CourierChange], bool]:
+    from reviews.history_scope import visible_history_contexts
+
+    history_ids = visible_history_contexts(ctx)
+
     rows = list(
         CourierChange.objects.for_org(ctx.organization)
-        .filter(_change_scope_filter(ctx), courier=ctx.user, sequence__gt=after)
+        .filter(
+            Q(kind="history", pk__in=history_ids) | (~Q(kind="history") & _change_scope_filter(ctx))
+        )
+        .filter(courier=ctx.user, sequence__gt=after)
         .order_by("sequence")[: settings.API_CURSOR_PAGE_SIZE + 1]
     )
     return rows[: settings.API_CURSOR_PAGE_SIZE], len(rows) > settings.API_CURSOR_PAGE_SIZE

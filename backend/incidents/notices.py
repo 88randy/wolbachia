@@ -47,6 +47,9 @@ class NoticeCause:
 def _cause(kind: str, identifier: UUID) -> NoticeCause | None:
     from django.http import Http404
 
+    if kind == "critical_review":
+        return _critical_review_cause(identifier)
+
     if kind == "incident_event":
         event = (
             IncidentEvent.objects.select_related("incident__organization", "incident__type_version")
@@ -114,6 +117,37 @@ def _cause(kind: str, identifier: UUID) -> NoticeCause | None:
     return None
 
 
+def _critical_review_cause(identifier: UUID) -> NoticeCause | None:
+    from reviews.models import ReviewSourceSnapshot
+    from shifts.models import Motorcycle
+
+    snapshot = (
+        ReviewSourceSnapshot.objects.select_related("source_event__organization")
+        .filter(
+            source_event_id=identifier,
+            source_event__status="in_review",
+            has_severe_observation=True,
+            resource_kind="motorcycle",
+        )
+        .first()
+    )
+    if snapshot is None or snapshot.resource_id is None:
+        return None
+    motorcycle = Motorcycle.objects.filter(
+        organization=snapshot.organization, pk=snapshot.resource_id
+    ).first()
+    if motorcycle is None or motorcycle.center_id is None:
+        return None
+    source = snapshot.source_event
+    return NoticeCause(
+        source.organization,
+        ResourceContext(motorcycle.center_id),
+        "incident.critical_review",
+        {"review_item_id": str(source.review_item.pk), "event_id": str(source.pk)},
+        courier_id=source.created_by_id,
+    )
+
+
 def publish(kind: str, identifier: UUID) -> bool:
     cause = _cause(kind, identifier)
     if cause is None:
@@ -142,7 +176,7 @@ def publish(kind: str, identifier: UUID) -> bool:
         return True
 
 
-CAUSE_KINDS = ("incident_event", "critical_source", "severe_fault")
+CAUSE_KINDS = ("incident_event", "critical_source", "severe_fault", "critical_review")
 
 
 def recover_publications(limit: int = 100) -> int:
@@ -164,6 +198,9 @@ def recover_publication_page(
         ),
         "severe_fault": MotorcycleBlockEvent.objects.filter(
             action="block", blocked_reason="severe_check"
+        ),
+        "critical_review": FieldEvent.objects.filter(
+            status="in_review", review_source_snapshot__has_severe_observation=True
         ),
     }
     query = queries[kind]

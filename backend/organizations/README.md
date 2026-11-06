@@ -5,6 +5,13 @@ Read the root backend README and `docs/api-conventions.md` before changing this 
 
 ## Scope and authorization
 
+#113 extracts only the pure active-profile paired-scope/government fold for reuse
+by historical review proof. The current wrapper retains User/Organization/member
+activity and same-tenant active-profile checks. FUTURE role revisions include slug;
+old active snapshots lacking identity fail historical proof closed. No snapshot
+backfill, current-profile inference, new grant/default or historical activity
+fabrication is introduced.
+
 `Membership.scope` and `Profile.scope` have exactly two dimensions:
 
 ```json

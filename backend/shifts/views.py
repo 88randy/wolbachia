@@ -1,16 +1,22 @@
 from typing import Any
+from uuid import UUID
 
 from django.db.models import QuerySet
+from django.http import Http404
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, viewsets
+from rest_framework.decorators import action
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from core.views import OrgScopedViewSetMixin
+from reviews.serializers import ShiftDecisionRequestSerializer, ShiftDecisionSerializer
 from shifts.models import Shift
-from shifts.permissions import SHIFT_READ
+from shifts.permissions import SHIFT_READ, SHIFT_VALIDATE
 from shifts.selectors import list_shifts
-from shifts.serializers import ShiftFilterSerializer, ShiftSerializer
+from shifts.serializers import ShiftDetailSerializer, ShiftFilterSerializer, ShiftSerializer
+from shifts.validation import ShiftDecisionRequest, decide_shift, require_shift_scope
+from uploads.access import actor_from_request
 
 
 class ShiftViewSet(
@@ -24,13 +30,30 @@ class ShiftViewSet(
 
     queryset = Shift.objects.all()
     serializer_class = ShiftSerializer
-    http_method_names = ["get", "head", "options"]
-    required_permissions = {"list": SHIFT_READ, "retrieve": SHIFT_READ}
+    http_method_names = ["get", "post", "head", "options"]
+    required_permissions = {
+        "list": SHIFT_READ,
+        "retrieve": SHIFT_READ,
+        "approve": SHIFT_VALIDATE,
+        "observe": SHIFT_VALIDATE,
+    }
+
+    def get_serializer_class(self) -> type[ShiftSerializer]:
+        return ShiftDetailSerializer if self.action == "retrieve" else ShiftSerializer
 
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return Shift.objects.none()
         scoped = super().get_queryset()
+        actor = actor_from_request(self.request)
+        visible = []
+        for shift in scoped.select_related("motorcycle", "organization"):
+            try:
+                require_shift_scope(actor, shift, SHIFT_READ)
+            except Http404:
+                continue
+            visible.append(shift.pk)
+        scoped = scoped.filter(pk__in=visible)
         if self.action != "list":
             return scoped.select_related("motorcycle").prefetch_related("checks__item")
         organization = self.request.organization  # type: ignore[attr-defined]
@@ -43,3 +66,27 @@ class ShiftViewSet(
     @extend_schema(parameters=[ShiftFilterSerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:
         return super().list(request, *args, **kwargs)
+
+    def _validate_shift(self, request: Request, pk: str | None, kind: str) -> Response:
+        try:
+            identifier = UUID(str(pk))
+        except ValueError:
+            raise Http404 from None
+        body = ShiftDecisionRequestSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        decision = decide_shift(
+            actor_from_request(request),
+            identifier,
+            ShiftDecisionRequest(kind=kind, **body.validated_data),
+        )
+        return Response(ShiftDecisionSerializer(decision).data, status=201)
+
+    @extend_schema(request=ShiftDecisionRequestSerializer, responses={201: ShiftDecisionSerializer})
+    @action(detail=True, methods=["post"])
+    def approve(self, request: Request, pk: str | None = None) -> Response:
+        return self._validate_shift(request, pk, "approve")
+
+    @extend_schema(request=ShiftDecisionRequestSerializer, responses={201: ShiftDecisionSerializer})
+    @action(detail=True, methods=["post"])
+    def observe(self, request: Request, pk: str | None = None) -> Response:
+        return self._validate_shift(request, pk, "observe")

@@ -4,6 +4,14 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#113 adds page-number review queue/detail, immutable accept/void/open-incident
+decisions, optional source-bound safety disposition and CLOSED-shift approve/
+observe. Source ingest/provenance remain separate from current decision state.
+The single typed CourierHistoryEntry producer supplies actual review/whole-shift
+history with current subject filtering before cursor/bootstrap; it is not a
+delivery receipt or durable permission. Unknown-scope audit stays pending.
+See ../../backend/reviews/README.md for exact effect/legacy/evidence boundaries.
+
 #105 adds supply-types, locations/stock and lots/conditions. Resource ids remain
 stable master/lot UUIDs; version is the exact immutable snapshot UUID. PATCH uses
 expected_revision. Lot supply_version_id/protocol_id pins change explicitly;

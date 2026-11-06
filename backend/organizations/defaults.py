@@ -34,7 +34,7 @@ from inventory.permissions import SUPERVISOR_CODES as INVENTORY_SUPERVISOR_CODES
 from inventory.permissions import WAREHOUSE_CODES as INVENTORY_WAREHOUSE_CODES
 from organizations.models import Organization, Profile
 from ovitraps.permissions import OVITRAP_REMOVAL_RESOLVE, READ_CODES, READING_READ
-from reviews.permissions import REVIEW_ITEM_READ
+from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from rules.permissions import (
     RULE_PARAMETER_READ,
     RULE_PARAMETER_VERSION_CREATE,
@@ -43,7 +43,13 @@ from rules.permissions import (
 )
 from rules.seeds import missing_parameter_keys, seed_default_rule_parameters
 from scheduling.permissions import RISK_IMPORT_APPLY, SCHEDULE_MANAGE, SCHEDULE_READ
-from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
+from shifts.permissions import (
+    MOTORCYCLE_MANAGE,
+    MOTORCYCLE_READ,
+    MOTORCYCLE_UNBLOCK,
+    SHIFT_READ,
+    SHIFT_VALIDATE,
+)
 from uploads.limits import FIELD_UPLOAD
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
@@ -78,6 +84,8 @@ ADMIN_CODES = (
     RULE_PARAMETER_VERSION_VOID,
     *ADMIN_AUTH_PERMISSION_CODES,  # device and session administration (#4)
     REVIEW_ITEM_READ,
+    REVIEW_ITEM_DECIDE,
+    SHIFT_VALIDATE,
     SHIFT_READ,
     MOTORCYCLE_READ,
     MOTORCYCLE_MANAGE,
@@ -108,6 +116,8 @@ SUPERVISOR_CODES = (
     QUADRANT_READ,
     *READ_ONLY_CODES,
     REVIEW_ITEM_READ,
+    REVIEW_ITEM_DECIDE,
+    SHIFT_VALIDATE,
     SHIFT_READ,
     MOTORCYCLE_READ,
     MOTORCYCLE_UNBLOCK,

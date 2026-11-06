@@ -111,4 +111,8 @@ export const sync = {
     "La referencia del incidente no está disponible dentro de tu ámbito autorizado.",
   "sync.result.incidentEvidenceRequired":
     "Falta evidencia verificada del incidente. Conserva los archivos pendientes; la captura requiere revisión.",
+  "sync.result.causalParentPending":
+    "Falta validar un registro previo. Tu supervisor debe revisar la captura conservada.",
+  "sync.result.motorcycleSafetyHold":
+    "La motocicleta tiene una retención de seguridad. La captura se conservó para revisión.",
 } as const satisfies AreaCatalog<"sync">;
