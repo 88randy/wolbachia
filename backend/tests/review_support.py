@@ -94,7 +94,7 @@ def legacy_severe_open(org, make_member, *, partial=False):
     from field_sync.envelope import describe_payload
     from field_sync.exceptions import EventNeedsReview
     from field_sync.registry import EventContext
-    from reviews.inspection import original_source_envelope
+    from reviews.inspection import original_source_envelope, validated_original_payload
     from reviews.services import create_review_item
     from reviews.transactions import review_transaction
     from shifts.services import open_shift
@@ -124,7 +124,7 @@ def legacy_severe_open(org, make_member, *, partial=False):
     envelope = original_source_envelope(source)
     ctx = EventContext(org, phone.user, source.device, envelope, source.server_received_at)
     with review_transaction(UploadActor(phone.user, org), source, set()):
-        data = capture["payload"] | {"note": ""}
+        data = validated_original_payload(source)
         if partial:
             data = data | {"checks": data["checks"][:1]}
         with pytest.raises(EventNeedsReview) as observation:

@@ -15,7 +15,7 @@ class VoidReviewAdapter(ReviewAdapter):
 
     def prepare_boundary(self, ctx: EventContext, data: dict[str, Any]) -> None:
         from field_sync.handlers.void import find_void_target
-        from reviews.effect_receipts import is_effective
+        from reviews.safety import has_pending_severe_source
 
         target = find_void_target(ctx)
         if target.voided_at is not None:
@@ -30,7 +30,7 @@ class VoidReviewAdapter(ReviewAdapter):
             raise EventRejected("already_voided")
         if ctx.review_code is not None and ctx.review_authorization is None:
             return
-        if not is_effective(target):
+        if has_pending_severe_source(target.pk):
             from field_sync.exceptions import EventNeedsReview
 
             raise EventNeedsReview("causal_parent_pending")

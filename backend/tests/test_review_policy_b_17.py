@@ -215,3 +215,30 @@ def test_historical_authority_uses_real_snapshot_identity_and_shared_government_
         assert proof.unavailable is None
         assert proof.scope.allows("field_event.sync") is (case != "government")
         assert proof.scope.allows("portal.read") is (case == "government")
+
+
+@pytest.mark.parametrize("event_type", ["ovitrap.place", "ovitrap.replace"])
+def test_physical_parent_claim_and_batch_candidate_use_the_actual_new_identity(event_type):
+    from reviews.dependencies import BatchCandidates, parent_claims
+
+    original, replacement = uuid4(), uuid4()
+    payload = {"ovitrap_id": str(original), "replacement_id": str(replacement)}
+    capture = EventEnvelope(
+        index=0,
+        id=uuid4(),
+        type=event_type,
+        schema_version=1,
+        device_time=datetime(2026, 11, 6, tzinfo=UTC),
+        payload=payload,
+        payload_info=describe_payload(payload),
+        rules_version="original-rule-pin",
+        catalog_version="original-catalog-pin",
+        manual_capture=False,
+    )
+    identity = original if event_type == "ovitrap.place" else replacement
+    batch = BatchCandidates.from_envelopes([capture])
+    assert batch.parents == {("ovitrap", identity): (capture.id,)}
+    assert parent_claims(capture, True) == ({"kind": "ovitrap", "identity": identity},)
+    assert parent_claims(capture, False) == ()
+    assert batch.captures[capture.id] is capture
+    assert batch.envelopes[capture.id] == envelope_metadata(capture)

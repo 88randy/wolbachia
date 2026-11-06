@@ -18,6 +18,7 @@ class BatchCandidates:
     sources: frozenset[UUID] = frozenset()
     parents: dict[tuple[str, UUID], tuple[UUID, ...]] = field(default_factory=dict)
     envelopes: dict[UUID, dict[str, Any]] = field(default_factory=dict)
+    captures: dict[UUID, EventEnvelope] = field(default_factory=dict)
 
     @classmethod
     def from_envelopes(cls, envelopes: list[EventEnvelope]) -> "BatchCandidates":
@@ -30,7 +31,7 @@ class BatchCandidates:
                 keys.append(("shift", event.shift_id))
             if event.type in {"ovitrap.place", "ovitrap.replace"}:
                 raw = event.payload.get(
-                    "ovitrap_id" if event.type.endswith("place") else "replacement_id"
+                    "ovitrap_id" if event.type == "ovitrap.place" else "replacement_id"
                 )
                 try:
                     keys.append(("ovitrap", UUID(str(raw))))
@@ -42,6 +43,7 @@ class BatchCandidates:
             frozenset(event.id for event in envelopes),
             {key: tuple(value) for key, value in parents.items()},
             {event.id: envelope_metadata(event) for event in envelopes},
+            {event.id: event for event in envelopes},
         )
 
 
@@ -66,10 +68,12 @@ def classify_dependencies(
 ) -> HandlerPreparation:
     from field_sync.registry import get_handler
 
+    handler = get_handler(envelope.type, envelope.schema_version)
+    if handler is None or handler.review_adapter is None:
+        return HandlerPreparation()
     if envelope.type == "record.void":
         return _void_dependency(batch, envelope, candidates)
     pending = []
-    handler = get_handler(envelope.type, envelope.schema_version)
     if (
         envelope.shift_id is not None
         and envelope.type != "shift.open"
@@ -124,6 +128,7 @@ def _physical_dependency(
             .first()
         )
         if physical is not None and not is_effective(physical.event):
+            _require_physical_scope(batch, envelope)
             return _pending("ovitrap", identity, physical.event_id)
         if physical is None:
             pending = _owned_parent(batch, "ovitrap", identity, candidates)
@@ -142,7 +147,9 @@ def _void_dependency(
     target = FieldEvent.objects.filter(
         organization=batch.organization, pk=identifier, created_by=batch.user
     ).first()
-    if target is not None and target.status == "in_review" and not is_effective(target):
+    from reviews.safety import has_pending_severe_source
+
+    if target is not None and has_pending_severe_source(target.pk):
         return _pending("void_target", target.pk, target.pk)
     # The existence test deliberately disqualifies a known foreign candidate.
     if (
@@ -177,17 +184,51 @@ def _owned_parent(  # noqa: PLR0913 -- actor, typed parent key and batch-only ca
             and (kind == "ovitrap" or source.created_by_id == batch.user.pk)
             and source.status != "rejected"
         ):
+            if kind == "ovitrap":
+                from reviews.inspection import original_source_envelope
+
+                try:
+                    parent_envelope = original_source_envelope(source)
+                except ValueError:
+                    return None
+                _require_physical_scope(batch, parent_envelope)
             return _pending(kind, identity, source.pk)
         return None
-    options = candidates.parents.get((kind, identity), ())
+    return _batch_parent(batch, candidates, (kind, identity))
+
+
+def _batch_parent(
+    batch: BatchContext, candidates: BatchCandidates, key: tuple[str, UUID]
+) -> HandlerPreparation | None:
+    kind, identity = key
+    options = candidates.parents.get(key, ())
     if kind == "shift":
         from shifts.models import Shift
 
         if Shift.objects.filter(pk=identity).exists():
             return None
     if len(options) == 1:
+        if kind == "ovitrap":
+            from reviews.source_identity import envelope_metadata
+
+            candidate = candidates.captures.get(options[0])
+            if candidate is None or envelope_metadata(candidate) != candidates.envelopes.get(
+                options[0]
+            ):
+                return None
+            _require_physical_scope(batch, candidate)
         return _pending(kind, identity, options[0], candidates.envelopes.get(options[0]))
     return None
+
+
+def _require_physical_scope(batch: BatchContext, envelope: EventEnvelope) -> None:
+    from reviews.scope import subject_facts, vector_allows
+    from uploads.access import UploadActor, current_scope
+
+    subjects = subject_facts(batch.organization, envelope)
+    scope = current_scope(UploadActor(batch.user, batch.organization, batch.device.pk))
+    if not vector_allows(scope, "field_event.sync", subjects.contexts, subjects.resolved):
+        raise EventRejected("ovitrap_inaccessible")
 
 
 def parent_claims(envelope: EventEnvelope, subjects_resolved: bool) -> tuple[dict[str, Any], ...]:
@@ -196,6 +237,6 @@ def parent_claims(envelope: EventEnvelope, subjects_resolved: bool) -> tuple[dic
     if envelope.type == "shift.open" and envelope.shift_id is not None:
         return ({"kind": "shift", "identity": envelope.shift_id},)
     if envelope.type in {"ovitrap.place", "ovitrap.replace"}:
-        key = "ovitrap_id" if envelope.type.endswith("place") else "replacement_id"
+        key = "ovitrap_id" if envelope.type == "ovitrap.place" else "replacement_id"
         return ({"kind": "ovitrap", "identity": UUID(str(envelope.payload[key]))},)
     return ()

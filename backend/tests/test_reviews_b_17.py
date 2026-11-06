@@ -242,6 +242,7 @@ def test_source_bound_safety_void_preserves_other_fault_and_original_history(org
     from reviews.models import ReviewEffectReceipt, ReviewSafetyDisposition
     from reviews.safety import has_pending_severe
     from shifts.models import MotorcycleBlockEvent, Shift
+    from tests.sync_support import event
     from tests.test_fleet_b_05 import make_fault
 
     phone, motorcycle, item, capture, actor, inspection, upload = _safety_case(org_a, make_member)
@@ -252,6 +253,23 @@ def test_source_bound_safety_void_preserves_other_fault_and_original_history(org
         item.field_event.device_time,
         item.field_event.server_received_at,
     )
+    generic = event(
+        type="record.void",
+        voids_event_id=str(item.field_event_id),
+        payload={
+            "reason_code": "other",
+            "reason": "Generic source correction cannot clear pending severe safety",
+        },
+    )
+    generic_result = phone.sync([generic]).data["results"][0]
+    assert (generic_result["status"], generic_result["code"]) == (
+        "in_review",
+        "causal_parent_pending",
+    )
+    item.field_event.refresh_from_db()
+    assert item.field_event.voided_at is None
+    assert has_pending_severe(motorcycle.pk)
+    assert not ReviewSafetyDisposition.objects.filter(source_event=item.field_event).exists()
     decision = decide_review(
         actor,
         item.pk,
@@ -313,6 +331,56 @@ def test_source_bound_safety_void_preserves_other_fault_and_original_history(org
         )
     inspection.refresh_from_db()
     assert inspection.voided_at is None
+
+    # Initial retained facts may name an unsupported policy: they remain holds,
+    # while the current v1 disposition cannot certify those unknown semantics.
+    from uuid import uuid4
+
+    from reviews.exceptions import ReviewBlockedError
+    from reviews.inspection import original_source_envelope
+    from reviews.safety import has_pending_severe_source
+    from reviews.safety_dispositions import _require_new_unapplied
+    from reviews.source_identity import envelope_metadata
+    from tests.factories import FieldEventFactory
+
+    retained = FieldEventFactory(
+        organization=org_a,
+        created_by=phone.user,
+        device=item.field_event.device,
+        type="shift.open",
+        shift_id=uuid4(),
+        payload=item.field_event.payload,
+        payload_sha256=item.field_event.payload_sha256,
+        status="in_review",
+        status_code="severe_check",
+    )
+    unknown = ReviewSourceSnapshot.objects.create(
+        organization=org_a,
+        created_by=phone.user,
+        source_event=retained,
+        sent_at=retained.server_received_at,
+        original_envelope=envelope_metadata(original_source_envelope(retained)),
+        policy_version="retained.unknown",
+        resource_kind="motorcycle",
+        resource_id=motorcycle.pk,
+        has_severe_observation=True,
+    )
+    assert has_pending_severe(motorcycle.pk)
+    assert has_pending_severe_source(retained.pk)
+    with pytest.raises(ReviewBlockedError) as unsupported:
+        _require_new_unapplied(unknown)
+    assert unsupported.value.blocked_by[0]["reason"] == "safety_source_unavailable"
+    correction = event(
+        type="record.void",
+        voids_event_id=str(retained.pk),
+        payload={"reason_code": "other", "reason": "Unknown policy requires retained safety proof"},
+    )
+    response = phone.sync([correction]).data["results"][0]
+    assert (response["status"], response["code"]) == ("in_review", "causal_parent_pending")
+    retained.refresh_from_db()
+    assert retained.voided_at is None
+    assert has_pending_severe(motorcycle.pk)
+    assert not ReviewSafetyDisposition.objects.filter(source_event=retained).exists()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -391,7 +459,6 @@ def _reviewed_incident(make_member, event_type, *, held=False):
 
     from django.utils import timezone
 
-    from catalogs.models import CatalogItem
     from field_sync.envelope import describe_payload
     from field_sync.services import sync_batch
     from incidents.configuration import write_type
@@ -405,18 +472,16 @@ def _reviewed_incident(make_member, event_type, *, held=False):
     case = configured(setup_field())
     org = case.actor.organization
     if event_type == "emergency.accident":
-        item = CatalogItem.objects.get(
-            organization=org, catalog__slug="incident-type", code="emergency-accident"
-        )
         write_type(
             case.actor,
             {
+                "code": "emergency-accident",
+                "label": "Synthetic emergency accident",
                 "severity": "critical",
                 "terminal_id": case.field.membership.pk,
                 "supervisor_sla_seconds": 60,
                 "coordinator_sla_seconds": 120,
             },
-            item.pk,
         )
     write_type(
         case.actor,
@@ -787,8 +852,19 @@ def test_physical_pending_parent_is_shared_only_through_real_scope_and_effective
             effective_from=child.device_time - timedelta(microseconds=1),
         )
     if mode == "other_prior":
+        from uuid import uuid4
+
+        from tests.ovitrap_support import make_point
+
+        prior_point = make_point(field.point.block.quadrant, "B17-PRIOR")
         prior = replace(
-            envelope(field, "ovitrap.check", payload={"bag_code": "B17-prior"}),
+            envelope(
+                field,
+                payload={
+                    "sampling_point_id": str(prior_point.pk),
+                    "ovitrap_id": str(uuid4()),
+                },
+            ),
             device_time=child.device_time - timedelta(microseconds=1),
         )
         assert sync_batch(other, [prior], None).results[0].status == "accepted"

@@ -11,6 +11,13 @@ reviews registers the single typed history producer; current actual subject scop
 filters before LIMIT/cursor/bootstrap. Critical-review causes recover through actual
 #104/B-07 after commit; an intent is not delivery. See ../reviews/README.md.
 
+Handlers without ReviewAdapter keep normal envelope checks and no-effect review
+rollback, without acquiring invented tenant/domain locks. Known own nonsevere
+reviewed targets may be corrected through canonical record.void and their real
+on_void hook without first accepting them. Generic void rechecks the exact pending
+severe source hold before mutating the target; missing targets remain causal and
+the correcting event's own clock/final-upload signal still prevents effects.
+
 The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md`](../../docs/sync.md) first (contract, codes, guarantees, how to register a handler) and [`../accounts/README.md`](../accounts/README.md) for the lock order.
 
 | Module | What lives there |

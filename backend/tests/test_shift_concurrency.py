@@ -11,7 +11,6 @@ from catalogs.models import CatalogItem
 from core.exceptions import ImmutableRecordError
 from field_sync.services import check_deferred_constraints_now
 from organizations.models import Organization
-from shifts import services
 from shifts.models import CheckResult, Motorcycle, MotorcycleCheck, Shift, ShiftStatus
 from tests.conftest import MemberFactory
 from tests.factories import (
@@ -189,29 +188,65 @@ def test_a_client_shift_id_reused_concurrently_by_two_couriers_rejects_only_the_
     check_items: dict[str, CatalogItem],
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Both batches pass the "id is free" check before either inserts; the loser hits the primary
-    key and gets `invalid_payload` for that event only: the rest of its batch is kept."""
+    """The retained Org arbiter retries contention; the exact retry rejects only the reused ID."""
+    from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+    from contextlib import contextmanager
+
+    from field_sync.models import FieldEvent
+    from reviews import boundaries
+
     MotorcycleFactory(organization=org_a, code="M-01")
     MotorcycleFactory(organization=org_a, code="M-02")
     meeting = threading.Barrier(2, timeout=10)
-    original = services._ensure_shift_id_is_free
+    retained, release = threading.Event(), threading.Event()
+    original = boundaries.prepare_ingest
 
-    def free_check_then_meet(shift_id: uuid.UUID) -> None:
-        original(shift_id)
-        meeting.wait()
+    @contextmanager
+    def meet_before_org(*args, **kwargs):
+        opening = args[1].type == "shift.open"
+        if opening:
+            meeting.wait()
+        with original(*args, **kwargs) as preparation:
+            if opening:
+                retained.set()
+                assert release.wait(timeout=10), "The test did not release the retained arbiter"
+            yield preparation
 
-    monkeypatch.setattr(services, "_ensure_shift_id_is_free", free_check_then_meet)
+    monkeypatch.setattr(boundaries, "prepare_ingest", meet_before_org)
     shared_id = uuid.uuid4()
     first = make_phone(make_member, org_a)
     second = make_phone(make_member, org_a)
 
-    answers = run_in_threads(
-        lambda: first.sync([open_event("M-01", shared_id), event()]),
-        lambda: second.sync([open_event("M-02", shared_id), event()]),
-    )
+    captures = [[open_event("M-01", shared_id), event()], [open_event("M-02", shared_id), event()]]
+    phones = [first, second]
 
-    assert all(not isinstance(answer, Exception) for answer in answers), answers
-    assert [answer.status_code for answer in answers] == [200, 200]
+    def submit(index):
+        try:
+            return phones[index].sync(captures[index])
+        finally:
+            connection.close()
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        jobs = {pool.submit(submit, index): index for index in range(2)}
+        try:
+            assert retained.wait(timeout=10)
+            done, _pending = wait(jobs, timeout=10, return_when=FIRST_COMPLETED)
+            assert len(done) == 1
+            refused_job = next(iter(done))
+            refused = refused_job.result(timeout=10)
+            assert (refused.status_code, refused.data["code"]) == (429, "sync_in_progress")
+        finally:
+            release.set()
+        answers = [job.result(timeout=10) for job in jobs]
+    loser_index = jobs[refused_job]
+    assert not FieldEvent.objects.filter(
+        pk__in=[row["id"] for row in captures[loser_index]]
+    ).exists()
+    winner = next(answer for answer in answers if answer.status_code == 200)
+    monkeypatch.setattr(boundaries, "prepare_ingest", original)
+    retried = phones[loser_index].sync(captures[loser_index])
+    assert retried.status_code == 200, retried.data
+    answers = [winner, retried]
     statuses = sorted(
         tuple(result["status"] for result in answer.data["results"]) for answer in answers
     )

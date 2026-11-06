@@ -13,6 +13,12 @@ shift.validate and revision/reason, append only for CLOSED shifts and authorize 
 source center/quadrant contexts plus current Motorcycle allocation. Approval needs
 effective sources/no unresolved safety/reviews; later sources invalidate it.
 
+Whole-frame validation locks only the Shift row through select_for_update(of=self):
+Motorcycle and original source rows are already retained. Related nullable close
+joins are inspection data, not additional FOR UPDATE targets. Concurrent new opens
+use the retained Organization NOWAIT arbiter; a contending batch retries once after
+commit, then a reused shift UUID rejects only that event and preserves its siblings.
+
 The courier's shift ("jornada", issue #68): the day that frames all field work. Read [`docs/sync.md`](../../docs/sync.md) ("Shifts") for the event contract and codes, and [`../field_sync/README.md`](../field_sync/README.md) for the handler registry.
 
 | Module | What lives there |

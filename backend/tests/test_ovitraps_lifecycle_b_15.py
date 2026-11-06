@@ -320,6 +320,9 @@ def test_abandoned_or_removed_findings_link_one_incident_through_removal(field, 
 @pytest.mark.django_db
 @pytest.mark.parametrize("kind", ["replace", "relocate", "remove"])
 def test_foreign_unknown_and_ungranted_physical_identity_share_one_rejection(field, kind):
+    from types import SimpleNamespace
+
+    from field_sync.services import sync_batch
     from organizations.models import all_scope
 
     foreign = setup_field()
@@ -329,9 +332,18 @@ def test_foreign_unknown_and_ungranted_physical_identity_share_one_rejection(fie
         for identifier in (foreign.identity, uuid4())
     ]
     ingest(field, envelope(field))
+    pending_field = SimpleNamespace(**{**vars(field), "identity": uuid4()})
+    assert ingest(pending_field, envelope(pending_field, gps=None)).status == "in_review"
     field.membership.scope = {**all_scope(), "quadrants": {"mode": "none", "ids": []}}
     field.membership.save(update_fields=["scope"])
     results.append(ingest(field, lifecycle(field, kind)))
+    results.append(ingest(pending_field, lifecycle(pending_field, kind)))
+    raw_field = SimpleNamespace(**{**vars(field), "identity": uuid4()})
+    parent = replace(
+        envelope(raw_field, gps=None), index=1, device_time=CAPTURED + timedelta(seconds=1)
+    )
+    child = lifecycle(raw_field, kind)
+    results.append(sync_batch(field.batch, [child, parent], None).results[0])
     assert {(row.status, row.code, str(row.params)) for row in results} == {
         ("rejected", "ovitrap_inaccessible", "{}")
     }

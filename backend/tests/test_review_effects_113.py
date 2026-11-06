@@ -268,12 +268,13 @@ def test_distinct_reviewed_voids_arbitrate_one_original_target_hook(make_member,
     children = [
         replace(
             envelope(field, "record.void"),
+            index=index,
             device_time=timezone.now(),
             voids_event_id=parent.id,
             payload=payload,
             payload_info=describe_payload(payload),
         )
-        for _ in range(2)
+        for index in range(2)
     ]
     late_batch = replace(batch, sent_at=now - timedelta(hours=1), received_at=timezone.now())
     assert all(
@@ -351,7 +352,7 @@ def test_child_requires_both_pending_owned_shift_and_physical_parent_without_aut
         payload=payload,
         payload_info=describe_payload(payload),
     )
-    placement = replace(envelope(field), device_time=timezone.now())
+    placement = replace(envelope(field), index=1, device_time=timezone.now())
     now = timezone.now()
     late = replace(field.batch, sent_at=now - timedelta(hours=1), received_at=now)
     assert all(

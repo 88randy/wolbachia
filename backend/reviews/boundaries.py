@@ -78,8 +78,9 @@ def prepare_target_domain(ctx: EventContext, target: FieldEvent) -> None:
         raise EventRejected("void_target_not_found") from None
     subjects = subject_facts(ctx.organization, envelope)
     if subjects.resource_kind == "sampling_point" and subjects.resource_id is not None:
-        accessible_point(ctx, subjects.resource_id)
-        if target.type != "ovitrap.place":
+        if target.type == "ovitrap.place":
+            accessible_point(ctx, subjects.resource_id)
+        else:
             accessible_ovitrap(ctx, envelope.payload["ovitrap_id"])
 
 
@@ -147,6 +148,9 @@ def prepare_ingest(  # noqa: PLR0913 -- explicit batch, source, registered handl
     candidates: BatchCandidates,
     review_code: str | None,
 ) -> Iterator[HandlerPreparation]:
+    if handler.review_adapter is None:
+        yield HandlerPreparation(subjects=subject_facts(batch.organization, envelope))
+        return
     ctx = EventContext(
         batch.organization, batch.user, batch.device, envelope, batch.received_at, review_code
     )

@@ -76,6 +76,12 @@ def apply_void(ctx: EventContext, data: dict[str, Any]) -> None:
         raise EventNeedsReview(VOID_REASON_CODE_DEACTIVATED)
     if ctx.review_code is not None and not ctx.acknowledges(ctx.review_code):
         return
+    from reviews.safety import has_pending_severe_source
+
+    if has_pending_severe_source(target.pk):
+        from field_sync.codes import CAUSAL_PARENT_PENDING
+
+        raise EventNeedsReview(CAUSAL_PARENT_PENDING)
     try:
         voided = void_locked_record(target, ctx.user, choice)
     except AlreadyVoidedError:

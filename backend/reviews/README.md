@@ -140,6 +140,25 @@ also safety_disposition). POST /shifts/{id}/approve/ or observe/ takes revision/
 Cookie CSRF, pinned bearer, tenant selection and default-deny mappings are inherited.
 No source update/delete, upload transfer, force-close or new permission is added.
 
+Preparation and causal dispatch apply only to registered concrete ReviewAdapters;
+handlers without one retain their registered envelope checks and global no-effect
+rollback but acquire no artificial Organization/domain locks. Physical parents,
+claims and batch-only candidates must resolve a REAL Point covered by current
+paired field_event.sync before reporting pending. Candidate payload is only an
+ephemeral exact-envelope lookup, checked against its immutable metadata/hash;
+it is not authority or a fabricated parent. Replacement claims reserve the NEW
+replacement_id, while placements reserve their own ovitrap_id.
+
+A known owned nonsevere in_review target without an effective effect may be
+cancelled through canonical record.void and its REAL owner hook, including a GPS
+review without an operational row. It gains no acceptance/effect receipt or false
+effective-parent resolution. Unknown batch targets still require causal proof.
+An exact pending severe hold is checked again before voided_at can change,
+including retained facts with unknown policy versions. The v1 clearance remains
+strictly limited to supported v1 proof; unknown policy cannot release retention.
+Generic source void cannot bypass its safety disposition, and owner OP16/refusals
+remain. The void's own clock/final-upload review still rolls back all its effects.
+
 Criterion -> tests: test_review_policy_b_17 (pure policy/observed inputs),
 test_reviews_b_17 (no effects, original replay, causal identity, safety/inspection
 barriers, follow-up private evidence, legacy frames), test_review_effects_113

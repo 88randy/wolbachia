@@ -130,6 +130,9 @@ def test_review_capture_and_review_void_do_not_change_task_completion(field, act
     assert ingest(field, doubtful).status == "in_review"
     assert task_changes(owner, before["cursor"]) == []
     assert ingest(field, void_event(field, doubtful)).status == "accepted"
+    cancelled = FieldEvent.objects.get(pk=doubtful.id)
+    assert cancelled.status == "in_review"
+    assert cancelled.voided_at is not None
     assert task_changes(owner, before["cursor"]) == []
     capture = envelope(field, f"ovitrap.{action}")
     assert ingest(field, capture).status == "accepted"

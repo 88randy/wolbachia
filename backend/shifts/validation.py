@@ -163,7 +163,7 @@ def decide_shift(
     with review_transaction(actor, shift.opened_event, references):
         motorcycle = Motorcycle.objects.select_for_update(nowait=True).get(pk=shift.motorcycle_id)
         shift = (
-            Shift.objects.select_for_update(nowait=True)
+            Shift.objects.select_for_update(nowait=True, of=("self",))
             .select_related("organization", "courier", "closed_event", "opened_event")
             .get(pk=shift.pk)
         )
