@@ -13,6 +13,7 @@ import { ME_QUERY_KEY } from "../../session/me-key";
 import { centerStorageKey, writeCenter } from "../../centers/center-selection";
 import { fakePassword } from "../../test/fake-credentials";
 import { apiError, createFakeApi, makeMe, makeOrganization } from "../../test/fake-api";
+import type { RecordedRequest } from "../../test/fake-api";
 import { renderApp } from "../../test/render-app";
 const SCOPE = {
   centers: { mode: "all" as const, ids: [] },
@@ -537,7 +538,10 @@ test("a successful settings patch publishes its revision before navigation and t
     );
   });
   const refresh = deferredResponse();
-  api.setRoute("GET /api/v1/organization/", () => refresh.promise);
+  const startRefresh = vi
+    .fn<(request: RecordedRequest) => Promise<Response>>()
+    .mockReturnValue(refresh.promise);
+  api.setRoute("GET /api/v1/organization/", startRefresh);
   await act(async () => {
     await app.router.navigate({ to: "/settings" });
   });
@@ -549,26 +553,59 @@ test("a successful settings patch publishes its revision before navigation and t
     (await screen.findByRole<HTMLInputElement>("textbox", { name: "Zona horaria" })).value,
   ).toBe("UTC");
   expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
+  await waitFor(() => {
+    expect(startRefresh).toHaveBeenCalledTimes(1);
+  });
+  const staleRead = startRefresh.mock.calls[0]?.[0];
+  expect(staleRead?.signal.aborted).toBe(false);
   await user.click(screen.getByRole("button", { name: "Guardar" }));
   await waitFor(() => {
     expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(2);
   });
-  expect(api.requests.filter((request) => request.method === "PATCH")[1]?.body).toMatchObject({
-    expected_revision: 5,
-    timezone: "UTC",
-  });
+  expect(
+    api.requests.filter((request) => request.method === "PATCH").map(({ body }) => body),
+  ).toMatchObject([
+    { expected_revision: 4, timezone: "UTC" },
+    { expected_revision: 5, timezone: "UTC" },
+  ]);
   await waitFor(() => {
-    expect(
-      api.requests
-        .filter((request) => request.path === "/api/v1/organization/" && request.method === "GET")
-        .at(-1)?.signal.aborted,
-    ).toBe(true);
+    expect(staleRead?.signal.aborted).toBe(true);
+    expect(screen.getByRole("button", { name: "Guardar" }).getAttribute("aria-disabled")).toBe(
+      "false",
+    );
   });
+  // A later navigation may start a valid read; it must not stand in for the cancelled one.
+  const currentRefresh = deferredResponse();
+  const startCurrentRefresh = vi
+    .fn<(request: RecordedRequest) => Promise<Response>>()
+    .mockReturnValue(currentRefresh.promise);
+  api.setRoute("GET /api/v1/organization/", startCurrentRefresh);
+  await act(async () => {
+    await app.router.navigate({ to: "/settings" });
+  });
+  await screen.findByRole("heading", { name: "Configuración" });
+  await act(async () => {
+    await app.router.navigate({ to: "/settings/organization" });
+  });
+  await screen.findByRole("textbox", { name: "Zona horaria" });
+  await waitFor(() => {
+    expect(startCurrentRefresh).toHaveBeenCalledTimes(1);
+  });
+  expect(startCurrentRefresh.mock.calls[0]?.[0].signal.aborted).toBe(false);
   await act(async () => {
     refresh.resolve(Response.json(ORGANIZATION));
     await refresh.promise;
   });
   expect(screen.getByText("Revisión vigente: 5")).toBeDefined();
+  expect(startCurrentRefresh.mock.calls[0]?.[0].signal.aborted).toBe(false);
+  await act(async () => {
+    currentRefresh.resolve(
+      Response.json({ ...ORGANIZATION, revision: 5, timezone: "UTC", epi_week: "mmwr" }),
+    );
+    await currentRefresh.promise;
+  });
+  expect(screen.getByRole<HTMLInputElement>("textbox", { name: "Zona horaria" }).value).toBe("UTC");
+  expect(api.requests.filter((request) => request.method === "PATCH")).toHaveLength(2);
 });
 
 test.each(["none", "selected"] as const)(

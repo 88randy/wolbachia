@@ -4,8 +4,10 @@ from typing import Any
 
 from rest_framework import serializers
 
+from core.serializers import OrgScopedModelSerializer
+from core.void_reason import VOID_REASON_MAX_LENGTH, validate_void_reason
 from geography.geometry import validate_location
-from ovitraps.lifecycle.models import RelocationProposal
+from ovitraps.lifecycle.models import RelocationProposal, RemovalResolution
 from ovitraps.payloads import (
     MAX_REFERENCES,
     OpaqueUUIDField,
@@ -119,3 +121,21 @@ class OvitrapHistorySerializer(serializers.Serializer[Any]):
     point_code = serializers.CharField()
     suggest_relocation = serializers.BooleanField()
     entries = HistoryEntrySerializer(many=True)
+
+
+class RemovalResolutionRequestSerializer(StrictPayloadSerializer):
+    expected_state = serializers.ChoiceField(
+        choices=["unrecovered", "recovered", "resolved", "voided"]
+    )
+    outcome = serializers.ChoiceField(choices=["recovered_later", "written_off"])
+    reason = serializers.CharField(max_length=VOID_REASON_MAX_LENGTH)
+
+    def validate_reason(self, value: str) -> str:
+        return validate_void_reason(value)
+
+
+class RemovalResolutionSerializer(OrgScopedModelSerializer):
+    class Meta:
+        model = RemovalResolution
+        fields = ("id", "removal", "outcome", "reason", "created_by", "created_at")
+        read_only_fields = fields

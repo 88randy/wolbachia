@@ -4,6 +4,19 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+Removal resolution (#217) adds the typed POST /ovitrap-removals/{id}/resolve/
+request (explicit expected_state, recovered_later|written_off, reason) and the
+insert-only audit response. Physical history retains its original capture state
+and adds the independent resolution. See docs/api-conventions.md for 404/409/429
+and the future closure selector boundary. Both generated artifacts are regenerated
+through api:generate; no new runtime client code is needed.
+
+Configuration table query parameters (#224) come from the backend's explicit
+allowlists, including rule facets/history status, catalog item availability,
+device search/ordering and geography version-history filters. Use the generated
+operation query types and [server contract](../../docs/api-conventions.md#configuration-table-queries-224);
+clients keep search/sort/filter state in the URL and send it before paging.
+
 ## Use
 
 ```ts

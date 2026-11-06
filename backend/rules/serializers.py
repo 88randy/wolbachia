@@ -103,12 +103,18 @@ class RuleParameterVersionSerializer(OrgScopedModelSerializer):
         return to_number(version.parameter.value_type, version.value)
 
 
+class ParameterFilterSerializer(serializers.Serializer[Any]):
+    value_type = serializers.ChoiceField(choices=ValueType.choices, required=False)
+    unit = serializers.ChoiceField(choices=Unit.choices, required=False)
+
+
 class VersionFilterSerializer(serializers.Serializer[Any]):
     """Query parameters of `GET /rule-parameters/{key}/versions/`."""
 
     include_voided = serializers.ChoiceField(
         choices=["true", "false"], required=False, default="false"
     )
+    status = serializers.ChoiceField(choices=VERSION_STATUSES, required=False)
 
 
 class RuleParameterVersionCreateSerializer(OrgScopedModelSerializer):
