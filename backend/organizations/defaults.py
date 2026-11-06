@@ -28,6 +28,10 @@ from incidents.permissions import (
     INCIDENT_REASSIGN,
     MANAGEMENT_CODES,
 )
+from inventory.permissions import ADMIN_CODES as INVENTORY_ADMIN_CODES
+from inventory.permissions import ENTOMOLOGIST_CODES as INVENTORY_ENTOMOLOGIST_CODES
+from inventory.permissions import SUPERVISOR_CODES as INVENTORY_SUPERVISOR_CODES
+from inventory.permissions import WAREHOUSE_CODES as INVENTORY_WAREHOUSE_CODES
 from organizations.models import Organization, Profile
 from ovitraps.permissions import OVITRAP_REMOVAL_RESOLVE, READ_CODES, READING_READ
 from reviews.permissions import REVIEW_ITEM_READ
@@ -46,6 +50,7 @@ from uploads.limits import FIELD_UPLOAD
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    *INVENTORY_ADMIN_CODES,
     *MANAGEMENT_CODES,
     OVITRAP_REMOVAL_RESOLVE,
     FIELD_UPLOAD,
@@ -90,6 +95,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    *INVENTORY_SUPERVISOR_CODES,
     INCIDENT_READ,
     INCIDENT_CREATE,
     INCIDENT_CLOSE,
@@ -111,7 +117,13 @@ SUPERVISOR_CODES = (
 DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,
     "supervisor": SUPERVISOR_CODES,
-    "entomologist": (*READ_ONLY_CODES, READING_READ, SCHEDULE_READ, RISK_IMPORT_APPLY),
+    "entomologist": (
+        *READ_ONLY_CODES,
+        *INVENTORY_ENTOMOLOGIST_CODES,
+        READING_READ,
+        SCHEDULE_READ,
+        RISK_IMPORT_APPLY,
+    ),
     "community_promoter": READ_ONLY_CODES,
     "admin": ADMIN_CODES,
     "coordinator": (
@@ -124,7 +136,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         INCIDENT_CLOSE,
         INCIDENT_REASSIGN,
     ),
-    "warehouse": READ_ONLY_CODES,
+    "warehouse": (*READ_ONLY_CODES, *INVENTORY_WAREHOUSE_CODES),
     "regulatory": READ_ONLY_CODES,
     "government": ("portal.read",),
 }
