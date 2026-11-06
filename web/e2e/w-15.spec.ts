@@ -3,6 +3,7 @@ import type { Schemas } from "@wolbachia/api-client";
 import { messages } from "@wolbachia/i18n";
 import { makeMe } from "../src/test/fake-api";
 import { mockApi } from "./fixtures/mock-api";
+import { deferCompactResize, releaseCompactResize } from "./fixtures/compact-resize";
 import {
   LANGUAGES,
   THEMES,
@@ -88,6 +89,7 @@ function samplingPoint(code = "OV-010", id = POINT_ID): Schemas["SamplingPoint"]
 for (const language of LANGUAGES) {
   for (const theme of THEMES) {
     test(`W22-W24 keyboard R2 wiring: ${language}, ${theme}`, async ({ page }) => {
+      await deferCompactResize(page);
       const copy = messages[language];
       await rememberPreferences(page, theme, language);
       await mockApi(page, {
@@ -199,6 +201,7 @@ for (const language of LANGUAGES) {
       await page.keyboard.press("Enter");
       const coordinates = page.getByRole("textbox", { name: copy["geography.field.polygon"] });
       await expect(coordinates).toBeVisible();
+      const sidebarToggle = page.getByRole("button", { name: copy["shell.sidebar.collapse"] });
       for (const viewport of [
         { width: 1280, height: 800 },
         { width: 1440, height: 900 },
@@ -207,7 +210,10 @@ for (const language of LANGUAGES) {
         await page.setViewportSize(viewport);
         await expectNoHorizontalScroll(page);
       }
-      // Real layout checks are kept in this unrun browser journey, not claimed from jsdom.
+      await expect(sidebarToggle).toBeVisible();
+      await releaseCompactResize(page);
+      await expect(sidebarToggle).toHaveCount(0);
+      // Real layout checks belong to this browser journey, not jsdom.
       await page.evaluate(() => {
         document.body.style.fontSize = "130%";
       });

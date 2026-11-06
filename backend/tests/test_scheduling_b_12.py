@@ -695,6 +695,7 @@ def test_bootstrap_assignments_contains_only_own_in_scope_planning_rows(monkeypa
         "source",
         "protocol",
         "target",
+        "is_completed",
     }
     assert (task_row["point"], task_row["target"]) == (str(planner.point.pk), 1)
 
@@ -842,7 +843,7 @@ def test_import_delivers_changed_risk_to_current_task_owner_once(monkeypatch):
 
 
 @pytest.mark.parametrize(
-    "invalid", ["missing_task_field", "extra_field", "assignment_task_fields", "completion_field"]
+    "invalid", ["missing_task_field", "extra_field", "assignment_task_fields", "missing_completion"]
 )
 def test_assignment_producer_rejects_invalid_phone_payloads(invalid):
     from scheduling.courier_feed import AssignmentProducerSerializer
@@ -861,14 +862,15 @@ def test_assignment_producer_rejects_invalid_phone_payloads(invalid):
         "source": None,
         "protocol": None,
         "target": 40,
+        "is_completed": False,
     }
     assert AssignmentProducerSerializer(data=payload).is_valid()
     if invalid == "missing_task_field":
         del payload["point"]
     elif invalid == "extra_field":
         payload["unexpected"] = 1
-    elif invalid == "completion_field":
-        payload["is_completed"] = False
+    elif invalid == "missing_completion":
+        del payload["is_completed"]
     else:
         payload["kind"] = "quadrant_assignment"
     assert not AssignmentProducerSerializer(data=payload).is_valid()
@@ -1086,7 +1088,7 @@ def test_scope_loss_hides_import_even_when_week_policy_changes(setting, value):
     assert not RiskImportApplication.objects.exists()
 
 
-def test_task_feed_never_claims_completion_from_a_schedule_row():
+def test_task_feed_preserves_completion_from_the_schedule_projection():
     from scheduling.courier_feed import AssignmentProducerSerializer, task_payload
 
     row = {
@@ -1107,10 +1109,10 @@ def test_task_feed_never_claims_completion_from_a_schedule_row():
         "target": 40,
     }
     produced = task_payload(row)
-    assert "is_completed" not in produced
+    assert produced["is_completed"] is True
     serializer = AssignmentProducerSerializer(data=produced)
     assert serializer.is_valid(), serializer.errors
-    assert "is_completed" not in serializer.data
+    assert serializer.data["is_completed"] is True
 
 
 @pytest.mark.django_db

@@ -18,9 +18,19 @@ export function LoginScreen({ snapshot }: { readonly snapshot: AuthSnapshot }) {
       <LoginContent snapshot={snapshot} form={form} />
       <View style={styles.footer}>
         <Button
-          label={t(snapshot.isOnline ? "mobile.login.enter" : "mobile.login.waitingSignal")}
-          disabled={!snapshot.isOnline || form.isBusy || !form.username.trim() || !form.password}
-          onPress={form.submit}
+          label={t(
+            form.isCleanupRetry
+              ? "common.actions.retry"
+              : snapshot.isOnline
+                ? "mobile.login.enter"
+                : "mobile.login.waitingSignal",
+          )}
+          disabled={
+            form.isBusy ||
+            (!form.isCleanupRetry &&
+              (!snapshot.isOnline || !form.username.trim() || !form.password))
+          }
+          onPress={form.isCleanupRetry ? form.retryCleanup : form.submit}
         />
       </View>
       <ForgotPasswordSheet isOpen={form.isForgotOpen} close={form.closeForgot} />
