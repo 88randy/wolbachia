@@ -1,12 +1,18 @@
 import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
-import type { QueryClient } from "@tanstack/react-query";
 import { apiError } from "../../test/fake-api";
 import type { RecordedRequest } from "../../test/fake-api";
 import { fakePassword } from "../../test/fake-credentials";
 import { currentRevision } from "../../session/session-revision";
 import { geographyContext } from "./permissions";
+import {
+  controlledRead,
+  currentRead,
+  queryFor,
+  consumeRead,
+} from "../../test/geography-read-test-helpers";
+import type { ControlledRead, ReadKind } from "../../test/geography-read-test-helpers";
 import {
   ALLOWED,
   QUADRANT_ID,
@@ -29,79 +35,6 @@ const SELECTED = {
   },
 };
 
-function barrier() {
-  let release!: () => void;
-  const promise = new Promise<void>((resolve) => {
-    release = resolve;
-  });
-  return { promise, release };
-}
-
-type ReadKind = "record" | "validation-points";
-/** Delivery and body consumption are distinct: resolving fetch alone is not query readiness. */
-function controlledRead(request: RecordedRequest, kind: ReadKind, context: string) {
-  const delivery = barrier();
-  const body = barrier();
-  const requested = barrier();
-  const consumed = barrier();
-  const response = pageOf(kind === "record" ? [quadrant()] : [point()]);
-  const text = response.text.bind(response);
-  response.text = async () => {
-    requested.release();
-    await body.promise;
-    const content = await text();
-    consumed.release();
-    return content;
-  };
-  return {
-    request,
-    kind,
-    context,
-    reply: delivery.promise.then(() => response),
-    deliver: delivery.release,
-    consume: body.release,
-    bodyRequested: requested.promise,
-    bodyConsumed: consumed.promise,
-  };
-}
-type ControlledRead = ReturnType<typeof controlledRead>;
-
-async function currentRead(reads: readonly ControlledRead[], kind: ReadKind, context: string) {
-  let current: ControlledRead | undefined;
-  await waitFor(() => {
-    const active = reads.filter(
-      (read) => read.kind === kind && read.context === context && !read.request.signal.aborted,
-    );
-    expect(active).toHaveLength(1);
-    current = active[0];
-  });
-  if (current === undefined) throw new Error("No current geography request.");
-  return current;
-}
-
-function queryFor(client: QueryClient, kind: ReadKind, context: string) {
-  return client.getQueryCache().find({
-    exact: false,
-    queryKey: [
-      "org",
-      ALLOWED.user.id,
-      ALLOWED.organization?.slug,
-      "geography",
-      context,
-      kind,
-      kind === "record" ? "C-07" : QUADRANT_ID,
-    ],
-  });
-}
-
-async function consume(read: ControlledRead) {
-  await act(async () => {
-    read.deliver();
-    read.consume();
-    await read.bodyConsumed;
-  });
-}
-
 describe("geography reauthentication", () => {
   test.each(["unchanged scope", "still-permitted scope refresh"])(
     "retains a permitted draft after 401, never replays it, and enables a new manual attempt: %s",
@@ -111,7 +44,7 @@ describe("geography reauthentication", () => {
       let shouldHoldReads = false;
       const reply = (request: RecordedRequest, kind: ReadKind) => {
         if (!shouldHoldReads) return pageOf(kind === "record" ? [quadrant()] : [point()]);
-        const read = controlledRead(request, kind, context);
+        const read = controlledRead(request, kind, { context });
         reads.push(read);
         return read.reply;
       };
@@ -181,7 +114,7 @@ describe("geography reauthentication", () => {
         expect(queryFor(app.queryClient, "record", context)?.state.status).toBe("pending");
         expect(screen.queryByRole("button", { name: PUBLISH_NAME })).toBeNull();
       }
-      await consume(lookup);
+      await consumeRead(app.queryClient, lookup);
       await waitFor(() => {
         expect(lookup.request.signal.aborted).toBe(false);
         expect(queryFor(app.queryClient, "record", context)?.state).toMatchObject({
@@ -198,6 +131,7 @@ describe("geography reauthentication", () => {
           true,
         );
       });
+
       const validation = await currentRead(reads, "validation-points", context);
       expect(api.requests).toContain(validation.request);
       await act(async () => {
@@ -212,7 +146,7 @@ describe("geography reauthentication", () => {
       expect(pendingPublish.hasAttribute("disabled")).toBe(true);
       await userEvent.click(pendingPublish);
       expect(writes()).toHaveLength(1);
-      await consume(validation);
+      await consumeRead(app.queryClient, validation);
       await waitFor(() => {
         expect(writes()).toHaveLength(1);
         expect(validation.request.signal.aborted).toBe(false);
@@ -230,6 +164,7 @@ describe("geography reauthentication", () => {
           screen.getByRole<HTMLTextAreaElement>("textbox", { name: COORDINATES_NAME }).value,
         ).toBe(DRAFT);
       });
+
       expect(writes()).toHaveLength(1);
       shouldHoldReads = false;
       api.setRoute(
