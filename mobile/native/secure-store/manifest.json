@@ -1,0 +1,36 @@
+{
+  "version": "58.0.2",
+  "upstreamCommit": "064d311c4732d9bde7dd37fcb08cb2294f72854e",
+  "files": [
+    {
+      "target": "android/src/main/java/expo/modules/securestore/SecureStoreModule.kt",
+      "payload": "upstream/SecureStoreModule.kt",
+      "original": "2c1f4172b3779de3e65052ecd0ce61ffef311565052a3fb5d0956c11f26f0deb",
+      "patched": "3715e82e624789f6c5e95fd1ec3612650340283b93fbec5fae57350202484878"
+    },
+    {
+      "target": "android/src/main/java/expo/modules/securestore/SecureStorePreferences.kt",
+      "payload": "upstream/SecureStorePreferences.kt",
+      "original": null,
+      "patched": "f71473fe9e0b4c92dd1e20057c32e8ed5bcd85232bfa7a9fea089a5fc5524bb4"
+    },
+    {
+      "target": "android/build.gradle",
+      "payload": "test-build.gradle",
+      "original": "adb4c2f04a960f50585a90d36fe10ba6622537bb56bfc35619b5893c0015328e",
+      "patched": "2035615bc0956c3006ccf69c155cd66e3c21df93ef2031d4a51fdd8cc6ccb8a7"
+    },
+    {
+      "target": "android/src/test/java/expo/modules/securestore/SecureStoreCommitIntegrationTest.kt",
+      "payload": "SecureStoreCommitIntegrationTest.kt",
+      "original": null,
+      "patched": "b35ceb6c7d131597e826fb4a585d932eddc5cef35426970de5e9e2c5fe83ffdd"
+    },
+    {
+      "target": "android/src/test/resources/robolectric.properties",
+      "payload": "robolectric.properties",
+      "original": null,
+      "patched": "ba451e2733c2fee849c29a062aa5cd7d3116fa937d097509d17b68eb5e82806e"
+    }
+  ]
+}
