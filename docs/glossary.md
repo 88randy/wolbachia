@@ -33,6 +33,7 @@ Rules:
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
 | muestra | sample | `/wolbachia-samples/`, `sample` | Lab sample (e.g. for Wolbachia results). |
 
+
 ## Configuration
 
 | Spanish | English name in code | API / field form | Notes |
@@ -46,6 +47,7 @@ Rules:
 | alcance efectivo | effective scope | `effective_scope` | The action-granting profile scope intersects membership scope in both applicable dimensions; unrelated grants never combine into a new pair. |
 | revisión de configuración | configuration revision | `ConfigurationRevision`, `revision`, `expected_revision` | Immutable authored snapshot of organization settings, profile permissions or membership assignments. |
 | paquete de configuración | snapshot | `/field/catalog/`, `/field/rules/`, `version` | Compact copy of a configuration that the phone keeps offline; `version` is a content hash and the `ETag`. |
+
 
 ## Release
 
@@ -146,3 +148,10 @@ Rules:
 | titularidad de tarea | task ownership | TaskOwnership, revision | Append-only courier decision; highest revision owns the task. |
 | revisi?n de agenda | schedule revision | ScheduleRevision, expected_revision | Organization counter serializes planning changes. |
 | meta diaria de tareas | daily task target | daily_task_target | Configurable operational target, never a hard cap. |
+
+## Offline day work (#135)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| tarea asignada | assigned task | `AssignedTask`, `assignments` | Downloaded scheduling assignments v2 task (#109): code -> point_code, point -> point_id, revision -> version, category -> risk. quadrant_assignment is ownership metadata, never a task. No server completion status or coordinates; [ASSUMPTION] progress uses local captures and server removal, while optional location/reference/history enrichment awaits #196. |
+| manifiesto de mapa | map manifest | `MapManifest`, `map_manifests` | Licensed offline asset metadata (asset id/version/hash/size/quadrant); it does not publish a download URL or certify local file readiness. |

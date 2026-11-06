@@ -28,6 +28,7 @@ interface AuthDeps {
   readonly fetchRules: () => Promise<unknown>;
   readonly randomBytes: (length: number) => Uint8Array;
   readonly now: () => number;
+  readonly clearSessionData?: (hasFinalReceipt?: boolean) => Promise<void>;
   readonly verify?: (secret: string, verifier: Verifier) => Promise<boolean>;
 }
 interface AcceptedLogin {
@@ -43,6 +44,7 @@ export class AuthController {
   readonly #listeners = new Set<() => void>();
   readonly #unlock: LocalUnlock;
   #isBusy = false;
+  #isSessionDataPending = false;
   #context: AuthContext = {
     profile: null,
     rules: readAuthRules(null),
@@ -74,18 +76,25 @@ export class AuthController {
   };
 
   load(): Promise<void> {
-    return this.#deps.credentials.runExclusive(async (transaction) => {
-      const profile = await this.#deps.kv.get(PROFILE_KEY);
-      const rules = await this.#deps.kv.get(RULES_KEY);
-      const parsed: unknown = rules === null ? null : JSON.parse(rules);
-      const current = transaction.read();
-      if (current.status === "active" && (await readEndedSession(this.#deps.kv, current.sessionId)))
-        await transaction.write(endedCredentials(transaction.read()));
-      this.#publish({
-        profile: profile === null ? null : (JSON.parse(profile) as AuthProfile),
-        rules: readAuthRules(isRulesSnapshot(parsed) ? parsed : null),
+    return this.#deps.credentials
+      .runExclusive(async (transaction) => {
+        const profile = await this.#deps.kv.get(PROFILE_KEY);
+        const rules = await this.#deps.kv.get(RULES_KEY);
+        const parsed: unknown = rules === null ? null : JSON.parse(rules);
+        const current = transaction.read();
+        if (
+          current.status === "active" &&
+          (await readEndedSession(this.#deps.kv, current.sessionId))
+        )
+          await transaction.write(endedCredentials(transaction.read()));
+        this.#publish({
+          profile: profile === null ? null : (JSON.parse(profile) as AuthProfile),
+          rules: readAuthRules(isRulesSnapshot(parsed) ? parsed : null),
+        });
+      })
+      .then(async () => {
+        if (!this.#deps.credentials.isSessionActive()) await this.#deps.clearSessionData?.();
       });
-    });
   }
 
   /** Connectivity is an external input; it cannot mutate credentials or the derived UI phase. */
@@ -96,16 +105,21 @@ export class AuthController {
     return this.#deps.credentials.lock();
   }
 
-  endSession(): Promise<void> {
+  endSession(hasFinalReceipt = false): Promise<void> {
     const sessionId = this.#deps.credentials.getSnapshot().sessionId;
-    return this.#deps.credentials.markEnded(sessionId, () => {
+    return this.#deps.credentials.markEnded(sessionId, async () => {
       this.#publish({ notice: null });
-      return this.#deps.kv.set(SESSION_ENDED_KEY, JSON.stringify({ sessionId, status: "ended" }));
+      await this.#deps.kv.set(SESSION_ENDED_KEY, JSON.stringify({ sessionId, status: "ended" }));
+      await this.#deps.clearSessionData?.(hasFinalReceipt);
     });
   }
 
   canLogin(): boolean {
-    return this.#snapshot.phase === "login" && !this.#deps.credentials.hasSyncSession();
+    return (
+      !this.#isSessionDataPending &&
+      this.#snapshot.phase === "login" &&
+      !this.#deps.credentials.hasSyncSession()
+    );
   }
 
   async login(username: string, password: string): Promise<void> {
@@ -242,7 +256,9 @@ export class AuthController {
   }
 
   unlock(secret: string, kind: "pin" | "password"): Promise<void> {
-    if (this.#snapshot.phase !== "locked") return Promise.resolve();
+    if (this.#snapshot.phase !== "locked" || this.#isSessionDataPending) return Promise.resolve();
+    // Guard before credential writes can publish pair=null. A replacement login must await cleanup.
+    this.#isSessionDataPending = true;
     const gate = this.#deps.credentials.unlockGate();
     return this.#unlock
       .attempt(secret, kind, (isAccepted, transaction) => {
@@ -256,6 +272,11 @@ export class AuthController {
           transaction.grantUnlock(gate);
           this.#publish({ notice: null });
         } else this.#publish({ notice: { key: "mobile.unlock.wrongSecret" } });
+      })
+      .finally(async () => {
+        if (!this.#deps.credentials.isSessionActive()) await this.#deps.clearSessionData?.();
+        this.#isSessionDataPending = false;
+        this.#refreshSnapshot();
       })
       .then(() => undefined);
   }

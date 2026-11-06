@@ -119,6 +119,93 @@ export const mobile = {
   "mobile.ovitrap.edit": "Volver a revisar respuestas",
   "mobile.ovitrap.permission":
     "Consulta a tu supervisor para reemplazar, reubicar o retirar esta ovitrampa. Conserva esta lectura.",
+  // M-06: P9-P10 day list and offline map
+  "mobile.day.loading": "Cargando puntos guardados…",
+  "mobile.day.updating": "Actualizando…",
+  "mobile.day.readFailed": "No pudimos leer los puntos guardados. Intenta leerlos otra vez.",
+  "mobile.day.mapFailed": "No pudimos verificar el mapa guardado. Intenta de nuevo o usa la lista.",
+  "mobile.day.actionFailed":
+    "No pudimos completar la acción local. Intenta otra vez; tus registros siguen guardados.",
+  "mobile.day.backHome": "Volver al inicio",
+  "mobile.day.showDetails": "Ver detalles del error",
+  "mobile.day.hideDetails": "Ocultar detalles del error",
+  "mobile.day.errorCode": "Código: {code}",
+
+  "mobile.day.historyEntry": "{date} · {summary}",
+  "mobile.day.title": "Mi día",
+  "mobile.day.open": "Ver puntos del día",
+  "mobile.day.list": "Lista",
+  "mobile.day.map": "Mapa",
+  "mobile.day.progress": "{reviewed} de {total} puntos revisados",
+  "mobile.day.pending": "Pendientes · Alto Riesgo primero",
+  "mobile.day.closedSection": "Casas cerradas por volver hoy",
+  "mobile.day.reviewedSection": "Puntos revisados",
+  "mobile.day.empty":
+    "No tienes puntos asignados guardados. Cuando haya señal, actualiza la lista.",
+  "mobile.day.ready":
+    "Listo por hoy. Puedes ir al inicio para cerrar tu jornada cuando esté disponible.",
+  "mobile.day.refresh": "Actualizar lista",
+  "mobile.day.refreshFailed":
+    "No pudimos actualizar. Puedes usar los puntos guardados e intentar otra vez.",
+  "mobile.day.unreadable":
+    "Filas que no se pudieron leer: {count}. Actualiza o pide ayuda al supervisor.",
+  "mobile.day.keptNotice":
+    "Cambió la asignación. Conservamos estos puntos por trabajo pendiente: {codes}. Consulta al supervisor.",
+  "mobile.day.kept": "Conservado: trabajo pendiente",
+  "mobile.day.highRisk": "Alto Riesgo",
+  "mobile.day.pendingStatus": "Pendiente hoy",
+  "mobile.day.doneStatus": "Revisado",
+  "mobile.day.closedStatus": "Casa cerrada · volver",
+  "mobile.day.relocateStatus": "Por reubicar",
+  "mobile.day.unknownStatus": "Estado por confirmar",
+  "mobile.day.phoneSaved": "Guardado en el teléfono",
+  "mobile.day.serverReceived": "Recibido por el servidor · revisión aparte",
+  "mobile.day.reviewUnconfirmed": "Revisión del servidor sin confirmar",
+  "mobile.day.place": "Colocar",
+  "mobile.day.check": "Revisar",
+  "mobile.day.replace": "Reemplazar",
+  "mobile.day.relocate": "Reubicar",
+  "mobile.day.remove": "Retirar",
+  "mobile.day.block": "Manzana {code}",
+  "mobile.day.distance": "{distance} m",
+  "mobile.day.navigate": "Cómo llegar",
+  "mobile.day.go": "Ir",
+  "mobile.day.history": "Historial reciente",
+  "mobile.day.historyEmpty": "No hay historial guardado.",
+  "mobile.day.historyUnknown": "Detalle de visita no disponible",
+  "mobile.day.historyOk": "Bien · papeleta entregada",
+  "mobile.day.historyDry": "Sin agua · reinstalada",
+  "mobile.day.reference": "Referencia: {reference}",
+  "mobile.day.noReference": "No hay referencia guardada.",
+  "mobile.day.scanHint":
+    "Para registrar, escanea el QR de la ovitrampa cuando el escáner esté disponible.",
+  "mobile.day.backList": "Ver lista de puntos",
+  "mobile.day.closeDetail": "Cerrar detalle",
+  "mobile.day.accessRevoked":
+    "Los puntos descargados ya no est\u00e1n disponibles. Actualiza la jornada.",
+  "mobile.day.noLocation": "Este punto todav\u00eda no tiene ubicaci\u00f3n. Puedes usar la lista.",
+  "mobile.day.noMap": "No tienes el mapa guardado",
+  "mobile.day.noMapHint":
+    "No hay un archivo de mapa verificado disponible. Intenta verificar de nuevo o usa la lista de puntos.",
+  "mobile.day.retryMap": "Verificar mapa otra vez",
+  "mobile.day.outsideCoverage": "Fuera de la cobertura descargada",
+  "mobile.day.attribution": "© OpenStreetMap contributors",
+  "mobile.day.mapLabel": "Mapa sin conexión de puntos asignados",
+  "mobile.day.locationDenied": "Ubicación no autorizada. Puedes seguir con la lista.",
+  "mobile.day.locationUnavailable": "Ubicación no disponible. Puedes seguir con la lista.",
+  "mobile.day.locationStale":
+    "Ubicación desactualizada · hace {seconds} s. No se muestran distancias.",
+  "mobile.day.locationFix": "Ubicación · hace {seconds} s · precisión ±{accuracy} m",
+  "mobile.day.locationUnknownAccuracy": "Ubicación · hace {seconds} s · precisión no disponible",
+  "mobile.day.locationWeak": "Ubicación aproximada · hace {seconds} s · precisión ±{accuracy} m",
+  "mobile.day.launched": "Se abrió el navegador. Al volver, este punto seguirá seleccionado.",
+  "mobile.day.noHandler":
+    "No hay una app de navegación disponible. Usa las coordenadas y la referencia; la lista sigue disponible.",
+  "mobile.day.denied":
+    "No se pudo abrir el navegador. Pide al administrador que revise el acceso. Puedes usar las coordenadas y la referencia.",
+  "mobile.day.invalidCoordinates":
+    "Las coordenadas no son válidas. Usa la lista y consulta al supervisor.",
+  "mobile.day.coordinates": "Coordenadas: {coordinates}",
   // M-04: P3-P7 shift opening
   "mobile.shiftOpen.catalogChanged":
     "El catálogo cambió. Revisa los puntos y confirma la nueva versión. Si una falla registrada ya no aparece, pide ayuda a tu supervisor; conservamos la evidencia.",

@@ -23,6 +23,17 @@
         "android.permission.WRITE_EXTERNAL_STORAGE"
       ]
     },
-    "plugins": ["./plugins/with-debug-lan-cleartext"]
+    "plugins": [
+      "./plugins/with-debug-lan-cleartext",
+      "@maplibre/maplibre-react-native",
+      "expo-location",
+      [
+        "./plugins/with-package-queries",
+        {
+          "packages": ["app.organicmaps"],
+          "intentSchemes": ["geo"]
+        }
+      ]
+    ]
   }
 }
