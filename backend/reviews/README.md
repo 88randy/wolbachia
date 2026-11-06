@@ -148,6 +148,11 @@ paired field_event.sync before reporting pending. Candidate payload is only an
 ephemeral exact-envelope lookup, checked against its immutable metadata/hash;
 it is not authority or a fabricated parent. Replacement claims reserve the NEW
 replacement_id, while placements reserve their own ovitrap_id.
+An in_review replacement with an observed ovitrap_stale_identity and an already
+materialized replacement UUID in the same organization creates no new parent
+claim. Its original claim and physical row remain untouched, even when final
+upload is the primary review code. New identities still reserve one immutable
+claim; voiding a pending placement does not make its UUID reusable.
 
 A known owned nonsevere in_review target without an effective effect may be
 cancelled through canonical record.void and its REAL owner hook, including a GPS

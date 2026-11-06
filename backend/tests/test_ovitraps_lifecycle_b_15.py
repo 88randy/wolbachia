@@ -350,10 +350,18 @@ def test_foreign_unknown_and_ungranted_physical_identity_share_one_rejection(fie
 
 
 @pytest.mark.django_db
-def test_replacement_and_removal_stale_identity_review_without_second_effect(field):
+@pytest.mark.parametrize("final_upload", [False, True])
+def test_replacement_and_removal_stale_identity_review_without_second_effect(field, final_upload):
+    from field_sync.services import sync_batch
     from ovitraps.lifecycle.models import PhysicalOvitrapLineage, RemovalAttempt
+    from ovitraps.models import Ovitrap
+    from reviews.models import ReviewParentClaim, ReviewSourceSnapshot
 
-    ingest(field, envelope(field))
+    placed = envelope(field)
+    assert ingest(field, placed).status == "accepted"
+    original_claim = ReviewParentClaim.objects.get(
+        organization=field.batch.organization, kind="ovitrap", identity=field.identity
+    )
     sent = lifecycle(field, "replace")
     assert ingest(field, sent).status == "accepted"
     for kind in ("replace", "relocate", "remove"):
@@ -361,7 +369,26 @@ def test_replacement_and_removal_stale_identity_review_without_second_effect(fie
         assert (result.status, result.code) == ("in_review", "ovitrap_stale_identity")
     field.identity = sent.payload["replacement_id"]
     reused = lifecycle(field, "replace", payload={"replacement_id": sent.payload["ovitrap_id"]})
-    assert ingest(field, reused).code == "ovitrap_stale_identity"
+    batch = replace(field.batch, is_final_upload=final_upload)
+    result = sync_batch(batch, [reused], None).results[0]
+    assert result.status == "in_review"
+    assert result.code == (
+        "final_upload_after_revoke" if final_upload else "ovitrap_stale_identity"
+    )
+    snapshot = ReviewSourceSnapshot.objects.get(source_event_id=reused.id)
+    assert "ovitrap_stale_identity" in snapshot.facts["observed_codes"]
+    assert sync_batch(batch, [reused], None).results[0] == result
+    retained = ReviewParentClaim.objects.get(pk=original_claim.pk)
+    assert retained.source_event_id == placed.id
+    assert retained.identity == original_claim.identity
+    assert (
+        ReviewParentClaim.objects.filter(
+            organization=field.batch.organization, kind="ovitrap", identity=retained.identity
+        ).count()
+        == 1
+    )
+    assert not ReviewParentClaim.objects.filter(source_event_id=reused.id).exists()
+    assert Ovitrap.objects.count() == 2
     assert PhysicalOvitrapLineage.objects.count() == 1
     assert not RemovalAttempt.objects.exists()
 

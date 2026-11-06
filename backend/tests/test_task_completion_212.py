@@ -135,6 +135,26 @@ def test_review_capture_and_review_void_do_not_change_task_completion(field, act
     assert cancelled.voided_at is not None
     assert task_changes(owner, before["cursor"]) == []
     capture = envelope(field, f"ovitrap.{action}")
+    if action == "place":
+        from uuid import UUID, uuid4
+
+        from reviews.models import ReviewParentClaim
+
+        reused = ingest(field, capture)
+        assert (reused.status, reused.code) == ("rejected", "ovitrap_identity_used")
+        assert ingest(field, capture) == reused
+        assert task_changes(owner, before["cursor"]) == []
+        assert (
+            ReviewParentClaim.objects.get(
+                organization=field.batch.organization,
+                kind="ovitrap",
+                identity=UUID(doubtful.payload["ovitrap_id"]),
+            ).source_event_id
+            == doubtful.id
+        )
+        capture = envelope(field, payload={"ovitrap_id": str(uuid4())})
+        assert capture.payload["sampling_point_id"] == doubtful.payload["sampling_point_id"]
+        assert capture.payload["ovitrap_id"] != doubtful.payload["ovitrap_id"]
     assert ingest(field, capture).status == "accepted"
     # Final upload is retained for review; it must leave the accepted effect intact.
     correction = void_event(field, capture)

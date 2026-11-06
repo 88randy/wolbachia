@@ -1,9 +1,12 @@
 """Write immutable capture observations after operational rollback, under retained locks."""
 
+from typing import Any
+
 from core.time import server_now
 from field_sync.envelope import BatchContext, EventEnvelope
 from field_sync.models import FieldEvent
 from field_sync.selectors import captured_scope, membership_snapshots
+from ovitraps.codes import STALE_IDENTITY
 from reviews.contracts import HandlerPreparation
 from reviews.dependencies import parent_claims
 from reviews.models import (
@@ -67,6 +70,8 @@ def store_source_facts(  # noqa: PLR0913 -- capture identity and retained prepar
             **dependency,
         )
     for claim in parent_claims(envelope, prepared.subjects.resolved):
+        if _materialized_stale_replacement(source, claim, prepared.observed_codes):
+            continue
         ReviewParentClaim.objects.create(
             organization=batch.organization, created_by=batch.user, source_event=source, **claim
         )
@@ -77,3 +82,21 @@ def store_source_facts(  # noqa: PLR0913 -- capture identity and retained prepar
     from reviews.history import publish_source_shift_invalidation
 
     publish_source_shift_invalidation(source)
+
+
+def _materialized_stale_replacement(
+    source: FieldEvent, claim: dict[str, Any], observed_codes: tuple[str, ...]
+) -> bool:
+    """An existing physical identity retains its original parent claim."""
+    if (
+        source.type != "ovitrap.replace"
+        or source.status != "in_review"
+        or claim["kind"] != "ovitrap"
+        or STALE_IDENTITY not in observed_codes
+    ):
+        return False
+    from ovitraps.models import Ovitrap
+
+    return Ovitrap.objects.filter(
+        organization=source.organization, client_uuid=claim["identity"]
+    ).exists()
