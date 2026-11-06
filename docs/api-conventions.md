@@ -461,4 +461,4 @@ NOWAIT NO KEY UPDATE, matching generic void's inherited order; no later account
 locks or external I/O. Contention/deferred-FK lock waits/deadlocks roll back and
 return 429 removal_in_progress, Retry-After: 1. Resolution is a retained dependent:
 later source void uses existing ovitrap_void_blocked with a safe resolution ID.
-No new sync event, result code or courier payload is added. ADR 128 is provisional.
+No new sync event, result code or courier payload is added. See accepted ADR 130.
