@@ -185,6 +185,8 @@ class BatchContext:
     sent_at: datetime
     received_at: datetime
     is_final_upload: bool = False
+    observed_session_id: uuid.UUID | None = None
+    observed_pair_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)

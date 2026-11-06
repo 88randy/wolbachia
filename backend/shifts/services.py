@@ -89,7 +89,7 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     _ensure_odometer_in_range(data["odometer_km"])
     _ensure_no_open_shift(ctx)
     _ensure_shift_id_is_free(shift_id)
-    _ensure_motorcycle_is_usable(motorcycle)
+    _ensure_motorcycle_is_usable(motorcycle, ctx.envelope.id)
     previous_km = highest_recorded_km(motorcycle)
     shift = _insert_shift(ctx, NewShift(shift_id, motorcycle, data["odometer_km"], data["note"]))
     _insert_checks(shift, data["checks"], items)
@@ -197,10 +197,13 @@ def _has_motorcycle_scope(ctx: EventContext, motorcycle: Motorcycle) -> bool:
     EventContext carries no captured scope. The shared single-statement capture avoids
     mixing configuration revisions, without configuration locks, including on a final upload.
     """
-    membership = membership_snapshots(ctx.organization).filter(user=ctx.user).first()
-    if membership is None:
-        return False
-    scope = captured_scope(membership)
+    if ctx.review_authorization is not None:
+        scope = ctx.review_authorization.historical_scope
+    else:
+        membership = membership_snapshots(ctx.organization).filter(user=ctx.user).first()
+        if membership is None:
+            return False
+        scope = captured_scope(membership)
     if motorcycle.center_id is None:
         return any(
             FIELD_EVENT_SYNC in codes and grant["centers"]["mode"] == "all"
@@ -226,11 +229,25 @@ def _ensure_shift_id_is_free(shift_id: uuid.UUID) -> None:
         raise EventRejected(INVALID_PAYLOAD, {"fields": {"shift_id": ["already_used"]}})
 
 
-def _ensure_motorcycle_is_usable(motorcycle: Motorcycle) -> None:
+def _ensure_motorcycle_is_usable(
+    motorcycle: Motorcycle, source_id: uuid.UUID | None = None
+) -> None:
     """Not blocked and in no open shift. The motorcycle row is locked by the caller, so two
     couriers cannot both pass this check for the same motorcycle."""
     if motorcycle.is_blocked:
         raise EventRejected(MOTORCYCLE_BLOCKED, {"reason": motorcycle.blocked_reason})
+    from fleet.selectors import active_blocks
+    from incidents.selectors import active_blockers
+    from reviews.safety import has_pending_severe
+
+    if (
+        has_pending_severe(motorcycle.pk, source_id)
+        or active_blocks(motorcycle)
+        or active_blockers(motorcycle.organization)
+        .filter(resource_kind="motorcycle", resource_id=motorcycle.pk, kind="dispatch")
+        .exists()
+    ):
+        raise EventRejected(MOTORCYCLE_BLOCKED, {"reason": "pending_severe_review"})
     if Shift.objects.filter(motorcycle=motorcycle, status=ShiftStatus.OPEN).exists():
         raise EventRejected(MOTORCYCLE_IN_USE)
 

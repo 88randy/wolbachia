@@ -31,6 +31,8 @@ def bind_evidence(  # noqa: PLR0913 -- current actor, exact parent, declared ide
                 and link.field_event_id == incident.source_event_id
             )
         )
+        if not same_case and link is not None:
+            same_case = _review_origin_evidence(actor, incident, link)
         own_unbound = (
             link is None
             and upload.uploader_id == actor.user.pk
@@ -55,3 +57,46 @@ def bind_evidence(  # noqa: PLR0913 -- current actor, exact parent, declared ide
                 incident=incident,
             )
     return sorted(str(identifier) for identifier in requested)
+
+
+def _review_origin_evidence(actor: UploadActor, incident: Incident, link: AttachmentLink) -> bool:
+    from reviews.evidence import exact_source_evidence
+    from reviews.models import ReviewIncidentLink
+    from uploads.targets import authorize_download
+
+    origin = (
+        ReviewIncidentLink.objects.filter(
+            organization=actor.organization,
+            incident=incident,
+            decision__kind="open_incident",
+            decision__is_terminal=False,
+            decision__created_by_id=incident.created_by_id,
+            decision__review_item_id=link.review_item_id,
+        )
+        .select_related("review_item__field_event")
+        .first()
+        if link.review_item_id
+        else None
+    )
+    if origin is None:
+        origin = (
+            ReviewIncidentLink.objects.filter(
+                organization=actor.organization,
+                incident=incident,
+                decision__kind="open_incident",
+                decision__is_terminal=False,
+                decision__created_by_id=incident.created_by_id,
+            )
+            .select_related("review_item__field_event")
+            .first()
+        )
+        if origin is None or not exact_source_evidence(link, origin.review_item):
+            return False
+    if (
+        origin.review_item.organization_id != actor.organization.pk
+        or origin.decision.review_item_id != origin.review_item_id
+    ):
+        return False
+    # The extra audit reference never grants bytes. Recheck the REAL immutable parent.
+    authorize_download(actor, link)
+    return True

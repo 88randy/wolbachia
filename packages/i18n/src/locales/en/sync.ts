@@ -110,4 +110,8 @@ export const sync: Record<keyof typeof source, string> = {
     "The incident reference is unavailable in your authorized work scope.",
   "sync.result.incidentEvidenceRequired":
     "Verified incident evidence is missing. Keep pending files; this capture needs review.",
+  "sync.result.causalParentPending":
+    "An earlier record needs validation. Your supervisor must review the retained capture.",
+  "sync.result.motorcycleSafetyHold":
+    "The motorcycle has a safety hold. The capture was kept for review.",
 };

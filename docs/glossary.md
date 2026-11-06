@@ -189,3 +189,14 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | acuse de escalamiento | escalation receipt | EscalationReceipt | Unique stage/deadline; final reminders also use rolling hours. |
 | intención de aviso | notice intent | IncidentNoticeIntent | Durable scoped B-07 producer fact, never delivery proof. |
 | origen de incidente | incident origin | IncidentOrigin | Explicit adoption of an opaque ovitrap marker; no historic ID rewrite. |
+
+## Append-only review decisions (#113)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| decisión de revisión | review decision | ReviewDecision | Separate immutable audit; original ingest never rewritten. |
+| recibo de efecto | effect receipt | ReviewEffectReceipt | Exactly-once applied operation or proven legacy adoption. |
+| disposición de seguridad | safety disposition | ReviewSafetyDisposition | Current administrative attestation with real inspection/proof; only its source hold. |
+| validación de jornada | shift validation | ShiftDecision | Approve/observe a CLOSED frame, independent from Shift lifecycle. |
+| historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
+| resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |

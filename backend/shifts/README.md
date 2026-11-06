@@ -1,5 +1,18 @@
 # shifts
 
+## Review integration (#113)
+
+NEW in_review open/close creates no Shift/check/block or lifecycle change. Severe
+pending safety derives a hold and real critical-review audit. A complete unadopted
+legacy OPEN frame grants no new work authority; a NEW same-owner/current-scoped
+valid close may exit that exact frame without accepting its opening or clearing
+holds. Mandatory close/maxima checks remain; another authorized device is allowed.
+Reviewed/partial/unproved closure stays pending; no force-close API exists.
+Detail adds validation/validation_timeline. POST {id}/approve/ and observe/ require
+shift.validate and revision/reason, append only for CLOSED shifts and authorize ALL
+source center/quadrant contexts plus current Motorcycle allocation. Approval needs
+effective sources/no unresolved safety/reviews; later sources invalidate it.
+
 The courier's shift ("jornada", issue #68): the day that frames all field work. Read [`docs/sync.md`](../../docs/sync.md) ("Shifts") for the event contract and codes, and [`../field_sync/README.md`](../field_sync/README.md) for the handler registry.
 
 | Module | What lives there |
@@ -15,7 +28,8 @@ The courier's shift ("jornada", issue #68): the day that frames all field work. 
 
 Rules for code here:
 
-- Shifts are written only by the sync handlers. There is no `POST`, `PUT` or `DELETE`; nothing is deleted.
+- Shift lifecycle is written only by concrete sync/review handlers. POST approve/
+  observe/ appends a separate audit decision; no PUT/DELETE or generic lifecycle API.
 - `guard.py` is registered with `field_sync.registry.register_envelope_check` from `ShiftsConfig.ready()`; `field_sync` does not import `shifts`.
 - A handler validates its own rules and raises `EventRejected` / `EventNeedsReview`; the partial unique indexes `shift_one_open_per_courier` and `shift_one_open_per_motorcycle` are only the backstop (and a reused shift id that loses a primary key race is caught in its own savepoint) (an `IntegrityError` would be a `500` for the whole batch).
 - Row locks, in order: `Motorcycle` (open), `Shift` (close). Both come after the account locks of [`accounts/README.md`](../accounts/README.md).

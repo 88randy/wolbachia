@@ -101,6 +101,8 @@ def authorize_target(
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
     scope = current_scope(actor)
+    if target.kind == "review_item":
+        return _review_attachment_target(actor, target, scope)
     if target.kind == "incident":
         from incidents.models import Incident
 
@@ -162,9 +164,54 @@ def authorize_target(
     return {"field_event": event}
 
 
+def _review_attachment_target(
+    actor: UploadActor, target: AttachmentTarget, scope: EffectiveScope
+) -> dict[str, object]:
+    from reviews.inspection import original_source_envelope
+    from reviews.models import ReviewItem
+    from reviews.scope import subject_facts, vector_allows
+
+    item = (
+        ReviewItem.objects.filter(organization=actor.organization, pk=target.identifier)
+        .select_related("field_event")
+        .first()
+    )
+    if item is None:
+        raise Http404
+    try:
+        facts = subject_facts(actor.organization, original_source_envelope(item.field_event))
+    except ValueError:
+        raise Http404 from None
+    if not all(
+        vector_allows(scope, permission, facts.contexts, facts.resolved)
+        for permission in ("review_item.decide", FIELD_UPLOAD)
+    ):
+        raise Http404
+    return {"review_item": item}
+
+
 def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     """Follow current parent read/history policy, including authorized voided history."""
     scope = current_scope(actor)
+    if link.review_item_id:
+        from reviews.inspection import original_source_envelope
+        from reviews.models import ReviewItem
+        from reviews.scope import subject_facts, vector_allows
+
+        item = (
+            ReviewItem.objects.filter(organization=actor.organization, pk=link.review_item_id)
+            .select_related("field_event")
+            .first()
+        )
+        if item is None:
+            raise Http404
+        try:
+            facts = subject_facts(actor.organization, original_source_envelope(item.field_event))
+        except ValueError:
+            raise Http404 from None
+        if not vector_allows(scope, "review_item.read", facts.contexts, facts.resolved):
+            raise Http404
+        return
     if link.incident_id:
         from incidents.models import Incident
 

@@ -1960,12 +1960,122 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * @description Events the server rejected or flagged for review (W30). Read-only: review items are created
-         *     with their event, and decisions (accept, void, open an incident) arrive with #22.
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
          */
         get: operations["review_items_list"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/review-items/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["review_items_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/review-items/{id}/accept/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["review_items_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/review-items/{id}/open-incident/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["review_items_open_incident_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/review-items/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["review_items_void_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -2431,6 +2541,46 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/shifts/{id}/approve/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Shifts of the organization (W28 and W29 read them). Read-only: shifts are written by the
+         *     `shift.open` and `shift.close` sync events; a supervisor's correction is #34.
+         */
+        post: operations["shifts_approve_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/shifts/{id}/observe/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Shifts of the organization (W28 and W29 read them). Read-only: shifts are written by the
+         *     `shift.open` and `shift.close` sync events; a supervisor's correction is #34.
+         */
+        post: operations["shifts_observe_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/supply-types/": {
         parameters: {
             query?: never;
@@ -2634,9 +2784,10 @@ export interface components {
          * @description * `field_event` - field_event
          *     * `motorcycle_fault` - motorcycle_fault
          *     * `incident` - incident
+         *     * `review_item` - review_item
          * @enum {string}
          */
-        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident";
+        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item";
         AttachmentTargetRequest: {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
@@ -2802,13 +2953,27 @@ export interface components {
             eligibility: {
                 [key: string]: unknown;
             }[];
-            history: {
-                [key: string]: unknown;
-            }[];
+            history: components["schemas"]["CourierHistoryEntry"][];
             map_manifests: components["schemas"]["MapManifest"][];
             quadrants: components["schemas"]["QuadrantReference"][];
             sampling_points: components["schemas"]["SamplingPointBundle"][];
             ovitraps: components["schemas"]["OvitrapBundle"][];
+        };
+        CapturedProvenance: {
+            /** Format: uuid */
+            snapshot_id: string | null;
+            policy_version: string | null;
+            /** Format: uuid */
+            point_version_id: string | null;
+            rule_version_ids: {
+                [key: string]: string;
+            };
+            rule_values: {
+                [key: string]: number | null;
+            };
+            /** Format: uuid */
+            fuel_baseline_id: string | null;
+            fuel_context_available: boolean | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -2910,7 +3075,7 @@ export interface components {
             supplies: components["schemas"]["ProducerChange"][];
             permits: components["schemas"]["ProducerChange"][];
             eligibility: components["schemas"]["ProducerChange"][];
-            history: components["schemas"]["ProducerChange"][];
+            history: components["schemas"]["HistoryChange"][];
             map_manifests: components["schemas"]["ProducerChange"][];
             quadrants: components["schemas"]["QuadrantChange"][];
             sampling_points: components["schemas"]["SamplingPointChange"][];
@@ -3002,6 +3167,69 @@ export interface components {
          * @enum {string}
          */
         CourierChangeActionEnum: "upsert" | "remove";
+        /**
+         * @description * `accept` - accept
+         *     * `void` - void
+         *     * `open_incident` - open_incident
+         *     * `approve` - approve
+         *     * `observe` - observe
+         * @enum {string}
+         */
+        CourierHistoryDecisionKindEnum: "accept" | "void" | "open_incident" | "approve" | "observe";
+        /**
+         * @description * `pending` - pending
+         *     * `accepted` - accepted
+         *     * `voided` - voided
+         *     * `approved` - approved
+         *     * `observed` - observed
+         * @enum {string}
+         */
+        CourierHistoryDecisionStateEnum: "pending" | "accepted" | "voided" | "approved" | "observed";
+        /**
+         * @description * `applied_review` - applied_review
+         *     * `adopted_legacy` - adopted_legacy
+         *     * `discarded` - discarded
+         *     * `incident_open` - incident_open
+         *     * `approved` - approved
+         *     * `observed` - observed
+         * @enum {string}
+         */
+        CourierHistoryEffectStateEnum: "applied_review" | "adopted_legacy" | "discarded" | "incident_open" | "approved" | "observed";
+        CourierHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["CourierHistoryKindEnum"];
+            /** Format: uuid */
+            review_item_id: string | null;
+            /** Format: uuid */
+            source_event_id: string | null;
+            /** Format: uuid */
+            shift_id: string | null;
+            decision_kind: components["schemas"]["CourierHistoryDecisionKindEnum"];
+            revision: number;
+            is_terminal: boolean | null;
+            decision_state: components["schemas"]["CourierHistoryDecisionStateEnum"];
+            reason: string;
+            /** Format: uuid */
+            decided_by: string;
+            /** Format: date-time */
+            decided_at: string;
+            subjects: components["schemas"]["HistorySubject"][];
+            source_status: (components["schemas"]["SourceStatusEnum"] | components["schemas"]["NullEnum"]) | null;
+            source_code: string | null;
+            effect_state: components["schemas"]["CourierHistoryEffectStateEnum"];
+            /** Format: uuid */
+            incident_id: string | null;
+            /** Format: uuid */
+            declared_void_target_uuid: string | null;
+            approval_current: boolean | null;
+        };
+        /**
+         * @description * `review_decision` - review_decision
+         *     * `shift_validation` - shift_validation
+         * @enum {string}
+         */
+        CourierHistoryKindEnum: "review_decision" | "shift_validation";
         CreateIncidentTypeRequest: {
             code: string;
             label: string;
@@ -3208,6 +3436,14 @@ export interface components {
         Health: {
             status: string;
         };
+        HistoryChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["CourierHistoryEntry"];
+        };
         HistoryEntry: {
             /** Format: uuid */
             event_id: string;
@@ -3231,6 +3467,12 @@ export interface components {
             gps: unknown;
             payload: unknown;
             effects: unknown;
+        };
+        HistorySubject: {
+            /** Format: uuid */
+            center_id: string | null;
+            /** Format: uuid */
+            quadrant_id: string | null;
         };
         /**
          * @description * `piece` - piece
@@ -3429,6 +3671,15 @@ export interface components {
          * @enum {string}
          */
         LanguagesEnum: "es-MX" | "en";
+        /**
+         * @description * `none` - none
+         *     * `complete_owned` - complete_owned
+         *     * `partial` - partial
+         *     * `ambiguous` - ambiguous
+         *     * `unavailable` - unavailable
+         * @enum {string}
+         */
+        LegacyEffectStateEnum: "none" | "complete_owned" | "partial" | "ambiguous" | "unavailable";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3890,6 +4141,43 @@ export interface components {
             support_contact: string;
             readonly logo_url: string | null;
             revision: number;
+        };
+        OriginalEnvelope: {
+            unavailable?: boolean;
+            version?: number;
+            /** Format: uuid */
+            id?: string;
+            type?: string;
+            schema_version?: number;
+            /** Format: date-time */
+            device_time?: string;
+            payload_sha256?: string;
+            rules_version?: string;
+            catalog_version?: string;
+            manual_capture?: boolean;
+            /** Format: uuid */
+            shift_id?: string | null;
+            gps?: components["schemas"]["OriginalGps"] | null;
+            /** Format: uuid */
+            declared_void_target_uuid?: string | null;
+        };
+        OriginalGps: {
+            /** Format: double */
+            lat: number;
+            /** Format: double */
+            lng: number;
+            /** Format: double */
+            accuracy_m: number | null;
+        };
+        OriginalReviewEvent: {
+            envelope: components["schemas"]["OriginalEnvelope"];
+            payload: unknown;
+            /** Format: date-time */
+            server_received_at: string;
+            clock_skew_seconds: number | null;
+            /** Format: date-time */
+            voided_at: string | null;
+            provenance: components["schemas"]["CapturedProvenance"];
         };
         /**
          * @description * `recovered_later` - recovered_later
@@ -4427,14 +4715,16 @@ export interface components {
             results: components["schemas"]["ResponsibilityLetter"][];
         };
         PaginatedReviewItemList: {
+            /** @example 123 */
+            count: number;
             /**
              * Format: uri
-             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             * @example http://api.example.org/accounts/?page=4
              */
             next?: string | null;
             /**
              * Format: uri
-             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             * @example http://api.example.org/accounts/?page=2
              */
             previous?: string | null;
             results: components["schemas"]["ReviewItem"][];
@@ -5235,6 +5525,96 @@ export interface components {
             created_at: string;
         };
         /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ReviewDecision: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly review_item: string;
+            readonly revision: number;
+            readonly expected_revision: number;
+            /** @default false */
+            readonly is_terminal: boolean;
+            readonly decision_state: components["schemas"]["ReviewDecisionStateEnum"];
+            readonly audit_only: boolean;
+            readonly kind: components["schemas"]["ReviewDecisionActionEnum"];
+            readonly reason: string;
+            readonly evidence_ids: unknown;
+            readonly evaluation: components["schemas"]["ReviewEvaluation"];
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly safety_disposition: components["schemas"]["ReviewSafetyDisposition"] | null;
+            readonly incident_id: string | null;
+            readonly effect_receipt: components["schemas"]["ReviewEffectReceipt"] | null;
+        };
+        /**
+         * @description * `accept` - accept
+         *     * `void` - void
+         *     * `open_incident` - open_incident
+         * @enum {string}
+         */
+        ReviewDecisionActionEnum: "accept" | "void" | "open_incident";
+        ReviewDecisionRequestRequest: {
+            reason: string;
+            expected_revision: number;
+            evidence_ids?: string[];
+        };
+        /**
+         * @description * `pending` - pending
+         *     * `accepted` - accepted
+         *     * `voided` - voided
+         * @enum {string}
+         */
+        ReviewDecisionStateEnum: "pending" | "accepted" | "voided";
+        /**
+         * @description * `applied_review` - applied_review
+         *     * `adopted_legacy` - adopted_legacy
+         * @enum {string}
+         */
+        ReviewEffectModeEnum: "applied_review" | "adopted_legacy";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ReviewEffectReceipt: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly source_event: string;
+            /** Format: uuid */
+            readonly decision: string;
+            readonly mode: components["schemas"]["ReviewEffectModeEnum"];
+            readonly payload_sha256: string;
+            readonly handler_version: string;
+            readonly materialization: unknown;
+            readonly authority_proofs: unknown;
+            readonly observations: unknown;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ReviewEvaluation: {
+            can_accept: boolean;
+            blockers: string[];
+            legacy_state: components["schemas"]["LegacyEffectStateEnum"];
+            subjects: components["schemas"]["HistorySubject"][];
+            scope_resolved: boolean;
+            authority_proof_ids: string[];
+        };
+        /**
          * @description A review item for the supervisor's list: what was flagged, why (`code` + `params`) and who
          *     sent it. The event itself (payload, times) comes with the review screens of #22.
          */
@@ -5255,11 +5635,79 @@ export interface components {
             readonly created_at: string;
         };
         /**
+         * @description A review item for the supervisor's list: what was flagged, why (`code` + `params`) and who
+         *     sent it. The event itself (payload, times) comes with the review screens of #22.
+         */
+        ReviewItemDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly event_id: string;
+            readonly event_type: string;
+            readonly kind: components["schemas"]["ReviewKindEnum"];
+            readonly code: string;
+            readonly params: unknown;
+            /** Format: uuid */
+            readonly courier: string;
+            /** Format: uuid */
+            readonly device: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly ingest_status: string;
+            readonly decision_state: components["schemas"]["ReviewState"];
+            readonly evaluation: components["schemas"]["ReviewEvaluation"];
+            readonly original_event: components["schemas"]["OriginalReviewEvent"];
+            readonly timeline: components["schemas"]["ReviewDecision"][];
+        };
+        /**
          * @description * `rejected` - Rejected
          *     * `in_review` - In Review
          * @enum {string}
          */
         ReviewKindEnum: "rejected" | "in_review";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ReviewSafetyDisposition: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly source_event: string;
+            /** Format: uuid */
+            readonly review_item: string;
+            /** Format: uuid */
+            readonly decision: string;
+            /** Format: uuid */
+            readonly motorcycle: string;
+            /** Format: uuid */
+            readonly inspection: string;
+            readonly evidence_ids: unknown;
+            readonly inspection_snapshot: unknown;
+            readonly policy_version: string;
+            readonly attest_safe_now: boolean;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ReviewState: {
+            revision: number;
+            kind: components["schemas"]["ReviewDecisionStateEnum"];
+            latest_kind: (components["schemas"]["ReviewDecisionActionEnum"] | components["schemas"]["NullEnum"]) | null;
+            audit_only: boolean;
+            terminal: boolean;
+        };
+        ReviewVoidRequestRequest: {
+            reason: string;
+            expected_revision: number;
+            evidence_ids?: string[];
+            safety_disposition?: components["schemas"]["SafetyDispositionRequestRequest"];
+        };
         RevisionRequest: {
             expected_revision: number;
         };
@@ -5363,6 +5811,11 @@ export interface components {
              */
             next_change_at: string | null;
             parameters: components["schemas"]["SnapshotParameter"][];
+        };
+        SafetyDispositionRequestRequest: {
+            /** Format: uuid */
+            inspection_id: string;
+            attest_safe_now: boolean;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -5539,11 +5992,89 @@ export interface components {
             readonly created_at: string;
         };
         /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ShiftDecision: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly shift: string;
+            /** Format: uuid */
+            readonly closed_event: string;
+            readonly revision: number;
+            readonly expected_revision: number;
+            readonly kind: components["schemas"]["ShiftValidationKindEnum"];
+            readonly reason: string;
+            readonly validation_fingerprint: string;
+            readonly subjects: unknown;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        ShiftDecisionRequestRequest: {
+            reason: string;
+            expected_revision: number;
+        };
+        /**
+         * @description A shift as the supervisor sees it. Times marked `_device` are the phone's clock; the events
+         *     (`opened_event`, `closed_event`) carry the server receipt time. No user-facing text.
+         */
+        ShiftDetail: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly courier: string;
+            /** Format: uuid */
+            readonly device: string;
+            /** Format: uuid */
+            readonly motorcycle: string;
+            readonly motorcycle_code: string;
+            /** @default open */
+            readonly status: components["schemas"]["ShiftStatusEnum"];
+            /** Format: date-time */
+            readonly opened_at_device: string;
+            /** Format: uuid */
+            readonly opened_event: string;
+            readonly odometer_open_km: number;
+            readonly open_note: string;
+            /** Format: date-time */
+            readonly closed_at_device: string | null;
+            /** Format: uuid */
+            readonly closed_event: string | null;
+            readonly odometer_close_km: number | null;
+            readonly close_note: string;
+            readonly checks: components["schemas"]["MotorcycleCheck"][];
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly validation: components["schemas"]["ShiftValidation"];
+            readonly validation_timeline: components["schemas"]["ShiftDecision"][];
+        };
+        /**
          * @description * `open` - Open
          *     * `closed` - Closed
          * @enum {string}
          */
         ShiftStatusEnum: "open" | "closed";
+        ShiftValidation: {
+            revision: number;
+            /** Format: uuid */
+            latest_decision: string | null;
+            kind: (components["schemas"]["ShiftValidationKindEnum"] | components["schemas"]["NullEnum"]) | null;
+            approval_current: boolean;
+            blockers: string[];
+        };
+        /**
+         * @description * `approve` - approve
+         *     * `observe` - observe
+         * @enum {string}
+         */
+        ShiftValidationKindEnum: "approve" | "observe";
         SnapshotCatalog: {
             slug: string;
             label_es: string;
@@ -5598,6 +6129,13 @@ export interface components {
          * @enum {string}
          */
         SourceKindEnum: "lot_admission";
+        /**
+         * @description * `accepted` - accepted
+         *     * `in_review` - in_review
+         *     * `rejected` - rejected
+         * @enum {string}
+         */
+        SourceStatusEnum: "accepted" | "in_review" | "rejected";
         SpacingWarning: {
             code: string;
             /** Format: uuid */
@@ -9761,13 +10299,19 @@ export interface operations {
         parameters: {
             query?: {
                 code?: string;
-                /** @description The pagination cursor value. */
-                cursor?: string;
                 /**
                  * @description * `rejected` - Rejected
                  *     * `in_review` - In Review
                  */
                 kind?: "rejected" | "in_review";
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -9784,6 +10328,154 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedReviewItemList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    review_items_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this review item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewItemDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    review_items_accept_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this review item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDecision"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    review_items_open_incident_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this review item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewDecisionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDecision"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    review_items_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this review item. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReviewVoidRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReviewDecision"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -10705,7 +11397,83 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Shift"];
+                    "application/json": components["schemas"]["ShiftDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    shifts_approve_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftDecisionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftDecision"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    shifts_observe_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this shift. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ShiftDecisionRequestRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ShiftDecision"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

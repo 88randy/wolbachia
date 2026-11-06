@@ -1,8 +1,10 @@
 """Append-only incident transitions; scope before lock, bounded atomic arbitration."""
 
-from dataclasses import dataclass
+from __future__ import annotations
+
+from dataclasses import dataclass, replace
 from datetime import datetime, timedelta
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 
 from django.db.models import Max
@@ -33,6 +35,10 @@ from incidents.selectors import (
 from incidents.transactions import incident_transaction
 from uploads.access import UploadActor, current_scope
 
+if TYPE_CHECKING:
+    from reviews.contracts import ReviewAuthorization
+    from reviews.models import ReviewDecision
+
 
 @dataclass(frozen=True)
 class IncidentCapture:
@@ -42,6 +48,8 @@ class IncidentCapture:
     device_time: datetime
     received_at: datetime
     source_id: UUID | None = None
+    review_authorization: ReviewAuthorization | None = None
+    review_decision: ReviewDecision | None = None
 
 
 def capture_version(capture: IncidentCapture) -> IncidentTypeVersion:
@@ -92,7 +100,14 @@ def append_event(
 def create_incident(capture: IncidentCapture) -> Incident:
     """Caller owns Organization; sync keeps source FK deferred until its immutable store."""
     actor, context = capture.actor, capture.context
-    require_context(current_scope(actor), INCIDENT_CREATE, context)
+    origin = None
+    if capture.review_decision is not None:
+        from reviews.incident_actions import validate_review_origin
+
+        origin = validate_review_origin(capture)
+        now = server_now()
+        capture = replace(capture, device_time=now, received_at=now)
+    _require_capture_authority(capture)
     version = capture_version(capture)
     owners = chain(version, context)
     stage = next_stage(-1, tuple(owner is not None for owner in owners))
@@ -115,6 +130,10 @@ def create_incident(capture: IncidentCapture) -> Incident:
         server_received_at=capture.received_at,
         description=capture.data["description"].strip(),
     )
+    if origin is not None:
+        from reviews.incident_actions import install_review_origin
+
+        install_review_origin(origin, incident)
     if capture.source_id:
         # Required source evidence was locked/verified BEFORE effects by the handler.
         evidence = sorted(str(value) for value in capture.data.get("evidence_ids", []))
@@ -160,6 +179,28 @@ def create_incident(capture: IncidentCapture) -> Incident:
         actor,
     )
     return cast(Incident, incident)
+
+
+def _require_capture_authority(capture: IncidentCapture) -> None:
+    authorization = capture.review_authorization
+    if authorization is None:
+        require_context(current_scope(capture.actor), INCIDENT_CREATE, capture.context)
+        return
+    from field_sync.models import FieldEvent
+
+    if authorization.reviewer_actor is None or capture.source_id != authorization.source_id:
+        raise Http404
+    source_matches = FieldEvent.objects.filter(
+        pk=authorization.source_id,
+        organization=capture.actor.organization,
+        created_by=capture.actor.user,
+        payload_sha256=authorization.payload_sha256,
+        status="in_review",
+    ).exists()
+    if not source_matches:
+        raise Http404
+    require_context(authorization.historical_scope, INCIDENT_CREATE, capture.context)
+    require_context(current_scope(authorization.reviewer_actor), INCIDENT_CREATE, capture.context)
 
 
 def report(actor: UploadActor, data: dict[str, Any]) -> Incident:

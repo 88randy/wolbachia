@@ -722,3 +722,40 @@ drafts. expiry_from_date/expiry_before_date (YYYY-MM-DD) resolve organization-lo
 day starts inclusive/exclusive, including DST. They cannot mix with the same-bound
 expiry_from/expiry_before instant; inverted resolved bounds are refused. Existing
 instant facets/orders/status remain; no implicit expires-soon threshold exists.
+## Append-only reviews (#113)
+
+GET /review-items/ uses StandardPagination (count/next/previous/results), kind/code
+filters, server search and explicit ordering. Detail separates immutable original
+source/provenance from current state/evaluation and revision-ordered decisions.
+POST {id}/accept/, void/ or open-incident/ requires review_item.decide and
+{expected_revision,reason,evidence_ids?}; returns 201 immutable ReviewDecision.
+is_terminal/audit_only/decision_state are server-derived/read-only. Source status,
+subject/effect receipt/terminal flags are not writable. Stale revisions return
+409 review_conflict; unsafe effects 409 review_blocked with blocked_by; contention
+uses existing retryable 429. Tenant/actor/current paired scopes are rechecked.
+
+Unknown source scope has a narrow read/audit exception: ONE contributing grant
+for that requested permission explicitly has centers=all AND quadrants=all. No
+cross-profile union/dimension borrowing or missing-axis inference. Accept stays
+blocked. Void under this exception is AUDIT ONLY/nonterminal/pending, with no
+source/operational mutation, foreign lookup/labels or unattributable hold clear.
+
+Optional void safety_disposition={inspection_id,attest_safe_now:true} applies only
+to NEW/unapplied severe source with exact bound Motorcycle. It also needs current
+motorcycle.service_clear, real same-Motorcycle unvoided ServiceRecord inspection
+and verified exact ReviewItem evidence. Missing proof retains pending hold with
+409 safety_disposition_required. Current administrative attestation uses server
+time, never photo/date/performed_at as physical-time proof. Referenced inspection
+void is 409 service_has_safety_disposition. Other faults/holds remain intact.
+
+POST /shifts/{id}/approve/ or observe/ needs shift.validate, revision/reason and a
+CLOSED frame. It appends audit without changing Shift lifecycle. Every current
+source center/quadrant plus Motorcycle context must be covered. Later sources
+invalidate approval without deleting history. Cookie CSRF, pinned bearer and
+default-deny action mapping remain inherited; no new permission/force-close route.
+
+Review uploads keep one immutable REAL parent. Follow-up Incident is a current
+reviewer report at server_now/source_event=None; its review link is audit, never
+parent-read authority. The typed history v1 owner appends real CourierChange plus
+publication receipt once and filters actual current subjects BEFORE LIMIT/cursor/
+bootstrap. See ../backend/reviews/README.md for causal, legacy and safety boundaries.
