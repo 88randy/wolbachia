@@ -1,6 +1,11 @@
 import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, test, vi } from "vitest";
+import type { QueryClient } from "@tanstack/react-query";
+import type { RecordedRequest } from "../../test/fake-api";
+import { geographyContext } from "./permissions";
+import { controlledRead, currentRead, queryFor, consumeRead } from "./geography-read-test-helpers";
+import type { ControlledRead, ReadKind } from "./geography-read-test-helpers";
 import { makeVoidReasonItems } from "../../test/fake-api";
 import {
   ALLOWED,
@@ -9,12 +14,15 @@ import {
   POINT_ID,
   QUADRANT_ID,
   version,
+  quadrant,
+  point,
 } from "./geography-test-helpers";
 
 vi.mock("./GeographyMap", () => ({
   default: () => <div role="region" aria-label="Map engine" />,
 }));
 
+const COORDINATES_NAME = "Pol\u00edgono (longitud, latitud)";
 const DRAFT = "0,0\n2,0\n0,2\n0,0";
 const ORIGINAL = "0,0\n4,0\n4,4\n0,4\n0,0";
 const PUBLISH = `POST /api/v1/quadrants/${QUADRANT_ID}/versions/`;
@@ -36,6 +44,23 @@ async function prepareResolvedDraft() {
     ).toBe(false);
   });
   return { coordinates, resolution };
+}
+
+async function readyEditor(client: QueryClient, reads: readonly ControlledRead[], context: string) {
+  await consumeRead(client, await currentRead(reads, "record", context));
+  await consumeRead(client, await currentRead(reads, "validation-points", context));
+  return screen.findByRole<HTMLTextAreaElement>("textbox", { name: COORDINATES_NAME });
+}
+
+function expectRetainedEvidence() {
+  expect(screen.getByRole<HTMLTextAreaElement>("textbox", { name: COORDINATES_NAME }).value).toBe(
+    DRAFT,
+  );
+  const resolution = within(screen.getByRole("group", { name: "OV-010" }));
+  expect(resolution.getByRole<HTMLSelectElement>("combobox").value).toBe("remove");
+  expect(resolution.getByRole<HTMLInputElement>("textbox", { name: "Evidencia" }).value).toBe(
+    EVIDENCE,
+  );
 }
 
 describe("geography retirement and permitted draft retention", () => {
@@ -72,8 +97,26 @@ describe("geography retirement and permitted draft retention", () => {
   });
 
   test("a scope-only change retains permitted polygon evidence and destroys it when the record leaves scope", async () => {
-    const { api, app } = await openGeography();
+    const reads: ControlledRead[] = [];
+    let context = geographyContext(ALLOWED) + "|";
+    let shouldHold = false;
+    const reply = (request: RecordedRequest, kind: ReadKind) => {
+      if (!shouldHold) return pageOf(kind === "record" ? [quadrant()] : [point()]);
+      const read = controlledRead(request, kind, { context });
+      reads.push(read);
+      return read.reply;
+    };
+    const { api, app } = await openGeography({
+      routes: {
+        "GET /api/v1/quadrants/": (request) => reply(request, "record"),
+        "GET /api/v1/sampling-points/": (request) => reply(request, "validation-points"),
+      },
+    });
     await prepareResolvedDraft();
+    await userEvent.selectOptions(
+      within(screen.getByRole("group", { name: "OV-010" })).getByRole("combobox"),
+      "remove",
+    );
     const selected = {
       ...ALLOWED,
       scope: {
@@ -81,40 +124,73 @@ describe("geography retirement and permitted draft retention", () => {
         quadrants: { mode: "selected" as const, ids: [QUADRANT_ID] },
       },
     };
-    api.setRoute("GET /api/v1/me/", Response.json(selected));
+    const changeScope = async (me: typeof ALLOWED) => {
+      context = geographyContext(me) + "|";
+      api.setRoute("GET /api/v1/me/", () => Response.json(me));
+      await act(async () => {
+        await app.queryClient.refetchQueries({ queryKey: ["me"] });
+      });
+    };
+    shouldHold = true;
+    await changeScope(selected);
+    const lookup = await currentRead(reads, "record", context);
+    expect(api.requests).toContain(lookup.request);
     await act(async () => {
-      await app.queryClient.refetchQueries({ queryKey: ["me"] });
+      lookup.deliver();
+      await lookup.bodyRequested;
     });
-    const retained = await screen.findByRole<HTMLTextAreaElement>("textbox", {
-      name: "Pol\u00edgono (longitud, latitud)",
+    // Me and even a delivered Response do not make the current scope's resource ready.
+    expect(queryFor(app.queryClient, "record", context)?.state.status).toBe("pending");
+    expect(screen.queryByRole("textbox", { name: COORDINATES_NAME })).toBeNull();
+    await readyEditor(app.queryClient, reads, context);
+    expectRetainedEvidence();
+    // A second permitted context must also retain both polygon and retirement evidence.
+    await changeScope(ALLOWED);
+    await readyEditor(app.queryClient, reads, context);
+    expectRetainedEvidence();
+    const previousQuery = queryFor(app.queryClient, "record", context);
+    if (previousQuery === undefined) throw new Error("No current lookup query to refresh.");
+    let oldRefresh: Promise<void> = Promise.resolve();
+    act(() => {
+      oldRefresh = app.queryClient.refetchQueries({
+        queryKey: previousQuery.queryKey,
+        exact: true,
+      });
     });
-    expect(retained.value).toBe(DRAFT);
-    const resolution = within(await screen.findByRole("group", { name: "OV-010" }));
-    expect(resolution.getByRole<HTMLInputElement>("textbox", { name: "Evidencia" }).value).toBe(
-      EVIDENCE,
-    );
-    api.setRoute(
-      "GET /api/v1/me/",
-      Response.json({
-        ...selected,
-        scope: { ...selected.scope, quadrants: { mode: "selected", ids: ["another-quadrant"] } },
-      }),
-    );
-    await act(async () => {
-      await app.queryClient.refetchQueries({ queryKey: ["me"] });
-    });
-    await screen.findByRole("heading", { name: "No encontramos esta p\u00e1gina" });
-    expect(screen.queryByRole("textbox", { name: "Pol\u00edgono (longitud, latitud)" })).toBeNull();
+    const obsolete = await currentRead(reads, "record", context);
+    const denied = {
+      ...selected,
+      scope: {
+        ...selected.scope,
+        quadrants: { mode: "selected" as const, ids: ["another-quadrant"] },
+      },
+    };
+    await changeScope(denied);
+    const deniedLookup = await currentRead(reads, "record", context);
+    expect(obsolete.request.signal.aborted).toBe(true);
+    expect(screen.queryByRole("textbox", { name: COORDINATES_NAME })).toBeNull();
     expect(screen.queryByDisplayValue(EVIDENCE)).toBeNull();
-    // Restoring access starts from published geometry, proving the denied draft was cleared.
-    api.setRoute("GET /api/v1/me/", Response.json(selected));
     await act(async () => {
-      await app.queryClient.refetchQueries({ queryKey: ["me"] });
+      obsolete.deliver();
+      obsolete.consume();
+      await obsolete.reply;
+      await oldRefresh;
     });
-    const restored = await screen.findByRole<HTMLTextAreaElement>("textbox", {
-      name: "Pol\u00edgono (longitud, latitud)",
-    });
+    expect(queryFor(app.queryClient, "record", context)?.state.status).toBe("pending");
+    expect(screen.queryByRole("textbox", { name: COORDINATES_NAME })).toBeNull();
+    expect(screen.queryByDisplayValue(EVIDENCE)).toBeNull();
+    expect(api.requests.filter(({ method }) => method === "POST")).toHaveLength(0);
+    await consumeRead(app.queryClient, deniedLookup);
+    await screen.findByRole("heading", { name: "No encontramos esta p\u00e1gina" });
+    // Restored access must wait for its own resource,then start with published geometry only.
+    await changeScope(selected);
+    const restoredLookup = await currentRead(reads, "record", context);
+    expect(restoredLookup.request).not.toBe(lookup.request);
+    expect(screen.queryByRole("textbox", { name: COORDINATES_NAME })).toBeNull();
+    expect(screen.queryByDisplayValue(EVIDENCE)).toBeNull();
+    const restored = await readyEditor(app.queryClient, reads, context);
     expect(restored.value).toBe(ORIGINAL);
     expect(screen.queryByDisplayValue(EVIDENCE)).toBeNull();
+    expect(api.requests.filter(({ method }) => method === "POST")).toHaveLength(0);
   });
 });

@@ -2,8 +2,13 @@ import { act, fireEvent, screen, waitFor, within } from "@testing-library/react"
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
 import type { Schemas } from "@wolbachia/api-client";
+import type { RecordedRequest } from "../../test/fake-api";
+import { geographyContext } from "./permissions";
+import { controlledRead, currentRead, consumeRead, queryFor } from "./geography-read-test-helpers";
+import type { ControlledRead, ReadKind } from "./geography-read-test-helpers";
 import { apiError } from "../../test/fake-api";
 import {
+  ALLOWED,
   openGeography,
   pageOf,
   POINT_ID,
@@ -50,36 +55,86 @@ function publicationRequests(requests: { method: string; path: string; body: unk
 
 describe("geography conflict and paging recovery", () => {
   test("refresh and reapply uses the latest revision without losing evidenced resolutions or publishing automatically", async () => {
-    const { api } = await openGeography({ routes: { [PUBLISH]: apiError(409, "stale_revision") } });
-    const coordinates = await resolveExcludedPoint();
-    const publish = screen.getByRole("button", { name: "Publicar nueva versi\u00f3n" });
-    await userEvent.click(publish);
+    const reads: ControlledRead[] = [];
+    const context = geographyContext(ALLOWED) + "|";
+    let shouldHold = false;
+    let recordRevision = 1;
+    const reply = (request: RecordedRequest, kind: ReadKind) => {
+      if (!shouldHold)
+        return pageOf(
+          kind === "record"
+            ? [{ ...quadrant(), current_version: version(recordRevision) }]
+            : [point()],
+        );
+      const read = controlledRead(request, kind, { context, recordRevision });
+      reads.push(read);
+      return read.reply;
+    };
+    const { api, app } = await openGeography({
+      routes: {
+        [PUBLISH]: apiError(409, "stale_revision"),
+        "GET /api/v1/quadrants/": (request) => reply(request, "record"),
+        "GET /api/v1/sampling-points/": (request) => reply(request, "validation-points"),
+      },
+    });
+    await resolveExcludedPoint();
+    await userEvent.click(screen.getByRole("button", { name: "Publicar nueva versi\u00f3n" }));
     await screen.findByRole("alert");
-    api.setRoute(
-      "GET /api/v1/quadrants/",
-      pageOf([{ ...quadrant(), current_version: version(3) }]),
-    );
-    const refresh = screen.getByRole("button", {
-      name: "Actualizar revisi\u00f3n y reaplicar borrador",
-    });
+    recordRevision = 3;
+    shouldHold = true;
     await waitFor(() => {
-      expect(refresh.hasAttribute("disabled")).toBe(false);
+      expect(
+        screen
+          .getByRole("button", { name: "Actualizar revisi\u00f3n y reaplicar borrador" })
+          .hasAttribute("disabled"),
+      ).toBe(false);
     });
-    await userEvent.click(refresh);
+    await userEvent.click(
+      screen.getByRole("button", { name: "Actualizar revisi\u00f3n y reaplicar borrador" }),
+    );
+    const lookup = await currentRead(reads, "record", context);
+    const validation = await currentRead(reads, "validation-points", context);
+    await act(async () => {
+      lookup.deliver();
+      validation.deliver();
+      await Promise.all([lookup.bodyRequested, validation.bodyRequested]);
+    });
+    expect(queryFor(app.queryClient, "record", context)?.state.fetchStatus).toBe("fetching");
+    expect(queryFor(app.queryClient, "validation-points", context)?.state.fetchStatus).toBe(
+      "fetching",
+    );
+    expect(screen.getByRole("alert").textContent).toContain("Hay una revisi");
+    expect(publicationRequests(api.requests)).toHaveLength(1);
+    await consumeRead(app.queryClient, lookup);
+    expect(queryFor(app.queryClient, "record", context)?.state.data).toMatchObject({
+      current_version: { revision: 3 },
+    });
+    // Reapply still waits for this explicit refresh's point projection.
+    expect(queryFor(app.queryClient, "validation-points", context)?.state.fetchStatus).toBe(
+      "fetching",
+    );
+    expect(screen.getByRole("alert").textContent).toContain("Hay una revisi");
+    expect(publicationRequests(api.requests)).toHaveLength(1);
+    await consumeRead(app.queryClient, validation);
     await waitFor(() => {
       expect(screen.queryByRole("alert")).toBeNull();
     });
-    expect(coordinates.value).toBe(DRAFT);
+    expect(
+      screen.getByRole<HTMLTextAreaElement>("textbox", {
+        name: "Pol\u00edgono (longitud, latitud)",
+      }).value,
+    ).toBe(DRAFT);
     const resolution = within(screen.getByRole("group", { name: "OV-010" }));
     expect(resolution.getByRole<HTMLInputElement>("textbox", { name: "Evidencia" }).value).toBe(
       "Outside point inspected and approved",
     );
     expect(publicationRequests(api.requests)).toHaveLength(1);
-    api.setRoute(
-      PUBLISH,
-      Response.json({ version: version(4), spacing_warnings: [] }, { status: 201 }),
-    );
-    await userEvent.click(publish);
+    shouldHold = false;
+    api.setRoute(PUBLISH, () => {
+      recordRevision = 4;
+      return Response.json({ version: version(4), spacing_warnings: [] }, { status: 201 });
+    });
+    await userEvent.click(screen.getByRole("button", { name: "Publicar nueva versi\u00f3n" }));
     await screen.findByText("Cambios publicados");
     expect(
       publicationRequests(api.requests).map(
@@ -94,6 +149,24 @@ describe("geography conflict and paging recovery", () => {
         ],
       },
     ]);
+    expect(publicationRequests(api.requests)).toHaveLength(2);
+    expect(publicationRequests(api.requests)[1]?.body).toEqual({
+      expected_revision: 3,
+      geometry: {
+        type: "Polygon",
+        coordinates: [
+          [
+            [0, 0],
+            [2, 0],
+            [0, 2],
+            [0, 0],
+          ],
+        ],
+      },
+      point_resolutions: [
+        { point: POINT_ID, decision: "keep", evidence: "Outside point inspected and approved" },
+      ],
+    });
   });
 
   test("an unresolved point missing from the loaded projection blocks publishing until a refresh loads and resolves it", async () => {
