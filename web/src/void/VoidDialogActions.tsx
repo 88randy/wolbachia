@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import styles from "./void-dialog.module.css";
+import { DialogFooter } from "../ui/DialogFooter";
 interface VoidDialogActionsProps {
   isBusy: boolean;
   isBlocked: boolean;
@@ -13,7 +14,7 @@ export function VoidDialogActions({ isBusy, isBlocked, onCancel }: VoidDialogAct
     if (!isBusy) onCancel();
   }
   return (
-    <div className={styles.actions}>
+    <DialogFooter>
       <Button variant="secondary" aria-disabled={isBusy} onClick={cancel} data-void-cancel>
         {t("common.actions.cancel")}
       </Button>
@@ -26,6 +27,6 @@ export function VoidDialogActions({ isBusy, isBlocked, onCancel }: VoidDialogAct
       >
         {t("voiding.dialog.confirm")}
       </Button>
-    </div>
+    </DialogFooter>
   );
 }

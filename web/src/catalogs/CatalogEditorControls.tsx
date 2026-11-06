@@ -1,3 +1,4 @@
+import { InlineNotice } from "../ui/InlineNotice";
 import { useTranslation } from "react-i18next";
 import type { CatalogEditor } from "./use-catalog-editor";
 import { CatalogAddButton } from "./CatalogAddButton";
@@ -13,13 +14,17 @@ export function CatalogEditorControls({
   isReady: boolean;
 }) {
   const { t } = useTranslation();
-  const isShowingError = editor.error !== null && editor.dialog?.kind !== "deactivate";
+  const isShowingError = editor.error !== null;
   return (
     <>
       <div className={styles.actions}>
         <CatalogAddButton editor={editor} isReady={isReady} />
       </div>
-      {isShowingError && editor.error && <p role="alert">{t(editor.error)}</p>}
+      {isShowingError && editor.error && (
+        <InlineNotice tone="warning">
+          <span role="alert">{t(editor.error)}</span>
+        </InlineNotice>
+      )}
       <p role="status" aria-live="polite" aria-atomic="true" className={styles.announcement}>
         {editor.announcement}
       </p>

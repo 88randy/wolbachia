@@ -38,5 +38,5 @@ export function useCatalogWrite() {
       if (!guard.signal.aborted) setBusy(false);
     }
   };
-  return { run, send, isBusy };
+  return { run, send, isBusy, isLocked: () => lock.current };
 }

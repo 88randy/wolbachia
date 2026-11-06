@@ -1,3 +1,4 @@
+import { ToastProvider } from "../ui/ToastProvider";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -37,7 +38,9 @@ async function renderLimitedControls() {
     <I18nextProvider i18n={instance}>
       <QueryClientProvider client={queryClient}>
         <ApiClientProvider client={client}>
-          <LimitedControls items={items} />
+          <ToastProvider>
+            <LimitedControls items={items} />
+          </ToastProvider>
         </ApiClientProvider>
       </QueryClientProvider>
     </I18nextProvider>,
@@ -51,9 +54,9 @@ test("the active-item limit keeps permitted controls visible with a readable rea
   for (const name of ["Agregar elemento", "Reactivar"]) {
     const control = screen.getByRole("button", { name });
     expect(control.getAttribute("aria-disabled")).toBe("true");
-    const description = document.getElementById(control.getAttribute("aria-describedby") ?? "");
-    expect(description?.textContent).toContain("200 elementos activos");
-    expect(description?.hidden).toBe(false);
+    await user.hover(control);
+    expect((await screen.findByRole("tooltip")).textContent).toContain("200 elementos activos");
+    await user.unhover(control);
     await user.click(control);
   }
   expect(api.requests).toHaveLength(0);

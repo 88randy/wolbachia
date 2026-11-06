@@ -6,7 +6,7 @@ import type { PointsTableOptions } from "./use-points-table";
 export function PointsTable(options: PointsTableOptions) {
   const { t } = useTranslation();
   const list = usePointsTable(options);
-  const dialog = { ...options, onClose: list.close };
+  const dialog = { scope: options.scope, quadrant: options.quadrant, onClose: list.close };
   return (
     <>
       <p>{t("geography.points.fixed")}</p>

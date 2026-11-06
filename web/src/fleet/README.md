@@ -17,3 +17,8 @@ verification guard on actions. List loading/empty/error states remain provided b
 `StatusPill`, actions use shared `Button`, and record codes/dates use mono tokens.
 The native create/reason dialogs keep their existing logic and the shared dialog
 CSS; no missing B-05 history, mutation or permission behavior is introduced.
+
+
+Issue #218 connects the existing server exact-code filter and ordering keys (code, plate,
+created_at, center). Only rendered supported columns expose sort controls. Filters, sorting
+and paging remain URL-owned; no free-text search or derived fleet metrics are fabricated.

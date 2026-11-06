@@ -147,3 +147,12 @@ their distinct response shapes. After an actual CI fixture failure, an authorize
 focused local run passed on Windows/Chromium on 2026-11-06, including the native
 worker and canvas-to-coordinate interaction. This does not qualify physical GPUs
 or the Linux runtime image; the corrected smoke still must pass those CI jobs.
+
+Issue #218 connects the inherited code search and code/created_at ordering to W24 block and
+sampling-point lists through URL state. Map and publication-validation reads remain unfiltered.
+Version histories use independent `history_*` URL state and the generated #224 revision/version,
+current-author, inclusive/exclusive ISO datetime and point-retired facets plus public sorting.
+Parent search/order/page never leak into history requests; closing a dialog retains parent state.
+There is no history free-text search or raw UUID author picker. `history-filters.test.tsx`
+checks actual typed requests for all three resources; `table-url-scope.test.ts` checks isolation
+and safe positive numbers. The shared shell/table/switch/dialog patterns also apply here.

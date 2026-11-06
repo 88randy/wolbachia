@@ -10,6 +10,7 @@ interface ToastLiveRegionProps {
 export function ToastLiveRegion({ toasts, onDismiss, label, politeness }: ToastLiveRegionProps) {
   return (
     <div
+      role="region"
       className={styles.toastList}
       aria-live={politeness}
       aria-relevant="additions removals"

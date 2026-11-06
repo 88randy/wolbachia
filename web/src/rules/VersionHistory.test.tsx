@@ -61,20 +61,36 @@ const rowOf = (name: RegExp) => screen.getByRole("row", { name });
 
 describe("version history", () => {
   test("shows value, day, status, reason, author and when it was recorded, newest first", async () => {
-    await openParameterPage({ versions: HISTORY });
-
-    const scheduled = await screen.findByRole("row", { name: /40 metros/ });
+    let release: () => void = () => undefined;
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const { api } = await openParameterPage({
+      routes: {
+        [`GET ${VERSIONS_API}`]: async () => {
+          await pending;
+          return pageOf([SCHEDULED, IN_FORCE, SUPERSEDED]);
+        },
+      },
+    });
+    const history = within(await screen.findByRole("region", { name: "Historial de versiones" }));
+    const historyRow = (name: RegExp) => history.getByRole("row", { name });
+    await waitFor(() => {
+      expect(requestsTo(api, "GET", VERSIONS_API)).toHaveLength(1);
+    });
+    release();
+    const scheduled = await history.findByRole("row", { name: /40 metros/ });
 
     expect(within(scheduled).getByText("10 nov 2026")).toBeDefined();
     expect(within(scheduled).getByText("Programada")).toBeDefined();
     expect(within(scheduled).getByText("Ajuste de temporada")).toBeDefined();
     expect(within(scheduled).getByText("ana.supervisora")).toBeDefined();
     expect(within(scheduled).getByText(/4 nov 2026/)).toBeDefined();
-    expect(within(rowOf(/50 metros/)).getByText("Vigente")).toBeDefined();
-    expect(within(rowOf(/50 metros/)).getByText("luis.promotor")).toBeDefined();
-    expect(within(rowOf(/60 metros/)).getByText("Anterior")).toBeDefined();
-    expect(within(rowOf(/60 metros/)).getByText("Sistema")).toBeDefined();
-    const values = screen
+    expect(within(historyRow(/50 metros/)).getByText("Vigente")).toBeDefined();
+    expect(within(historyRow(/50 metros/)).getByText("luis.promotor")).toBeDefined();
+    expect(within(historyRow(/60 metros/)).getByText("Anterior")).toBeDefined();
+    expect(within(historyRow(/60 metros/)).getByText("Sistema")).toBeDefined();
+    const values = history
       .getAllByRole("row")
       .slice(1)
       .map((row) => row.textContent);
@@ -89,7 +105,7 @@ describe("version history", () => {
     expect(screen.queryByRole("row", { name: /45 metros/ })).toBeNull();
     expect(requestsTo(api, "GET", VERSIONS_API)[0]?.path).toContain("include_voided=false");
 
-    await user.click(screen.getByRole("checkbox", { name: "Incluir anulados" }));
+    await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
 
     const voided = await screen.findByRole("row", { name: /45 metros/ });
     expect(within(voided).getByText("Motivo: Se capturó dos veces")).toBeDefined();
@@ -198,7 +214,13 @@ describe("version history", () => {
       await screen.findByRole("heading", { name: "Historial de versiones" })
     ).closest("section");
 
-    expect(within(history as HTMLElement).queryAllByRole("textbox")).toHaveLength(0);
+    expect(
+      within(history as HTMLElement).getByRole("textbox", { name: "Buscar en motivos" }),
+    ).toBeDefined();
+    const table = within(await within(history as HTMLElement).findByRole("table"));
+    expect(table.queryAllByRole("textbox")).toHaveLength(0);
+    expect(table.queryAllByRole("spinbutton")).toHaveLength(0);
+    expect(table.queryAllByRole("combobox")).toHaveLength(0);
     expect(
       within(history as HTMLElement).queryAllByRole("button", {
         name: /editar|guardar|borrar|eliminar/i,
@@ -300,6 +322,27 @@ describe("voiding a scheduled version", () => {
 });
 
 describe("history in the address", () => {
+  test("reason search, status and numeric value sorting are sent to this parameter's history", async () => {
+    const { api } = await openParameterPage({
+      versions: [SCHEDULED],
+      path: `${PARAMETER_PATH}?search=temporada&status=scheduled&ordering=-value&include_voided=true`,
+    });
+    const history = within(await screen.findByRole("region", { name: "Historial de versiones" }));
+    await history.findByRole("row", { name: /40 metros/ });
+    const query = new URL(requestsTo(api, "GET", VERSIONS_API)[0]?.path ?? "", "http://api.invalid")
+      .searchParams;
+    expect(Object.fromEntries(query)).toEqual({
+      page: "1",
+      page_size: "100",
+      include_voided: "true",
+      search: "temporada",
+      status: "scheduled",
+      ordering: "-value",
+    });
+    expect(history.getByRole("columnheader", { name: /Valor/ }).getAttribute("aria-sort")).toBe(
+      "descending",
+    );
+  });
   test("opens with Include voided on when the address says so", async () => {
     await openParameterPage({ versions: HISTORY, path: `${PARAMETER_PATH}?include_voided=true` });
 
