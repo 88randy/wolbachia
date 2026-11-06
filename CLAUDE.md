@@ -128,3 +128,6 @@ docs/           Decisiones (ADR), contratos y notas
 - (review) Select exact registered event types for parent identities: `ovitrap.replace` also ends with `place`, so suffix matching can reserve the old UUID instead of the replacement UUID (#113).
 - (tests) Control both concurrency winner orders: NEW in_review sources have no operational rows. Isolate only notice transport so real transactions and after-commit behavior remain exercised (#113).
 - (git) Check an alleged revert against the PR merge base and actual merged tree. Comparing an older branch tip with newer master can mislabel an untouched path as a revert (#113/#274).
+- (tooling) Persist offline guard startup and denied attempts immediately: mypy's fast exit bypasses atexit. Record hook arguments after runpy restores them; a missing exit report is not evidence of an unguarded startup or zero attempts (#126).
+- (tests) Build published-payload expectations through the registered producer codec, then assert domain values/instants. Update affected exact seed, route and schema expectations in the same feature while preserving previous assertions (#126).
+- (integration) JavaScript replacement strings interpret dollar replacement tokens; use a replacement function for literal document content. Verify canonical blobs/prefixes and retained stashes by exact OID when composing concurrent changes (#280).

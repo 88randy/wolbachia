@@ -10,7 +10,7 @@ One English name per domain term across backend, mobile and web. Spanish appears
 | autorización temporal de carga | upload lease | UploadLease, Upload-Lease | Append-only 15-minute authenticated PUT authorization. |
 | recibo de bytes originales | upload source | UploadSource, sha256 | Immutable private original object; never served. |
 | verificación de evidencia | upload verification | UploadVerification, verified_at | Sanitized image plus its separate SHA-256; no parent authority implied. |
-| vínculo de evidencia | attachment link | AttachmentLink, context | One immutable authorized source/fault binding per upload. |
+| vínculo de evidencia | attachment link | AttachmentLink, context | Exactly one immutable field_event, motorcycle_fault, incident or review_item parent per upload. Current parent authorization is rechecked; retained verification never grants permanent access or reparenting. |
 
 Rules:
 
@@ -51,6 +51,7 @@ Rules:
 | --- | --- | --- | --- |
 | catálogo | catalog | `/catalogs/`, `Catalog`, `slug` | Per-organization option list (e.g. `removal-reason`). Created by the seed; `is_open` says it ends with "Other". |
 | opción de catálogo | catalog item | `/catalogs/{slug}/items/`, `CatalogItem`, `code` | One option; deactivated (`is_active`), never deleted. Labels `label_es` / `label_en` are data. |
+| revisión de catálogo | catalog revision | `Catalog.revision`, item `catalog_version`, request `version` | Integer counter for one Catalog, checked by reorder and conditional availability. Item responses retain that write's revision; field configuration snapshot versions are separate content hashes. |
 | Otro (especificar) | other item | `is_other`, code `other` | Fixed last item of an open catalog; cannot be deactivated; choosing it requires free text. |
 | parámetro de regla | rule parameter | `/rule-parameters/`, `RuleParameter`, `key` | A threshold (e.g. `max_distance_to_point_m`) with type, unit and optional bounds. |
 | versión de parámetro | rule parameter version | `/rule-parameters/{key}/versions/`, `RuleParameterVersion` | One value from `effective_from` on; insert-only; voided (not deleted) if wrong and still scheduled. |
