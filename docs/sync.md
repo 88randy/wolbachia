@@ -780,4 +780,4 @@ No network/storage/mail under locks. Replacement emits old/new upserts; removal 
 a retired upsert; proposal emits nothing. Courier schema 1 adds optional is_retired
 (default false for old payloads) without changing existing field meanings. Version
 hashes include nonvoided lineage/removal event UUIDs; pending source handling keeps
-feed and subsequent bootstrap consistent. Details: ADR 119 and lifecycle/README.md.
+feed and subsequent bootstrap consistent. Details: ADR 120 and lifecycle/README.md.

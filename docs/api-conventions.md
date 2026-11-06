@@ -367,5 +367,5 @@ OP03 uses the existing versioned 2 weeks (1..8) / 3 incidents (1..10), counting 
 epi weeks and fixed-point incident markers. Suggestions are advisory. Voids require
 normalized 10..1000 visible-character text and preserve lifecycle/decision dependents.
 No stock compensation exists in this baseline. Explicit unrecovered-resolution and
-quadrant closure writers remain follow-ups. ADR 119 and backend/ovitraps/lifecycle/
+quadrant closure writers remain follow-ups. ADR 120 and backend/ovitraps/lifecycle/
 README.md document SQL guards, lock order and the acceptance map.

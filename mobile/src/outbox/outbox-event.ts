@@ -63,10 +63,10 @@ function readGps(text: string | null): FieldEventEnvelope["gps"] {
   if (text === null) return null;
   const gps = parseJsonObject(text);
   const { lat, lng, accuracy_m: accuracyM } = gps;
-  if (typeof lat !== "number" || typeof lng !== "number" || typeof accuracyM !== "number") {
+  if (typeof lat !== "number" || typeof lng !== "number") {
     throw new Error("Stored GPS fix is malformed.");
   }
-  return { lat, lng, accuracy_m: accuracyM };
+  return { lat, lng, accuracy_m: typeof accuracyM === "number" ? accuracyM : null };
 }
 
 export function readStatus(row: SqlRow): OutboxStatus {

@@ -215,7 +215,7 @@ Tests: ../tests/test_bundle_producers_196.py covers fan-out, once-only pulls/rep
 placement/reading tombstones, fallback to earlier checks, isolation and query bound.
 
 
-## Lifecycle (#112, B-15 / ADR 119)
+## Lifecycle (#112, B-15 / ADR 120)
 
 lifecycle/ is part of this app, imported by models.py and registered by apps.ready.
 See [lifecycle/README.md](lifecycle/README.md) for the full decisions, invariant/lock

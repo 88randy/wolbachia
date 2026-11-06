@@ -1,9 +1,9 @@
 # Ovitrap lifecycle (B-15 / #112)
 
 Package inside the existing ovitraps app. Read ../README.md, ../../field_sync/README.md,
-../../../docs/sync.md and ADR 119 before changing it. No new app or dependency.
+../../../docs/sync.md and ADR 120 before changing it. No new app or dependency.
 
-## Decisions and boundaries (ADR 119)
+## Decisions and boundaries (ADR 120)
 
 - Ovitrap remains immutable. Replacement inserts a phone-generated organization-unique
   physical client_uuid, the same SamplingPoint, its capture-time PointVersion and a
