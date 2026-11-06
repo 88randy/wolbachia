@@ -3,6 +3,57 @@
 Package inside the existing ovitraps app. Read ../README.md, ../../field_sync/README.md,
 ../../../docs/sync.md and ADR 120 before changing it. No new app or dependency.
 
+## Scoped OP03 read (#287)
+
+`GET /api/v1/field/ovitrap-advisories/{physical-client-UUID}/?at=...` supplies an
+optional exact-cutoff relocation advisory. This new read policy was selected by
+the orchestrator under delegated authority; no personal client approval is implied.
+DeviceBearer must be active and both field.bootstrap and field_event.sync must
+each cover the actual point's center/quadrant pair. It does not use ovitrap.read,
+final capability, Me's flat projection or downloaded rows as capture authority.
+
+advisory_selectors.py owns the shared OP03 rule bounds, real selected version/value/
+effective_from tuples and fixed-point facts. Existing suggest_relocation remains
+the legacy bool wrapper: absent rules false; unexpected errors still propagate.
+Closed-house labels are the current local week plus N-1 predecessors, distinct and
+in required order, bounded by N<=8. Incident links are point-wide across physical
+lineage/couriers with device_time<=at and current nonvoid sources, without a week
+window or general Incident lookup. Existing effective/void owners supply the facts;
+a ReviewDecision alone is not an effect and status=in_review is never rewritten.
+
+advisory.py takes User→Device→DeviceSession→TokenPair NOWAIT, then Organization
+NOWAIT NO KEY UPDATE and repeats current paired authority/point resolution in that
+SAME transaction. Authentication's own bookkeeping remains outside it. No source,
+courier or late account locks, I/O, models/migrations/defaults or publication writes.
+field_views.py validates an explicit aware protocol at and reauthorizes before ETag
+handling. serializers.py describes nullable result fields and rule tuples.
+
+See ../../../docs/api-conventions.md#scoped-relocation-advisory-287 for exact DTO,
+errors, private caching and same-at known-projection semantics. In particular a
+future_cutoff state can become available by clock alone, without business writes;
+equal versions require equal computed state and content, not merely unchanged rows.
+This is explicit revalidation, not bootstrap/delta delivery. Unproved context is
+unavailable/null, never fabricated zero. An unavailable advisory alone adds no
+capture block; existing capture authorization, rule, GPS and evidence gates still
+apply. #138 must retain its frozen rule and authority proof.
+Known scope/session/owner invalidation hides active guidance; fully offline
+retained data cannot be immediately erased remotely. Camera/native work stays
+in #253/#138/#130; this aggregate is not device or capture qualification.
+
+Acceptance coverage (SQL/HTTP/barriers require PostgreSQL CI):
+
+| Criterion | Test owner |
+| --- | --- |
+| Canonical lineage/cutoff/void and bounded ordered weeks | Existing B15 closed_house_suggestion and incident_threshold tests, extended with duplicate and out-of-window labels, the upper bound of eight, and void/cutoff assertions. |
+| Aware input, explicit null, unexpected legacy failure, schema | tests/test_ovitrap_advisory_contract_287.py (DB-free). |
+| Rule tuples, clock transition to 200/new ETag/304 and no business writes | clock_transition_recomputes_state_before_etag_without_business_writes. |
+| Both real paired actions, private 304 denial, active bearer only | actual_bearer_both_paired_actions_and_current_denial_before_304. |
+| General Incident excluded, actual reviewed effects/replay/void, original source/geometry retained | new_known_review_effect_and_void_change_same_cutoff_not_geometry. |
+| Real Organization arbiter, both reader/writer winner orders | reader_and_real_rule_writer_share_organization_boundary (Event+SQL barrier). |
+
+The last four names are in tests/test_ovitrap_advisory_read_287.py. Local collection,
+schema generation and pure checks are not SQL/HTTP/concurrency execution evidence.
+
 ## Decisions and boundaries (ADR 120)
 
 - Ovitrap remains immutable. Replacement inserts a phone-generated organization-unique

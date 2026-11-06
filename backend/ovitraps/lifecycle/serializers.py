@@ -1,11 +1,14 @@
 """Strict lifecycle event payloads and scoped read projections."""
 
+import re
+from datetime import UTC, datetime
 from typing import Any
 
 from rest_framework import serializers
 
 from core.serializers import OrgScopedModelSerializer
 from core.void_reason import VOID_REASON_MAX_LENGTH, validate_void_reason
+from field_sync.serializers import SafeDateTimeField, validate_plausible_time
 from geography.geometry import validate_location
 from ovitraps.lifecycle.models import RelocationProposal, RemovalResolution
 from ovitraps.payloads import (
@@ -15,6 +18,62 @@ from ovitraps.payloads import (
     StrictPayloadSerializer,
 )
 from ovitraps.serializers import PROVENANCE_FIELDS, ProvenanceSerializer
+
+MAX_ADVISORY_WEEKS = 8  # Existing OP03 upper bound; this response is not reading history.
+RFC3339_CUTOFF = re.compile(
+    r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})", re.IGNORECASE
+)
+
+
+class AdvisoryCutoffField(SafeDateTimeField):
+    def to_internal_value(self, value: Any) -> datetime:  # noqa: ANN401
+        if not isinstance(value, str) or RFC3339_CUTOFF.fullmatch(value) is None:
+            self.fail("invalid", format="RFC3339 with an explicit offset")
+        return super().to_internal_value(value.upper())
+
+
+class OvitrapAdvisoryQuerySerializer(serializers.Serializer[Any]):
+    at = AdvisoryCutoffField(default_timezone=UTC, validators=[validate_plausible_time])
+
+
+class AdvisoryRuleVersionSerializer(serializers.Serializer[Any]):
+    version_id = serializers.UUIDField()
+    value = serializers.IntegerField()
+    effective_from = serializers.DateTimeField()
+
+
+class AdvisoryParametersSerializer(serializers.Serializer[Any]):
+    closed_house_weeks_to_relocate = AdvisoryRuleVersionSerializer()
+    incidents_to_relocate = AdvisoryRuleVersionSerializer()
+
+
+class AdvisoryRuleContextSerializer(serializers.Serializer[Any]):
+    timezone = serializers.CharField()
+    epi_week = serializers.ChoiceField(choices=["iso", "mmwr"])
+    parameters = AdvisoryParametersSerializer()
+
+
+class OvitrapAdvisorySerializer(serializers.Serializer[Any]):
+    schema_version = serializers.IntegerField(min_value=1, max_value=1)
+    version = serializers.CharField()
+    physical_ovitrap_id = serializers.UUIDField()
+    point_id = serializers.UUIDField()
+    as_of = serializers.DateTimeField()
+    state = serializers.ChoiceField(choices=["available", "unavailable"])
+    unavailable_reason = serializers.ChoiceField(
+        choices=["rule_context_unavailable", "organization_context_unavailable", "future_cutoff"],
+        allow_null=True,
+    )
+    rule_context = AdvisoryRuleContextSerializer(allow_null=True)
+    rule_context_version = serializers.CharField(allow_null=True)
+    required_epi_weeks = serializers.ListField(
+        child=serializers.CharField(), max_length=MAX_ADVISORY_WEEKS, allow_null=True
+    )
+    observed_closed_house_weeks = serializers.ListField(
+        child=serializers.CharField(), max_length=MAX_ADVISORY_WEEKS, allow_null=True
+    )
+    incident_count = serializers.IntegerField(min_value=0, allow_null=True)
+    suggested = serializers.BooleanField(allow_null=True)
 
 
 class PhysicalUUIDField(serializers.UUIDField):

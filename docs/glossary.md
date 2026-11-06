@@ -39,6 +39,7 @@ Rules:
 | revisar | check | `check` (action) | Fixed action. |
 | reemplazar | replace | `replace` (action) | Fixed action. |
 | reubicar | relocate | `relocate` (action), `/relocations/` | Fixed action; also a proposal that the supervisor approves. |
+| sugerencia de reubicación | relocation advisory | `/field/ovitrap-advisories/{id}/`, `as_of` | Optional point-wide OP03 aggregate at an explicit source cutoff with observed rule provenance; neither original capture proof nor capture permission. |
 | retirar | remove | `remove` (action) | Fixed action. |
 | resolución de retiro no recuperado | removal resolution | `RemovalResolution`, `removal.resolve` | Supervisor's append-only recovered_later or written_off disposition for one removal; original recovery evidence remains unchanged. |
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |

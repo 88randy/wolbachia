@@ -515,6 +515,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/field/ovitrap-advisories/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["field_ovitrap_advisories_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/rules/": {
         parameters: {
             query?: never;
@@ -2858,6 +2884,22 @@ export interface components {
          * @enum {string}
          */
         ActorKindEnum: "human" | "system";
+        AdvisoryParameters: {
+            closed_house_weeks_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
+            incidents_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
+        };
+        AdvisoryRuleContext: {
+            timezone: string;
+            epi_week: components["schemas"]["EpiWeekEnum"];
+            parameters: components["schemas"]["AdvisoryParameters"];
+        };
+        AdvisoryRuleVersion: {
+            /** Format: uuid */
+            version_id: string;
+            value: number;
+            /** Format: date-time */
+            effective_from: string;
+        };
         Application: {
             /** Format: uuid */
             id: string;
@@ -4375,6 +4417,30 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        OvitrapAdvisory: {
+            schema_version: number;
+            version: string;
+            /** Format: uuid */
+            physical_ovitrap_id: string;
+            /** Format: uuid */
+            point_id: string;
+            /** Format: date-time */
+            as_of: string;
+            state: components["schemas"]["OvitrapAdvisoryStateEnum"];
+            unavailable_reason: (components["schemas"]["UnavailableReasonEnum"] | components["schemas"]["NullEnum"]) | null;
+            rule_context: components["schemas"]["AdvisoryRuleContext"] | null;
+            rule_context_version: string | null;
+            required_epi_weeks: string[] | null;
+            observed_closed_house_weeks: string[] | null;
+            incident_count: number | null;
+            suggested: boolean | null;
+        };
+        /**
+         * @description * `available` - available
+         *     * `unavailable` - unavailable
+         * @enum {string}
+         */
+        OvitrapAdvisoryStateEnum: "available" | "unavailable";
         OvitrapBundle: {
             /** @default false */
             is_retired: boolean;
@@ -6601,6 +6667,13 @@ export interface components {
          * @enum {string}
          */
         TaskActionEnum: "place" | "check";
+        /**
+         * @description * `rule_context_unavailable` - rule_context_unavailable
+         *     * `organization_context_unavailable` - organization_context_unavailable
+         *     * `future_cutoff` - future_cutoff
+         * @enum {string}
+         */
+        UnavailableReasonEnum: "rule_context_unavailable" | "organization_context_unavailable" | "future_cutoff";
         /** @description Free-text reason of a fleet unblock; the service validates it with `validate_void_reason`. */
         UnblockRequest: {
             reason: string;
@@ -7837,6 +7910,50 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CatalogSnapshot"][];
+                };
+            };
+            /** @description No response body */
+            304: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    field_ovitrap_advisories_retrieve: {
+        parameters: {
+            query: {
+                at: string;
+            };
+            header?: {
+                /** @description The `ETag` (the snapshot `version`) the client already holds. When it is still current the answer is `304` with no body. */
+                "If-None-Match"?: string;
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OvitrapAdvisory"];
                 };
             };
             /** @description No response body */

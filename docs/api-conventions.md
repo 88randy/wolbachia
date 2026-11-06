@@ -486,6 +486,60 @@ No stock compensation exists in this baseline. Quadrant closure writers remain
 follow-ups. ADR 120 and backend/ovitraps/lifecycle/
 README.md document SQL guards, lock order and the acceptance map.
 
+## Scoped relocation advisory (#287)
+
+GET `/field/ovitrap-advisories/{id}/?at=<RFC3339>` is a narrow DeviceBearer-only
+aggregate read. The existing history endpoint still requires `ovitrap.read`. The id is the
+physical client UUID; the server resolves its actual same-organization fixed point,
+including retained replaced/removed identities. Require BOTH field.bootstrap and
+field_event.sync, each paired with that real center AND quadrant in one effective
+grant. No grant/default changes or final-upload capability. A cached validator is
+never permission; current identity/membership/scope are rechecked before 304.
+This policy was chosen by the orchestrator under delegated authority.
+
+`at` is mandatory with an explicit offset/Z, inclusive 2020-01-01 and
+exclusive 2100-01-01 UTC. Bad/missing values are 400 validation_error fields.at.
+The response has schema_version=1, version, physical_ovitrap_id, point_id, as_of,
+state=available|unavailable, unavailable_reason and six result fields:
+rule_context, rule_context_version, required_epi_weeks,
+observed_closed_house_weeks, incident_count, suggested. Available reason is null.
+Unavailable reason is future_cutoff|rule_context_unavailable|
+organization_context_unavailable; ALL six result fields are null, never fake zeros.
+Unknown application/storage failures propagate, rather than becoming unavailable.
+
+Available rule_context is `{timezone,epi_week,parameters}`. Parameters has exactly
+closed_house_weeks_to_relocate and incidents_to_relocate, each the actual selected
+`{version_id,value,effective_from}`. Its component hash is not the original event's
+full rules_version. Required weeks are N newest-first organization-local ISO/MMWR
+labels, including the week containing at; 1<=N<=8. Observed weeks are their distinct
+matching subset in the SAME order, at most N labels. Incident count uses nonvoid
+OvitrapIncidentLink sources at that fixed point across physical lineage/couriers
+with device_time<=at, without an incident week window or general #104 Incident count.
+Suggested is the canonical OR of all N closed-house weeks or the configured count.
+
+`as_of` is a source device-time cutoff and effective-rule selection, not the time
+the server first knew all facts. Late arrivals, actual reviewed effects and voids
+can change later same-at results. Version/ETag hash identity/cutoff and computed
+state/content, without request-now churn. A future_cutoff result can become
+available solely as the clock reaches at: recompute before 304 and return 200/new
+version when state changes. Equal computed state/content retains its version.
+Use private,no-cache and Vary:X-Organization, with no public cache or source/GPS/
+author/evidence detail. Auth bookkeeping stays outside this bounded business read.
+
+Fresh account locks precede Organization NOWAIT NO KEY UPDATE, then fresh paired
+scope and point-filtered facts in one short transaction. No late User/source/
+courier locks or external I/O. Contention uses existing retryable 429. No model,
+migration, event, producer/feed, geometry or task effect is added.
+
+#138 consumes optional downloaded/dated guidance only under the SAME proved cutoff
+and rule context; a new unproved offline cutoff stays unavailable without blocking
+capture. This read and Me's display projection do not authorize capture or repair
+original source proof. Preserve frozen capture hashes/time/UUID. Hide active cached
+guidance on observed scope/owner/session revocation. Fully offline retained data
+cannot be immediately remotely erased. No new scheduler/delta promise is made;
+explicit revalidation uses the existing request lifecycle. #138/#130 native
+qualification and #253 acquisition remain separate.
+
 ## Unrecovered removal resolution (#217)
 
 POST /api/v1/ovitrap-removals/{removal UUID}/resolve/ requires removal.resolve.
