@@ -25,12 +25,13 @@ const createStyles = (theme: Theme) =>
   });
 
 interface ScreenHeaderProps {
+  readonly largeTargets?: boolean;
   readonly title: string;
   readonly subtitle?: string;
 }
 
 /** Header of the inner screens (design `.fh`): back button, title, and the sync chip. */
-export function ScreenHeader({ title, subtitle }: ScreenHeaderProps) {
+export function ScreenHeader({ title, subtitle, largeTargets = false }: ScreenHeaderProps) {
   const styles = useStyles(createStyles);
   const { theme } = useTheme();
   const t = useT();
@@ -40,7 +41,7 @@ export function ScreenHeader({ title, subtitle }: ScreenHeaderProps) {
     <View style={[styles.header, { paddingTop: insets.top + spacing[1] }]}>
       <View style={styles.row}>
         <IconButton
-          icon="left"
+          {...{ largeTarget: largeTargets, icon: "left" }}
           label={t("mobile.nav.back")}
           color={theme.color.text.primary}
           onPress={goBack}
@@ -55,7 +56,7 @@ export function ScreenHeader({ title, subtitle }: ScreenHeaderProps) {
             </AppText>
           )}
         </View>
-        <SyncChip />
+        <SyncChip largeTarget={largeTargets} />
       </View>
     </View>
   );

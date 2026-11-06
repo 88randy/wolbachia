@@ -1,5 +1,7 @@
 import { getRandomBytes, randomUUID } from "expo-crypto";
 
+import { createOvitrapCheck } from "../features/ovitrap-check/create-ovitrap-check.ts";
+import type { OvitrapService } from "../features/ovitrap-check/service.ts";
 import { createShiftOpen } from "../features/shift-open/create-shift-open.ts";
 import type { ShiftOpenService } from "../features/shift-open/service.ts";
 
@@ -25,6 +27,7 @@ import type { SyncTransport } from "../sync/sync-transport.ts";
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly auth: AuthController;
+  readonly ovitrapCheck: OvitrapService;
   readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
@@ -71,7 +74,8 @@ export async function createServices(): Promise<AppServices> {
   });
   const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests });
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
-  return { kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
+  const ovitrapCheck = createOvitrapCheck({ db, engine, requests, tokens, shiftOpen });
+  return { ovitrapCheck, kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen };
 }
 
 async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
@@ -87,7 +91,9 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
 }
 
 function createEngine(
-  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen"> & { requests: SessionRequests },
+  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen" | "ovitrapCheck"> & {
+    requests: SessionRequests;
+  },
 ): SyncEngine {
   const { kv, outbox, server, deviceId, tokens, requests } = deps;
   return new SyncEngine({

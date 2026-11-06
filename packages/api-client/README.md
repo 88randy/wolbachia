@@ -121,3 +121,11 @@ outside the sandbox. No local openapi-typescript executable is installed; no
 package was installed and generated TypeScript was not hand-edited. Integration
 must run the complete generation command and verify a second run produces no
 diff, as required by .github/workflows/api-contract.yml.
+
+
+## Lifecycle projections (#112)
+
+The schema includes relocation.read proposal listing and ovitrap.read physical
+history, retirement/suggestion fields, abandoned/removed incident markers and the
+additive optional courier is_retired field. Event payloads/results remain documented
+in docs/sync.md. Regenerate both artifacts with api:generate; do not edit them.

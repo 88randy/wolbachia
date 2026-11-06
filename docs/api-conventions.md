@@ -324,3 +324,48 @@ field sync; out-of-range week/day returns 400 out_of_range, never date overflow.
 
 See [sync.md](sync.md#bootstrap-and-projection-recovery-b-13-110) for version
 compatibility, producer registration, recovery and the existing error-code table.
+
+
+## Ovitrap lifecycle (#112, B-15)
+
+Field events ovitrap.replace/relocate/remove schema 1 use field_event.sync; see
+sync.md for strict payloads, codes and archived catalog/GPS/evidence requirements.
+Replacement inserts a new physical client UUID and immutable lineage at the same
+SamplingPoint/code. Removal retires a physical identity and frees the point.
+Active list/placement occupancy excludes nonvoided outgoing lineage/removals;
+status=all retains retired identities, status=voided selects voided source events.
+Exact ovitrap ?code= defaults all states unless status is explicit. is_retired is
+separate from source-event void status. Replacement capture provenance replaces
+placement provenance for a new identity; supply_refs is empty (no inventory exists).
+
+GET /api/v1/relocations/ requires relocation.read and page-number paging. Filters:
+code=<proposal UUID>, status=pending|approved|rejected, point=<sampling point UUID>,
+ovitrap=<physical UUID>, include_voided=true (default false). Ordering fields are
+created_at, event__device_time, ovitrap__sampling_point__code (optional minus);
+default -created_at,id. Status derives from appended decisions; B-33 owns their
+writer. A proposal never changes approved geometry. Void metadata remains distinct
+from decision status; voided proposals are excluded from the default pending queue.
+
+GET /api/v1/ovitraps/{physical UUID}/history/ requires ovitrap.read. It returns the
+fixed point code, computed suggest_relocation and chronological lifecycle sources
+across physical identities: source event UUID, both timestamps, author, ingest/void
+state and void-event reference, original payload/GPS/tokens and applied lifecycle
+provenance. Ordinary checks and bags remain behind reading.read and are excluded.
+Reading projections expose incident_link for abandoned/removed findings; removal
+history exposes the same marker and recovery_state. The marker is an opaque unique
+append-only identity for future B-06, not a verified incidents-app FK.
+
+Both endpoints default-deny and enforce organization AND paired center/quadrant
+scope; foreign point/ovitrap filters and history references return 404. Organization
+comes from membership/session, never URL/body. Web cookie+CSRF and pinned device
+bearer policies are inherited. relocation.read is granted once to seeded admin,
+supervisor and coordinator; later revocations/custom profiles remain unchanged.
+Only GET routes are added; sync state conflicts use per-event codes/safe blocked_by,
+not a new HTTP correction route. HTTP validation keeps code/detail/fields (400).
+
+OP03 uses the existing versioned 2 weeks (1..8) / 3 incidents (1..10), counting local
+epi weeks and fixed-point incident markers. Suggestions are advisory. Voids require
+normalized 10..1000 visible-character text and preserve lifecycle/decision dependents.
+No stock compensation exists in this baseline. Explicit unrecovered-resolution and
+quadrant closure writers remain follow-ups. ADR 120 and backend/ovitraps/lifecycle/
+README.md document SQL guards, lock order and the acceptance map.

@@ -2,6 +2,121 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  "mobile.ovitrap.pendingDraft":
+    "Another capture draft is pending. Resume it before switching ovitraps.",
+  // M-08: P13, P14 and P21
+  "mobile.ovitrap.open": "Place or check ovitraps",
+  "mobile.ovitrap.place": "Place ovitrap",
+  "mobile.ovitrap.check": "Check ovitrap",
+  "mobile.ovitrap.next": "Continue",
+  "mobile.ovitrap.save": "Save on phone",
+  "mobile.ovitrap.point": "Choose a point from your assignment",
+  "mobile.ovitrap.finding": "How did you find it?",
+  "mobile.ovitrap.paddle": "Is the egg paddle present?",
+  "mobile.ovitrap.eggs": "Does it have eggs?",
+  "mobile.ovitrap.yes": "Yes",
+  "mobile.ovitrap.no": "No",
+  "mobile.ovitrap.conditions": "Site conditions",
+  "mobile.ovitrap.temperature": "Temperature (°C, optional)",
+  "mobile.ovitrap.humidity": "Humidity (%, optional)",
+  "mobile.ovitrap.paddleType": "Egg paddle type",
+  "mobile.ovitrap.other": "Describe what you found (required for Other)",
+  "mobile.ovitrap.bag": "Human bag code",
+  "mobile.ovitrap.scanBag": "Scan bag",
+  "mobile.ovitrap.bagHint":
+    "One bag per reading. Write the point code and date; fold inwards. The lab counts the eggs.",
+  "mobile.ovitrap.lagged": "Mark as lagged",
+  "mobile.ovitrap.laggedHint":
+    "A lagged paddle still goes to the lab and remains countable. The server determines its exclusion from indices.",
+  "mobile.ovitrap.prepare": "Prepare and reinstate",
+  "mobile.ovitrap.clean": "I washed and scrubbed the container",
+  "mobile.ovitrap.water": "Clean water to three quarters, without chlorine or larvicide",
+  "mobile.ovitrap.liner": "Egg paddle covers the entire inside",
+  "mobile.ovitrap.shade": "In shade, among plants",
+  "mobile.ovitrap.height": "Up to 1.5 m high",
+  "mobile.ovitrap.containers": "Away from other water containers",
+  "mobile.ovitrap.safe": "Out of reach of children and animals",
+  "mobile.ovitrap.marked": "I marked the facade with OV and the point code",
+  "mobile.ovitrap.newPaddle": "New egg paddle",
+  "mobile.ovitrap.reuse": "Approved reused egg paddle",
+  "mobile.ovitrap.reuseUnavailable":
+    "Reuse requires downloaded eligibility. A third reuse is never offered.",
+  "mobile.ovitrap.supplies": "Supply UUID references, separated by commas",
+  "mobile.ovitrap.photo": "Add photo evidence",
+  "mobile.ovitrap.photoUnavailable":
+    "The evidence camera is unavailable in this build. Keep the draft and ask for help if the catalog requires a photo.",
+  "mobile.ovitrap.refresh": "Download catalogs and rules",
+  "mobile.ovitrap.adopt": "Review and use downloaded versions",
+  "mobile.ovitrap.catalogChanged":
+    "A newer catalog is available. Your answers and historical labels are retained; review before changing versions.",
+  "mobile.ovitrap.confirm": "Review before saving",
+  "mobile.ovitrap.phoneSaved": "Saved on phone",
+  "mobile.ovitrap.serverPending": "Server receipt: pending",
+  "mobile.ovitrap.serverReceived": "Received by server",
+  "mobile.ovitrap.reviewPending": "Review: pending; ask your supervisor for help",
+  "mobile.ovitrap.reviewUnknown": "Supervisor review: not confirmed",
+  "mobile.ovitrap.repeat":
+    "This ovitrap already has a reading this week. You can void it with a reason and record a new reading. Original evidence is retained.",
+  "mobile.ovitrap.correct": "Void with reason and record new",
+  "mobile.ovitrap.reason": "Reason: 10 visible characters to 1000 characters",
+  "mobile.ovitrap.reasonCode": "Catalog reason",
+  "mobile.ovitrap.newBag": "Use a new bag code: previous codes remain reserved.",
+  "mobile.ovitrap.scan": "Scan ovitrap",
+  "mobile.ovitrap.manual": "Enter code manually",
+  "mobile.ovitrap.manualHint":
+    "Manual capture is flagged. Use the physical ovitrap UUID or the human bag code.",
+  "mobile.ovitrap.code": "Code",
+  "mobile.ovitrap.lookup": "Use code",
+  "mobile.ovitrap.invalid": "This code is not valid for this operation",
+  "mobile.ovitrap.invalidHint":
+    "Find the correct program label and retry, or enter the code manually.",
+  "mobile.ovitrap.retry": "Scan again",
+  "mobile.ovitrap.scannerUnavailable":
+    "The scanner is not available in this build. Enter the code manually.",
+  "mobile.ovitrap.gps":
+    "Location is missing or accuracy does not meet downloaded rules. Retry GPS or save for review if policy allows.",
+  "mobile.ovitrap.stale":
+    "Rules changed or expired. Download current rules or keep the capture for review if policy allows.",
+  "mobile.ovitrap.distance":
+    "You are far from the point under downloaded rules. Move closer or keep the capture for review.",
+  "mobile.ovitrap.location":
+    "This ovitrap point is unknown on the phone. The server will review location and scope; compliance is not confirmed.",
+  "mobile.ovitrap.acknowledge": "I understand this capture needs server review",
+  "mobile.ovitrap.retryGps": "Retry GPS",
+  "mobile.ovitrap.shiftBlocked":
+    "This shift does not allow capture or saving. Review the opening with your supervisor; the draft is retained.",
+  "mobile.ovitrap.staleWeekContext":
+    "Current organization week and time zone settings are missing. Update the context before saving; the draft is retained.",
+  "mobile.ovitrap.staleView":
+    "The capture you are viewing changed. This action was not applied. Refresh the view and try again.",
+  "mobile.ovitrap.immutableEdit":
+    "The late edit was not saved and has been discarded. Start a new capture or use a correction.",
+  "mobile.ovitrap.gateShift": "Open a shift before saving. The draft is retained.",
+  "mobile.ovitrap.gateAssignment":
+    "An assignment with explicit scope and epi week is missing. Download it before saving.",
+  "mobile.ovitrap.gateCatalog": "The catalog is missing. Download it before saving.",
+  "mobile.ovitrap.gateRules": "Usable rules are missing. Download them before saving.",
+  "mobile.ovitrap.gatePoint": "Choose an allowed point and verify supply references.",
+  "mobile.ovitrap.gateFinding": "Choose a finding from the saved catalog.",
+  "mobile.ovitrap.gatePaddle": "Confirm egg paddle presence and type.",
+  "mobile.ovitrap.gateEggs": "Confirm Yes or No: does it have eggs?",
+  "mobile.ovitrap.gateBag": "Enter the human bag code.",
+  "mobile.ovitrap.gateConditions":
+    "Check temperature and humidity. Humidity must be between 0 and 100%.",
+  "mobile.ovitrap.gateOther": "Other requires a description of up to 1000 characters.",
+  "mobile.ovitrap.gatePrepare": "Complete preparation before saving.",
+  "mobile.ovitrap.gateEvidence":
+    "This catalog requires photo evidence. Keep the draft and ask for help.",
+  "mobile.ovitrap.gateReuse": "This paddle is not approved for reuse. Choose a new one.",
+  "mobile.ovitrap.gateReason":
+    "Choose a reason and write at least 10 visible characters, up to 1000.",
+  "mobile.ovitrap.gateReview":
+    "Review GPS and rule notices. Save for review only when downloaded policy permits.",
+  "mobile.ovitrap.resume": "Resume draft",
+  "mobile.ovitrap.nextTarget": "Next point",
+  "mobile.ovitrap.edit": "Review answers again",
+  "mobile.ovitrap.permission":
+    "Ask your supervisor to replace, relocate or remove this ovitrap. Keep this reading.",
   // M-04: P3-P7 shift opening
   "mobile.shiftOpen.catalogChanged":
     "The catalog changed. Review the items and confirm the new version. If a captured fault is no longer listed, ask your supervisor for help; the evidence is retained.",

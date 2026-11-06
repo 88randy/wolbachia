@@ -3,6 +3,9 @@
  * without a phone. Later epics add their routes here (one union member each).
  */
 export type Route =
+  | { readonly name: "ovitrapCapture" }
+  | { readonly name: "ovitrapScanner"; readonly target: "ovitrap" | "bag" }
+  | { readonly name: "invalidOvitrapCode"; readonly target: "ovitrap" | "bag" }
   | { readonly name: "openShift" }
   | { readonly name: "home" }
   | { readonly name: "inbox" }
