@@ -169,3 +169,12 @@ trigger execution, CI or remote issue state (gh issue view 103 returned HTTP 401
 An initial makemigrations history check inherited test settings' port 5432 and was
 refused; subsequent commands used an explicit throwaway configuration and offline
 migration inspection. No PostgreSQL data was accessed; Docker was not invoked.
+
+## Verified clearance evidence (#102)
+
+clear_fault requires verification plus an immutable binding to the exact fault
+before writes. Current service_clear and Motorcycle serialization are unchanged.
+Sorted Upload NOWAIT locks follow Motorcycle; no new account/Organization/FieldEvent
+lock or storage I/O occurs below it. Pending/foreign/unbound/other-fault evidence
+returns 409 motorcycle_evidence_not_ready and rolls back. Later finalize permits a
+fresh authorized clearance. See ../uploads/README.md and its integration test map.

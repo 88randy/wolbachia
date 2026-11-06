@@ -32,6 +32,7 @@ from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS, seed_default_rule_parameters
 from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
 from tests.factories import OrganizationFactory
+from uploads.limits import FIELD_UPLOAD
 
 pytestmark = pytest.mark.django_db
 
@@ -252,9 +253,16 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "organization.read",
         "center.read",
     }
-    assert by_slug["courier"] == {*reader, FIELD_EVENT_SYNC, FIELD_BOOTSTRAP, MOTORCYCLE_READ}
+    assert by_slug["courier"] == {
+        *reader,
+        FIELD_EVENT_SYNC,
+        FIELD_BOOTSTRAP,
+        MOTORCYCLE_READ,
+        FIELD_UPLOAD,
+    }
     assert by_slug["supervisor"] == {
         "removal.resolve",
+        FIELD_UPLOAD,
         "schedule.read",
         "schedule.manage",
         "ovitrap.read",
@@ -286,6 +294,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["admin"] == {
         "removal.resolve",
+        FIELD_UPLOAD,
         "schedule.read",
         "schedule.manage",
         "risk_import.apply",
@@ -507,6 +516,9 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
 @pytest.mark.parametrize(
     ("slug", "code"),
     [
+        ("courier", FIELD_UPLOAD),
+        ("supervisor", FIELD_UPLOAD),
+        ("admin", FIELD_UPLOAD),
         ("courier", FIELD_EVENT_SYNC),
         ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),
@@ -544,6 +556,9 @@ def test_apply_grants_the_sync_codes_to_an_organization_seeded_before_they_exist
 @pytest.mark.parametrize(
     ("slug", "code"),
     [
+        ("courier", FIELD_UPLOAD),
+        ("supervisor", FIELD_UPLOAD),
+        ("admin", FIELD_UPLOAD),
         ("courier", FIELD_EVENT_SYNC),
         ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),

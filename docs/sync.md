@@ -302,9 +302,36 @@ Schema version stays **1**: **[ASSUMPTION]** no production phone uses the old re
 
 `GET /api/v1/review-items/` (permission `review_item.read`: supervisor, admin). Cursor paging (newest first), filters `?kind=rejected|in_review` and `?code=`. Each item: `{id, event_id, event_type, kind, code, params, courier, device, created_at}`. A `ReviewItem` is created in the same savepoint as every rejected or in-review event. Decisions (accept, void, open an incident) are #22.
 
-## Uploads (deferred sketch, not implemented)
+## Private evidence uploads (#102)
 
-Photos are not part of #5. The first epic that needs them (#9 relocation or #11 incidents) adds presigned uploads. **Sketch, non-binding, [PENDING that epic]:** `POST /api/v1/field/uploads/` with `{content_type, size_bytes, sha256}` answers `{upload_id, url, method: "PUT", headers, expires_at}`; the phone `PUT`s the bytes straight to object storage (never through the API), then references `upload_id` in an event payload; the handler checks that the upload exists and belongs to the organization. It needs `boto3` or `django-storages`, MinIO in `compose.yaml` and bucket settings (production Spaces: #18).
+`POST /api/v1/field/uploads/` accepts `{content_type,size_bytes,sha256}` and optional
+`client_id`/typed `context`, returning `{upload_id,url,method:"PUT",headers,expires_at}`.
+This delivery uses authenticated private LOCAL PUT leases for 15 minutes, not S3.
+JPEG/PNG only, <=10 MiB and 25 MP; finalization verifies actual size/type/original
+hash, strips metadata with Pillow and records a separate sanitized-object hash.
+Renew retains the public ID/phone file. Bytes/sanitization never run under sync locks.
+
+An offline evidence UUID remains immutable: supply it as client_id when authorizing.
+Three-field authorization stays private/unbound and grants no parent access.
+After verification, an incoming event may consume its own unbound evidence under
+the Upload lock; post-_store creates its exact source binding in the SAME event
+transaction. Fault clearance instead requires an existing exact-fault binding.
+Post-_store linkage survives in_review independently of operational
+effects; late metadata can bind the same retained UUID. Finalized-first evidence is
+locked before required effects and bound after source insertion. Late finalize never
+accepts review or rewrites ingest payload/status/clocks/provenance (#113).
+
+Actual gates: lifecycle replace/relocate/remove; check when the exact archived
+finding/paddle requires_photo flag is true; fleet clear_fault for its exact fault.
+Check adds optional evidence_ids default []. Pending files use existing
+ovitrap_evidence_required (already translated); no new sync code. Optional placement
+and fuel references do not gain a new gate or automatic status change. Downloads
+recheck CURRENT parent read/history access and return sanitized private no-store
+bytes; void alone does not hide authorized history. Upload byte endpoints reject
+the special revoked final-upload entitlement: retain local files and reauthorize
+under a valid session. Existing bounded JSON final-sync ordering is unchanged.
+Mobile transport/check serialization is #246; no native upload claim. Full contract,
+HTTP codes and lock matrix: api-conventions.md and ../backend/uploads/README.md.
 
 ## Pending
 
