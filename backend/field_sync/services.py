@@ -30,12 +30,12 @@ upload for the whole batch.
 import hashlib
 import logging
 import math
-from collections.abc import Callable, Iterator
+from collections.abc import Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import UTC, date, datetime, time, timedelta
 from functools import partial
-from typing import Any, Self
+from typing import Any, Protocol, Self
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -634,8 +634,14 @@ def _has_courier_lock(batch: BatchContext | CourierContext) -> bool:
     return row is not None and key in (row[0] or "").split(",")
 
 
+class FanoutPublisher(Protocol):
+    """An optional owner narrows the already captured, scoped and locked recipients."""
+
+    def __call__(self, change: ChangeInput, *, courier_id: UUID | None = None) -> None: ...
+
+
 @contextmanager
-def fanout_courier_changes(scope: FanoutScope) -> Iterator[Callable[[ChangeInput], None]]:
+def fanout_courier_changes(scope: FanoutScope) -> Iterator[FanoutPublisher]:
     """Lock ALL recipients before yielding the domain write and validated upsert publisher.
 
     Caller serializes organization configuration first. Transaction-local lock markers
@@ -654,10 +660,11 @@ def fanout_courier_changes(scope: FanoutScope) -> Iterator[Callable[[ChangeInput
         if not _has_courier_lock(batch):
             lock_courier_batches(batch)
 
-    def append(change: ChangeInput) -> None:
+    def append(change: ChangeInput, *, courier_id: UUID | None = None) -> None:
         if change.action != "upsert" or change.scope != scope.metadata:
             raise ValueError("Fan-out requires an upsert in its locked center/quadrant scope.")
         for batch in recipients:
-            append_courier_change(batch, change)
+            if courier_id is None or batch.user.pk == courier_id:
+                append_courier_change(batch, change)
 
     yield append

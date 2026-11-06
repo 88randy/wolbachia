@@ -402,14 +402,14 @@ reuse still returns ovitrap_identity_used; no new sync code is added.
 
 ## Scheduling integration boundary (#109, B-12)
 
-SchedulingConfig.ready registers the assignments v2 producer. Bootstrap returns
+SchedulingConfig.ready registers the assignments v3 producer (#212). Bootstrap returns
 one flat list of kind=quadrant_assignment and kind=task rows, filtered by active
 courier membership, organization and captured permission/paired center/quadrant
 scope. IDs are stable quadrant/task UUIDs. Common fields are id, kind, quadrant_id,
 courier, revision; tasks add code, point, action, date, category, source, protocol
-and target. Include every owned task due on/after the current organization epi-week
+target and is_completed. Quadrant-assignment rows never carry task fields. Include every owned task due on/after the current organization epi-week
 start, with no upper bound, so the bootstrap cursor cannot skip future upserts.
-Risk provenance resolves at each task's own week. No completion state or egg counts.
+Risk provenance resolves at each task's own week. No egg counts are published.
 Organization/center metadata is checked before serialization and is not exposed.
 
 change_assignment emits allocation remove/upsert (existing tasks retain ownership);
@@ -422,12 +422,33 @@ Resource types are quadrant_assignment/task, scope is {center_id,quadrant_id}, a
 resource_version hashes the payload, including risk provenance. Retryable scheduling
 contention is 429 scheduling_in_progress, Retry-After: 1; replays append no extra rows.
 No field events/result codes, capture timestamps or review acceptance (#22) change.
-Capture/void handlers emit no scheduling CourierChange, so assignments v2 omits
-is_completed; GET /schedule/ retains it. A former owner's phone may retain a stale
-pending task until the next bootstrap/full resync refreshes projections. Capture
-is revalidated server-side; duplicate physical-ovitrap/local-week readings are
-rejected and completed tasks cannot be reassigned. Producer v2 changes the bundle
-schema_version and requires replacing the prior projection through bootstrap.
+Accepted ovitrap.place/check and their accepted voids append task upserts in the
+same savepoint as their effects. Completion retains GET /schedule/ semantics:
+an active operational placement/reading at the same sampling point, action and
+organization-local due date completes a task, regardless of the capturing courier.
+Current explicit task ownership determines the recipient; quadrant allocation and
+the capture's author do not transfer it. Only that owner, if active and included
+in the fan-out's captured paired field.bootstrap scope, receives the task payload.
+No unrelated authorized courier receives another courier's task.
+
+Publication rule: acquire the shared organization lock and every existing fan-out
+recipient try-lock before effects; append under those locks through commit. The
+accepted capture's operational row exists before its FieldEvent is inserted, so
+its pending effect explicitly completes matching tasks. A void uses the ORIGINAL
+capture's local date and recomputes completion after the source void marker; it
+reopens a task only when no matching active effect remains. Doubtful in_review
+captures/voids and voided reviews without operational effects publish nothing.
+Replayed UUIDs append nothing, and failures roll back source markers, effects and
+both ovitrap/task feeds together. The existing User -> Device -> DeviceSession ->
+TokenPair order and generic void-target lock are preserved; no network occurs
+under these locks. Contention remains retryable 429 sync_in_progress.
+
+The task's content-hash resource_version includes is_completed; ownership revisions
+and original FieldEvent status/evidence stay unchanged. Producer v3 changes the
+bundle schema_version and scope_revision, invalidating prior cursors before ingest.
+Clients must bootstrap and atomically replace their old projections; immutable
+historical v2 feed payloads are retained, never backfilled. Duplicate physical-
+ovitrap/local-week readings remain rejected and completed tasks cannot be reassigned.
 See [ADR 117 lead decisions](../backend/scheduling/README.md).
 
 ## Bootstrap and projection recovery (B-13, #110)

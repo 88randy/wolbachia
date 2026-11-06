@@ -23,8 +23,10 @@ from rest_framework.exceptions import NotFound
 
 from core.exceptions import FieldValidationError
 from core.time import epi_week_start
+from field_sync.envelope import EventEnvelope
+from field_sync.models import FieldEvent
 from field_sync.producers import ProducerContext
-from geography.models import Block, Quadrant
+from geography.models import Block, Quadrant, SamplingPoint
 from geography.selectors import get_quadrant, visible_quadrants
 from organizations.models import Membership, Organization
 from organizations.selectors import filter_by_effective_scope
@@ -379,8 +381,25 @@ def _courier_task_rows(
             courier.organization,
             task_start,
         )
-        rows.extend(
-            {key: value for key, value in row.items() if key != "is_completed"}
-            for row in task_rows(projected, {})
-        )
+        rows.extend(task_rows(projected, {}))
     return rows
+
+
+def completion_task_rows(
+    point: SamplingPoint, event: EventEnvelope | FieldEvent
+) -> list[dict[str, Any]]:
+    """Project tasks for an already authorized point and the source capture's local date.
+
+    Current task owners are independent of the capturing courier or quadrant allocation.
+    The fan-out publisher enforces each owner's captured paired download scope.
+    """
+    day = event.device_time.astimezone(ZoneInfo(point.organization.timezone)).date()
+    tasks = ScheduledTask.objects.filter(
+        organization=point.organization,
+        point=point,
+        action=event.type.removeprefix("ovitrap."),
+        due_date=day,
+    )
+    return task_rows(
+        _task_projection(tasks, point.organization, week_start(point.organization, day)), {}
+    )

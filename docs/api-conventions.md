@@ -305,8 +305,12 @@ fields only, 409 uses safe blocked_by, lock contention/deadlock is retryable
 NO KEY UPDATE locking precedes sorted courier try-locks and point locks; no network/storage/mail or account
 locks occur inside. Existing User -> Device -> DeviceSession -> TokenPair order
 is preserved. No void/delete endpoints, new sync events or result codes are added;
-#22 owns review acceptance. Scheduling registers the assignments v2 bundle producer
+#22 owns review acceptance. Scheduling registers the assignments v3 bundle producer
 and atomically emits scoped allocation/task deltas through #110 delivery APIs.
+Accepted ovitrap placement/check and void also publish is_completed for the current
+authorized task owner (#212), using the same point/action/local-date completion
+projection as GET /schedule/. Reviewed events have no effect. Producer v3 changes
+the bundle schema boundary and requires bootstrap recovery for old cursors.
 See scheduling/README.md and ADR 117 for lead decisions and lock ordering.
 
 Planning input dates use the same technical 2020-01-01..2100-01-01 window as

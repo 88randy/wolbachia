@@ -28,6 +28,7 @@ from ovitraps.selectors import (
     ovitrap_row,
     projected_ovitraps,
 )
+from scheduling.courier_feed import emit_task_completion
 
 
 @dataclass(frozen=True)
@@ -83,6 +84,7 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
             )
             ovitrap.event = FieldEvent(id=ctx.envelope.id, device_time=ctx.envelope.device_time)
             emit_ovitrap(ovitrap, emit)
+            emit_task_completion(point, ctx.envelope, emit)
     except IntegrityError as error:
         if (
             getattr(getattr(error.__cause__, "diag", None), "constraint_name", "")
@@ -127,6 +129,7 @@ def check_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
         projected = projected_ovitraps(ctx.organization).get(pk=ovitrap.pk)
         projected.latest_check = latest_check_with_pending(projected, reading, ctx.envelope)
         emit_ovitrap(projected, emit)
+        emit_task_completion(ovitrap.sampling_point, ctx.envelope, emit)
 
 
 def _create_reading(
@@ -216,6 +219,7 @@ def void_ovitrap_event(ctx: EventContext, target: FieldEvent) -> None:
     with fanout_courier_changes(point_fanout_scope(ovitrap.sampling_point)) as emit:
         _append_ovitrap_void(ctx, target, reason)
         emit_ovitrap(projected_ovitraps(ctx.organization).get(pk=ovitrap.pk), emit)
+        emit_task_completion(ovitrap.sampling_point, target, emit)
 
 
 def _void_target_ovitrap(ctx: EventContext, target: FieldEvent) -> Ovitrap | None:

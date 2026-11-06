@@ -99,6 +99,10 @@ scope; ctx.includes remains a second metadata check. Selectors use four queries
 for the three producers, with no per-row reads. Final upload returns nine arrays.
 
 services.fanout_courier_changes is the reusable upsert-only writer boundary.
+For #212, its optional courier_id narrows delivery to one of the already captured,
+scoped and locked recipients. It never adds a recipient or takes a later lock;
+ovitrap/geography broadcast delivery remains the default. Scheduling task upserts
+use this owner filter; assignments v3 includes is_completed on task rows only.
 Domain writers take their organization serialization lock, obtain all affected
 courier try-locks in ascending advisory-key/user-id order (skip transaction-local
 held locks), write effects and append under those locks through commit. A failed
