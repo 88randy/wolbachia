@@ -3,7 +3,8 @@ MotorcycleCheck and Motorcycle).
 
 They run inside the savepoint the sync pipeline opens per event, under the courier's batch lock
 (docs/sync.md): they validate their own rules and raise `EventRejected` (every write rolls back)
-or `EventNeedsReview` (after the writes to keep), never letting the database detect a violation
+or `EventNeedsReview` (an observation whose NEW operational writes the caller rolls back),
+never letting the database detect a violation
 (an `IntegrityError` would be a `500` for the whole batch). The partial unique index on open
 shifts is the backstop. They call no external service.
 
@@ -80,8 +81,10 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
 
     Rejected: `shift_already_open`, `motorcycle_unknown`, `motorcycle_blocked`,
     `motorcycle_in_use`, `odometer_out_of_range`, `invalid_payload` (unknown checklist item or
-    reused shift id). In review (writes kept): `severe_check`, `odometer_decreased`; when both
-    apply, `severe_check` wins (the decrease is not reported separately).
+    reused shift id). In review: `severe_check`, `odometer_decreased`; when both apply,
+    `severe_check` wins (the decrease is not reported separately). The caller rolls back NEW
+    reviewed operations while preserving original source facts and the derived severe hold.
+    Proven legacy effects are adopted separately, without replaying these writes.
     """
     shift_id = _require_shift_id(ctx)
     items = _resolve_check_items(ctx.organization, data["checks"])
@@ -107,7 +110,9 @@ def close_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     Shift, once).
 
     Rejected: `shift_not_open` (missing, someone else's or already closed), `odometer_out_of_range`.
-    In review (the shift is closed anyway, a field typo must not lose data): `odometer_decreased`.
+    In review: `odometer_decreased`. The caller rolls back a NEW reviewed close, preserving
+    the original source without closing the shift. A proven legacy close is adopted separately;
+    its historical state is not rewritten or applied again.
     """
     shift_id = _require_shift_id(ctx)
     shift = (

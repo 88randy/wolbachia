@@ -160,26 +160,111 @@ def test_the_database_lets_only_one_of_two_racing_open_shifts_of_a_motorcycle_in
     assert (len(created), len(refused)) == (1, 1), outcomes
 
 
+@pytest.mark.parametrize("first", ["severe", "normal"])
 def test_a_severe_check_and_another_courier_opening_the_same_motorcycle_stay_consistent(
-    org_a: Organization, make_member: MemberFactory, check_items: dict[str, CatalogItem]
+    org_a: Organization,
+    make_member: MemberFactory,
+    check_items: dict[str, CatalogItem],
+    monkeypatch: pytest.MonkeyPatch,
+    first: str,
 ) -> None:
+    from concurrent.futures import ThreadPoolExecutor
+    from contextlib import contextmanager
+
+    from field_sync.models import FieldEvent
+    from reviews import boundaries
+    from reviews.models import ReviewSourceSnapshot
+    from reviews.safety import has_pending_severe
+    from shifts.models import MotorcycleBlockEvent
+
     moto = MotorcycleFactory(organization=org_a, code="M-03")
     severe = make_phone(make_member, org_a)
-    other = make_phone(make_member, org_a)
-
-    answers = run_in_threads(
-        lambda: severe.sync(
-            [open_event("M-03", payload_checks=[{"item": "lights", "result": "severe"}])]
-        ),
-        lambda: other.sync([open_event("M-03")]),
+    normal = make_phone(make_member, org_a)
+    captures = {
+        "severe": open_event("M-03", payload_checks=[{"item": "lights", "result": "severe"}]),
+        "normal": open_event("M-03"),
+    }
+    phones = {"severe": severe, "normal": normal}
+    second = "normal" if first == "severe" else "severe"
+    entered, release = threading.Event(), threading.Event()
+    prepare = boundaries.prepare_ingest
+    dispatched = []
+    monkeypatch.setattr(
+        "incidents.tasks.publish_incident_notices.delay", lambda *args: dispatched.append(args)
     )
 
-    assert all(not isinstance(answer, Exception) for answer in answers), answers
-    assert all(answer.status_code in (200, 429) for answer in answers)
+    @contextmanager
+    def retain_first(*args, **kwargs):
+        with prepare(*args, **kwargs) as preparation:
+            if str(args[1].id) == captures[first]["id"]:
+                entered.set()
+                assert release.wait(timeout=10), "The test did not release the retained arbiter"
+            yield preparation
+
+    monkeypatch.setattr(boundaries, "prepare_ingest", retain_first)
+
+    def sync_first():
+        try:
+            return phones[first].sync([captures[first]])
+        finally:
+            connection.close()
+
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        winner_job = pool.submit(sync_first)
+        try:
+            assert entered.wait(timeout=10)
+            refused = phones[second].sync([captures[second]])
+            assert (refused.status_code, refused.data["code"]) == (429, "sync_in_progress")
+        finally:
+            release.set()
+        winner = winner_job.result(timeout=10)
+    assert winner.status_code == 200, winner.data
+    assert not FieldEvent.objects.filter(pk=captures[second]["id"]).exists()
+    monkeypatch.setattr(boundaries, "prepare_ingest", prepare)
+    retried = phones[second].sync([captures[second]])
+    assert retried.status_code == 200, retried.data
+    answers = {first: winner.data["results"][0], second: retried.data["results"][0]}
+    expected = (
+        {"severe": ("in_review", "severe_check"), "normal": ("rejected", "motorcycle_blocked")}
+        if first == "severe"
+        else {"normal": ("accepted", "accepted"), "severe": ("rejected", "motorcycle_in_use")}
+    )
+    for kind, capture in captures.items():
+        result = answers[kind]
+        assert (result["status"], result["code"]) == expected[kind]
+        source = FieldEvent.objects.get(pk=capture["id"])
+        assert source.organization_id == org_a.pk
+        assert source.created_by_id == phones[kind].user.pk
+        assert source.device_id == phones[kind].device_id
+        assert source.shift_id == uuid.UUID(capture["shift_id"])
+        assert source.payload == capture["payload"]
+        assert (source.status, source.status_code) == expected[kind]
+        assert source.voided_at is None
     moto.refresh_from_db()
-    assert Shift.objects.filter(motorcycle=moto).exists()
-    assert moto.is_blocked == Shift.objects.filter(courier=severe.user).exists()
-    assert Shift.objects.filter(motorcycle=moto, status=ShiftStatus.OPEN).count() == 1
+    assert not moto.is_blocked
+    assert moto.blocked_reason == ""
+    assert not MotorcycleBlockEvent.objects.filter(motorcycle=moto).exists()
+    assert not MotorcycleCheck.objects.filter(result=CheckResult.SEVERE).exists()
+    assert not Shift.objects.filter(opened_event_id=captures["severe"]["id"]).exists()
+    assert has_pending_severe(moto.pk) == (first == "severe")
+    if first == "severe":
+        assert answers["normal"]["params"] == {"reason": "pending_severe_review"}
+        assert not Shift.objects.filter(motorcycle=moto).exists()
+        assert not MotorcycleCheck.objects.exists()
+        snapshot = ReviewSourceSnapshot.objects.get(source_event_id=captures["severe"]["id"])
+        assert snapshot.has_severe_observation
+        assert (snapshot.resource_kind, snapshot.resource_id) == ("motorcycle", moto.pk)
+        assert dispatched == [("critical_review", captures["severe"]["id"])]
+    else:
+        shift = Shift.objects.get(motorcycle=moto)
+        assert shift.status == ShiftStatus.OPEN
+        assert shift.courier_id == normal.user.pk
+        assert shift.opened_event_id == uuid.UUID(captures["normal"]["id"])
+        assert shift.checks.count() == 3
+        assert not ReviewSourceSnapshot.objects.filter(
+            source_event_id=captures["severe"]["id"]
+        ).exists()
+        assert dispatched == []
 
 
 def test_a_client_shift_id_reused_concurrently_by_two_couriers_rejects_only_the_loser_event(
