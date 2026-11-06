@@ -68,3 +68,20 @@ cleanup, never an unbound UI command; historical events remain immutable.
 | Stale action shows its localized notice, reloads B at `point`, and a fresh service resumes B correctly | Same end-to-end local regression, using the production confirmation command and notification observer |
 
 No new dependencies, sync envelope changes or native layout changes.
+
+## Private evidence transport (#246)
+
+The production composition adopts a port-supplied capture URI into an exclusive
+private owned file and UUID/session-bound journal before returning its reference.
+Save binds the current evidence IDs and original outbox event atomically; historical
+sourceEvidence remains history. checkPayload now declares current evidence_ids,
+matching placement and the backend's additive field. Existing captured payloads
+are never repaired or relabelled. Legacy references lacking original User UUID /
+session provenance remain local and recoverable, even after a fresh matching login.
+
+The shared engine gates normal events on verified files, while final JSON retains
+its explicit in-review exception. P28 shows file pending/error separately from
+event receipt; its existing Try now action retries the same engine. The default
+native capture port remains unavailable: acquisition is [#253](https://github.com/88randy/wolbachia/issues/253).
+See [attachment transport](../../attachments/README.md) and `mobile/README.md` for transport,
+integration and native evidence limits.

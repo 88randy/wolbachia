@@ -304,6 +304,10 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.inbox.onPhone": "On the phone · {count}",
   "mobile.inbox.sent": "Sent · {count}",
   "mobile.inbox.tryNow": "Try now",
+  "mobile.inbox.evidencePending":
+    "Pending photo references: {count}. This does not confirm event delivery.",
+  "mobile.inbox.evidenceError":
+    "Some photo references are incomplete. Use Try now; if the file is unavailable, contact your coordinator.",
   "mobile.inbox.empty": "No records yet. What you capture will show up here.",
   "mobile.inbox.groupTitle": "{count} · {label}",
   "mobile.inbox.timeRange": "{from} to {to}",

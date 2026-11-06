@@ -768,3 +768,42 @@ barriers. They verify logical recovery and preserved immutable event references;
 Android force-stop, SQLCipher/SecureStore disk behavior, native P1 layout, TalkBack
 and 130% text still require the qualified build/device workflow. No native build,
 phone, API, Docker or database service is required for this fix.
+
+## Private evidence transport (#246)
+
+M-08 now copies a port-supplied capture URI into exclusive private document storage,
+checks bounded original JPEG/PNG bytes and SHA-256, and retains a proven issuer /
+organization UUID / User UUID / device owner in an additive file journal. Migration
+10 is provisional after canonical 1–9 on the #102 base; released SQL is unchanged.
+The original evidence UUID and event envelope never change after capture. Legacy
+references without original ownership provenance are retained locally, not assigned
+by username or a fresh Me response. A pre-login SQL CAS arbitrates owner activation
+with adopted-only reservations, including a rejected SecureStore write and retry.
+
+The existing SyncEngine owns recovery, one file chain per turn, Retry and backoff.
+Normal events with any declared evidence wait for verified finalize; SQL selection
+runs before claim/LIMIT and propagates only related attachment blocking. Unrelated
+JSON and pulls proceed first. Only Save-enrolled declarations can upload; adopted
+or cancelled/Undo photos remain local. Lost PUT/finalize replies resume the same
+UUID through renew. Actual sent/in-review receipts allow typed field_event binding;
+a late/lost binding response never accepts review or changes an event. Final JSON
+retains receipt-before-cleanup as an explicit exception, with no byte/binding calls
+under final-upload capability. P28 displays file errors/pending references separately
+and its existing Try now wakes the same engine.
+
+Tests in attachments.test.ts and attachment-transport.test.ts use real temporary
+files, file-backed SQLite close/reopen, barriers and the actual generated API client
+with scripted HTTP responses. They prove file bytes/hash, immutable ownership,
+restart/replay/linking, selection fairness, unrelated receipts and stale-context
+refusal. They do not execute a live #102 backend or certify native storage/network.
+
+The native capture port still returns unavailable: [#253](https://github.com/88randy/wolbachia/issues/253)
+is an implementation dependency, not merely device qualification. The productive
+#138 bridge remains pending explicit serial integration, including migration
+lineage and its current physical/scope authority; no lifecycle module is copied
+here. Generic lifecycle payload/dependency shapes are covered separately. Actual
+B-33 decisions/tasks remain [#126](https://github.com/88randy/wolbachia/issues/126).
+Owner-authorized Android force-stop, SQLCipher/private-file persistence, camera,
+GPS, real uploads/API, TalkBack/130%/light-dark/es-MX-en and both device profiles
+remain UNVERIFIED under #138/#130. A Node test or debug-apk does not substitute for
+those journeys. See src/attachments/README.md and ADR 132 (provisional).
