@@ -389,6 +389,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.login.wrongCredentials": "The username or password does not match. Check and try again.",
   "mobile.login.sessionEnded": "Your session was closed for security. Sign in again.",
   "mobile.login.deviceRevoked": "This phone was deactivated. Call your supervisor.",
+  "mobile.login.cleanupFailed":
+    "The phone could not prepare sign-in. Try again; your captured records remain saved.",
   "mobile.login.genericError": "We could not sign you in. Try again or call your supervisor.",
   "mobile.login.throttled": "Too many attempts. Wait {minutes} min and try again.",
   "mobile.login.throttledUnknown": "Too many attempts. Wait a moment and try again.",
