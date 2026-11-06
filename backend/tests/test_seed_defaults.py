@@ -359,6 +359,8 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
         "field.bootstrap",
         "field.upload",
         "field_event.sync",
+        "incident.create",
+        "incident.read",
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
@@ -381,6 +383,8 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
         "field.bootstrap",
         "field.upload",
         "field_event.sync",
+        "incident.create",
+        "incident.read",
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
@@ -410,6 +414,8 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     assert plan.grants == {
         "courier": (
+            "incident.read",
+            "incident.create",
             "field.upload",
             "rule_parameter.read",
             "organization.read",

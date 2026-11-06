@@ -19,6 +19,7 @@ from uploads.models import AttachmentLink, Upload
 OVITRAP_EVENTS = frozenset(
     {"ovitrap.place", "ovitrap.check", "ovitrap.replace", "ovitrap.relocate", "ovitrap.remove"}
 )
+INCIDENT_EVENTS = frozenset({"incident.report", "emergency.accident"})
 
 
 @dataclass(frozen=True)
@@ -38,7 +39,7 @@ def _allows_motorcycle(scope: EffectiveScope, permission: str, motorcycle: Motor
 
 
 def declared_upload_ids(event: FieldEvent) -> set[UUID]:
-    if event.type not in OVITRAP_EVENTS and event.type != "fuel.load":
+    if event.type not in OVITRAP_EVENTS | INCIDENT_EVENTS and event.type != "fuel.load":
         return set()
     references: Any = event.payload.get("evidence_ids", [])
     if event.type == "fuel.load":
@@ -55,6 +56,14 @@ def declared_upload_ids(event: FieldEvent) -> set[UUID]:
 
 
 def _event_dimensions(event: FieldEvent) -> tuple[str | None, str | None]:
+    if event.type in INCIDENT_EVENTS:
+        from incidents.selectors import resource_context
+
+        try:
+            context = resource_context(event.organization, event.payload, event.shift_id)
+        except (ValueError, KeyError, TypeError):
+            raise Http404 from None
+        return str(context.center_id), str(context.quadrant_id) if context.quadrant_id else None
     if event.type == "fuel.load":
         motorcycle = Motorcycle.objects.filter(
             organization_id=event.organization_id, code=event.payload.get("motorcycle_id")
@@ -92,6 +101,27 @@ def authorize_target(
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
     scope = current_scope(actor)
+    if target.kind == "incident":
+        from incidents.models import Incident
+
+        incident = Incident.objects.filter(
+            organization=actor.organization, pk=target.identifier
+        ).first()
+        if (
+            incident is None
+            or not scope.allows(
+                "incident.close",
+                str(incident.center_id),
+                str(incident.quadrant_id) if incident.quadrant_id else None,
+            )
+            or not scope.allows(
+                FIELD_UPLOAD,
+                str(incident.center_id),
+                str(incident.quadrant_id) if incident.quadrant_id else None,
+            )
+        ):
+            raise Http404
+        return {"incident": incident}
     if target.kind == "motorcycle_fault":
         fault = (
             MotorcycleBlockEvent.objects.select_related("motorcycle")
@@ -135,6 +165,19 @@ def authorize_target(
 def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     """Follow current parent read/history policy, including authorized voided history."""
     scope = current_scope(actor)
+    if link.incident_id:
+        from incidents.models import Incident
+
+        incident = Incident.objects.filter(
+            organization=actor.organization, pk=link.incident_id
+        ).first()
+        if incident is None or not scope.allows(
+            "incident.read",
+            str(incident.center_id),
+            str(incident.quadrant_id) if incident.quadrant_id else None,
+        ):
+            raise Http404
+        return
     if link.fault_id:
         fault = MotorcycleBlockEvent.objects.select_related("motorcycle").get(
             pk=link.fault_id, organization=actor.organization
@@ -142,11 +185,15 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
         if not _allows_motorcycle(scope, "motorcycle.read", fault.motorcycle):
             raise Http404
         return
-    if link.field_event_id is None:
+    _authorize_event_download(actor, scope, link.field_event_id)
+
+
+def _authorize_event_download(
+    actor: UploadActor, scope: EffectiveScope, event_id: UUID | None
+) -> None:
+    if event_id is None:
         raise Http404
-    event = FieldEvent.objects.filter(
-        pk=link.field_event_id, organization=actor.organization
-    ).first()
+    event = FieldEvent.objects.filter(pk=event_id, organization=actor.organization).first()
     if event is None:
         raise Http404
     if event.type == "fuel.load":
@@ -157,8 +204,18 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
             raise Http404
         return
     center, quadrant = _event_dimensions(event)
-    permission = "reading.read" if event.type == "ovitrap.check" else "ovitrap.read"
+    permission = (
+        "incident.read"
+        if event.type in INCIDENT_EVENTS
+        else ("reading.read" if event.type == "ovitrap.check" else "ovitrap.read")
+    )
     if not scope.allows(permission, center, quadrant):
+        raise Http404
+    if (
+        event.type in INCIDENT_EVENTS
+        and event.status == "in_review"
+        and not scope.allows("review_item.read", center, quadrant)
+    ):
         raise Http404
 
 

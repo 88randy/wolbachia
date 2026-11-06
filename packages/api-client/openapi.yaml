@@ -1755,9 +1755,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
-  /api/v1/incidents/:
+  /api/v1/incident-types/:
     get:
-      operationId: incidents_list
+      operationId: incident_types_list
       description: |-
         Resolves the active organization of the request and scopes every query to it.
 
@@ -1774,6 +1774,14 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
       - name: ordering
         required: false
         in: query
@@ -1793,6 +1801,232 @@ paths:
         schema:
           type: integer
       tags:
+      - incident-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentTypeList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: incident_types_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - incident-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateIncidentTypeRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentType'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incident-types/{id}/:
+    patch:
+      operationId: incident_types_partial_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this incident type version.
+        required: true
+      tags:
+      - incident-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTypeConfigurationRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentType'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/:
+    get:
+      operationId: incidents_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+        description: Exact code in reported mode only; fleet mode retains its legacy
+          filters.
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - fleet
+          - reported
+          type: string
+          default: fleet
+          minLength: 1
+        description: |-
+          * `fleet` - fleet
+          * `reported` - reported
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: owner
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: severity
+        schema:
+          enum:
+          - low
+          - medium
+          - high
+          - critical
+          type: string
+          minLength: 1
+        description: |-
+          * `low` - Low
+          * `medium` - Medium
+          * `high` - High
+          * `critical` - Critical
+      - in: query
+        name: state
+        schema:
+          enum:
+          - open
+          - closed
+          - voided
+          type: string
+          minLength: 1
+        description: |-
+          * `open` - open
+          * `closed` - closed
+          * `voided` - voided
+      - in: query
+        name: type_id
+        schema:
+          type: string
+          format: uuid
+      tags:
       - incidents
       security:
       - cookieAuth: []
@@ -1802,7 +2036,379 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedIncidentList'
+                $ref: '#/components/schemas/PaginatedIncidentListItemList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: incidents_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentReportPayloadRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportedIncident'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/{id}/:
+    get:
+      operationId: incidents_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle block event.
+        required: true
+      tags:
+      - incidents
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportedIncident'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/{id}/change-severity/:
+    post:
+      operationId: incidents_change_severity_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle block event.
+        required: true
+      tags:
+      - incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SeverityRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentEvent'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/{id}/close/:
+    post:
+      operationId: incidents_close_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle block event.
+        required: true
+      tags:
+      - incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentEvent'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/{id}/comments/:
+    post:
+      operationId: incidents_comments_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle block event.
+        required: true
+      tags:
+      - incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentEvent'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/{id}/reassign/:
+    post:
+      operationId: incidents_reassign_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle block event.
+        required: true
+      tags:
+      - incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReassignRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentEvent'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/{id}/void/:
+    post:
+      operationId: incidents_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle block event.
+        required: true
+      tags:
+      - incidents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncidentVoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentEvent'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncidentConflictResponse'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -5153,6 +5759,14 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
+    ActorKindEnum:
+      enum:
+      - human
+      - system
+      type: string
+      description: |-
+        * `human` - human
+        * `system` - system
     Application:
       type: object
       properties:
@@ -5260,10 +5874,12 @@ components:
       enum:
       - field_event
       - motorcycle_fault
+      - incident
       type: string
       description: |-
         * `field_event` - field_event
         * `motorcycle_fault` - motorcycle_fault
+        * `incident` - incident
     AttachmentTargetRequest:
       type: object
       properties:
@@ -5599,6 +6215,14 @@ components:
           type: string
       required:
       - code
+    BlockerKindsEnum:
+      enum:
+      - dispatch
+      - quadrant_closure
+      type: string
+      description: |-
+        * `dispatch` - dispatch
+        * `quadrant_closure` - quadrant_closure
     Bootstrap:
       type: object
       properties:
@@ -6033,6 +6657,44 @@ components:
       - expected_revision
       - fault_id
       - reason
+    CloseRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+      required:
+      - evidence_ids
+      - expected_revision
+      - reason
+    CodeEnum:
+      enum:
+      - incident_conflict
+      type: string
+      description: '* `incident_conflict` - incident_conflict'
+    CommentRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+        text:
+          type: string
+          minLength: 1
+          maxLength: 4000
+      required:
+      - expected_revision
+      - text
     ContentTypeEnum:
       enum:
       - image/jpeg
@@ -6049,6 +6711,73 @@ components:
       description: |-
         * `upsert` - upsert
         * `remove` - remove
+    CreateIncidentTypeRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9_-]*$
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        icon:
+          oneOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[a-z0-9-]*$
+          - type: string
+            maxLength: 0
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        supervisor_id:
+          type: string
+          format: uuid
+          nullable: true
+        coordinator_id:
+          type: string
+          format: uuid
+          nullable: true
+        terminal_id:
+          type: string
+          format: uuid
+        supervisor_sla_seconds:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+        coordinator_sla_seconds:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+        report_evidence_min:
+          type: integer
+          maximum: 100
+          minimum: 0
+        close_evidence_min:
+          type: integer
+          maximum: 100
+          minimum: 1
+        blocker_kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockerKindsEnum'
+          description: Kinds must be unique; duplicates return 400 validation_error.
+          maxItems: 2
+        is_active:
+          type: boolean
+      required:
+      - code
+      - coordinator_sla_seconds
+      - label
+      - severity
+      - supervisor_sla_seconds
+      - terminal_id
     DecisionEnum:
       enum:
       - keep
@@ -6624,6 +7353,295 @@ components:
       - id
       - is_cleared
       - motorcycle
+    IncidentBlockedBy:
+      type: object
+      properties:
+        reason:
+          type: string
+        unblocked_by_role:
+          $ref: '#/components/schemas/UnblockedByRoleEnum'
+        link:
+          type: string
+        current_revision:
+          type: integer
+          minimum: 0
+      required:
+      - link
+      - reason
+      - unblocked_by_role
+    IncidentConflictResponse:
+      type: object
+      properties:
+        code:
+          $ref: '#/components/schemas/CodeEnum'
+        detail:
+          type: string
+        blocked_by:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentBlockedBy'
+      required:
+      - blocked_by
+      - code
+      - detail
+    IncidentEvent:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        action:
+          allOf:
+          - $ref: '#/components/schemas/IncidentEventActionEnum'
+          readOnly: true
+        state:
+          allOf:
+          - $ref: '#/components/schemas/IncidentStateEnum'
+          readOnly: true
+        owner:
+          type: string
+          format: uuid
+          readOnly: true
+        stage:
+          type: integer
+          readOnly: true
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        stage_entered_at:
+          type: string
+          format: date-time
+          readOnly: true
+        deadline:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        last_reminder_at:
+          type: string
+          format: date-time
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+        evidence_ids:
+          readOnly: true
+        resolved_blocker_ids:
+          readOnly: true
+        actor_kind:
+          allOf:
+          - $ref: '#/components/schemas/ActorKindEnum'
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        policy_version:
+          type: string
+          readOnly: true
+      required:
+      - action
+      - actor_kind
+      - created_at
+      - created_by
+      - deadline
+      - evidence_ids
+      - id
+      - last_reminder_at
+      - owner
+      - policy_version
+      - resolved_blocker_ids
+      - revision
+      - severity
+      - stage
+      - stage_entered_at
+      - state
+      - text
+    IncidentEventActionEnum:
+      enum:
+      - report
+      - comment
+      - reassign
+      - change_severity
+      - close
+      - void
+      - escalate
+      - reminder
+      type: string
+      description: |-
+        * `report` - report
+        * `comment` - comment
+        * `reassign` - reassign
+        * `change_severity` - change_severity
+        * `close` - close
+        * `void` - void
+        * `escalate` - escalate
+        * `reminder` - reminder
+    IncidentListItem:
+      oneOf:
+      - $ref: '#/components/schemas/Incident'
+      - $ref: '#/components/schemas/ReportedIncident'
+    IncidentReportPayloadRequest:
+      type: object
+      properties:
+        type_id:
+          type: string
+          format: uuid
+          description: Pinned IncidentTypeVersion UUID, not CatalogItem UUID.
+        description:
+          type: string
+          minLength: 1
+          maxLength: 4000
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+        resource_ref:
+          $ref: '#/components/schemas/ResourceReferenceRequest'
+        scope:
+          $ref: '#/components/schemas/IncidentScopeRequest'
+      required:
+      - description
+      - type_id
+    IncidentScopeRequest:
+      type: object
+      properties:
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+      required:
+      - center_id
+    IncidentStateEnum:
+      enum:
+      - open
+      - closed
+      - voided
+      type: string
+      description: |-
+        * `open` - open
+        * `closed` - closed
+        * `voided` - voided
+    IncidentType:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        current_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+        icon:
+          type: string
+          readOnly: true
+        is_other:
+          type: boolean
+          readOnly: true
+        is_active:
+          type: boolean
+          readOnly: true
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        supervisor:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        coordinator:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        terminal:
+          type: string
+          format: uuid
+          readOnly: true
+        supervisor_sla_seconds:
+          type: integer
+          readOnly: true
+        coordinator_sla_seconds:
+          type: integer
+          readOnly: true
+        report_evidence_min:
+          type: integer
+          readOnly: true
+        close_evidence_min:
+          type: integer
+          readOnly: true
+        blocker_kinds:
+          readOnly: true
+      required:
+      - blocker_kinds
+      - close_evidence_min
+      - code
+      - coordinator
+      - coordinator_sla_seconds
+      - current_version_id
+      - icon
+      - id
+      - is_active
+      - is_other
+      - label
+      - report_evidence_min
+      - revision
+      - severity
+      - supervisor
+      - supervisor_sla_seconds
+      - terminal
+    IncidentVoidRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - expected_revision
+      - reason
     LanguagesEnum:
       enum:
       - es-MX
@@ -7782,7 +8800,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FuelLoad'
-    PaginatedIncidentList:
+    PaginatedIncidentListItemList:
       type: object
       required:
       - count
@@ -7804,7 +8822,30 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/Incident'
+            $ref: '#/components/schemas/IncidentListItem'
+    PaginatedIncidentTypeList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentType'
     PaginatedMembershipList:
       type: object
       required:
@@ -8287,6 +9328,65 @@ components:
         support_contact:
           type: string
           maxLength: 200
+    PatchedTypeConfigurationRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 64
+          pattern: ^[a-z0-9][a-z0-9_-]*$
+        label:
+          type: string
+          minLength: 1
+          maxLength: 200
+        icon:
+          oneOf:
+          - type: string
+            maxLength: 64
+            pattern: ^[a-z0-9-]*$
+          - type: string
+            maxLength: 0
+        expected_revision:
+          type: integer
+          minimum: 0
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+        supervisor_id:
+          type: string
+          format: uuid
+          nullable: true
+        coordinator_id:
+          type: string
+          format: uuid
+          nullable: true
+        terminal_id:
+          type: string
+          format: uuid
+        supervisor_sla_seconds:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+        coordinator_sla_seconds:
+          type: integer
+          maximum: 2147483647
+          minimum: 1
+        report_evidence_min:
+          type: integer
+          maximum: 100
+          minimum: 0
+        close_evidence_min:
+          type: integer
+          maximum: 100
+          minimum: 1
+        blocker_kinds:
+          type: array
+          items:
+            $ref: '#/components/schemas/BlockerKindsEnum'
+          description: Kinds must be unique; duplicates return 400 validation_error.
+          maxItems: 2
+        is_active:
+          type: boolean
     PointPublicationRequest:
       type: object
       properties:
@@ -8501,6 +9601,11 @@ components:
       - upsert
       type: string
       description: '* `upsert` - upsert'
+    PublicationStateEnum:
+      enum:
+      - outboxed
+      - pending_outbox
+      type: string
     Quadrant:
       type: object
       description: |-
@@ -8940,6 +10045,18 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    ReassignRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+        owner_id:
+          type: string
+          format: uuid
+      required:
+      - expected_revision
+      - owner_id
     ReassignRequestRequest:
       type: object
       properties:
@@ -9190,6 +10307,127 @@ components:
       - expected_state
       - outcome
       - reason
+    ReportedIncident:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        type_version:
+          type: string
+          format: uuid
+          readOnly: true
+        center:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        source_event:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        state:
+          type: string
+          readOnly: true
+        owner_id:
+          type: string
+          format: uuid
+          readOnly: true
+        severity:
+          allOf:
+          - $ref: '#/components/schemas/SeverityEnum'
+          readOnly: true
+        deadline:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        timeline:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentEvent'
+          readOnly: true
+        publication_state:
+          allOf:
+          - $ref: '#/components/schemas/PublicationStateEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - center
+      - code
+      - created_at
+      - created_by
+      - deadline
+      - description
+      - device_time
+      - id
+      - owner_id
+      - publication_state
+      - quadrant
+      - revision
+      - server_received_at
+      - severity
+      - source_event
+      - state
+      - timeline
+      - type_version
+    ResourceReferenceKindEnum:
+      enum:
+      - motorcycle
+      - ovitrap_marker
+      type: string
+      description: |-
+        * `motorcycle` - motorcycle
+        * `ovitrap_marker` - ovitrap_marker
+    ResourceReferenceRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ResourceReferenceKindEnum'
+        id:
+          type: string
+          format: uuid
+      required:
+      - id
+      - kind
     ResourceTypeEnum:
       enum:
       - quadrant
@@ -9928,6 +11166,29 @@ components:
       - kind
       - odometer_km
       - performed_at
+    SeverityEnum:
+      enum:
+      - low
+      - medium
+      - high
+      - critical
+      type: string
+      description: |-
+        * `low` - Low
+        * `medium` - Medium
+        * `high` - High
+        * `critical` - Critical
+    SeverityRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 1
+        severity:
+          $ref: '#/components/schemas/SeverityEnum'
+      required:
+      - expected_revision
+      - severity
     Shift:
       type: object
       description: |-
@@ -10364,6 +11625,14 @@ components:
           maxLength: 1000
       required:
       - reason
+    UnblockedByRoleEnum:
+      enum:
+      - admin
+      - supervisor
+      type: string
+      description: |-
+        * `admin` - admin
+        * `supervisor` - supervisor
     UnitEnum:
       enum:
       - m

@@ -849,3 +849,46 @@ a retired upsert; proposal emits nothing. Courier schema 1 adds optional is_reti
 (default false for old payloads) without changing existing field meanings. Version
 hashes include nonvoided lineage/removal event UUIDs; pending source handling keeps
 feed and subsequent bootstrap consistent. Details: ADR 120 and lifecycle/README.md.
+
+## Scoped incident capture (#104 / B-06)
+
+`incident.report` v1 payload is `{type_id, description, evidence_ids?: UUID[],
+resource_ref?: {kind: motorcycle|ovitrap_marker, id},
+scope?: {center_id, quadrant_id?}}`. `type_id` pins an immutable
+IncidentTypeVersion UUID, not the stable CatalogItem. `emergency.accident` v1
+uses `{description, gps?: {lat,lng}, evidence_ids?: UUID[], resource_ref?, scope?}`
+and the explicitly configured critical emergency-accident type. GPS is evidence,
+never an authorization/scope inference. Evidence defaults to an empty list.
+
+Scope derives from a typed resource, an explicit validated center/quadrant, or the
+sender's named shift motorcycle. Supplied resource and scope must agree. Original
+minimal captures without unambiguous scope remain reviewable private evidence;
+they do not create an Incident. Each source requires current incident.create AND
+field_event.sync with paired scope. Type configuration pins the SLA, chain,
+severity and evidence requirements; no sample-screen defaults are invented.
+
+| Code | Verdict / client consequence |
+| --- | --- |
+| `incident_configuration_unavailable` | In review: missing/ineligible named terminal, inactive or unavailable configuration. A stale offline version never falls back to unrelated global owners. |
+| `incident_scope_unavailable` | In review: no verified work scope. Keep capture/evidence for authorized review. |
+| `incident_inaccessible` | Rejected: unknown, foreign or unauthorized reference; no existence disclosure. |
+| `incident_evidence_required` | In review: missing/unfinished/other-case required photo evidence. Keep local files and retry their independent upload. |
+
+Existing review_code (clock/final upload/shift) wins before operational writes.
+New in_review captures have no Incident, owner, blocker or escalation effects.
+After immutable FieldEvent/ReviewItem insertion, declared #102 upload UUIDs can
+bind independently of operational readiness, in either arrival order. Later
+finalization never accepts/replays the event or changes its original status.
+Authorized acceptance remains #113. Current parent read/history policy controls
+private downloads, including authorized voided history; review-only source reads
+also require current review_item.read in that exact scope.
+
+Committed critical emergency sources can produce minimal, scoped **audit** intents
+referencing ReviewItem even while in_review; this does not assert an operational
+incident or delivery. Missing scope stays pending, never broadcast. Committed
+IncidentEvent and severe MotorcycleBlockEvent are the other concrete B-07 causes.
+Task dispatch occurs after commit; publication receipts/intents dedupe retries.
+Recovery uses bounded (created_at,id) pages that advance even over pending causes.
+No storage/network/mail under sync locks and no new sync projection is introduced.
+record.void retains linked incident/history; incident closure resolves owned holds
+only and does not compensate other domain facts. See ADR 132 and incidents/README.md.

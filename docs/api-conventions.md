@@ -516,3 +516,88 @@ locks or external I/O. Contention/deferred-FK lock waits/deadlocks roll back and
 return 429 removal_in_progress, Retry-After: 1. Resolution is a retained dependent:
 later source void uses existing ovitrap_void_blocked with a safe resolution ID.
 No new sync event, result code or courier payload is added. See accepted ADR 130.
+
+## Scoped incidents (#104 / B-06)
+
+There is one `/incidents/` facade and the existing `fleet-incident` basename.
+Unqualified GET and `?kind=fleet` preserve the legacy paged `Incident` schema,
+MotorcycleBlockEvent IDs, `motorcycle.read`, filters and ordering. `?kind=reported`
+explicitly selects the paged `ReportedIncident` schema and `incident.read`.
+OpenAPI represents the response item alternatives with oneOf and documents the
+query selector; the legacy object gains no discriminator property. Grant changes
+never silently change the selected representation. New detail/POST/actions apply
+to reported incidents only. Lists filter state, severity, owner, type_id, center,
+quadrant and exact scoped code before paging; ordering is created_at with id ties.
+
+GET/POST `/incident-types/`; PATCH `/incident-types/{id}/` appends a version.
+The URL `id` is the stable incident-type CatalogItem UUID; `current_version_id`
+is the immutable IncidentTypeVersion UUID. Configure an unconfigured existing
+catalog item (including protected Other) with expected_revision=0. POST creates
+a regular catalog item plus its first version. PATCH requires the current revision
+and retains omitted settings. Code is immutable; Other cannot be renamed, have
+its icon changed or be deactivated, and a report of Other requires text.
+
+Type configuration names supervisor_id/coordinator_id (nullable), terminal_id,
+positive supervisor_sla_seconds/coordinator_sla_seconds and severity
+low|medium|high|critical. Report evidence minimum is 0..100 (default 0); closure
+minimum is 1..100 (default 1). Blocker kinds are dispatch|quadrant_closure, default
+empty. These are owned holds exposed by a selector, not a new dispatch/closure API.
+Duplicate blocker kinds return 400 validation_error with
+fields.blocker_kinds code duplicate_blocker_kind before a type version is retained.
+No organization gets an invented SLA, terminal roster or automatic data backfill.
+Reserved emergency-accident must be critical. The terminal must be an active
+same-organization member with actual administrative capabilities plus incident
+read/close; each incident rechecks the exact paired scope.
+
+POST `/incidents/` uses the incident.report payload documented in sync.md.
+`type_id` is explicitly the **immutable version UUID**, not the catalog item ID.
+Typed resource_ref derives scope; otherwise explicit scope is required for web
+creation. If both are supplied they must agree, including applicable quadrant.
+There is no GPS/home-center inference. Web uses server time for both capture
+clocks; field captures retain their original device/server clocks and source.
+
+POST `/incidents/{id}/{comments|reassign|change-severity|close|void}/` requires
+expected_revision. Comments use text; reassign uses owner_id (Membership UUID);
+change-severity uses severity; close uses reason and evidence_ids; void uses reason.
+Close/void normalize the existing 10 visible-character minimum and 1000 maximum.
+Evidence must be verified by #102 and bound to this incident or its unique source
+event; unbound owned files can bind during the atomic close. Other-case/unfinished
+files never certify closure. Close resolves server-selected IDs of this incident's
+owned holds only; fleet inspection clearance and RemovalResolution remain separate.
+Incident void refuses dependent history/holds (409) rather than deleting them.
+Voiding a source retains the linked incident, original ingest status and timeline.
+
+Permissions: incident.read, incident.create (report/comment), incident.reassign
+(reassign/severity), incident.close (close/void), incident.manage_type. Current
+organization AND each action's paired center/applicable quadrant apply before
+lock contention and again in the transaction. Foreign/out-of-scope relations are
+404; missing actions and metadata/OPTIONS are default-denied (403).
+Stale state/revision/evidence/configuration returns 409 incident_conflict with safe
+blocked_by reason/unblocked_by_role/link entries and, for stale decisions, the
+entry's current_revision (explicitly typed by IncidentConflictResponse). NOWAIT/deferred lock
+contention returns 429 incident_in_progress, Retry-After: 1, rolling back all writes.
+
+Account order precedes Organization NO KEY UPDATE → Incident NO KEY UPDATE → sorted
+Upload NO KEY UPDATE. Type configuration uses Organization → Catalog → CatalogItem.
+Source void already owns FieldEvent first; it never acquires it below Organization.
+System scheduler/publication facts explicitly carry actor_kind=system, null author
+and policy_version; human facts require the real author. New migrations enforce
+insert-only guards named exactly `<table>_guard`; existing facts are not backfilled.
+
+Escalation skips missing intermediates, advances at server deadlines and terminates
+at the active administrative final owner. Severity changes retain the pinned SLA
+and deadline; reassign does not reset the clock or move the stage backward. Final
+reminders require a rolling hour, not just a new calendar-hour bucket. One catch-up
+transition/reminder per invocation prevents bursts after outages or clock rollback.
+Configuration guards preserve the latest active type terminal and each open case's
+effective terminal, while allowing retired historical owners once no longer needed.
+
+ReportedIncident.publication_state is pending_outbox|outboxed for its latest event.
+After commit, concrete IncidentEvent, critical emergency FieldEvent (including
+audit-only ReviewItem references) and severe MotorcycleBlockEvent causes publish
+deduplicated IncidentNoticeIntent rows. Current scoped supervisor/coordinator and
+eligible source/owner recipients are checked individually; named terminal fallback
+uses explicit type configuration. Unknown scope/owner remains pending, never global.
+Keyset recovery pages advance past pending causes before continuing; no delivered
+state, email, push, native screen or notification inbox is claimed. B-07/#49 owns
+delivery. Review acceptance is #113; mobile evidence transport remains #246.

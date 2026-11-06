@@ -166,3 +166,15 @@ Rules:
 | --- | --- | --- | --- |
 | tarea asignada | assigned task | `AssignedTask`, `assignments` | Downloaded scheduling assignments v2 task (#109): code -> point_code, point -> point_id, revision -> version, category -> risk. quadrant_assignment is ownership metadata, never a task. No server completion status or coordinates; [ASSUMPTION] progress uses local captures and server removal, while optional location/reference/history enrichment awaits #196. |
 | manifiesto de mapa | map manifest | `MapManifest`, `map_manifests` | Licensed offline asset metadata (asset id/version/hash/size/quadrant); it does not publish a download URL or certify local file readiness. |
+
+## Scoped incidents (#104)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| versión de tipo de incidente | incident type version | IncidentTypeVersion, type_id | Immutable UUID pins explicit SLA, severity, evidence and named chain. |
+| incidente reportado | reported incident | Incident, kind=reported | Separate from legacy fleet MotorcycleBlockEvent IDs. |
+| evento de incidente | incident event | IncidentEvent, expected_revision | Append-only full state/comment/closure snapshot. |
+| bloqueo propio | owned blocker | IncidentBlocker | Only its owning incident can resolve it. |
+| acuse de escalamiento | escalation receipt | EscalationReceipt | Unique stage/deadline; final reminders also use rolling hours. |
+| intención de aviso | notice intent | IncidentNoticeIntent | Durable scoped B-07 producer fact, never delivery proof. |
+| origen de incidente | incident origin | IncidentOrigin | Explicit adoption of an opaque ovitrap marker; no historic ID rewrite. |
