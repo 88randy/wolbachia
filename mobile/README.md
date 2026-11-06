@@ -175,6 +175,21 @@ mobile/package.json sets "op-sqlite": {"sqlcipher": true}. The installed Android
 
 The key is 32 Expo random bytes encoded as hex and held in Keystore-backed SecureStore without user-auth binding so sync runs while locked. When missing, generate a candidate IN MEMORY. Open with name/encryptionKey, require nonempty PRAGMA cipher_version, then actually read SELECT count(*) FROM sqlite_master. Only then save the fresh key; only after saving run durability pragmas/migrations. An existing encrypted file with another key fails the real read; its candidate is never saved and nothing is deleted. SecureStore save failure stops boot before migrations/writes. No file-system dependency or plaintext fallback.
 
+After those existing encrypted-open/key checks, #266 performs a read-only structural
+lineage preflight BEFORE OUR WAL/FULL configuration and migrations. Public migrate
+also checks the same profiles. Profiles derive from the actual released migration
+arrays1–11; user_version, a points table or mutable bootstrap flags alone never
+establish compatibility. Empty0 and complete canonical prefixes continue normally;
+unmerged M09 families, future versions and incomplete/mixed objects fail closed.
+See [db/README](src/db/README.md) for the bounded comparison and exact fixtures.
+
+UnsupportedDatabaseLineageError retains the original database and reaches the
+existing localized storage-failure/support screen; only its name is logged. Keep
+the retained file and contact support. No reset, uninstall, guessed version or
+automatic conversion is a recovery step. This boundary covers OUR SQL calls;
+native open/SQLCipher physical behavior remains UNRUN and is not certified by
+ordinary Node SQLite or APK compilation.
+
 Biometrics are a UI gate, NOT a key unwrap. The database key and credentials are Keystore-bound but not user-auth-bound. Hardware, enrollment and strong Class 3 enrollment are required. Native authentication requests strong biometrics and disables device-credential fallback.
 ## Verification and assumptions (#7)
 

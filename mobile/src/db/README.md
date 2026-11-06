@@ -1,0 +1,64 @@
+# Database startup and schema lineage (#266)
+
+Read mobile/README.md and engineering-rules.md first. Encryption/key validation
+remains in encrypted-database.ts. After it returns, open-database.ts delegates to
+prepare-database.ts: structural preflight, existing WAL/FULL, then migrate. Public
+migrate independently checks the same profile before its first atomic write.
+There is no caller-trusted bypass, repair, reset, new flag or migration.
+
+## One source of expectations
+
+migrations.ts derives profiles from the SAME released arrays it executes.
+CANONICAL_MIGRATIONS is an internal readonly fixture view, not another definition.
+No released SQL literal/order changed; array SHA256 remains
+15cc0777e1a7692560c0ed32f90662d38aa173aa0a5cf905d07f65a5d134f8f1.
+
+schema-profile.ts folds only our known CREATE TABLE/INDEX/TRIGGER, DROP TRIGGER
+and ALTER TABLE ADD COLUMN forms; existing data-only statements add no schema.
+Unknown source DDL fails closed. schema-table.ts derives column/PK/FK/UNIQUE
+metadata from those same known table forms, not a second handwritten signature.
+
+schema-sql.ts tokenizes without changing quoted string values. Whitespace and
+keyword case may differ. A quoted spelling can match only an EXPECTED unquoted
+canonical identifier; literal tokens retain exact spelling, case and whitespace.
+This is bounded to our DDL, not a general SQL parser or affinity normalizer.
+
+schema-lineage.ts reads user_version and every sqlite_master object; table/index/
+trigger definitions must match the entire prefix. schema-metadata.ts verifies
+columns/order/types/defaults/PK, FK targets/actions and explicit/generated indexes.
+SQLite autoindexes are recognized only for known tables and exact PK/UNIQUE
+origin/columns/uniqueness/partial signatures. sqlite_sequence is allowed only for
+the source AUTOINCREMENT definition and known SQLite structure; there is no broad
+sqlite_* exemption. No business view is executed to infer lineage.
+
+## Retained state and refusal
+
+Only genuinely empty version0 or complete canonical1–11 prefixes are supported.
+Readiness flags can disappear after hydration; receipts, adoption state, settings,
+UUIDs, envelopes and ownership values are DATA and are never relabelled as proof.
+Old M09 schemas at8,9–11 and10–12 conflict even where numeric versions or points
+coincide. A future version or a partial/mixed signature is not a fresh install.
+
+Refusal issues no OUR configuration/migration writer. The named internal
+UnsupportedDatabaseLineageError goes to the existing localized support failure;
+logging contains its name, not SQL/payload/key data. Retain the original for an
+explicit support decision; do not uninstall/reset/delete/rename/replace it or
+guess user_version. No M09 runtime or compatibility bridge is implemented here.
+
+## Verification boundary
+
+database-lineage.test.ts uses actual migrate/prepareDatabase with real temporary
+ordinary SQLite files, retained synthetic envelopes/KV and reopen/hash checks.
+The fixture-only schema-lineage-history.json deduplicates the exact historical
+common prefix and four suffixes, with original source refs and SQL-array hashes.
+Tests do not import old M09 production code, invoke Git, install a package or need
+a remote ref/shallow-clone exception. Canonical0–11, seven old shapes, future/
+partial/mixed schemas, missing retention triggers, identifier quoting and literal/
+deferred-constraint differences are covered at the same cheap SQL layer.
+
+The extracted orchestration proves reads precede OUR WAL/FULL and migration batch.
+It does not execute or certify native open/SQLCipher, SecureStore or Android disk
+behavior. The existing native/physical qualification remains owner-authorized and
+UNRUN; neither Node success nor an APK build replaces it. Adding a future released
+migration requires supported DDL/profile and compatibility tests, never an edit to
+an old array or an inferred upgrade of an unknown retained file.
