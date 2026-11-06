@@ -1,6 +1,7 @@
 import { mkdtemp, mkdir, open, writeFile, rm } from "node:fs/promises";
 import { join, resolve } from "node:path";
 import { tmpdir } from "node:os";
+import { fileURLToPath } from "node:url";
 import type { TestContext } from "node:test";
 import type { SqlExecutor } from "../../src/db/sql.ts";
 import { openTestDatabase } from "./sqlite-executor.ts";
@@ -29,7 +30,7 @@ export function nodePrivateFiles(root: string): PrivateFiles {
     owns: (ref) =>
       resolve(ref).startsWith(`${resolve(root)}\\`) || resolve(ref).startsWith(`${resolve(root)}/`),
     openRead: async (ref) => {
-      const handle = await open(ref, "r");
+      const handle = await open(ref.startsWith("file://") ? fileURLToPath(ref) : ref, "r");
       return {
         read: async (length) => {
           const buffer = Buffer.alloc(length);

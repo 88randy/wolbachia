@@ -154,6 +154,19 @@ jobs:
           APK=$(ls ./*.apk)
           # The JavaScript bundle must be inside the APK (no Metro on the phone).
           unzip -l "$APK" | grep -q 'assets/index.android.bundle'
+          # Check merged APK permissions, including transitive SDK manifests.
+          "$ANDROID_HOME/build-tools/$ANDROID_BUILD_TOOLS/aapt2" dump permissions "$APK" > apk-permissions.txt
+          python - <<'PY'
+          import pathlib
+          import re
+          permissions = set(re.findall(r"android\.permission\.[A-Z0-9_]+", pathlib.Path("apk-permissions.txt").read_text()))
+          if "android.permission.CAMERA" not in permissions:
+              raise SystemExit("The APK is missing CAMERA permission")
+          forbidden = {"RECORD_AUDIO", "READ_EXTERNAL_STORAGE", "WRITE_EXTERNAL_STORAGE", "READ_MEDIA_IMAGES", "READ_MEDIA_VIDEO", "READ_MEDIA_AUDIO"}
+          unexpected = permissions & {f"android.permission.{name}" for name in forbidden}
+          if unexpected:
+              raise SystemExit(f"The APK requests forbidden photo permissions: {sorted(unexpected)}")
+          PY
           # Verify the built APK contains the patched native rejection, not Expo's precompiled AAR.
           python - "$APK" <<'PY'
           import sys

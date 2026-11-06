@@ -4,9 +4,13 @@ import { readText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
 import type { OutboxEvent } from "../../outbox/outbox-event.ts";
 import type { ChecklistCatalog, MapPreparation, OpenShiftDraft } from "./domain.ts";
+import {
+  readShiftGateFacts,
+  SHIFT_CATALOG_KEY as CATALOG_KEY,
+  SHIFT_MAP_KEY as MAP_KEY,
+} from "./gate-facts.ts";
+import type { ShiftGateFacts } from "./gate-facts.ts";
 
-const CATALOG_KEY = "shift_open_catalog";
-const MAP_KEY = "shift_open_map";
 export interface StoredShift {
   readonly draft: OpenShiftDraft | null;
   readonly opening: OutboxEvent | null;
@@ -29,6 +33,9 @@ export class ShiftOpenStore {
       draft.openingEventId,
     ]);
     return { draft, opening: event === undefined ? null : toOutboxEvent(event) };
+  }
+  readGateFacts(): Promise<ShiftGateFacts> {
+    return readShiftGateFacts(this.#db);
   }
   async createDraft(draft: OpenShiftDraft): Promise<void> {
     await this.#db.runAtomically([

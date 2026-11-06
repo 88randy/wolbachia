@@ -1,5 +1,6 @@
 import type { Schemas } from "@wolbachia/api-client";
 import type { FieldEventEnvelope } from "../../outbox/outbox-event.ts";
+import type { SqlStatement } from "../../db/sql.ts";
 import type { ChecklistItem } from "../shift-open/domain.ts";
 export type QrKind = "lot" | "ovitrap" | "bag" | "release-device" | "sample";
 export type Step = "point" | "prepare" | "finding" | "paddle" | "eggs" | "details" | "confirm";
@@ -108,5 +109,16 @@ export interface GpsPort {
   locate(): Promise<FieldEventEnvelope["gps"]>;
 }
 export interface EvidencePort {
-  capture(): Promise<Evidence | null>;
+  capture(context: EvidenceCaptureContext): Promise<Evidence | null>;
+}
+export interface CapturedEvidence extends Evidence {
+  readonly authority: SqlStatement;
+}
+export interface CapturedEvidencePort {
+  capture(context: EvidenceCaptureContext): Promise<CapturedEvidence | null>;
+}
+export interface EvidenceCaptureContext {
+  readonly draftId: string;
+  readonly signal: AbortSignal;
+  readonly assertCurrent: () => Promise<void>;
 }

@@ -2,9 +2,10 @@
 
 One immutable evidence UUID identifies original bytes, their SHA-256/type/size and
 their proven issuer/organization/user/device owner. This journal transports files;
-the existing event outbox remains the only event queue. Native acquisition is
-[a separate implementation gap (#253)](https://github.com/88randy/wolbachia/issues/253),
-not a camera implemented by this transport.
+the existing event outbox remains the only event queue. Camera-only native
+acquisition is supplied by [#253](https://github.com/88randy/wolbachia/issues/253);
+its adapter delegates durable ownership to this transport. Physical qualification
+remains pending.
 
 Capture adopts an exclusive bounded app-owned file and durable journal before
 returning a reference. The existing capture transaction binds that reference to
@@ -49,6 +50,30 @@ Every file/network continuation rechecks its captured owner/session/generation.
 SQL CAS arbitrates progress and claims with invalidation. Network/file I/O runs
 outside credential, projection and SQLite locks. Verified bytes are not current
 scope authorization or a review acceptance. #102 checks current server authority.
+
+M08 acquisition also retains the displayed unsaved draft UUID and originating
+live assignment/shift. Native permission/camera and file continuations check those
+facts and cancellation; reservation checks the same unsaved draft in the owner CAS
+INSERT before any private file creation. Cancelled native work keeps its single-flight
+lease until settlement. Local MO03 locking still applies: a permission-induced lock
+requires unlock/retry before launch; an already launched same-context camera can
+finish privately beneath the opaque AuthGate. Cold uncorrelated pending results
+are read and ignored. No gallery, microphone or second durable queue is used.
+
+ImagePicker58.0.10 (MIT, SDK58 bundled range) uses the system camera UI. The config
+plugin disables microphone and photo-library permissions; existing Android storage
+blocks remain. Asset metadata is advisory; bounded signature/hash verification
+still belongs to this journal. `exif:false` omits JS metadata, not metadata in the
+original bytes; server #102 sanitation remains required. See
+[qualification status](../../../docs/qa/native-photo-253.md).
+
+The adopted result retains an internal SQL authority guard built from the original
+capture fence and immutable owned file. M08 consumes it in its final partial
+reference UPDATE; a fresh session fence cannot bless an older result. Concurrent
+target/assignment/authority changes reject publication while retaining the file
+and journal. Whole-draft editors use raw read-version CAS, including Save's atomic
+outbox transaction, so neither writer order can overwrite concurrent evidence or
+unrelated input. These internal guards are stripped from persisted references.
 
 New capture UUIDs use canonical lowercase before becoming immutable. The legacy
 reference guard compares UUIDs case-insensitively; a spelling change cannot adopt

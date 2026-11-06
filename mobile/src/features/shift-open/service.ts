@@ -10,6 +10,7 @@ import type {
   PhotoCapturePort,
 } from "./domain.ts";
 import type { ShiftOpenStore, StoredShift } from "./store.ts";
+import type { SqlStatement } from "../../db/sql.ts";
 
 interface ServiceDeps {
   readonly store: ShiftOpenStore;
@@ -57,10 +58,11 @@ export class ShiftOpenService {
     return next;
   }
   async read(): Promise<ShiftSnapshot> {
+    return (await this.readWithGuard()).snapshot;
+  }
+  async readWithGuard(): Promise<{ snapshot: ShiftSnapshot; guard: SqlStatement }> {
     const { store } = this.#deps;
-    const state = await store.read();
-    const catalog = await store.catalog();
-    const map = await store.map();
+    const { catalog, map, guard, ...state } = await store.readGateFacts();
     const lastOdometer =
       state.draft === null ? null : await store.lastOdometer(state.draft.motorcycle_code);
     const gate = outcomeGate(
@@ -68,16 +70,19 @@ export class ShiftOpenService {
       state.draft === null ? null : departureGate({ draft: state.draft, catalog, map }),
     );
     return {
-      ...state,
-      catalog,
-      map,
-      gate,
-      lastOdometer,
-      canDepart: state.opening !== null && gate === null,
-      hasOdometerWarning:
-        lastOdometer !== null &&
-        state.draft !== null &&
-        Number(state.draft.odometer_km) < lastOdometer,
+      snapshot: {
+        ...state,
+        catalog,
+        map,
+        gate,
+        lastOdometer,
+        canDepart: state.opening !== null && gate === null,
+        hasOdometerWarning:
+          lastOdometer !== null &&
+          state.draft !== null &&
+          Number(state.draft.odometer_km) < lastOdometer,
+      },
+      guard,
     };
   }
   start(): Promise<ShiftSnapshot> {
