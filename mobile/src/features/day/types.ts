@@ -1,4 +1,4 @@
-/** Normalized assignments v2 task from scheduling/courier_feed.py. */
+/** Normalized scheduling task; absent legacy completion remains unknown. */
 export interface AssignedTask {
   readonly id: string;
   readonly point_code: string;
@@ -9,6 +9,7 @@ export interface AssignedTask {
   readonly date: string;
   readonly risk: "high" | "normal";
   readonly version: string;
+  readonly isCompleted?: boolean;
   readonly block_code?: string;
   readonly quadrant_id: string;
   /** Coordinates are joined from the current authorized sampling-point projection (#196/#221). */
@@ -28,6 +29,8 @@ export interface MapManifest {
 export interface CachedTask {
   readonly task: AssignedTask;
   readonly isKept: boolean;
+  /** Always from the current projection, independently of retained capture context. */
+  readonly serverCompletion: boolean | null;
 }
 export interface BundleMeta {
   readonly bundle_version: string;
@@ -44,7 +47,10 @@ export interface DayCache {
   readonly meta: BundleMeta | null;
 }
 export interface LocalWork {
-  readonly captureDate: string;
+  readonly eventId: string;
+  readonly origin: "capture" | "legacy" | "unknown";
+  readonly pointId: string | null;
+  readonly captureDate: string | null;
   readonly action: string;
   readonly taskId: string | null;
   readonly ovitrapId: string | null;

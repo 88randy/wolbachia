@@ -75,6 +75,7 @@ function isManifestChecksum(value: unknown): value is string {
 /** One scheduling boundary: code/revision/category/point map to the local task vocabulary. */
 export function parseAssignment(value: unknown): AssignedTask | null {
   if (!isRecord(value) || !hasAssignmentFields(value)) return null;
+  if ("is_completed" in value && typeof value.is_completed !== "boolean") return null;
   const version = readVersion(value.revision);
   if (version === null || !isDateOnly(value.date)) return null;
   return {
@@ -87,6 +88,7 @@ export function parseAssignment(value: unknown): AssignedTask | null {
     risk: value.category === "high" ? "high" : "normal",
     version,
     quadrant_id: String(value.quadrant_id),
+    ...(typeof value.is_completed === "boolean" ? { isCompleted: value.is_completed } : {}),
     ...pointDetails(value),
   };
 }

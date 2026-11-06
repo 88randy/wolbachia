@@ -16,5 +16,7 @@ export const PENDING_RETAINED = `(day_assignment.retained_payload IS NOT NULL AN
    AND e.id IN (SELECT value FROM json_each(day_assignment.retained_event_ids))))`;
 export const PENDING_WORK = `(${PENDING_CURRENT} OR ${PENDING_RETAINED})`;
 export const VISIBLE_ASSIGNMENTS = `SELECT CASE WHEN kept=1 AND ${PENDING_RETAINED} THEN retained_payload ELSE payload END AS payload,
+  CASE WHEN removed=0 AND json_type(payload,'$.isCompleted') IN ('true','false')
+    THEN json_extract(payload,'$.isCompleted') ELSE NULL END AS server_completed,
   CASE WHEN kept=1 AND ((${PENDING_RETAINED}) OR (removed=1 AND ${PENDING_CURRENT})) THEN 1 ELSE 0 END AS kept FROM day_assignment
   WHERE payload IS NOT NULL AND (removed=0 OR (kept=1 AND ${PENDING_WORK}))`;

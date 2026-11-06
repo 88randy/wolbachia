@@ -16,22 +16,38 @@ function distance(task: AssignedTask, fix: LocationFix): number | null {
 }
 export interface DayTask extends CachedTask {
   readonly distanceM: number | null;
-  readonly isReviewed: boolean;
-  readonly delivery: "phone" | "received" | "none";
+  readonly completion: "complete" | "pending" | "unknown";
+  readonly delivery: {
+    readonly hasPendingUpload: boolean;
+    readonly hasServerReceipt: boolean;
+    readonly hasRejectedReceipt: boolean;
+    readonly isReviewPending: boolean;
+  };
 }
-function overlay(row: CachedTask, work: readonly LocalWork[], fix: LocationFix | null): DayTask {
-  const captures = taskWork(row.task, work);
-  const isLocal = captures.some((entry) =>
-    ["pending", "sending", "error", "sent", "in_review"].includes(entry.status),
-  );
-  const isReceived = captures.some((entry) =>
-    ["sent", "in_review", "rejected"].includes(entry.status),
-  );
+function overlay(
+  row: CachedTask,
+  captures: readonly LocalWork[],
+  fix: LocationFix | null,
+): DayTask {
   return {
     ...row,
     distanceM: fix === null ? null : distance(row.task, fix),
-    isReviewed: isLocal,
-    delivery: isReceived ? "received" : isLocal ? "phone" : "none",
+    completion:
+      row.serverCompletion === true
+        ? "complete"
+        : row.serverCompletion === false
+          ? "pending"
+          : "unknown",
+    delivery: {
+      hasPendingUpload: captures.some((entry) =>
+        ["pending", "sending", "error"].includes(entry.status),
+      ),
+      hasServerReceipt: captures.some((entry) =>
+        ["sent", "in_review", "rejected"].includes(entry.status),
+      ),
+      hasRejectedReceipt: captures.some((entry) => entry.status === "rejected"),
+      isReviewPending: captures.some((entry) => entry.status === "in_review"),
+    },
   };
 }
 function compare(left: DayTask, right: DayTask): number {
@@ -42,7 +58,7 @@ function compare(left: DayTask, right: DayTask): number {
     left.task.point_code.localeCompare(right.task.point_code)
   );
 }
-/** Risk first; distance only from a fresh real fix. Local capture never claims server review. */
+/** Server completion alone decides progress; local capture/delivery never supplies a verdict. */
 export function buildDay(input: {
   readonly tasks: readonly CachedTask[];
   readonly work: readonly LocalWork[];
@@ -51,14 +67,17 @@ export function buildDay(input: {
 }) {
   const location = currentLocation(input.location, input.now);
   const fix = location.kind === "granted" ? location.fix : null;
-  const tasks = input.tasks.map((row) => overlay(row, input.work, fix)).sort(compare);
+  const visible = input.tasks.map((row) => row.task);
+  const tasks = input.tasks
+    .map((row) => overlay(row, taskWork(row.task, input.work, visible), fix))
+    .sort(compare);
   return {
     tasks,
     location,
-    pendingTasks: tasks.filter((row) => !row.isReviewed),
+    pendingTasks: tasks.filter((row) => row.completion !== "complete"),
     closedTasks: [] as DayTask[],
-    reviewedTasks: tasks.filter((row) => row.isReviewed),
-    reviewed: tasks.filter((row) => row.isReviewed).length,
+    completedTasks: tasks.filter((row) => row.completion === "complete"),
+    completed: tasks.filter((row) => row.completion === "complete").length,
     total: tasks.length,
   };
 }

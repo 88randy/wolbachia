@@ -540,21 +540,24 @@ navigation button says "How to get there", without claiming a specific navigator
   place/check; closed-house/relocate states in the design await capture/point data.
   Delta numeric versions are ordered numerically; opaque versions deduplicate by equality
   and ordered change sequence. Bootstrap authoritatively restores present resources and removes missing ids.
-- **[ASSUMPTION]** #9 captures reference `payload.task_id` or `payload.ovitrap_id`.
-  `LocalWorkOverlay` is a replaceable port over the existing outbox. Explicit task ids
-  take precedence. Completion fallback uses the same ISO capture date/action
-  **[ASSUMPTION]** until downloaded organization timezone metadata is published;
-  evening local-time capture may therefore remain uncounted without a task id.
-  Pending retention conservatively matches the ovitrap regardless of date, so
-  this uncertainty never drops recoverable work from the list. Day progress
-  uses local captured work plus removal of tasks from the server projection
-  Assignments v3 now publishes `is_completed` (#212), but the mobile parser still
-  ignores it; consuming that completion contract remains the separate #229
-  follow-up. #221 does not change local completion policy.
-  Phone-saved and server-received text
-  remain separate; the existing `SyncChip` opens the inbox with actual delivery/review
-  outcomes. Neither an error nor a pending upload implies server delivery/review.
-  No new capture queue, upload transport, ping producer or server lookup was added.
+- Assignments v3 `is_completed` alone controls list/map/progress (#229): exact
+  true completes, false reopens immediately, absent legacy data remains UNKNOWN.
+  Completion can change without an ownership revision increment. Current row
+  authority stays separate from any older retained capture context. Local
+  pending/sent/in_review/rejected events never count as authoritative completion
+  or supervisor review; receipt and outstanding phone work can coexist.
+  `LocalWorkOverlay` reads actual immutable M08 capture provenance because real
+  M08 envelopes have no task_id and v3 tasks have no ovitrap_id. Delivery joins
+  only a unique point/action/captured organization-local date. Missing timezone,
+  origin or ambiguous identity stays unlinked in outbox/P28; explicit legacy
+  task IDs keep precedence. Existing retained-event enrollment stays unchanged.
+  No envelope, captured JSON, file reference or assignment snapshot is rewritten.
+  Migration 11 requires a committed unconditional bootstrap even if a parser-
+  stripped old cache still has a valid ETag/cursor; offline/304/deltas/restart and
+  rollback cannot clear readiness. Full empty/legacy responses clear it once,
+  preserving UNKNOWN where no authoritative bit exists. The existing SyncChip
+  opens actual delivery/review details. No queue, receipt floor, producer, backend
+  lookup or upload transport is added. See `src/features/day/README.md`.
 - Bootstrap uses `packages/api-client`, validates `unknown` at the runtime object
   boundary (generated response incorrectly says array) and sends the stored bundle
   version as a quoted ETag when the local projection is ready. Migration 9 records

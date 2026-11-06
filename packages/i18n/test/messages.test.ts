@@ -42,7 +42,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["mobile.day.locationStale", ["seconds"]],
   ["mobile.day.locationUnknownAccuracy", ["seconds"]],
   ["mobile.day.locationWeak", ["accuracy", "seconds"]],
-  ["mobile.day.progress", ["reviewed", "total"]],
+  ["mobile.day.progress", ["completed", "total"]],
   ["mobile.day.reference", ["reference"]],
   ["mobile.day.unreadable", ["count"]],
   ["mobile.inbox.evidencePending", ["count"]],
