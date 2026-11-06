@@ -101,3 +101,11 @@ choices/labels/Other flags from that submitted version. Pre-archive hashes revie
 without effects. Retained deactivated choices review, never bind to a new identity.
 Seeds add closed-house/absent/destroyed and protected Other to ovitrap-finding, plus
 paddle-type (standard + Other), preserving administrator labels and deactivations.
+
+
+## Lifecycle reasons (#112)
+
+Seeds reuse replacement-reason/removal-reason and add relocation-reason with the
+protected Other. Findings add abandoned/removed; each skips the egg question and
+can reserve the unique lifecycle incident marker. Exact archived reason resolution
+reuses ovitraps.findings; get_or_create preserves labels and inactive history.

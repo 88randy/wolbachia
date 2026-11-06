@@ -664,7 +664,7 @@ with no timing sleeps. The native/API/device UNVERIFIED limits above are unchang
 
 The #135 merge retains master's encrypted database, CredentialStore, SessionRequests,
 identity-pinned origin and final-upload lifecycle (decision 116; M-06 is decision
-120). Bootstrap uses `tokens.getOrigin()` and the 401 refresh wrapper, retains ETag/
+122). Bootstrap uses `tokens.getOrigin()` and the 401 refresh wrapper, retains ETag/
 304 handling, and checks session identity/origin rather than access-token equality.
 The scoped sync adapter delegates refresh/final upload to master's transport and
 guards both queued requests and late responses against a replacement session/origin. Ordinary locked sessions

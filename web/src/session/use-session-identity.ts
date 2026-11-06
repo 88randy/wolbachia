@@ -1,3 +1,5 @@
+import { useActiveCenter } from "../centers/use-active-center";
+import { hasCenterScope, authorizationKey } from "../centers/center-selection";
 import { useSyncExternalStore } from "react";
 import { sessionIdentityOf } from "./org-scoped-query";
 import type { SessionIdentity } from "./org-scoped-query";
@@ -12,5 +14,12 @@ export function useSessionIdentity(): SessionIdentity {
   const me = useMe();
   const revision = useSyncExternalStore(subscribeToRevision, currentRevision);
   const isKnown = useSyncExternalStore(subscribeToRevision, isSessionKnown);
-  return sessionIdentityOf(me, revision, isKnown);
+  const activeCenter = useActiveCenter();
+  return {
+    ...sessionIdentityOf(me, revision, isKnown),
+    activeCenter,
+    authorization: authorizationKey(me),
+    hasScope: hasCenterScope(me.scope),
+    permissions: me.permissions,
+  };
 }

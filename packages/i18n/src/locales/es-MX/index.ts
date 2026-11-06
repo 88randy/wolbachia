@@ -1,3 +1,4 @@
+import { orgAdmin } from "./orgAdmin.ts";
 import { geography } from "./geography.ts";
 import { catalogs } from "./catalogs.ts";
 /**
@@ -18,6 +19,7 @@ import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const esMX = {
+  ...orgAdmin,
   ...geography,
   ...catalogs,
   ...fleet,

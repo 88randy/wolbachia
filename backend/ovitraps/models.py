@@ -18,6 +18,10 @@ class OvitrapRecord(ImmutableMixin, OrgScopedModel):
 
 class Ovitrap(OvitrapRecord):
     # Query annotations / pending-event projection state, never database columns.
+    is_replaced: bool
+    is_removed: bool
+    replacement_event_id: str | None
+    removal_event_id: str | None
     sampling_point_version: int | None
     reading_revision: int | None
     void_revision: int | None
@@ -114,3 +118,13 @@ class OvitrapVoid(OvitrapRecord):
     )
     reason = models.TextField()
     reason_code = models.CharField(max_length=64)
+
+
+# Register package models under the existing ovitraps app; no new Django app.
+from ovitraps.lifecycle.models import (  # noqa: E402, F401
+    OvitrapIncidentLink,
+    PhysicalOvitrapLineage,
+    RelocationDecision,
+    RelocationProposal,
+    RemovalAttempt,
+)

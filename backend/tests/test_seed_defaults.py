@@ -58,7 +58,7 @@ def test_create_organization_seeds_catalogs_and_parameters() -> None:
     assert (
         Catalog.objects.filter(organization=organization).count()
         == len(DEFAULT_CATALOG_SEEDS)
-        == 11
+        == 12
     )
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
@@ -213,9 +213,9 @@ def test_seed_does_not_cross_organizations() -> None:
     first = create_organization(SPEC)
     second = create_organization(OrganizationSpec("Beta", "beta", "MX", "America/Mexico_City"))
 
-    assert Catalog.objects.filter(organization=first).count() == 11
-    assert Catalog.objects.filter(organization=second).count() == 11
-    assert Catalog.objects.count() == 22
+    assert Catalog.objects.filter(organization=first).count() == 12
+    assert Catalog.objects.filter(organization=second).count() == 12
+    assert Catalog.objects.count() == 24
 
 
 def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
@@ -237,6 +237,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "schedule.manage",
         "ovitrap.read",
         "reading.read",
+        "relocation.read",
         "quadrant.read",
         *reader,
         REVIEW_ITEM_READ,
@@ -255,6 +256,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     assert by_slug["coordinator"] == {
         "ovitrap.read",
         "reading.read",
+        "relocation.read",
         *reader,
         "quadrant.read",
         "quadrant.publish",
@@ -266,6 +268,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "risk_import.apply",
         "ovitrap.read",
         "reading.read",
+        "relocation.read",
         "quadrant.read",
         "quadrant.publish",
         "sampling_point.create",
@@ -442,7 +445,7 @@ def test_command_apply_updates_an_existing_organization() -> None:
     output = run_command("--organization", organization.slug, "--apply")
 
     assert "Applied" in output
-    assert Catalog.objects.filter(organization=organization).count() == 11
+    assert Catalog.objects.filter(organization=organization).count() == 12
     assert RuleParameter.objects.filter(organization=organization).count() == len(
         DEFAULT_PARAMETER_SEEDS
     )

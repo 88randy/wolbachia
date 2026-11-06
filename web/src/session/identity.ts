@@ -15,7 +15,7 @@ const lastVerified = new WeakMap<QueryClient, string>();
 const listeners = new Set<Listener>();
 
 function identityOf(me: Me): string {
-  return `${me.user.id}|${me.organization?.slug ?? ""}`;
+  return `${me.user.id}|${me.organization?.slug ?? ""}|${JSON.stringify([me.permissions, me.scope])}`;
 }
 
 /**
@@ -48,7 +48,7 @@ export function isRecordedIdentity(
   userId: string,
   organizationSlug: string,
 ): boolean {
-  return known.get(queryClient) === `${userId}|${organizationSlug}`;
+  return known.get(queryClient)?.startsWith(`${userId}|${organizationSlug}|`) === true;
 }
 
 /** The session was left: no identity is usable until a verified `/me/` records one. */

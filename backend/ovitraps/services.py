@@ -10,7 +10,7 @@ from rest_framework.exceptions import ValidationError
 
 from core.void_reason import validate_void_reason
 from field_sync.codes import INVALID_PAYLOAD
-from field_sync.exceptions import EventRejected
+from field_sync.exceptions import EventNeedsReview, EventRejected
 from field_sync.models import FieldEvent
 from field_sync.projection_serializers import OvitrapBundleSerializer
 from field_sync.registry import EventContext
@@ -52,9 +52,11 @@ def place_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
         organization=ctx.organization, client_uuid=payload["ovitrap_id"]
     ).exists():
         raise EventRejected(codes.IDENTITY_USED)
-    if Ovitrap.objects.filter(sampling_point=point, event__voided_at__isnull=True).exists():
-        raise EventRejected(codes.POINT_OCCUPIED)
     capture = capture_context(ctx, point)
+    from ovitraps.lifecycle.selectors import active_ovitraps
+
+    if active_ovitraps(ctx.organization).filter(sampling_point=point).exists():
+        raise EventRejected(codes.POINT_OCCUPIED)
     scope = point_fanout_scope(point)
     try:
         with transaction.atomic(), fanout_courier_changes(scope) as emit:
@@ -94,6 +96,10 @@ def check_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
     """Append a reading and its optional bag together; void a weekly reading before correcting it."""
     lock_organization(ctx)
     ovitrap = accessible_ovitrap(ctx, payload["ovitrap_id"])
+    from ovitraps.lifecycle.selectors import is_active
+
+    if not is_active(ovitrap):
+        raise EventNeedsReview(codes.STALE_IDENTITY)
     if ctx.envelope.device_time < ovitrap.event.device_time:
         raise EventRejected(codes.OVITRAP_INACCESSIBLE)
     finding, paddle = validate_choices(ctx, payload)
@@ -112,6 +118,10 @@ def check_ovitrap(ctx: EventContext, payload: dict[str, Any]) -> None:
         reading = _create_reading(
             ctx, payload, ReadingCapture(ovitrap, capture, finding, paddle, week)
         )
+        from ovitraps.lifecycle.services import INCIDENT_FINDINGS, incident_link
+
+        if finding.historical["code"] in INCIDENT_FINDINGS:
+            incident_link(ctx, ovitrap)
         if payload["bag_code"] is not None:
             _create_bag(ctx, reading, payload["bag_code"])
         projected = projected_ovitraps(ctx.organization).get(pk=ovitrap.pk)
@@ -195,16 +205,10 @@ def void_ovitrap_event(ctx: EventContext, target: FieldEvent) -> None:
     if target.type == "ovitrap.place":
         ovitrap = Ovitrap.objects.filter(organization=ctx.organization, event=target).first()
         if ovitrap is not None:
-            blockers = OvitrapReading.objects.filter(ovitrap=ovitrap).order_by("id")
-            if blockers.exists():
-                raise EventRejected(
-                    codes.VOID_BLOCKED,
-                    {
-                        "blocked_by": [
-                            {"resource": "reading", "id": str(row.pk)} for row in blockers
-                        ]
-                    },
-                )
+            from ovitraps.lifecycle.services import trap_dependents
+
+            if blockers := trap_dependents(ovitrap):
+                raise EventRejected(codes.VOID_BLOCKED, {"blocked_by": blockers})
     ovitrap = _void_target_ovitrap(ctx, target)
     if ovitrap is None:
         _append_ovitrap_void(ctx, target, reason)
