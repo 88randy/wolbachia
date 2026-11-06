@@ -28,7 +28,7 @@ interface AuthDeps {
   readonly fetchRules: () => Promise<unknown>;
   readonly randomBytes: (length: number) => Uint8Array;
   readonly now: () => number;
-  readonly clearSessionData?: () => Promise<void>;
+  readonly clearSessionData?: (hasFinalReceipt?: boolean) => Promise<void>;
   readonly verify?: (secret: string, verifier: Verifier) => Promise<boolean>;
 }
 interface AcceptedLogin {
@@ -105,12 +105,12 @@ export class AuthController {
     return this.#deps.credentials.lock();
   }
 
-  endSession(): Promise<void> {
+  endSession(hasFinalReceipt = false): Promise<void> {
     const sessionId = this.#deps.credentials.getSnapshot().sessionId;
     return this.#deps.credentials.markEnded(sessionId, async () => {
       this.#publish({ notice: null });
       await this.#deps.kv.set(SESSION_ENDED_KEY, JSON.stringify({ sessionId, status: "ended" }));
-      await this.#deps.clearSessionData?.();
+      await this.#deps.clearSessionData?.(hasFinalReceipt);
     });
   }
 

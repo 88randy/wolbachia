@@ -24,16 +24,22 @@ import { FIXED_DEVICE_ID } from "./support/factories.ts";
 import type { LocationState } from "../src/features/day/location.ts";
 import type { MapPreparation } from "../src/features/shift-open/domain.ts";
 import { verifyMap, hasCoverage } from "../src/features/day/map-coverage.ts";
-import { parseAssignment } from "../src/features/day/assignment-parser.ts";
+import { hasCoordinates, parseAssignment } from "../src/features/day/assignment-parser.ts";
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DayStore } from "../src/features/day/store.ts";
 import { DayBundleService } from "../src/features/day/bundle-service.ts";
-import { buildDay } from "../src/features/day/domain.ts";
+import { buildDay, findAssignedTaskByPointCode, mapTasks } from "../src/features/day/domain.ts";
 import { NavigationService } from "../src/navigation/navigation-service.ts";
 import { createStores, makeEnvelope, FIXED_NOW } from "./support/factories.ts";
 
-const task = (overrides = {}) => ({
+const task = (overrides: Record<string, unknown> = {}) => ({
+  kind: "task",
+  code: overrides.point_code ?? "OV-012",
+  point: "point-1",
+  courier: "courier-1",
+  category: overrides.risk ?? "high",
+  revision: overrides.version ?? 1,
   id: "task-1",
   point_code: "OV-012",
   action: "check",
@@ -326,7 +332,7 @@ void test("Regression: newer server payload stays staged while pending work reta
   ]);
   const latest = (await store.read()).tasks[0];
   assert.equal(latest?.task.quadrant_id, "q2");
-  assert.equal(latest.task.status, "done");
+  assert.equal(latest.task.version, "2");
   assert.equal(latest.isKept, false);
 });
 
@@ -990,7 +996,7 @@ async function authDayFixture() {
   const auth = new AuthController({
     ...fixture,
     credentials,
-    clearSessionData: service.clearSessionData,
+    clearSessionData: service.clearForAuth,
     randomBytes,
     now: () => FIXED_NOW.getTime(),
     hasLocalRecords: () => Promise.resolve(true),
@@ -1000,7 +1006,7 @@ async function authDayFixture() {
   requests = new SessionRequests({
     credentials,
     isOnline: () => true,
-    endSession: () => auth.endSession(),
+    endSession: (hasFinalReceipt) => auth.endSession(hasFinalReceipt),
     refresh: () => Promise.resolve({ access: randomUUID(), refresh: randomUUID() }),
   });
   await auth.load();
@@ -1061,7 +1067,7 @@ void test("Merge session: logout during a pending bootstrap clears downloads wit
   });
   const auth = new AuthController({
     ...fixture,
-    clearSessionData: service.clearSessionData,
+    clearSessionData: service.clearForAuth,
     randomBytes,
     now: () => FIXED_NOW.getTime(),
     hasLocalRecords: () => Promise.resolve(true),
@@ -1161,7 +1167,8 @@ void test("UI state: a local read failure stays scoped and retry distinguishes n
   await fixture.store.replace(bundle([]), FIXED_NOW);
   await view.load();
   assert.equal(dayViewPhase(view.getSnapshot()), "empty");
-  await fixture.store.replace(bundle([task({ status: "done" })]), FIXED_NOW);
+  await fixture.store.replace(bundle(), FIXED_NOW);
+  await fixture.outbox.enqueue(makeEnvelope({ payload: { task_id: "task-1" } }));
   await view.load();
   assert.equal(dayViewPhase(view.getSnapshot()), "complete");
 });
@@ -1432,4 +1439,322 @@ void test("Merge revocation: a late file inspection cannot publish a map into a 
   inspected.resolve({ sha256: manifest.sha256, size: 127 });
   await rejected;
   assert.equal((await day.read()).map.kind, "unavailable");
+});
+
+function producerTask(overrides = {}) {
+  return {
+    id: "10000000-0000-4000-8000-000000000001",
+    kind: "task",
+    quadrant_id: "20000000-0000-4000-8000-000000000001",
+    courier: "30000000-0000-4000-8000-000000000001",
+    revision: 1,
+    code: "OV-012:check:2026-01-15",
+    point: "40000000-0000-4000-8000-000000000001",
+    action: "check",
+    date: "2026-01-15",
+    category: null,
+    source: null,
+    protocol: null,
+    target: 40,
+    ...overrides,
+  };
+}
+function producerAllocation() {
+  const row = producerTask();
+  return {
+    id: row.quadrant_id,
+    kind: "quadrant_assignment",
+    quadrant_id: row.quadrant_id,
+    courier: row.courier,
+    revision: 1,
+  };
+}
+void test("Review2 producer: real bootstrap and delta rows preserve unlocated tasks without allocation noise", async () => {
+  const fixture = await dayFixture();
+  await fixture.store.replace(bundle([producerAllocation(), producerTask()]), FIXED_NOW);
+  let cached = await fixture.store.read();
+  assert.equal(cached.meta?.unreadable_rows, 0);
+  assert.equal(cached.tasks.length, 1);
+  assert.equal(cached.tasks[0]?.task.point_code, "OV-012:check:2026-01-15");
+  assert.equal(findAssignedTaskByPointCode("OV-012", cached.tasks)?.point_id, producerTask().point);
+  assert.equal(cached.tasks[0].task.point_id, producerTask().point);
+  assert.equal(cached.tasks[0].task.version, "1");
+  assert.equal(cached.tasks[0].task.lat, undefined);
+  const row = producerTask({ category: "high", revision: 2 });
+  await fixture.service.applyProjectionChanges({
+    assignments: [
+      {
+        ...change("upsert", 2),
+        resource_type: "quadrant_assignment",
+        resource_id: row.quadrant_id,
+        data: producerAllocation(),
+      },
+      {
+        ...change("upsert", 3),
+        resource_type: "task",
+        resource_id: row.id,
+        resource_version: "risk-content-hash",
+        data: row,
+      },
+      {
+        ...change("upsert", 4),
+        resource_type: "task",
+        resource_id: "10000000-0000-4000-8000-000000000002",
+        data: producerTask({
+          id: "10000000-0000-4000-8000-000000000002",
+          code: "OV-001:check:2026-01-15",
+        }),
+      },
+    ],
+  });
+  cached = await fixture.store.read();
+  assert.equal(cached.meta?.unreadable_rows, 0);
+  const day = buildDay({
+    tasks: cached.tasks,
+    work: [],
+    location: {
+      kind: "granted",
+      fix: { lat: 19.4, lng: -99.1, accuracy_m: 5, fixedAt: FIXED_NOW.getTime() },
+    },
+    now: FIXED_NOW,
+  });
+  assert.deepEqual(
+    day.tasks.map((entry) => entry.task.point_code),
+    ["OV-012:check:2026-01-15", "OV-001:check:2026-01-15"],
+  );
+  assert.ok(day.tasks.every((entry) => entry.distanceM === null));
+  assert.equal(mapTasks(day.tasks).length, 0);
+  assert.ok(day.tasks.every((entry) => !hasCoordinates(entry.task)));
+  assert.equal(day.reviewed, 0);
+  await fixture.service.applyProjectionChanges({
+    assignments: [{ ...change("remove", 5), resource_type: "task", resource_id: row.id }],
+  });
+  assert.equal((await fixture.store.read()).tasks.length, 1);
+});
+
+void test("Review2 retention: only captures enrolled in the retained view can keep its original payload visible", async () => {
+  const fixture = await dayFixture();
+  await fixture.store.replace(bundle([task({ ovitrap_id: "trap-1" })]), FIXED_NOW);
+  const first = makeEnvelope({ payload: { ovitrap_id: "trap-1" } });
+  await fixture.outbox.enqueue(first);
+  await fixture.service.applyProjectionChanges({
+    assignments: [change("upsert", 2, task({ version: 2, lat: 20, ovitrap_id: "trap-1" }))],
+  });
+  assert.equal((await fixture.store.read()).tasks[0]?.task.lat, 19.4);
+  // This capture was made while the old point view still applied; it also keeps that view.
+  const duringRetention = makeEnvelope({ payload: { ovitrap_id: "trap-1" } });
+  await fixture.outbox.enqueue(duringRetention);
+  await fixture.outbox.claimPending(1);
+  await fixture.outbox.settle([
+    { id: first.id, action: "accept", result: { code: "accepted", params: {} } },
+  ]);
+  assert.equal((await fixture.store.read()).tasks[0]?.task.lat, 19.4);
+  await fixture.outbox.claimPending(1);
+  await fixture.outbox.settle([
+    { id: duringRetention.id, action: "accept", result: { code: "accepted", params: {} } },
+  ]);
+  assert.equal((await fixture.store.read()).tasks[0]?.task.lat, 20);
+  await fixture.outbox.enqueue(makeEnvelope({ payload: { ovitrap_id: "trap-1" } }));
+  const latest = (await fixture.store.read()).tasks[0];
+  assert.equal(latest?.task.lat, 20);
+  assert.equal(latest.isKept, false);
+});
+
+void test("Review2 revocation: failed reload cannot leave the previous snapshot or map visible", async () => {
+  const fixture = await dayFixture();
+  const day = createTestDay(fixture);
+  await day.verifyMap();
+  let canRead = true;
+  const view = new DayViewController({
+    bundle: fixture.service,
+    verifyMap: () => day.verifyMap(),
+    read: () => (canRead ? day.read() : Promise.reject(new Error("storage read failed"))),
+  });
+  view.start();
+  await view.load();
+  assert.equal(view.getSnapshot().state?.map.kind, "ready");
+  canRead = false;
+  const clearing = fixture.service.clearSessionData();
+  assert.equal(view.getSnapshot().state, null);
+  await clearing;
+  await view.load();
+  assert.equal(view.getSnapshot().state, null);
+  assert.ok(view.getSnapshot().errors.read);
+  view.stop();
+});
+
+void test("Review2 final receipt: cleanup failure cannot discard revoked200 results and restart retries cleanup", async () => {
+  const fixture = await authDayFixture();
+  const event = makeEnvelope({ payload: { task_id: "task-1" } });
+  await fixture.outbox.enqueue(event);
+  await fixture.service.applyProjectionChanges({
+    assignments: [change("upsert", 2, task({ version: 2, lat: 20 }))],
+  });
+  await fixture.db.query(
+    "CREATE TRIGGER fail_receipt_projection_update BEFORE UPDATE ON day_assignment BEGIN SELECT RAISE(ABORT,'projection unavailable'); END",
+  );
+  await fixture.navigation.select("task-1");
+  const auth = new AuthController({
+    ...fixture,
+    randomBytes,
+    now: () => FIXED_NOW.getTime(),
+    hasLocalRecords: () => Promise.resolve(true),
+    login: () => Promise.reject(new Error("No login")),
+    fetchRules: () => Promise.resolve(null),
+    clearSessionData: (shouldDefer) =>
+      shouldDefer ? fixture.service.deferCleanup() : fixture.service.clearSessionData(),
+  });
+  await auth.load();
+  const requests = new SessionRequests({
+    credentials: fixture.credentials,
+    isOnline: () => true,
+    endSession: (hasFinalReceipt) => auth.endSession(hasFinalReceipt),
+    refresh: () => Promise.reject(new Error("No refresh")),
+  });
+  const response = answer([accepted(event.id)]);
+  assert.ok(response.ok);
+  let posts = 0;
+  const transport = createScopedSyncTransport({
+    tokens: fixture.credentials,
+    requests,
+    fetch: () => {
+      posts += 1;
+      return Promise.resolve(jsonResponse(response.response, { isFinal: true }));
+    },
+  });
+  await fixture.db.query(
+    "CREATE TRIGGER fail_revoked_cleanup BEFORE DELETE ON day_assignment BEGIN SELECT RAISE(ABORT,'storage unavailable'); END",
+  );
+  await assert.rejects(
+    runSyncPass(
+      {
+        ...fixture,
+        ...fixture.service.syncHooks(),
+        transport,
+        deviceId: FIXED_DEVICE_ID,
+        now: () => FIXED_NOW,
+      },
+      { batchSize: 50 },
+    ),
+  );
+  assert.equal(posts, 1);
+  const rows = await fixture.db.query("SELECT id,local_status,result_code FROM outbox_event");
+  assert.equal(rows[0]?.id, event.id);
+  assert.equal(rows[0].local_status, "sent");
+  assert.equal(rows[0].result_code, "accepted");
+  assert.notEqual(fixture.credentials.getSnapshot().pair, null);
+  assert.equal(await fixture.kv.get("day_cleanup_pending"), "true");
+  await fixture.db.query("DROP TRIGGER fail_revoked_cleanup");
+  const restarted = new DayBundleService({
+    store: new DayStore(fixture.db),
+    now: () => FIXED_NOW,
+    transport: () => Promise.reject(new Error("airplane")),
+  });
+  await restarted.retryCleanup();
+  assert.equal((await restarted.read()).tasks.length, 0);
+  assert.equal(await fixture.navigation.read(), null);
+  assert.equal(await fixture.kv.get(KV_KEYS.syncCursor), null);
+  assert.equal((await fixture.outbox.countByStatus()).sent, 1);
+});
+
+void test("Review2 scope restart: active-session offline restart cannot expose downloads whose cleanup is pending", async () => {
+  const fixture = await dayFixture();
+  await fixture.navigation.select("task-1");
+  await fixture.db.query(
+    "CREATE TRIGGER fail_scope_cleanup BEFORE DELETE ON day_assignment BEGIN SELECT RAISE(ABORT,'disk unavailable'); END",
+  );
+  await assert.rejects(fixture.service.clearSessionData());
+  const restarted = new DayBundleService({
+    store: new DayStore(fixture.db),
+    now: () => FIXED_NOW,
+    getScopeKey: () => "same-active-session",
+    transport: () => Promise.reject(new Error("airplane")),
+  });
+  const day = createTestDay(fixture, restarted);
+  const cached = await day.read();
+  assert.equal(cached.tasks.length, 0);
+  assert.equal(cached.manifests.length, 0);
+  assert.equal(cached.map.kind, "unavailable");
+  assert.equal(cached.navigation, null);
+  await assert.rejects(day.select("task-1"));
+  const evidence = await fixture.db.query("SELECT id FROM day_assignment");
+  assert.equal(evidence.length, 1); // Physical cleanup really failed; hiding is not a successful delete.
+});
+
+void test("Review2 concurrent final receipt: a revoked200 upgrades ordinary cleanup already pending", async () => {
+  const fixture = await authDayFixture();
+  const cleanupEntered = deferred<undefined>();
+  const cleanupFailure = deferred<never>();
+  const upgradeRequested = deferred<undefined>();
+  const uploadEntered = deferred<undefined>();
+  const uploaded = deferred<Response>();
+  const event = makeEnvelope();
+  await fixture.outbox.enqueue(event);
+  const auth = new AuthController({
+    ...fixture,
+    randomBytes,
+    now: () => FIXED_NOW.getTime(),
+    hasLocalRecords: () => Promise.resolve(true),
+    login: () => Promise.reject(new Error("No login")),
+    fetchRules: () => Promise.resolve(null),
+    clearSessionData: async (hasFinalReceipt) => {
+      await fixture.service.deferCleanup();
+      if (hasFinalReceipt) return;
+      cleanupEntered.resolve(undefined);
+      await cleanupFailure.promise;
+    },
+  });
+  await auth.load();
+  const requests = new SessionRequests({
+    credentials: fixture.credentials,
+    isOnline: () => true,
+    endSession: (hasFinalReceipt) => {
+      if (hasFinalReceipt) upgradeRequested.resolve(undefined);
+      return auth.endSession(hasFinalReceipt);
+    },
+    refresh: () => Promise.reject(new Error("No refresh")),
+  });
+  const transport = createScopedSyncTransport({
+    tokens: fixture.credentials,
+    requests,
+    fetch: () => {
+      uploadEntered.resolve(undefined);
+      return uploaded.promise;
+    },
+  });
+  const running = runSyncPass(
+    {
+      ...fixture,
+      ...fixture.service.syncHooks(),
+      transport,
+      deviceId: FIXED_DEVICE_ID,
+      now: () => FIXED_NOW,
+    },
+    { batchSize: 50 },
+  );
+  await uploadEntered.promise;
+  const ordinary = requests.run(() =>
+    Promise.resolve({
+      response: new Response(null, { status: 403 }),
+      error: { code: "session_revoked", detail: "Fixture" },
+    }),
+  );
+  const ordinaryOutcome = ordinary.then(
+    () => null,
+    (error: unknown) => error,
+  );
+  await cleanupEntered.promise;
+  const result = answer([accepted(event.id)]);
+  assert.ok(result.ok);
+  uploaded.resolve(jsonResponse(result.response, { isFinal: true }));
+  await upgradeRequested.promise;
+  cleanupFailure.reject(new Error("projection cleanup failed"));
+  assert.match(String(await ordinaryOutcome), /projection cleanup failed/);
+  assert.deepEqual(await running, {
+    kind: "blocked",
+    reason: "needsLogin",
+    code: "session_revoked",
+  });
+  assert.equal((await fixture.outbox.countByStatus()).sent, 1);
+  assert.equal(fixture.credentials.getSnapshot().pair, null);
 });

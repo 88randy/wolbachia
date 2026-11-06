@@ -62,7 +62,7 @@ export class DayService {
     return {
       ...cache,
       work,
-      navigation,
+      navigation: cache.meta === null ? null : navigation,
       isShiftOpen,
       maxGpsAccuracyM: maxGpsAccuracy(rules === null ? null : (JSON.parse(rules) as unknown)),
       map:

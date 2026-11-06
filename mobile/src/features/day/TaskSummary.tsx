@@ -13,7 +13,9 @@ export function TaskSummary({ row }: { readonly row: DayTask }) {
       {row.task.risk === "high" ? (
         <Badge tone="critical" icon="alert" label={t("mobile.day.highRisk")} />
       ) : null}
-      <AppText tone="secondary">{t("mobile.day.block", { code: row.task.block_code })}</AppText>
+      {row.task.block_code === undefined ? null : (
+        <AppText tone="secondary">{t("mobile.day.block", { code: row.task.block_code })}</AppText>
+      )}
       <AppText>{t(ACTION_KEYS[row.task.action])}</AppText>
       <AppText>{new Date(row.task.date).toLocaleDateString(locale, { timeZone: "UTC" })}</AppText>
       {row.distanceM === null ? null : (

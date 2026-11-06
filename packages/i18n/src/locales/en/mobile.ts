@@ -59,6 +59,8 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.day.scanHint": "To record, scan the ovitrap QR when the scanner is available.",
   "mobile.day.backList": "View point list",
   "mobile.day.closeDetail": "Close point details",
+  "mobile.day.accessRevoked": "Downloaded points are no longer available. Refresh your day.",
+  "mobile.day.noLocation": "No location for this point yet. You can still use the list.",
   "mobile.day.noMap": "No saved map",
   "mobile.day.noMapHint":
     "No verified map file is available. Retry verification or use the point list.",

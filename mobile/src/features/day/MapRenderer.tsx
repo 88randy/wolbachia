@@ -2,6 +2,7 @@ import { Map, Camera } from "@maplibre/maplibre-react-native";
 import { useMemo } from "react";
 import { useTheme, useStyles } from "../../theme/ThemeProvider.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
+import { mapTasks } from "./domain.ts";
 import type { DayTask } from "./domain.ts";
 import type { MapFile } from "./map-coverage.ts";
 import { buildPmtilesStyle } from "./pmtiles-style.ts";
@@ -20,7 +21,8 @@ export function MapRenderer({ files, rows, selected, onSelect, onFailure }: Prop
   const styles = useStyles(createDayStyles);
   const t = useT();
   const mapStyle = useMemo(() => buildPmtilesStyle(files, theme), [files, theme]);
-  const target = selected ?? rows[0];
+  const located = mapTasks(rows);
+  const target = located.find((row) => row.task.id === selected?.task.id) ?? located[0];
   return (
     <Map
       style={styles.map}

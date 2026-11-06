@@ -24,11 +24,9 @@ function useDayView() {
       void controller.load();
     };
     const stopEngine = engine.subscribe(update);
-    const stopBundle = day.bundle.subscribe(update);
     return () => {
       controller.stop();
       stopEngine();
-      stopBundle();
     };
   }, [controller, day, engine, scope]);
   return { day, controller, snapshot, isUnlocked: session.phase === "unlocked" };

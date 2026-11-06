@@ -71,7 +71,7 @@ function createRuntimeAuth(
 ) {
   return createAuth({
     ...deps,
-    clearSessionData: bundle.clearSessionData,
+    clearSessionData: bundle.clearForAuth,
     randomBytes: getRandomBytes,
     now: Date.now,
     appVersion: appManifest.version,

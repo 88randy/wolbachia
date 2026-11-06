@@ -1,10 +1,12 @@
 import type { AssignedTask, CachedTask, LocalWork } from "./types.ts";
+import { hasCoordinates } from "./assignment-parser.ts";
 import { currentLocation } from "./location.ts";
 import type { LocationState, LocationFix } from "./location.ts";
 import { taskWork } from "./local-work.ts";
 const EARTH_RADIUS_M = 6_371_000;
 const RADIANS = Math.PI / 180;
-function distance(task: AssignedTask, fix: LocationFix): number {
+function distance(task: AssignedTask, fix: LocationFix): number | null {
+  if (!hasCoordinates(task)) return null;
   const lat = (task.lat - fix.lat) * RADIANS;
   const lng = (task.lng - fix.lng) * RADIANS;
   const arc =
@@ -28,7 +30,7 @@ function overlay(row: CachedTask, work: readonly LocalWork[], fix: LocationFix |
   return {
     ...row,
     distanceM: fix === null ? null : distance(row.task, fix),
-    isReviewed: row.task.status === "done" || isLocal,
+    isReviewed: isLocal,
     delivery: isReceived ? "received" : isLocal ? "phone" : "none",
   };
 }
@@ -36,7 +38,7 @@ function compare(left: DayTask, right: DayTask): number {
   const risk = Number(right.task.risk === "high") - Number(left.task.risk === "high");
   return (
     risk ||
-    (left.distanceM ?? 0) - (right.distanceM ?? 0) ||
+    (left.distanceM ?? Infinity) - (right.distanceM ?? Infinity) ||
     left.task.point_code.localeCompare(right.task.point_code)
   );
 }
@@ -53,9 +55,9 @@ export function buildDay(input: {
   return {
     tasks,
     location,
-    pendingTasks: tasks.filter((row) => !row.isReviewed && row.task.status !== "closed_house"),
-    closedTasks: tasks.filter((row) => row.task.status === "closed_house"),
-    reviewedTasks: tasks.filter((row) => row.isReviewed && row.task.status !== "closed_house"),
+    pendingTasks: tasks.filter((row) => !row.isReviewed),
+    closedTasks: [] as DayTask[],
+    reviewedTasks: tasks.filter((row) => row.isReviewed),
     reviewed: tasks.filter((row) => row.isReviewed).length,
     total: tasks.length,
   };
@@ -65,5 +67,20 @@ export function findAssignedTaskByPointCode(
   code: string,
   tasks: readonly CachedTask[],
 ): AssignedTask | null {
-  return tasks.find((row) => row.task.point_code === code.trim())?.task ?? null;
+  const pointCode = code.trim();
+  return (
+    tasks.find(
+      ({ task }) =>
+        task.point_code === pointCode ||
+        task.point_code === `${pointCode}:${task.action}:${task.date}`,
+    )?.task ?? null
+  );
+}
+
+export type LocatedDayTask = DayTask & {
+  readonly task: AssignedTask & { readonly lat: number; readonly lng: number };
+};
+/** Missing point enrichment means list-only work, never a marker at fabricated coordinates. */
+export function mapTasks(rows: readonly DayTask[]): readonly LocatedDayTask[] {
+  return rows.filter((row): row is LocatedDayTask => hasCoordinates(row.task));
 }

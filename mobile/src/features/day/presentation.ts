@@ -9,14 +9,10 @@ export interface MarkerState {
 }
 /** Native markers and list badges use the same icon/text state so color never carries meaning alone. */
 export function markerState(row: DayTask): MarkerState {
-  if (row.task.status === "closed_house")
-    return { tone: "warning", icon: "door", key: "mobile.day.closedStatus" };
   if (row.isReviewed) return { tone: "success", icon: "check", key: "mobile.day.doneStatus" };
   if (row.task.action === "relocate")
     return { tone: "neutral", icon: "move", key: "mobile.day.relocateStatus" };
-  if (row.task.status === "pending")
-    return { tone: "info", icon: "clock", key: "mobile.day.pendingStatus" };
-  return { tone: "neutral", icon: "alert", key: "mobile.day.unknownStatus" };
+  return { tone: "info", icon: "clock", key: "mobile.day.pendingStatus" };
 }
 export const ACTION_KEYS: Readonly<Record<DayTask["task"]["action"], MessageKey>> = {
   place: "mobile.day.place",

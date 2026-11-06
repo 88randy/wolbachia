@@ -64,6 +64,9 @@ export const mobile = {
     "Para registrar, escanea el QR de la ovitrampa cuando el escáner esté disponible.",
   "mobile.day.backList": "Ver lista de puntos",
   "mobile.day.closeDetail": "Cerrar detalle",
+  "mobile.day.accessRevoked":
+    "Los puntos descargados ya no est\u00e1n disponibles. Actualiza la jornada.",
+  "mobile.day.noLocation": "Este punto todav\u00eda no tiene ubicaci\u00f3n. Puedes usar la lista.",
   "mobile.day.noMap": "No tienes el mapa guardado",
   "mobile.day.noMapHint":
     "No hay un archivo de mapa verificado disponible. Intenta verificar de nuevo o usa la lista de puntos.",

@@ -1,6 +1,11 @@
 import type { SqlStatement } from "../../db/sql.ts";
 import type { AssignedTask, ProjectionChange, MapManifest } from "./types.ts";
-import { PENDING_WORK, PENDING_RETAINED, PENDING_CURRENT } from "./pending-work.ts";
+import {
+  PENDING_WORK,
+  PENDING_RETAINED,
+  PENDING_CURRENT,
+  CURRENT_EVENT_IDS,
+} from "./pending-work.ts";
 const NEWER = `excluded.version != version AND
   (excluded.sequence = 0 OR excluded.sequence > sequence) AND
   (excluded.version GLOB '*[^0-9]*' OR version GLOB '*[^0-9]*' OR CAST(excluded.version AS INTEGER) > CAST(version AS INTEGER))`;
@@ -10,6 +15,7 @@ export function upsertTask(task: AssignedTask, change?: ProjectionChange): SqlSt
     sql: `INSERT INTO day_assignment(id,version,sequence,payload,removed,kept) VALUES (?,?,?,?,0,0)
     ON CONFLICT(id) DO UPDATE SET version=excluded.version, sequence=excluded.sequence,
     kept=CASE WHEN ${PENDING_RETAINED} OR (${PENDING_CURRENT} AND payload != excluded.payload) THEN 1 ELSE 0 END,
+    retained_event_ids=CASE WHEN ${PENDING_RETAINED} THEN retained_event_ids WHEN ${PENDING_CURRENT} AND payload != excluded.payload THEN ${CURRENT_EVENT_IDS} ELSE '[]' END,
     retained_payload=CASE WHEN ${PENDING_RETAINED} THEN retained_payload WHEN ${PENDING_CURRENT} AND payload != excluded.payload THEN payload ELSE NULL END,
     payload=excluded.payload,
     removed=0 WHERE ${change === undefined ? "1" : NEWER}`,

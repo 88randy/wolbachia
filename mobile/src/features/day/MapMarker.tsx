@@ -4,11 +4,11 @@ import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Badge } from "../../ui/Badge.tsx";
-import type { DayTask } from "./domain.ts";
+import type { LocatedDayTask } from "./domain.ts";
 import { markerState } from "./presentation.ts";
 import { createDayStyles } from "./styles.ts";
 interface Props {
-  readonly row: DayTask;
+  readonly row: LocatedDayTask;
   readonly onSelect: () => void;
   readonly isSelected: boolean;
 }

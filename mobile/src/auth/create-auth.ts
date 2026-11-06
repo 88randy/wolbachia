@@ -20,7 +20,7 @@ interface CreateAuthDeps {
   readonly server: ServerSettings;
   readonly deviceId: string;
   readonly appVersion: string;
-  readonly clearSessionData?: () => Promise<void>;
+  readonly clearSessionData?: (hasFinalReceipt?: boolean) => Promise<void>;
 }
 
 /** Auth composition uses injectable native ports and the generated API client. */
@@ -41,7 +41,7 @@ export async function createAuth(deps: CreateAuthDeps) {
   const requests: SessionRequests = new SessionRequests({
     credentials,
     isOnline: () => auth.getSnapshot().isOnline,
-    endSession: () => auth.endSession(),
+    endSession: (hasFinalReceipt) => auth.endSession(hasFinalReceipt),
     refresh: (pair) => refreshOnline(anonymous(), pair, deps.deviceId),
   });
   await auth.load();

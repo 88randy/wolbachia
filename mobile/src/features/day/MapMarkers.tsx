@@ -1,4 +1,5 @@
 import { MapMarker } from "./MapMarker.tsx";
+import { mapTasks } from "./domain.ts";
 import type { DayTask } from "./domain.ts";
 interface Props {
   readonly rows: readonly DayTask[];
@@ -8,7 +9,7 @@ interface Props {
 export function MapMarkers({ rows, selected, onSelect }: Props) {
   return (
     <>
-      {rows.map((row) => (
+      {mapTasks(rows).map((row) => (
         <MapMarker
           key={row.task.id}
           row={row}

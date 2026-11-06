@@ -2,7 +2,13 @@ import { VISIBLE_ASSIGNMENTS } from "./pending-work.ts";
 import { setStatement, removeStatement, KV_KEYS } from "../../db/kv-store.ts";
 import { readText } from "../../db/sql.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
-import { isRecord, parseAssignment, parseManifest, parseChanges } from "./assignment-parser.ts";
+import {
+  isRecord,
+  isQuadrantAssignment,
+  parseAssignment,
+  parseManifest,
+  parseChanges,
+} from "./assignment-parser.ts";
 import { parseBundle } from "./bundle-parser.ts";
 import {
   upsertTask,
@@ -65,7 +71,12 @@ export class DayStore {
   }
   async applyChanges(body: unknown): Promise<void> {
     if (!isRecord(body)) throw new Error("Malformed changes.");
-    const tasks = parseChanges(body.assignments).map(assignmentStatement);
+    const tasks = parseChanges(body.assignments)
+      .filter(
+        (change) =>
+          change.resource_type !== "quadrant_assignment" && !isQuadrantAssignment(change.data),
+      )
+      .map(assignmentStatement);
     const manifests = parseChanges(body.map_manifests).map(manifestStatement);
     const statements = [...tasks, ...manifests].filter(
       (entry): entry is SqlStatement => entry !== null,
@@ -82,6 +93,13 @@ export class DayStore {
       });
     await this.#db.runAtomically(statements);
   }
+  async markCleanupPending(): Promise<void> {
+    await this.#db.runAtomically([setStatement("day_cleanup_pending", "true")]);
+  }
+  async needsCleanup(): Promise<boolean> {
+    const rows = await this.#db.query("SELECT value FROM kv WHERE key='day_cleanup_pending'");
+    return rows[0]?.value === "true";
+  }
   async revoke(): Promise<void> {
     await this.#db.runAtomically([
       { sql: "DELETE FROM day_assignment" },
@@ -90,6 +108,7 @@ export class DayStore {
       removeStatement("day_navigation"),
       removeStatement("shift_open_map"),
       removeStatement(KV_KEYS.syncCursor),
+      removeStatement("day_cleanup_pending"),
     ]);
   }
 }

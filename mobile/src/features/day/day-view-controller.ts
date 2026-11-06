@@ -25,6 +25,7 @@ export class DayViewController {
   readonly #listeners = new Set<() => void>();
   #revision = 0;
   #isActive = true;
+  #stopBundle: (() => void) | null = null;
   #refreshing: Promise<void> | null = null;
   #retryAction: (() => Promise<unknown>) | null = null;
   #snapshot: DayViewState = {
@@ -47,10 +48,33 @@ export class DayViewController {
   };
   start(): void {
     this.#isActive = true;
+    this.#stopBundle ??= this.#day.bundle.subscribe((event) => {
+      if (event === "revoked") this.invalidate();
+      else void this.load();
+    });
+  }
+  /** Security invalidation clears sensitive memory before any fallible SQLite reload. */
+  invalidate(): void {
+    this.#revision += 1;
+    this.#retryAction = null;
+    this.#patch({
+      state: null,
+      isLoading: false,
+      isMapLoading: false,
+      isActing: false,
+      errors: {
+        read: { key: "mobile.day.accessRevoked", code: null },
+        refresh: null,
+        map: null,
+        action: null,
+      },
+    });
   }
   stop(): void {
     this.#isActive = false;
     this.#revision += 1;
+    this.#stopBundle?.();
+    this.#stopBundle = null;
   }
   #patch(change: Partial<DayViewState>): void {
     if (!this.#isActive) return;

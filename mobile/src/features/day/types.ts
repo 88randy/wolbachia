@@ -1,17 +1,19 @@
-/** [ASSUMPTION] Assignment producer payload until #109/#196 publish their schema. */
+/** Normalized assignments v2 task from scheduling/courier_feed.py. */
 export interface AssignedTask {
   readonly id: string;
   readonly point_code: string;
+  readonly point_id: string;
+  readonly courier: string;
   readonly ovitrap_id?: string;
   readonly action: "place" | "check" | "replace" | "relocate" | "remove";
   readonly date: string;
   readonly risk: "high" | "normal";
   readonly version: string;
-  readonly status: string;
-  readonly block_code: string;
+  /** [ASSUMPTION] Optional enrichment from the future sampling-point projection (#196). */
+  readonly block_code?: string;
   readonly quadrant_id: string;
-  readonly lat: number;
-  readonly lng: number;
+  readonly lat?: number;
+  readonly lng?: number;
   readonly reference?: string;
   readonly history: readonly { readonly date: string; readonly summary_code: string }[];
 }

@@ -2,7 +2,7 @@
 
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
-> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Day list/offline map/navigation P9-P10 (#135) is implemented against fixture-backed producer contracts; native/device qualification is pending. P1/P2 login and local unlock are #7 (decision 116); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
+> Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Day list/offline map/navigation P9-P10 (#135) is aligned to scheduling assignments v2 (#109); native/device qualification is pending. P1/P2 login and local unlock are #7 (decision 116); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
 
 ## Rules
 
@@ -343,14 +343,26 @@ navigation button says "How to get there", without claiming a specific navigator
   transaction. A changed/removed task keeps its original point/ownership visible
   with "Kept: pending work" and a notice listing affected point codes. The newest
   server payload is staged separately from the retained view; after pending work
-  is received, the current projection becomes visible. Revoked
+  is received, migration 6's enrolled event UUIDs stop justifying the retained
+  view. An INSERT-only trigger enrolls extra captures made while that view is still
+  visible; later captures cannot resurrect it. Receipt settlement never writes
+  downloaded projections. The next projection write discards obsolete retention. Revoked
   session/scope download access clears projections, saved map preparation/navigation
   and the cursor, retaining unsent evidence. Expired auth/network failures keep cache.
-- **[ASSUMPTION]** #109/#196 have not published assignment payloads. The single
-  tolerant parser accepts `{id, point_code, ovitrap_id?, action, date, risk, version,
-  status, block_code, quadrant_id, lat, lng, reference?, history?}` as supplied by the
-  lead. Malformed assignment rows are dropped and counted in a localized notice. Unknown risk
-  sorts as normal; unknown history/status codes receive a translated fallback.
+- The single tolerant parser follows `backend/scheduling/courier_feed.py`'s
+  `AssignmentProducerSerializer` (#109 assignments v2): common fields are
+  `{id, kind, quadrant_id, courier, revision}`; tasks add
+  `{code, point, action, date, category, source, protocol, target}`. Local names map
+  code to point_code (the producer's human task code includes :action:YYYY-MM-DD),
+  point to point_id, revision to version, and category=high to
+  high risk; medium/low/null/unknown are normal for ordering. Allocation rows with
+  kind=quadrant_assignment are intentionally ignored for the task list and never
+  count as unreadable, in bootstrap or deltas. Malformed task rows are counted.
+  **[ASSUMPTION: future points projection #196]** coordinates, block code,
+  reference, history and ovitrap linkage are optional enrichment; no location is
+  invented. Unlocated tasks remain in the list with an explanation, no distance,
+  map marker or How to get there action. The real producer supplies only
+  place/check; closed-house/relocate states in the design await capture/point data.
   Delta numeric versions are ordered numerically; opaque versions deduplicate by equality
   and ordered change sequence. Bootstrap authoritatively restores present resources and removes missing ids.
 - **[ASSUMPTION]** #9 captures reference `payload.task_id` or `payload.ovitrap_id`.
@@ -360,7 +372,10 @@ navigation button says "How to get there", without claiming a specific navigator
   evening local-time capture may therefore remain uncounted without a task id.
   Pending retention conservatively matches the ovitrap regardless of date, so
   this uncertainty never drops recoverable work from the list. Day progress
-  overlays local captures on server status. Phone-saved and server-received text
+  uses local captured work plus removal of tasks from the server projection
+  **[ASSUMPTION]**: assignments v2 publishes no completion/status field and capture
+  completion currently needs a bootstrap refresh (see scheduling README).
+  Phone-saved and server-received text
   remain separate; the existing `SyncChip` opens the inbox with actual delivery/review
   outcomes. Neither an error nor a pending upload implies server delivery/review.
   No new capture queue, upload transport, ping producer or server lookup was added.
@@ -476,7 +491,7 @@ with no timing sleeps. The native/API/device UNVERIFIED limits above are unchang
 
 The #135 merge retains master's encrypted database, CredentialStore, SessionRequests,
 identity-pinned origin and final-upload lifecycle (decision 116; M-06 is decision
-117). Bootstrap uses `tokens.getOrigin()` and the 401 refresh wrapper, retains ETag/
+118). Bootstrap uses `tokens.getOrigin()` and the 401 refresh wrapper, retains ETag/
 304 handling, and checks session identity/origin rather than access-token equality.
 The scoped sync adapter delegates refresh/final upload to master's transport and
 guards both queued requests and late responses against a replacement session/origin. Ordinary locked sessions
@@ -485,8 +500,13 @@ automatic day refresh run only with the auth gate unlocked. The screen model is
 keyed by session identity, so a failed replacement-session read cannot expose an
 old in-memory assignment snapshot; an ordinary lock keeps the same cache.
 
-Auth end's durable journal awaits downloaded-data cleanup using the short
+Auth end's durable journal normally awaits downloaded-data cleanup using the short
 projection gate; it never reacquires the network gate held by SessionRequests.
+For a 200 carrying X-Session-Revoked, the integration hook only invalidates writers
+and visible memory first. Sync persists all per-event receipts before physical
+cleanup, then erases the credential pair only after cleanup succeeds. A failed
+cleanup retains the receipt and pair, sets day_cleanup_pending, and retries before
+the next bootstrap/sync pass; the durable auth-ended journal also retries at boot.
 Boot reconciles ended/missing sessions, and password credential erasure also clears
 downloaded projections before another login is permitted. Cleanup removes assigned/map projections, navigation state
 and cursor while preserving drafts and outbox evidence. An active POST returning
@@ -513,10 +533,21 @@ are pure controller/SQLite/API-client checks, not native rendering certification
 Light/dark, 130% text, TalkBack, reduced-motion presentation and actual navigation
 return remain UNVERIFIED on devices; no Docker, Playwright or Expo build is run.
 
-Current merge validation (2026-11-05): the i18n suite passes 13 tests. Dependency
-installation (`npm ci --ignore-scripts`) was blocked by Windows EPERM and left
-node_modules incomplete. ESLint/Prettier are unavailable; mobile typecheck cannot
-use the required compiler/types. The mobile command reports 53 passes and 21
-module-loading failures from missing dependencies; the new M-06 regressions could
-not execute. Earlier evidence above does not certify this merged build. Reinstall
-the locked dependencies and rerun all required checks before integration.
+### Second adversarial review
+
+`test/m-06.test.ts` adds deterministic regressions mapping to all four findings:
+
+| Finding | Regression evidence |
+| --- | --- |
+| Real scheduling producer | Serializer-shaped bootstrap/delta fixtures include allocation and null-category task rows; no unreadable noise, fabricated distances, markers or navigation eligibility |
+| Final acknowledgement survives cleanup failure | A retained task plus projection UPDATE/DELETE failures still settles the original UUID/result before cleanup; restart retries, and a final receipt upgrades concurrently pending ordinary cleanup |
+| Same-session scope revocation clears visible memory | Ready-map snapshot invalidates synchronously despite failed reload; an active-session offline restart also hides pending-cleanup projections and routing |
+| Retained payload cannot reappear | Extra capture during retention stays enrolled; after both original UUIDs are received, another capture cannot restore the old view |
+
+The native/device accessibility and navigation qualifications above remain
+UNVERIFIED. These regressions use SQLite and controlled promises, never sleeps.
+
+Local verification: ESLint, Prettier check and mobile typecheck pass; mobile tests
+pass 214/214 and i18n tests pass 13/13. An earlier simultaneous verification run
+exhausted process memory; the required mobile command passes when run separately.
+No npm ci/install, Docker, Playwright or Expo build was run for this review.

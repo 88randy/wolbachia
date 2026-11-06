@@ -27,22 +27,31 @@ export class DayBundleService {
   readonly #deps: Dependencies;
   readonly #network = new SerialQueue();
   readonly #projections = new SerialQueue();
-  readonly #listeners = new Set<() => void>();
+  readonly #listeners = new Set<(event: "updated" | "revoked") => void>();
+  #isRevoked = false;
   #revocation = 0;
   constructor(deps: Dependencies) {
     this.#deps = deps;
   }
-  read() {
-    return this.#deps.store.read();
+  async read(): Promise<DayCache> {
+    const empty: DayCache = { tasks: [], manifests: [], meta: null };
+    const revocation = this.#revocation;
+    if (this.#isRevoked) return empty;
+    if (await this.#deps.store.needsCleanup()) {
+      this.#invalidate();
+      return empty;
+    }
+    const cached = await this.#deps.store.read();
+    return revocation !== this.#revocation ? empty : cached;
   }
-  subscribe = (listener: () => void): (() => void) => {
+  subscribe = (listener: (event: "updated" | "revoked") => void): (() => void) => {
     this.#listeners.add(listener);
     return () => {
       this.#listeners.delete(listener);
     };
   };
-  #publish(): void {
-    for (const listener of this.#listeners) listener();
+  #publish(event: "updated" | "revoked" = "updated"): void {
+    for (const listener of this.#listeners) listener(event);
   }
   #captureGuard(): () => void {
     const scope = this.#deps.getScopeKey?.();
@@ -66,7 +75,10 @@ export class DayBundleService {
       });
   }
   refresh(force = false): Promise<void> {
-    return this.#network.run(() => this.#refresh(force));
+    return this.#network.run(async () => {
+      await this.retryCleanup();
+      await this.#refresh(force);
+    });
   }
   async #refresh(force: boolean): Promise<void> {
     const write = this.captureProjectionWriter();
@@ -81,6 +93,7 @@ export class DayBundleService {
     }
     await write(async () => {
       await this.#deps.store.replace(answer.body, this.#deps.now());
+      this.#isRevoked = false;
       this.#publish();
     });
   }
@@ -92,20 +105,38 @@ export class DayBundleService {
   }
   applyProjectionChanges = (changes: unknown): Promise<void> =>
     this.#network.run(() => this.#apply(changes, this.captureProjectionWriter()));
-  /** Auth journal can already own #network. Never reacquire it while awaiting this cleanup. */
-  clearSessionData = (): Promise<void> => {
+  #invalidate(): void {
     this.#revocation += 1;
+    this.#isRevoked = true;
+    this.#publish("revoked");
+  }
+  /** The durable auth-ended journal covers a final receipt until sync persists its results. */
+  deferCleanup = (): Promise<void> => {
+    this.#invalidate();
+    return Promise.resolve();
+  };
+  clearForAuth = (hasFinalReceipt = false): Promise<void> =>
+    hasFinalReceipt ? this.deferCleanup() : this.clearSessionData();
+  /** Auth may own #network: only brief local writes acquire the projection gate. */
+  clearSessionData = (): Promise<void> => {
+    this.#invalidate();
     return this.#projections.run(async () => {
+      await this.#deps.store.markCleanupPending();
       await this.#deps.store.revoke();
       this.#publish();
     });
+  };
+  /** Failed cleanup has a durable flag; retry before another sync/bootstrap or on auth startup. */
+  retryCleanup = async (): Promise<void> => {
+    if (await this.#deps.store.needsCleanup()) await this.clearSessionData();
   };
   revoke = (): Promise<void> => this.#network.run(this.clearSessionData);
   syncHooks(): SyncHooks {
     let write = this.captureProjectionWriter();
     return {
       serializeProjectionPass: (pass) =>
-        this.#network.run(() => {
+        this.#network.run(async () => {
+          await this.retryCleanup();
           write = this.captureProjectionWriter();
           return pass();
         }),

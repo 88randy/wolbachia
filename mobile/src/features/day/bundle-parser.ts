@@ -1,4 +1,9 @@
-import { isRecord, parseAssignment, parseManifest } from "./assignment-parser.ts";
+import {
+  isRecord,
+  isQuadrantAssignment,
+  parseAssignment,
+  parseManifest,
+} from "./assignment-parser.ts";
 import type { AssignedTask, BundleMeta, MapManifest } from "./types.ts";
 export interface ParsedBundle {
   readonly tasks: readonly AssignedTask[];
@@ -39,9 +44,8 @@ function validateBundle(body: unknown): asserts body is RawBundle {
 /** Bootstrap is an object at runtime despite the generated array response annotation. */
 export function parseBundle(body: unknown, now: Date): ParsedBundle {
   validateBundle(body);
-  const tasks = body.assignments
-    .map(parseAssignment)
-    .filter((row): row is AssignedTask => row !== null);
+  const assignments = body.assignments.filter((row) => !isQuadrantAssignment(row));
+  const tasks = assignments.map(parseAssignment).filter((row): row is AssignedTask => row !== null);
   const manifests = body.map_manifests.map((entry) => {
     const manifest = parseManifest(entry);
     if (manifest === null) throw new Error("Malformed bootstrap map manifest.");
@@ -59,7 +63,7 @@ export function parseBundle(body: unknown, now: Date): ParsedBundle {
       map_manifest_ready: body.map_manifest_ready,
       fetched_at: now.toISOString(),
       unreadable_rows:
-        body.assignments.length - tasks.length + body.map_manifests.length - manifests.length,
+        assignments.length - tasks.length + body.map_manifests.length - manifests.length,
     },
   };
 }

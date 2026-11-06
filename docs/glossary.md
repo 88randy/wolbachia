@@ -153,5 +153,5 @@ Rules:
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
-| tarea asignada | assigned task | `AssignedTask`, `assignments` | Downloaded day work for one sampling point/action/date, with risk, assignment version and status. Producer shape remains [ASSUMPTION] until published. |
+| tarea asignada | assigned task | `AssignedTask`, `assignments` | Downloaded scheduling assignments v2 task (#109): code -> point_code, point -> point_id, revision -> version, category -> risk. quadrant_assignment is ownership metadata, never a task. No server completion status or coordinates; [ASSUMPTION] progress uses local captures and server removal, while optional location/reference/history enrichment awaits #196. |
 | manifiesto de mapa | map manifest | `MapManifest`, `map_manifests` | Licensed offline asset metadata (asset id/version/hash/size/quadrant); it does not publish a download URL or certify local file readiness. |

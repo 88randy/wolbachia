@@ -1,5 +1,5 @@
 import type { KvStore } from "../db/kv-store.ts";
-import { isCoordinates } from "../features/day/assignment-parser.ts";
+import { hasCoordinates } from "../features/day/assignment-parser.ts";
 export type NavigationOutcome = "launched" | "no_handler" | "denied" | "invalid_coordinates";
 export interface NavigationLauncher {
   launch(uri: string): Promise<"launched" | "no_handler" | "denied">;
@@ -7,8 +7,8 @@ export interface NavigationLauncher {
 export interface NavigationPoint {
   readonly id: string;
   readonly point_code: string;
-  readonly lat: number;
-  readonly lng: number;
+  readonly lat?: number;
+  readonly lng?: number;
 }
 export interface NavigationState {
   readonly pointId: string;
@@ -19,7 +19,7 @@ export interface NavigationState {
 export const NAVIGATION_KEY = "day_navigation";
 /** Only validated coordinates and the sampling point code leave the app. No reference text or organization. */
 export function geoUri(point: NavigationPoint): string | null {
-  if (!isCoordinates(point.lat, point.lng)) return null;
+  if (!hasCoordinates(point)) return null;
   const coordinates = `${point.lat.toFixed(6)},${point.lng.toFixed(6)}`;
   const label = encodeURIComponent(point.point_code).replace(
     /[()]/g,

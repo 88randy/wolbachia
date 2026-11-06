@@ -1,3 +1,4 @@
+import { hasCoordinates } from "./assignment-parser.ts";
 import { Pressable, View } from "react-native";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { useT } from "../../i18n/I18nProvider.tsx";
@@ -27,6 +28,7 @@ export function TaskCard({
       >
         <View style={styles.group}>
           <TaskSummary row={row} />
+          {hasCoordinates(row.task) ? null : <AppText>{t("mobile.day.noLocation")}</AppText>}
           {isCovered ? null : <AppText>{t("mobile.day.outsideCoverage")}</AppText>}
         </View>
       </Pressable>

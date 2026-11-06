@@ -32,15 +32,31 @@ function readHistory(value: unknown): AssignedTask["history"] {
       : [],
   );
 }
+/** Allocation metadata is deliberately excluded from task rendering and unreadable counts. */
+export function isQuadrantAssignment(value: unknown): boolean {
+  return isRecord(value) && value.kind === "quadrant_assignment";
+}
 function hasAssignmentFields(value: Record<string, unknown>): boolean {
   return (
-    ["id", "point_code", "date", "status", "block_code", "quadrant_id"].every((key) =>
-      isText(value[key]),
-    ) &&
-    typeof value.action === "string" &&
-    ["place", "check", "replace", "relocate", "remove"].includes(value.action) &&
-    isCoordinates(value.lat, value.lng)
+    value.kind === "task" &&
+    ["id", "code", "point", "quadrant_id", "courier"].every((key) => isText(value[key])) &&
+    (value.action === "place" || value.action === "check")
   );
+}
+/** Optional enrichment never fabricates coordinates or rejects an otherwise valid scheduling task. */
+export function hasCoordinates<T extends { readonly lat?: number; readonly lng?: number }>(
+  point: T,
+): point is T & { readonly lat: number; readonly lng: number } {
+  return isCoordinates(point.lat, point.lng);
+}
+function pointDetails(value: Record<string, unknown>) {
+  return {
+    ...(isCoordinates(value.lat, value.lng) ? { lat: value.lat, lng: Number(value.lng) } : {}),
+    ...(isText(value.block_code) ? { block_code: value.block_code } : {}),
+    ...(isText(value.ovitrap_id) ? { ovitrap_id: value.ovitrap_id } : {}),
+    ...(isText(value.reference) ? { reference: value.reference } : {}),
+    history: readHistory(value.history),
+  };
 }
 function isDateOnly(value: unknown): value is string {
   return (
@@ -56,26 +72,22 @@ function isNonnegativeInteger(value: unknown): value is number {
 function isManifestChecksum(value: unknown): value is string {
   return typeof value === "string" && (value === "" || /^[a-fA-F0-9]{64}$/.test(value));
 }
-/** One tolerant boundary. Invalid rows are counted by callers; unknown risk is ordinary risk. */
+/** One scheduling boundary: code/revision/category/point map to the local task vocabulary. */
 export function parseAssignment(value: unknown): AssignedTask | null {
   if (!isRecord(value) || !hasAssignmentFields(value)) return null;
-  const version = readVersion(value.version);
+  const version = readVersion(value.revision);
   if (version === null || !isDateOnly(value.date)) return null;
   return {
     id: String(value.id),
-    point_code: String(value.point_code),
+    point_code: String(value.code),
+    point_id: String(value.point),
+    courier: String(value.courier),
     action: value.action as AssignedTask["action"],
     date: value.date,
-    risk: value.risk === "high" ? "high" : "normal",
+    risk: value.category === "high" ? "high" : "normal",
     version,
-    status: String(value.status),
-    block_code: String(value.block_code),
     quadrant_id: String(value.quadrant_id),
-    lat: Number(value.lat),
-    lng: Number(value.lng),
-    ...(typeof value.ovitrap_id === "string" ? { ovitrap_id: value.ovitrap_id } : {}),
-    ...(typeof value.reference === "string" ? { reference: value.reference } : {}),
-    history: readHistory(value.history),
+    ...pointDetails(value),
   };
 }
 /** Empty version/checksum and zero size are reported unavailable states, not malformed rows. */
