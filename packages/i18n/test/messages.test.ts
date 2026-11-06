@@ -45,6 +45,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["mobile.day.progress", ["reviewed", "total"]],
   ["mobile.day.reference", ["reference"]],
   ["mobile.day.unreadable", ["count"]],
+  ["mobile.inbox.evidencePending", ["count"]],
   ["mobile.inbox.groupTitle", ["count", "label"]],
   ["mobile.inbox.lastConnection", ["time"]],
   ["mobile.inbox.onPhone", ["count"]],

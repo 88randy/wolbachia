@@ -1,6 +1,7 @@
 import type { SqlExecutor, SqlStatement } from "./sql.ts";
 import { readInteger } from "./sql.ts";
 import { KV_KEYS } from "./kv-store.ts";
+import { ATTACHMENT_SCHEMA } from "../attachments/schema.ts";
 
 /**
  * Schema of the phone's database. Each entry is one migration; the position (1-based) is the
@@ -126,6 +127,7 @@ const MIGRATIONS: readonly (readonly string[])[] = [
       sequence INTEGER NOT NULL DEFAULT 0,payload TEXT,removed INTEGER NOT NULL DEFAULT 0 CHECK(removed IN (0,1)))`,
     `INSERT INTO kv(key,value) VALUES('${KV_KEYS.daySamplingPointsBootstrapPending}','true')`,
   ],
+  ATTACHMENT_SCHEMA,
 ];
 
 /** Highest schema version this build knows. */

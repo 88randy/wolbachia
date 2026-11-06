@@ -13,6 +13,7 @@ import type { OvitrapStore, StoredCapture } from "./store.ts";
 import type { Draft, DraftPatch, EvidencePort, GpsPort, ScannerPort, Reuse } from "./types.ts";
 import { saveGate } from "./validation.ts";
 import type { OutboxEvent } from "../../outbox/outbox-event.ts";
+import type { SqlStatement } from "../../db/sql.ts";
 interface Dependencies {
   readonly store: OvitrapStore;
   readonly engine: SyncEngine;
@@ -21,6 +22,7 @@ interface Dependencies {
   readonly gps: GpsPort;
   readonly scanner: ScannerPort;
   readonly evidence: EvidencePort;
+  readonly evidenceBindings?: (draft: Draft) => Promise<readonly SqlStatement[]>;
   readonly shiftId: () => Promise<string>;
   readonly refresh?: () => Promise<void>;
 }
@@ -287,7 +289,10 @@ export class OvitrapService {
   async #commit(draft: Draft): Promise<void> {
     if (await this.#isShiftBlocked(draft)) throw new ShiftBlockedError();
     const event = captureEvent(draft);
-    const statements = this.#deps.store.commitStatements(draft);
+    const statements = [
+      ...this.#deps.store.commitStatements(draft),
+      ...((await this.#deps.evidenceBindings?.(draft)) ?? []),
+    ];
     if (!draft.replacesEventId) return this.#deps.engine.enqueue(event, statements);
     await this.#deps.engine.enqueue(voidEvent(draft), [
       eventInsertStatement(event, draft.deviceTime),
