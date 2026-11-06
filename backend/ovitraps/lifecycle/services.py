@@ -284,6 +284,26 @@ def void_lifecycle_event(ctx: EventContext, target: FieldEvent) -> None:
 
 def _check_void_dependents(ctx: EventContext, target: FieldEvent, ovitrap: Ovitrap) -> None:
     blockers: list[dict[str, str]] = []
+    if target.type in {"ovitrap.remove", "ovitrap.replace"}:
+        from geography.decisions.models import QuadrantClosure
+        from geography.decisions.retirements import closure_dependency
+
+        for closure in QuadrantClosure.objects.filter(
+            organization=ctx.organization,
+            quadrant_version__quadrant=ovitrap.sampling_point.block.quadrant,
+        ).select_related("quadrant_version"):
+            dependency = closure_dependency(
+                closure.readiness_snapshot, target.pk, closure.quadrant_version.revision
+            )
+            if dependency is not False:
+                blockers.append(
+                    {
+                        "resource": "quadrant_closure"
+                        if dependency
+                        else "quadrant_closure_proof_unavailable",
+                        "id": str(closure.pk),
+                    }
+                )
     if target.type == "ovitrap.replace":
         lineage = PhysicalOvitrapLineage.objects.filter(
             organization=ctx.organization, event=target

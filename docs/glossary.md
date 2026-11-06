@@ -201,3 +201,12 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
 | resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |
 | reserva de identidad padre | parent claim | ReviewParentClaim | Immutable typed identity reservation for one source; cancellation does not reassign it or authorize a child. |
+
+## Geography decisions (#126)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| decisión de reubicación | relocation decision | RelocationDecision | Terminal audit references the immutable proposal source. |
+| tarea del día siguiente | next-day task | NextDayTask | Unique proposal/decision provenance to a real ScheduledTask on the next org-local date. |
+| intervención de terceros | third-party intervention | ThirdPartyIntervention | Metadata across authorized real blocks; no company release authority. |
+| cierre de cuadrante | quadrant closure | QuadrantClosure | Immutable audit of one published QuadrantVersion; no implicit reopening. |

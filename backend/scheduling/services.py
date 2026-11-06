@@ -421,6 +421,15 @@ def generate_schedule(member: Membership, week: date) -> dict[str, int]:
             version = point_version_at(point, timezone.now())
             if version is None or version.is_retired:
                 continue
+            from geography.decisions.models import QuadrantClosure
+            from geography.selectors import quadrant_version_at
+
+            epoch = quadrant_version_at(point.block.quadrant, timezone.now())
+            if (
+                epoch is not None
+                and QuadrantClosure.objects.filter(quadrant_version=epoch).exists()
+            ):
+                continue
             for action, due, rules in _due_actions(point, start):
                 task, is_created = ScheduledTask.objects.get_or_create(
                     organization=current.organization,

@@ -468,6 +468,8 @@ sample. Full decisions and assumptions: backend/ovitraps/README.md and ADR 99.
 | `ovitrap_point_version_unavailable` | in_review, no operational effects |
 | `ovitrap_too_far` | in_review, no operational effects |
 | `ovitrap_speed_anomaly` | in_review, no operational effects |
+| `late_work_after_quadrant_close` | in_review, no effects before original historical authority/inputs are proved and accepted once by the existing review owner. |
+| `captured_after_quadrant_close` | in_review, no effects; supervisor decisions cannot grant retroactive work authority in the closed captured epoch. |
 | `ovitrap_void_blocked` | rejected, no operational effects |
 
 Every code maps to sync.result.<camelCase> in es-MX/en. Lock contention retains

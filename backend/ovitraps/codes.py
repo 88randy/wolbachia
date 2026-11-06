@@ -17,7 +17,11 @@ SPEED_ANOMALY = "ovitrap_speed_anomaly"
 VOID_BLOCKED = "ovitrap_void_blocked"
 STALE_IDENTITY = "ovitrap_stale_identity"
 EVIDENCE_REQUIRED = "ovitrap_evidence_required"
+LATE_WORK_AFTER_CLOSE = "late_work_after_quadrant_close"
+CAPTURED_AFTER_CLOSE = "captured_after_quadrant_close"
 CODES = (
+    LATE_WORK_AFTER_CLOSE,
+    CAPTURED_AFTER_CLOSE,
     STALE_IDENTITY,
     EVIDENCE_REQUIRED,
     POINT_INACCESSIBLE,

@@ -759,3 +759,55 @@ reviewer report at server_now/source_event=None; its review link is audit, never
 parent-read authority. The typed history v1 owner appends real CourierChange plus
 publication receipt once and filters actual current subjects BEFORE LIMIT/cursor/
 bootstrap. See ../backend/reviews/README.md for causal, legacy and safety boundaries.
+
+## Relocation decisions, interventions and quadrant closure (#126)
+
+POST /relocations/{id}/approve/ and reject/ consume {reason, expected_revision} under
+relocation.decide. The initial revision is0 and the sole terminal revision is1;
+replay/stale state is409, with no second effect. Approval returns the exact authored
+PointVersion of the same SamplingPoint/code. Rejection returns the real next-local-day
+ScheduledTask link; neither endpoint fabricates a FieldEvent or task assignment.
+The unique server decided_at anchor controls discovery, point effective time,
+org-local task date and history; created_at remains real insertion audit time.
+
+GET /third-party-interventions/ requires intervention.read and POST requires
+intervention.create for every actual block's paired center/quadrant. Filters are
+type, block, date_from/date_to overlap; ordering is created_at/date_from/date_to,
+with page-number pagination. This UUID-only resource has no ?code filter. Other
+requires text, product/source are bounded and nonblank, and date_from <= date_to.
+This record conveys no company release authority.
+
+GET /quadrants/{id}/closure/ under quadrant.close reports the exact epoch/revision,
+readiness, closure audit and safe blockers. POST close/ consumes expected_revision,
+rechecks all blockers atomically and appends one QuadrantClosure. It never retires
+points, rewrites source status or silently reopens geography. Live deployed physical
+identities, unresolved/unconfirmed removals, active pending relocation/removal
+reviews and explicitly owned104 quadrant_closure holds remain authoritative.
+The closure DTO exposes epoch/revision/author/time; its immutable internal causal
+snapshot/source IDs are not returned by GET or POST. Only exact retirement facts
+consumed by readiness become void dependencies, never an inferred old epoch.
+Current quadrants producer schema2 includes is_closed/closure_id on quadrant rows
+only. Blocks retain six fields. Quadrant resource_version is an opaque content hash;
+data.revision remains the geometry revision. Bootstrap and closure/new-epoch upserts
+share the same builder. Older retained six-field changes keep their original shape,
+without an invented open status; the schema-bound cursor invalidates to a current
+bootstrap. Closure publication is atomic with its audit and uses only preplanned
+current download recipients.
+Hidden causes expose no reference/count; only authorized real causes identify an
+unblocking action. An explicit new QuadrantVersion is the existing new-work path.
+
+Preclosure captures first delivered after close enter late_work_after_quadrant_close
+review before effects. Only original configuration/scope and retained capture facts
+can support acceptance once by the existing113 owner. Captured-at equality or later
+uses captured_after_quadrant_close, with0 effects and no retroactive authority.
+The single113 history producer advances to schema2 for relocation_proposal; changes
+and bootstrap share the same typed shape/current visibility. Its publication receipt
+is internal persistence, not delivery. v3 tasks retain real source/owner semantics.
+OP03 still counts B15 OvitrapIncidentLink markers at the fixed point, without an
+invented time window or general104 Incident authority. Mobile138 advisory work and
+native/photo verification are outside this backend issue.
+
+Action permissions remain default deny with paired center/quadrant scope and
+foreign404, cookie+CSRF or pinned bearer. Reasons use the shared normalized10-visible
+minimum/1000 maximum. Only400 has fields;409 has safe blocked_by, contention429.
+See ../backend/geography/decisions/README.md for lock order, raw guards and tests.

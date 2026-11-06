@@ -62,4 +62,18 @@ def _current_subjects(row: CourierChange) -> SubjectFacts:
 
         contexts, resolved = shift_subjects(decision.shift)
         return SubjectFacts(resolved, tuple(contexts), "shift", decision.shift_id)
+    if row.resource_type == "history.relocation_proposal":
+        from geography.decisions.producers import proposal_subjects
+        from ovitraps.lifecycle.models import RelocationProposal
+
+        proposal = (
+            RelocationProposal.objects.filter(
+                organization_id=row.organization_id,
+                pk=identifier,
+                event__created_by_id=row.courier_id,
+            )
+            .select_related("ovitrap__sampling_point__block__quadrant")
+            .first()
+        )
+        return SubjectFacts() if proposal is None else proposal_subjects(proposal)
     return SubjectFacts()

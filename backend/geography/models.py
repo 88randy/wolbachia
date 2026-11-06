@@ -129,3 +129,12 @@ class ExcludedPointResolution(ImmutableMixin, OrgScopedModel):
                 fields=["quadrant_version", "point"], name="geography_resolution_point_once"
             )
         ]
+
+
+# Concrete B33 models share this app and its append-only migration history.
+from geography.decisions.models import (  # noqa: E402, F401
+    NextDayTask,
+    QuadrantClosure,
+    ThirdPartyIntervention,
+    ThirdPartyInterventionBlock,
+)
