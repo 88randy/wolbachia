@@ -65,6 +65,11 @@ function insertParams(event: FieldEventEnvelope, updatedAt: string): SqlValue[] 
   ];
 }
 
+/** Reuse the existing outbox insertion for an atomic void-plus-replacement capture. */
+export function eventInsertStatement(event: FieldEventEnvelope, updatedAt: string): SqlStatement {
+  return { sql: COLUMNS_SQL, params: insertParams(event, updatedAt) };
+}
+
 /**
  * The phone's outbox: every captured event waits here until the server answers.
  * Status changes go through `applyOutboxAction` only, so the rules live in one place.
@@ -80,9 +85,11 @@ export class OutboxRepository {
 
   /** Saves a captured event as `pending`. Throws `OutboxWriteError` when it could not be stored. */
   async enqueue(event: FieldEventEnvelope, extra: readonly SqlStatement[] = []): Promise<void> {
-    const params = insertParams(event, this.#now().toISOString());
     try {
-      await this.#db.runAtomically([{ sql: COLUMNS_SQL, params }, ...extra]);
+      await this.#db.runAtomically([
+        eventInsertStatement(event, this.#now().toISOString()),
+        ...extra,
+      ]);
     } catch (error) {
       throw new OutboxWriteError(error);
     }

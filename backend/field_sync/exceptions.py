@@ -54,3 +54,9 @@ class EventNeedsReview(EventSignal):
 
     A handler raises it only after it has made the writes it wants to keep.
     """
+
+
+class FanoutLimitExceededError(DomainError):
+    code = "fanout_limit_exceeded"
+    status_code = HTTPStatus.SERVICE_UNAVAILABLE
+    default_detail = "Courier projection fan-out exceeds the configured bound."

@@ -2,7 +2,7 @@
 
 B-11 (#108): scoped, versioned quadrants, blocks and sampling points. Read
 ../README.md, ../organizations/README.md (scope, Center and lock order) and
-../../docs/api-conventions.md first. No web, fleet, sync effect or deployment work.
+../../docs/api-conventions.md first. No web, fleet or deployment work. Courier projection effects from #196 are described below.
 
 ## Geometry and decisions
 
@@ -182,3 +182,27 @@ validation passed with no warnings; comparing the three resource list operations
 confirmed the only operation changes are the new search/ordering parameters.
 The three PostgreSQL regression cases collect, but have not run here. The exported
 schema and generated client remain untouched for the owner's regeneration.
+
+
+## Courier projections (#196, D7b)
+
+GeographyConfig registers quadrants and sampling_points producers (schema 1).
+quadrants contains small typed quadrant/block references and current revision;
+sampling_points contains current location/retirement with fixed code and parent
+references. No polygon is required for placing an already located point.
+Both filter the captured paired field.bootstrap grant and organization in SQL,
+then provide organization/center/quadrant metadata to the registry guard.
+
+Writers serialize Organization, lock all in-scope courier batches via the shared
+fanout_courier_changes helper, then lock Quadrant/descendants. Create/publish of
+quadrant/block/point emits its exact written version. Quadrant resolutions emit
+upserts for changed points and their ovitraps, including is_retired=true for remove.
+Point and block parents are immutable: move changes location inside the same
+block identity, never transfers scope. No new move/remove writer is built; scope
+revocation uses invalid_cursor -> bootstrap replacement. Resource versions are
+decimal point version or reference revision. The ovitrap app owns its projection
+logic, called locally for affected points under the same fan-out locks.
+
+Tests: ../tests/test_bundle_producers_196.py covers all creation/publication
+writers and keep/move/remove resolutions, shared fan-out and current reference
+versions. Full contract, bound assumption and lock paths: ../../docs/sync.md.

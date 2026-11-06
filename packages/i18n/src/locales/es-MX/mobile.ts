@@ -2,6 +2,123 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.ovitrap.pendingDraft":
+    "Ya tienes un borrador de otra captura. Continúa ese borrador antes de cambiar de ovitrampa.",
+  // M-08: P13, P14 and P21
+  "mobile.ovitrap.open": "Colocar o revisar ovitrampas",
+  "mobile.ovitrap.place": "Colocar ovitrampa",
+  "mobile.ovitrap.check": "Revisar ovitrampa",
+  "mobile.ovitrap.next": "Continuar",
+  "mobile.ovitrap.save": "Guardar en el teléfono",
+  "mobile.ovitrap.point": "Elige un punto de tu asignación",
+  "mobile.ovitrap.finding": "¿Cómo la encontraste?",
+  "mobile.ovitrap.paddle": "¿Todavía tiene papeleta?",
+  "mobile.ovitrap.eggs": "¿Tiene huevos?",
+  "mobile.ovitrap.yes": "Sí",
+  "mobile.ovitrap.no": "No",
+  "mobile.ovitrap.conditions": "Condiciones del sitio",
+  "mobile.ovitrap.temperature": "Temperatura (°C, opcional)",
+  "mobile.ovitrap.humidity": "Humedad (%, opcional)",
+  "mobile.ovitrap.paddleType": "Tipo de papeleta",
+  "mobile.ovitrap.other": "Especifica qué encontraste (obligatorio para Otro)",
+  "mobile.ovitrap.bag": "Código humano de la bolsa",
+  "mobile.ovitrap.scanBag": "Escanear bolsa",
+  "mobile.ovitrap.bagHint":
+    "Una bolsa por lectura. Escribe el folio y la fecha; dobla hacia dentro. El laboratorio cuenta los huevos.",
+  "mobile.ovitrap.lagged": "Marcar lectura desfasada",
+  "mobile.ovitrap.laggedHint":
+    "La papeleta desfasada sí va al laboratorio y se puede contar. El servidor determina su exclusión de los índices.",
+  "mobile.ovitrap.prepare": "Preparar y reinstalar",
+  "mobile.ovitrap.clean": "Lavé y tallé el bote",
+  "mobile.ovitrap.water": "Agua limpia a tres cuartas partes, sin cloro ni larvicida",
+  "mobile.ovitrap.liner": "Papeleta cubre todo el interior",
+  "mobile.ovitrap.shade": "A la sombra, entre plantas",
+  "mobile.ovitrap.height": "Hasta 1.5 m de altura",
+  "mobile.ovitrap.containers": "Lejos de otros recipientes con agua",
+  "mobile.ovitrap.safe": "Fuera del alcance de niños y animales",
+  "mobile.ovitrap.marked": "Marqué la fachada con OV y el folio",
+  "mobile.ovitrap.newPaddle": "Papeleta nueva",
+  "mobile.ovitrap.reuse": "Papeleta reutilizada autorizada",
+  "mobile.ovitrap.reuseUnavailable":
+    "Solo se ofrece reutilización con elegibilidad descargada. Nunca una tercera reutilización.",
+  "mobile.ovitrap.supplies": "Referencias UUID de insumos, separadas por coma",
+  "mobile.ovitrap.photo": "Agregar evidencia fotográfica",
+  "mobile.ovitrap.photoUnavailable":
+    "La cámara de evidencia no está disponible en esta compilación. Conserva el borrador y pide ayuda si el catálogo requiere foto.",
+  "mobile.ovitrap.refresh": "Descargar catálogos y reglas",
+  "mobile.ovitrap.adopt": "Revisar y usar las versiones descargadas",
+  "mobile.ovitrap.catalogChanged":
+    "Hay un catálogo nuevo. Conservamos tus respuestas y etiquetas históricas; revisa antes de cambiar de versión.",
+  "mobile.ovitrap.confirm": "Revisa antes de guardar",
+  "mobile.ovitrap.phoneSaved": "Guardado en el teléfono",
+  "mobile.ovitrap.serverPending": "Recepción del servidor: pendiente",
+  "mobile.ovitrap.serverReceived": "Recibido por el servidor",
+  "mobile.ovitrap.reviewPending": "Revisión: pendiente; pide ayuda a tu supervisor",
+  "mobile.ovitrap.reviewUnknown": "Revisión del supervisor: sin confirmación",
+  "mobile.ovitrap.repeat":
+    "Ya registraste esta ovitrampa en la misma semana. Puedes anular con motivo y registrar una lectura nueva. La evidencia original se conserva.",
+  "mobile.ovitrap.correct": "Anular con motivo y registrar nueva",
+  "mobile.ovitrap.reason": "Motivo: de 10 caracteres visibles a 1000 caracteres",
+  "mobile.ovitrap.reasonCode": "Motivo del catálogo",
+  "mobile.ovitrap.newBag":
+    "Usa un código de bolsa nuevo: los códigos anteriores quedan reservados.",
+  "mobile.ovitrap.scan": "Escanear ovitrampa",
+  "mobile.ovitrap.manual": "Escribir código manualmente",
+  "mobile.ovitrap.manualHint":
+    "La captura manual queda marcada. Usa el UUID físico de la ovitrampa o el código humano de la bolsa.",
+  "mobile.ovitrap.code": "Código",
+  "mobile.ovitrap.lookup": "Usar código",
+  "mobile.ovitrap.invalid": "Este código no es válido para esta operación",
+  "mobile.ovitrap.invalidHint":
+    "Busca la etiqueta correcta del programa y vuelve a intentar, o escribe el código manualmente.",
+  "mobile.ovitrap.retry": "Escanear de nuevo",
+  "mobile.ovitrap.scannerUnavailable":
+    "El escáner no está disponible en esta compilación. Escribe el código manualmente.",
+  "mobile.ovitrap.gps":
+    "La ubicación falta o su precisión no cumple las reglas descargadas. Intenta obtener GPS o guarda para revisión si la política lo permite.",
+  "mobile.ovitrap.stale":
+    "Las reglas cambiaron o vencieron. Descarga la versión vigente o conserva la captura para revisión si la política lo permite.",
+  "mobile.ovitrap.distance":
+    "Estás lejos del punto según las reglas descargadas. Acércate o conserva la captura para revisión.",
+  "mobile.ovitrap.location":
+    "No conocemos el punto de esta ovitrampa en el teléfono. El servidor revisará ubicación y alcance; no confirmamos cumplimiento.",
+  "mobile.ovitrap.acknowledge": "Entiendo que la captura requiere revisión del servidor",
+  "mobile.ovitrap.retryGps": "Intentar GPS de nuevo",
+  "mobile.ovitrap.shiftBlocked":
+    "La jornada no permite capturar ni guardar. Revisa la apertura con tu supervisor; el borrador se conserva.",
+  "mobile.ovitrap.staleWeekContext":
+    "Falta la configuraci?n vigente de semana y zona horaria de la organizaci?n. Actualiza el contexto antes de guardar; el borrador se conserva.",
+  "mobile.ovitrap.staleView":
+    "La captura que ves cambió. No se aplicó esta acción. Actualiza la vista y vuelve a intentarlo.",
+  "mobile.ovitrap.immutableEdit":
+    "La edición tardía no se guardó y se descartó. Inicia una nueva captura o usa una corrección.",
+  "mobile.ovitrap.gateShift": "Abre una jornada antes de guardar. El borrador se conserva.",
+  "mobile.ovitrap.gateAssignment":
+    "Falta la asignación con alcance explícito y semana epidemiológica. Descárgala antes de guardar.",
+  "mobile.ovitrap.gateCatalog": "Falta el catálogo. Descárgalo antes de guardar.",
+  "mobile.ovitrap.gateRules": "Faltan reglas utilizables. Descárgalas antes de guardar.",
+  "mobile.ovitrap.gatePoint": "Elige un punto permitido y verifica las referencias de insumos.",
+  "mobile.ovitrap.gateFinding": "Elige un hallazgo del catálogo guardado.",
+  "mobile.ovitrap.gatePaddle": "Confirma la presencia y el tipo de papeleta.",
+  "mobile.ovitrap.gateEggs": "Confirma Sí o No: ¿tiene huevos?",
+  "mobile.ovitrap.gateBag": "Escribe el código humano de la bolsa.",
+  "mobile.ovitrap.gateConditions":
+    "Revisa temperatura y humedad. La humedad debe estar entre 0 y 100 %.",
+  "mobile.ovitrap.gateOther": "Otro requiere una descripción de hasta 1000 caracteres.",
+  "mobile.ovitrap.gatePrepare": "Completa la preparación antes de guardar.",
+  "mobile.ovitrap.gateEvidence":
+    "Este catálogo requiere evidencia fotográfica. Conserva el borrador y pide ayuda.",
+  "mobile.ovitrap.gateReuse":
+    "Esta papeleta no tiene una reutilización autorizada. Elige una nueva.",
+  "mobile.ovitrap.gateReason":
+    "Elige un motivo y escribe al menos 10 caracteres visibles, hasta 1000.",
+  "mobile.ovitrap.gateReview":
+    "Revisa los avisos de GPS y reglas. Solo puedes guardar para revisión cuando la política descargada lo permite.",
+  "mobile.ovitrap.resume": "Continuar borrador",
+  "mobile.ovitrap.nextTarget": "Siguiente punto",
+  "mobile.ovitrap.edit": "Volver a revisar respuestas",
+  "mobile.ovitrap.permission":
+    "Consulta a tu supervisor para reemplazar, reubicar o retirar esta ovitrampa. Conserva esta lectura.",
   // M-06: P9-P10 day list and offline map
   "mobile.day.loading": "Cargando puntos guardados…",
   "mobile.day.updating": "Actualizando…",

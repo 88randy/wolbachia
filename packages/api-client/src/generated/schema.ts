@@ -1938,6 +1938,9 @@ export interface components {
                 [key: string]: unknown;
             }[];
             map_manifests: components["schemas"]["MapManifest"][];
+            quadrants: components["schemas"]["QuadrantReference"][];
+            sampling_points: components["schemas"]["SamplingPointBundle"][];
+            ovitraps: components["schemas"]["OvitrapBundle"][];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -2041,6 +2044,9 @@ export interface components {
             eligibility: components["schemas"]["ProducerChange"][];
             history: components["schemas"]["ProducerChange"][];
             map_manifests: components["schemas"]["ProducerChange"][];
+            quadrants: components["schemas"]["QuadrantChange"][];
+            sampling_points: components["schemas"]["SamplingPointChange"][];
+            ovitraps: components["schemas"]["OvitrapChange"][];
         };
         /**
          * @description * `ok` - Ok
@@ -2056,6 +2062,12 @@ export interface components {
             reason: string;
             expected_revision: number;
         };
+        /**
+         * @description * `upsert` - upsert
+         *     * `remove` - remove
+         * @enum {string}
+         */
+        CourierChangeActionEnum: "upsert" | "remove";
         /**
          * @description * `keep` - keep
          *     * `move` - move
@@ -2510,6 +2522,8 @@ export interface components {
             /** Format: uuid */
             center?: string | null;
         };
+        /** @enum {unknown} */
+        NullEnum: null;
         OrganizationSettings: {
             /** Format: uuid */
             id: string;
@@ -2568,6 +2582,45 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        OvitrapBundle: {
+            version: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            client_uuid: string;
+            code: string;
+            /** Format: uuid */
+            sampling_point_id: string;
+            /** Format: uuid */
+            point_version: string;
+            sampling_point_version: number;
+            /** Format: date-time */
+            placed_at: string;
+            /** Format: uuid */
+            reading_id: string | null;
+            finding_code: string | null;
+            paddle_present: boolean | null;
+            has_eggs: boolean | null;
+            /** Format: date-time */
+            checked_at: string | null;
+            is_lagged: boolean | null;
+            placement_voided: boolean;
+            voided: boolean;
+            voided_resource_type: (components["schemas"]["VoidedResourceTypeEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: uuid */
+            voided_event_id: string | null;
+            void_reason_code: string;
+            /** Format: date-time */
+            voided_at: string | null;
+        };
+        OvitrapChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["OvitrapBundle"];
         };
         /** @enum {string} */
         OvitrapLifecycleStatusEnum: "active" | "voided";
@@ -3049,7 +3102,7 @@ export interface components {
         };
         ProducerChange: {
             sequence: number;
-            action: components["schemas"]["ProducerChangeActionEnum"];
+            action: components["schemas"]["CourierChangeActionEnum"];
             resource_type: string;
             resource_id: string;
             resource_version: string;
@@ -3057,12 +3110,6 @@ export interface components {
                 [key: string]: unknown;
             };
         };
-        /**
-         * @description * `upsert` - upsert
-         *     * `remove` - remove
-         * @enum {string}
-         */
-        ProducerChangeActionEnum: "upsert" | "remove";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3088,6 +3135,11 @@ export interface components {
             expected_revision: number;
         };
         /**
+         * @description * `upsert` - upsert
+         * @enum {string}
+         */
+        ProjectionUpsertActionEnum: "upsert";
+        /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
          *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
@@ -3106,6 +3158,14 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        QuadrantChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["QuadrantReference"];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -3133,6 +3193,17 @@ export interface components {
                 coordinates: number[][][];
             };
             point_resolutions?: components["schemas"]["PointResolutionRequest"][];
+        };
+        QuadrantReference: {
+            resource_type: components["schemas"]["ResourceTypeEnum"];
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id: string;
+            revision: number;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -3250,6 +3321,12 @@ export interface components {
             /** Format: date-time */
             server_time: string;
         };
+        /**
+         * @description * `quadrant` - quadrant
+         *     * `block` - block
+         * @enum {string}
+         */
+        ResourceTypeEnum: "quadrant" | "block";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3444,6 +3521,26 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        SamplingPointBundle: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            block_id: string;
+            /** Format: uuid */
+            quadrant_id: string;
+            location: number[];
+            is_retired: boolean;
+            version: number;
+        };
+        SamplingPointChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["SamplingPointBundle"];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -3753,6 +3850,12 @@ export interface components {
             /** @default  */
             reason: string;
         };
+        /**
+         * @description * `placement` - placement
+         *     * `reading` - reading
+         * @enum {string}
+         */
+        VoidedResourceTypeEnum: "placement" | "reading";
         WebLoginResponse: {
             me: components["schemas"]["Me"];
             /** Format: date-time */

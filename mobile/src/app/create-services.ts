@@ -4,6 +4,8 @@ import type { DayService } from "../features/day/service.ts";
 import type { DayBundleService } from "../features/day/bundle-service.ts";
 import { getRandomBytes, randomUUID } from "expo-crypto";
 
+import { createOvitrapCheck } from "../features/ovitrap-check/create-ovitrap-check.ts";
+import type { OvitrapService } from "../features/ovitrap-check/service.ts";
 import { createShiftOpen } from "../features/shift-open/create-shift-open.ts";
 import type { ShiftOpenService } from "../features/shift-open/service.ts";
 
@@ -28,6 +30,7 @@ import { createScopedSyncTransport } from "../sync/scoped-sync-transport.ts";
 export interface AppServices {
   readonly day: DayService;
   readonly auth: AuthController;
+  readonly ovitrapCheck: OvitrapService;
   readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
@@ -59,7 +62,8 @@ export async function createServices(): Promise<AppServices> {
   const engine = createEngine({ kv, outbox, server, deviceId, tokens, requests }, bundle);
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
-  return { kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen, day };
+  const ovitrapCheck = createOvitrapCheck({ db, engine, requests, tokens, shiftOpen });
+  return { ovitrapCheck, kv, outbox, engine, tokens, server, deviceId, auth, shiftOpen, day };
 }
 
 function createRuntimeAuth(
@@ -91,7 +95,9 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
 }
 
 function createEngine(
-  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen" | "day"> & { requests: SessionRequests },
+  deps: Omit<AppServices, "engine" | "auth" | "shiftOpen" | "ovitrapCheck" | "day"> & {
+    requests: SessionRequests;
+  },
   bundle: DayBundleService,
 ): SyncEngine {
   const { kv, outbox, server, deviceId, tokens, requests } = deps;

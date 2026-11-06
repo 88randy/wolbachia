@@ -15,6 +15,11 @@ from field_sync.envelope import (
 )
 from field_sync.models import TYPE_MAX_LENGTH, VERSION_MAX_LENGTH, EventStatus
 from field_sync.producers import MapManifestSerializer
+from field_sync.projection_serializers import (
+    OvitrapBundleSerializer,
+    QuadrantReferenceSerializer,
+    SamplingPointBundleSerializer,
+)
 from reviews.models import ReviewKind
 
 MAX_LATITUDE = 90
@@ -146,6 +151,21 @@ class ProducerChangeSerializer(serializers.Serializer[Any]):
     data = serializers.DictField()  # type: ignore[assignment]  # Required wire name overlaps Serializer.data.
 
 
+class QuadrantChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = QuadrantReferenceSerializer()  # type: ignore[assignment]
+
+
+class SamplingPointChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = SamplingPointBundleSerializer()  # type: ignore[assignment]
+
+
+class OvitrapChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = OvitrapBundleSerializer()  # type: ignore[assignment]
+
+
 class ChangesSerializer(serializers.Serializer[Any]):
     cursor = serializers.CharField(allow_null=True)
     reviews = ReviewChangeSerializer(many=True)
@@ -159,6 +179,9 @@ class ChangesSerializer(serializers.Serializer[Any]):
     eligibility = ProducerChangeSerializer(many=True)
     history = ProducerChangeSerializer(many=True)
     map_manifests = ProducerChangeSerializer(many=True)
+    quadrants = QuadrantChangeSerializer(many=True)
+    sampling_points = SamplingPointChangeSerializer(many=True)
+    ovitraps = OvitrapChangeSerializer(many=True)
 
 
 class SyncResponseSerializer(serializers.Serializer[Any]):
@@ -183,3 +206,6 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     eligibility = serializers.ListField(child=serializers.DictField())
     history = serializers.ListField(child=serializers.DictField())
     map_manifests = MapManifestSerializer(many=True)
+    quadrants = QuadrantReferenceSerializer(many=True)
+    sampling_points = SamplingPointBundleSerializer(many=True)
+    ovitraps = OvitrapBundleSerializer(many=True)

@@ -1,5 +1,8 @@
 import { P9Screen } from "../features/day/P9Screen.tsx";
 import { P10Screen } from "../features/day/P10Screen.tsx";
+import { OvitrapScreen } from "../features/ovitrap-check/OvitrapScreen.tsx";
+import { ScannerScreen } from "../features/ovitrap-check/ScannerScreen.tsx";
+import { P21Screen } from "../features/ovitrap-check/P21Screen.tsx";
 import { OpenShiftScreen } from "../features/shift-open/OpenShiftScreen.tsx";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
@@ -17,6 +20,12 @@ function screenFor(route: Route): ReactNode {
       return <P9Screen />;
     case "map":
       return <P10Screen />;
+    case "ovitrapCapture":
+      return <OvitrapScreen />;
+    case "ovitrapScanner":
+      return <ScannerScreen target={route.target} />;
+    case "invalidOvitrapCode":
+      return <P21Screen target={route.target} />;
     case "openShift":
       return <OpenShiftScreen />;
     case "home":
