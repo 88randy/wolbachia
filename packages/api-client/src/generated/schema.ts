@@ -1022,6 +1022,32 @@ export interface paths {
         patch: operations["locations_partial_update"];
         trace?: never;
     };
+    "/api/v1/locations/{id}/movements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["locations_movements_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/locations/{id}/stock/": {
         parameters: {
             query?: never;
@@ -1040,6 +1066,58 @@ export interface paths {
          *     `APIView`s do not have.
          */
         get: operations["locations_stock_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/locations/owner-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["locations_owner_options_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/locations/placement-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["locations_placement_options_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2451,6 +2529,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/supply-types/protocol-incident-type-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["supply_types_protocol_incident_type_options_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/{id}/revoke-device-sessions/": {
         parameters: {
             query?: never;
@@ -3375,6 +3479,7 @@ export interface components {
             };
             /** Format: uuid */
             readonly owner_id: string;
+            readonly owner_label: string;
             readonly is_insecticide_free: boolean | null;
             /** Format: uuid */
             readonly created_by: string | null;
@@ -3434,6 +3539,9 @@ export interface components {
             readonly supply: string;
             /** Format: uuid */
             readonly supply_version_id: string;
+            readonly supply_version: components["schemas"]["Supply"];
+            /** Format: uuid */
+            readonly admission_id: string | null;
             /** Format: uuid */
             readonly center: string;
             /** Format: uuid */
@@ -3444,6 +3552,7 @@ export interface components {
             readonly initial_location_id: string | null;
             /** Format: uuid */
             readonly location_version_id: string | null;
+            readonly location_version: components["schemas"]["RetainedLocation"] | null;
             /** Format: decimal */
             readonly quantity: string | null;
             readonly provenance: string;
@@ -3469,6 +3578,25 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        LotPlacementOption: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "location" | "center_only_draft";
+            /** Format: uuid */
+            quadrant_id: string | null;
+            code: string | null;
+            /** Format: uuid */
+            location_id: string | null;
+            is_read_only: boolean;
+        };
+        /**
+         * @description * `location` - location
+         *     * `center_only_draft` - center_only_draft
+         * @enum {string}
+         */
+        LotPlacementOptionKindEnum: "location" | "center_only_draft";
         LotWriteRequest: {
             /** @default 0 */
             expected_revision: number;
@@ -3710,6 +3838,43 @@ export interface components {
             /** Format: uuid */
             center?: string | null;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Movement: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly operation_id: string;
+            readonly line_number: number;
+            /** Format: uuid */
+            readonly lot_id: string;
+            readonly lot_code: string;
+            /** Format: uuid */
+            readonly supply_id: string;
+            /** Format: uuid */
+            readonly location_id: string;
+            readonly location_code: string;
+            /** Format: uuid */
+            readonly piece_id: string | null;
+            /** Format: decimal */
+            readonly quantity: string;
+            readonly unit: string;
+            /** Format: uuid */
+            readonly unit_version_id: string;
+            readonly source_kind: components["schemas"]["SourceKindEnum"];
+            /** Format: uuid */
+            readonly source_id: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+        };
         /** @enum {unknown} */
         NullEnum: null;
         OrganizationSettings: {
@@ -3829,6 +3994,11 @@ export interface components {
         };
         /** @enum {string} */
         OvitrapLifecycleStatusEnum: "active" | "voided";
+        OwnerOption: {
+            /** Format: uuid */
+            membership_id: string;
+            label: string;
+        };
         OwnershipResult: {
             /** Format: uuid */
             task: string;
@@ -4076,6 +4246,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Motorcycle"][];
         };
+        PaginatedMovementList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Movement"][];
+        };
         PaginatedOvitrapList: {
             /** @example 123 */
             count: number;
@@ -4090,6 +4275,36 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Ovitrap"][];
+        };
+        PaginatedOwnerOptionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["OwnerOption"][];
+        };
+        PaginatedPlacementOptionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["PlacementOption"][];
         };
         PaginatedPointVersionList: {
             /** @example 123 */
@@ -4120,6 +4335,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Profile"][];
+        };
+        PaginatedProtocolTypeOptionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ProtocolTypeOption"][];
         };
         PaginatedQuadrantList: {
             /** @example 123 */
@@ -4445,6 +4675,7 @@ export interface components {
             blocker_kinds?: components["schemas"]["BlockerKindsEnum"][];
             is_active?: boolean;
         };
+        PlacementOption: components["schemas"]["QuadrantPlacementOption"] | components["schemas"]["LotPlacementOption"];
         PointPublicationRequest: {
             expected_revision: number;
             location: number[];
@@ -4558,10 +4789,22 @@ export interface components {
             readonly required_fields: unknown;
             /** Format: uuid */
             readonly incident_type_id: string | null;
+            readonly incident_type: {
+                /** Format: uuid */
+                incident_type_version_id: string;
+                code: string;
+                label: string;
+            } | null;
             /** Format: uuid */
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        ProtocolTypeOption: {
+            /** Format: uuid */
+            incident_type_version_id: string;
+            code: string;
+            label: string;
         };
         ProtocolWriteRequest: {
             name?: string;
@@ -4629,6 +4872,22 @@ export interface components {
                 coordinates: number[][][];
             };
         };
+        QuadrantPlacementOption: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "quadrant" | "center_only";
+            /** Format: uuid */
+            quadrant_id: string | null;
+            code: string | null;
+        };
+        /**
+         * @description * `quadrant` - quadrant
+         *     * `center_only` - center_only
+         * @enum {string}
+         */
+        QuadrantPlacementOptionKindEnum: "quadrant" | "center_only";
         QuadrantPublicationRequest: {
             expected_revision: number;
             geometry: {
@@ -4944,6 +5203,22 @@ export interface components {
             /** Format: uuid */
             readonly document_reference: string | null;
             readonly notes: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        RetainedLocation: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly location_id: string;
+            readonly code: string;
+            readonly name: string;
         };
         /** @description A review item as the phone's inbox sees it (the courier's own events only). */
         ReviewChange: {
@@ -5318,6 +5593,11 @@ export interface components {
          * @enum {string}
          */
         SourceEnum: "official_import" | "company_rule";
+        /**
+         * @description * `lot_admission` - lot_admission
+         * @enum {string}
+         */
+        SourceKindEnum: "lot_admission";
         SpacingWarning: {
             code: string;
             /** Format: uuid */
@@ -7674,6 +7954,53 @@ export interface operations {
             };
         };
     };
+    locations_movements_list: {
+        parameters: {
+            query?: {
+                created_at_before?: string;
+                created_at_from?: string;
+                lot?: string;
+                operation?: string;
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                piece?: string | "none";
+                supply?: string;
+                unit?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this location version. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedMovementList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     locations_stock_list: {
         parameters: {
             query?: {
@@ -7718,14 +8045,102 @@ export interface operations {
             };
         };
     };
+    locations_owner_options_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                location?: string;
+                /**
+                 * @description * `label` - label
+                 *     * `-label` - -label
+                 */
+                ordering?: "label" | "-label";
+                page?: number;
+                page_size?: number;
+                quadrant?: string | "none";
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedOwnerOptionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    locations_placement_options_list: {
+        parameters: {
+            query?: {
+                /**
+                 * @description * `location.create` - location.create
+                 *     * `lot.create` - lot.create
+                 */
+                action?: "location.create" | "lot.create";
+                center?: string;
+                lot?: string;
+                page?: number;
+                page_size?: number;
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPlacementOptionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     lots_list: {
         parameters: {
             query?: {
+                blocked_by?: "supply_type_inactive" | "lot_expired" | "protocol_not_configured" | "storage_safety_not_configured" | "insecticide_free_required" | "condition_slot_missing" | "condition_breach";
                 center?: string;
                 /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
                 code?: string;
                 expiry_before?: string;
+                expiry_before_date?: string;
                 expiry_from?: string;
+                expiry_from_date?: string;
                 location?: string;
                 /** @description Comma-separated fields: code, expiry, created_at. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
                 ordering?: string;
@@ -10483,6 +10898,42 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Supply"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    supply_types_protocol_incident_type_options_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                search?: string;
+                supply?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedProtocolTypeOptionList"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
