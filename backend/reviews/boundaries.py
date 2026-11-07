@@ -18,6 +18,12 @@ def lock_source_references(ctx: EventContext) -> None:
     from shifts.models import Shift
 
     identifiers = set()
+    if ctx.envelope.type in {"transfer.dispatch", "transfer.receive"}:
+        from inventory.transfers.dependencies import source_references
+        from inventory.transfers.review import authorize_source
+
+        authorize_source(ctx, ctx.envelope.payload)
+        identifiers.update(source_references(ctx.organization, ctx.envelope.payload))
     if ctx.envelope.voids_event_id is not None:
         owned_target = FieldEvent.objects.filter(
             organization=ctx.organization, created_by=ctx.user, pk=ctx.envelope.voids_event_id
@@ -159,6 +165,10 @@ def prepare_ingest(  # noqa: PLR0913 -- explicit batch, source, registered handl
     causal = classify_dependencies(batch, envelope, candidates)
     subjects = subject_facts(batch.organization, envelope)
     with ExitStack() as stack:
+        if subjects.resource_kind == "transfer":
+            from inventory.transactions import inventory_transaction
+
+            stack.enter_context(inventory_transaction(organization=batch.organization))
         if causal.pending_code is None:
             retain_domain_boundary(ctx, handler, subjects)
             subjects = subject_facts(batch.organization, envelope)

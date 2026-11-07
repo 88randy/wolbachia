@@ -14,7 +14,7 @@ from reviews.exceptions import ReviewBlockedError
 from reviews.inspection import ExistingEffect, original_source_envelope
 from reviews.models import ReviewEffectReceipt, ReviewSourceSnapshot
 from reviews.policies import ReviewPolicyFacts, acceptance_blockers
-from reviews.scope import SubjectFacts, subject_facts, vector_allows
+from reviews.scope import SubjectFacts, subject_allows, subject_facts
 
 
 @dataclass(frozen=True)
@@ -66,9 +66,10 @@ def inspect_review(source: FieldEvent) -> ReviewEvaluation:
     required = [FIELD_EVENT_SYNC]
     if source.type in {"incident.report", "emergency.accident"}:
         required.append("incident.create")
+    if subjects.resource_kind == "transfer":
+        required.append(subjects.facts["transfer_action"])
     permission_proved = all(
-        vector_allows(historical_scope, permission, subjects.contexts, subjects.resolved)
-        for permission in required
+        subject_allows(historical_scope, permission, subjects) for permission in required
     )
     capability = ReviewAuthorization(
         source.pk,

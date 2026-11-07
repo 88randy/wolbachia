@@ -118,4 +118,13 @@ export const sync: Record<keyof typeof source, string> = {
     "An earlier record needs validation. Your supervisor must review the retained capture.",
   "sync.result.motorcycleSafetyHold":
     "The motorcycle has a safety hold. The capture was kept for review.",
+  "sync.result.transferInaccessible": "The transfer is unavailable in your authorized work scope.",
+  "sync.result.transferStateConflict":
+    "The transfer needs its earlier records reviewed. Keep the capture and signature.",
+  "sync.result.transferEvidenceRequired":
+    "Verified transfer evidence is missing. Keep the signature and pending files.",
+  "sync.result.transferSafetyBlocked":
+    "Current conditions prevent applying the transfer. The capture was kept for review.",
+  "sync.result.transferVoidBlocked":
+    "The transfer has effects or dependent records. Contact your supervisor to correct it.",
 };

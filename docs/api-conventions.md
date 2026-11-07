@@ -916,3 +916,75 @@ Action permissions remain default deny with paired center/quadrant scope and
 foreign404, cookie+CSRF or pinned bearer. Reasons use the shared normalized10-visible
 minimum/1000 maximum. Only400 has fields;409 has safe blocked_by, contention429.
 See ../backend/geography/decisions/README.md for lock order, raw guards and tests.
+
+## Signed facility transfers (#106 / B-09)
+
+GET `/transfers/` and `/{id}/` require transfer.read. POST the collection needs
+transfer.create and `{code,origin_id,destination_id,lines:[{lot_id,piece_id,
+unit_version_id,quantity}]}`; piece_id is explicitly nullable. Preparing reserves
+and moves0 units. POST `/{id}/dispatch/` needs transfer.dispatch and `{command_id,
+expected_revision,signature_upload_id}`. POST `/{id}/receive/` needs transfer.receive
+and adds scanned, missing and evidence_ids. Optional dispatch_source_event_id must
+name the exact real dispatch FieldEvent, not operation/admission/TransferEvent.
+ONE contributing action binding must cover BOTH endpoints and ALL line pairs.
+
+Scans are a closed kind union: expected `{scan_id,line_id,quantity}`;
+identified_extra `{scan_id,lot_id,piece_id,unit_version_id,quantity}`;
+unidentified_extra `{scan_id,unidentified_code,quantity}`. Quantity is exact finite
+positive Decimal20/6; a piece is counted once, with duplicate feedback. Server
+reconciliation bounds actual credits; extras remain uncredited observations.
+Extra quarantine is the open manifest/DiscrepancyLine quantity, without a
+TransferHold over expected or already-accounted stock. Missing retains its hold;
+all unrelated holds remain mandatory safety blockers. A separate actual signed
+correction receipt is still required to close an extra, with no second credit.
+Missing asserts `{line_id,quantity,evidence_ids:[photo UUIDs]}` with verified per-line
+photo coverage. Independently owned verified signatures are disjoint from photos.
+The literal unidentified code is stored ONLY beneath an authorized real Transfer,
+with no resource FK, foreign lookup or credit.
+
+GET `/discrepancies/` and `/{id}/` require discrepancy.read. POST `/{id}/close/`
+needs discrepancy.close and `{reason,evidence_ids,expected_revision,resolution:
+{outcomes:[...]}}`. Initial revision is0. Each closed outcome has line_id/quantity:
+ack_missing; recover_dest/return_origin with exact dispatch_event_id, receipt_event_id
+and NEW signature_upload_id; or reference_signed_correction with real
+correction_transfer_id/receipt_event_id. The whole exact quantity partition must
+resolve every line. Recovery/return also require current receive and P at the
+credited site. Reference creates no second credit. No caller-selected stock delta,
+location or new required close command_id exists; the server returns its actual
+immutable resolution event/command UUID.
+
+Writes return exact TransferEvent201, or200 original replay, with manifest/hash,
+both clocks and true nullable operation/discrepancy UUIDs. Fresh full action/scope
+precedes replay, which precedes CAS/state/evidence reconsumption. Changed UUID
+reuse is409; later transitions never replace an old write response with latest.
+Failed current safety/evidence creates0 event/stock/hold/success receipts. No auto-
+POST or fake FieldEvent is used to retain an HTTP intent.
+
+Transfer filters: state/origin/destination/lot/created_at_from inclusive and
+created_at_before exclusive. Discrepancy filters: status/transfer/lot/same range.
+Scoped exact code/search and ordering code|created_at have stable UUID ties and
+page-number pagination. Related authority precedes count/page. Missing action403;
+unknown/foreign/out-of-scope404; malformed fields/range400; safe state/CAS/safety
+409 inventory_state_conflict; contention429 inventory_in_progress/Retry-After1.
+blocked_by reasons include transfer_revision_conflict, transfer_command_conflict,
+transfer_state_conflict, transfer_insufficient_stock, transfer_evidence_required
+and storage_context_required; no hidden counterpart IDs/labels are disclosed.
+
+Lot GET adds custody_location=UUID and safety_location_id. Default remains legacy
+admission visibility/initial safety; explicit context needs positive real current
+custody and lot.read there. A custody-only detail with omitted context gets safe409
+AFTER authorization; unknown/foreign/no-positive remains404. Historical location
+filter grants nothing. Original private actor is redacted. Scoped movement history
+remains at balance0, with source_transfer=null without whole transfer.read.
+
+Conditions POST adds explicit `{location_id,device_time,temperature_c,humidity_pct}`
+beside the separately named legacy105 omitted-location adapter. Results retain
+capture_mode/capture_location_id and exact LocationVersion; GET adds location_id
+with captured-location scope before page. condition.create permits B measurement
+at0 stock, proving no custody. A readings cannot certify B. Every stock phase uses
+the shared global type/expiry/protocol/holds plus this site's storage/day windows.
+Null Lot.protocol never inherits nested SupplyTypeVersion protocol.
+
+HTTP evidence has the fifth transfer_event parent; sync retains actual FieldEvent
+primary parent. See ../backend/inventory/transfers/README.md for locks, mandatory
+phase safety, source/review/history, exact resolution proofs and SQL test ownership.

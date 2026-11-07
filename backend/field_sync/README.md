@@ -255,3 +255,12 @@ after actual FieldEvent/ReviewItem/evidence linkage; a review callback produces 
 a scoped audit intent, never an Incident/owner/blocker. Immutable committed causes
 support keyset recovery after callback/broker loss. No delivery or #113 acceptance
 is asserted; current final-upload entitlement/session ordering remains unchanged.
+
+#106 registers only transfer.dispatch/transfer.receive schema1. They do not require
+a Shift, so checks_shift=False is explicit for these two families; global actor,
+clock/final-upload and source digest gates remain. They are not supplies.receive.
+NEW review retains source facts/evidence with0 operational custody/stock effects.
+_store links the actual accepted source after its snapshot and primary evidence
+exist. Reviewed application waits for canonical113's exact effect receipt. The ONE
+history producer is schema3 with an additive transfer_custody branch; old review,
+shift and relocation shapes remain. No fake HTTP courier or delivery receipt.

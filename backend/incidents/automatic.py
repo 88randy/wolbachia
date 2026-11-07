@@ -47,7 +47,10 @@ def create_automatic_incident(capture: AutomaticIncidentCapture) -> Incident:
     if existing is not None:
         return cast(Incident, existing.incident)
     version = _automatic_type(AutomaticIncidentCapture(reading, capture.type_id))
-    context = ResourceContext(reading.lot.center_id, reading.lot.quadrant_id, "lot", reading.lot_id)
+    from inventory.conditions import reading_context
+
+    placement = reading_context(reading)
+    context = ResourceContext(placement.center_id, placement.quadrant_id, "lot", reading.lot_id)
     owners = chain(version, context)
     stage = next_stage(-1, tuple(owner is not None for owner in owners))
     incident = _identity(reading, version)
@@ -103,6 +106,9 @@ def _automatic_type(capture: AutomaticIncidentCapture) -> IncidentTypeVersion:
 
 
 def _identity(reading: ConditionReading, version: IncidentTypeVersion) -> Incident:
+    from inventory.conditions import reading_context
+
+    placement = reading_context(reading)
     highest = (
         Incident.objects.filter(organization=reading.organization).aggregate(
             highest=Max("sequence")
@@ -117,8 +123,8 @@ def _identity(reading: ConditionReading, version: IncidentTypeVersion) -> Incide
             sequence=highest + 1,
             code=f"I-{highest + 1:06d}",
             type_version=version,
-            center_id=reading.lot.center_id,
-            quadrant_id=reading.lot.quadrant_id,
+            center_id=placement.center_id,
+            quadrant_id=placement.quadrant_id,
             device_time=reading.device_time,
             server_received_at=reading.server_received_at,
             description="Biological condition reading outside its named protocol range.",

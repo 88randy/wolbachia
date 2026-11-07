@@ -6,4 +6,4 @@ from reviews.history_serializers import CourierHistoryEntrySerializer
 
 
 def register_history_producer() -> None:
-    register(BundleProducer("history", 2, build_history, CourierHistoryEntrySerializer))
+    register(BundleProducer("history", 3, build_history, CourierHistoryEntrySerializer))

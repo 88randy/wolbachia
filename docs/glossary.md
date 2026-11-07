@@ -10,7 +10,7 @@ One English name per domain term across backend, mobile and web. Spanish appears
 | autorización temporal de carga | upload lease | UploadLease, Upload-Lease | Append-only 15-minute authenticated PUT authorization. |
 | recibo de bytes originales | upload source | UploadSource, sha256 | Immutable private original object; never served. |
 | verificación de evidencia | upload verification | UploadVerification, verified_at | Sanitized image plus its separate SHA-256; no parent authority implied. |
-| vínculo de evidencia | attachment link | AttachmentLink, context | Exactly one immutable field_event, motorcycle_fault, incident or review_item parent per upload. Current parent authorization is rechecked; retained verification never grants permanent access or reparenting. |
+| vínculo de evidencia | attachment link | AttachmentLink, context | Exactly one immutable field_event, motorcycle_fault, incident, review_item or transfer_event parent per upload. Current parent authorization is rechecked; retained verification never grants permanent access or reparenting. |
 
 Rules:
 
@@ -213,3 +213,17 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | tarea del día siguiente | next-day task | NextDayTask | Unique proposal/decision provenance to a real ScheduledTask on the next org-local date. |
 | intervención de terceros | third-party intervention | ThirdPartyIntervention | Metadata across authorized real blocks; no company release authority. |
 | cierre de cuadrante | quadrant closure | QuadrantClosure | Immutable audit of one published QuadrantVersion; no implicit reopening. |
+
+## Signed facility custody (#106)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| transferencia | transfer | Transfer, `/transfers/` | Signed expected manifest between two real locations; preparation reserves no stock. |
+| evento de transferencia | transfer event | TransferEvent | Immutable prepared/dispatch/receive/resolution fact; event UUID differs from transfer and stock operation UUIDs. |
+| línea esperada | transfer line | TransferLine | Exact lot/optional piece/unit/quantity and both retained location versions. |
+| recepción real | transfer receipt line | TransferReceiptLine | Independently signed actual receipt, bounded by expected dispatch. |
+| mercancía en tránsito | outstanding custody | outstanding | Derived unreceived dispatch; never a spendable location or balance. |
+| resolución de discrepancia | discrepancy resolution | DiscrepancyResolution, ResolutionOutcome | Complete accountable partition; bounded recovery/return or reference to a real separate signed correction. |
+| sobrante sin identificar | unidentified extra | unidentified_extra | Literal observation under an authorized real transfer, no resource FK or stock credit. |
+| recibo de comando | transfer command receipt | TransferCommandReceipt | Immutable replay proof; internal persistence, not delivery or a new client command on close. |
+| padre de evidencia de transferencia | transfer event parent | transfer_event | Fifth closed upload parent for HTTP custody; source captures retain their actual FieldEvent primary parent. |

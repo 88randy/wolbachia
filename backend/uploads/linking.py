@@ -56,6 +56,7 @@ def _link_declared(actor: UploadActor, upload: Upload, event_id: UUID) -> bool:
         and link.fault_id is None
         and link.incident_id is None
         and link.review_item_id is None
+        and link.transfer_event_id is None
     )
     if not is_same_parent:
         logger.info(

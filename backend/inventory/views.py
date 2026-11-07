@@ -17,20 +17,21 @@ from core.filters import CodeLookupFilter
 from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.views import OrgScopedViewSetMixin
 from inventory.access import scoped_inventory
-from inventory.conditions import ConditionCapture, record_condition
+from inventory.conditions import ConditionCapture, record_condition, record_condition_at_location
 from inventory.masters import (
     MasterChange,
     deactivate_supply_type,
     revise_location,
     revise_supply_type,
 )
-from inventory.models import ConditionReading, LocationVersion, LotVersion, SupplyTypeVersion
+from inventory.models import ConditionReading, LocationVersion, Lot, LotVersion, SupplyTypeVersion
 from inventory.option_selectors import owner_options, placement_options, protocol_type_options
 from inventory.schema import InventoryAutoSchema
 from inventory.selectors import latest_versions, location_movements, location_stock, lot_versions
 from inventory.serializers import (
     ConditionSerializer,
     ConditionWriteSerializer,
+    ExplicitConditionWriteSerializer,
     InventoryRevisionSerializer,
     LocationSerializer,
     LocationWriteSerializer,
@@ -299,7 +300,11 @@ class LocationViewSet(InventoryVersionViewSet):
         actor = actor_from_request(request)
         query = location_stock(actor, current.location)
         for name, value in validated_query(request, ("lot", "supply")).items():
-            require_relation(actor, (name, value), "lot.read" if name == "lot" else "location.read")
+            if name == "lot":
+                if not location_movements(actor, current.location).filter(lot_id=value).exists():
+                    raise Http404
+            else:
+                require_relation(actor, (name, value), "location.read")
             query = query.filter(**{"lot_id" if name == "lot" else "lot__supply_id": value})
         order = nested_order(request, ("lot__code", "piece_id"), "lot__code")[:-1]
         query = query.order_by(*order, "lot_id", "piece_id")
@@ -334,6 +339,57 @@ class LotViewSet(InventoryVersionViewSet):
         "expiry_before_date": "expires_at__lt",
         "blocked_by": "blocked_by",
     }
+    inventory_context_facets = ("custody_location",)
+
+    def get_queryset(self) -> QuerySet[Any]:
+        if getattr(self, "swagger_fake_view", False):
+            return self.queryset.none()
+        from inventory.transfers.custody import context_location
+
+        actor = actor_from_request(self.request)
+        location = None
+        if self.action in {"list", "retrieve"} and "custody_location" in self.request.query_params:
+            location = context_location(actor, self.request.query_params["custody_location"])
+        self.custody_location = location
+        return lot_versions(actor, self.required_permissions[self.action], location)
+
+    def get_serializer_context(self) -> dict[str, Any]:
+        return {
+            **super().get_serializer_context(),
+            "custody_location": getattr(self, "custody_location", None),
+        }
+
+    def get_object(self) -> Any:  # noqa: ANN401 -- DRF resource protocol
+        if self.action == "retrieve":
+            self._require_read_context()
+        return super().get_object()
+
+    def _require_read_context(self) -> None:
+        from inventory.exceptions import InventoryConflictError
+        from inventory.transfers.custody import custody_lots
+        from uploads.access import current_scope
+
+        actor = actor_from_request(self.request)
+        try:
+            identifier = UUID(self.kwargs["pk"])
+        except ValueError as error:
+            raise Http404 from error
+        lot = Lot.objects.filter(organization=actor.organization, pk=identifier).first()
+        if lot is None:
+            raise Http404
+        original = current_scope(actor).allows(
+            "lot.read", str(lot.center_id), str(lot.quadrant_id) if lot.quadrant_id else None
+        )
+        if not original and "custody_location" not in self.request.query_params:
+            permitted = (
+                Lot.objects.filter(pk=lot.pk)
+                .annotate(_custody=custody_lots(actor))
+                .filter(_custody=True)
+                .exists()
+            )
+            if permitted:
+                raise InventoryConflictError("storage_context_required")
+            raise Http404
 
     @extend_schema(request=LotWriteSerializer, responses={201: LotSerializer})
     def create(self, request: Request) -> Response:
@@ -356,16 +412,32 @@ class LotViewSet(InventoryVersionViewSet):
 
     @extend_schema(
         parameters=nested_parameters(
-            ("device_time_from", "device_time_before", "local_date", "evaluation")
+            ("device_time_from", "device_time_before", "local_date", "evaluation", "location_id")
         ),
         responses=ConditionSerializer(many=True),
     )
     @action(detail=True, methods=["get"])
     def conditions(self, request: Request, pk: str | None = None) -> Response:
-        current = self.get_object()
+        from django.db.models import Q
+
+        from inventory.transfers.custody import condition_target
+
+        lot, location = condition_target(
+            actor_from_request(request),
+            (str(pk), request.query_params.get("location_id")),
+            "lot.read",
+        )
         query = ConditionReading.objects.filter(
-            organization=current.organization, lot=current.lot
-        ).select_related("lot", "protocol")
+            organization=lot.organization, lot=lot
+        ).select_related("lot", "protocol", "capture_location", "location_version__location")
+        query = (
+            query.filter(
+                Q(capture_location=location, capture_mode="explicit_location")
+                | Q(capture_mode="legacy_initial", location_version__location=location)
+            )
+            if location
+            else query.filter(capture_mode="legacy_initial", location_version__isnull=True)
+        )
         lookups = {
             "device_time_from": "device_time__gte",
             "device_time_before": "device_time__lt",
@@ -381,15 +453,28 @@ class LotViewSet(InventoryVersionViewSet):
             ConditionSerializer(page, many=True, context=self.get_serializer_context()).data
         )
 
-    @extend_schema(request=ConditionWriteSerializer, responses={201: ConditionSerializer})
+    @extend_schema(
+        request=PolymorphicProxySerializer(
+            component_name="ConditionCaptureRequest",
+            serializers=[ConditionWriteSerializer, ExplicitConditionWriteSerializer],
+            resource_type_field_name=None,
+        ),
+        responses={201: ConditionSerializer},
+    )
     @conditions.mapping.post
     def create_condition(self, request: Request, pk: str | None = None) -> Response:
-        current = self.get_object()
-        payload = ConditionWriteSerializer(data=request.data)
+        from inventory.transfers.custody import condition_target
+
+        actor = actor_from_request(request)
+        raw = request.data
+        explicit = isinstance(raw, dict) and "location_id" in raw
+        location = str(raw.get("location_id")) if isinstance(raw, dict) and explicit else None
+        lot, _ = condition_target(actor, (str(pk), location), "condition.create")
+        serializer = ExplicitConditionWriteSerializer if explicit else ConditionWriteSerializer
+        payload = serializer(data=request.data)
         payload.is_valid(raise_exception=True)
-        reading = record_condition(
-            ConditionCapture(actor_from_request(request), current.lot_id, **payload.validated_data)
-        )
+        capture = ConditionCapture(actor, lot.pk, **payload.validated_data)
+        reading = record_condition_at_location(capture) if explicit else record_condition(capture)
         return Response(
             ConditionSerializer(reading, context=self.get_serializer_context()).data, status=201
         )

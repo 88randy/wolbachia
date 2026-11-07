@@ -1305,6 +1305,208 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/discrepancies/:
+    get:
+      operationId: discrepancies_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: created_at_before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: lot
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, created_at. Prefix with - for
+          descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: code.'
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - open
+          - closed
+      - name: transfer
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - discrepancies
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDiscrepancyList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/discrepancies/{id}/:
+    get:
+      operationId: discrepancies_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this discrepancy.
+        required: true
+      tags:
+      - discrepancies
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Discrepancy'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/discrepancies/{id}/close/:
+    post:
+      operationId: discrepancies_close_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this discrepancy.
+        required: true
+      tags:
+      - discrepancies
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CloseDiscrepancyRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/field/bootstrap/:
     get:
       operationId: field_bootstrap_list
@@ -3079,6 +3281,7 @@ paths:
           - insecticide_free_required
           - condition_slot_missing
           - condition_breach
+          - transfer_discrepancy_hold
       - name: center
         required: false
         in: query
@@ -3093,6 +3296,12 @@ paths:
         schema:
           type: string
           maxLength: 50
+      - name: custody_location
+        required: false
+        in: query
+        schema:
+          type: string
+          format: uuid
       - name: expiry_before
         required: false
         in: query
@@ -3382,6 +3591,11 @@ paths:
           type: string
           format: date
       - in: query
+        name: location_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
         name: ordering
         schema:
           type: string
@@ -3446,7 +3660,7 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/ConditionWriteRequest'
+              $ref: '#/components/schemas/ConditionCaptureRequestRequest'
         required: true
       security:
       - cookieAuth: []
@@ -7705,6 +7919,321 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/transfers/:
+    get:
+      operationId: transfers_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - name: created_at_before
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: created_at_from
+        in: query
+        required: false
+        schema:
+          type: string
+          format: date-time
+      - name: destination
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: lot
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: code, created_at. Prefix with - for
+          descending. Unsupported or blank terms return 400. Ties use id ascending.'
+        schema:
+          type: string
+      - name: origin
+        in: query
+        required: false
+        schema:
+          type: string
+          format: uuid
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - name: search
+        required: false
+        in: query
+        description: 'Case-insensitive search across: code.'
+        schema:
+          type: string
+      - name: state
+        in: query
+        required: false
+        schema:
+          type: string
+          enum:
+          - prepared
+          - dispatched
+          - received
+          - discrepancy
+          - resolved
+      tags:
+      - transfers
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTransferList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: transfers_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrepareTransferRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/transfers/{id}/:
+    get:
+      operationId: transfers_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this transfer.
+        required: true
+      tags:
+      - transfers
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transfer'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/transfers/{id}/dispatch/:
+    post:
+      operationId: transfers_dispatch_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this transfer.
+        required: true
+      tags:
+      - transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DispatchTransferRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/transfers/{id}/receive/:
+    post:
+      operationId: transfers_receive_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this transfer.
+        required: true
+      tags:
+      - transfers
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveTransferRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransferEvent'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/users/{id}/revoke-device-sessions/:
     post:
       operationId: users_revoke_device_sessions_create
@@ -7751,6 +8280,43 @@ paths:
                 $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
+    AcknowledgeMissing:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/AcknowledgeMissingKindEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - kind
+      - line_id
+      - quantity
+    AcknowledgeMissingKindEnum:
+      enum:
+      - ack_missing
+      type: string
+      description: '* `ack_missing` - ack_missing'
+    AcknowledgeMissingRequest:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/AcknowledgeMissingKindEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - kind
+      - line_id
+      - quantity
     ActorKindEnum:
       enum:
       - human
@@ -7906,12 +8472,14 @@ components:
       - motorcycle_fault
       - incident
       - review_item
+      - transfer_event
       type: string
       description: |-
         * `field_event` - field_event
         * `motorcycle_fault` - motorcycle_fault
         * `incident` - incident
         * `review_item` - review_item
+        * `transfer_event` - transfer_event
     AttachmentTargetRequest:
       type: object
       properties:
@@ -8373,6 +8941,14 @@ components:
       - schema_version
       - scope_revision
       - user_id
+    CaptureModeEnum:
+      enum:
+      - legacy_initial
+      - explicit_location
+      type: string
+      description: |-
+        * `legacy_initial` - legacy_initial
+        * `explicit_location` - explicit_location
     CapturedProvenance:
       type: object
       properties:
@@ -8773,6 +9349,29 @@ components:
       - expected_revision
       - fault_id
       - reason
+    CloseDiscrepancyRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+        resolution:
+          $ref: '#/components/schemas/ResolutionBodyRequest'
+      required:
+      - evidence_ids
+      - expected_revision
+      - reason
+      - resolution
     CloseRequest:
       type: object
       properties:
@@ -8793,6 +9392,52 @@ components:
       - evidence_ids
       - expected_revision
       - reason
+    ClosedOutcome:
+      oneOf:
+      - $ref: '#/components/schemas/AcknowledgeMissing'
+      - $ref: '#/components/schemas/ReceivingOutcome'
+      - $ref: '#/components/schemas/CorrectionOutcome'
+      discriminator:
+        propertyName: kind
+        mapping:
+          ack_missing: '#/components/schemas/AcknowledgeMissing'
+          recover_dest: '#/components/schemas/ReceivingOutcome'
+          return_origin: '#/components/schemas/ReceivingOutcome'
+          reference_signed_correction: '#/components/schemas/CorrectionOutcome'
+    ClosedOutcomeRequest:
+      oneOf:
+      - $ref: '#/components/schemas/AcknowledgeMissingRequest'
+      - $ref: '#/components/schemas/ReceivingOutcomeRequest'
+      - $ref: '#/components/schemas/CorrectionOutcomeRequest'
+      discriminator:
+        propertyName: kind
+        mapping:
+          ack_missing: '#/components/schemas/AcknowledgeMissingRequest'
+          recover_dest: '#/components/schemas/ReceivingOutcomeRequest'
+          return_origin: '#/components/schemas/ReceivingOutcomeRequest'
+          reference_signed_correction: '#/components/schemas/CorrectionOutcomeRequest'
+    ClosedScan:
+      oneOf:
+      - $ref: '#/components/schemas/ExpectedScan'
+      - $ref: '#/components/schemas/IdentifiedExtra'
+      - $ref: '#/components/schemas/UnidentifiedExtra'
+      discriminator:
+        propertyName: kind
+        mapping:
+          expected: '#/components/schemas/ExpectedScan'
+          identified_extra: '#/components/schemas/IdentifiedExtra'
+          unidentified_extra: '#/components/schemas/UnidentifiedExtra'
+    ClosedScanRequest:
+      oneOf:
+      - $ref: '#/components/schemas/ExpectedScanRequest'
+      - $ref: '#/components/schemas/IdentifiedExtraRequest'
+      - $ref: '#/components/schemas/UnidentifiedExtraRequest'
+      discriminator:
+        propertyName: kind
+        mapping:
+          expected: '#/components/schemas/ExpectedScanRequest'
+          identified_extra: '#/components/schemas/IdentifiedExtraRequest'
+          unidentified_extra: '#/components/schemas/UnidentifiedExtraRequest'
     ClosureBlocker:
       type: object
       properties:
@@ -8853,6 +9498,15 @@ components:
           format: uuid
           nullable: true
           readOnly: true
+        capture_mode:
+          allOf:
+          - $ref: '#/components/schemas/CaptureModeEnum'
+          readOnly: true
+        capture_location_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
         device_time:
           type: string
           format: date-time
@@ -8909,6 +9563,8 @@ components:
           format: date-time
           readOnly: true
       required:
+      - capture_location_id
+      - capture_mode
       - created_at
       - created_by
       - device_time
@@ -8926,6 +9582,10 @@ components:
       - slot
       - temperature_c
       - timezone
+    ConditionCaptureRequestRequest:
+      oneOf:
+      - $ref: '#/components/schemas/ConditionWriteRequest'
+      - $ref: '#/components/schemas/ExplicitConditionWriteRequest'
     ConditionWriteRequest:
       type: object
       properties:
@@ -8952,6 +9612,59 @@ components:
       description: |-
         * `image/jpeg` - image/jpeg
         * `image/png` - image/png
+    CorrectionOutcome:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/CorrectionOutcomeKindEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        correction_transfer_id:
+          type: string
+          format: uuid
+        receipt_event_id:
+          type: string
+          format: uuid
+      required:
+      - correction_transfer_id
+      - kind
+      - line_id
+      - quantity
+      - receipt_event_id
+    CorrectionOutcomeKindEnum:
+      enum:
+      - reference_signed_correction
+      type: string
+      description: '* `reference_signed_correction` - reference_signed_correction'
+    CorrectionOutcomeRequest:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/CorrectionOutcomeKindEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        correction_transfer_id:
+          type: string
+          format: uuid
+        receipt_event_id:
+          type: string
+          format: uuid
+      required:
+      - correction_transfer_id
+      - kind
+      - line_id
+      - quantity
+      - receipt_event_id
     CourierChangeActionEnum:
       enum:
       - upsert
@@ -9008,12 +9721,14 @@ components:
       oneOf:
       - $ref: '#/components/schemas/ReviewHistoryEntry'
       - $ref: '#/components/schemas/RelocationHistoryEntry'
+      - $ref: '#/components/schemas/TransferHistoryEntry'
       discriminator:
         propertyName: kind
         mapping:
           review_decision: '#/components/schemas/ReviewHistoryEntry'
           shift_validation: '#/components/schemas/ReviewHistoryEntry'
           relocation_proposal: '#/components/schemas/RelocationHistoryEntry'
+          transfer_custody: '#/components/schemas/TransferHistoryEntry'
     CourierHistoryKindEnum:
       enum:
       - review_decision
@@ -9159,6 +9874,146 @@ components:
       - revoked_at
       - revoked_by
       - serial
+    Discrepancy:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        transfer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        transfer:
+          allOf:
+          - $ref: '#/components/schemas/Transfer'
+          readOnly: true
+        receipt_event_id:
+          type: string
+          format: uuid
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/DiscrepancyLine'
+          readOnly: true
+        holds:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferHold'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/DiscrepancyStatusEnum'
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        resolution:
+          allOf:
+          - $ref: '#/components/schemas/TransferEvent'
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - created_by
+      - holds
+      - id
+      - lines
+      - receipt_event_id
+      - resolution
+      - revision
+      - status
+      - transfer
+      - transfer_id
+    DiscrepancyLine:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/DiscrepancyLineKindEnum'
+          readOnly: true
+        line_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          readOnly: true
+        observation:
+          readOnly: true
+      required:
+      - id
+      - kind
+      - line_id
+      - observation
+      - quantity
+    DiscrepancyLineKindEnum:
+      enum:
+      - missing
+      - identified_extra
+      - unidentified_extra
+      type: string
+      description: |-
+        * `missing` - missing
+        * `identified_extra` - identified_extra
+        * `unidentified_extra` - unidentified_extra
+    DiscrepancyStatusEnum:
+      type: string
+      enum:
+      - open
+      - closed
+    DispatchTransferRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        signature_upload_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+      required:
+      - command_id
+      - expected_revision
+      - signature_upload_id
     EfficiencyStatusEnum:
       enum:
       - unavailable
@@ -9286,6 +10141,51 @@ components:
       - id
       - point
       - point_version
+    ExpectedScan:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ExpectedScanKindEnum'
+        scan_id:
+          type: string
+          format: uuid
+        line_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - kind
+      - line_id
+      - quantity
+      - scan_id
+    ExpectedScanKindEnum:
+      enum:
+      - expected
+      type: string
+      description: '* `expected` - expected'
+    ExpectedScanRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ExpectedScanKindEnum'
+        scan_id:
+          type: string
+          format: uuid
+        line_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - kind
+      - line_id
+      - quantity
+      - scan_id
     ExpectedStateEnum:
       enum:
       - unrecovered
@@ -9303,6 +10203,61 @@ components:
       - laid_on
       type: string
       description: "* `` - \n* `laid_on` - laid_on"
+    ExplicitConditionWriteRequest:
+      type: object
+      properties:
+        device_time:
+          type: string
+          format: date-time
+        temperature_c:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,6}(?:\.\d{0,6})?$
+        humidity_pct:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+        location_id:
+          type: string
+          format: uuid
+      required:
+      - device_time
+      - humidity_pct
+      - location_id
+      - temperature_c
+    ExtraObservation:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/ExtraObservationKindEnum'
+        scan_id:
+          type: string
+          format: uuid
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        unidentified_code:
+          type: string
+        quantity:
+          type: string
+      required:
+      - kind
+      - quantity
+    ExtraObservationKindEnum:
+      enum:
+      - identified_extra
+      - unidentified_extra
+      type: string
+      description: |-
+        * `identified_extra` - identified_extra
+        * `unidentified_extra` - unidentified_extra
     FuelLoad:
       type: object
       description: |-
@@ -9606,6 +10561,69 @@ components:
       required:
       - center_id
       - quadrant_id
+    IdentifiedExtra:
+      type: object
+      properties:
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        kind:
+          $ref: '#/components/schemas/IdentifiedExtraKindEnum'
+        scan_id:
+          type: string
+          format: uuid
+      required:
+      - kind
+      - lot_id
+      - piece_id
+      - quantity
+      - scan_id
+      - unit_version_id
+    IdentifiedExtraKindEnum:
+      enum:
+      - identified_extra
+      type: string
+      description: '* `identified_extra` - identified_extra'
+    IdentifiedExtraRequest:
+      type: object
+      properties:
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        kind:
+          $ref: '#/components/schemas/IdentifiedExtraKindEnum'
+        scan_id:
+          type: string
+          format: uuid
+      required:
+      - kind
+      - lot_id
+      - piece_id
+      - quantity
+      - scan_id
+      - unit_version_id
     IdentityKindEnum:
       enum:
       - piece
@@ -10515,6 +11533,11 @@ components:
           allOf:
           - $ref: '#/components/schemas/InventoryLotStatusEnum'
           readOnly: true
+        safety_location_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
         missing_fields:
           type: array
           items:
@@ -10532,8 +11555,8 @@ components:
         created_by:
           type: string
           format: uuid
-          readOnly: true
           nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -10561,6 +11584,7 @@ components:
       - quadrant
       - quantity
       - revision
+      - safety_location_id
       - species
       - status
       - stock_url
@@ -10670,6 +11694,50 @@ components:
       required:
       - code
       - supply_id
+    ManifestEvidence:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        sha256:
+          type: string
+        coverage:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - coverage
+      - role
+      - sha256
+      - upload_id
+    ManifestLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+      required:
+      - id
+      - lot_id
+      - piece_id
+      - quantity
+      - unit_version_id
     MapManifest:
       type: object
       description: Metadata only; a producer must report missing/failed assets as
@@ -10939,6 +12007,46 @@ components:
       - PUT
       type: string
       description: '* `PUT` - PUT'
+    MissingAssertion:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+      required:
+      - evidence_ids
+      - line_id
+      - quantity
+    MissingAssertionRequest:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+      required:
+      - evidence_ids
+      - line_id
+      - quantity
     MobileLoginResponse:
       type: object
       properties:
@@ -11269,6 +12377,23 @@ components:
           type: string
           format: uuid
           readOnly: true
+        source_transfer:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: string
+              format: uuid
+            code:
+              type: string
+            event_id:
+              type: string
+              format: uuid
+          required:
+          - id
+          - code
+          - event_id
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -11292,6 +12417,7 @@ components:
       - quantity
       - source_id
       - source_kind
+      - source_transfer
       - supply_id
       - unit
       - unit_version_id
@@ -12008,6 +13134,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Device'
+    PaginatedDiscrepancyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Discrepancy'
     PaginatedFuelLoadList:
       type: object
       required:
@@ -12675,6 +13824,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Supply'
+    PaginatedTransferList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transfer'
     PasswordResetConfirmRequest:
       type: object
       description: Resolves the link first, so a bad link never reveals the password
@@ -12982,6 +14154,14 @@ components:
       - field_event.sync
       type: string
       description: '* `field_event.sync` - field_event.sync'
+    PhaseEnum:
+      enum:
+      - dispatch
+      - receive
+      type: string
+      description: |-
+        * `dispatch` - dispatch
+        * `receive` - receive
     PlacementOption:
       oneOf:
       - $ref: '#/components/schemas/QuadrantPlacementOption'
@@ -13095,6 +14275,50 @@ components:
       required:
       - point
       - spacing_warnings
+    PrepareLineRequest:
+      type: object
+      properties:
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - lot_id
+      - piece_id
+      - quantity
+      - unit_version_id
+    PrepareTransferRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        origin_id:
+          type: string
+          format: uuid
+        destination_id:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrepareLineRequest'
+      required:
+      - code
+      - destination_id
+      - lines
+      - origin_id
     PreviewRequestRequest:
       type: object
       properties:
@@ -13957,6 +15181,106 @@ components:
       required:
       - owners
       - revision
+    ReceiveTransferRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        signature_upload_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        scanned:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClosedScanRequest'
+        missing:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissingAssertionRequest'
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 1000
+        dispatch_source_event_id:
+          type: string
+          format: uuid
+      required:
+      - command_id
+      - evidence_ids
+      - expected_revision
+      - missing
+      - scanned
+      - signature_upload_id
+    ReceivingOutcome:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ReceivingOutcomeKindEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        dispatch_event_id:
+          type: string
+          format: uuid
+        receipt_event_id:
+          type: string
+          format: uuid
+        signature_upload_id:
+          type: string
+          format: uuid
+      required:
+      - dispatch_event_id
+      - kind
+      - line_id
+      - quantity
+      - receipt_event_id
+      - signature_upload_id
+    ReceivingOutcomeKindEnum:
+      enum:
+      - recover_dest
+      - return_origin
+      type: string
+      description: |-
+        * `recover_dest` - recover_dest
+        * `return_origin` - return_origin
+    ReceivingOutcomeRequest:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/ReceivingOutcomeKindEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        dispatch_event_id:
+          type: string
+          format: uuid
+        receipt_event_id:
+          type: string
+          format: uuid
+        signature_upload_id:
+          type: string
+          format: uuid
+      required:
+      - dispatch_event_id
+      - kind
+      - line_id
+      - quantity
+      - receipt_event_id
+      - signature_upload_id
     RefreshRequest:
       type: object
       properties:
@@ -14500,6 +15824,15 @@ components:
         * `generation` - generation
         * `laid_on` - laid_on
         * `estimated_organism_count` - estimated_organism_count
+    ResolutionBodyRequest:
+      type: object
+      properties:
+        outcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClosedOutcomeRequest'
+      required:
+      - outcomes
     ResourceReferenceKindEnum:
       enum:
       - motorcycle
@@ -15295,6 +16628,14 @@ components:
       - revision
       - source
       - week_start
+    RoleEnum:
+      enum:
+      - signature
+      - photo
+      type: string
+      description: |-
+        * `signature` - signature
+        * `photo` - photo
     RuleParameter:
       type: object
       description: |-
@@ -16233,8 +17574,15 @@ components:
     SourceKindEnum:
       enum:
       - lot_admission
+      - transfer_dispatch
+      - transfer_receive
+      - transfer_resolution
       type: string
-      description: '* `lot_admission` - lot_admission'
+      description: |-
+        * `lot_admission` - lot_admission
+        * `transfer_dispatch` - transfer_dispatch
+        * `transfer_receive` - transfer_receive
+        * `transfer_resolution` - transfer_resolution
     SourceStatusEnum:
       enum:
       - accepted
@@ -16628,6 +17976,425 @@ components:
       description: |-
         * `place` - place
         * `check` - check
+    Transfer:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        origin_id:
+          type: string
+          format: uuid
+          readOnly: true
+        destination_id:
+          type: string
+          format: uuid
+          readOnly: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferLine'
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferEvent'
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        state:
+          allOf:
+          - $ref: '#/components/schemas/TransferStateEnum'
+          readOnly: true
+        outstanding:
+          type: object
+          additionalProperties:
+            type: string
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - created_by
+      - destination_id
+      - events
+      - id
+      - lines
+      - origin_id
+      - outstanding
+      - revision
+      - state
+    TransferEvent:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        transfer_id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/TransferEventKindEnum'
+          readOnly: true
+        command_id:
+          type: string
+          format: uuid
+          readOnly: true
+        manifest:
+          allOf:
+          - $ref: '#/components/schemas/TransferManifest'
+          readOnly: true
+        manifest_hash:
+          type: string
+          readOnly: true
+        device_time:
+          type: string
+          format: date-time
+          readOnly: true
+        server_received_at:
+          type: string
+          format: date-time
+          readOnly: true
+        declared_source_uuid:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        operation_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        discrepancy_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - command_id
+      - created_at
+      - created_by
+      - declared_source_uuid
+      - device_time
+      - discrepancy_id
+      - id
+      - kind
+      - manifest
+      - manifest_hash
+      - operation_id
+      - revision
+      - server_received_at
+      - transfer_id
+    TransferEventKindEnum:
+      enum:
+      - prepared
+      - dispatch
+      - receive
+      - resolution
+      type: string
+      description: |-
+        * `prepared` - prepared
+        * `dispatch` - dispatch
+        * `receive` - receive
+        * `resolution` - resolution
+    TransferHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/TransferHistoryEntryKindEnum'
+        transfer_id:
+          type: string
+          format: uuid
+        transfer_code:
+          type: string
+        phase:
+          $ref: '#/components/schemas/PhaseEnum'
+        revision:
+          type: integer
+          minimum: 1
+        manifest_hash:
+          type: string
+        source_event_id:
+          type: string
+          format: uuid
+        source_status:
+          $ref: '#/components/schemas/SourceStatusEnum'
+        source_code:
+          type: string
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorySubject'
+      required:
+      - id
+      - kind
+      - manifest_hash
+      - phase
+      - revision
+      - source_code
+      - source_event_id
+      - source_status
+      - subjects
+      - transfer_code
+      - transfer_id
+      - voided_at
+    TransferHistoryEntryKindEnum:
+      enum:
+      - transfer_custody
+      type: string
+      description: '* `transfer_custody` - transfer_custody'
+    TransferHold:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        lot_id:
+          type: string
+          format: uuid
+          readOnly: true
+        location_id:
+          type: string
+          format: uuid
+          readOnly: true
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        resolution_id:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - id
+      - location_id
+      - lot_id
+      - piece_id
+      - resolution_id
+    TransferLine:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        lot_id:
+          type: string
+          format: uuid
+          readOnly: true
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+          readOnly: true
+        unit_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+          readOnly: true
+        origin_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        destination_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
+      - destination_version_id
+      - id
+      - lot_id
+      - origin_version_id
+      - piece_id
+      - quantity
+      - unit_version_id
+    TransferManifest:
+      type: object
+      properties:
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManifestLine'
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/ManifestEvidence'
+        dispatch_event_id:
+          type: string
+          format: uuid
+        scanned:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClosedScan'
+        received:
+          type: object
+          additionalProperties:
+            type: string
+        missing:
+          type: array
+          items:
+            $ref: '#/components/schemas/MissingAssertion'
+        extras:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExtraObservation'
+        duplicates:
+          type: array
+          items:
+            type: string
+            format: uuid
+        discrepancy_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        outcomes:
+          type: array
+          items:
+            $ref: '#/components/schemas/ClosedOutcome'
+        source_facts:
+          $ref: '#/components/schemas/TransferObservedFacts'
+      required:
+      - evidence
+    TransferObservedFacts:
+      type: object
+      properties:
+        version:
+          type: integer
+        available:
+          type: boolean
+        transfer_id:
+          type: string
+          format: uuid
+        prepared_hash:
+          type: string
+        identity_hash:
+          type: string
+        pins:
+          type: array
+          items:
+            $ref: '#/components/schemas/TransferObservedPin'
+        observed_at:
+          type: string
+          format: date-time
+      required:
+      - available
+      - identity_hash
+      - observed_at
+      - pins
+      - prepared_hash
+      - transfer_id
+      - version
+    TransferObservedPin:
+      type: object
+      properties:
+        line_id:
+          type: string
+          format: uuid
+        lot_version_id:
+          type: string
+          format: uuid
+        supply_version_id:
+          type: string
+          format: uuid
+        protocol_id:
+          type: string
+          format: uuid
+          nullable: true
+        origin_version_id:
+          type: string
+          format: uuid
+        destination_version_id:
+          type: string
+          format: uuid
+        available_at_observation:
+          type: string
+      required:
+      - available_at_observation
+      - destination_version_id
+      - line_id
+      - lot_version_id
+      - origin_version_id
+      - protocol_id
+      - supply_version_id
+    TransferStateEnum:
+      type: string
+      enum:
+      - prepared
+      - dispatched
+      - received
+      - discrepancy
+      - resolved
     UnavailableReasonEnum:
       enum:
       - rule_context_unavailable
@@ -16656,6 +18423,52 @@ components:
       description: |-
         * `admin` - admin
         * `supervisor` - supervisor
+    UnidentifiedExtra:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/UnidentifiedExtraKindEnum'
+        scan_id:
+          type: string
+          format: uuid
+        unidentified_code:
+          type: string
+          maxLength: 200
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - kind
+      - quantity
+      - scan_id
+      - unidentified_code
+    UnidentifiedExtraKindEnum:
+      enum:
+      - unidentified_extra
+      type: string
+      description: '* `unidentified_extra` - unidentified_extra'
+    UnidentifiedExtraRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/UnidentifiedExtraKindEnum'
+        scan_id:
+          type: string
+          format: uuid
+        unidentified_code:
+          type: string
+          minLength: 1
+          maxLength: 200
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - kind
+      - quantity
+      - scan_id
+      - unidentified_code
     UnitEnum:
       enum:
       - m
