@@ -188,6 +188,9 @@ def decide_review(
             from inventory.transfers.history import stored_source as stored_transfer_source
 
             stored_transfer_source(source, cause=decision)
+            from community.history import stored_source as stored_community_source
+
+            stored_community_source(source, cause=decision)
     return decision
 
 
