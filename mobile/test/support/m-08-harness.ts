@@ -1,10 +1,16 @@
 import { OvitrapStore } from "../../src/features/ovitrap-check/store.ts";
+import type { Snapshots } from "../../src/features/ovitrap-check/store.ts";
 import { OvitrapService } from "../../src/features/ovitrap-check/service.ts";
 import { SyncEngine } from "../../src/sync/sync-engine.ts";
 import { createStores, FIXED_NOW, FIXED_DEVICE_ID } from "./factories.ts";
 import type { TestStores } from "./factories.ts";
 import { scriptedTransport, answer } from "./scripted-transport.ts";
 import { CATALOG, RULES, ASSIGNMENT } from "./m-08-fixtures.ts";
+import { hydrateLifecycleCaptureFixture } from "./lifecycle-capture-fixture.ts";
+import { PROJECTION_IDENTITY } from "./lifecycle-projection-fixtures.ts";
+import type { SqlExecutor } from "../../src/db/sql.ts";
+import type { EvidenceSession } from "../../src/attachments/evidence-session.ts";
+type FixtureStores = TestStores & { readonly session?: Pick<EvidenceSession, "deps"> };
 export function engineFor(
   local: TestStores,
   transport = scriptedTransport([answer([])]).transport,
@@ -59,15 +65,27 @@ function serviceFor(
   });
 }
 export async function harness(
-  stores?: TestStores,
+  stores?: FixtureStores,
   overrides: Partial<ConstructorParameters<typeof OvitrapService>[0]> = {},
 ) {
-  const local = stores ?? (await createStores());
+  const local: FixtureStores = stores ?? (await createStores());
   const engine = engineFor(local);
   const store = new OvitrapStore(local.db);
-  await store.saveSnapshots({ catalog: CATALOG, rules: RULES, assignment: ASSIGNMENT });
+  await publishSnapshots(store, { catalog: CATALOG, rules: RULES, assignment: ASSIGNMENT });
+  const identity = local.session === undefined ? PROJECTION_IDENTITY : local.session.deps.current();
+  await hydrateLifecycleCaptureFixture(local.db, ASSIGNMENT, { force: true, identity });
   const service = serviceFor({ store, engine }, overrides);
   return { ...local, engine, store, service };
+}
+/** Explicit downloaded fixture context still uses the production authority CAS, never a raw KV replacement. */
+export async function publishSnapshots(
+  store: OvitrapStore,
+  snapshots: Snapshots,
+  db?: SqlExecutor,
+): Promise<void> {
+  const authority = await store.assignmentAuthority();
+  await store.publishSnapshots(snapshots, authority);
+  if (db) await hydrateLifecycleCaptureFixture(db, snapshots.assignment, { force: true });
 }
 export async function prepareCheck(service: OvitrapService): Promise<void> {
   await service.update(

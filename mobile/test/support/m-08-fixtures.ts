@@ -35,7 +35,7 @@ export const ASSIGNMENT: Assignment = {
   epiWeek: "2026-W45",
   organization: { timezone: "America/Mexico_City", epi_week: "iso" },
   points: [POINT],
-  ovitraps: [],
+  ovitraps: [{ id: "44444444-4444-4444-8444-444444444444", point: POINT }],
   bags: [{ id: "33333333-3333-4333-8333-333333333333", code: "B-QR" }],
   reuse: [],
 };

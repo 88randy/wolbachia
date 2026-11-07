@@ -5,18 +5,20 @@ import { createStores, FIXED_NOW, makeEnvelope } from "./support/factories.ts";
 import { EvidenceCapture } from "../src/attachments/capture-evidence.ts";
 import { readVerified } from "../src/attachments/owned-files.ts";
 import { MAX_EVIDENCE_BYTES } from "../src/attachments/types.ts";
-import {
-  attachmentHarness,
-  EVIDENCE_ID,
-  PNG_BYTES,
-  NOW,
-  restoreCanonicalNineFixture,
-} from "./support/attachment-fixtures.ts";
+import { attachmentHarness, EVIDENCE_ID, PNG_BYTES, NOW } from "./support/attachment-fixtures.ts";
 import { migrate, SCHEMA_VERSION } from "../src/db/migrations.ts";
 import { captureEvent } from "../src/features/ovitrap-check/events.ts";
+import { retainedCapture } from "./support/legacy-capture.ts";
 import { AttachmentSync } from "../src/attachments/attachment-sync.ts";
 import { writeFile, readFile } from "node:fs/promises";
 import { DayStore } from "../src/features/day/store.ts";
+import { DayBundleService } from "../src/features/day/bundle-service.ts";
+import { LifecycleStore } from "../src/features/ovitrap-lifecycle/store.ts";
+import { startOwnedLifecycleDraft } from "../src/features/ovitrap-lifecycle/new-owned-draft.ts";
+import { startDraft } from "../src/features/ovitrap-lifecycle/new-draft.ts";
+import type { SqlExecutor } from "../src/db/sql.ts";
+import type { EvidenceIdentity } from "../src/attachments/evidence-session.ts";
+import { projectionBundle, projectionDraft } from "./support/lifecycle-projection-fixtures.ts";
 import { hasLocalRecords } from "../src/db/owner-data.ts";
 import { prepareEvidenceSession } from "../src/attachments/prepare-session.ts";
 import { CredentialStore, EMPTY_CREDENTIALS } from "../src/auth/credential-store.ts";
@@ -50,25 +52,23 @@ const FILE = {
 };
 
 void test("canonical schema 9 upgrade retains legacy capture without relabelling or scheduling untransferable declared evidence", async (test) => {
-  const local = await attachmentHarness(test);
-  const store = new OvitrapStore(local.db);
+  const local = await attachmentHarness(test, 9);
   const draft = makeDraft({ evidence: [{ id: ID, fileRef: "legacy-private-reference" }] });
-  await store.begin(draft);
-  await local.outbox.enqueue(
-    { ...captureEvent(draft), payload: { ovitrap_id: draft.ovitrapId } },
-    store.commitStatements(draft),
-  );
+  await retainedCapture(local.db, {
+    draft,
+    envelope: { ...captureEvent(draft), payload: { ovitrap_id: draft.ovitrapId } },
+    epiWeek: "2026-W45",
+  });
   const declared = makeEnvelope({ type: "ovitrap.place", payload: { evidence_ids: [ID] } });
   await local.outbox.enqueue(declared);
-  await local.outbox.claimPending(50);
-  await local.outbox.settle(
-    [draft.eventId, declared.id].map((id) => ({
-      id,
-      action: "release" as const,
-      retryAt: new Date(NOW.getTime() - 1).toISOString(),
-    })),
-  );
-  await restoreCanonicalNineFixture(local.db);
+  // Retained schema9 retry facts predate the attachment gate; no current worker
+  // runs against a schema whose tables it has not migrated yet.
+  await local.db.runAtomically([
+    {
+      sql: "UPDATE outbox_event SET retry_at=?",
+      params: [new Date(NOW.getTime() - 1).toISOString()],
+    },
+  ]);
   const history = await local.db.query("SELECT id,payload,device_time,retry_at FROM outbox_event");
   const references = await local.db.query("SELECT * FROM ovitrap_evidence");
   await migrate(local.db);
@@ -230,6 +230,12 @@ void test("evidence journal retains immutable owner and rejects stale verificati
 
 void test("SecureStore failure after owner CAS cannot activate credentials or strand proven owner's files and retry", async (test) => {
   const h = await attachmentHarness(test);
+  const originalOwner = h.session.deps.current();
+  assert.ok(originalOwner);
+  await sealNoFileOrigin(h.db, originalOwner);
+  const originalOrigin = await h.db.query(
+    "SELECT body FROM lifecycle_courier_projection WHERE kind='lifecycle.owned-draft'",
+  );
   const event = makeEnvelope({ payload: { evidence_ids: [EVIDENCE_ID] } });
   const saved = await new EvidenceCapture(h).capture(
     { capture: () => Promise.resolve({ id: EVIDENCE_ID, fileRef: h.source }) },
@@ -321,6 +327,12 @@ void test("SecureStore failure after owner CAS cannot activate credentials or st
   await assert.rejects(() => session.capture(), /owner_unproven/);
   blocked.reject(new Error("SecureStore refused"));
   await assert.rejects(() => login, /SecureStore refused/);
+  assert.deepEqual(
+    await h.db.query(
+      "SELECT body FROM lifecycle_courier_projection WHERE kind='lifecycle.owned-draft'",
+    ),
+    originalOrigin,
+  );
   assert.equal(auth.canLogin(), true);
   assert.equal((await h.outbox.countByStatus()).pending, 1);
   assert.deepEqual(await readFile(saved.fileRef), PNG_BYTES);
@@ -330,6 +342,12 @@ void test("SecureStore failure after owner CAS cannot activate credentials or st
   const pending = await h.store.next(await session.capture(), NOW.toISOString());
   assert.equal(pending?.file.id, EVIDENCE_ID);
   assert.equal((await h.db.query("SELECT id FROM outbox_event"))[0]?.id, event.id);
+  assert.deepEqual(
+    await h.db.query(
+      "SELECT body FROM lifecycle_courier_projection WHERE kind='lifecycle.owned-draft'",
+    ),
+    originalOrigin,
+  );
 });
 
 void test("exclusive owned capture checks exact bytes/hash and survives SQLite restart without assigning legacy references", async (test) => {
@@ -688,4 +706,165 @@ void test("login versus adopted-only reserve is arbitrated atomically in either 
     /stale_context/,
   );
   assert.equal((await empty.db.query("SELECT id FROM attachment_file")).length, 0);
+  await noFileOriginOwnerRace(identity);
 });
+
+async function noFileOriginOwnerRace(identity: Parameters<typeof prepareEvidenceSession>[0]) {
+  const cache = await createStores();
+  await new DayStore(cache.db).replace(projectionBundle(), FIXED_NOW);
+  assert.equal(
+    await hasLocalRecords(cache.db),
+    false,
+    "downloaded rows and floors are not authored work",
+  );
+  await cache.db.runAtomically([
+    {
+      sql: "INSERT INTO lifecycle_courier_projection(kind,id,version,sequence,body) VALUES('private.unknown','unknown','1',0,?)",
+      params: [JSON.stringify({ _available: false })],
+    },
+  ]);
+  assert.equal(
+    await hasLocalRecords(cache.db),
+    true,
+    "unknown/private kinds fail closed even unavailable",
+  );
+  const first = await createStores();
+  await sealNoFileOrigin(first.db, { owner: OWNER, sessionId: "old-session" });
+  assert.equal((await first.db.query("SELECT id FROM attachment_file")).length, 0);
+  assert.equal(await prepareEvidenceSession({ ...identity, db: first.db }), false);
+  await assert.rejects(
+    new AttachmentStore(first.db).bindSession({
+      owner: { ...OWNER, userId: "another-user" },
+      sessionId: "read",
+    }),
+    /owner_conflict/,
+    "every nonnull activation protects no-file owned work, not only login",
+  );
+  await assert.rejects(
+    new AttachmentStore(first.db).bindSession({
+      owner: { ...OWNER, deviceId: "ffffffff-ffff-4fff-8fff-ffffffffffff" },
+      sessionId: "new-install",
+    }),
+    /owner_conflict/,
+    "the same User UUID on another device does not adopt retained work",
+  );
+  const original = await first.db.query(
+    "SELECT body FROM lifecycle_courier_projection WHERE kind='lifecycle.owned-draft'",
+  );
+  assert.ok(
+    await new AttachmentStore(first.db).bindSession({
+      owner: OWNER,
+      sessionId: "fresh-same-owner",
+    }),
+  );
+  assert.deepEqual(
+    await first.db.query(
+      "SELECT body FROM lifecycle_courier_projection WHERE kind='lifecycle.owned-draft'",
+    ),
+    original,
+  );
+  const second = await createStores();
+  const entered = deferred<undefined>();
+  const resume = deferred<undefined>();
+  const creating = sealNoFileOrigin(
+    second.db,
+    { owner: OWNER, sessionId: "old-session" },
+    async () => {
+      entered.resolve(undefined);
+      await resume.promise;
+    },
+  );
+  await entered.promise;
+  assert.equal(await prepareEvidenceSession({ ...identity, db: second.db }), true);
+  await new AttachmentStore(second.db).bindSession({ owner: OWNER, sessionId: "old-session" });
+  resume.resolve(undefined);
+  await assert.rejects(
+    creating,
+    /stale|changed|CHECK/,
+    "login-first and A→B→A cannot admit origin with the old generation",
+  );
+  assert.deepEqual(await second.db.query("SELECT * FROM lifecycle_draft"), []);
+}
+
+async function sealNoFileOrigin(
+  db: SqlExecutor,
+  identity: EvidenceIdentity,
+  beforeCreate: () => Promise<void> = () => Promise.resolve(),
+) {
+  const body = projectionBundle();
+  const day = new DayStore(db);
+  await db.runAtomically([
+    {
+      sql: "INSERT INTO kv(key,value) VALUES('session_profile',?) ON CONFLICT(key) DO UPDATE SET value=excluded.value",
+      params: [
+        JSON.stringify({
+          userId: identity.owner.userId,
+          sessionId: identity.sessionId,
+          issuer: identity.owner.issuer,
+          organization: {
+            id: identity.owner.organizationId,
+            timezone: "America/Mexico_City",
+            epi_week: "iso",
+          },
+        }),
+      ],
+    },
+  ]);
+  await new DayBundleService({
+    store: day,
+    now: () => FIXED_NOW,
+    getCaptureIdentity: () => identity,
+    transport: () =>
+      Promise.resolve({
+        kind: "bundle",
+        body: {
+          ...body,
+          capture_context: {
+            ...body.capture_context,
+            user_id: identity.owner.userId,
+            organization_id: identity.owner.organizationId,
+          },
+        },
+      }),
+  }).refresh();
+  const ownerFence = await new AttachmentStore(db).bindSession(identity);
+  const handle = await day.captureTransport(identity, () => true);
+  assert.ok(handle && ownerFence);
+  const original = await day.lifecycleSource(handle, {
+    kind: "new",
+    ovitrapId: projectionDraft().ovitrapId,
+  });
+  assert.ok(original.source);
+  const source = original.source;
+  const store = new LifecycleStore(db);
+  return startOwnedLifecycleDraft({
+    store,
+    handle,
+    ownerFence,
+    admit: (commit) => commit(),
+    expectedEventId: null,
+    uuid: () => "aaaaaaa1-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    create: async (id) => {
+      await beforeCreate();
+      return startDraft(
+        {
+          store,
+          engine: { enqueue: () => Promise.reject(new Error("Origin only")) },
+          uuid: () => id,
+          now: () => FIXED_NOW,
+          gps: { locate: () => Promise.resolve(null) },
+          evidence: { capture: () => Promise.resolve(null) },
+          shiftId: () => Promise.resolve(projectionDraft().shiftId),
+        },
+        {
+          kind: "relocate",
+          ovitrapId: source.physical.id,
+          manualCapture: false,
+          source,
+          freshEventId: id,
+          deviceTime: FIXED_NOW.toISOString(),
+        },
+      );
+    },
+  });
+}

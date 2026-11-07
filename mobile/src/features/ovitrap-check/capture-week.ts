@@ -18,7 +18,7 @@ function localDate(deviceTime: string, timeZone: string): number {
   return Date.UTC(part("year"), part("month") - 1, part("day"));
 }
 /** Match backend/ovitraps/capture.py: local date, ISO Monday/MMWR Sunday, four-day week one. */
-export function captureWeek(draft: Draft): string | null {
+export function captureWeek(draft: Pick<Draft, "deviceTime" | "assignment">): string | null {
   const organization = draft.assignment?.organization;
   if (!organization?.timezone || !["iso", "mmwr"].includes(organization.epi_week)) return null;
   try {
