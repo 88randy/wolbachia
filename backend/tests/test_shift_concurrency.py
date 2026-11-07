@@ -9,6 +9,7 @@ from django.db import DatabaseError, IntegrityError, connection, transaction
 
 from catalogs.models import CatalogItem
 from core.exceptions import ImmutableRecordError
+from field_sync import services as sync_services
 from field_sync.services import check_deferred_constraints_now
 from organizations.models import Organization
 from shifts.models import CheckResult, Motorcycle, MotorcycleCheck, Shift, ShiftStatus
@@ -285,19 +286,24 @@ def test_a_client_shift_id_reused_concurrently_by_two_couriers_rejects_only_the_
     meeting = threading.Barrier(2, timeout=10)
     retained, release = threading.Event(), threading.Event()
     original = boundaries.prepare_ingest
+    lock_sources = sync_services._lock_prepared_sources
+
+    def meet_before_org(batch, prepared):
+        if not release.is_set():
+            meeting.wait()
+        return lock_sources(batch, prepared)
 
     @contextmanager
-    def meet_before_org(*args, **kwargs):
+    def retain_preparation(*args, **kwargs):
         opening = args[1].type == "shift.open"
-        if opening:
-            meeting.wait()
         with original(*args, **kwargs) as preparation:
             if opening:
                 retained.set()
                 assert release.wait(timeout=10), "The test did not release the retained arbiter"
             yield preparation
 
-    monkeypatch.setattr(boundaries, "prepare_ingest", meet_before_org)
+    monkeypatch.setattr(sync_services, "_lock_prepared_sources", meet_before_org)
+    monkeypatch.setattr(boundaries, "prepare_ingest", retain_preparation)
     shared_id = uuid.uuid4()
     first = make_phone(make_member, org_a)
     second = make_phone(make_member, org_a)
@@ -329,6 +335,7 @@ def test_a_client_shift_id_reused_concurrently_by_two_couriers_rejects_only_the_
     ).exists()
     winner = next(answer for answer in answers if answer.status_code == 200)
     monkeypatch.setattr(boundaries, "prepare_ingest", original)
+    monkeypatch.setattr(sync_services, "_lock_prepared_sources", lock_sources)
     retried = phones[loser_index].sync(captures[loser_index])
     assert retried.status_code == 200, retried.data
     answers = [winner, retried]

@@ -195,7 +195,7 @@ def _lot_subjects(actor: UploadActor, values: dict[str, Any]) -> IntentSubjects:
     require_contexts(actor, WRITE_OFF, contexts)
     require_contexts(UploadActor(owner.user, actor.organization), WRITE_OFF, contexts)
     fields = {"lot": lot, "location": location, "unit_version": unit, "piece": piece}
-    return IntentSubjects(fields, contexts, SupplyParticipants(users=(values["owner_id"],)))
+    return IntentSubjects(fields, contexts, SupplyParticipants(users=(owner.user_id,)))
 
 
 def authorize_intent(actor: UploadActor, intent: InventoryIntent) -> IntentSubjects:

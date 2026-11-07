@@ -176,7 +176,8 @@ def test_supply_upgrade_keeps_actual_legacy_admission_and_reading_audit(
                 "SELECT %s,created_at,created_by_id,%s,courier_id,origin_id,date,shift_id FROM inventory_supplyassignment WHERE id=%s",
                 [uuid4(), org_b.pk, assignment_id],
             )
-            connection.check_constraints()
+            # Isolate the parent/tenant guard before unrelated absent-plan completion.
+            cursor.execute("SET CONSTRAINTS inventory_supplyassignment_supply_complete IMMEDIATE")
         with (  # noqa: PT012 -- missing receipt must fail at deferred completion, not row construction.
             pytest.raises(DatabaseError, match="complete actual plan"),
             transaction.atomic(),

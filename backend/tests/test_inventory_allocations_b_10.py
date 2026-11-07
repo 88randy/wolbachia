@@ -1360,15 +1360,25 @@ def test_assignment_http_requires_current_action_and_one_paired_binding_without_
 
     from rest_framework.test import APIClient
 
+    from geography.models import Quadrant
     from inventory.allocations.models import SupplyAssignment
-    from organizations.models import all_scope
-    from tests.factories import CenterFactory, ProfileFactory, QuadrantFactory
+    from organizations.models import Center, all_scope
+    from tests.factories import ProfileFactory
     from tests.inventory_support import AT, allow_all, inventory_context
 
-    center = CenterFactory(organization=org_a)
-    quadrant = QuadrantFactory(organization=org_a, center=center)
-    other_center = CenterFactory(organization=org_a)
-    other_quadrant = QuadrantFactory(organization=org_a, center=other_center)
+    author, _ = make_member(org_a, ())
+    center = Center.objects.create(
+        organization=org_a, created_by=author, code="SUPPLY-C", name="Synthetic supply center"
+    )
+    quadrant = Quadrant.objects.create(
+        organization=org_a, created_by=author, center=center, code="SUPPLY-Q"
+    )
+    other_center = Center.objects.create(
+        organization=org_a, created_by=author, code="OTHER-C", name="Synthetic other center"
+    )
+    other_quadrant = Quadrant.objects.create(
+        organization=org_a, created_by=author, center=other_center, code="OTHER-Q"
+    )
     stock = inventory_context(org_a, make_member, quadrant=quadrant)
     foreign = inventory_context(org_b, make_member)
     courier, courier_membership = make_member(org_a, ("field_event.sync",))

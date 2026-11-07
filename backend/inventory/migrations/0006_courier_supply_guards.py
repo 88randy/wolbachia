@@ -293,8 +293,8 @@ CHECKS = {
       AND NEW.dependency_proof->>'sample_frame_hash'=sample.frame_hash
       AND NEW.dependency_proof->'selected'='false'::jsonb
       AND NEW.dependency_proof->'pending_request_ids'='[]'::jsonb
-      AND NOT EXISTS(SELECT 1 FROM lab_recountrequest request JOIN lab_eggcountattempt old ON old.id=request.count_id
-        WHERE old.bag_id=b.id AND NOT EXISTS(SELECT 1 FROM lab_recountrequestsupersession superseded
+      AND NOT EXISTS(SELECT 1 FROM lab_recountrequest request JOIN lab_eggcountattempt prior_count ON prior_count.id=request.count_id
+        WHERE prior_count.bag_id=b.id AND NOT EXISTS(SELECT 1 FROM lab_recountrequestsupersession superseded
           WHERE superseded.request_id=request.id))
       AND NEW.owner_id::text=i.canonical_input->>'owner_id' AND NEW.date::text=i.canonical_input->>'date'
       AND EXISTS(SELECT 1 FROM organizations_membership m WHERE m.organization_id=NEW.organization_id AND m.user_id=NEW.owner_id))
@@ -386,7 +386,7 @@ BEGIN
   END IF;
   RETURN NEW;
 END; $$ LANGUAGE plpgsql;
-CREATE TRIGGER inventory_{name}_supply_guard BEFORE INSERT OR UPDATE OR DELETE ON inventory_{name}
+CREATE TRIGGER inventory_{name}_guard BEFORE INSERT OR UPDATE OR DELETE ON inventory_{name}
 FOR EACH ROW EXECUTE FUNCTION inventory_supply_insert_only();
 CREATE CONSTRAINT TRIGGER inventory_{name}_supply_complete AFTER INSERT ON inventory_{name}
 DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION inventory_{name}_supply_guard();"""
@@ -511,7 +511,7 @@ BEGIN
 END; $$ LANGUAGE plpgsql;
 
 CREATE FUNCTION inventory_supply_source_complete(supply_event_uuid uuid) RETURNS void AS $$
-DECLARE event inventory_supplyevent; signed inventory_supplyreceipt; line record; effect numeric;
+DECLARE event inventory_supplyevent; signed_receipt inventory_supplyreceipt; line record; effect numeric;
   observed jsonb; used numeric; lost numeric; evidence_uuid text;
 BEGIN
   SELECT * INTO event FROM inventory_supplyevent WHERE id=supply_event_uuid;
@@ -524,23 +524,23 @@ BEGIN
       AND reconciliation.assignment_id=event.assignment_id)
     THEN RAISE EXCEPTION 'supply source requires exact source, result and reconciliation receipts'; END IF;
   IF event.kind='receive' THEN
-    SELECT * INTO signed FROM inventory_supplyreceipt WHERE event_id=event.id;
-    IF signed.id IS NULL OR NOT EXISTS(SELECT 1 FROM uploads_attachmentlink link
+    SELECT * INTO signed_receipt FROM inventory_supplyreceipt WHERE event_id=event.id;
+    IF signed_receipt.id IS NULL OR NOT EXISTS(SELECT 1 FROM uploads_attachmentlink link
       JOIN uploads_upload upload ON upload.id=link.upload_id
       JOIN field_sync_fieldevent source ON source.id=link.field_event_id
-      WHERE link.upload_id=signed.signature_id AND source.id=event.declared_source_uuid
+      WHERE link.upload_id=signed_receipt.signature_id AND source.id=event.declared_source_uuid
       AND upload.device_id=source.device_id)
       THEN RAISE EXCEPTION 'signed receipt requires its exact verified source parent'; END IF;
-    IF (SELECT COUNT(*) FROM inventory_supplyreceiptline WHERE receipt_id=signed.id)
+    IF (SELECT COUNT(*) FROM inventory_supplyreceiptline WHERE receipt_id=signed_receipt.id)
       <>jsonb_array_length(event.canonical_input->'actual_lines')
       THEN RAISE EXCEPTION 'signed observation lines must remain complete'; END IF;
     FOR observed IN SELECT value FROM jsonb_array_elements(event.canonical_input->'actual_lines') LOOP
-      IF NOT EXISTS(SELECT 1 FROM inventory_supplyreceiptline r WHERE r.receipt_id=signed.id
+      IF NOT EXISTS(SELECT 1 FROM inventory_supplyreceiptline r WHERE r.receipt_id=signed_receipt.id
         AND r.id::text=observed->>'id' AND r.release_line_id::text=observed->>'release_line_id'
         AND r.quantity=(observed->>'quantity')::numeric)
         THEN RAISE EXCEPTION 'receipt line differs from the exact signed observation'; END IF;
     END LOOP;
-    FOR line IN SELECT * FROM inventory_supplyreceiptline WHERE receipt_id=signed.id LOOP
+    FOR line IN SELECT * FROM inventory_supplyreceiptline WHERE receipt_id=signed_receipt.id LOOP
       IF line.quantity>0 THEN
         IF (SELECT COUNT(*) FROM inventory_supplystockeffect effect JOIN inventory_supplyledgersource source
           ON source.id=effect.source_id WHERE source.event_id=event.id AND effect.receipt_line_id=line.id
@@ -577,8 +577,8 @@ BEGIN
       UNION ALL SELECT row FROM jsonb_array_elements(event.canonical_input->'shrinkage') row
       UNION ALL SELECT row FROM jsonb_array_elements(event.canonical_input->'returned') row LOOP
       IF NOT EXISTS(SELECT 1 FROM inventory_supplyreceiptline receipt
-        JOIN inventory_supplyreceipt signed ON signed.id=receipt.receipt_id
-        JOIN inventory_supplyevent parent ON parent.id=signed.event_id
+        JOIN inventory_supplyreceipt captured_receipt ON captured_receipt.id=receipt.receipt_id
+        JOIN inventory_supplyevent parent ON parent.id=captured_receipt.event_id
         WHERE receipt.id::text=observed->>'receipt_line_id'
         AND parent.declared_source_uuid::text=observed->>'receipt_source_event_id'
         AND parent.assignment_id=event.assignment_id AND parent.created_by_id=event.created_by_id)
@@ -887,7 +887,7 @@ class Migration(migrations.Migration):
         migrations.RunSQL(
             INSERT_ONLY + BALANCE + SOURCE_COMPLETE + EXECUTION_COMPLETE + AUDIT_COMPLETE,
             "\n".join(
-                f"DROP TRIGGER inventory_{name}_supply_guard ON inventory_{name}; "
+                f"DROP TRIGGER inventory_{name}_guard ON inventory_{name}; "
                 f"DROP TRIGGER inventory_{name}_supply_complete ON inventory_{name}; "
                 f"DROP FUNCTION inventory_{name}_supply_guard();"
                 for name in reversed(CHECKS)

@@ -9,10 +9,11 @@ from django.http import Http404
 from drf_spectacular.utils import extend_schema
 from rest_framework import serializers, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import BasePermission, IsAuthenticated
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
 
+from core.permissions import HasPermissionCode
 from core.views import OrgScopedViewSetMixin
 from inventory.allocations.commands import (
     AssignmentWrite,
@@ -77,27 +78,30 @@ from inventory.allocations.services import write_assignment
 from inventory.allocations.suggestions import material_suggestion
 from inventory.allocations.transit import publish_transit_configuration
 from inventory.models import SupplyType
+from organizations.services import effective_scope
 from uploads.access import actor_from_request, current_scope
 
 
-class SupplyActionPermission(BasePermission):
-    """Precheck ANY named applicable action; never authorizes an unresolved object/vector."""
-
-    def has_permission(self, request: Request, view: Any) -> bool:  # noqa: ANN401 -- DRF view protocol
-        codes = getattr(view, "supply_actions", {}).get(getattr(view, "action", ""), ())
-        return bool(codes) and any(
-            code in current_scope(actor_from_request(request)).permissions for code in codes
-        )
-
-
 class SupplyViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet[Any]):
-    permission_classes = [IsAuthenticated, SupplyActionPermission]
+    permission_classes = [IsAuthenticated, HasPermissionCode]
     http_method_names = ["get", "post", "head", "options"]
     supply_actions: dict[str, tuple[str, ...]] = {}
     lookup_value_regex = (
         r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
     )
     query_serializer: type[serializers.Serializer[Any]] = SupplyQuerySerializer
+
+    @property
+    def required_permissions(self) -> dict[str, str]:
+        """Choose a declared action alternative; concrete selectors still require its full vector."""
+        membership = getattr(getattr(self, "request", None), "membership", None)
+        if membership is None:
+            return {}
+        scope = effective_scope(membership)
+        for code in self.supply_actions.get(self.action, ()):
+            if scope.allows(code):
+                return {self.action: code}
+        return {}
 
     def _query(
         self, serializer_type: type[serializers.Serializer[Any]] | None = None

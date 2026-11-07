@@ -101,7 +101,9 @@ def authorize_source(ctx: EventContext, data: dict[str, Any]) -> SupplyAssignmen
     return cast(SupplyAssignment, assignment)
 
 
-def _authorized_source(ctx: EventContext, data: dict[str, Any]) -> SupplyAssignment:
+def _authorized_source(
+    ctx: EventContext, data: dict[str, Any], *, inspection: bool = False
+) -> SupplyAssignment:
     identifier = UUID(str(data["assignment_id"]))
     assignment = (
         SupplyAssignment.objects.filter(
@@ -124,7 +126,7 @@ def _authorized_source(ctx: EventContext, data: dict[str, Any]) -> SupplyAssignm
         not allows_supply_vector(scope, code, contexts) for code in (permission, "field_event.sync")
     ):
         raise Http404
-    if capability is not None:
+    if capability is not None and not inspection:
         if capability.reviewer_actor is None:
             raise Http404
         reviewer = current_scope(capability.reviewer_actor)
@@ -176,6 +178,12 @@ def source_participants(ctx: EventContext) -> tuple[UUID, ...]:
 
 def capture_source_facts(ctx: EventContext, data: dict[str, Any]) -> dict[str, Any]:
     assignment = authorize_source(ctx, data)
+    return _source_facts(ctx, data, assignment)
+
+
+def _source_facts(
+    ctx: EventContext, data: dict[str, Any], assignment: SupplyAssignment
+) -> dict[str, Any]:
     release = None
     if ctx.envelope.type == "supplies.receive":
         release = OriginReleaseProof.objects.filter(
@@ -198,12 +206,23 @@ def capture_source_facts(ctx: EventContext, data: dict[str, Any]) -> dict[str, A
     }
 
 
-def require_original_facts(ctx: EventContext, data: dict[str, Any]) -> None:
+def require_original_facts(
+    ctx: EventContext, data: dict[str, Any], *, inspection: bool = False
+) -> None:
     capability = ctx.review_authorization
     if capability is None:
         return
     original = capability.owner_facts.get("supplies", {})
-    current = capture_source_facts(ctx, data)
+    if inspection:
+        # Historical inspection precedes reviewer attachment; it cannot apply an effect.
+        try:
+            assignment = _authorized_source(ctx, data, inspection=True)
+        except (Http404, PermissionDenied, KeyError, TypeError, ValueError, AttributeError):
+            raise EventRejected("supply_inaccessible") from None
+        current = _source_facts(ctx, data, assignment)
+    else:
+        # Both preparation and execution retain the actual current reviewer checks.
+        current = capture_source_facts(ctx, data)
     if (
         not original.get("available")
         or original.get("version") != 1
@@ -233,7 +252,7 @@ class SupplyReviewAdapter(ReviewAdapter):
         from reviews.inspection import validated_original_payload
         from reviews.models import ReviewEffectReceipt
 
-        require_original_facts(ctx, validated_original_payload(source))
+        require_original_facts(ctx, validated_original_payload(source), inspection=True)
         event = SupplyEvent.objects.filter(
             organization=source.organization,
             declared_source_uuid=source.pk,

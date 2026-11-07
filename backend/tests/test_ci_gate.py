@@ -18,17 +18,17 @@ from ci.runner import run_child
 EXPECTED_COHORTS = {
     "migrations-foundation": {
         "tests/test_inventory_migrations_105.py",
-        "tests/test_void_reason_migration.py",
     },
     "migrations-field": {
         "tests/test_geography_migrations_b_33.py",
-        "tests/test_review_migrations_113.py",
     },
     "migrations-material": {
         "tests/test_transfer_migrations_106.py",
-        "tests/test_lab_migrations_114.py",
-        "tests/test_inventory_allocations_migrations_107.py",
     },
+    "migrations-void-reason": {"tests/test_void_reason_migration.py"},
+    "migrations-review": {"tests/test_review_migrations_113.py"},
+    "migrations-lab": {"tests/test_lab_migrations_114.py"},
+    "migrations-supplies": {"tests/test_inventory_allocations_migrations_107.py"},
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
 
@@ -150,6 +150,13 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
     for malformed in (
         {**EXPECTED_COHORTS, "migrations-foundation": set()},
         {**EXPECTED_COHORTS, "migrations-field": EXPECTED_COHORTS["migrations-foundation"]},
+        {
+            name: modules | EXPECTED_COHORTS["migrations-void-reason"]
+            if name == "migrations-foundation"
+            else modules
+            for name, modules in EXPECTED_COHORTS.items()
+            if name != "migrations-void-reason"
+        },
     ):
         with monkeypatch.context() as changed:
             changed.setattr(contract, "MIGRATION_PARTITIONS", malformed)
@@ -296,12 +303,9 @@ def test_aggregate_requires_two_current_inputs_even_if_one_has_full_coverage(tmp
         (downloads / "old-migrations").mkdir()
     inputs = GateInputs(directory=downloads, sources=(source,))
     if fault == "none":
-        assert [path.parent.name for path in verify_inputs(inputs, expected)] == [
-            "regular",
-            "migrations-foundation",
-            "migrations-field",
-            "migrations-material",
-        ]
+        assert [path.parent.name for path in verify_inputs(inputs, expected)] == list(
+            EXPECTED_PARTITIONS
+        )
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             verify_inputs(inputs, expected)
