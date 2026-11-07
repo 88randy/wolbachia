@@ -399,7 +399,7 @@ async function exerciseClearance(page: Page, cell: LocaleCell, fleet: FleetMock)
     page.waitForEvent("download"),
     page.getByRole("button", { name: labels.download }).click(),
   ]);
-  expect(download.suggestedFilename()).toBe(UPLOAD_ID);
+  expect(download.suggestedFilename()).toBe(`${UPLOAD_ID}.png`);
 }
 async function exerciseRecordWrites(page: Page, cell: LocaleCell, fleet: FleetMock) {
   const en = cell.language === "en";
