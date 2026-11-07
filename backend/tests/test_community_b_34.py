@@ -817,6 +817,32 @@ def test_source_history_current_read_and_latest_void_are_shared_by_bootstrap_and
     assert [row for row in build_history(restored) if row["kind"] == "community_activity"][0][
         "is_voided"
     ] is True
+    from datetime import timedelta
+
+    from accounts.models import DeviceSession
+    from accounts.session_audit_retention import dissociate_ended_sessions
+    from accounts.token_retention import prune_ended_token_pairs
+    from field_sync.models import FieldEvent
+    from reviews.authority import historical_authority
+    from reviews.models import ReviewSourceSnapshot
+
+    source_before = FieldEvent.objects.filter(pk=capture["id"]).values().get()
+    snapshot_before = (
+        ReviewSourceSnapshot.objects.filter(source_event_id=capture["id"]).values().get()
+    )
+    authority_before = historical_authority(org_a, record.created_by_id, record.created_at)
+    assert authority_before.unavailable is None
+    context.clock["now"] += timedelta(days=500)
+    prune_ended_token_pairs()
+    assert dissociate_ended_sessions().sessions_dissociated >= 1
+    assert DeviceSession.objects.get(pk=snapshot_before["observed_session_id"]).user_id is None
+    assert FieldEvent.objects.filter(pk=capture["id"]).values().get() == source_before
+    assert (
+        ReviewSourceSnapshot.objects.filter(source_event_id=capture["id"]).values().get()
+        == snapshot_before
+    )
+    assert historical_authority(org_a, record.created_by_id, record.created_at) == authority_before
+    assert CourierChange.objects.get(pk=latest.pk).payload == latest.payload
 
 
 @pytest.mark.django_db(transaction=True)

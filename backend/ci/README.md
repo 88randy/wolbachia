@@ -15,8 +15,9 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-lab`: lab114.
 - `migrations-community`: community127.
 - `migrations-supplies`: courier-supplies107.
+- `migrations-session-audit`: session-audit181.
 
-`regular` retains exactly the complement of the eight migration modules. The
+`regular` retains exactly the complement of the nine migration modules. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; no second module registry exists. Every cohort must contain exactly one
 whole module and no module can belong to two cohorts. Each selection retains its original collected
@@ -48,9 +49,9 @@ migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires all nine matrix results to succeed. It runs
+The original `checks` job first requires all ten matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-nine exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+ten exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
@@ -64,7 +65,7 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: all nine fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all ten fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
@@ -74,10 +75,10 @@ cannot pass it. It executes no tests and emits no fragment or passing-test count
 `PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
 protection or repository setting is changed.
 
-All nine test jobs and final `checks` keep their 15-minute timeout and standard runner.
-The nine PostgreSQL test services and final drift service duplicate setup work and can
-increase runner-minutes/storage. Compared with the canonical eight-partition workflow,
-one additional standard-runner job repeats checkout, dependency and database setup;
+All ten test jobs and final `checks` keep their 15-minute timeout and standard runner.
+The ten PostgreSQL test services and final drift service duplicate setup work and can
+increase runner-minutes/storage. Session-audit181 adds one complete upgrade-owner
+cohort to the canonical nine-partition workflow, including its own setup/service;
 tests still execute exactly once. The target is at least three minutes' headroom per
 job, to be measured in actual changed-head CI. Historic adjacent log intervals are
 not individual test/SQL timings and no host-resource cause or speedup is certified.
