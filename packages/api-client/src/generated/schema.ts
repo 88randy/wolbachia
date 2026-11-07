@@ -200,6 +200,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/bags/{id}/counts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["bags_counts_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bags/{id}/mark-missing/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["bags_mark_missing_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bags/{id}/rejections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["bags_rejections_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/bags/receive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["bags_receive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/blocks/": {
         parameters: {
             query?: never;
@@ -553,6 +657,136 @@ export interface paths {
          *     `APIView`s do not have.
          */
         post: operations["discrepancies_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/egg-counts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["egg_counts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/egg-counts/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["egg_counts_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/egg-counts/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["egg_counts_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/egg-counts/{id}/void-context/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["egg_counts_void_context_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/egg-counts/queue/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["egg_counts_queue_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -1048,6 +1282,390 @@ export interface paths {
          *     `APIView`s do not have.
          */
         post: operations["incidents_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-methods/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_methods_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["lab_methods_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-methods/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_methods_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-methods/{id}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_methods_versions_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["lab_methods_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-methods/{id}/versions/{version}/verify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["lab_methods_versions_verify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-methods/{id}/versions/{version}/withdraw/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["lab_methods_versions_withdraw_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-reception-discrepancies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_reception_discrepancies_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-reception-discrepancies/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_reception_discrepancies_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-reception-incident-policy/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_reception_incident_policy_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-reception-incident-policy/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["lab_reception_incident_policy_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-receptions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_receptions_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-rejections/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_rejections_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-rejections/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_rejections_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-rejections/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["lab_rejections_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/lab-rejections/{id}/void-context/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["lab_rejections_void_context_retrieve"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -2056,6 +2674,58 @@ export interface paths {
          *     `APIView`s do not have.
          */
         get: operations["readings_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/readings/{id}/receive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["readings_receive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/recount-requests/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["recount_requests_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -3169,14 +3839,22 @@ export interface components {
          *     * `incident` - incident
          *     * `review_item` - review_item
          *     * `transfer_event` - transfer_event
+         *     * `lab_rejection` - lab_rejection
          * @enum {string}
          */
-        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event";
+        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection";
         AttachmentTargetRequest: {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
             id: string;
         };
+        /**
+         * @description * `unconfigured` - unconfigured
+         *     * `configured` - configured
+         *     * `unavailable` - unavailable
+         * @enum {string}
+         */
+        AvailabilityEnum: "unconfigured" | "configured" | "unavailable";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3194,6 +3872,7 @@ export interface components {
             /** Format: uuid */
             readonly collector: string;
             readonly field_flags: unknown;
+            readonly lab: components["schemas"]["LabBagSummary"] | null;
             readonly evaluated_rules: unknown;
             readonly rule_version_ids: unknown;
             /** Format: uuid */
@@ -3623,6 +4302,45 @@ export interface components {
             receipt_event_id: string;
         };
         /**
+         * @description * `count` - count
+         * @enum {string}
+         */
+        CountReplacementKindEnum: "count";
+        CountReplacementRequest: {
+            /** Format: int64 */
+            value: number;
+            /** @default false */
+            confirmed_implausible: boolean;
+            /** Format: int64 */
+            viable_eggs?: number;
+            /** Format: int64 */
+            total_examined?: number;
+            /** Format: uuid */
+            method_version?: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "count";
+        };
+        CountWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            /** Format: int64 */
+            value: number;
+            /** @default false */
+            confirmed_implausible: boolean;
+            /** Format: int64 */
+            viable_eggs?: number;
+            /** Format: int64 */
+            total_examined?: number;
+            /** Format: uuid */
+            method_version?: string;
+            /** @default 0 */
+            expected_revision: number;
+            queue_context?: components["schemas"]["LabQueueQueryRequest"];
+        };
+        /**
          * @description * `upsert` - upsert
          *     * `remove` - remove
          * @enum {string}
@@ -3656,7 +4374,7 @@ export interface components {
          * @enum {string}
          */
         CourierHistoryEffectStateEnum: "applied_review" | "adopted_legacy" | "discarded" | "incident_open" | "approved" | "observed";
-        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"] | components["schemas"]["TransferHistoryEntry"];
+        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"] | components["schemas"]["TransferHistoryEntry"] | components["schemas"]["LabHistoryEntry"];
         /**
          * @description * `review_decision` - review_decision
          *     * `shift_validation` - shift_validation
@@ -4121,6 +4839,7 @@ export interface components {
             readonly is_cleared: boolean;
             /** Format: date-time */
             readonly cleared_at: string | null;
+            readonly clearance: components["schemas"]["InspectionClearanceRead"] | null;
         };
         IncidentBlockedBy: {
             reason: string;
@@ -4240,6 +4959,24 @@ export interface components {
             expected_revision: number;
             reason: string;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        InspectionClearanceRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly reviewer: string;
+            readonly reason: string;
+            readonly evidence_ids: string[];
+        };
         Intervention: {
             /** Format: uuid */
             readonly id: string;
@@ -4290,6 +5027,387 @@ export interface components {
         InventoryLotStatusEnum: "draft" | "available" | "blocked";
         InventoryRevisionRequest: {
             expected_revision: number;
+        };
+        LabBagSummary: {
+            status: components["schemas"]["LabBagSummaryStatusEnum"];
+            revision: number;
+            /** Format: uuid */
+            receipt_id: string | null;
+            /** Format: uuid */
+            count_id: string | null;
+            /** Format: uuid */
+            rejection_id: string | null;
+        };
+        /**
+         * @description * `expected` - expected
+         *     * `missing` - missing
+         *     * `no_effective_reading` - no_effective_reading
+         *     * `pending_count` - pending_count
+         *     * `counted` - counted
+         *     * `awaiting_independent_qa` - awaiting_independent_qa
+         *     * `rejected` - rejected
+         *     * `voided` - voided
+         * @enum {string}
+         */
+        LabBagSummaryStatusEnum: "expected" | "missing" | "no_effective_reading" | "pending_count" | "counted" | "awaiting_independent_qa" | "rejected" | "voided";
+        LabCommandRequest: {
+            /** Format: uuid */
+            command_id: string;
+        };
+        LabCount: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bag_id: string;
+            /** Format: int64 */
+            value: number;
+            ordinal: number;
+            viable_eggs: number | null;
+            total_examined: number | null;
+            /** Format: decimal */
+            viability_percent: string | null;
+            viability_reason: components["schemas"]["ViabilityReasonEnum"] | components["schemas"]["BlankEnum"];
+            /** Format: uuid */
+            method_version: string | null;
+            method: components["schemas"]["LabMethodPin"] | null;
+            /** Format: uuid */
+            verification_id: string | null;
+            rules: unknown;
+            source_proof: unknown;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by: string;
+            voided: boolean;
+            expected_revision: number;
+            current_revision?: number;
+            is_current?: boolean;
+        };
+        LabCountOutcome: {
+            count: components["schemas"]["LabCount"];
+            next_bag: components["schemas"]["LabQueueCandidate"] | null;
+            queue_snapshot: components["schemas"]["LabQueueSnapshot"];
+        };
+        LabDiscrepancy: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bag_id: string;
+            /** Format: uuid */
+            source_event_id: string;
+            kind: components["schemas"]["LabDiscrepancyKindEnum"];
+            reason: string;
+            source_proof: unknown;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            incident_id: string | null;
+            configuration_pending: boolean;
+            incident_link: string | null;
+        };
+        /**
+         * @description * `missing` - missing
+         *     * `no_reading` - no_reading
+         * @enum {string}
+         */
+        LabDiscrepancyKindEnum: "missing" | "no_reading";
+        LabHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "lab_receipt" | "lab_discrepancy" | "lab_count" | "lab_void" | "lab_rejection";
+            /** Format: uuid */
+            bag_id: string | null;
+            /** Format: uuid */
+            count_id: string | null;
+            /** Format: uuid */
+            rejection_id: string | null;
+            /** Format: uuid */
+            reading_id: string;
+            /** Format: uuid */
+            source_event_id: string;
+            /** Format: date-time */
+            recorded_at: string;
+            /** Format: uuid */
+            author_id: string;
+            /** Format: date-time */
+            source_device_time: string;
+            /** Format: date-time */
+            source_server_received_at: string;
+            subjects: components["schemas"]["HistorySubject"][];
+            value: number | null;
+            /** Format: decimal */
+            viability_percent: string | null;
+            qa_state: components["schemas"]["QaStateEnum"];
+            voided: boolean;
+            /** Format: uuid */
+            incident_id: string | null;
+            configuration_pending: boolean;
+            /** Format: uuid */
+            method_version_id: string | null;
+            reason: string | null;
+        };
+        /**
+         * @description * `lab_receipt` - lab_receipt
+         *     * `lab_discrepancy` - lab_discrepancy
+         *     * `lab_count` - lab_count
+         *     * `lab_void` - lab_void
+         *     * `lab_rejection` - lab_rejection
+         * @enum {string}
+         */
+        LabHistoryEntryKindEnum: "lab_receipt" | "lab_discrepancy" | "lab_count" | "lab_void" | "lab_rejection";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        LabMethod: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+        };
+        LabMethodDecisionRequest: {
+            expected_revision: number;
+            reference: string;
+        };
+        LabMethodPin: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            method_id: string;
+            revision: number;
+            name: string;
+            procedure: string;
+            reference: string;
+            /** Format: date-time */
+            effective_from: string;
+            content_hash: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        LabMethodVerification: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly method_version: string;
+            readonly revision: number;
+            readonly decision: components["schemas"]["LabMethodVerificationDecisionEnum"];
+            readonly reference: string;
+            readonly content_hash: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+        };
+        /**
+         * @description * `verify` - verify
+         *     * `withdraw` - withdraw
+         * @enum {string}
+         */
+        LabMethodVerificationDecisionEnum: "verify" | "withdraw";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        LabMethodVersion: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly method: string;
+            readonly revision: number;
+            readonly name: string;
+            readonly procedure: string;
+            readonly reference: string;
+            /** Format: date-time */
+            readonly effective_from: string;
+            readonly content_hash: string;
+            readonly supports_viability: boolean;
+            readonly supports_rejection: boolean;
+            readonly verification: unknown;
+            readonly availability: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+        };
+        LabMethodWriteRequest: {
+            code?: string;
+            expected_revision: number;
+            name: string;
+            procedure: string;
+            reference: string;
+            /** Format: date-time */
+            effective_from: string;
+            supports_viability: boolean;
+            supports_rejection: boolean;
+        };
+        LabQueueCandidate: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            reading_id: string;
+            expected_revision: number;
+            has_eggs: boolean;
+            is_lagged: boolean;
+            is_index_excluded: boolean;
+        };
+        LabQueueQuery: {
+            /** Format: uuid */
+            center?: string;
+            /** Format: uuid */
+            quadrant?: string;
+            /** Format: uuid */
+            point?: string;
+            week?: string;
+            code?: string;
+            ordering?: components["schemas"]["OrderingEnum"];
+        };
+        LabQueueQueryRequest: {
+            /** Format: uuid */
+            center?: string;
+            /** Format: uuid */
+            quadrant?: string;
+            /** Format: uuid */
+            point?: string;
+            week?: string;
+            code?: string;
+            ordering?: components["schemas"]["OrderingEnum"];
+        };
+        LabQueueSnapshot: {
+            /** Format: date-time */
+            as_of: string;
+            context: components["schemas"]["LabQueueQuery"];
+        };
+        LabReceipt: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            reading_id: string;
+            /** Format: uuid */
+            bag_id: string | null;
+            kind: components["schemas"]["LabReceiptKindEnum"];
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by: string;
+        };
+        /**
+         * @description * `bag` - bag
+         *     * `no_paddle` - no_paddle
+         * @enum {string}
+         */
+        LabReceiptKindEnum: "bag" | "no_paddle";
+        LabReceptionConflict: {
+            code: string;
+            detail: string;
+            blocked_by: {
+                [key: string]: unknown;
+            }[];
+            /** Format: uuid */
+            discrepancy_id?: string;
+            /** Format: uuid */
+            incident_id?: string | null;
+        };
+        LabReceptionOutcome: {
+            bag: components["schemas"]["ReceivedBag"] | null;
+            reading: components["schemas"]["ReceivedReading"];
+            receipt: components["schemas"]["LabReceipt"];
+        };
+        LabRejection: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            bag_id: string;
+            /** Format: uuid */
+            method_version: string;
+            method: components["schemas"]["LabMethodPin"];
+            /** Format: uuid */
+            verification_id: string;
+            reason: string;
+            evidence_ids: string[];
+            source_proof: unknown;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by: string;
+            voided: boolean;
+            expected_revision: number;
+            current_revision?: number;
+            is_current?: boolean;
+        };
+        LabRejectionOutcome: {
+            rejection: components["schemas"]["LabRejection"];
+            next_bag: components["schemas"]["LabQueueCandidate"] | null;
+            queue_snapshot: components["schemas"]["LabQueueSnapshot"];
+        };
+        LabReplacementRequest: components["schemas"]["CountReplacementRequest"] | components["schemas"]["RejectionReplacementRequest"];
+        LabVoidContext: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["LabVoidContextKindEnum"];
+            /** Format: uuid */
+            bag_id: string;
+            /** Format: uuid */
+            reading_id: string;
+            /** Format: uuid */
+            source_event_id: string;
+            current_revision: number;
+            is_current: boolean;
+            value: number | null;
+            reason: string | null;
+            /** Format: uuid */
+            method_version: string | null;
+            method_name: string | null;
+            evidence_ids: string[];
+            has_recount_obligation: boolean;
+            blocked_by: {
+                [key: string]: unknown;
+            }[];
+        };
+        /**
+         * @description * `count` - count
+         *     * `rejection` - rejection
+         * @enum {string}
+         */
+        LabVoidContextKindEnum: "count" | "rejection";
+        LabVoidOutcome: {
+            /** Format: uuid */
+            void_id: string;
+            current_revision: number;
+            count: components["schemas"]["LabCount"] | null;
+            rejection: components["schemas"]["LabRejection"] | null;
+            next_bag: components["schemas"]["LabQueueCandidate"] | null;
+            queue_snapshot: components["schemas"]["LabQueueSnapshot"];
+        };
+        LabVoidRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            reason_code: string;
+            reason: string;
+            replacement?: components["schemas"]["LabReplacementRequest"];
+            queue_context?: components["schemas"]["LabQueueQueryRequest"];
         };
         /**
          * @description * `es-MX` - es-MX
@@ -4640,6 +5758,11 @@ export interface components {
             quantity: string;
             evidence_ids: string[];
         };
+        MissingBagRequest: {
+            /** Format: uuid */
+            command_id: string;
+            reason: string;
+        };
         MobileLoginResponse: {
             access: string;
             refresh: string;
@@ -4802,6 +5925,14 @@ export interface components {
         };
         /** @enum {unknown} */
         NullEnum: null;
+        /**
+         * @description * `created_at` - created_at
+         *     * `-created_at` - -created_at
+         *     * `code` - code
+         *     * `-code` - -code
+         * @enum {string}
+         */
+        OrderingEnum: "created_at" | "-created_at" | "code" | "-code";
         OrganizationSettings: {
             /** Format: uuid */
             id: string;
@@ -5202,6 +6333,111 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Intervention"][];
         };
+        PaginatedLabCountList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["LabCount"][];
+        };
+        PaginatedLabDiscrepancyList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["LabDiscrepancy"][];
+        };
+        PaginatedLabMethodList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["LabMethod"][];
+        };
+        PaginatedLabMethodVersionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["LabMethodVersion"][];
+        };
+        PaginatedLabQueueCandidateList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["LabQueueCandidate"][];
+        };
+        PaginatedLabReceiptList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["LabReceipt"][];
+        };
+        PaginatedLabRejectionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["LabRejection"][];
+        };
         PaginatedLocationList: {
             /** @example 123 */
             count: number;
@@ -5411,6 +6647,36 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Reading"][];
+        };
+        PaginatedReceptionPolicyContextList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["ReceptionPolicyContext"][];
+        };
+        PaginatedRecountRequestList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RecountRequest"][];
         };
         PaginatedRelocationList: {
             /** @example 123 */
@@ -5889,6 +7155,13 @@ export interface components {
         /** @enum {string} */
         PublicationStateEnum: "outboxed" | "pending_outbox";
         /**
+         * @description * `not_requested` - not_requested
+         *     * `awaiting_independent_qa` - awaiting_independent_qa
+         *     * `superseded` - superseded
+         * @enum {string}
+         */
+        QaStateEnum: "not_requested" | "awaiting_independent_qa" | "superseded";
+        /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
          *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
@@ -6064,6 +7337,7 @@ export interface components {
             readonly is_index_excluded: boolean;
             readonly index_exclusion_reason: string;
             readonly is_countable: boolean;
+            readonly lab_receipt: components["schemas"]["LabReceipt"] | null;
             readonly epi_week: string;
             /** Format: uuid */
             readonly bag_id: string | null;
@@ -6109,6 +7383,15 @@ export interface components {
             revision: number;
             owners: components["schemas"]["OwnershipResult"][];
         };
+        /**
+         * @description Validates `?code=`: not blank, at most `CODE_MAX_LENGTH`, no NUL characters (PostgreSQL
+         *     rejects them, which would otherwise be a 500).
+         */
+        ReceiveBagRequest: {
+            /** Format: uuid */
+            command_id: string;
+            code: string;
+        };
         ReceiveTransferRequest: {
             /** Format: uuid */
             command_id: string;
@@ -6120,6 +7403,16 @@ export interface components {
             evidence_ids: string[];
             /** Format: uuid */
             dispatch_source_event_id?: string;
+        };
+        ReceivedBag: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+        };
+        ReceivedReading: {
+            /** Format: uuid */
+            id: string;
+            paddle_present: boolean;
         };
         ReceivingOutcome: {
             /** Format: uuid */
@@ -6161,6 +7454,64 @@ export interface components {
             /** Format: uuid */
             signature_upload_id: string;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        ReceptionPolicy: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly revision: number;
+            /** Format: uuid */
+            readonly missing_type_version: string;
+            /** Format: uuid */
+            readonly no_reading_type_version: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string | null;
+        };
+        ReceptionPolicyContext: {
+            revision: number;
+            policy: components["schemas"]["ReceptionPolicy"] | null;
+            availability: components["schemas"]["AvailabilityEnum"];
+        };
+        ReceptionPolicyWriteRequest: {
+            expected_revision: number;
+            /** Format: uuid */
+            missing_type_version: string;
+            /** Format: uuid */
+            no_reading_type_version: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        RecountRequest: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly count: string;
+            /** Format: uuid */
+            readonly first_counter: string;
+            readonly independent_required: boolean;
+            readonly actor_kind: components["schemas"]["ActorKindEnum"];
+            readonly policy_version: string;
+            readonly causes: {
+                [key: string]: unknown;
+            }[];
+            readonly superseded: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
         RefreshRequest: {
             refresh: string;
             /** Format: uuid */
@@ -6171,6 +7522,33 @@ export interface components {
             refresh: string;
             /** Format: date-time */
             server_time: string;
+        };
+        /**
+         * @description * `rejection` - rejection
+         * @enum {string}
+         */
+        RejectionReplacementKindEnum: "rejection";
+        RejectionReplacementRequest: {
+            /** Format: uuid */
+            method_version: string;
+            reason: string;
+            evidence_ids: string[];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "rejection";
+        };
+        RejectionWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            /** Format: uuid */
+            method_version: string;
+            reason: string;
+            evidence_ids: string[];
+            /** @default 0 */
+            expected_revision: number;
+            queue_context?: components["schemas"]["LabQueueQueryRequest"];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -7577,6 +8955,13 @@ export interface components {
          * @enum {string}
          */
         ValueTypeEnum: "integer" | "decimal";
+        /**
+         * @description * `not_requested` - not_requested
+         *     * `zero_examined` - zero_examined
+         *     * `` -
+         * @enum {string}
+         */
+        ViabilityReasonEnum: "not_requested" | "zero_examined";
         /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
         VoidRequest: {
             reason_code: string;
@@ -7855,6 +9240,17 @@ export interface operations {
         parameters: {
             query?: {
                 code?: string;
+                /**
+                 * @description * `expected` - expected
+                 *     * `missing` - missing
+                 *     * `no_effective_reading` - no_effective_reading
+                 *     * `pending_count` - pending_count
+                 *     * `counted` - counted
+                 *     * `awaiting_independent_qa` - awaiting_independent_qa
+                 *     * `rejected` - rejected
+                 *     * `voided` - voided
+                 */
+                lab_status?: "expected" | "missing" | "no_effective_reading" | "pending_count" | "counted" | "awaiting_independent_qa" | "rejected" | "voided";
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -7920,6 +9316,160 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Bag"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    bags_counts_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CountWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabCountOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    bags_mark_missing_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MissingBagRequest"];
+            };
+        };
+        responses: {
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabReceptionConflict"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    bags_rejections_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RejectionWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabRejectionOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    bags_receive_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiveBagRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabReceptionOutcome"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabReceptionConflict"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -8805,6 +10355,221 @@ export interface operations {
             };
         };
     };
+    egg_counts_list: {
+        parameters: {
+            query?: {
+                author?: string;
+                center?: string;
+                code?: string;
+                configuration_pending?: boolean;
+                created_before?: string;
+                created_from?: string;
+                include_voided?: boolean;
+                /**
+                 * @description * `missing` - missing
+                 *     * `no_reading` - no_reading
+                 */
+                kind?: "missing" | "no_reading";
+                method?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                point?: string;
+                /**
+                 * @description * `not_requested` - not_requested
+                 *     * `awaiting_independent_qa` - awaiting_independent_qa
+                 *     * `superseded` - superseded
+                 */
+                qa_state?: "not_requested" | "awaiting_independent_qa" | "superseded";
+                quadrant?: string;
+                superseded?: boolean;
+                week?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLabCountList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    egg_counts_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabCount"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    egg_counts_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabVoidRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabVoidOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    egg_counts_void_context_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabVoidContext"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    egg_counts_queue_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                code?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 *     * `code` - code
+                 *     * `-code` - -code
+                 */
+                ordering?: "created_at" | "-created_at" | "code" | "-code";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                point?: string;
+                quadrant?: string;
+                week?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLabQueueCandidateList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     field_bootstrap_list: {
         parameters: {
             query?: never;
@@ -9368,6 +11133,8 @@ export interface operations {
                  *     * `reported` - reported
                  */
                 kind?: "fleet" | "reported";
+                /** @description Exact motorcycle UUID; applies only to fleet incident lists. */
+                motorcycle?: string;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 owner?: string;
@@ -9726,6 +11493,660 @@ export interface operations {
             };
         };
     };
+    lab_methods_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLabMethodList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_methods_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabMethodWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabMethodVersion"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_methods_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabMethod"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_methods_versions_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLabMethodVersionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_methods_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabMethodWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabMethodVersion"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_methods_versions_verify_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabMethodDecisionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabMethodVerification"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_methods_versions_withdraw_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabMethodDecisionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabMethodVerification"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_reception_discrepancies_list: {
+        parameters: {
+            query?: {
+                author?: string;
+                center?: string;
+                code?: string;
+                configuration_pending?: boolean;
+                created_before?: string;
+                created_from?: string;
+                include_voided?: boolean;
+                /**
+                 * @description * `missing` - missing
+                 *     * `no_reading` - no_reading
+                 */
+                kind?: "missing" | "no_reading";
+                method?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                point?: string;
+                /**
+                 * @description * `not_requested` - not_requested
+                 *     * `awaiting_independent_qa` - awaiting_independent_qa
+                 *     * `superseded` - superseded
+                 */
+                qa_state?: "not_requested" | "awaiting_independent_qa" | "superseded";
+                quadrant?: string;
+                superseded?: boolean;
+                week?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLabDiscrepancyList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_reception_discrepancies_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabDiscrepancy"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_reception_incident_policy_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedReceptionPolicyContextList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_reception_incident_policy_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceptionPolicyWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReceptionPolicy"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_receptions_list: {
+        parameters: {
+            query?: {
+                author?: string;
+                center?: string;
+                code?: string;
+                configuration_pending?: boolean;
+                created_before?: string;
+                created_from?: string;
+                include_voided?: boolean;
+                /**
+                 * @description * `bag` - bag
+                 *     * `no_paddle` - no_paddle
+                 */
+                kind?: "bag" | "no_paddle";
+                method?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                point?: string;
+                /**
+                 * @description * `not_requested` - not_requested
+                 *     * `awaiting_independent_qa` - awaiting_independent_qa
+                 *     * `superseded` - superseded
+                 */
+                qa_state?: "not_requested" | "awaiting_independent_qa" | "superseded";
+                quadrant?: string;
+                superseded?: boolean;
+                week?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLabReceiptList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_rejections_list: {
+        parameters: {
+            query?: {
+                author?: string;
+                center?: string;
+                code?: string;
+                configuration_pending?: boolean;
+                created_before?: string;
+                created_from?: string;
+                include_voided?: boolean;
+                /**
+                 * @description * `missing` - missing
+                 *     * `no_reading` - no_reading
+                 */
+                kind?: "missing" | "no_reading";
+                method?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                point?: string;
+                /**
+                 * @description * `not_requested` - not_requested
+                 *     * `awaiting_independent_qa` - awaiting_independent_qa
+                 *     * `superseded` - superseded
+                 */
+                qa_state?: "not_requested" | "awaiting_independent_qa" | "superseded";
+                quadrant?: string;
+                superseded?: boolean;
+                week?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedLabRejectionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_rejections_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabRejection"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_rejections_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabVoidRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabVoidOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    lab_rejections_void_context_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabVoidContext"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     locations_list: {
         parameters: {
             query?: {
@@ -9886,6 +12307,7 @@ export interface operations {
                 created_at_before?: string;
                 created_at_from?: string;
                 lot?: string;
+                lot_code?: string;
                 operation?: string;
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -10565,6 +12987,7 @@ export interface operations {
     motorcycles_responsibility_letters_list: {
         parameters: {
             query?: {
+                include_voided?: boolean;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -10680,6 +13103,7 @@ export interface operations {
     motorcycles_services_list: {
         parameters: {
             query?: {
+                include_voided?: boolean;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -11698,6 +14122,115 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Reading"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    readings_receive_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LabCommandRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabReceptionOutcome"];
+                };
+            };
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LabReceptionConflict"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    recount_requests_list: {
+        parameters: {
+            query?: {
+                author?: string;
+                center?: string;
+                code?: string;
+                configuration_pending?: boolean;
+                created_before?: string;
+                created_from?: string;
+                include_voided?: boolean;
+                /**
+                 * @description * `missing` - missing
+                 *     * `no_reading` - no_reading
+                 */
+                kind?: "missing" | "no_reading";
+                method?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                point?: string;
+                /**
+                 * @description * `not_requested` - not_requested
+                 *     * `awaiting_independent_qa` - awaiting_independent_qa
+                 *     * `superseded` - superseded
+                 */
+                qa_state?: "not_requested" | "awaiting_independent_qa" | "superseded";
+                quadrant?: string;
+                superseded?: boolean;
+                week?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRecountRequestList"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

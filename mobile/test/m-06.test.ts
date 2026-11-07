@@ -40,6 +40,7 @@ import { join } from "node:path";
 import { buildDay, findAssignedTaskByPointCode, mapTasks } from "../src/features/day/domain.ts";
 import { NavigationService } from "../src/navigation/navigation-service.ts";
 import { createStores, makeEnvelope, FIXED_NOW } from "./support/factories.ts";
+import { LAB_HISTORY } from "./support/lifecycle-contract-fixtures.ts";
 
 const task = (overrides: Record<string, unknown> = {}) => ({
   kind: "task",
@@ -1004,7 +1005,7 @@ function sessionScope(
     ? JSON.stringify([current.sessionId, current.origin])
     : null;
 }
-async function authDayFixture() {
+async function authDayFixture(history: unknown[] = []) {
   const fixture = await dayFixture();
   const { credentials, secrets } = await makeCredentials();
   // eslint-disable-next-line prefer-const -- the transport closure needs it before the wrapper is built
@@ -1013,7 +1014,7 @@ async function authDayFixture() {
     db: fixture.db,
     tokens: credentials,
     requests: () => requests,
-    fetch: () => Promise.resolve(jsonResponse(bundle())),
+    fetch: () => Promise.resolve(jsonResponse({ ...bundle(), history })),
   });
   const auth = new AuthController({
     ...fixture,
@@ -1110,7 +1111,15 @@ void test("Merge session: logout during a pending bootstrap clears downloads wit
   assert.equal((await fixture.outbox.countByStatus()).pending, 1);
 });
 void test("Merge session: ordinary local lock retains downloads while boot reconciles ended-session cleanup", async () => {
-  const fixture = await authDayFixture();
+  const fixture = await authDayFixture(LAB_HISTORY);
+  await fixture.service.refresh();
+  assert.deepEqual(
+    await fixture.db.query(
+      "SELECT kind FROM lifecycle_courier_projection WHERE kind LIKE 'history.lab_%'",
+    ),
+    [],
+  );
+  assert.equal(await fixture.store.needsBootstrap(), true, "Lab is not current capture authority");
   await fixture.auth.lock();
   assert.equal((await fixture.service.read()).tasks.length, 1);
   await fixture.auth.endSession();

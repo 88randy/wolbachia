@@ -77,6 +77,69 @@ export const TRANSFER_HISTORY = {
     { center_id: CONTRACT_IDS.otherCenter, quadrant_id: CONTRACT_IDS.otherQuadrant },
   ],
 } satisfies Schemas["TransferHistoryEntry"];
+export const LAB_RECEIPT = {
+  id: CONTRACT_IDS.history,
+  kind: "lab_receipt",
+  reading_id: CONTRACT_IDS.point,
+  bag_id: null,
+  source_event_id: CONTRACT_IDS.source,
+  recorded_at: "2026-11-07T09:00:00Z",
+  author_id: CONTRACT_IDS.actor,
+  source_device_time: "2026-11-08T09:00:00+00:00",
+  source_server_received_at: "2026-11-06T20:00:00Z",
+  subjects: [{ center_id: CONTRACT_IDS.center, quadrant_id: CONTRACT_IDS.quadrant }],
+  count_id: null,
+  rejection_id: null,
+  value: null,
+  viability_percent: null,
+  qa_state: "not_requested",
+  voided: false,
+  incident_id: null,
+  configuration_pending: false,
+  method_version_id: null,
+  reason: null,
+} satisfies Schemas["LabHistoryEntry"];
+export const LAB_DISCREPANCY = {
+  ...LAB_RECEIPT,
+  kind: "lab_discrepancy",
+  bag_id: CONTRACT_IDS.point,
+  configuration_pending: true,
+  reason: "",
+} satisfies Schemas["LabHistoryEntry"];
+export const LAB_COUNT = {
+  ...LAB_RECEIPT,
+  kind: "lab_count",
+  bag_id: CONTRACT_IDS.point,
+  count_id: CONTRACT_IDS.history,
+  value: 0,
+  viability_percent: "0.000000",
+  method_version_id: CONTRACT_IDS.actor,
+  qa_state: "awaiting_independent_qa",
+} satisfies Schemas["LabHistoryEntry"];
+export const LAB_REJECTION = {
+  ...LAB_RECEIPT,
+  kind: "lab_rejection",
+  bag_id: CONTRACT_IDS.point,
+  rejection_id: CONTRACT_IDS.history,
+  method_version_id: CONTRACT_IDS.actor,
+  reason: "",
+  voided: true,
+} satisfies Schemas["LabHistoryEntry"];
+export const LAB_VOID = {
+  ...LAB_RECEIPT,
+  kind: "lab_void",
+  bag_id: CONTRACT_IDS.point,
+  count_id: CONTRACT_IDS.point,
+  reason: "Retained result correction",
+  voided: true,
+} satisfies Schemas["LabHistoryEntry"];
+export const LAB_HISTORY = [
+  LAB_RECEIPT,
+  LAB_DISCREPANCY,
+  LAB_COUNT,
+  LAB_REJECTION,
+  LAB_VOID,
+] satisfies Schemas["LabHistoryEntry"][];
 export const QUADRANT_REFERENCE = {
   resource_type: "quadrant",
   id: CONTRACT_IDS.quadrant,

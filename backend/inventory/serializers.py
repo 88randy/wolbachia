@@ -10,6 +10,7 @@ from django.utils.functional import cached_property
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.filters import CodeQuerySerializer
 from core.serializers import OrgScopedModelSerializer
 from field_sync.envelope import MAX_PLAUSIBLE_TIME, MIN_PLAUSIBLE_TIME
 from geography.geometry import validate_location
@@ -523,6 +524,7 @@ class InventoryQuerySerializer(serializers.Serializer[Any]):
     custody_location = serializers.UUIDField(required=False)
     location_id = serializers.UUIDField(required=False)
     lot = serializers.UUIDField(required=False)
+    lot_code = serializers.CharField(required=False, allow_blank=True, trim_whitespace=False)
     center = serializers.UUIDField(required=False)
     status = serializers.ChoiceField(choices=["draft", "available", "blocked"], required=False)
     is_active = serializers.ChoiceField(choices=["true", "false"], required=False)
@@ -556,6 +558,13 @@ class InventoryQuerySerializer(serializers.Serializer[Any]):
     device_time_before = serializers.DateTimeField(required=False)
     local_date = serializers.DateField(required=False)
     evaluation = serializers.ChoiceField(choices=["normal", "breach", "unassessed"], required=False)
+
+    def validate_lot_code(self, value: str) -> str:
+        """Reuse the public code grammar while retaining this query field's error path."""
+        query = CodeQuerySerializer(data={"code": value})
+        if not query.is_valid():
+            raise serializers.ValidationError(query.errors["code"])
+        return str(query.validated_data["code"])
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         attrs = self._expiry_bounds(attrs)

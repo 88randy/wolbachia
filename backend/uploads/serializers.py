@@ -10,7 +10,14 @@ from uploads.limits import CONTENT_TYPES, MAX_UPLOAD_BYTES
 
 class AttachmentTargetSerializer(StrictPayloadSerializer):
     kind = serializers.ChoiceField(
-        choices=["field_event", "motorcycle_fault", "incident", "review_item", "transfer_event"]
+        choices=[
+            "field_event",
+            "motorcycle_fault",
+            "incident",
+            "review_item",
+            "transfer_event",
+            "lab_rejection",
+        ]
     )
     id = serializers.UUIDField()
 

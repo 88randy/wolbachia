@@ -124,6 +124,14 @@ cd .. && npm run api:generate             # validate the schema, re-export opena
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
+CI runs every test once across two serial PostgreSQL partitions (`regular` and the
+five whole migration-test modules), then the original `checks` job validates both
+current artifacts and applies the existing 85% gate to their combined statement
+coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
+original test assertions and coverage source/omit list are unchanged (15 configured
+apps; `shifts` remains outside that historical list). See [`ci/README.md`](ci/README.md)
+for exact-attempt conservation, failure handling, timing evidence and compute costs.
+
 ## Settings and environment
 
 Deployment variables are documented in [`.env.example`](.env.example) and the tables below. Settings are chosen only by a real `DJANGO_SETTINGS_MODULE` environment variable or `--settings`, never by `.env`. Required everywhere: `DATABASE_URL`, `REDIS_URL`; `DJANGO_SECRET_KEY` in dev and prod (tests use a fixed key). Production also requires `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; `manage.py check --deploy` is clean with `config.settings.prod`.
@@ -286,3 +294,14 @@ escalation, plus an after-commit durable B-07 producer/recovery task. There rema
 one /incidents/ facade: GET defaults to the unchanged fleet contract; kind=reported
 selects rich incidents. See incidents/README.md for explicit roster/SLA requirements,
 lock order, private #102 evidence and external #49/#113/#246 boundaries.
+
+## Laboratory reception and counts (#114)
+
+lab/ implements real Bag/Reading reception, immutable first-pass observations and
+named-method viability/rejection, reasoned correction, durable independent-QA
+requests and closed-local-day sampling. It shares the existing private upload and
+typed history owners. Unknown scans create nothing; no method or delivery is
+invented. #115 owns independent execution/adjudication and paddle reuse. See
+lab/README.md for current paired authority, exact replay, configuration gates,
+lock/SQL boundaries and criterion owners. Lab is covered and strict; the existing
+combined statement-coverage gate stays 85%.

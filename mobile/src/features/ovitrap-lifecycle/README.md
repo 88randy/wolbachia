@@ -2,8 +2,11 @@
 
 ## Current M5 composition (local, not device qualification)
 
-The actual history3/B33 producer is decoded and materialized by the existing
-DayStore writer. Feedback joins the exact original source UUID and point UUID.
+The actual history4/B33 producer is fully decoded by the existing DayStore writer.
+The four lifecycle branches materialize; all five canonical Lab kinds are validated
+before deliberate exclusion. Malformed Lab rejects the whole page and cannot become
+a known lifecycle invalidation or acknowledge readiness. Lab never grants capture
+authority. Feedback joins the exact original source UUID and point UUID.
 Ingest receipt/status stays immutable and separate from review effect, terminal
 state, source void and current shift approval. Nullable legacy decision reason/time
 stay unknown. Remote proposals render as downloaded references without a fabricated

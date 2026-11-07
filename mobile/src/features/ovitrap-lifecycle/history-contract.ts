@@ -1,4 +1,5 @@
 import type { Schemas } from "@wolbachia/api-client";
+import { LAB_HISTORY_KINDS, readLabHistoryEntry } from "./lab-history-contract.ts";
 import {
   CourierContractError,
   choice,
@@ -18,12 +19,13 @@ import {
   requireResourceIdentity,
 } from "./contract-readers.ts";
 
-const HISTORY_KINDS = [
+export const LIFECYCLE_HISTORY_KINDS = [
   "review_decision",
   "shift_validation",
   "relocation_proposal",
   "transfer_custody",
 ] as const;
+const HISTORY_KINDS = [...LIFECYCLE_HISTORY_KINDS, ...LAB_HISTORY_KINDS] as const;
 const REVIEW_FIELDS = {
   id: readUuid,
   review_item_id: nullable(readUuid),
@@ -98,10 +100,11 @@ function readTransfer(row: Record<string, unknown>): Schemas["TransferHistoryEnt
   });
   return { ...row, subjects: readSubjects(row.subjects) } as Schemas["TransferHistoryEntry"];
 }
-/** Shared history schema3 retains each real domain branch without inventing review fields. */
+/** History4 validates all nine domain kinds without inventing review or capture authority. */
 export function readHistoryEntry(value: unknown): Schemas["CourierHistoryEntry"] {
   const row = readRecord(value);
   const kind = choice(HISTORY_KINDS)(row.kind);
+  if (LAB_HISTORY_KINDS.some((candidate) => candidate === kind)) return readLabHistoryEntry(row);
   if (kind === "relocation_proposal") return readRelocation(row);
   if (kind === "transfer_custody") return readTransfer(row);
   requireFields(row, REVIEW_FIELDS);

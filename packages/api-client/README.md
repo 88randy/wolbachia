@@ -218,3 +218,15 @@ redact source_transfer without whole transfer.read, and conditions distinguish
 explicit-location captures from the legacy initial adapter. The same typed history
 union gains transfer_custody under schema3; no runtime client or screen is added.
 See ../../backend/inventory/transfers/README.md for replay, safety and permissions.
+
+## Laboratory commands (#114)
+
+Generated types add real Bag/Reading reception/count/rejection, immutable result
+replay/next snapshots, minimal void contexts, public reception incident policy,
+named method/version verification and durable recount reads. Unknown scans create
+nothing. Use strict integer values and exact LabMethodVersion pins for optional
+viability/rejection; null ratio reasons remain explicit. Void replacements form a
+closed count/rejection union with no Bag override. The sixth private parent is
+lab_rejection. The ONE history producer becomes 4 while root bundle 2, capture
+context and all four old kind mappings remain. Generated types supply no lab
+screen, independent execution or operational biological method approval.

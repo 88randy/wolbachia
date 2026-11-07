@@ -633,12 +633,26 @@ def test_current_custody_b_to_c_does_not_require_admission_a_or_grant_counterpar
     custody,
     api_client,
 ):
+    from inventory.services import LotChange, revise_lot
     from inventory.transfers.commands import PrepareTransferCommand
     from inventory.transfers.services import dispatch_transfer, prepare_transfer, receive_transfer
     from organizations.models import Center
     from tests.factories import ProfileFactory
 
     context, _ = custody
+    coded = revise_lot(
+        LotChange(
+            context.actor,
+            {
+                "code": str(uuid4()),
+                "supply_id": context.supply.pk,
+                "initial_location_id": context.location.pk,
+                "quantity": Decimal("3"),
+                "provenance": "Synthetic UUID-looking human code",
+            },
+        )
+    )
+    context = replace(context, lot=coded.lot, version=coded)
     places = []
     for name in ("B", "C"):
         center = Center.objects.create(
@@ -723,6 +737,37 @@ def test_current_custody_b_to_c_does_not_require_admission_a_or_grant_counterpar
     assert all(
         "destination" not in row and "manifest" not in row for row in history.data["results"]
     )
+    movements = f"/api/v1/locations/{destination.pk}/movements/"
+    filters = {
+        "lot_code": ["UNKNOWN", f" {context.lot.code} "],
+        "lot": str(context.lot.pk),
+        "piece": "none",
+        "unit": "piece",
+        "ordering": "quantity",
+        "page_size": 1,
+    }
+    first_page = api_client.get(movements, filters)
+    second_page = api_client.get(movements, {**filters, "page": 2})
+    assert first_page.status_code == second_page.status_code == 200
+    assert first_page.data["count"] == second_page.data["count"] == 2
+    pages = first_page.data["results"] + second_page.data["results"]
+    assert [row["quantity"] for row in pages] == ["-3.000000", "3.000000"]
+    assert {(row["id"], row["operation_id"]) for row in pages} == {
+        (row["id"], row["operation_id"]) for row in history.data["results"]
+    }
+    operation = pages[0]["operation_id"]
+    exact_operation = api_client.get(movements, {**filters, "operation": operation})
+    assert exact_operation.status_code == 200
+    assert exact_operation.data["count"] == 1
+    assert exact_operation.data["results"][0]["id"] == pages[0]["id"]
+    assert api_client.get(lot_url, {"custody_location": destination.pk}).status_code == 404
+    profile.scope["centers"]["ids"].append(str(following.center_id))
+    profile.save(update_fields=["scope"])
+    elsewhere = api_client.get(
+        f"/api/v1/locations/{following.pk}/movements/", {"lot_code": context.lot.code}
+    )
+    assert elsewhere.status_code == 200
+    assert elsewhere.data["count"] == 0
 
 
 def custody_phone(context):

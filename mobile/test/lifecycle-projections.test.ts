@@ -37,6 +37,8 @@ import {
   TRANSFER_HISTORY,
   QUADRANT_REFERENCE,
   RELOCATION_HISTORY,
+  LAB_HISTORY,
+  LAB_COUNT,
 } from "./support/lifecycle-contract-fixtures.ts";
 import {
   PROJECTION_IDENTITY,
@@ -47,6 +49,15 @@ import {
   quadrantChange,
   projectionDraft,
 } from "./support/lifecycle-projection-fixtures.ts";
+
+function readProjectionState(db: SqlExecutor) {
+  return Promise.all([
+    db.query("SELECT * FROM lifecycle_courier_projection ORDER BY kind,id"),
+    db.query("SELECT * FROM kv ORDER BY key"),
+    db.query("SELECT * FROM day_bundle_meta ORDER BY slot"),
+    db.query("SELECT * FROM lifecycle_draft"),
+  ]);
+}
 
 void test("C3/C4: schema14 recovery requires a complete owned body across 304, failure and cold reopen", async (t) => {
   const directory = await mkdtemp(join(tmpdir(), "m09-readiness-"));
@@ -76,25 +87,39 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
   );
   const etags: (string | null)[] = [];
   let result: "304" | "offline" | "body" = "304";
-  const bundle = new DayBundleService({
-    store,
-    now: () => PROJECTION_NOW,
-    getCaptureIdentity: () => PROJECTION_IDENTITY,
-    transport: (etag) => {
-      etags.push(etag);
-      if (result === "offline") return Promise.reject(new Error("offline"));
-      return Promise.resolve(
-        result === "304" ? { kind: "unchanged" } : { kind: "bundle", body: projectionBundle() },
-      );
-    },
-  });
+  const makeBundle = () =>
+    new DayBundleService({
+      store,
+      now: () => PROJECTION_NOW,
+      getCaptureIdentity: () => PROJECTION_IDENTITY,
+      transport: (etag) => {
+        etags.push(etag);
+        if (result === "offline") return Promise.reject(new Error("offline"));
+        return Promise.resolve(
+          result === "304"
+            ? { kind: "unchanged" }
+            : {
+                kind: "bundle",
+                body: { ...projectionBundle(), history: LAB_HISTORY },
+              },
+        );
+      },
+    });
+  let bundle = makeBundle();
   await assert.rejects(bundle.refresh(), /requires a body/);
   result = "offline";
   await assert.rejects(bundle.refresh(), /offline/);
   assert.deepEqual(etags, [null, null]);
   assert.equal(await store.needsBootstrap(), true);
-  await bundle.applyProjectionChanges(projectionChanges());
+  await bundle.applyProjectionChanges(
+    projectionChanges({ history: LAB_HISTORY.map(historyChange) }),
+  );
   assert.equal(await store.needsBootstrap(), true, "initial changes are not hydration");
+  assert.equal(
+    await new KvStore(local.executor).get("sync_cursor"),
+    "old-cursor",
+    "direct projection commit does not settle the independent sync receipt",
+  );
   const before = await local.executor.query("SELECT * FROM kv ORDER BY key");
   const failingStore = new DayStore({
     query: (sql, params) => local.executor.query(sql, params),
@@ -112,6 +137,36 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
     store.replace({ ...projectionBundle(), history: [{ kind: "invented" }] }, PROJECTION_NOW),
   );
   assert.equal(await store.needsBootstrap(), true);
+  const beforeMalformed = await readProjectionState(local.executor);
+  await assert.rejects(
+    store.replace(
+      {
+        ...projectionBundle(),
+        history: [
+          REVIEW_HISTORY,
+          ...LAB_HISTORY,
+          {
+            ...LAB_COUNT,
+            id: CONTRACT_IDS.device,
+            count_id: CONTRACT_IDS.device,
+            value: -1,
+          },
+        ],
+      },
+      PROJECTION_NOW,
+    ),
+  );
+  assert.deepEqual(await readProjectionState(local.executor), beforeMalformed);
+  local.close();
+  local = await openTestDatabase(path);
+  store = new DayStore(local.executor);
+  bundle = makeBundle();
+  assert.equal(
+    await store.needsBootstrap(),
+    true,
+    "malformed Lab cannot acknowledge readiness through restart",
+  );
+  assert.deepEqual(await local.executor.query("SELECT draft FROM lifecycle_draft"), legacyBytes);
   result = "body";
   await bundle.refresh();
   await assert.rejects(
@@ -431,7 +486,20 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
     store,
     now: () => PROJECTION_NOW,
     getCaptureIdentity: () => PROJECTION_IDENTITY,
-    transport: () => Promise.resolve({ kind: "bundle", body: projectionBundle() }),
+    transport: () =>
+      Promise.resolve({
+        kind: "bundle",
+        body: {
+          ...projectionBundle(),
+          history: [
+            REVIEW_HISTORY,
+            SHIFT_HISTORY,
+            RELOCATION_HISTORY,
+            TRANSFER_HISTORY,
+            ...LAB_HISTORY,
+          ],
+        },
+      }),
   });
   await bundle.refresh();
   await prepareProjectionCapture(local.executor);
@@ -441,6 +509,8 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
         historyChange(REVIEW_HISTORY),
         historyChange(SHIFT_HISTORY),
         historyChange(TRANSFER_HISTORY),
+        historyChange(RELOCATION_HISTORY),
+        ...LAB_HISTORY.map(historyChange),
       ],
     }),
   );
@@ -449,13 +519,89 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
   );
   assert.deepEqual(
     rows.map((row) => row.kind),
-    ["history.review_decision", "history.shift_validation", "history.transfer_custody"],
+    [
+      "history.relocation_proposal",
+      "history.review_decision",
+      "history.shift_validation",
+      "history.transfer_custody",
+    ],
   );
-  const [review] = rows;
+  const review = rows.find((row) => row.kind === "history.review_decision");
   assert.equal(
     (JSON.parse(String(review?.body)) as Record<string, unknown>).source_status,
     "in_review",
   );
+  const beforeLab = await store.captureTransport(PROJECTION_IDENTITY, () => true);
+  assert.ok(beforeLab);
+  const labChanges = projectionChanges({
+    cursor: "lab-only-current-cursor",
+    history: [
+      ...LAB_HISTORY.map(historyChange),
+      {
+        ...historyChange({ ...LAB_COUNT, qa_state: "superseded" }),
+        sequence: 9,
+      },
+    ],
+  });
+  const labReply = answer([]);
+  assert.ok(labReply.ok);
+  let labPulls = 0;
+  const labOutcome = await runSyncPass(
+    {
+      outbox: new OutboxRepository(local.executor, () => PROJECTION_NOW),
+      kv: new KvStore(local.executor),
+      ...bundle.syncHooks(),
+      deviceId: CONTRACT_IDS.device,
+      now: () => PROJECTION_NOW,
+      transport: (request) => {
+        assert.deepEqual(request.events, []);
+        labPulls++;
+        return Promise.resolve({
+          ...labReply,
+          response: {
+            ...labReply.response,
+            changes: { ...labReply.response.changes, ...labChanges },
+          },
+        });
+      },
+    },
+    { batchSize: 50 },
+  );
+  assert.equal(labOutcome.kind, "idle");
+  assert.equal(labPulls, 1);
+  assert.equal(await new KvStore(local.executor).get("sync_cursor"), "lab-only-current-cursor");
+  const afterLab = await store.captureTransport(PROJECTION_IDENTITY, () => true);
+  assert.ok(afterLab);
+  assert.equal(afterLab.sessionId, beforeLab.sessionId);
+  assert.deepEqual(afterLab.owner, beforeLab.owner);
+  assert.equal(afterLab.scopeRevision, beforeLab.scopeRevision);
+  assert.ok(afterLab.revision > beforeLab.revision);
+  assert.deepEqual(
+    await local.executor.query(
+      "SELECT kind,body FROM lifecycle_courier_projection WHERE kind LIKE 'history.%' ORDER BY kind",
+    ),
+    rows,
+  );
+  const beforeBadPage = await readProjectionState(local.executor);
+  await assert.rejects(
+    bundle.applyProjectionChanges(
+      projectionChanges({
+        cursor: "unaccepted-malformed-Lab-cursor",
+        history: [
+          { ...historyChange({ ...REVIEW_HISTORY, reason: "Must roll back" }), sequence: 11 },
+          historyChange({ ...LAB_COUNT, value: -1 }),
+        ],
+      }),
+    ),
+  );
+  assert.deepEqual(await readProjectionState(local.executor), beforeBadPage);
+  await assert.rejects(
+    store.replace(
+      { ...projectionBundle(), history: [...LAB_HISTORY, LAB_HISTORY[0]] },
+      PROJECTION_NOW,
+    ),
+  );
+  assert.deepEqual(await readProjectionState(local.executor), beforeBadPage);
   await assertKnownQuadrantInvalidation(local.executor, bundle);
   const closed = { ...QUADRANT_REFERENCE, is_closed: true, closure_id: CONTRACT_IDS.history };
   await bundle.applyProjectionChanges(
@@ -862,6 +1008,7 @@ void test("C3/C7: projection commit survives failed receipt settlement and retry
   await service.refresh();
   await saveProjectionCapture(local.executor);
   let rejectReceipt = true;
+  let malformedLab = true;
   const receiptDb: SqlExecutor = {
     query: (sql, params) => local.executor.query(sql, params),
     runAtomically: (statements) =>
@@ -881,11 +1028,31 @@ void test("C3/C7: projection commit survives failed receipt settlement and retry
         ...projectionChanges({
           cursor: "first-page",
           has_more: true,
-          history: [historyChange(terminalProposal())],
+          history: [historyChange(terminalProposal()), ...LAB_HISTORY.map(historyChange)],
         }),
       },
     },
   };
+  const currentResponse = () =>
+    malformedLab
+      ? {
+          ...response,
+          response: {
+            ...response.response,
+            changes: {
+              ...response.response.changes,
+              // Keep the malformed raw body at the existing fixture boundary until DayStore reads it.
+              ...projectionChanges({
+                ...response.response.changes,
+                history: [
+                  ...response.response.changes.history,
+                  historyChange({ ...LAB_COUNT, value: -1 }),
+                ],
+              }),
+            },
+          },
+        }
+      : response;
   const requests: string[][] = [];
   const run = () =>
     runSyncPass(
@@ -899,7 +1066,7 @@ void test("C3/C7: projection commit survives failed receipt settlement and retry
           requests.push(request.events.map((event) => event.id));
           return Promise.resolve(
             request.events.length
-              ? response
+              ? currentResponse()
               : {
                   ...response,
                   response: {
@@ -909,7 +1076,10 @@ void test("C3/C7: projection commit survives failed receipt settlement and retry
                       ...response.response.changes,
                       cursor: "settled-cursor",
                       has_more: false,
-                      history: [readHistoryChange(historyChange(SHIFT_HISTORY))],
+                      history: [
+                        readHistoryChange(historyChange(SHIFT_HISTORY)),
+                        ...LAB_HISTORY.map((entry) => readHistoryChange(historyChange(entry))),
+                      ],
                     },
                   },
                 },
@@ -918,6 +1088,22 @@ void test("C3/C7: projection commit survives failed receipt settlement and retry
       },
       { batchSize: 50 },
     );
+  const beforeMalformed = await readProjectionState(local.executor);
+  const beforeHandle = await store.captureTransport(PROJECTION_IDENTITY, () => true);
+  assert.ok(beforeHandle);
+  await assert.rejects(run(), { name: "CourierContractError", boundary: "body" });
+  assert.deepEqual(await readProjectionState(local.executor), beforeMalformed);
+  assert.equal(
+    (await local.executor.query("SELECT local_status FROM outbox_event"))[0]?.local_status,
+    "sending",
+  );
+  assert.equal(await store.needsCleanup(), false);
+  const afterHandle = await store.captureTransport(PROJECTION_IDENTITY, () => true);
+  assert.ok(afterHandle);
+  assert.equal(afterHandle.revision, beforeHandle.revision);
+  assert.equal(afterHandle.scopeRevision, beforeHandle.scopeRevision);
+  await outbox.recoverInterrupted();
+  malformedLab = false;
   await assert.rejects(run(), /receipt storage failed/);
   assert.equal(
     (await local.executor.query("SELECT local_status FROM outbox_event"))[0]?.local_status,
@@ -935,7 +1121,12 @@ void test("C3/C7: projection commit survives failed receipt settlement and retry
   rejectReceipt = false;
   await outbox.recoverInterrupted();
   assert.equal((await run()).kind, "idle");
-  assert.deepEqual(requests, [[CONTRACT_IDS.source], [CONTRACT_IDS.source], []]);
+  assert.deepEqual(requests, [
+    [CONTRACT_IDS.source],
+    [CONTRACT_IDS.source],
+    [CONTRACT_IDS.source],
+    [],
+  ]);
   assert.deepEqual(
     await local.executor.query(
       "SELECT body FROM lifecycle_courier_projection WHERE kind='lifecycle.reviewed-proposal'",

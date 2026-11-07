@@ -9,6 +9,8 @@ import type { RuleParameter } from "./rules-query";
  * more) shows its own code, which is data, instead of failing.
  */
 const NAME_KEYS: Readonly<Record<string, MessageKey>> = {
+  lab_count_plausibility_limit: "rules.param.labCountPlausibilityLimit",
+  lab_recount_sample_per_100: "rules.param.labRecountSamplePer100",
   max_distance_to_point_m: "rules.param.maxDistanceToPoint",
   min_distance_same_block_m: "rules.param.minDistanceSameBlock",
   speed_lock_kmh: "rules.param.speedLock",

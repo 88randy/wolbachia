@@ -1,6 +1,10 @@
 import type { SqlStatement } from "../../db/sql.ts";
 import { CourierContractError, readNonempty, readRecord } from "./contract-readers.ts";
-import { readHistoryChange, readHistoryEntry } from "./history-contract.ts";
+import {
+  LIFECYCLE_HISTORY_KINDS,
+  readHistoryChange,
+  readHistoryEntry,
+} from "./history-contract.ts";
 import { CURRENT_CAPTURE_CONTEXT } from "./context-sql.ts";
 import {
   courierSection,
@@ -10,15 +14,11 @@ import {
 } from "./projection-record.ts";
 import type { CourierProjection } from "./projection-record.ts";
 
-const HISTORY_TYPES = [
-  "review_decision",
-  "shift_validation",
-  "relocation_proposal",
-  "transfer_custody",
-].map((kind) => `history.${kind}`);
-function historyProjection(value: unknown): CourierProjection {
+const HISTORY_TYPES = LIFECYCLE_HISTORY_KINDS.map((kind) => `history.${kind}`);
+function historyProjection(value: unknown): CourierProjection | null {
   try {
     const row = readHistoryChange(value);
+    if (!HISTORY_TYPES.includes(row.resource_type)) return null;
     return {
       kind: row.resource_type,
       id: row.resource_id,
@@ -28,6 +28,8 @@ function historyProjection(value: unknown): CourierProjection {
     };
   } catch (error) {
     if (!(error instanceof CourierContractError) || error.boundary !== "body") throw error;
+    const resourceType = readRecord(value).resource_type;
+    if (!HISTORY_TYPES.some((kind) => kind === resourceType)) throw error;
     return knownInvalidation(value, HISTORY_TYPES);
   }
 }
@@ -49,7 +51,10 @@ const retainTerminalProposal: SqlStatement = {
       WHERE lifecycle_courier_projection.body<>excluded.body`,
 };
 export function historyChangeStatements(body: unknown): readonly SqlStatement[] {
-  return courierSection(body, "history").map(historyProjection).map(projectionStatement);
+  return courierSection(body, "history")
+    .map(historyProjection)
+    .filter((row) => row !== null)
+    .map(projectionStatement);
 }
 export function historyBundleStatements(body: unknown): readonly SqlStatement[] {
   const rows = courierSection(body, "history");
@@ -63,7 +68,7 @@ export function historyBundleStatements(body: unknown): readonly SqlStatement[] 
     body: entry,
   }));
   requireDistinctProjections(projections);
-  return projections.map(projectionStatement);
+  return projections.filter((row) => HISTORY_TYPES.includes(row.kind)).map(projectionStatement);
 }
 export function retainedHistoryStatements(): readonly SqlStatement[] {
   return [retainTerminalProposal];

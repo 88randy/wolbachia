@@ -220,6 +220,29 @@ paths:
           type: string
           minLength: 1
           maxLength: 50
+      - in: query
+        name: lab_status
+        schema:
+          enum:
+          - expected
+          - missing
+          - no_effective_reading
+          - pending_count
+          - counted
+          - awaiting_independent_qa
+          - rejected
+          - voided
+          type: string
+          minLength: 1
+        description: |-
+          * `expected` - expected
+          * `missing` - missing
+          * `no_effective_reading` - no_effective_reading
+          * `pending_count` - pending_count
+          * `counted` - counted
+          * `awaiting_independent_qa` - awaiting_independent_qa
+          * `rejected` - rejected
+          * `voided` - voided
       - name: ordering
         required: false
         in: query
@@ -322,6 +345,202 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Bag'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bags/{id}/counts/:
+    post:
+      operationId: bags_counts_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - bags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CountWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabCountOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bags/{id}/mark-missing/:
+    post:
+      operationId: bags_mark_missing_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - bags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MissingBagRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabReceptionConflict'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bags/{id}/rejections/:
+    post:
+      operationId: bags_rejections_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - bags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RejectionWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabRejectionOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/bags/receive/:
+    post:
+      operationId: bags_receive_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - bags
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceiveBagRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabReceptionOutcome'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabReceptionConflict'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -1507,6 +1726,376 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/egg-counts/:
+    get:
+      operationId: egg_counts_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: author
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: configuration_pending
+        schema:
+          type: boolean
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - missing
+          - no_reading
+          type: string
+          minLength: 1
+        description: |-
+          * `missing` - missing
+          * `no_reading` - no_reading
+      - in: query
+        name: method
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: qa_state
+        schema:
+          enum:
+          - not_requested
+          - awaiting_independent_qa
+          - superseded
+          type: string
+          minLength: 1
+        description: |-
+          * `not_requested` - not_requested
+          * `awaiting_independent_qa` - awaiting_independent_qa
+          * `superseded` - superseded
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: superseded
+        schema:
+          type: boolean
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - egg-counts
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabCountList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/egg-counts/{id}/:
+    get:
+      operationId: egg_counts_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - egg-counts
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabCount'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/egg-counts/{id}/void/:
+    post:
+      operationId: egg_counts_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - egg-counts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabVoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabVoidOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/egg-counts/{id}/void-context/:
+    get:
+      operationId: egg_counts_void_context_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - egg-counts
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabVoidContext'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/egg-counts/queue/:
+    get:
+      operationId: egg_counts_queue_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          - code
+          - -code
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+          * `code` - code
+          * `-code` - -code
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - egg-counts
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabQueueCandidateList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/field/bootstrap/:
     get:
       operationId: field_bootstrap_list
@@ -2233,6 +2822,12 @@ paths:
         description: |-
           * `fleet` - fleet
           * `reported` - reported
+      - in: query
+        name: motorcycle
+        schema:
+          type: string
+          format: uuid
+        description: Exact motorcycle UUID; applies only to fleet incident lists.
       - name: ordering
         required: false
         in: query
@@ -2684,6 +3279,1055 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-methods/:
+    get:
+      operationId: lab_methods_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - lab-methods
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabMethodList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: lab_methods_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - lab-methods
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabMethodWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabMethodVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-methods/{id}/:
+    get:
+      operationId: lab_methods_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - lab-methods
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabMethod'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-methods/{id}/versions/:
+    get:
+      operationId: lab_methods_versions_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - lab-methods
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabMethodVersionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: lab_methods_versions_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - lab-methods
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabMethodWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabMethodVersion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-methods/{id}/versions/{version}/verify/:
+    post:
+      operationId: lab_methods_versions_verify_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      - in: path
+        name: version
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - lab-methods
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabMethodDecisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabMethodVerification'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-methods/{id}/versions/{version}/withdraw/:
+    post:
+      operationId: lab_methods_versions_withdraw_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      - in: path
+        name: version
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - lab-methods
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabMethodDecisionRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabMethodVerification'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-reception-discrepancies/:
+    get:
+      operationId: lab_reception_discrepancies_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: author
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: configuration_pending
+        schema:
+          type: boolean
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - missing
+          - no_reading
+          type: string
+          minLength: 1
+        description: |-
+          * `missing` - missing
+          * `no_reading` - no_reading
+      - in: query
+        name: method
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: qa_state
+        schema:
+          enum:
+          - not_requested
+          - awaiting_independent_qa
+          - superseded
+          type: string
+          minLength: 1
+        description: |-
+          * `not_requested` - not_requested
+          * `awaiting_independent_qa` - awaiting_independent_qa
+          * `superseded` - superseded
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: superseded
+        schema:
+          type: boolean
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - lab-reception-discrepancies
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabDiscrepancyList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-reception-discrepancies/{id}/:
+    get:
+      operationId: lab_reception_discrepancies_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - lab-reception-discrepancies
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabDiscrepancy'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-reception-incident-policy/:
+    get:
+      operationId: lab_reception_incident_policy_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - lab-reception-incident-policy
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedReceptionPolicyContextList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-reception-incident-policy/versions/:
+    post:
+      operationId: lab_reception_incident_policy_versions_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - lab-reception-incident-policy
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReceptionPolicyWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReceptionPolicy'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-receptions/:
+    get:
+      operationId: lab_receptions_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: author
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: configuration_pending
+        schema:
+          type: boolean
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - bag
+          - no_paddle
+          type: string
+          minLength: 1
+        description: |-
+          * `bag` - bag
+          * `no_paddle` - no_paddle
+      - in: query
+        name: method
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: qa_state
+        schema:
+          enum:
+          - not_requested
+          - awaiting_independent_qa
+          - superseded
+          type: string
+          minLength: 1
+        description: |-
+          * `not_requested` - not_requested
+          * `awaiting_independent_qa` - awaiting_independent_qa
+          * `superseded` - superseded
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: superseded
+        schema:
+          type: boolean
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - lab-receptions
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabReceiptList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-rejections/:
+    get:
+      operationId: lab_rejections_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: author
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: configuration_pending
+        schema:
+          type: boolean
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - missing
+          - no_reading
+          type: string
+          minLength: 1
+        description: |-
+          * `missing` - missing
+          * `no_reading` - no_reading
+      - in: query
+        name: method
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: qa_state
+        schema:
+          enum:
+          - not_requested
+          - awaiting_independent_qa
+          - superseded
+          type: string
+          minLength: 1
+        description: |-
+          * `not_requested` - not_requested
+          * `awaiting_independent_qa` - awaiting_independent_qa
+          * `superseded` - superseded
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: superseded
+        schema:
+          type: boolean
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - lab-rejections
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedLabRejectionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-rejections/{id}/:
+    get:
+      operationId: lab_rejections_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - lab-rejections
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabRejection'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-rejections/{id}/void/:
+    post:
+      operationId: lab_rejections_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - lab-rejections
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabVoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabVoidOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/lab-rejections/{id}/void-context/:
+    get:
+      operationId: lab_rejections_void_context_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - lab-rejections
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabVoidContext'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/locations/:
     get:
       operationId: locations_list
@@ -2961,6 +4605,11 @@ paths:
         schema:
           type: string
           format: uuid
+      - in: query
+        name: lot_code
+        schema:
+          type: string
+          maxLength: 50
       - in: query
         name: operation
         schema:
@@ -4059,6 +5708,10 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
       - in: path
         name: motorcycle_id
         schema:
@@ -4223,6 +5876,10 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
       - in: path
         name: motorcycle_id
         schema:
@@ -5611,6 +7268,205 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Reading'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/readings/{id}/receive/:
+    post:
+      operationId: readings_receive_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - readings
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LabCommandRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabReceptionOutcome'
+          description: ''
+        '409':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LabReceptionConflict'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/recount-requests/:
+    get:
+      operationId: recount_requests_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: author
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+      - in: query
+        name: configuration_pending
+        schema:
+          type: boolean
+      - in: query
+        name: created_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - missing
+          - no_reading
+          type: string
+          minLength: 1
+        description: |-
+          * `missing` - missing
+          * `no_reading` - no_reading
+      - in: query
+        name: method
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: point
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: qa_state
+        schema:
+          enum:
+          - not_requested
+          - awaiting_independent_qa
+          - superseded
+          type: string
+          minLength: 1
+        description: |-
+          * `not_requested` - not_requested
+          * `awaiting_independent_qa` - awaiting_independent_qa
+          * `superseded` - superseded
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: superseded
+        schema:
+          type: boolean
+      - in: query
+        name: week
+        schema:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+      tags:
+      - recount-requests
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedRecountRequestList'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -8478,6 +10334,7 @@ components:
       - incident
       - review_item
       - transfer_event
+      - lab_rejection
       type: string
       description: |-
         * `field_event` - field_event
@@ -8485,6 +10342,7 @@ components:
         * `incident` - incident
         * `review_item` - review_item
         * `transfer_event` - transfer_event
+        * `lab_rejection` - lab_rejection
     AttachmentTargetRequest:
       type: object
       properties:
@@ -8496,6 +10354,16 @@ components:
       required:
       - id
       - kind
+    AvailabilityEnum:
+      enum:
+      - unconfigured
+      - configured
+      - unavailable
+      type: string
+      description: |-
+        * `unconfigured` - unconfigured
+        * `configured` - configured
+        * `unavailable` - unavailable
     Bag:
       type: object
       description: |-
@@ -8522,6 +10390,11 @@ components:
           format: uuid
           readOnly: true
         field_flags:
+          readOnly: true
+        lab:
+          allOf:
+          - $ref: '#/components/schemas/LabBagSummary'
+          nullable: true
           readOnly: true
         evaluated_rules:
           readOnly: true
@@ -8596,6 +10469,7 @@ components:
       - field_flags
       - gps
       - id
+      - lab
       - manual_capture
       - reading
       - rule_version_ids
@@ -9670,6 +11544,76 @@ components:
       - line_id
       - quantity
       - receipt_event_id
+    CountReplacementKindEnum:
+      enum:
+      - count
+      type: string
+      description: '* `count` - count'
+    CountReplacementRequest:
+      type: object
+      properties:
+        value:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        confirmed_implausible:
+          type: boolean
+          default: false
+        viable_eggs:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        total_examined:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        method_version:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/CountReplacementKindEnum'
+      required:
+      - kind
+      - value
+    CountWriteRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        value:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        confirmed_implausible:
+          type: boolean
+          default: false
+        viable_eggs:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        total_examined:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        method_version:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        queue_context:
+          $ref: '#/components/schemas/LabQueueQueryRequest'
+      required:
+      - command_id
+      - value
     CourierChangeActionEnum:
       enum:
       - upsert
@@ -9727,6 +11671,7 @@ components:
       - $ref: '#/components/schemas/ReviewHistoryEntry'
       - $ref: '#/components/schemas/RelocationHistoryEntry'
       - $ref: '#/components/schemas/TransferHistoryEntry'
+      - $ref: '#/components/schemas/LabHistoryEntry'
       discriminator:
         propertyName: kind
         mapping:
@@ -9734,6 +11679,11 @@ components:
           shift_validation: '#/components/schemas/ReviewHistoryEntry'
           relocation_proposal: '#/components/schemas/RelocationHistoryEntry'
           transfer_custody: '#/components/schemas/TransferHistoryEntry'
+          lab_receipt: '#/components/schemas/LabHistoryEntry'
+          lab_discrepancy: '#/components/schemas/LabHistoryEntry'
+          lab_count: '#/components/schemas/LabHistoryEntry'
+          lab_void: '#/components/schemas/LabHistoryEntry'
+          lab_rejection: '#/components/schemas/LabHistoryEntry'
     CourierHistoryKindEnum:
       enum:
       - review_decision
@@ -10738,8 +12688,14 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        clearance:
+          allOf:
+          - $ref: '#/components/schemas/InspectionClearanceRead'
+          readOnly: true
+          nullable: true
       required:
       - blocked_reason
+      - clearance
       - cleared_at
       - created_at
       - created_by
@@ -11036,6 +12992,43 @@ components:
       required:
       - expected_revision
       - reason
+    InspectionClearanceRead:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewer:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+      required:
+      - created_at
+      - evidence_ids
+      - id
+      - reason
+      - reviewer
     Intervention:
       type: object
       properties:
@@ -11172,6 +13165,907 @@ components:
           minimum: 0
       required:
       - expected_revision
+    LabBagSummary:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/LabBagSummaryStatusEnum'
+        revision:
+          type: integer
+          minimum: 0
+        receipt_id:
+          type: string
+          format: uuid
+          nullable: true
+        count_id:
+          type: string
+          format: uuid
+          nullable: true
+        rejection_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - count_id
+      - receipt_id
+      - rejection_id
+      - revision
+      - status
+    LabBagSummaryStatusEnum:
+      enum:
+      - expected
+      - missing
+      - no_effective_reading
+      - pending_count
+      - counted
+      - awaiting_independent_qa
+      - rejected
+      - voided
+      type: string
+      description: |-
+        * `expected` - expected
+        * `missing` - missing
+        * `no_effective_reading` - no_effective_reading
+        * `pending_count` - pending_count
+        * `counted` - counted
+        * `awaiting_independent_qa` - awaiting_independent_qa
+        * `rejected` - rejected
+        * `voided` - voided
+    LabCommandRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+      required:
+      - command_id
+    LabCount:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bag_id:
+          type: string
+          format: uuid
+        value:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        ordinal:
+          type: integer
+          minimum: 1
+        viable_eggs:
+          type: integer
+          nullable: true
+        total_examined:
+          type: integer
+          nullable: true
+        viability_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        viability_reason:
+          oneOf:
+          - $ref: '#/components/schemas/ViabilityReasonEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        method_version:
+          type: string
+          format: uuid
+          nullable: true
+        method:
+          allOf:
+          - $ref: '#/components/schemas/LabMethodPin'
+          nullable: true
+        verification_id:
+          type: string
+          format: uuid
+          nullable: true
+        rules: {}
+        source_proof: {}
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+        voided:
+          type: boolean
+        expected_revision:
+          type: integer
+          minimum: 1
+        current_revision:
+          type: integer
+          minimum: 1
+        is_current:
+          type: boolean
+      required:
+      - bag_id
+      - created_at
+      - created_by
+      - expected_revision
+      - id
+      - method
+      - method_version
+      - ordinal
+      - rules
+      - source_proof
+      - total_examined
+      - value
+      - verification_id
+      - viability_percent
+      - viability_reason
+      - viable_eggs
+      - voided
+    LabCountOutcome:
+      type: object
+      properties:
+        count:
+          $ref: '#/components/schemas/LabCount'
+        next_bag:
+          allOf:
+          - $ref: '#/components/schemas/LabQueueCandidate'
+          nullable: true
+        queue_snapshot:
+          $ref: '#/components/schemas/LabQueueSnapshot'
+      required:
+      - count
+      - next_bag
+      - queue_snapshot
+    LabDiscrepancy:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bag_id:
+          type: string
+          format: uuid
+        source_event_id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/LabDiscrepancyKindEnum'
+        reason:
+          type: string
+        source_proof: {}
+        created_at:
+          type: string
+          format: date-time
+        incident_id:
+          type: string
+          format: uuid
+          nullable: true
+        configuration_pending:
+          type: boolean
+        incident_link:
+          type: string
+          nullable: true
+      required:
+      - bag_id
+      - configuration_pending
+      - created_at
+      - id
+      - incident_id
+      - incident_link
+      - kind
+      - reason
+      - source_event_id
+      - source_proof
+    LabDiscrepancyKindEnum:
+      enum:
+      - missing
+      - no_reading
+      type: string
+      description: |-
+        * `missing` - missing
+        * `no_reading` - no_reading
+    LabHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/LabHistoryEntryKindEnum'
+        bag_id:
+          type: string
+          format: uuid
+          nullable: true
+        count_id:
+          type: string
+          format: uuid
+          nullable: true
+        rejection_id:
+          type: string
+          format: uuid
+          nullable: true
+        reading_id:
+          type: string
+          format: uuid
+        source_event_id:
+          type: string
+          format: uuid
+        recorded_at:
+          type: string
+          format: date-time
+        author_id:
+          type: string
+          format: uuid
+        source_device_time:
+          type: string
+          format: date-time
+        source_server_received_at:
+          type: string
+          format: date-time
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorySubject'
+        value:
+          type: integer
+          nullable: true
+        viability_percent:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,6})?$
+          nullable: true
+        qa_state:
+          $ref: '#/components/schemas/QaStateEnum'
+        voided:
+          type: boolean
+        incident_id:
+          type: string
+          format: uuid
+          nullable: true
+        configuration_pending:
+          type: boolean
+        method_version_id:
+          type: string
+          format: uuid
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+      required:
+      - author_id
+      - bag_id
+      - configuration_pending
+      - count_id
+      - id
+      - incident_id
+      - kind
+      - method_version_id
+      - qa_state
+      - reading_id
+      - reason
+      - recorded_at
+      - rejection_id
+      - source_device_time
+      - source_event_id
+      - source_server_received_at
+      - subjects
+      - value
+      - viability_percent
+      - voided
+    LabHistoryEntryKindEnum:
+      enum:
+      - lab_receipt
+      - lab_discrepancy
+      - lab_count
+      - lab_void
+      - lab_rejection
+      type: string
+      description: |-
+        * `lab_receipt` - lab_receipt
+        * `lab_discrepancy` - lab_discrepancy
+        * `lab_count` - lab_count
+        * `lab_void` - lab_void
+        * `lab_rejection` - lab_rejection
+    LabMethod:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - code
+      - created_at
+      - created_by
+      - id
+    LabMethodDecisionRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - expected_revision
+      - reference
+    LabMethodPin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        method_id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        name:
+          type: string
+        procedure:
+          type: string
+        reference:
+          type: string
+        effective_from:
+          type: string
+          format: date-time
+        content_hash:
+          type: string
+      required:
+      - content_hash
+      - effective_from
+      - id
+      - method_id
+      - name
+      - procedure
+      - reference
+      - revision
+    LabMethodVerification:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        method_version:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        decision:
+          allOf:
+          - $ref: '#/components/schemas/LabMethodVerificationDecisionEnum'
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        content_hash:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - content_hash
+      - created_at
+      - created_by
+      - decision
+      - id
+      - method_version
+      - reference
+      - revision
+    LabMethodVerificationDecisionEnum:
+      enum:
+      - verify
+      - withdraw
+      type: string
+      description: |-
+        * `verify` - verify
+        * `withdraw` - withdraw
+    LabMethodVersion:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        method:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        procedure:
+          type: string
+          readOnly: true
+        reference:
+          type: string
+          readOnly: true
+        effective_from:
+          type: string
+          format: date-time
+          readOnly: true
+        content_hash:
+          type: string
+          readOnly: true
+        supports_viability:
+          type: boolean
+          readOnly: true
+        supports_rejection:
+          type: boolean
+          readOnly: true
+        verification:
+          nullable: true
+          readOnly: true
+        availability:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - availability
+      - content_hash
+      - created_at
+      - created_by
+      - effective_from
+      - id
+      - method
+      - name
+      - procedure
+      - reference
+      - revision
+      - supports_rejection
+      - supports_viability
+      - verification
+    LabMethodWriteRequest:
+      type: object
+      properties:
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        expected_revision:
+          type: integer
+          minimum: 0
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        procedure:
+          type: string
+          minLength: 1
+          maxLength: 20000
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        effective_from:
+          type: string
+          format: date-time
+        supports_viability:
+          type: boolean
+        supports_rejection:
+          type: boolean
+      required:
+      - effective_from
+      - expected_revision
+      - name
+      - procedure
+      - reference
+      - supports_rejection
+      - supports_viability
+    LabQueueCandidate:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        reading_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        has_eggs:
+          type: boolean
+        is_lagged:
+          type: boolean
+        is_index_excluded:
+          type: boolean
+      required:
+      - code
+      - expected_revision
+      - has_eggs
+      - id
+      - is_index_excluded
+      - is_lagged
+      - reading_id
+    LabQueueQuery:
+      type: object
+      properties:
+        center:
+          type: string
+          format: uuid
+        quadrant:
+          type: string
+          format: uuid
+        point:
+          type: string
+          format: uuid
+        week:
+          type: string
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+        code:
+          type: string
+          maxLength: 50
+        ordering:
+          $ref: '#/components/schemas/OrderingEnum'
+    LabQueueQueryRequest:
+      type: object
+      properties:
+        center:
+          type: string
+          format: uuid
+        quadrant:
+          type: string
+          format: uuid
+        point:
+          type: string
+          format: uuid
+        week:
+          type: string
+          minLength: 1
+          pattern: ^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+        ordering:
+          $ref: '#/components/schemas/OrderingEnum'
+    LabQueueSnapshot:
+      type: object
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        context:
+          $ref: '#/components/schemas/LabQueueQuery'
+      required:
+      - as_of
+      - context
+    LabReceipt:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reading_id:
+          type: string
+          format: uuid
+        bag_id:
+          type: string
+          format: uuid
+          nullable: true
+        kind:
+          $ref: '#/components/schemas/LabReceiptKindEnum'
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+      required:
+      - bag_id
+      - created_at
+      - created_by
+      - id
+      - kind
+      - reading_id
+    LabReceiptKindEnum:
+      enum:
+      - bag
+      - no_paddle
+      type: string
+      description: |-
+        * `bag` - bag
+        * `no_paddle` - no_paddle
+    LabReceptionConflict:
+      type: object
+      properties:
+        code:
+          type: string
+        detail:
+          type: string
+        blocked_by:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        discrepancy_id:
+          type: string
+          format: uuid
+        incident_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - blocked_by
+      - code
+      - detail
+    LabReceptionOutcome:
+      type: object
+      properties:
+        bag:
+          allOf:
+          - $ref: '#/components/schemas/ReceivedBag'
+          nullable: true
+        reading:
+          $ref: '#/components/schemas/ReceivedReading'
+        receipt:
+          $ref: '#/components/schemas/LabReceipt'
+      required:
+      - bag
+      - reading
+      - receipt
+    LabRejection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        bag_id:
+          type: string
+          format: uuid
+        method_version:
+          type: string
+          format: uuid
+        method:
+          $ref: '#/components/schemas/LabMethodPin'
+        verification_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        source_proof: {}
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+        voided:
+          type: boolean
+        expected_revision:
+          type: integer
+          minimum: 1
+        current_revision:
+          type: integer
+          minimum: 1
+        is_current:
+          type: boolean
+      required:
+      - bag_id
+      - created_at
+      - created_by
+      - evidence_ids
+      - expected_revision
+      - id
+      - method
+      - method_version
+      - reason
+      - source_proof
+      - verification_id
+      - voided
+    LabRejectionOutcome:
+      type: object
+      properties:
+        rejection:
+          $ref: '#/components/schemas/LabRejection'
+        next_bag:
+          allOf:
+          - $ref: '#/components/schemas/LabQueueCandidate'
+          nullable: true
+        queue_snapshot:
+          $ref: '#/components/schemas/LabQueueSnapshot'
+      required:
+      - next_bag
+      - queue_snapshot
+      - rejection
+    LabReplacementRequest:
+      oneOf:
+      - $ref: '#/components/schemas/CountReplacementRequest'
+      - $ref: '#/components/schemas/RejectionReplacementRequest'
+      discriminator:
+        propertyName: kind
+        mapping:
+          count: '#/components/schemas/CountReplacementRequest'
+          rejection: '#/components/schemas/RejectionReplacementRequest'
+    LabVoidContext:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/LabVoidContextKindEnum'
+        bag_id:
+          type: string
+          format: uuid
+        reading_id:
+          type: string
+          format: uuid
+        source_event_id:
+          type: string
+          format: uuid
+        current_revision:
+          type: integer
+          minimum: 0
+        is_current:
+          type: boolean
+        value:
+          type: integer
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        method_version:
+          type: string
+          format: uuid
+          nullable: true
+        method_name:
+          type: string
+          nullable: true
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        has_recount_obligation:
+          type: boolean
+        blocked_by:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+      required:
+      - bag_id
+      - blocked_by
+      - current_revision
+      - evidence_ids
+      - has_recount_obligation
+      - id
+      - is_current
+      - kind
+      - method_name
+      - method_version
+      - reading_id
+      - reason
+      - source_event_id
+      - value
+    LabVoidContextKindEnum:
+      enum:
+      - count
+      - rejection
+      type: string
+      description: |-
+        * `count` - count
+        * `rejection` - rejection
+    LabVoidOutcome:
+      type: object
+      properties:
+        void_id:
+          type: string
+          format: uuid
+        current_revision:
+          type: integer
+          minimum: 1
+        count:
+          allOf:
+          - $ref: '#/components/schemas/LabCount'
+          nullable: true
+        rejection:
+          allOf:
+          - $ref: '#/components/schemas/LabRejection'
+          nullable: true
+        next_bag:
+          allOf:
+          - $ref: '#/components/schemas/LabQueueCandidate'
+          nullable: true
+        queue_snapshot:
+          $ref: '#/components/schemas/LabQueueSnapshot'
+      required:
+      - count
+      - current_revision
+      - next_bag
+      - queue_snapshot
+      - rejection
+      - void_id
+    LabVoidRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 1
+        reason_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        replacement:
+          $ref: '#/components/schemas/LabReplacementRequest'
+        queue_context:
+          $ref: '#/components/schemas/LabQueueQueryRequest'
+      required:
+      - command_id
+      - expected_revision
+      - reason
+      - reason_code
     LanguagesEnum:
       enum:
       - es-MX
@@ -12052,6 +14946,19 @@ components:
       - evidence_ids
       - line_id
       - quantity
+    MissingBagRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - command_id
+      - reason
     MobileLoginResponse:
       type: object
       properties:
@@ -12444,6 +15351,18 @@ components:
     NullEnum:
       enum:
       - null
+    OrderingEnum:
+      enum:
+      - created_at
+      - -created_at
+      - code
+      - -code
+      type: string
+      description: |-
+        * `created_at` - created_at
+        * `-created_at` - -created_at
+        * `code` - code
+        * `-code` - -code
     OrganizationSettings:
       type: object
       properties:
@@ -13254,6 +16173,167 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Intervention'
+    PaginatedLabCountList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabCount'
+    PaginatedLabDiscrepancyList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabDiscrepancy'
+    PaginatedLabMethodList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabMethod'
+    PaginatedLabMethodVersionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabMethodVersion'
+    PaginatedLabQueueCandidateList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabQueueCandidate'
+    PaginatedLabReceiptList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabReceipt'
+    PaginatedLabRejectionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/LabRejection'
     PaginatedLocationList:
       type: object
       required:
@@ -13576,6 +16656,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Reading'
+    PaginatedReceptionPolicyContextList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReceptionPolicyContext'
+    PaginatedRecountRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecountRequest'
     PaginatedRelocationList:
       type: object
       required:
@@ -14607,6 +17733,16 @@ components:
       - outboxed
       - pending_outbox
       type: string
+    QaStateEnum:
+      enum:
+      - not_requested
+      - awaiting_independent_qa
+      - superseded
+      type: string
+      description: |-
+        * `not_requested` - not_requested
+        * `awaiting_independent_qa` - awaiting_independent_qa
+        * `superseded` - superseded
     Quadrant:
       type: object
       description: |-
@@ -15032,6 +18168,11 @@ components:
         is_countable:
           type: boolean
           readOnly: true
+        lab_receipt:
+          allOf:
+          - $ref: '#/components/schemas/LabReceipt'
+          nullable: true
+          readOnly: true
         epi_week:
           type: string
           readOnly: true
@@ -15128,6 +18269,7 @@ components:
       - is_countable
       - is_index_excluded
       - is_lagged
+      - lab_receipt
       - manual_capture
       - other_text
       - ovitrap
@@ -15186,6 +18328,22 @@ components:
       required:
       - owners
       - revision
+    ReceiveBagRequest:
+      type: object
+      description: |-
+        Validates `?code=`: not blank, at most `CODE_MAX_LENGTH`, no NUL characters (PostgreSQL
+        rejects them, which would otherwise be a 500).
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+          minLength: 1
+          maxLength: 50
+      required:
+      - code
+      - command_id
     ReceiveTransferRequest:
       type: object
       properties:
@@ -15222,6 +18380,28 @@ components:
       - missing
       - scanned
       - signature_upload_id
+    ReceivedBag:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+      required:
+      - code
+      - id
+    ReceivedReading:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        paddle_present:
+          type: boolean
+      required:
+      - id
+      - paddle_present
     ReceivingOutcome:
       type: object
       properties:
@@ -15286,6 +18466,134 @@ components:
       - quantity
       - receipt_event_id
       - signature_upload_id
+    ReceptionPolicy:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        missing_type_version:
+          type: string
+          format: uuid
+          readOnly: true
+        no_reading_type_version:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+      required:
+      - created_at
+      - created_by
+      - id
+      - missing_type_version
+      - no_reading_type_version
+      - revision
+    ReceptionPolicyContext:
+      type: object
+      properties:
+        revision:
+          type: integer
+          minimum: 0
+        policy:
+          allOf:
+          - $ref: '#/components/schemas/ReceptionPolicy'
+          nullable: true
+        availability:
+          $ref: '#/components/schemas/AvailabilityEnum'
+      required:
+      - availability
+      - policy
+      - revision
+    ReceptionPolicyWriteRequest:
+      type: object
+      properties:
+        expected_revision:
+          type: integer
+          minimum: 0
+        missing_type_version:
+          type: string
+          format: uuid
+        no_reading_type_version:
+          type: string
+          format: uuid
+      required:
+      - expected_revision
+      - missing_type_version
+      - no_reading_type_version
+    RecountRequest:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        count:
+          type: string
+          format: uuid
+          readOnly: true
+        first_counter:
+          type: string
+          format: uuid
+          readOnly: true
+        independent_required:
+          type: boolean
+          readOnly: true
+        actor_kind:
+          allOf:
+          - $ref: '#/components/schemas/ActorKindEnum'
+          readOnly: true
+        policy_version:
+          type: string
+          readOnly: true
+        causes:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+          readOnly: true
+        superseded:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - actor_kind
+      - causes
+      - count
+      - created_at
+      - first_counter
+      - id
+      - independent_required
+      - policy_version
+      - superseded
     RefreshRequest:
       type: object
       properties:
@@ -15313,6 +18621,64 @@ components:
       - access
       - refresh
       - server_time
+    RejectionReplacementKindEnum:
+      enum:
+      - rejection
+      type: string
+      description: '* `rejection` - rejection'
+    RejectionReplacementRequest:
+      type: object
+      properties:
+        method_version:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+        kind:
+          $ref: '#/components/schemas/RejectionReplacementKindEnum'
+      required:
+      - evidence_ids
+      - kind
+      - method_version
+      - reason
+    RejectionWriteRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        method_version:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 100
+        expected_revision:
+          type: integer
+          minimum: 0
+          default: 0
+        queue_context:
+          $ref: '#/components/schemas/LabQueueQueryRequest'
+      required:
+      - command_id
+      - evidence_ids
+      - method_version
+      - reason
     Relocation:
       type: object
       description: |-
@@ -18603,6 +21969,13 @@ components:
       description: |-
         * `integer` - Integer
         * `decimal` - Decimal
+    ViabilityReasonEnum:
+      enum:
+      - not_requested
+      - zero_examined
+      type: string
+      description: "* `not_requested` - not_requested\n* `zero_examined` - zero_examined\n*
+        `` - "
     VoidRequest:
       type: object
       description: Shared HTTP and sync body. The target-aware resolver validates

@@ -14,6 +14,12 @@ import {
   CAPTURE_CONTEXT,
   CONTRACT_IDS as ID,
   QUADRANT_REFERENCE,
+  LAB_RECEIPT,
+  LAB_DISCREPANCY,
+  LAB_COUNT,
+  LAB_REJECTION,
+  LAB_VOID,
+  LAB_HISTORY,
   RELOCATION_HISTORY,
   REVIEW_HISTORY,
   SHIFT_HISTORY,
@@ -23,7 +29,134 @@ import {
   historyChange,
 } from "./support/lifecycle-contract-fixtures.ts";
 
+function assertCanonicalLabHistory() {
+  // Observe every valid kind on the old decoder, rather than stopping at the first rejection.
+  const observed = LAB_HISTORY.map((entry) => {
+    try {
+      return readHistoryEntry(entry).kind;
+    } catch (error) {
+      if (!(error instanceof CourierContractError)) throw error;
+      return `rejected:${entry.kind}:${error.boundary}`;
+    }
+  });
+  assert.deepEqual(
+    observed,
+    LAB_HISTORY.map((entry) => entry.kind),
+  );
+  for (const entry of LAB_HISTORY) {
+    const parsed = readHistoryEntry(entry);
+    assert.ok("reading_id" in parsed);
+    assert.equal(parsed.reading_id, ID.point);
+    assert.equal(parsed.source_event_id, ID.source);
+    assert.equal(parsed.author_id, ID.actor);
+    assert.equal(parsed.source_device_time, LAB_RECEIPT.source_device_time);
+    assert.equal(parsed.source_server_received_at, LAB_RECEIPT.source_server_received_at);
+    assert.equal(parsed.recorded_at, LAB_RECEIPT.recorded_at);
+    const change = readHistoryChange(historyChange(entry));
+    assert.equal(change.resource_type, `history.${entry.kind}`);
+    assert.equal(change.resource_id, entry.id);
+    assert.equal(change.data.kind, entry.kind);
+  }
+  assertLabAlternatives();
+  assertMalformedLabHistory();
+}
+function assertLabAlternatives() {
+  const alternatives = [
+    { ...LAB_RECEIPT, bag_id: ID.point },
+    { ...LAB_DISCREPANCY, incident_id: ID.actor, configuration_pending: false },
+    { ...LAB_COUNT, viability_percent: null, method_version_id: null },
+    { ...LAB_COUNT, viability_percent: null, method_version_id: ID.actor },
+    { ...LAB_COUNT, viability_percent: "100.000000", value: Number.MAX_SAFE_INTEGER },
+    { ...LAB_COUNT, viability_percent: "-0.000000" },
+    ...["not_requested", "awaiting_independent_qa", "superseded"].map((qa_state) => ({
+      ...LAB_COUNT,
+      qa_state,
+      voided: true,
+    })),
+    { ...LAB_REJECTION, voided: false },
+    { ...LAB_VOID, count_id: null, rejection_id: ID.history },
+    { ...LAB_VOID, count_id: ID.history }, // Different table identities may share a UUID value.
+  ];
+  for (const entry of alternatives) assert.doesNotThrow(() => readHistoryEntry(entry));
+  const count = readHistoryEntry(LAB_COUNT);
+  assert.ok(count.kind === "lab_count");
+  assert.equal(count.value, 0);
+  assert.equal(count.viability_percent, "0.000000");
+  assert.equal(count.method_version_id, ID.actor);
+}
+function assertMalformedLabHistory() {
+  for (const field of Object.keys(LAB_RECEIPT)) {
+    const missing = Object.fromEntries<unknown>(
+      Object.entries(LAB_RECEIPT).filter(([key]) => key !== field),
+    );
+    assert.throws(() => readHistoryEntry(missing), `missing required ${field}`);
+  }
+  for (const mutation of [
+    { reading_id: "bad" },
+    { source_event_id: null },
+    { author_id: "bad" },
+    { bag_id: "bad" },
+    { recorded_at: "2026-11-07T09:00:00" },
+    { source_device_time: null },
+    { source_server_received_at: "bad" },
+    { subjects: [] },
+    { subjects: [{ center_id: "bad", quadrant_id: null }] },
+    { qa_state: "approved" },
+    { voided: 0 },
+    { configuration_pending: null },
+    { reason: false },
+    { kind: "lab_future" },
+  ])
+    assert.throws(() => readHistoryEntry({ ...LAB_RECEIPT, ...mutation }));
+  for (const entry of [
+    { ...LAB_RECEIPT, value: 0 },
+    { ...LAB_RECEIPT, voided: true },
+    { ...LAB_DISCREPANCY, configuration_pending: false },
+    { ...LAB_DISCREPANCY, incident_id: ID.actor },
+    { ...LAB_DISCREPANCY, reason: null },
+    { ...LAB_COUNT, count_id: ID.actor },
+    { ...LAB_COUNT, rejection_id: ID.actor },
+    { ...LAB_COUNT, method_version_id: null },
+    { ...LAB_COUNT, method_version_id: "bad" },
+    { ...LAB_COUNT, value: null },
+    { ...LAB_COUNT, value: true },
+    { ...LAB_COUNT, value: -1 },
+    { ...LAB_COUNT, value: 1.5 },
+    { ...LAB_COUNT, value: Number.MAX_SAFE_INTEGER + 1 },
+    ...["NaN", "Infinity", "1e1", "100.000001", "-0.000001", "0.1234567"].map(
+      (viability_percent) => ({ ...LAB_COUNT, viability_percent }),
+    ),
+    { ...LAB_REJECTION, method_version_id: null },
+    { ...LAB_REJECTION, rejection_id: ID.actor },
+    { ...LAB_REJECTION, count_id: ID.actor },
+    { ...LAB_REJECTION, reason: null },
+    { ...LAB_VOID, count_id: null },
+    { ...LAB_VOID, rejection_id: ID.actor },
+    { ...LAB_VOID, voided: false },
+    { ...LAB_VOID, value: 0 },
+  ])
+    assert.throws(() => readHistoryEntry(entry));
+  assert.throws(
+    () => readHistoryChange(historyChange({ ...LAB_COUNT, value: -1 })),
+    (error: unknown) => error instanceof CourierContractError && error.boundary === "body",
+  );
+  assert.throws(
+    () =>
+      readHistoryChange({
+        ...historyChange(LAB_COUNT),
+        resource_id: ID.actor,
+        data: { ...LAB_COUNT, value: -1 },
+      }),
+    (error: unknown) => error instanceof CourierContractError && error.boundary === "envelope",
+  );
+  assert.throws(
+    () => readHistoryChange({ ...historyChange(LAB_COUNT), resource_type: "history.lab_future" }),
+    (error: unknown) => error instanceof CourierContractError && error.boundary === "envelope",
+  );
+}
+
 void test("C1: canonical history3 preserves signed transfer event/source facts without inventing review, shift or lifecycle state", () => {
+  assertCanonicalLabHistory();
   for (const phase of ["dispatch", "receive"] as const) {
     const body = {
       ...TRANSFER_HISTORY,

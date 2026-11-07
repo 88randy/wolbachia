@@ -264,3 +264,13 @@ _store links the actual accepted source after its snapshot and primary evidence
 exist. Reviewed application waits for canonical113's exact effect receipt. The ONE
 history producer is schema3 with an additive transfer_custody branch; old review,
 shift and relocation shapes remain. No fake HTTP courier or delivery receipt.
+
+## Laboratory projections (#114)
+
+The ONE history producer advances from 3 to 4, adding authentic Lab receipt,
+discrepancy, count, rejection and void payloads. The four old kind mappings and
+whole-transfer scope remain. BOOTSTRAP_SCHEMA_VERSION stays 2 and the outer hash
+stays opaque. Lab commands are server operations, not courier event types. Current
+source/recipient subjects filter history before download; storing an updated QA
+projection grants no FIELD_BOOTSTRAP and proves no delivery. Independent requests
+are real; execution belongs to #115.

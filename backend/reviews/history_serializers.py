@@ -93,6 +93,33 @@ class TransferHistoryEntrySerializer(serializers.Serializer[Any]):
     subjects = HistorySubjectSerializer(many=True, allow_empty=False)
 
 
+class LabHistoryEntrySerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(
+        choices=["lab_receipt", "lab_discrepancy", "lab_count", "lab_void", "lab_rejection"]
+    )
+    bag_id = serializers.UUIDField(allow_null=True)
+    count_id = serializers.UUIDField(allow_null=True)
+    rejection_id = serializers.UUIDField(allow_null=True)
+    reading_id = serializers.UUIDField()
+    source_event_id = serializers.UUIDField()
+    recorded_at = serializers.DateTimeField()
+    author_id = serializers.UUIDField()
+    source_device_time = serializers.DateTimeField()
+    source_server_received_at = serializers.DateTimeField()
+    subjects = HistorySubjectSerializer(many=True, allow_empty=False)
+    value = serializers.IntegerField(allow_null=True)
+    viability_percent = serializers.DecimalField(max_digits=9, decimal_places=6, allow_null=True)
+    qa_state = serializers.ChoiceField(
+        choices=["not_requested", "awaiting_independent_qa", "superseded"]
+    )
+    voided = serializers.BooleanField()
+    incident_id = serializers.UUIDField(allow_null=True)
+    configuration_pending = serializers.BooleanField()
+    method_version_id = serializers.UUIDField(allow_null=True)
+    reason = serializers.CharField(allow_null=True, allow_blank=True)
+
+
 class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
     """The single history producer validates and renders its two actual domain shapes."""
 
@@ -106,6 +133,14 @@ class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
 
     @staticmethod
     def _serializer(kind: str) -> type[serializers.Serializer[Any]]:
+        if isinstance(kind, str) and kind in {
+            "lab_receipt",
+            "lab_discrepancy",
+            "lab_count",
+            "lab_void",
+            "lab_rejection",
+        }:
+            return LabHistoryEntrySerializer
         if kind == "transfer_custody":
             return TransferHistoryEntrySerializer
         if kind == "relocation_proposal":
@@ -124,8 +159,9 @@ class CourierHistorySchema(OpenApiSerializerExtension):
             RelocationHistoryEntrySerializer(), direction
         ).ref
         transfer = auto_schema.resolve_serializer(TransferHistoryEntrySerializer(), direction).ref
+        lab = auto_schema.resolve_serializer(LabHistoryEntrySerializer(), direction).ref
         return {
-            "oneOf": [review, relocation, transfer],
+            "oneOf": [review, relocation, transfer, lab],
             "discriminator": {
                 "propertyName": "kind",
                 "mapping": {
@@ -133,6 +169,16 @@ class CourierHistorySchema(OpenApiSerializerExtension):
                     "shift_validation": review["$ref"],
                     "relocation_proposal": relocation["$ref"],
                     "transfer_custody": transfer["$ref"],
+                    **{
+                        kind: lab["$ref"]
+                        for kind in (
+                            "lab_receipt",
+                            "lab_discrepancy",
+                            "lab_count",
+                            "lab_void",
+                            "lab_rejection",
+                        )
+                    },
                 },
             },
         }
