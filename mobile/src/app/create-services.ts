@@ -79,7 +79,8 @@ export async function createServices(): Promise<AppServices> {
   const engine = createEngine(shared, bundle);
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
-  const captures = createCaptures({ db, engine, requests, tokens, shiftOpen, attachments }, bundle);
+  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments };
+  const captures = createCaptures(captureDeps, bundle, day);
   return { ...shared, ...captures, engine, shiftOpen, day };
 }
 function captureIdentity(
@@ -97,10 +98,16 @@ function captureIdentity(
 function createCaptures(
   deps: Parameters<typeof createOvitrapCheck>[0] & { tokens: CredentialStore },
   bundle: DayBundleService,
+  day: DayService,
 ) {
   return {
     ovitrapCheck: createOvitrapCheck(deps),
-    ovitrapLifecycle: createOvitrapLifecycle({ ...deps, bundle }),
+    ovitrapLifecycle: createOvitrapLifecycle({
+      ...deps,
+      bundle,
+      location: day.location,
+      selectTask: (id, expected, admission) => day.select(id, expected, admission),
+    }),
   };
 }
 

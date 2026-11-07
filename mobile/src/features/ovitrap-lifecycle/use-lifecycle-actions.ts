@@ -1,4 +1,5 @@
-import { useState } from "react";
+import type { LifecycleCompletion } from "./types.ts";
+import { useState, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import type { MessageKey } from "@wolbachia/i18n";
 import { actionErrorKey } from "./action-error-key.ts";
@@ -9,7 +10,7 @@ import type { DraftPatch } from "./types.ts";
 interface Input {
   readonly state: Snapshot | null;
   readonly setState: Dispatch<SetStateAction<Snapshot | null>>;
-  readonly refresh: () => Promise<void>;
+  readonly refresh: (completion?: LifecycleCompletion) => Promise<void>;
   readonly service: LifecycleService;
   readonly setError: (key: MessageKey | null) => void;
 }
@@ -25,7 +26,7 @@ function editLifecycle(input: Input, patch: DraftPatch, eventId: string): void {
   }
   void service.draftBuffer
     .persist(service, eventId)
-    .then(refresh)
+    .then(() => refresh())
     .catch((error: unknown) => {
       setError(actionErrorKey(error));
       if (error instanceof StaleCaptureError)
@@ -36,20 +37,38 @@ function editLifecycle(input: Input, patch: DraftPatch, eventId: string): void {
 }
 export function useLifecycleActions(input: Input) {
   const [isBusy, setBusy] = useState(false);
+  const alive = useMounted();
   const run = async (
-    action: () => Promise<unknown>,
+    action: () => Promise<Snapshot>,
     eventId: string | null,
-    startsDraft = false,
+    options: boolean | { readonly startsDraft?: boolean; readonly onSuccess?: () => void } = false,
   ) => {
+    const config = typeof options === "boolean" ? { startsDraft: options } : options;
     setBusy(true);
     try {
-      return await runLifecycleAction({ ...input, startsDraft }, action, eventId);
+      const result = await runLifecycleAction(
+        { ...input, ...config, isCurrentView: () => alive.current },
+        action,
+        eventId,
+      );
+      return alive.current && result;
     } finally {
-      setBusy(false);
+      if (alive.current) setBusy(false);
     }
   };
   const edit = (patch: DraftPatch, eventId: string) => {
     editLifecycle(input, patch, eventId);
   };
   return { isBusy, run, edit };
+}
+
+function useMounted() {
+  const alive = useRef(false);
+  useEffect(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  return alive;
 }

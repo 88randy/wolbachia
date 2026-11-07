@@ -7,6 +7,7 @@ const LABELS = {
   captureEvidence: "mobile.lifecycle.capturePhoto",
   undoEvidence: "mobile.lifecycle.undo",
   refresh: "mobile.lifecycle.download",
+  refreshAdvisory: "common.actions.retry",
   adoptSnapshots: "mobile.lifecycle.adopt",
 } as const satisfies Record<string, MessageKey>;
 interface Props {

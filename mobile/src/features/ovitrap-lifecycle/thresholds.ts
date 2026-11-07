@@ -14,8 +14,8 @@ export async function relocationSuggestion(db: SqlExecutor, draft: LifecycleDraf
   const rows = await db.query(
     `SELECT c.draft FROM ovitrap_capture c JOIN outbox_event e ON e.id=c.event_id
     WHERE c.mode='check' AND json_extract(c.draft,'$.point.id')=? AND json_extract(c.draft,'$.finding')='closed-house'
-    AND e.local_status NOT IN ('rejected','in_review') AND NOT EXISTS(SELECT 1 FROM ovitrap_lineage l JOIN outbox_event ve ON ve.id=l.void_event_id WHERE l.target_event_id=c.event_id AND ve.local_status NOT IN ('rejected','in_review'))`,
-    [draft.point.id],
+    AND e.device_time<=? AND e.local_status NOT IN ('rejected','in_review') AND NOT EXISTS(SELECT 1 FROM ovitrap_lineage l JOIN outbox_event ve ON ve.id=l.void_event_id WHERE l.target_event_id=c.event_id AND ve.local_status NOT IN ('rejected','in_review'))`,
+    [draft.point.id, draft.deviceTime],
   );
   const weeks = new Set(
     rows.map((row) => captureWeek(JSON.parse(readText(row, "draft")) as Draft)),

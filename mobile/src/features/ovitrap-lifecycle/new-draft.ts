@@ -68,11 +68,12 @@ export async function startDraft(
   const shiftId = await deps.shiftId();
   if (!shiftId) throw new ShiftBlockedError();
   requireActiveSource(source, input.ovitrapId);
-  const { catalog, rules, ...audit } = source;
+  const { catalog, rules, limits, ...audit } = source;
   return {
     ...EMPTY,
     catalog,
     rules,
+    ...(limits === undefined ? {} : { limits }),
     eventId: freshEventId,
     schemaVersion: 2,
     source: audit,

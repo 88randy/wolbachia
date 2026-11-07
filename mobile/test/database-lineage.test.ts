@@ -8,6 +8,8 @@ import {
   HISTORY,
   historicalCases,
 } from "./support/lineage-fixtures.ts";
+import { AttachmentStore } from "../src/attachments/attachment-store.ts";
+import { PROJECTION_IDENTITY } from "./support/lifecycle-projection-fixtures.ts";
 
 void test("all seven pinned unmerged lineages refuse before any migration write and survive reopen", async (test) => {
   for (const setup of historicalCases()) {
@@ -57,7 +59,92 @@ void test("every released canonical prefix and cleared readiness state keeps its
       assert.deepEqual(await fixture.snapshot(), after);
     });
   }
+  await legacyLifecycleReservation(test);
 });
+
+async function legacyLifecycleReservation(test: import("node:test").TestContext) {
+  const fixture = await createLineageFixture(test, {
+    migrations: CANONICAL_MIGRATIONS.slice(0, 15),
+    version: 15,
+  });
+  const [source] = await fixture.executor.query("SELECT id FROM outbox_event LIMIT 1");
+  assert.ok(source);
+  const legacyId = "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee";
+  await fixture.executor.runAtomically([
+    {
+      sql: "INSERT INTO lifecycle_evidence(event_id,evidence_id,file_ref) VALUES(?,?,?)",
+      params: [String(source.id), legacyId.toUpperCase(), "synthetic-legacy-unowned"],
+    },
+  ]);
+  const store = new AttachmentStore(fixture.executor),
+    fence = await store.bindSession(PROJECTION_IDENTITY);
+  assert.ok(fence);
+  const references = await fixture.executor.query("SELECT * FROM lifecycle_evidence");
+  await assert.rejects(
+    store.reserve({ id: legacyId, draftId: "fresh-draft", fence }),
+    /stale_context|unproven lifecycle/,
+  );
+  await migrate(fixture.executor);
+  await assert.rejects(
+    async () =>
+      fixture.executor.query("INSERT INTO attachment_file(id,owner_key,draft_id) VALUES(?,?,?)", [
+        legacyId.toUpperCase(),
+        fence.ownerKey,
+        "fresh-draft",
+      ]),
+    /unproven lifecycle/,
+  );
+  assert.deepEqual(await fixture.executor.query("SELECT * FROM lifecycle_evidence"), references);
+  assert.deepEqual(await fixture.executor.query("SELECT * FROM attachment_file"), []);
+  const fresh = "ffffffff-ffff-4fff-8fff-ffffffffffff";
+  await store.reserve({ id: fresh, draftId: String(source.id), fence });
+  await store.saveOwned(
+    {
+      id: fresh,
+      fileRef: "synthetic-owned",
+      sizeBytes: 4,
+      contentType: "image/png",
+      sha256: "a".repeat(64),
+    },
+    fence,
+  );
+  await fixture.executor.runAtomically(
+    store.bindingStatements({ eventId: String(source.id), evidenceIds: [fresh], fence }),
+  );
+  await store.saveProgress({
+    id: fresh,
+    fence,
+    state: "verified",
+    verifiedAt: "2026-11-07T00:00:00Z",
+    attemptVersion: 0,
+  });
+  await fixture.executor.runAtomically([
+    {
+      sql: "INSERT INTO lifecycle_evidence(event_id,evidence_id,file_ref) VALUES(?,?,?)",
+      params: [String(source.id), fresh, "synthetic-owned"],
+    },
+  ]);
+  const owned = await fixture.executor.query("SELECT * FROM attachment_file"),
+    bindings = await fixture.executor.query("SELECT * FROM attachment_event");
+  await fixture.executor.query(
+    "INSERT OR IGNORE INTO attachment_file(id,owner_key,draft_id) VALUES(?,?,?)",
+    [fresh, fence.ownerKey, String(source.id)],
+  );
+  assert.deepEqual(await fixture.executor.query("SELECT * FROM attachment_file"), owned);
+  assert.deepEqual(await fixture.executor.query("SELECT * FROM attachment_event"), bindings);
+  await assert.rejects(
+    async () =>
+      fixture.executor.query(
+        "INSERT OR IGNORE INTO attachment_file(id,owner_key,draft_id) VALUES(?,?,?)",
+        [fresh.toUpperCase(), "another-owner", "fresh-draft"],
+      ),
+    /unproven lifecycle/,
+  );
+  assert.deepEqual(await fixture.executor.query("SELECT * FROM attachment_file"), owned);
+  const reopened = fixture.reopen();
+  await migrate(reopened);
+  assert.deepEqual(await reopened.query("SELECT * FROM attachment_file"), owned);
+}
 
 void test("the real startup orchestrator refuses before OUR settings and configures supported storage only afterward", async (test) => {
   const setup = historicalCases().find((candidate) => candidate.label === "33e6b78 schema10");

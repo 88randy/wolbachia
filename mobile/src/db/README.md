@@ -93,3 +93,15 @@ and unknown/private kinds regardless of availability. This reader never deletes
 floor storage or changes server-reset/final-cleanup rules. M3's runtime owner/origin
 admission uses existing schema15 and attachment_context; evaluated SQL1–15 and its
 historical import closure remain exact. No migration/backfill/adoption is added.
+
+## Additive lifecycle evidence reservation guard (#138 M5)
+
+Local schema16 appends only lifecycle_evidence_uuid (lower UUID lookup) and
+lifecycle_unproven_evidence_reservation. Fresh attachment_file INSERT cannot adopt
+a referenced legacy lifecycle UUID, case-insensitively. Existing owned rows preserve
+INSERT OR IGNORE no-op behavior, metadata, verified state and event bindings.
+No historical array/helper/SQL1–15, QA data, owner inference, backfill or reset changes.
+The registry alone gains import+append; its newly evaluated closure proves the
+protected expanded prefix unchanged. #266 derives profiles from the actual registry;
+canonical prefix upgrades and unsupported old-lineage refusals remain owning tests.
+This is ordinary synthetic SQLite evidence, never SQLCipher/device certification.

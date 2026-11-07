@@ -6,6 +6,7 @@ import { catalogLabel } from "../ovitrap-check/labels.ts";
 import { KIND_LABEL, RECOVERY_LABEL } from "./labels.ts";
 import { ProposalFeedback } from "./ProposalFeedback.tsx";
 import type { HistoryItem } from "./types.ts";
+import { DeliveryOutcome } from "./DeliveryOutcome.tsx";
 export function LifecycleHistoryItem({ item }: { readonly item: HistoryItem }) {
   const t = useT();
   const locale = useLocale();
@@ -21,6 +22,7 @@ export function LifecycleHistoryItem({ item }: { readonly item: HistoryItem }) {
       <AppText>{draft.otherText}</AppText>
       {draft.recovery ? <AppText>{t(RECOVERY_LABEL[draft.recovery])}</AppText> : null}
       <AppText>{draft.deviceTime}</AppText>
+      <DeliveryOutcome event={item.event} reviews={item.reviews} />
       {item.proposal ? <ProposalFeedback proposal={item.proposal} /> : null}
       <CorrectionHistory corrections={item.corrections} />
     </View>

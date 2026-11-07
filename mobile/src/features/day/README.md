@@ -167,3 +167,14 @@ durable revision checks. No task/Assignment/Me permission reconstruction exists.
 Downloaded and owned-local physical provenance stay distinct. Legacy decoding is
 not ownership; service display hides private data without current proven owned facts.
 The detailed protocol and remaining M4/M5/native limits live in lifecycle/README.md.
+
+## M09 final transport and task read (#138 M5)
+
+The pure create-day-bundle factory is the actual app factory, reexported by create-day.
+Active scope remains required for bootstrap/capture/read. A separate retained
+issuer/session transport fence permits ended-session final JSON retry after restart
+without giving an EvidenceOwner/unlock/read grant. Receipt settlement precedes
+projection cleanup; an old cleanup cannot clear a replacement session's cache.
+Current-task navigation and lifecycle feedback share current-task.ts: exact UUID,
+point, proven courier, removed=false and explicit v3 isCompleted=false only.
+No retained payload or point-code fallback creates an action or capture permission.

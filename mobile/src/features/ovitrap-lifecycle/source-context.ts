@@ -39,7 +39,7 @@ export function boundConfiguration(
   };
   const binding = row.captureBinding;
   return binding?.ownerKey === ownerKey(handle.owner) && binding.sessionId === handle.sessionId
-    ? { catalog: row.catalog, rules: row.rules }
+    ? { catalog: row.catalog, rules: row.rules, limits: row.limits ?? null }
     : EMPTY;
 }
 function organization(
@@ -269,16 +269,20 @@ async function admitCommit<T>(
 function captureOperation(
   deps: PortDependencies,
   expectedEventId: string | null,
-  isDraftCurrent: () => boolean,
+  callbacks: { readonly draft: () => boolean; readonly interactive: () => boolean },
 ) {
   const gate = deps.credentials.unlockGate(),
     read = deps.bundle.captureLifecycleSource();
-  const current = () =>
-    deps.credentials.isUnlocked() && deps.credentials.unlockGate() === gate && isDraftCurrent();
+  const interactive = () =>
+    deps.credentials.isUnlocked() &&
+    deps.credentials.unlockGate() === gate &&
+    callbacks.interactive();
+  const current = () => interactive() && callbacks.draft();
   return {
     read,
     expectedEventId,
     isCurrent: current,
+    isInteractiveCurrent: interactive,
     admit: <T>(turn: LifecycleSourceTurn, sqlOnly: () => Promise<T>) =>
       admitCommit({ deps, expectedEventId, current }, turn, sqlOnly),
   };
@@ -289,7 +293,8 @@ export function createLifecycleSourcePort(
   db: SqlExecutor,
 ): LifecycleSourcePort {
   return {
-    capture: (id, current) => captureOperation({ bundle, credentials, db }, id, current),
+    capture: (id, current, interactive = current) =>
+      captureOperation({ bundle, credentials, db }, id, { draft: current, interactive }),
     read<T>(
       request: LifecycleSourceRequest | null,
       use: (turn: LifecycleSourceTurn) => Promise<T>,

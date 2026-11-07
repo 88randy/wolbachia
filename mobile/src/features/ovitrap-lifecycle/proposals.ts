@@ -1,3 +1,4 @@
+import { localProposal, currentProposal } from "./proposal-model.ts";
 import { readText } from "../../db/sql.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { OvitrapStore } from "../ovitrap-check/store.ts";
@@ -5,15 +6,22 @@ import { UUID_PATTERN } from "../ovitrap-check/domain.ts";
 import { readLifecycleDraft } from "./draft-context.ts";
 import { ownerKey } from "../../attachments/types.ts";
 import type { CaptureTransportHandle } from "./capture-context-contract.ts";
+import { activeFeedback, proposalFeedback, sourceReviews, isCurrentTask } from "./feedback.ts";
+import type { Schemas } from "@wolbachia/api-client";
 import type {
   HistoryItem,
   LifecycleDraft,
   RelocationDecision,
   RelocationProposal,
 } from "./types.ts";
+interface Observation {
+  readonly handle?: CaptureTransportHandle;
+  readonly entries?: readonly Schemas["CourierHistoryEntry"][];
+}
 export async function readProposal(
   db: SqlExecutor,
   eventId: string,
+  observation: Observation = {},
 ): Promise<RelocationProposal | null> {
   const [row] = await db.query(
     "SELECT draft FROM lifecycle_capture WHERE event_id=? AND kind='relocate'",
@@ -21,7 +29,6 @@ export async function readProposal(
   );
   if (!row) return null;
   const draft = readLifecycleDraft(JSON.parse(readText(row, "draft")));
-  if (!draft.proposedLocation) throw new Error("Proposal location missing.");
   const [latest] = await db.query(
     "SELECT decision FROM lifecycle_decision WHERE proposal_event_id=? ORDER BY decided_at DESC,id DESC LIMIT 1",
     [eventId],
@@ -31,16 +38,36 @@ export async function readProposal(
     "SELECT v.event_id FROM lifecycle_void v JOIN outbox_event e ON e.id=v.event_id WHERE v.target_event_id=? AND e.local_status NOT IN ('rejected','in_review')",
     [eventId],
   );
-  return {
-    eventId,
-    status: decision?.status ?? "proposed",
-    proposedLocation: draft.proposedLocation,
-    isVoided: voids.length > 0,
-    decision,
-    nextDayTask: decision?.nextDayTask ?? null,
-  };
+  const base = localProposal(draft, decision, voids.length > 0),
+    { handle } = observation;
+  if (!handle) return base;
+  return observedProposal(db, base, {
+    pointId: draft.point.id,
+    handle,
+    entries: observation.entries,
+  });
 }
-async function historyItem(db: SqlExecutor, draft: LifecycleDraft): Promise<HistoryItem> {
+async function observedProposal(
+  db: SqlExecutor,
+  base: RelocationProposal,
+  input: { pointId: string; handle: CaptureTransportHandle; entries?: Observation["entries"] },
+) {
+  const { pointId, handle, entries } = input;
+  const { proposal: entry, retained } = await proposalFeedback(db, {
+    eventId: base.eventId,
+    pointId,
+    handle,
+    observed: entries,
+  });
+  const task = entry?.next_day_task;
+  const actionable = task ? await isCurrentTask(db, task.id, { pointId, handle }) : false;
+  return currentProposal({ base, entry, retained, isTaskActionable: actionable });
+}
+async function historyItem(
+  db: SqlExecutor,
+  draft: LifecycleDraft,
+  observation: Observation,
+): Promise<HistoryItem> {
   const capture = new OvitrapStore(db);
   const event = await capture.event(draft.eventId);
   if (!event) throw new Error("Lifecycle event missing.");
@@ -55,14 +82,16 @@ async function historyItem(db: SqlExecutor, draft: LifecycleDraft): Promise<Hist
     event,
     voidReason: voided ? readText(voided, "reason") : null,
     voidEvent: voided ? await capture.event(readText(voided, "event_id")) : null,
-    proposal: await readProposal(db, draft.eventId),
+    proposal: await readProposal(db, draft.eventId, observation),
+    reviews: sourceReviews(observation.entries ?? [], draft.eventId, draft.shiftId),
   };
 }
 export async function readHistory(
   db: SqlExecutor,
   pointId: string,
-  handle?: CaptureTransportHandle,
+  observation: Observation = {},
 ): Promise<readonly HistoryItem[]> {
+  const { handle, entries: feedback } = observation;
   const rows = await db.query(
     `SELECT draft FROM lifecycle_capture c WHERE point_id=? ${
       handle
@@ -73,8 +102,11 @@ export async function readHistory(
     } ORDER BY rowid DESC`,
     handle ? [pointId, ownerKey(handle.owner)] : [pointId],
   );
+  const entries = feedback ?? (handle ? await activeFeedback(db, handle) : []);
   return Promise.all(
-    rows.map((row) => historyItem(db, readLifecycleDraft(JSON.parse(readText(row, "draft"))))),
+    rows.map((row) =>
+      historyItem(db, readLifecycleDraft(JSON.parse(readText(row, "draft"))), { handle, entries }),
+    ),
   );
 }
 function validateDecision(decision: RelocationDecision): void {
@@ -82,7 +114,7 @@ function validateDecision(decision: RelocationDecision): void {
     !UUID_PATTERN.test(decision.id) ||
     !UUID_PATTERN.test(decision.proposalEventId) ||
     !["approved", "rejected"].includes(decision.status) ||
-    !Number.isFinite(Date.parse(decision.decidedAt)) ||
+    !Number.isFinite(Date.parse(decision.decidedAt ?? "")) ||
     typeof decision.reason !== "string" ||
     decision.reason.length > 1000
   )
@@ -117,7 +149,7 @@ export async function decisionStatement(
     params: [
       decision.id,
       decision.proposalEventId,
-      new Date(decision.decidedAt).toISOString(),
+      new Date(decision.decidedAt ?? "").toISOString(),
       serialized,
     ],
   };

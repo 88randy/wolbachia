@@ -499,4 +499,51 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.unlock.keepWorking": "Keep working",
   "mobile.unlock.resumeSetup": "Enter your password to finish creating your PIN.",
   "mobile.unlock.wrongPinLast": "Incorrect PIN. You have 1 attempt left.",
+  "mobile.lifecycle.advisoryUnavailable":
+    "Advisory unavailable for this instant and these rules. Capture can continue.",
+  "mobile.lifecycle.advisoryFuture":
+    "The capture instant is still in the server’s future. Retry later.",
+  "mobile.lifecycle.advisoryAt":
+    "Facts observed through {at}. Late facts or voids can change this observation.",
+  "mobile.lifecycle.advisoryCounts": "Closed-house weeks: {weeks}. Point incidents: {incidents}.",
+  "mobile.lifecycle.advisorySuggested":
+    "Rules suggest considering relocation. Saving only creates a proposal.",
+  "mobile.lifecycle.advisoryNotSuggested":
+    "The available observation does not reach the advisory thresholds.",
+  "mobile.lifecycle.legacyAdvisory":
+    "Only partial local history is available; it does not establish the point incident total.",
+  "mobile.lifecycle.decisionReasonUnknown": "Historical reason unavailable.",
+  "mobile.lifecycle.decisionTimeUnknown": "Historical decision time unavailable.",
+  "mobile.lifecycle.sourceVoided":
+    "The source was voided: {at}. Proposal and evidence are retained.",
+  "mobile.lifecycle.legacyDecision":
+    "Earlier local record retained for audit; it does not prove server review.",
+  "mobile.lifecycle.taskReferenceOnly":
+    "Scheduled reference; it is not yet a current task assigned to you.",
+  "mobile.lifecycle.taskAssigned": "Current task assigned to you and not completed.",
+  "mobile.lifecycle.openTask": "View assigned task",
+  "mobile.lifecycle.ingestAccepted": "Original ingestion result: accepted.",
+  "mobile.lifecycle.ingestRejected": "Original ingestion result: rejected.",
+  "mobile.lifecycle.ingestReview": "Original ingestion result: in review.",
+  "mobile.lifecycle.reviewedTitle": "Later server decision",
+  "mobile.lifecycle.effectApplied": "Effect applied after review.",
+  "mobile.lifecycle.effectAdopted": "Earlier effect acknowledged; original provenance retained.",
+  "mobile.lifecycle.effectDiscarded": "Work discarded by decision; its history is retained.",
+  "mobile.lifecycle.effectIncident": "Incident opened; this does not accept the original capture.",
+  "mobile.lifecycle.effectApproved": "Shift reviewed; it grants no new capture permission.",
+  "mobile.lifecycle.effectObserved": "Shift observation recorded.",
+  "mobile.lifecycle.approvalNotCurrent": "This validation is no longer the current approval.",
+  "mobile.lifecycle.nonterminalDecision": "Informational decision; review can continue.",
+  "mobile.lifecycle.limitsUnavailable":
+    "Choose a downloaded reason with known limits before correcting.",
+  "mobile.lifecycle.reasonLimits":
+    "Minimum visible characters for this option: {min}. Note limit: {max} characters.",
+  "mobile.lifecycle.epochClosed":
+    "The quadrant is closed. New captures cannot be saved in this frame.",
+  "mobile.lifecycle.epochUnknown":
+    "A verifiable current frame is unavailable. Refresh; the draft is retained.",
+  "mobile.lifecycle.recoveryBlocked":
+    "The draft is retained, but ownership is unproven for this session. Sign in with the original account or contact support.",
+  "mobile.lifecycle.remoteProposal":
+    "Downloaded server proposal; it is not an editable local capture.",
 };

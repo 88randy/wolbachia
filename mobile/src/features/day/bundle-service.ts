@@ -3,11 +3,12 @@ import type { SyncPassDeps } from "../../sync/sync-pass.ts";
 import { SerialQueue } from "./serial-queue.ts";
 import type { DayStore } from "./store.ts";
 import type { DayCache } from "./types.ts";
+import type { TaskOwner } from "./current-task.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import { ownerKey } from "../../attachments/types.ts";
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
 import type { LifecycleSourceReader } from "../ovitrap-lifecycle/source-context.ts";
-import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
+import type { LifecycleSourceRequest, LifecycleAdmission } from "../ovitrap-lifecycle/types.ts";
 import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 
 export type BundleResult =
@@ -25,6 +26,7 @@ interface Dependencies {
   readonly transport: BundleTransport;
   readonly now: () => Date;
   readonly getScopeKey?: () => string | null;
+  readonly getTransportKey?: () => string | null;
   readonly getCaptureIdentity?: () => EvidenceIdentity | null;
 }
 type SyncHooks = Pick<
@@ -47,7 +49,7 @@ export class DayBundleService {
   async read(): Promise<DayCache> {
     const empty: DayCache = { tasks: [], manifests: [], meta: null };
     const revocation = this.#revocation;
-    if (this.#isRevoked) return empty;
+    if (this.#isRevoked || this.#deps.getScopeKey?.() === null) return empty;
     if (await this.#deps.store.needsCleanup()) {
       this.#invalidate();
       return empty;
@@ -227,6 +229,24 @@ export class DayBundleService {
     if (await this.#deps.store.needsCleanup()) await this.clearSessionData();
   };
   revoke = (): Promise<void> => this.#network.run(this.clearSessionData);
+  #captureTransportGuard(): () => void {
+    const read = this.#deps.getTransportKey ?? this.#deps.getScopeKey;
+    const original = read?.();
+    return () => {
+      if (read !== undefined && (original === null || read() !== original))
+        throw new RemoteSessionEnded();
+    };
+  }
+  #clearTransportProjections(assertSession: () => void): Promise<void> {
+    return this.#projections.run(async () => {
+      assertSession();
+      this.#invalidate();
+      await this.#deps.store.markCleanupPending();
+      assertSession();
+      await this.#deps.store.revoke();
+      this.#publish();
+    });
+  }
   #suspendCaptureForRecovery(turn: ProjectionTurn): Promise<ProjectionTurn> {
     return turn.write(async () => {
       await this.#deps.store.suspendCaptureForRecovery(turn.handle);
@@ -236,6 +256,7 @@ export class DayBundleService {
     });
   }
   syncHooks(): SyncHooks {
+    let assertSession = this.#captureTransportGuard();
     let turn: ProjectionTurn = {
       write: this.captureProjectionWriter(),
       handle: null,
@@ -244,7 +265,12 @@ export class DayBundleService {
       serializeProjectionPass: (pass) =>
         this.#network.run(async () => {
           await this.retryCleanup();
-          turn = await this.#captureTurn();
+          assertSession = this.#captureTransportGuard();
+          assertSession();
+          turn =
+            this.#deps.getScopeKey?.() === null
+              ? { handle: null, write: () => Promise.reject(new RemoteSessionEnded()) }
+              : await this.#captureTurn();
           return pass();
         }),
       applyProjectionChanges: async (changes) => {
@@ -256,10 +282,25 @@ export class DayBundleService {
         if (recovered === null) throw new RemoteSessionEnded();
         turn = recovered;
       },
-      revokeProjections: this.clearSessionData,
+      revokeProjections: () => this.#clearTransportProjections(assertSession),
     };
   }
   /** Local routing never waits for HTTP or adopts a previous session's selection. */
+  withCurrentTask<T>(
+    id: string,
+    expected: TaskOwner,
+    action: { readonly admission: LifecycleAdmission; readonly sqlOnly: () => Promise<T> },
+  ): Promise<T> {
+    const assertCurrent = this.#captureGuard();
+    return action.admission.commit(async () => {
+      assertCurrent();
+      const task = await this.#deps.store.currentTask(id, expected);
+      assertCurrent();
+      action.admission.assertCurrent();
+      if (!task) throw new LifecycleGateError("scope");
+      return action.sqlOnly();
+    });
+  }
   withAssignments<T>(action: (cache: DayCache) => Promise<T>): Promise<T> {
     const assertCurrent = this.#captureGuard();
     return this.#projections.run(async () => {

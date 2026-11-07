@@ -2,6 +2,33 @@ import { UUID_PATTERN, visibleLength } from "../ovitrap-check/domain.ts";
 import { reviewReasons as captureReviewReasons } from "../ovitrap-check/review-policy.ts";
 import type { OutboxEvent } from "../../outbox/outbox-event.ts";
 import type { LifecycleDraft } from "./types.ts";
+import type { Schemas } from "@wolbachia/api-client";
+type VoidOption = import("../shift-open/domain.ts").ChecklistItem;
+export function correctionPolicy(
+  option: VoidOption | undefined,
+  limits: Schemas["MeLimits"] | null | undefined,
+) {
+  if (!option || typeof option.is_other !== "boolean" || !limits) return null;
+  return {
+    minimum: option.is_other ? limits.void_reason_min_length : 0,
+    maximum: limits.void_reason_max_length,
+  };
+}
+export function validCorrectionReason(
+  reason: string,
+  option: VoidOption | undefined,
+  limits: Schemas["MeLimits"] | null | undefined,
+): boolean {
+  const policy = correctionPolicy(option, limits);
+  if (!policy) return false;
+  const value = reason.normalize("NFC").replaceAll("\r\n", "\n").trim();
+  return (
+    Array.from(value).length <= policy.maximum &&
+    visibleLength(value) >= policy.minimum &&
+    !/[\p{Cs}\u202a-\u202e\u2066-\u2069]/u.test(value) &&
+    !/\p{Cc}/u.test(value.replaceAll("\n", ""))
+  );
+}
 export const MAX_EVIDENCE = 100;
 export const MAX_OTHER = 1000;
 export function needsOther(draft: LifecycleDraft): boolean {

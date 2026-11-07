@@ -30,6 +30,7 @@ export interface LifecycleRules extends Rules {
 export interface Configuration {
   readonly catalog: LifecycleCatalog | null;
   readonly rules: LifecycleRules | null;
+  readonly limits?: Schemas["MeLimits"] | null;
 }
 export interface LegacyLifecycleDraft extends Configuration {
   readonly schemaVersion?: undefined;
@@ -105,9 +106,18 @@ export interface LifecycleSourceTurn {
   readonly resolve: (request: LifecycleSourceRequest) => Promise<LifecycleSource>;
   readonly write: <T>(commit: () => Promise<T>) => Promise<T>;
 }
+export interface LifecycleAdmission {
+  readonly assertCurrent: () => void;
+  readonly commit: <T>(sqlOnly: () => Promise<T>) => Promise<T>;
+}
+export interface LifecycleCompletion {
+  normalize(beforeRevision: number, observedEventId: string | null): void;
+  complete(isViewCurrent: () => boolean, onSuccess?: () => void): Promise<boolean>;
+}
 export interface LifecycleSourceOperation {
   readonly expectedEventId: string | null;
   readonly isCurrent: () => boolean;
+  readonly isInteractiveCurrent: () => boolean;
   read<T>(
     request: LifecycleSourceRequest | null,
     use: (turn: LifecycleSourceTurn) => Promise<T>,
@@ -115,7 +125,11 @@ export interface LifecycleSourceOperation {
   admit<T>(turn: LifecycleSourceTurn, sqlOnly: () => Promise<T>): Promise<T>;
 }
 export interface LifecycleSourcePort {
-  capture(expectedEventId: string | null, isDraftCurrent: () => boolean): LifecycleSourceOperation;
+  capture(
+    expectedEventId: string | null,
+    isDraftCurrent: () => boolean,
+    isInteractionCurrent?: () => boolean,
+  ): LifecycleSourceOperation;
   read<T>(
     request: LifecycleSourceRequest | null,
     use: (turn: LifecycleSourceTurn) => Promise<T>,
@@ -124,13 +138,13 @@ export interface LifecycleSourcePort {
 export type DraftPatch = Partial<
   Pick<LifecycleDraft, "reasonCode" | "otherText" | "recovery" | "reviewAcknowledged">
 >;
-/** Local-only contract until B-33 publishes its changes/bundle producer schema. */
+/** Local decision audit/read model. Actual wire authority uses decoded history3, never this stored seam. */
 export interface RelocationDecision {
   readonly id: string;
   readonly proposalEventId: string;
   readonly status: "approved" | "rejected";
-  readonly decidedAt: string;
-  readonly reason: string;
+  readonly decidedAt: string | null;
+  readonly reason: string | null;
   readonly nextDayTask: {
     readonly id: string;
     readonly code: string;
@@ -140,16 +154,22 @@ export interface RelocationDecision {
 export interface RelocationProposal {
   readonly eventId: string;
   readonly status: "proposed" | "approved" | "rejected";
-  readonly proposedLocation: readonly [number, number];
+  readonly proposedLocation: readonly number[];
   readonly isVoided: boolean;
   readonly decision: RelocationDecision | null;
   readonly nextDayTask: RelocationDecision["nextDayTask"];
+  readonly serverProposalId?: string | null;
+  readonly sourceVoidedAt?: string | null;
+  readonly provenance?: "downloaded" | "retained" | "legacy-local" | "local";
+  readonly legacyDecision?: RelocationDecision | null;
+  readonly isTaskActionable?: boolean;
 }
 export interface CorrectionItem {
   readonly event: OutboxEvent;
   readonly reason: string;
 }
 export interface HistoryItem {
+  readonly reviews?: readonly Schemas["ReviewHistoryEntry"][];
   readonly corrections: readonly CorrectionItem[];
   readonly draft: LifecycleDraft;
   readonly event: OutboxEvent;
@@ -164,6 +184,8 @@ export interface PhysicalOvitrap {
   readonly replacedBy: string | null;
 }
 export interface StoredLifecycle {
+  readonly reviews?: readonly Schemas["ReviewHistoryEntry"][];
+  readonly remoteProposals?: readonly Schemas["RelocationHistoryEntry"][];
   readonly recovery?: "blocked_ownership" | "unsupported_draft";
   readonly draft: LifecycleDraft | null;
   readonly event: OutboxEvent | null;

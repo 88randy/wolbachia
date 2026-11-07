@@ -20,6 +20,9 @@ import type {
 } from "./types.ts";
 import { physicalOvitrap } from "./physical-projection.ts";
 import { readHistory, readProposal, decisionStatement } from "./proposals.ts";
+import { activeFeedback, sourceReviews } from "./feedback.ts";
+import type { Schemas } from "@wolbachia/api-client";
+import { readQuadrantReference } from "./quadrant-contract.ts";
 import { lifecycleStatements } from "./store-statements.ts";
 export function identityGuard(eventId: string | null): SqlStatement {
   return {
@@ -43,11 +46,25 @@ export class LifecycleStore {
     const [row] = await this.db.query("SELECT draft,event_id FROM lifecycle_draft WHERE slot = 1");
     if (!row) return { draft: null, event: null, proposal: null, history: [] };
     const draft = readLifecycleDraft(JSON.parse(readText(row, "draft")));
+    const feedback = turn ? await activeFeedback(this.db, turn.handle) : [];
     return {
       draft,
       event: typeof row.event_id === "string" ? await this.capture.event(row.event_id) : null,
-      proposal: await readProposal(this.db, draft.eventId),
-      history: await readHistory(this.db, draft.point.id, turn?.handle),
+      proposal: await readProposal(this.db, draft.eventId, {
+        handle: turn?.handle,
+        entries: feedback,
+      }),
+      history: await readHistory(this.db, draft.point.id, {
+        handle: turn?.handle,
+        entries: feedback,
+      }),
+      reviews: sourceReviews(feedback, draft.eventId, draft.shiftId),
+      remoteProposals: feedback.filter(
+        (entry): entry is Schemas["RelocationHistoryEntry"] =>
+          entry.kind === "relocation_proposal" &&
+          entry.point_id === draft.point.id &&
+          entry.proposal_event_id !== draft.eventId,
+      ),
     };
   }
   async readOwned(turn: LifecycleSourceTurn | null): Promise<StoredLifecycle> {
@@ -118,6 +135,28 @@ export class LifecycleStore {
   }
   physical(id: string) {
     return physicalOvitrap(this.db, id);
+  }
+  async frameState(
+    pointId: string,
+    turn: LifecycleSourceTurn | null,
+  ): Promise<"open" | "closed" | "unknown"> {
+    if (!turn) return "unknown";
+    const [row] = await this.db.query(
+      `SELECT quadrant.body FROM day_sampling_point point
+      JOIN lifecycle_courier_projection quadrant ON quadrant.kind='quadrant' AND quadrant.id=json_extract(point.payload,'$.quadrant_id')
+      JOIN (${CURRENT_CAPTURE_CONTEXT}) context ON json_extract(context.value,'$.ownerKey')=?
+        AND json_extract(context.value,'$.sessionId')=? AND json_extract(context.value,'$.authorityRevision')=?
+      WHERE point.id=? AND point.removed=0`,
+      [ownerKey(turn.handle.owner), turn.handle.sessionId, turn.handle.revision, pointId],
+    );
+    if (!row) return "unknown";
+    try {
+      const { closure } = readQuadrantReference(JSON.parse(readText(row, "body")));
+      return closure.kind === "open" || closure.kind === "closed" ? closure.kind : "unknown";
+    } catch (error) {
+      if (error instanceof CourierContractError) return "unknown";
+      throw error;
+    }
   }
   async begin(draft: LifecycleDraft, eventId: string | null): Promise<void> {
     await this.db.runAtomically(this.beginStatements(draft, eventId));

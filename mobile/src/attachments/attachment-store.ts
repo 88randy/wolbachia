@@ -52,9 +52,10 @@ export class AttachmentStore {
     const { id, draftId, fence } = input;
     const rows = await this.db.query(
       `INSERT INTO attachment_file(id,owner_key,draft_id)
-      SELECT ?,?,? WHERE ${CURRENT_FENCE} AND NOT EXISTS(SELECT 1 FROM ovitrap_evidence WHERE lower(evidence_id)=?)
+      SELECT ?,?,? WHERE ${CURRENT_FENCE} AND NOT EXISTS(SELECT 1 FROM ovitrap_evidence WHERE lower(evidence_id)=lower(?))
+        AND NOT EXISTS(SELECT 1 FROM lifecycle_evidence WHERE lower(evidence_id)=lower(?))
       RETURNING id`,
-      [id, fence.ownerKey, draftId, ...fenceParams(fence), id],
+      [id, fence.ownerKey, draftId, ...fenceParams(fence), id, id],
     );
     if (!rows.length) throw new EvidenceError("stale_context");
   }

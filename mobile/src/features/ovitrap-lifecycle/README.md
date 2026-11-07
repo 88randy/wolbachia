@@ -1,6 +1,77 @@
 # M-09 lifecycle capture (#138)
 
-## Current composition checkpoint — M3
+## Current M5 composition (local, not device qualification)
+
+The actual history3/B33 producer is decoded and materialized by the existing
+DayStore writer. Feedback joins the exact original source UUID and point UUID.
+Ingest receipt/status stays immutable and separate from review effect, terminal
+state, source void and current shift approval. Nullable legacy decision reason/time
+stay unknown. Remote proposals render as downloaded references without a fabricated
+local draft/event. A next-day task reference is not an assignment: opening requires
+the same current task UUID, point, proven courier and explicit v3 completion=false.
+This read action retains the current owner/session/unlock/draft fence; it neither
+reopens the original shift nor grants capture. No geometry moves automatically.
+
+The optional OP03 read uses the actual #287 generated GET physical UUID + original
+aware device_time. Its complete content hash and ETag, exact point/cutoff and frozen
+rule version_id/value/effective_from, timezone and epi-week tuple must match. The
+bounded cache is private metadata in the existing configuration KV row, bound to
+original owner/session/durable authority revision. Retry revalidates that exact
+observation with If-None-Match; it does not replace capture configuration. Same-at
+late facts/voids may change the version. A future_cutoff response stays unavailable
+until a fresh server response; the phone never guesses zero or advances server time.
+Unknown offline cutoff/rules stay unavailable without blocking otherwise valid
+capture. Revocation/ABA hides retained cache; late HTTP/304 cannot publish it anew.
+The historical local closed-week counter is labelled partial and is never v2 OP03.
+
+Current Me.limits and delivered void catalog govern correction reason validation;
+Other stays catalog-defined and last. These limits do not replace frozen capture
+rules or manufacture authority. Configuration and advisory publication retain their
+original turn. Bundle updates synchronously hide the old private view and cancel
+interactive continuations before the asynchronous refresh; unmount/late action
+callbacks cannot navigate or publish a stale model.
+
+Foreground GPS reuses the existing day LocationSource, AppState and bounded 10s
+technical wait. Inactive, denied, stale, invalid and future fixes do not become
+coordinates. Actual accuracy reaches the frozen review policy unchanged. No new
+native library or guessed geometry exists. Shared246 EvidenceCapture adopts to an
+exclusive durable private file under the original owner. Save enrolls only confirmed
+photo UUIDs in the SAME lifecycle/outbox/evidence transaction. Undo/cancelled adopted
+photos remain local; a write failure retains draft/file recovery. The existing
+serialized AttachmentSync verifies declared bytes before their event is eligible;
+verification never changes an in_review verdict or manufactures review acceptance.
+The acquisition port is still unavailable by default; actual camera acquisition is
+[#253](https://github.com/88randy/wolbachia/issues/253), not a mocked native success.
+
+Local schema16 appends only a case-insensitive legacy lifecycle-evidence index and
+fresh attachment reservation guard after protected evaluated SQL1–15. Runtime reserve
+uses the SAME INSERT and both existing capture reference owners. A legacy UUID cannot
+be adopted, while a previously owned/verified row retains metadata, bindings and
+idempotent no-op behavior. No backfill, reset, new table, queue or old-APK conversion.
+Source-derived #266 profiles still reject unsupported lineages before our writes.
+The ordinal is local; canonical reconciliation belongs to the orchestrator.
+
+createDayBundle is the real factory shared by app wiring and owning C7 tests. Its
+retained issuer/session transport fence permits only final JSON POST/retry/reopen;
+ended credentials still cannot unlock, supply EvidenceOwner, bootstrap or capture.
+The final receipt is settled before cleanup. A replacement session defeats an old
+cleanup without deleting its new projections. The two projection/result transactions
+and cleanup recovery remain intact.
+
+P15–P17 keep localized wrapping controls, explicit reasons/Other/recovery and photo
+Undo. Receipt, reviewed effect and current task action use separate labels; unknown
+metadata is explicit. S09/S15/S16 PNG + HTML were read and the project UI skill was
+applied. Host-prop tests cover es-MX/en, light/dark and scale1/1.3; they are not native
+layout/TalkBack or device certification. Android force-stop/SQLCipher, actual GPS,
+camera/file/network/API/B33 task journey and both MO01 device profiles remain UNRUN.
+Q1/Q2 and Draft219/Refs138 remain open; Node and prior APK evidence cannot close them.
+
+Owning tests extend existing m-09 AC2/AC3/AC4, m-06 final-upload composition and
+source-derived database-lineage groups. The ignored M5 packet records actual RED,
+intermediate fixture failures, GREEN, prefix preservation and final gate commands.
+The sections below are historical milestone records, not current missing producers.
+
+## Historical composition checkpoint — M3
 
 The production composition now forwards the existing synchronous acceptedEvidenceOwner
 through createDayBundle. One private source turn captures the original transport
@@ -54,7 +125,7 @@ not native qualification. Full feedback/B33 task joins, reason limits from Me.li
 actual #287 advisory, foreground GPS and shared #246 evidence/Undo integration remain
 in M4/M5. Camera #253 and Q1/Q2 device/accessibility gates remain separate and UNRUN.
 The M1/M2 checkpoint descriptions and older notes below are historical phase records.
-## Current contract continuation — M1
+## Historical contract continuation — M1
 
 The historical implementation and verification notes below describe the legacy
 wiring. Actual canonical fbb3b6b (#106) supplies history schema3
@@ -522,3 +593,35 @@ Full M5 feedback/history3/B33 task joins, actual287 OP03 consumption, Me.limits,
 foreground GPS, shared246 evidence Save/Undo, forms and accessibility remain required.
 Camera253/visual203 are separate holds. Node/file-backed SQLite results do not
 qualify Q1/Q2, native SQLCipher, physical restart or the two device profiles.
+## M5 R1 — one original interactive admission
+
+Every nested interactive continuation carries the SAME operation/turn admission.
+The evidence bridge checks it synchronously at the actual native port invocation,
+after canonical246 has awaited its session bind; no native wait runs under gates.
+Current-task selection enters credentials → ORIGINAL projection writer → SQLite,
+without a second writer, and rechecks that same admission immediately after its
+SQL read and before navigation KV. The original source turn validates current SQL
+context before this short selection. Background evidence/read ownership is not
+conditioned on unlock.
+
+UI completion remains tied to the original owner/session/context/unlock generation,
+interaction and displayed UUID. It is rechecked after refresh and immediately before
+the synchronous push/close callback. A buffer-revision successor is acknowledged
+only for the action's OWN explicit start or the applied same-UUID refresh/normalization;
+an edit or canceled/replaced context cannot reseal it. Already-committed capture or
+selection that won before a later change is retained, not rolled back by UI loss.
+
+Correction service, UI gate and help share the actual selected catalog option:
+only is_other requires the visible minimum; other options allow empty/short notes.
+All options still require known limits, maximum length and permitted characters.
+Unknown/missing options remain unavailable. Advisory403 suppresses the retained
+observation through the ORIGINAL request/context SQL CAS, without inferring which
+permission disappeared, ending auth or deleting the body. A newer/different context
+is not overwritten. Ordinary offline failure retains the proven available observation.
+
+The interactive403 UI path receives a private ApiError subtype carrying the SAME
+original operation completion; it does not recapture the actor or infer a grant.
+The actual snapshot refresh and inline error callback publish only inside that
+completion after the awaited read. A completion emitted after cancellation starts
+permanently ineligible. Cancel/lock while refreshing cannot publish a stale view;
+the normal winner displays the suppressed observation and retryable error.

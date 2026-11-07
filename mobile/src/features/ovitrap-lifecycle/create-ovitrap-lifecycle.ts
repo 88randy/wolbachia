@@ -1,5 +1,6 @@
 import { unwrap } from "@wolbachia/api-client";
 import { randomUUID } from "expo-crypto";
+import { AppState } from "react-native";
 import { createMobileApiClient } from "../../api/create-api-client.ts";
 import type { CredentialStore } from "../../auth/credential-store.ts";
 import type { TokenStore } from "../../auth/token-store.ts";
@@ -9,12 +10,18 @@ import type { SyncEngine } from "../../sync/sync-engine.ts";
 import type { ShiftOpenService } from "../shift-open/service.ts";
 import type { EvidencePort, GpsPort } from "../ovitrap-check/types.ts";
 import { captureShiftId } from "../ovitrap-check/shift-authorization.ts";
-import { readLifecycleCatalog, readLifecycleRules } from "./snapshots.ts";
+import { readLifecycleCatalog, readLifecycleRules, readLifecycleLimits } from "./snapshots.ts";
 import { LifecycleService } from "./service.ts";
 import { LifecycleStore } from "./store.ts";
 import { createLifecycleSourcePort } from "./source-context.ts";
 import type { LifecycleSourceTurn, LifecycleSourceOperation } from "./types.ts";
 import type { DayBundleService } from "../day/bundle-service.ts";
+import type { LocationSource } from "../day/location.ts";
+import type { Attachments } from "../../attachments/create-attachments.ts";
+import { lifecycleEvidence } from "./evidence-configuration.ts";
+import { ForegroundLifecycleGps } from "./foreground-gps.ts";
+import { LifecycleAdvisory } from "./advisory.ts";
+import { createScopedApiClient } from "../../api/create-scoped-api-client.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly engine: SyncEngine;
@@ -25,6 +32,9 @@ interface Dependencies {
   readonly shiftOpen: Pick<ShiftOpenService, "read">;
   readonly gps?: GpsPort;
   readonly evidence?: EvidencePort;
+  readonly location: LocationSource;
+  readonly selectTask: NonNullable<import("./ports.ts").Dependencies["selectTask"]>;
+  readonly attachments?: Pick<Attachments, "capture" | "session" | "store">;
 }
 interface ConfigurationTurn {
   readonly turn: LifecycleSourceTurn;
@@ -37,7 +47,7 @@ function configurationRequest(deps: Dependencies, original: ConfigurationTurn) {
     throw new Error("Configuration requires an active pinned session.");
   const client = createMobileApiClient({ baseUrl, tokens: deps.tokens }),
     signal = AbortSignal.timeout(30_000);
-  return async (path: "/api/v1/field/catalog/" | "/api/v1/field/rules/") => {
+  return async (path: "/api/v1/field/catalog/" | "/api/v1/field/rules/" | "/api/v1/me/") => {
     const response = await deps.requests.run(async () => {
       await original.turn.assertCurrent();
       if (!original.turn.handle.isCurrent() || !original.operation.isCurrent())
@@ -63,12 +73,19 @@ async function download(
   const request = configurationRequest(deps, original);
   const catalog = readLifecycleCatalog(await request("/api/v1/field/catalog/"));
   const rules = readLifecycleRules(await request("/api/v1/field/rules/"));
+  const limits = readLifecycleLimits(await request("/api/v1/me/"));
   await original.operation.admit(original.turn, () =>
-    store.saveConfiguration({ catalog, rules }, original.turn),
+    store.saveConfiguration({ catalog, rules, limits }, original.turn),
   );
 }
 export function createOvitrapLifecycle(deps: Dependencies): LifecycleService {
   const store = new LifecycleStore(deps.db);
+  const gps = foregroundGps(deps);
+  const advisory = new LifecycleAdvisory({
+    db: deps.db,
+    requests: deps.requests,
+    client: () => createScopedApiClient({ tokens: deps.tokens }),
+  });
   return new LifecycleService({
     store,
     source: createLifecycleSourcePort(deps.bundle, deps.tokens, deps.db),
@@ -76,8 +93,38 @@ export function createOvitrapLifecycle(deps: Dependencies): LifecycleService {
     uuid: randomUUID,
     now: () => new Date(),
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
-    gps: deps.gps ?? { locate: () => Promise.resolve(null) },
+    gps: deps.gps ?? gps,
+    cancelNative: gps.cancel,
+    selectTask: deps.selectTask,
     evidence: deps.evidence ?? { capture: () => Promise.resolve(null) },
-    refresh: (turn, operation) => download(deps, store, { turn, operation }),
+    refreshAdvisory: (draft, turn, operation) => advisory.refresh(draft, turn, operation),
+    ...lifecycleEvidence({ port: deps.evidence, attachments: deps.attachments }),
+    refresh: async (turn, operation) => {
+      await download(deps, store, { turn, operation });
+      const current = await store.readOwned(turn);
+      if (current.draft) await advisory.refresh(current.draft, turn, operation);
+    },
+  });
+}
+
+function foregroundGps(deps: Dependencies) {
+  return new ForegroundLifecycleGps({
+    source: deps.location,
+    now: () => new Date(),
+    activity: {
+      isActive: () => AppState.currentState === "active",
+      subscribe: (listener) => {
+        const subscription = AppState.addEventListener("change", listener);
+        return () => {
+          subscription.remove();
+        };
+      },
+    },
+    schedule: (callback, delay) => {
+      const timer = setTimeout(callback, delay);
+      return () => {
+        clearTimeout(timer);
+      };
+    },
   });
 }

@@ -8,27 +8,26 @@ import { P17Screen } from "./P17Screen.tsx";
 import { LifecycleFeedback } from "./LifecycleFeedback.tsx";
 import { LifecycleHistory } from "./LifecycleHistory.tsx";
 import type { M09Model } from "./use-m-09.ts";
+import { Notice } from "../../ui/Notice.tsx";
 export function LifecycleBody({ model }: { readonly model: M09Model }) {
   const t = useT();
   const state = model.state;
   const draft = state?.draft;
   if (!state) return <LifecycleLoading />;
-  if (!draft) return <AppText>{t("mobile.lifecycle.empty")}</AppText>;
-  const props = { draft, model };
+  if (!draft)
+    return state.recovery ? (
+      <Notice tone="warning" icon="alert" message={t("mobile.lifecycle.recoveryBlocked")} />
+    ) : (
+      <AppText>{t("mobile.lifecycle.empty")}</AppText>
+    );
+  const props = { draft, model },
+    Form = { replace: P15Screen, relocate: P16Screen, remove: P17Screen }[draft.kind];
   return (
     <View>
       {state.event ? (
         <LifecycleFeedback {...props} />
       ) : !state.isShiftBlocked && !state.isScopeBlocked ? (
-        <View>
-          {draft.kind === "replace" ? (
-            <P15Screen key={draft.eventId} {...props} />
-          ) : draft.kind === "relocate" ? (
-            <P16Screen key={draft.eventId} {...props} />
-          ) : (
-            <P17Screen key={draft.eventId} {...props} />
-          )}
-        </View>
+        <Form key={draft.eventId} {...props} />
       ) : null}
       <LifecycleHistory model={model} />
     </View>

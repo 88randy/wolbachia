@@ -6,6 +6,26 @@ import {
 } from "../ovitrap-check/snapshots.ts";
 import type { LifecycleCatalog, LifecycleRules } from "./types.ts";
 import { UUID_PATTERN } from "../ovitrap-check/domain.ts";
+import type { Schemas } from "@wolbachia/api-client";
+import { readRecord } from "./contract-readers.ts";
+export function readLifecycleLimits(me: unknown): Schemas["MeLimits"] {
+  const limits = readRecord(readRecord(me).limits);
+  const minimum = limits.void_reason_min_length,
+    maximum = limits.void_reason_max_length;
+  if (
+    typeof minimum !== "number" ||
+    typeof maximum !== "number" ||
+    !Number.isSafeInteger(minimum) ||
+    !Number.isSafeInteger(maximum) ||
+    minimum < 1 ||
+    maximum < minimum
+  )
+    throw new Error("Void reason limits unavailable.");
+  return { void_reason_min_length: minimum, void_reason_max_length: maximum };
+}
+function ordered(items: ReturnType<typeof readCatalogItems>) {
+  return [...items.filter((item) => !item.is_other), ...items.filter((item) => item.is_other)];
+}
 export function readLifecycleCatalog(value: unknown): LifecycleCatalog {
   const base = readCatalog(value);
   if (
@@ -17,10 +37,10 @@ export function readLifecycleCatalog(value: unknown): LifecycleCatalog {
     throw new Error("Invalid lifecycle catalogs.");
   return {
     version: base.version,
-    voidReasons: base.voidReasons,
-    replace: readCatalogItems(value.catalogs, "replacement-reason"),
-    relocate: readCatalogItems(value.catalogs, "relocation-reason"),
-    remove: readCatalogItems(value.catalogs, "removal-reason"),
+    voidReasons: ordered(base.voidReasons),
+    replace: ordered(readCatalogItems(value.catalogs, "replacement-reason")),
+    relocate: ordered(readCatalogItems(value.catalogs, "relocation-reason")),
+    remove: ordered(readCatalogItems(value.catalogs, "removal-reason")),
   };
 }
 function threshold(parameters: readonly unknown[], key: string, maximum: number): number | null {

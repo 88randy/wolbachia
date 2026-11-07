@@ -795,114 +795,41 @@ phone, API, Docker or database service is required for this fix.
 
 ## M-09: replace, relocate, remove (#138)
 
-Current M3 continuation: production now wires the proven capture identity and real
-point/physical/quadrant provider, explicit v2 new start and current-session admission
-without a fabricated M08 Assignment. Owned/unproven legacy data remains recoverable
-and private; no-file origin shares the existing file-owner SQL arbiter. See the
-feature README's current M3 checkpoint for exact invariants/evidence. Actual #287
-advisory, feedback/task UI, foreground GPS and #246 lifecycle evidence bridge remain
-in M4/M5; camera253 and native/Q1/Q2 are not completed by this checkpoint. Older
-implementation paragraphs below are historical and do not establish current API or
-physical acceptance.
+P15–P17 use the real point/physical/quadrant provider and whole paired capture
+context, explicit owned v2 new start, current owner/session/revision admission and
+shared file-owner arbiter. Legacy captures remain recoverable and private; no
+Assignment/bags/stock/task authority or original ownership is reconstructed.
+Replacement keeps the point code, relocation stays Proposed, and removal records
+recovered/unrecovered/unconfirmed. Draft/outbox/evidence commit before Saved.
 
-P15-P17 are entered from the selected point/physical ovitrap in M-08 and implemented
-in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). the unmerged #138 decision draft records the
-owner-supplied decisions. Service/store/ports and `use-m-09` reuse the existing
-M-02 outbox and M-08 GPS/evidence/shift authorization patterns. Migration 12 follows
-released canonical migrations 1–11; it retains immutable captures, reserved replacement UUIDs, evidence,
-reasoned void attempts and local relocation decisions. No new queue, HTTP endpoint,
-transport, dependency or generated client edit is introduced.
+Current history3/B33 feedback preserves original ingest receipts and distinguishes
+review effect, approval currency, nullable audit and actual next-day task reference.
+Task action requires its current UUID + point + courier + explicit v3 false state.
+Actual #287 advisory uses exact original cutoff/rule provenance and a private,
+current owner/session/revision-bound ETag cache; unknown/offline data is unavailable,
+never zero. Real Me.limits and delivered void reasons govern corrections. Native
+foreground GPS uses day.location; canonical246 adopts and enrolls only confirmed
+Save evidence in the same transaction. Undo leaves unconfirmed files local.
 
-Saving is one SQLite transaction before success. Replacement keeps the point code
-and exposes the new physical identity to M-08 while retaining lineage. Explicitly
-starting a new M-08 capture archives a pending check whose source was retired;
-its input/evidence is retained. Removal requires a deliberate recovered/unrecovered/
-unconfirmed choice. Relocation remains Proposed and never moves geometry. Closed-house
-suggestions count locally known checks across physical lineage using downloaded OP03
-thresholds; unavailable incident history produces no incident-count suggestion.
+The real createDayBundle factory separates retained-final transport from active
+capture/read authority: cold-restart final JSON retry works without unlocking or
+bootstrap, receipts precede cleanup, and a replacement session fences old cleanup.
+Schema16 adds only legacy lifecycle evidence reservation protection after unchanged
+evaluated SQL1–15; #266 profiles are source-derived, no reset/adoption is performed.
+See [feature README](src/features/ovitrap-lifecycle/README.md) for ownership, ordering,
+M1–M5 history, criterion→test evidence and truthful delivery/review states.
 
-Phone saved, server received and review result are distinct. A rejected or pending
-request never claims delivery. Reasoned corrections preserve every source/photo and
-attempt, show each void's delivery/result, and cannot restore a trap over another
-active identity or void a proposal with decisions. M-08 abandoned/removed findings
-use the no-paddle path and an informational backend-incident notice.
+Design PNG/source S09/S15/S16 and project UI standards were applied. Issue decisions
+win: GPS creates a proposal, never automatic movement/task assignment; replacement
+creates a physical UUID without invented stock; P17 has unconfirmed recovery. Forms
+wrap and use tokens, localized labels and persistent photo Undo. Host props cover
+es-MX/en, light/dark and scale1/1.3, not native assistive technology or layout.
 
-**Design mapping/differences:** S09-Ovitrampa.png/source P15-P17, S15-Ingles and
-S16-Accesibilidad were read. The accepted decisions supersede sample pixels: the
-replacement UUID is generated/reserved on the phone rather than scanning an invented
-assigned-stock API; no stock return or compensation is claimed. P16 records a GPS
-proposal rather than placing/moving immediately, and never promises a task tomorrow.
-Only a synced task value is displayed. P17 adds explicit unconfirmed recovery;
-confirmation uses a bottom sheet. All forms require current GPS/photo and catalog
-Other text, use wrapping 56 dp controls/shared tokens and localized copy. Forms are
-continuous scrollable sections rather than duplicating the artwork's five-step
-stock/paddle workflow; final paddle capture remains M-08. Photo removal offers a
-persistent local Undo while the draft is editable; captured evidence is never deleted.
-
-**[ASSUMPTION] integration boundaries:**
-
-- B-33's decision writer and changes-feed producer are absent. `ingestDecision`
-  accepts a typed **local** decision/task projection; its camelCase fields are not
-  a proposed wire contract. No generic `changes.history` row is interpreted as a
-  decision, no approve endpoint exists, rejection never deletes a proposal, and no
-  local task is synthesized. The future producer must add a generated wire schema
-  and decoder at the existing changes/bootstrap boundary.
-- B-15 `is_recovered` is boolean: only recovered sends true. Unrecovered and
-  unconfirmed send false; unconfirmed remains a durable flagged local distinction.
-- GPS, camera and explicit assignment adapters have the same unavailable production
-  defaults as M-08 until the M-01 qualified build supplies them. Missing GPS/photo/
-  authorized point remains incomplete. Evidence UUID/file references use existing
-  ports and transactional attachment references; B-04 upload integration is absent,
-  so no actual photo upload is claimed.
-- Existing B-13 ovitrap/point sections are validated inside the M-06 DayStore
-  bootstrap/delta/revocation gate. Bootstrap replaces downloads and its cursor
-  atomically; deltas apply before receipt/cursor advancement, and replay is
-  idempotent. Revocation clears downloaded physical/point state and M-08 assignment
-  authorization while retaining drafts/outbox/evidence. Existing invalid-cursor
-  recovery bootstraps before retry. Optional historical `is_retired` defaults false.
-  Organization routing is the pinned token, never a URL selector.
-- Copy uses runtime-free `packages/i18n` through the existing mobile `useT`/
-  `translate.ts` adapter, exactly as M-08; no additional i18next runtime is added.
-- The manifest's `mobile/e2e/m-09.spec.ts` is intentionally not created: no mobile
-  e2e directory/tooling exists. A real file-backed SQLite close/reopen test proves
-  local restart persistence and original-UUID retry; it is not force-stop/device proof.
-
-Tests and criterion mapping: [feature README](src/features/ovitrap-lifecycle/README.md).
-Native SQLCipher, camera/GPS/navigation, uploads, real API and B-33 feed, TalkBack,
-light/dark layout at 130% on the Galaxy S24 Ultra SM-S928B/Android 16 and the
-arm64/4GB/64GB/Android 13+ profile still require M-01 build/device qualification.
-The Node prop matrix verifies labeled controls, minimum heights, wrapping/scaling
-configuration, tokens/locales and modal actions; it cannot certify native layout,
-focus return, contrast in sunlight or assistive-technology behavior.
-
-
-### M-09 master integration
-
-Lifecycle migrations are12–14 after released canonical migrations1–11; the
-accepted M-09 decision is the unmerged #138 decision draft. `DayStore` applies lifecycle bootstrap and delta
-sections through the existing `DayBundleService` projection gate and transaction.
-Revocation rejects stale writers and removes downloaded physical/point projections
-plus M-08 assignment authorization, while retaining drafts, events and evidence.
-The upgrade regression preserves retained M-06 assignments and capture enrollment.
-
-The live GitHub issue was read successfully during this integration. The existing
-cold-start regression closes/reopens a real temporary SQLite file and later retries
-the original pending UUID once. Node/disc evidence does not certify Android
-force-stop, native SQLCipher/upload, TalkBack, light/dark layout or 130% text on the
-MO01 device profiles. B-33's real decision/task producer remains unavailable.
-
-
-M-09 scope/reactivation hardening (the unmerged #138 decision draft, migration 12): bootstrap atomically
-narrows current capture authorization while retaining each draft's historical copy.
-SQLite insertion guards protect M-08/M-09 saves and lifecycle corrections against
-revocation after preflight. A durable receipt ledger retains acknowledged local
-physical effects through lagging pages; only a drained newer identity projection or
-serialized authoritative bootstrap reconciles them. Pending effects still overlay
-downloads, and later authoritative server voids can reactivate acknowledged identities.
-The feature README maps the deterministic scope-race, bootstrap, pagination and
-real-file restart regressions. Incident thresholds remain configured but cannot form
-a real journey until downloaded incident history is connected; native/API limits
-remain UNVERIFIED.
+Actual camera acquisition remains [#253](https://github.com/88randy/wolbachia/issues/253).
+Android force-stop/cold-start/SQLCipher, real GPS/file/network/API/B33 decision/task,
+TalkBack, 130% native layout and both MO01 profiles remain UNRUN owner/device gates.
+No local Android/e2e/Playwright build or real-API phone certification was performed.
+Draft219 remains Refs138; full acceptance is not established by Node/APK results.
 
 ## Private evidence transport (#246)
 
@@ -937,7 +864,8 @@ is an implementation dependency, not merely device qualification. The productive
 #138 bridge remains pending explicit serial integration, including migration
 lineage and its current physical/scope authority; no lifecycle module is copied
 here. Generic lifecycle payload/dependency shapes are covered separately. Actual
-B-33 decisions/tasks remain [#126](https://github.com/88randy/wolbachia/issues/126).
+B-33 decisions/tasks use the actual merged #126/history3 producer; the real device
+journey remains unverified.
 Owner-authorized Android force-stop, SQLCipher/private-file persistence, camera,
 GPS, real uploads/API, TalkBack/130%/light-dark/es-MX-en and both device profiles
 remain UNVERIFIED under #138/#130. A Node test or debug-apk does not substitute for

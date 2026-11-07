@@ -9,11 +9,7 @@ export function useLifecycleSave({ model, draft }: LifecycleProps) {
     setOpen(false);
   };
   const save = () => {
-    void model
-      .run(() => model.service.save(draft.eventId), draft.eventId)
-      .then((isSaved) => {
-        if (isSaved) close();
-      });
+    void model.run(() => model.service.save(draft.eventId), draft.eventId, { onSuccess: close });
   };
   const submit = () => {
     if (draft.kind === "remove") setOpen(true);

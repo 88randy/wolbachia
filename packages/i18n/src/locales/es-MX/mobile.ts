@@ -519,4 +519,52 @@ export const mobile = {
   "mobile.unlock.keepWorking": "Seguir trabajando",
   "mobile.unlock.resumeSetup": "Para terminar de crear tu PIN, escribe tu contraseña.",
   "mobile.unlock.wrongPinLast": "PIN incorrecto. Te queda 1 intento.",
+  "mobile.lifecycle.advisoryUnavailable":
+    "Recomendación no disponible para este instante y estas reglas. Puedes continuar la captura.",
+  "mobile.lifecycle.advisoryFuture":
+    "El instante de captura aún es futuro para el servidor. Reintenta después.",
+  "mobile.lifecycle.advisoryAt":
+    "Hechos observados hasta {at}. Una llegada tardía o anulación puede cambiar esta consulta.",
+  "mobile.lifecycle.advisoryCounts":
+    "Semanas de casa cerrada: {weeks}. Incidentes del punto: {incidents}.",
+  "mobile.lifecycle.advisorySuggested":
+    "Las reglas sugieren revisar una reubicación. Guardarla sólo crea una propuesta.",
+  "mobile.lifecycle.advisoryNotSuggested":
+    "La observación disponible no alcanza los umbrales de sugerencia.",
+  "mobile.lifecycle.legacyAdvisory":
+    "Sólo hay historia local parcial; no confirma el total de incidentes del punto.",
+  "mobile.lifecycle.decisionReasonUnknown": "Motivo histórico no disponible.",
+  "mobile.lifecycle.decisionTimeUnknown": "Fecha histórica de decisión no disponible.",
+  "mobile.lifecycle.sourceVoided":
+    "La fuente fue anulada: {at}. La propuesta y su evidencia se conservan.",
+  "mobile.lifecycle.legacyDecision":
+    "Registro local anterior conservado como auditoría; no confirma una revisión del servidor.",
+  "mobile.lifecycle.taskReferenceOnly":
+    "Referencia programada; todavía no es una tarea vigente asignada a ti.",
+  "mobile.lifecycle.taskAssigned": "Tarea vigente asignada a ti y pendiente de completar.",
+  "mobile.lifecycle.openTask": "Ver tarea asignada",
+  "mobile.lifecycle.ingestAccepted": "Resultado original de recepción: aceptado.",
+  "mobile.lifecycle.ingestRejected": "Resultado original de recepción: rechazado.",
+  "mobile.lifecycle.ingestReview": "Resultado original de recepción: en revisión.",
+  "mobile.lifecycle.reviewedTitle": "Decisión posterior del servidor",
+  "mobile.lifecycle.effectApplied": "Efecto aplicado tras revisión.",
+  "mobile.lifecycle.effectAdopted": "Efecto anterior reconocido; conserva su procedencia original.",
+  "mobile.lifecycle.effectDiscarded": "Trabajo descartado por decisión; conserva su historia.",
+  "mobile.lifecycle.effectIncident": "Incidente abierto; esto no acepta la captura original.",
+  "mobile.lifecycle.effectApproved": "Jornada revisada; no concede permiso nuevo de captura.",
+  "mobile.lifecycle.effectObserved": "Observación de jornada registrada.",
+  "mobile.lifecycle.approvalNotCurrent": "Esta validación ya no es la aprobación vigente.",
+  "mobile.lifecycle.nonterminalDecision": "Decisión informativa; la revisión puede continuar.",
+  "mobile.lifecycle.limitsUnavailable":
+    "Selecciona un motivo del catálogo descargado con límites conocidos antes de corregir.",
+  "mobile.lifecycle.reasonLimits":
+    "Caracteres visibles mínimos para esta opción: {min}. Límite de la nota: {max} caracteres.",
+  "mobile.lifecycle.epochClosed":
+    "El cuadrante está cerrado. No se pueden guardar nuevas capturas en este marco.",
+  "mobile.lifecycle.epochUnknown":
+    "Falta un marco actual verificable. Actualiza; el borrador se conserva.",
+  "mobile.lifecycle.recoveryBlocked":
+    "El borrador se conserva, pero su propiedad no está probada para esta sesión. Entra con la cuenta original o pide ayuda a soporte.",
+  "mobile.lifecycle.remoteProposal":
+    "Propuesta descargada del servidor; no es una captura local editable.",
 } as const satisfies AreaCatalog<"mobile">;

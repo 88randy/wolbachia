@@ -10,8 +10,19 @@ export function LifecycleFeedback(props: LifecycleProps) {
   if (!state?.event) return null;
   return (
     <View>
-      <DeliveryOutcome event={state.event} />
-      {state.proposal ? <ProposalFeedback proposal={state.proposal} /> : null}
+      <DeliveryOutcome event={state.event} reviews={state.reviews} />
+      {state.proposal ? (
+        <ProposalFeedback
+          proposal={state.proposal}
+          openTask={
+            !model.isBusy && !state.isScopeBlocked
+              ? () => {
+                  model.openTask(draft.eventId);
+                }
+              : undefined
+          }
+        />
+      ) : null}
       <LifecycleCorrection key={draft.eventId} {...props} />
       {draft.kind === "replace" && draft.replacementId ? (
         <LifecycleEntry ovitrapId={draft.replacementId} manualCapture={draft.manualCapture} />
