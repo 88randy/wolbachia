@@ -248,3 +248,29 @@ current storage. Null Lot.protocol never inherits nested supply configuration.
 
 See transfers/README.md for closed outcome wire choices, source/review/history
 integration, primary evidence, global locks, new SQL and criterion/test ownership.
+
+## Exact movement lot codes (#292)
+
+Only `GET /locations/{id}/movements/` accepts optional `lot_code`. It filters
+the existing signed ledger by exact human code, including when current stock at
+that location is zero. It does not resolve current lot metadata or admission scope.
+Validation delegates to the public CodeQuerySerializer: surrounding whitespace
+trimmed, at most 50 characters, nonblank and no NUL. Errors use the normal 400
+envelope under `fields.lot_code`. A UUID-looking code remains a code; repeated
+parameters use the last value. No substring, case folding, wildcard or comma-list
+interpretation is added.
+
+The real parent location is authorized first. Like the existing lot UUID facet,
+the code reference must have a leg in current tenant/paired-scope `scoped_legs`;
+unknown, foreign and wholly inaccessible codes share safe 404. Then all filters
+intersect on the requested location's already permitted rows before count, stable
+ordering and paging. Readable references in another permitted location can return
+an empty page here; contradictory readable `lot`/`lot_code` filters also return an
+empty page. Existing UUID/operation/piece/unit/time/default-order behavior remains.
+No stock, lot list/detail, condition or PATCH action gains this parameter.
+
+Historical rows retain their actual movement/operation/source/event identities,
+signed decimal quantities, unit pins and existing transfer metadata redaction.
+Zero stock does not erase history or grant current custody/whole-transfer access.
+Owning tests extend existing read-contract and B-to-C custody groups; generic code
+grammar stays owned by tests/test_code_filter.py. SQL execution requires PostgreSQL.

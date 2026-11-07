@@ -9886,6 +9886,7 @@ export interface operations {
                 created_at_before?: string;
                 created_at_from?: string;
                 lot?: string;
+                lot_code?: string;
                 operation?: string;
                 ordering?: string;
                 /** @description A page number within the paginated result set. */

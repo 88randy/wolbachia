@@ -12,6 +12,7 @@ from rest_framework.filters import BaseFilterBackend
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
+from core.filters import CODE_MAX_LENGTH
 from inventory.access import require_scope
 from inventory.models import Location, Lot, SupplyType
 from inventory.serializers import InventoryQuerySerializer, OptionalReferenceField
@@ -108,6 +109,8 @@ def nested_parameters(names: tuple[str, ...]) -> list[OpenApiParameter]:
                     ]
                 }
                 if isinstance(field, OptionalReferenceField)
+                else {"type": "string", "maxLength": CODE_MAX_LENGTH}
+                if name == "lot_code"
                 else kind,
                 enum=list(field.choices) if isinstance(field, serializers.ChoiceField) else None,
             )
@@ -124,6 +127,7 @@ def nested_order(request: Request, allowed: tuple[str, ...], default: str) -> li
 
 MOVEMENT_FACETS = (
     "lot",
+    "lot_code",
     "supply",
     "operation",
     "piece",
@@ -141,6 +145,7 @@ def filter_movements(query: QuerySet[Any], request: Request) -> QuerySet[Any]:
     visible = scoped_legs(actor)
     lookups = {
         "lot": "lot_id",
+        "lot_code": "lot__code",
         "supply": "lot__supply_id",
         "operation": "operation_id",
         "piece": "piece_id",
@@ -149,8 +154,8 @@ def filter_movements(query: QuerySet[Any], request: Request) -> QuerySet[Any]:
         "created_at_before": "created_at__lt",
     }
     for name, value in values.items():
-        if name == "lot":
-            if not visible.filter(lot_id=value).exists():
+        if name in ("lot", "lot_code"):
+            if not visible.filter(**{lookups[name]: value}).exists():
                 raise Http404
         elif name == "supply":
             require_relation(actor, (name, value), "lot.read")
