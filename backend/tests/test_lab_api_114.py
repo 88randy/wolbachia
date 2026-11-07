@@ -63,6 +63,7 @@ def test_lab_public_schema_preserves_authentic_actions_and_single_history_owner(
         "lab_discrepancy",
         "lab_rejection",
         "lab_void",
+        "community_activity",
     } == mapping.keys()
     history = schema["components"]["schemas"]["LabHistoryEntry"]["properties"]
     for field in ("count_id", "rejection_id"):

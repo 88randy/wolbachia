@@ -100,6 +100,20 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
                     {"transfer_action": envelope.type},
                 )
             )
+        if envelope.type == "community.activity":
+            from community.permissions import block_context
+            from geography.models import Block
+
+            block = (
+                Block.objects.filter(organization=organization, pk=data["zone_id"])
+                .select_related("quadrant")
+                .first()
+            )
+            return (
+                SubjectFacts()
+                if block is None
+                else SubjectFacts(True, (block_context(block),), "block", block.pk)
+            )
         if envelope.type.startswith("ovitrap."):
             return _point_subject(organization, data)
         if envelope.type == "record.void":

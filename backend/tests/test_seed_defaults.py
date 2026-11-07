@@ -272,6 +272,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "center.read",
     }
     assert by_slug["courier"] == {
+        "community_activity.read",
+        "community_activity.create",
         "supply_assignment.receive",
         "supply_assignment.reconcile",
         "incident.read",
@@ -283,6 +285,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "community_activity.read",
+        "community_activity.void",
         "inventory.reconcile",
         "egg_count.void",
         "transfer.read",
@@ -339,7 +343,11 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "schedule.read",
         "risk_import.apply",
     }
-    assert by_slug["community_promoter"] == reader
+    assert by_slug["community_promoter"] == {
+        *reader,
+        "community_activity.read",
+        "community_activity.create",
+    }
     assert by_slug["warehouse"] == {
         "inventory.allocate",
         "inventory.reconcile",
@@ -363,6 +371,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "condition.create",
     }
     assert by_slug["coordinator"] == {
+        "community_activity.read",
+        "community_activity.void",
         "field.upload",
         "incident.read",
         "incident.create",
@@ -377,6 +387,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "community_activity.read",
+        "community_activity.create",
+        "community_activity.void",
         "inventory.allocate",
         "inventory.reconcile",
         "inventory.write_off",
@@ -482,6 +495,8 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     assert courier.seeded_permission_codes == [
         "catalog.read",
         "center.read",
+        "community_activity.create",
+        "community_activity.read",
         "field.bootstrap",
         "field.upload",
         "field_event.sync",
@@ -508,6 +523,8 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     assert courier.permission_codes == [
         "catalog.read",
         "center.read",
+        "community_activity.create",
+        "community_activity.read",
         "field.bootstrap",
         "field.upload",
         "field_event.sync",
@@ -544,6 +561,8 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     assert plan.grants == {
         "courier": (
+            "community_activity.read",
+            "community_activity.create",
             "supply_assignment.receive",
             "supply_assignment.reconcile",
             "incident.read",

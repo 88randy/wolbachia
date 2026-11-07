@@ -129,6 +129,20 @@ export const sync = {
     "Las condiciones actuales impiden aplicar la transferencia. La captura quedó para revisión.",
   "sync.result.transferVoidBlocked":
     "La transferencia tiene efectos o registros dependientes. Consulta a tu supervisor para corregirla.",
+  "sync.result.communityInaccessible":
+    "La referencia de la actividad no está disponible en tu alcance de trabajo autorizado.",
+  "sync.result.communityCommandConflict":
+    "Esta identidad de comando pertenece a otra captura conservada. Mantén el original y contacta a tu supervisor.",
+  "sync.result.communityCatalogUnavailable":
+    "La configuración original del tipo de actividad no está disponible. La captura quedó en revisión.",
+  "sync.result.communityCatalogDeactivated":
+    "Este tipo de actividad conservado está inactivo. Tu supervisor debe revisar la captura original.",
+  "sync.result.communityConfigurationUnavailable":
+    "El tipo de actividad requiere un propósito de captura no compatible. Conserva la captura para revisión.",
+  "sync.result.communityZoneUnavailable":
+    "La versión original de la manzana no está disponible. Conserva la captura para revisión.",
+  "sync.result.communityStateConflict":
+    "La actividad tiene hechos conservados en conflicto. Contacta a tu supervisor antes de corregirla.",
   "sync.result.supplyInaccessible":
     "El registro de materiales no está disponible en tu ámbito de trabajo autorizado.",
   "sync.result.supplyVoidBlocked":

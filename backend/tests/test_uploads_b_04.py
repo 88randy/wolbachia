@@ -389,7 +389,7 @@ def test_lab_rejection_consumes_real_verified_bytes_and_exact_void_only_parent_a
         download_attachment(reader, identifier)
 
 
-@pytest.mark.django_db
+@pytest.mark.django_db(transaction=True)
 def test_inventory_intent_binds_real_signature_once_and_download_uses_current_action(
     allocation, tmp_path, settings
 ):

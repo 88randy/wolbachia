@@ -478,7 +478,9 @@ def test_signed_zero_and_changed_plan_keep_actual_source_without_invented_credit
 
 @pytest.mark.django_db
 @pytest.mark.parametrize("custody", [True], indirect=True)
-def test_real_biological_lot_write_off_requires_bound_rpbi_and_never_exceeds_stock(custody):
+def test_real_biological_lot_write_off_requires_bound_rpbi_and_never_exceeds_stock(
+    custody, void_catalog
+):
     from uuid import UUID, uuid4
 
     from inventory.allocations.commands import IntentExecution

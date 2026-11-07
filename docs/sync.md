@@ -1085,6 +1085,51 @@ LIMIT, bootstrap and changes. Persistence during download loss grants no access;
 a later regrant sees the updated retained projection. Nothing here proves courier
 delivery or implements a Lab screen, count on the phone, or independent QA execution.
 
+## Community activity schema1 (B34 / #127)
+
+`community.activity` uses the closed aggregate fields
+`{type_id,zone_id,attendance,agreements,other_text?,incident_id?}`; event UUID supplies
+command_id. Zone is a real Block; type is a community-activity-type CatalogItem
+from the exact delivered catalog snapshot. Other requires text and unsupported
+photo-required purposes remain configuration-unavailable/review with zero effects.
+No resident records, attendance lists or routine attachment purpose are accepted.
+
+Current field_event.sync AND community_activity.create must cover the complete
+actual pair before pending/dependency diversion, and are rechecked under the Org
+arbiter. Default shift checks, global clock/final-upload gates and rollback remain.
+An in_review source has no Activity/event/receipt/link/totals/history effect; B17
+acceptance uses the original historical domain+sync proof and captured facts once.
+The original ingest status/clocks are never rewritten. A real record.void requires
+community_activity.void; canceling an unapplied known source retains an exact source
+cancellation audit without inventing an Activity or zero attendance.
+
+B34 replay additionally requires its exact retained source frame/hash and current
+paired domain permission. Missing original proof fails closed, rather than the
+legacy warning-only body mismatch behavior. HTTP/source UUID reuse conflicts;
+an HTTP command never becomes a source or takes a different source parent.
+
+| Code | Meaning |
+| --- | --- |
+| `community_inaccessible` | Rejected: unknown, foreign or unauthorized actual Block/type/Incident reference. |
+| `community_command_conflict` | Rejected: immutable command identity/body/target/origin conflicts. |
+| `community_catalog_unavailable` | Review: original delivered catalog cannot be proved. |
+| `community_catalog_deactivated` | Review: retained selected type is inactive. |
+| `community_configuration_unavailable` | Review: required capture purpose has no supported routine-activity proof. |
+| `community_zone_unavailable` | Review: original BlockVersion cannot be proved. |
+| `community_state_conflict` | Rejected: unsafe lifecycle/void state; preserve original facts. |
+
+The existing single history producer advances4→5 and adds only
+`kind:community_activity`: actual activity/event/command/type/Block/version/date/
+attendance/revision/void fields, genuine original source clocks and subjects. It
+excludes agreements, Other wording and Incident identities. Source links are made
+after actual persistence, including review's same-transaction effect receipt. A
+later web void of a field-backed activity publishes the latest tombstone once under
+the preplanned original courier lock. HTTP-only activities have no invented recipient.
+Current community_activity.read plus the existing full subject permission filter
+precede LIMIT/cursor/bootstrap. The payload builder is shared by bootstrap/changes;
+persisting during revocation is not a read grant. Root bootstrap2, capture_context,
+other producer versions and the six current upload parents remain unchanged.
+
 ## Signed courier supply sources (#107)
 
 The registered schema1 sources supplies.receive and supplies.reconcile use the
@@ -1126,7 +1171,7 @@ material or dependent declarations require their real correction first or safe40
 supply_void_blocked. No DELETE, status rewrite or second history publisher exists.
 
 Supplies producer1 now projects actual own assignments/releases/receipts/frame and
-justification facts. History advances4→5 with eight typed supply kinds; root
+justification facts. History advances5→6 with eight typed supply kinds; root
 bootstrap remains2 and all old kinds stay intact. Current complete-vector/own-action
 filtering happens before serialization, count and cursor LIMIT. The new own codes
 participate in scope_revision; clients must use existing capture readiness and

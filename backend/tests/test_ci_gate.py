@@ -28,6 +28,7 @@ EXPECTED_COHORTS = {
     "migrations-void-reason": {"tests/test_void_reason_migration.py"},
     "migrations-review": {"tests/test_review_migrations_113.py"},
     "migrations-lab": {"tests/test_lab_migrations_114.py"},
+    "migrations-community": {"tests/test_community_migrations_127.py"},
     "migrations-supplies": {"tests/test_inventory_allocations_migrations_107.py"},
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
@@ -124,8 +125,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 8
-        )  # One regular node and seven whole migration owners.
+            validate_fragments(bundles, expected) == 9
+        )  # One regular node and eight whole migration owners.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -156,6 +157,11 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
             else modules
             for name, modules in EXPECTED_COHORTS.items()
             if name != "migrations-void-reason"
+        },
+        {
+            **{key: value for key, value in EXPECTED_COHORTS.items() if key != "migrations-lab"},
+            "migrations-material": EXPECTED_COHORTS["migrations-material"]
+            | EXPECTED_COHORTS["migrations-lab"],
         },
     ):
         with monkeypatch.context() as changed:
@@ -313,9 +319,10 @@ def test_aggregate_requires_two_current_inputs_even_if_one_has_full_coverage(tmp
 
 def test_verified_coverage_combine_keeps_both_line_sets_and_direct_exit(tmp_path):
     source = tmp_path / "app.py"
-    source.write_text("first = 1\nsecond = 2\nthird = 3\nfourth = 4\n", encoding="utf-8")
+    lines = list(range(1, len(EXPECTED_PARTITIONS) + 1))
+    source.write_text("".join(f"value_{line} = {line}\n" for line in lines), encoding="utf-8")
     paths = []
-    for line in (1, 2, 3, 4):
+    for line in lines:
         path = tmp_path / f"coverage-{line}.data"
         recorded = CoverageData(basename=str(path))
         recorded.add_lines({str(source): {line}})
@@ -326,7 +333,7 @@ def test_verified_coverage_combine_keeps_both_line_sets_and_direct_exit(tmp_path
     combine_coverage(paths, combined)
     recorded = CoverageData(basename=str(combined))
     recorded.read()
-    assert recorded.lines(str(source)) == [1, 2, 3, 4]
+    assert recorded.lines(str(source)) == lines
     recorded.close()
     assert (tmp_path / "combine-exit.json").is_file()
 

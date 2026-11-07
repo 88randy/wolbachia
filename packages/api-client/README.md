@@ -14,6 +14,15 @@ The default fleet mode, six attachment parents, download authorization and all
 write/CAS bodies remain unchanged. Availability is not evidence admissibility or
 a durable permission. Full W6/W7 and W4 consumers remain separate issues.
 
+B34 adds `/community-activities/` list/detail/create/void and action-scoped
+`zone-options`. `zone_id` is a real Block UUID. List totals cover all authorized
+filtered active rows, while `count` describes the selected display rows including
+voids when requested. Summed attendance is an exact digit string, not unique people.
+Writes return immutable minimal receipts; current detail reads own independently
+redacted Incident references. The existing single history union adds one aggregate
+branch without private wording or Incident identity; only real-source captures are
+courier-delivered. Root bootstrap2 and six upload parents remain unchanged.
+
 #289 adds optional/nullable root capture_context to Bootstrap and Changes. Its
 required object fields are capture schema 1, field_event.sync permission, self
 user/org UUIDs, scope_revision and complete effective paired grants. Known empty
@@ -245,7 +254,8 @@ screen, independent execution or operational biological method approval.
 
 Official schema/client include closed preparation and execution commands, current
 paired assignment/reconciliation/write-off reads, supplies1 and additive typed
-history5. InventoryIntent is the seventh concrete B04 parent, not a second uploader.
+history6, preserving the canonical Community5 branch and all earlier shapes.
+InventoryIntent is the seventh concrete B04 parent, not a second uploader.
 Quantity strings and unknown-versus-zero receipts are preserved. Count replacement
 adds optional measurement_kind only for proved historical data correction after
 disposal; omitted/physical behavior and old command replay stay compatible.

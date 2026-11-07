@@ -12,6 +12,7 @@ MIGRATION_PARTITIONS = {
     "migrations-void-reason": frozenset({"tests/test_void_reason_migration.py"}),
     "migrations-review": frozenset({"tests/test_review_migrations_113.py"}),
     "migrations-lab": frozenset({"tests/test_lab_migrations_114.py"}),
+    "migrations-community": frozenset({"tests/test_community_migrations_127.py"}),
     "migrations-supplies": frozenset({"tests/test_inventory_allocations_migrations_107.py"}),
 }
 PARTITION_NAMES = ("regular", *MIGRATION_PARTITIONS)
@@ -34,7 +35,7 @@ def partition_nodes(nodes: list[str]) -> dict[str, list[str]]:
         all(len(cohort) == 1 for cohort in MIGRATION_PARTITIONS.values())
         and len(modules) == len(set(modules))
         and set(modules) == MIGRATION_MODULES,
-        "empty, overlapping or incomplete migration registry",
+        "non-singleton, overlapping or incomplete migration registry",
     )
     owners = {node.split("::")[0] for node in nodes}
     require(owners >= MIGRATION_MODULES, "missing migration owner")

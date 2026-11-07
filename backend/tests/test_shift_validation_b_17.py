@@ -23,7 +23,7 @@ def test_open_shift_cannot_be_approved_or_observed(org_a, make_member):
 
 @pytest.mark.django_db
 def test_real_late_warehouse_acceptance_invalidates_closed_supply_frame_once(
-    allocation, make_member
+    allocation, make_member, void_catalog
 ):
     from uuid import UUID, uuid4
 

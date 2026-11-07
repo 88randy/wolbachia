@@ -25,6 +25,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `catalogs/` | `Catalog`, `CatalogItem`; item services, catalog snapshot, `/catalogs/...` and `/field/catalog/` (see its README) |
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
+| `community/` | Aggregate community activities at real Block identities, immutable cross-transport command receipts, complaint links and void-aware scoped totals (B34; see its README) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
 | `geography/` | Scoped quadrants, blocks, fixed sampling point identities, append-only geometry/location versions and excluded-point decisions (#108; see its README) |
@@ -125,12 +126,13 @@ cd .. && npm run api:generate             # validate the schema, re-export opena
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
-CI runs every test once across eight serial PostgreSQL partitions (`regular` and
-seven explicit cohorts containing one complete migration-test module each), then the
-original `checks` job validates all eight
+CI runs every test once across nine serial PostgreSQL partitions (`regular` and
+eight cohorts containing one complete migration-test module each), then the
+original `checks` job validates all nine
 current artifacts and applies the existing 85% gate to their combined statement
 coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
-original test assertions and coverage source/omit list are unchanged (16 configured
+original test assertions and coverage omit policy are unchanged; Community is added
+to the configured statement denominator (17 configured
 apps; `shifts` remains outside that historical list). See [`ci/README.md`](ci/README.md)
 for exact-attempt conservation, failure handling, timing evidence and compute costs.
 

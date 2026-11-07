@@ -121,6 +121,29 @@ class LabHistoryEntrySerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(allow_null=True, allow_blank=True)
 
 
+class CommunityHistoryEntrySerializer(serializers.Serializer[Any]):
+    from community.serializers import CommunityTypeSnapshotSerializer
+
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(choices=["community_activity"])
+    activity_id = serializers.UUIDField()
+    event_id = serializers.UUIDField()
+    command_id = serializers.UUIDField()
+    code = serializers.CharField()
+    revision = serializers.IntegerField(min_value=1, max_value=2)
+    type_id = serializers.UUIDField()
+    type_snapshot = CommunityTypeSnapshotSerializer()
+    zone_id = serializers.UUIDField()
+    zone_version_id = serializers.UUIDField()
+    activity_date = serializers.DateField()
+    attendance = serializers.IntegerField(min_value=0, max_value=2**53 - 1)
+    is_voided = serializers.BooleanField()
+    source_event_id = serializers.UUIDField()
+    source_device_time = serializers.DateTimeField()
+    source_server_received_at = serializers.DateTimeField()
+    subjects = HistorySubjectSerializer(many=True, allow_empty=False)
+
+
 SUPPLY_HISTORY_SOURCES = (
     "plan",
     "release",
@@ -183,6 +206,8 @@ class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
 
     @staticmethod
     def _serializer(kind: str) -> type[serializers.Serializer[Any]]:
+        if kind == "community_activity":
+            return CommunityHistoryEntrySerializer
         if isinstance(kind, str) and kind in {
             "lab_receipt",
             "lab_discrepancy",
@@ -221,12 +246,14 @@ class CourierHistorySchema(OpenApiSerializerExtension):
         ).ref
         transfer = auto_schema.resolve_serializer(TransferHistoryEntrySerializer(), direction).ref
         lab = auto_schema.resolve_serializer(LabHistoryEntrySerializer(), direction).ref
+        community = auto_schema.resolve_serializer(CommunityHistoryEntrySerializer(), direction).ref
         supply = auto_schema.resolve_serializer(SupplyHistoryEntrySerializer(), direction).ref
         return {
-            "oneOf": [review, relocation, transfer, lab, supply],
+            "oneOf": [review, relocation, transfer, lab, community, supply],
             "discriminator": {
                 "propertyName": "kind",
                 "mapping": {
+                    "community_activity": community["$ref"],
                     "review_decision": review["$ref"],
                     "shift_validation": review["$ref"],
                     "relocation_proposal": relocation["$ref"],

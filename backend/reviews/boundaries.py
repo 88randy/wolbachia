@@ -419,6 +419,10 @@ def prepare_ingest(  # noqa: PLR0913 -- explicit batch, source, registered handl
     )
     lock_source_references(ctx)
     Organization.objects.select_for_update(nowait=True, no_key=True).get(pk=batch.organization.pk)
+    if envelope.type == "community.activity":
+        from community.review import source_block
+
+        source_block(ctx, data)
     causal = classify_dependencies(batch, envelope, candidates)
     subjects = subject_facts(batch.organization, envelope)
     with ExitStack() as stack:

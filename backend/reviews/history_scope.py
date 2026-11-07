@@ -19,6 +19,10 @@ def visible_history_contexts(ctx: ProducerContext) -> dict[UUID, tuple[dict[str,
         if key not in current:
             current[key] = _current_subjects(row)
         facts = current[key]
+        if facts.resource_kind == "community_activity" and not subject_allows(
+            ctx.scope, "community_activity.read", facts
+        ):
+            continue
         if row.resource_type.startswith("history.supply_") and not subject_allows(
             ctx.scope, facts.facts.get("own_permission", ""), facts
         ):
@@ -35,10 +39,8 @@ def _current_subjects(row: CourierChange) -> SubjectFacts:
         return SubjectFacts()
     if row.resource_type.startswith(("history.supply_", "history.lab_")):
         return _owned_domain_subjects(row, identifier)
-    if row.resource_type == "history.transfer_custody":
-        from inventory.transfers.history import history_subjects
-
-        return history_subjects(row.organization_id, row.courier_id, identifier)
+    if row.resource_type in {"history.transfer_custody", "history.community_activity"}:
+        return _operational_subjects(row, identifier)
     if row.resource_type == "history.review_decision":
         decision = (
             ReviewDecision.objects.filter(
@@ -101,3 +103,13 @@ def _owned_domain_subjects(row: CourierChange, identifier: UUID) -> SubjectFacts
         row.courier_id,
         (row.resource_type.removeprefix("history."), identifier),
     )
+
+
+def _operational_subjects(row: CourierChange, identifier: UUID) -> SubjectFacts:
+    if row.resource_type == "history.community_activity":
+        from community.history import history_subjects as community_subjects
+
+        return community_subjects(row.organization_id, row.courier_id, identifier)
+    from inventory.transfers.history import history_subjects
+
+    return history_subjects(row.organization_id, row.courier_id, identifier)

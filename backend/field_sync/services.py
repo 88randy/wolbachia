@@ -401,6 +401,19 @@ class EventProcessor:
             serializer.is_valid(raise_exception=True)
         except ValidationError as error:
             raise EventRejected(INVALID_PAYLOAD, rejection_params(error)) from None
+        if envelope.type == "community.activity":
+            from community.review import source_block
+
+            source_block(
+                EventContext(
+                    organization,
+                    self.batch.user,
+                    self.batch.device,
+                    envelope,
+                    self.batch.received_at,
+                ),
+                dict(serializer.validated_data),
+            )
         causal = classify_dependencies(self.batch, envelope, self.candidates)
         shift_signal = (
             run_envelope_checks(organization, self.batch.user, envelope)
@@ -623,6 +636,9 @@ class EventProcessor:
         from inventory.transfers.history import stored_source as stored_transfer_source
 
         stored_transfer_source(event)
+        from community.history import stored_source as stored_community_source
+
+        stored_community_source(event)
         from inventory.allocations.history import stored_source as stored_supply_source
 
         stored_supply_source(event)
@@ -687,6 +703,14 @@ class EventProcessor:
                 batch.device.pk,
             )
             return EventResult(envelope.id, EventStatus.REJECTED, EVENT_ID_CONFLICT)
+        if (
+            stored.type in {"community.activity", VOID_EVENT_TYPE}
+            or envelope.type == "community.activity"
+        ):
+            from community.review import replay_code
+
+            if code := replay_code(batch, envelope, stored.type):
+                return EventResult(envelope.id, EventStatus.REJECTED, code)
         supply = FieldEvent.objects.filter(
             pk=envelope.id,
             organization=batch.organization,

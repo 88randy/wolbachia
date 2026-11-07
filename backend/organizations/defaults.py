@@ -76,6 +76,9 @@ from uploads.limits import FIELD_UPLOAD
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    "community_activity.read",
+    "community_activity.create",
+    "community_activity.void",
     *SUPPLY_ADMIN_CODES,
     *LAB_ADMIN_CODES,
     *TRANSFER_ADMIN_CODES,
@@ -120,6 +123,8 @@ ADMIN_CODES = (
     MOTORCYCLE_SERVICE_CLEAR,
 )
 COURIER_CODES = (
+    "community_activity.read",
+    "community_activity.create",
     *SUPPLY_COURIER_CODES,
     INCIDENT_READ,
     INCIDENT_CREATE,
@@ -131,6 +136,8 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    "community_activity.read",
+    "community_activity.void",
     RECONCILE,
     COUNT_VOID,
     *TRANSFER_SUPERVISOR_CODES,
@@ -174,9 +181,15 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         SCHEDULE_READ,
         RISK_IMPORT_APPLY,
     ),
-    "community_promoter": READ_ONLY_CODES,
+    "community_promoter": (
+        *READ_ONLY_CODES,
+        "community_activity.read",
+        "community_activity.create",
+    ),
     "admin": ADMIN_CODES,
     "coordinator": (
+        "community_activity.read",
+        "community_activity.void",
         *READ_ONLY_CODES,
         *GEOGRAPHY_WRITE_CODES,
         *READ_CODES,

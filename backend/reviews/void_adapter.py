@@ -18,6 +18,10 @@ class VoidReviewAdapter(ReviewAdapter):
         from reviews.safety import has_pending_severe_source
 
         target = find_void_target(ctx)
+        if target.type == "community.activity":
+            from community.review import authorize_void
+
+            authorize_void(ctx, target)
         if target.voided_at is not None:
             source = FieldEvent.objects.filter(pk=ctx.envelope.id).first()
             if source is not None and self.inspect_existing(source, ctx).state == "complete_owned":
@@ -43,6 +47,10 @@ class VoidReviewAdapter(ReviewAdapter):
 
         target = find_void_target(ctx)
         if target.voided_at is not None:
+            if target.type == "community.activity":
+                from community.review import inspect_void
+
+                return inspect_void(source, target)
             if target.type in {"supplies.receive", "supplies.reconcile"}:
                 from inventory.allocations.write_offs import inspect_supply_void
 
@@ -93,6 +101,10 @@ class VoidReviewAdapter(ReviewAdapter):
             from inventory.transfers.voids import void_materialization
 
             return void_materialization(ctx.envelope.id, target)
+        if target.type == "community.activity":
+            from community.review import void_materialization as community_void_materialization
+
+            return community_void_materialization(ctx.envelope.id, target)
         if target.type in {"supplies.receive", "supplies.reconcile"}:
             from inventory.allocations.write_offs import inspect_supply_void
 

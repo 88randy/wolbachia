@@ -227,6 +227,8 @@ has zero operational effects; acceptance rechecks original/current/reviewer whol
 physical vector without weakening other adapters. Actual supply authors/sources
 are prepared before all User/account/domain locks; changed closure re-prepares.
 One post-store hook binds real FieldEvents, publishes eight typed supply history
-kinds through publish_history and supplies upserts. HTTP return acceptance and
+kinds through publish_history and supplies upserts. The same history producer6
+preserves Community5 and every earlier shape; root bootstrap2 is unchanged.
+HTTP return acceptance and
 justification invalidate the existing Shift decision fingerprint/history using
 their real execution cause, without synthetic FEs or a second history publisher.

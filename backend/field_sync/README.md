@@ -280,7 +280,8 @@ are real; execution belongs to #115.
 Two schema1 shift-checked sources use existing preparation/review/on_void and real
 post-store source identities. Complete historical User/source preparation precedes
 account locks even in final upload; no new sync endpoint or session writer exists.
-Supplies producer1 owns current self Assignment facts. History5 retains old kinds;
+Supplies producer1 owns current self Assignment facts. History6 retains the canonical
+Community5 branch and all earlier kinds while adding eight supply kinds;
 root bootstrap2 is unchanged. Supply changes filter exact current full-vector and
 own action BEFORE count/order/LIMIT. Scope-revision changes require existing
 readiness/retention invalidation; cached hidden rows never authorize a capture.

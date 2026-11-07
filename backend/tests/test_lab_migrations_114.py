@@ -83,6 +83,24 @@ SUPPLY_ADDITIVE_TRIGGERS = (
 )
 
 
+# Canonical #127 additions; keep exact identities independent of the restored DB.
+COMMUNITY_ADDITIVE_TRIGGERS = {
+    (table, f"{table}_{suffix}")
+    for table in (
+        "community_communityactivity",
+        "community_communityactivityevent",
+        "community_communitycommandreceipt",
+        "community_communitysourcelink",
+        "community_complaintincidentlink",
+        "community_communitysourcecancellation",
+    )
+    for suffix in ("guard", "complete")
+} | {
+    ("field_sync_fieldevent", "community_source_complete"),
+    ("reviews_revieweffectreceipt", "community_review_complete"),
+}
+
+
 def assert_lab_sql_dependencies_precede_empty_plan_guard(loader):
     plan = loader.graph.forwards_plan(("lab", "0002_append_only_guards"))
     rules = ("rules", "0004_void_reason_code")
@@ -165,7 +183,10 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
             (table, name): definition for table, name, definition in old_trigger_definitions()
         }
         assert {key: restored[key] for key in retained} == retained
-        assert restored.keys() - retained.keys() == SUPPLY_ADDITIVE_TRIGGERS
+        assert (
+            restored.keys() - retained.keys()
+            == SUPPLY_ADDITIVE_TRIGGERS | COMMUNITY_ADDITIVE_TRIGGERS
+        )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
         ]
