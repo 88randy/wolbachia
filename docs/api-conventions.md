@@ -432,14 +432,65 @@ field sync; out-of-range week/day returns 400 out_of_range, never date overflow.
 | Contract | Rule |
 | --- | --- |
 | GET /api/v1/field/bootstrap/ | Live pinned bearer device token, field.bootstrap, token/membership organization only; no final-upload entitlement. One courier try-locked transaction builds fixed assignments/supplies/permits/eligibility/history/map_manifests/quadrants/sampling_points/ovitraps lists and cursor. |
-| Bootstrap metadata | bundle_version (content hash/ETag), schema_version (opaque registered-schema hash), generated_at, scope_revision, cursor, catalog_version, rules_version, next_change_at, map_manifest_ready. Private no-cache, Vary X-Organization; conditional 304 only after auth/permission. |
-| Sync producer arrays | Six typed changes arrays with sequence/action/resource_type/resource_id/resource_version/data, plus nullable next_change_at. Independent sequence pages; has_more if either stream remains. Existing event order and final-upload restriction are preserved. |
+| Bootstrap metadata | bundle_version (content hash/ETag), schema_version (opaque registered-schema hash), generated_at, scope_revision, cursor, catalog_version, rules_version, next_change_at, map_manifest_ready, capture_context (#289). Private no-cache, Vary X-Organization; conditional 304 only after auth/permission. |
+| Sync producer arrays | Nine typed changes arrays with sequence/action/resource_type/resource_id/resource_version/data, plus nullable next_change_at and root capture_context (#289). Independent sequence pages; has_more if either stream remains. Existing event order and final-upload restriction are preserved. |
 | Cursor v2 | Signed o/u/s/c/r, bound to effective paired scope and field.bootstrap/field_event.sync codes; v1, expired or changed scope returns 400 invalid_cursor before ingest. Recover with bootstrap and retain unsent phone events. |
 | Producer isolation | Registered schemas from AppConfig.ready(); producer filters organization/courier and applicable center/quadrant; defense-in-depth metadata check precedes serialization. Foreign rows remain undisclosed. Every change writer holds courier lock through domain write, append and commit. |
 | Maps | Licensed PMTiles manifests only; incomplete/unavailable/unlicensed assets keep readiness false. Native asset download/hash verification is separate (M-01). |
 
 See [sync.md](sync.md#bootstrap-and-projection-recovery-b-13-110) for version
 compatibility, producer registration, recovery and the existing error-code table.
+
+
+### Paired current capture context (#289)
+
+Bootstrap and changes add optional/nullable `capture_context`. A current-server
+bootstrap 200 and every normal sync page, including an empty/initial page, emit:
+
+```text
+{schema_version: 1, permission: "field_event.sync", user_id: UUID,
+ organization_id: UUID, scope_revision: opaque SHA-256,
+ grants: [{centers: {mode: none|selected|all, ids: UUID[]},
+           quadrants: {mode: none|selected|all, ids: UUID[]}}, ...]}
+```
+
+All object fields are required. Every whole grant comes from the SAME captured
+ProducerContext, filtered to FIELD_EVENT_SYNC after existing membership/profile
+intersection and government clamping. Keep pairs intact; never union dimensions
+from different grants. Empty grants is known denial; absent/null/unsupported
+normal metadata is unavailable. The existing canonical scope grammar applies to
+each entry. Self user/org UUIDs come from ctx identities; no Me/admin requery,
+profile inference, session secret, token, geometry or assignment is returned.
+The live DeviceBearer route checks stay field.bootstrap for bootstrap and
+field_event.sync for normal sync. This adds no grant or capture capability.
+
+The root bundle contract advances 1→2, without changing SECTION_KEYS or any
+producer version/payload. Outer schema_version stays an opaque hash; nested
+capture schema is 1. Scope revision includes the root schema and captured
+membership/profile generations. Old cursor r fails before ingest, including
+revoke→regrant to identical grants. Context/root/cursor use the same computed
+revision. Bundle ETag includes the context, excludes generated_at/cursor, and
+changes on permission generation even with identical geometry. Authentication
+and current permission checks still precede conditional 304. Hashes are equality
+tokens, never owner identities, local generations or sortable revisions.
+
+Normal HTTP omitted/null cursor decodes to ChangesCursor() and returns context
+with initial changes; that is not a complete bootstrap. Final/internal no-pull
+None returns null context and no download authority. An admin commit after ctx
+capture may leave a coherent earlier observation; the next pull detects its
+changed generation. No late configuration read/lock is introduced.
+
+#138 owns the consumer: full-body context/foundations/readiness commit through
+the existing projection writer and proven owner/session fence. Delta pages cannot
+hydrate missing foundations. Pending recovery omits ETag across offline/304/write
+failure/restart; known empty grants deny without a recovery loop. Old or unsupported
+normal metadata invalidates active permission, retaining prior context only for
+audit. Final null never renews capture; final receipts precede full cleanup.
+Observed revocation/ABA and new sessions/reinstalls invalidate local authority
+before recovery; a username, same UUID or fresh Me cannot adopt legacy data.
+Offline revocation is observable only after contact, not remote immediate erasure.
+This current observation never replaces frozen rules/original authority or changes
+immutable events, B17/B33, #287 advisory, GPS/evidence/camera or native qualification.
 
 
 ## Ovitrap lifecycle (#112, B-15)

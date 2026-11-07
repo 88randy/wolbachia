@@ -3099,6 +3099,7 @@ export interface components {
             /** Format: date-time */
             generated_at: string;
             scope_revision: string;
+            capture_context?: components["schemas"]["CaptureContext"] | null;
             cursor: string;
             catalog_version: string;
             rules_version: string;
@@ -3122,6 +3123,17 @@ export interface components {
             quadrants: components["schemas"]["QuadrantReference"][];
             sampling_points: components["schemas"]["SamplingPointBundle"][];
             ovitraps: components["schemas"]["OvitrapBundle"][];
+        };
+        /** @description Self current SYNC observation; no session secret or immutable source authority. */
+        CaptureContext: {
+            schema_version: number;
+            permission: components["schemas"]["PermissionEnum"];
+            /** Format: uuid */
+            user_id: string;
+            /** Format: uuid */
+            organization_id: string;
+            scope_revision: string;
+            grants: components["schemas"]["MeScope"][];
         };
         CapturedProvenance: {
             /** Format: uuid */
@@ -3238,6 +3250,7 @@ export interface components {
             has_more: boolean;
             /** Format: date-time */
             next_change_at: string | null;
+            capture_context?: components["schemas"]["CaptureContext"] | null;
             assignments: components["schemas"]["ProducerChange"][];
             supplies: components["schemas"]["ProducerChange"][];
             permits: components["schemas"]["ProducerChange"][];
@@ -5189,6 +5202,11 @@ export interface components {
             blocker_kinds?: components["schemas"]["BlockerKindsEnum"][];
             is_active?: boolean;
         };
+        /**
+         * @description * `field_event.sync` - field_event.sync
+         * @enum {string}
+         */
+        PermissionEnum: "field_event.sync";
         PlacementOption: components["schemas"]["QuadrantPlacementOption"] | components["schemas"]["LotPlacementOption"];
         PointPublicationRequest: {
             expected_revision: number;

@@ -58,6 +58,7 @@ Rules:
 | versión de parámetro | rule parameter version | `/rule-parameters/{key}/versions/`, `RuleParameterVersion` | One value from `effective_from` on; insert-only; voided (not deleted) if wrong and still scheduled. |
 | modo de alcance | scope mode | `scope.centers.mode`, `scope.quadrants.mode` | Explicit none/selected/all; empty selected denies, all requires an explicit grant, selected never expands to new centers. |
 | alcance efectivo | effective scope | `effective_scope` | The action-granting profile scope intersects membership scope in both applicable dimensions; unrelated grants never combine into a new pair. |
+| contexto de captura | capture context | `capture_context` | Current self effective `field_event.sync` whole paired grants observed in bootstrap/changes; neither immutable original authority nor a permanent offline permission. |
 | revisión de configuración | configuration revision | `ConfigurationRevision`, `revision`, `expected_revision` | Immutable authored snapshot of organization settings, profile permissions or membership assignments. |
 | paquete de configuración | snapshot | `/field/catalog/`, `/field/rules/`, `version` | Compact copy of a configuration that the phone keeps offline; `version` is a content hash and the `ETag`. |
 
