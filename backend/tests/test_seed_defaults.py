@@ -482,6 +482,8 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
     assert courier.seeded_permission_codes == [
         "catalog.read",
         "center.read",
+        "community_activity.create",
+        "community_activity.read",
         "field.bootstrap",
         "field.upload",
         "field_event.sync",
@@ -506,6 +508,8 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
     assert courier.permission_codes == [
         "catalog.read",
         "center.read",
+        "community_activity.create",
+        "community_activity.read",
         "field.bootstrap",
         "field.upload",
         "field_event.sync",
@@ -540,6 +544,8 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
 
     assert plan.grants == {
         "courier": (
+            "community_activity.read",
+            "community_activity.create",
             "incident.read",
             "incident.create",
             "field.upload",

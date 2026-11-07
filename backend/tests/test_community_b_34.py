@@ -280,7 +280,7 @@ def test_dual_transport_replay_retains_original_clock_type_and_one_activity(
         )
     )
     update_catalog_item(configured, {"label_es": "Updated wording"})
-    deactivate_catalog_item(configured)
+    deactivate_catalog_item(configured, context.actor.user)
     assert CommunityActivity.objects.get(pk=captured["activity_id"]).type_snapshot["label_es"] == (
         "Original outreach"
     )
@@ -481,7 +481,8 @@ def test_pending_source_current_pair_gate_denies_hidden_foreign_or_missing_actio
         context.profile.save(update_fields=["permission_codes"])
         other = ProfileFactory(organization=org_a, permission_codes=[denied], scope=hidden)
         context.member.profiles.add(other)
-        capture = community_source(context, shift_id=str(uuid4()))
+        capture = community_source(context)
+        capture["catalog_version"] = "f" * 64
         answer = context.phone.sync([capture])
         assert answer.status_code == 200, answer.data
         assert answer.data["results"][0]["code"] == "community_inaccessible"
@@ -513,16 +514,19 @@ def test_pending_source_current_pair_gate_denies_hidden_foreign_or_missing_actio
 
     with monkeypatch.context() as gate:
         gate.setattr(boundaries, "lock_source_references", revoke_before_organization)
-        pending = community_source(context, shift_id=str(uuid4()))
+        pending = community_source(context)
+        pending["catalog_version"] = "f" * 64
         denied = context.phone.sync([pending])
     assert retained == [FieldEvent.objects.get(pk=pending["id"]).pk]
     assert denied.data["results"][0]["code"] == "community_inaccessible"
     assert not CommunityActivity.objects.exists()
     context.profile.permission_codes = original
     context.profile.save(update_fields=["permission_codes"])
-    valid_pending = community_source(context, shift_id=str(uuid4()))
+    valid_pending = community_source(context)
+    valid_pending["catalog_version"] = "f" * 64
     answer = context.phone.sync([valid_pending])
     assert answer.data["results"][0]["status"] == "in_review"
+    assert answer.data["results"][0]["code"] == "community_catalog_unavailable"
     assert not CommunityActivity.objects.exists()
     assert FieldEvent.objects.get(pk=valid_pending["id"]).status == "in_review"
 
