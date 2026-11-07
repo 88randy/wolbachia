@@ -67,6 +67,16 @@ class RevokeReason(models.TextChoices):
     MEMBERSHIP_INACTIVE = "membership_inactive"  # the pinned organization membership ended
 
 
+class SessionEndBasis(models.TextChoices):
+    TOKEN_EXPIRY = "token_expiry"  # noqa: S105 -- persisted non-secret end basis.
+    REVOCATION_WINDOW = "revocation_window"
+    LEGACY_EMPTY = "legacy_empty"
+
+
+class SessionHoldPurpose(models.TextChoices):
+    SECURITY_INVESTIGATION = "security_investigation"
+
+
 class DeviceSession(OrgScopedModel):
     """One login of a user on a device. Its token pairs are `TokenPair` rows (hashes only).
 
@@ -75,7 +85,11 @@ class DeviceSession(OrgScopedModel):
     """
 
     user = models.ForeignKey(
-        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="device_sessions"
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="device_sessions",
     )
     device = models.ForeignKey(Device, on_delete=models.PROTECT, related_name="sessions")
     last_used_at = models.DateTimeField(null=True, blank=True)
@@ -86,6 +100,18 @@ class DeviceSession(OrgScopedModel):
     revoke_reason = models.CharField(max_length=30, choices=RevokeReason.choices, blank=True)
     final_upload_deadline = models.DateTimeField(null=True, blank=True)
     final_upload_used_at = models.DateTimeField(null=True, blank=True)
+    ended_at = models.DateTimeField(null=True, blank=True)
+    end_basis = models.CharField(max_length=30, choices=SessionEndBasis.choices, blank=True)
+    end_reason = models.CharField(
+        max_length=30,
+        choices=[*RevokeReason.choices, ("expired", "Expired"), ("unknown", "Unknown")],
+        blank=True,
+    )
+    retention_anchor = models.DateTimeField(null=True, blank=True)
+    dissociated_at = models.DateTimeField(null=True, blank=True)
+    hold_until = models.DateTimeField(null=True, blank=True)
+    hold_purpose = models.CharField(max_length=30, choices=SessionHoldPurpose.choices, blank=True)
+    hold_reference = models.UUIDField(null=True, blank=True)
 
     class Meta:
         constraints = [
@@ -95,7 +121,73 @@ class DeviceSession(OrgScopedModel):
                     | (models.Q(revoked_at__isnull=False) & ~models.Q(revoke_reason=""))
                 ),
                 name="devicesession_revoke_fields_consistent",
-            )
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(user__isnull=False, dissociated_at__isnull=True)
+                    | models.Q(
+                        user__isnull=True,
+                        dissociated_at__isnull=False,
+                        created_by__isnull=True,
+                        revoked_by__isnull=True,
+                        last_used_at__isnull=True,
+                        final_upload_deadline__isnull=True,
+                        final_upload_used_at__isnull=True,
+                        hold_until__isnull=True,
+                        hold_purpose="",
+                        hold_reference__isnull=True,
+                        retention_anchor__isnull=False,
+                    )
+                    & ~models.Q(end_basis="")
+                ),
+                name="devicesession_dissociated_fields",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        end_basis="",
+                        end_reason="",
+                        ended_at__isnull=True,
+                        retention_anchor__isnull=True,
+                    )
+                    | models.Q(
+                        end_basis=SessionEndBasis.LEGACY_EMPTY,
+                        end_reason="unknown",
+                        ended_at__isnull=True,
+                        retention_anchor__isnull=False,
+                        revoked_at__isnull=True,
+                    )
+                    | models.Q(
+                        end_basis=SessionEndBasis.TOKEN_EXPIRY,
+                        end_reason="expired",
+                        ended_at__isnull=False,
+                        retention_anchor=models.F("ended_at"),
+                        retention_anchor__isnull=False,
+                        revoked_at__isnull=True,
+                    )
+                    | models.Q(
+                        end_basis=SessionEndBasis.REVOCATION_WINDOW,
+                        ended_at__isnull=False,
+                        retention_anchor=models.F("ended_at"),
+                        retention_anchor__isnull=False,
+                        revoked_at__isnull=False,
+                        end_reason=models.F("revoke_reason"),
+                        ended_at__gte=models.F("revoked_at"),
+                    )
+                ),
+                name="devicesession_end_proof_consistent",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(hold_until__isnull=True, hold_purpose="", hold_reference__isnull=True)
+                    | models.Q(
+                        hold_until__isnull=False,
+                        hold_purpose=SessionHoldPurpose.SECURITY_INVESTIGATION,
+                        hold_reference__isnull=False,
+                    )
+                ),
+                name="devicesession_hold_consistent",
+            ),
         ]
         indexes = [models.Index(fields=["user", "organization"], name="devicesession_user_org_idx")]
 

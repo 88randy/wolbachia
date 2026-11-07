@@ -140,6 +140,8 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | --- | --- | --- | --- |
 | teléfono / dispositivo (del repartidor) | device | `Device`, `/devices/`, `device_id` | The registered phone of the mobile app. Never `release_device` (that is release equipment) and never "terminal" or "handset". |
 | sesión del dispositivo | device session | `DeviceSession`, `revoke-device-sessions` | One login of a user on a device: an access + refresh token pair, revoked and never deleted. |
+| auditoría del fin de sesión | session-end audit | `ended_at`, `end_basis`, `retention_anchor`, `dissociated_at` | Truthful closed-session proof; legacy unknown end keeps a distinct cutover anchor. Direct session-person references are removed after configured retention; device/business/log correlation remains separate. |
+| retención por investigación de seguridad | session audit hold | `hold_until`, `hold_purpose`, `hold_reference` | Finite, session-specific operator action; blocks audit dissociation only, not TokenPair pruning. No permanent/public grant or implied legal certification. |
 | baja del dispositivo | device revocation | `POST /devices/{id}/revoke/`, `is_revoked` | Lost or retired phone: it cannot log in again. |
 | última carga | final upload | `final_upload_deadline`, `X-Session-Revoked`, `FinalUploadMixin` | The one upload a revoked phone may still make. |
 | — | token pair | `TokenPair`, `accounts/token_pairs.py` | Hashes of one access + refresh pair of a device session. A refresh consumes its pair and issues a child pair. Live families are kept in full for reuse detection. Ended families are pruned together by retention (#54); their device session audit row is kept. |

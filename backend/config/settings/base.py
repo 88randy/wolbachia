@@ -106,6 +106,14 @@ except ValueError as error:
     ) from error
 if not 30 <= AUTH_TOKEN_PAIR_RETENTION_DAYS <= 365:
     raise ImproperlyConfigured("AUTH_TOKEN_PAIR_RETENTION_DAYS must be between 30 and 365.")
+try:
+    AUTH_SESSION_AUDIT_RETENTION_DAYS = env.int("AUTH_SESSION_AUDIT_RETENTION_DAYS", default=365)
+except ValueError as error:
+    raise ImproperlyConfigured("AUTH_SESSION_AUDIT_RETENTION_DAYS must be an integer.") from error
+if max(180, AUTH_TOKEN_PAIR_RETENTION_DAYS) > AUTH_SESSION_AUDIT_RETENTION_DAYS:
+    raise ImproperlyConfigured(
+        "AUTH_SESSION_AUDIT_RETENTION_DAYS must be >=180 and >=AUTH_TOKEN_PAIR_RETENTION_DAYS."
+    )
 AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", default=60)
 AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
 AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)

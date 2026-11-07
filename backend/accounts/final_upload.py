@@ -50,7 +50,12 @@ class FinalUploadMixin:
     def initial(self, request: Request, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
         super().initial(request, *args, **kwargs)  # type: ignore[misc]
         session = request.auth
-        if not isinstance(session, DeviceSession) or session.revoked_at is None:
+        if not isinstance(session, DeviceSession):
+            return
+        if session.user_id is None or session.end_basis or session.dissociated_at is not None:
+            raise SessionRevokedError
+        actor_user_id = session.user_id
+        if session.revoked_at is None:
             return
         if request.method not in self.final_upload_methods:
             raise SessionRevokedError
@@ -64,7 +69,7 @@ class FinalUploadMixin:
         self._final_upload_transaction = transaction.atomic()
         self._final_upload_transaction.__enter__()
         self._acquire_final_upload_participants(
-            session, tuple(sorted({session.user_id, *participants}))
+            session, tuple(sorted({actor_user_id, *participants}))
         )
         consume_final_upload(session)
         self.is_final_upload = True
@@ -82,6 +87,9 @@ class FinalUploadMixin:
     def _acquire_final_upload_participants(
         self, session: DeviceSession, identifiers: tuple[UUID, ...]
     ) -> None:
+        if session.user_id is None or session.end_basis or session.dissociated_at is not None:
+            raise SessionRevokedError
+        actor_user_id = session.user_id
         try:
             # Roll back an unsuccessful closure before any fresh query; release partial User locks.
             with transaction.atomic():
@@ -90,7 +98,7 @@ class FinalUploadMixin:
             if error.status_code != HTTPStatus.TOO_MANY_REQUESTS:
                 raise
             # No Device/Session/domain lock here. Withdrawal still outranks retryable contention.
-            fresh = DeviceSession.objects.filter(pk=session.pk, user_id=session.user_id).first()
+            fresh = DeviceSession.objects.filter(pk=session.pk, user_id=actor_user_id).first()
             now = server_now()
             if fresh is None or not is_final_upload_available(fresh, now):
                 raise SessionRevokedError from error
