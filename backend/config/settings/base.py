@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "incidents.apps.IncidentsConfig",
     "inventory",
     "lab.apps.LabConfig",
+    "community.apps.CommunityConfig",
 ]
 
 MIDDLEWARE = [
@@ -226,6 +227,14 @@ SPECTACULAR_SETTINGS = {
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
         "ModeEnum": ["none", "selected", "all"],
+        "OriginEnum": [
+            "field_event",
+            "direct_report",
+            "review_decision",
+            "inventory_condition",
+            "lab_reception",
+            "unknown",
+        ],
         "ReviewDecisionActionEnum": ["accept", "void", "open_incident"],
         "RelocationDecisionEnum": ["approved", "rejected"],
         "DecisionEnum": ["keep", "move", "remove"],

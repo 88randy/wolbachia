@@ -33,7 +33,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        shard: [regular, migrations-foundation, migrations-field, migrations-material]
+        shard:
+          - regular
+          - migrations-foundation
+          - migrations-field
+          - migrations-material
+          - migrations-void-reason
+          - migrations-review
+          - migrations-lab
+          - migrations-community
     defaults:
       run:
         working-directory: backend
@@ -160,6 +168,26 @@ jobs:
         with:
           name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-material
           path: backend/.pytest_cache/ci-downloads/migrations-material
+      - name: Download current void-reason migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-void-reason
+          path: backend/.pytest_cache/ci-downloads/migrations-void-reason
+      - name: Download current review migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-review
+          path: backend/.pytest_cache/ci-downloads/migrations-review
+      - name: Download current Lab migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-lab
+          path: backend/.pytest_cache/ci-downloads/migrations-lab
+      - name: Download current Community migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-community
+          path: backend/.pytest_cache/ci-downloads/migrations-community
       - name: Complete inventory and combined coverage (existing 85 percent gate)
         run: uv run python -m ci.aggregate
       - name: Preserve the complete coverage result

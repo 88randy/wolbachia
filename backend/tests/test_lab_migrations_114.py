@@ -93,7 +93,26 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         executor.migrate(old)
         triggers = old_trigger_definitions()
         MigrationExecutor(connection).migrate(leaves)
-        assert old_trigger_definitions() == triggers
+        restored = {
+            (table, name): definition for table, name, definition in old_trigger_definitions()
+        }
+        previous = {(table, name): definition for table, name, definition in triggers}
+        assert {key: restored[key] for key in previous} == previous
+        assert restored.keys() - previous.keys() == {
+            (table, f"{table}_{suffix}")
+            for table in (
+                "community_communityactivity",
+                "community_communityactivityevent",
+                "community_communitycommandreceipt",
+                "community_communitysourcelink",
+                "community_complaintincidentlink",
+                "community_communitysourcecancellation",
+            )
+            for suffix in ("guard", "complete")
+        } | {
+            ("field_sync_fieldevent", "community_source_complete"),
+            ("reviews_revieweffectreceipt", "community_review_complete"),
+        }
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
         ]

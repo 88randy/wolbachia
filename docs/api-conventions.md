@@ -1170,3 +1170,52 @@ members/selection, rule versions, timezone/UTC interval and configuration/hash p
 Recovery/supplements are idempotent and retain earlier facts. #115 owns independent
 execution, blind adjudication and paddle reuse. A technical configuration record or
 synthetic fixture is not biological certification. No Lab client screen is delivered.
+
+## Community aggregates (B34 / #127)
+
+`zone_id` is the actual `geography.Block` UUID, with a retained BlockVersion;
+it is not a new Zone or a multi-area attendance attribution. Current action and
+the complete center/quadrant pair must be covered by one contributing grant.
+Organization/author/status/source/clocks remain server-owned.
+
+- `GET /community-activities/`: page-number `{count,next,previous,results,totals}`.
+  Filters are exact `code`, `zone_id`, `center`, `quadrant`, CatalogItem `type_id`,
+  `date_from` (inclusive), `date_before` (exclusive), `include_voided` (default false).
+  Allowlisted ordering is activity_date/created_at/code/attendance/id with stable id
+  ties. All filters/scope apply before paging. `count` covers display rows, while
+  `totals.active_activity_count` and exact digit-string `totals.attendance` cover
+  every active matching observation, including matches outside the visible page.
+  These are attendance observations, never unique residents or notice quantities.
+- `GET /community-activities/{id}/`: current authorized record, immutable captured
+  type/Block context and lifecycle events. The related reported Incident id/code/
+  state is independently checked with current incident.read and becomes null when
+  unavailable. Activity read never grants Incident reads or private evidence bytes.
+- `POST /community-activities/`: closed body
+  `{command_id,type_id,zone_id,attendance,agreements,other_text?,incident_id?}`.
+  Type is a real active item of community-activity-type. Other needs visible text;
+  a linked Incident needs nonidentifying agreements and the exact same real pair.
+  Attendance is an explicit integer0..2**53−1, rejecting bool/floats/numeric strings.
+  Wording is bounded/normalized text; arbitrary prose is not certified PII-free.
+  No resident/phone/address/list fields, routine evidence or new upload parent exist.
+- `POST /community-activities/{id}/void/`: closed
+  `{command_id,expected_revision:1,reason_code,reason}`; current read+void authority,
+  normalized reason10 visible minimum/1000 maximum and real reason catalog. Append
+  terminal revision2, preserving the original activity, Incident/link and holds.
+- `GET /community-activities/zone-options/?action=read|create`: minimal scoped Block
+  and actual parent identities/codes with page/page_size, optional center/quadrant/
+  code search. It requires that target action, never broad center/role/geography read.
+
+Cookie+CSRF writes return a minimal immutable receipt containing actual activity,
+event and command UUIDs, code, revision and original server_received_at. Current
+records/totals are GET data, never appended dynamically to an old receipt. An exact
+same-actor/body/target/origin retry rechecks current authority and returns that
+receipt. HTTP/field origin reuse or changed commands conflict with no conversion,
+reparenting or automatic retry. Unknown/foreign/hidden references are404; malformed
+closed inputs are400; stale/unsafe command state is409 with safe blocked_by.
+
+Web capture date uses its first server instant and freshly locked organization
+timezone. Field capture keeps actual device and receipt clocks and retained original
+type/Block/time/authority facts. Only real source-backed activities publish one
+aggregate history branch to the original real courier. No private wording or Incident
+identities enter that branch; HTTP-only rows do not invent a FieldEvent or recipient.
+No client Community screen/cache/native qualification is delivered here.

@@ -530,6 +530,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/community-activities/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["community_activities_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["community_activities_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/community-activities/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["community_activities_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/community-activities/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["community_activities_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/community-activities/zone-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["community_activities_zone_options_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/devices/": {
         parameters: {
             query?: never;
@@ -4270,6 +4384,176 @@ export interface components {
          *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
          *     build with `ImproperlyConfigured`.
          */
+        CommunityActivity: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            readonly revision: number;
+            readonly is_voided: boolean;
+            /** Format: uuid */
+            readonly type_id: string;
+            readonly type_snapshot: components["schemas"]["CommunityTypeSnapshot"];
+            /** Format: uuid */
+            readonly zone_id: string;
+            readonly zone_code: string;
+            /** Format: uuid */
+            readonly zone_version_id: string;
+            /** Format: uuid */
+            readonly center_id: string;
+            /** Format: uuid */
+            readonly quadrant_id: string;
+            /** Format: date */
+            readonly activity_date: string;
+            readonly captured_timezone: string;
+            readonly attendance: number;
+            readonly agreements: string;
+            readonly other_text: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string;
+            readonly events: components["schemas"]["CommunityEvent"][];
+            readonly incident: components["schemas"]["CommunityIncidentReference"] | null;
+        };
+        CommunityActivityPage: {
+            count: number;
+            /** Format: uri */
+            next: string | null;
+            /** Format: uri */
+            previous: string | null;
+            results: components["schemas"]["CommunityActivity"][];
+            totals: components["schemas"]["CommunityTotals"];
+        };
+        CommunityEvent: {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            action: components["schemas"]["CommunityEventActionEnum"];
+            /** Format: uuid */
+            command_id: string;
+            origin: components["schemas"]["CommunityEventOriginEnum"];
+            /** Format: date-time */
+            device_time: string | null;
+            /** Format: date-time */
+            server_received_at: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by: string;
+            reason: string;
+            reason_code: string;
+        };
+        /**
+         * @description * `create` - create
+         *     * `void` - void
+         * @enum {string}
+         */
+        CommunityEventActionEnum: "create" | "void";
+        /**
+         * @description * `http` - http
+         *     * `field` - field
+         * @enum {string}
+         */
+        CommunityEventOriginEnum: "http" | "field";
+        CommunityHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "community_activity";
+            /** Format: uuid */
+            activity_id: string;
+            /** Format: uuid */
+            event_id: string;
+            /** Format: uuid */
+            command_id: string;
+            code: string;
+            revision: number;
+            /** Format: uuid */
+            type_id: string;
+            type_snapshot: components["schemas"]["CommunityTypeSnapshot"];
+            /** Format: uuid */
+            zone_id: string;
+            /** Format: uuid */
+            zone_version_id: string;
+            /** Format: date */
+            activity_date: string;
+            /** Format: int64 */
+            attendance: number;
+            is_voided: boolean;
+            /** Format: uuid */
+            source_event_id: string;
+            /** Format: date-time */
+            source_device_time: string;
+            /** Format: date-time */
+            source_server_received_at: string;
+            subjects: components["schemas"]["HistorySubject"][];
+        };
+        /**
+         * @description * `community_activity` - community_activity
+         * @enum {string}
+         */
+        CommunityHistoryEntryKindEnum: "community_activity";
+        CommunityIncidentReference: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            state: components["schemas"]["IncidentStateEnum"];
+        };
+        CommunityReceipt: {
+            /** Format: uuid */
+            activity_id: string;
+            /** Format: uuid */
+            event_id: string;
+            /** Format: uuid */
+            command_id: string;
+            code: string;
+            revision: number;
+            /** Format: date-time */
+            server_received_at: string;
+        };
+        CommunityTotals: {
+            active_activity_count: number;
+            attendance: string;
+        };
+        CommunityTypeSnapshot: {
+            /** Format: uuid */
+            id?: string;
+            code: string;
+            label_es: string;
+            label_en: string;
+            is_other: boolean;
+            requires_photo: boolean;
+        };
+        CommunityZoneOption: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            quadrant_id: string;
+            quadrant_code: string;
+            /** Format: uuid */
+            center_id: string;
+            center_code: string;
+        };
+        CommunityZoneOptionsPage: {
+            count: number;
+            /** Format: uri */
+            next: string | null;
+            /** Format: uri */
+            previous: string | null;
+            results: components["schemas"]["CommunityZoneOption"][];
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
         Condition: {
             /** Format: uuid */
             readonly id: string;
@@ -4426,13 +4710,28 @@ export interface components {
          * @enum {string}
          */
         CourierHistoryEffectStateEnum: "applied_review" | "adopted_legacy" | "discarded" | "incident_open" | "approved" | "observed";
-        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"] | components["schemas"]["TransferHistoryEntry"] | components["schemas"]["LabHistoryEntry"];
+        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"] | components["schemas"]["TransferHistoryEntry"] | components["schemas"]["LabHistoryEntry"] | components["schemas"]["CommunityHistoryEntry"];
         /**
          * @description * `review_decision` - review_decision
          *     * `shift_validation` - shift_validation
          * @enum {string}
          */
         CourierHistoryKindEnum: "review_decision" | "shift_validation";
+        CreateCommunityActivityRequest: {
+            /** Format: uuid */
+            type_id: string;
+            /** Format: uuid */
+            zone_id: string;
+            /** Format: int64 */
+            attendance: number;
+            agreements: string;
+            /** @default  */
+            other_text: string;
+            /** Format: uuid */
+            incident_id?: string | null;
+            /** Format: uuid */
+            command_id: string;
+        };
         CreateIncidentTypeRequest: {
             code: string;
             label: string;
@@ -9138,6 +9437,15 @@ export interface components {
          */
         ViabilityReasonEnum: "not_requested" | "zero_examined";
         /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
+        VoidCommunityActivityRequest: {
+            reason_code: string;
+            /** @default  */
+            reason: string;
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+        };
+        /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
         VoidRequest: {
             reason_code: string;
             /** @default  */
@@ -10276,6 +10584,199 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Center"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    community_activities_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                code?: string;
+                date_before?: string;
+                date_from?: string;
+                include_voided?: boolean;
+                /** @description Comma-separated fields: activity_date, created_at, code, attendance, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                page?: number;
+                page_size?: number;
+                quadrant?: string;
+                type_id?: string;
+                zone_id?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityActivityPage"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    community_activities_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateCommunityActivityRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    community_activities_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this community activity. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityActivity"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    community_activities_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this community activity. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["VoidCommunityActivityRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    community_activities_zone_options_retrieve: {
+        parameters: {
+            query: {
+                /**
+                 * @description * `read` - read
+                 *     * `create` - create
+                 */
+                action: "read" | "create";
+                center?: string;
+                page?: number;
+                page_size?: number;
+                quadrant?: string;
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CommunityZoneOptionsPage"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
