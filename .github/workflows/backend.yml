@@ -43,6 +43,7 @@ jobs:
           - migrations-lab
           - migrations-community
           - migrations-supplies
+          - regular-integration
     defaults:
       run:
         working-directory: backend
@@ -194,6 +195,11 @@ jobs:
         with:
           name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-supplies
           path: backend/.pytest_cache/ci-downloads/migrations-supplies
+      - name: Download current regular integration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-regular-integration
+          path: backend/.pytest_cache/ci-downloads/regular-integration
       - name: Complete inventory and combined coverage (existing 85 percent gate)
         run: uv run python -m ci.aggregate
       - name: Preserve the complete coverage result

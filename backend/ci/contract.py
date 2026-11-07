@@ -5,7 +5,8 @@ import re
 from collections import Counter
 from typing import Any
 
-MIGRATION_PARTITIONS = {
+INTEGRATION_PARTITION = "regular-integration"
+MODULE_PARTITIONS = {
     "migrations-foundation": frozenset({"tests/test_inventory_migrations_105.py"}),
     "migrations-field": frozenset({"tests/test_geography_migrations_b_33.py"}),
     "migrations-material": frozenset({"tests/test_transfer_migrations_106.py"}),
@@ -14,10 +15,16 @@ MIGRATION_PARTITIONS = {
     "migrations-lab": frozenset({"tests/test_lab_migrations_114.py"}),
     "migrations-community": frozenset({"tests/test_community_migrations_127.py"}),
     "migrations-supplies": frozenset({"tests/test_inventory_allocations_migrations_107.py"}),
+    INTEGRATION_PARTITION: frozenset(
+        {"tests/test_inventory_allocations_b_10.py", "tests/test_uploads_b_04.py"}
+    ),
 }
-PARTITION_NAMES = ("regular", *MIGRATION_PARTITIONS)
+PARTITION_NAMES = ("regular", *MODULE_PARTITIONS)
 MIGRATION_MODULES = frozenset(
-    module for modules in MIGRATION_PARTITIONS.values() for module in modules
+    module
+    for name, modules in MODULE_PARTITIONS.items()
+    if name != INTEGRATION_PARTITION
+    for module in modules
 )
 
 
@@ -30,20 +37,30 @@ def partition_nodes(nodes: list[str]) -> dict[str, list[str]]:
     require(isinstance(nodes, list) and bool(nodes), "empty inventory")
     require(all(isinstance(node, str) and "::" in node for node in nodes), "invalid node")
     require(len(nodes) == len(set(nodes)), "duplicate node")
-    modules = [module for cohort in MIGRATION_PARTITIONS.values() for module in cohort]
+    modules = [module for cohort in MODULE_PARTITIONS.values() for module in cohort]
+    migration_modules = {
+        module
+        for name, cohort in MODULE_PARTITIONS.items()
+        if name != INTEGRATION_PARTITION
+        for module in cohort
+    }
     require(
-        all(len(cohort) == 1 for cohort in MIGRATION_PARTITIONS.values())
+        INTEGRATION_PARTITION in MODULE_PARTITIONS
+        and all(
+            cohort and (name == INTEGRATION_PARTITION or len(cohort) == 1)
+            for name, cohort in MODULE_PARTITIONS.items()
+        )
         and len(modules) == len(set(modules))
-        and set(modules) == MIGRATION_MODULES,
-        "non-singleton, overlapping or incomplete migration registry",
+        and migration_modules == MIGRATION_MODULES,
+        "empty, non-singleton migration, overlapping or incomplete module registry",
     )
     owners = {node.split("::")[0] for node in nodes}
-    require(owners >= MIGRATION_MODULES, "missing migration owner")
-    parts = {"regular": [node for node in nodes if node.split("::")[0] not in MIGRATION_MODULES]}
+    require(owners >= set(modules), "missing complete module owner")
+    parts = {"regular": [node for node in nodes if node.split("::")[0] not in modules]}
     parts.update(
         {
             shard: [node for node in nodes if node.split("::")[0] in cohort]
-            for shard, cohort in MIGRATION_PARTITIONS.items()
+            for shard, cohort in MODULE_PARTITIONS.items()
         }
     )
     require(all(parts.values()), "empty partition")
