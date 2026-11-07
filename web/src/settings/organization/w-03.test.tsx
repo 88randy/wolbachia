@@ -69,12 +69,13 @@ async function open(path = "/settings/roles", me = ME, profiles: Profile[] = PRO
       409,
       "last_administrator",
     ),
-    "PATCH /api/v1/organization/": Response.json({
-      ...ORGANIZATION,
-      revision: 5,
-      timezone: "UTC",
-      epi_week: "mmwr",
-    }),
+    "PATCH /api/v1/organization/": () =>
+      Response.json({
+        ...ORGANIZATION,
+        revision: 5,
+        timezone: "UTC",
+        epi_week: "mmwr",
+      }),
   });
   return { api, app: await renderApp({ path, fetch: api.fetch }), user: userEvent.setup() };
 }
