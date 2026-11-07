@@ -1,7 +1,9 @@
 """Protect our complete CI gate, not pytest's or GitHub's implementation."""
 
 import copy
+import gc
 import sys
+import warnings
 
 import pytest
 from coverage import CoverageData
@@ -163,15 +165,25 @@ def test_coverage_inputs_are_readable_statement_data_from_allowed_sources(tmp_pa
     else:
         recorded.add_lines({filename: set() if fault == "empty" else {1}})
     recorded.write()
+    recorded.close()
     if fault == "missing":
         path.unlink()
     elif fault == "corrupt":
         path.write_bytes(b"not coverage data")
-    if fault == "none":
-        assert read_coverage(path, (source,)) == {str(module): {1}}
-    else:
-        with pytest.raises(ValueError, match="CI evidence"):
-            read_coverage(path, (source,))
+    gc.collect()
+    with warnings.catch_warnings(record=True) as observed:
+        warnings.simplefilter("always", ResourceWarning)
+        if fault == "none":
+            assert read_coverage(path, (source,)) == {str(module): {1}}
+        else:
+            with pytest.raises(ValueError, match="CI evidence"):
+                read_coverage(path, (source,))
+        gc.collect()
+    assert not [
+        str(warning.message)
+        for warning in observed
+        if issubclass(warning.category, ResourceWarning)
+    ]
 
 
 @pytest.mark.parametrize("status", [0, 7])
