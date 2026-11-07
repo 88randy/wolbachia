@@ -67,3 +67,15 @@ Official APIs: [FileSystem 58](https://docs.expo.dev/versions/v58.0.0/sdk/filesy
 File/hash tests use actual temporary files and Node SQLite; transport fixtures use
 the actual generated client with scripted responses, not a running #102 backend.
 Android persistence/network/TalkBack qualification is not established by these tests.
+
+## No-file lifecycle origin arbitration (#138 M3)
+
+Every nonnull bindSession, preserving its existing isLogin-or-nonnull policy, also
+checks the three immutable lifecycle owned fact kinds. A conflicting or missing
+owner refuses activation even before a photo was adopted. Explicit new lifecycle
+origin checks the ORIGINAL owner/session/generation/is_active binding inside its
+same SQL transaction; it cannot late-bind to a replacement actor after an await.
+Origin-first blocks another owner; login-first and A→B→A defeat stale origin.
+Null/end deactivation remains safe and retains all facts. The real CredentialStore
+failure/retry journey also retains no-file origin audit without exposing a new owner.
+No new identity store, queue, migration or changes to captured files/envelopes exist.

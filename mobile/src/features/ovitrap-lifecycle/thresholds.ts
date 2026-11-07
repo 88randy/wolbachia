@@ -7,6 +7,8 @@ const WEEK_MS = 7 * 86_400_000;
 /** Only locally known unvoided check history counts, at the fixed point across physical lineage. */
 export async function relocationSuggestion(db: SqlExecutor, draft: LifecycleDraft) {
   if (draft.kind !== "relocate") return null;
+  if (draft.schemaVersion === 2)
+    return { state: "unavailable" as const, reason: "advisory_not_loaded" as const };
   const threshold = draft.rules?.closedHouseWeeks;
   if (!threshold || !Number.isInteger(threshold) || threshold < 1 || threshold > 8) return null;
   const rows = await db.query(

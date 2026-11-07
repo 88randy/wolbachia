@@ -17,6 +17,8 @@ import {
 import { clearDownloadedProjections } from "../ovitrap-lifecycle/quadrant-projections.ts";
 import { retainedHistoryStatements } from "../ovitrap-lifecycle/history-projections.ts";
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
+import { readLifecycleSource } from "../ovitrap-lifecycle/source-context.ts";
+import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import { LOCATED_ASSIGNMENTS } from "./task-locations.ts";
 import { INVALIDATE_ATTACHMENTS } from "../../attachments/schema.ts";
@@ -91,6 +93,9 @@ export class DayStore {
     isCurrent: () => boolean,
   ): Promise<CaptureTransportHandle | null> {
     return readCaptureTransport(this.#db, identity, isCurrent);
+  }
+  lifecycleSource(handle: CaptureTransportHandle, request: LifecycleSourceRequest | null) {
+    return readLifecycleSource(this.#db, handle, request);
   }
   advanceCaptureTransport(
     handle: CaptureTransportHandle | null,

@@ -6,6 +6,9 @@ import type { DayCache } from "./types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import { ownerKey } from "../../attachments/types.ts";
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
+import type { LifecycleSourceReader } from "../ovitrap-lifecycle/source-context.ts";
+import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
+import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 
 export type BundleResult =
   | { readonly kind: "bundle"; readonly body: unknown }
@@ -100,6 +103,49 @@ export class DayBundleService {
     const handle = await write(() => this.#deps.store.captureTransport(identity, current));
     if (!current()) throw new RemoteSessionEnded();
     return { write, handle };
+  }
+  /** Neither the network queue nor the short SQL writer owns the consumer's factory/native work. */
+  captureLifecycleSource(): LifecycleSourceReader {
+    const original = this.#captureTurn();
+    void original.catch(() => undefined); // Abandoned requests still own their read error.
+    return async (request, use) => {
+      const turn = await original;
+      if (turn.handle === null) throw new LifecycleGateError("scope");
+      const handle = turn.handle;
+      const source = await turn.write(() => this.#deps.store.lifecycleSource(handle, request));
+      if (!handle.isCurrent()) throw new LifecycleGateError("scope");
+      return use({ ...source, write: turn.write, ...this.#lifecycleContinuations(turn, source) });
+    };
+  }
+  async #readLifecycleCurrent(
+    turn: ProjectionTurn,
+    source: Awaited<ReturnType<DayStore["lifecycleSource"]>>,
+    next: LifecycleSourceRequest | null,
+  ) {
+    const current = await turn.write(() => this.#deps.store.lifecycleSource(source.handle, next));
+    if (
+      current.ownerFence.ownerKey !== source.ownerFence.ownerKey ||
+      current.ownerFence.sessionId !== source.ownerFence.sessionId ||
+      current.ownerFence.generation !== source.ownerFence.generation ||
+      !source.handle.isCurrent()
+    )
+      throw new LifecycleGateError("scope");
+    return current;
+  }
+  #lifecycleContinuations(
+    turn: ProjectionTurn,
+    source: Awaited<ReturnType<DayStore["lifecycleSource"]>>,
+  ) {
+    return {
+      resolve: async (next: LifecycleSourceRequest) => {
+        const current = await this.#readLifecycleCurrent(turn, source, next);
+        if (current.source === null) throw new LifecycleGateError("scope");
+        return current.source;
+      },
+      assertCurrent: async () => {
+        await this.#readLifecycleCurrent(turn, source, null);
+      },
+    };
   }
   refresh(force = false): Promise<void> {
     return this.#network.run(async () => {

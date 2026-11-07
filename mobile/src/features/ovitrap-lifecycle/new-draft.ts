@@ -2,7 +2,13 @@ import { PendingDraftError } from "../ovitrap-check/ports.ts";
 import { ShiftBlockedError } from "../ovitrap-check/shift-authorization.ts";
 import { UUID_PATTERN } from "../ovitrap-check/domain.ts";
 import type { Dependencies } from "./ports.ts";
-import type { LifecycleDraft, LifecycleKind, StoredLifecycle } from "./types.ts";
+import type {
+  CurrentLifecycleDraft,
+  LifecycleDraft,
+  LifecycleKind,
+  StoredLifecycle,
+  LifecycleSource,
+} from "./types.ts";
 export interface StartInput {
   readonly kind: LifecycleKind;
   readonly ovitrapId: string;
@@ -18,7 +24,7 @@ const EMPTY = {
   discardedEvidence: [],
   reviewAcknowledged: false,
 } as const;
-function pendingDraft(
+export function pendingDraft(
   current: StoredLifecycle,
   input: StartInput,
   shiftId: string,
@@ -28,46 +34,54 @@ function pendingDraft(
     throw new PendingDraftError();
   return current.draft;
 }
-async function newIdentity(deps: Dependencies, kind: LifecycleKind) {
-  const eventId = deps.uuid();
-  const replacementId = kind === "replace" ? deps.uuid() : null;
-  if (!UUID_PATTERN.test(eventId)) throw new Error("Invalid event UUID.");
+async function replacementIdentity(deps: Dependencies, kind: LifecycleKind, eventId: string) {
+  const id = kind === "replace" ? deps.uuid() : null;
   if (
-    replacementId &&
-    (!UUID_PATTERN.test(replacementId) ||
-      replacementId === eventId ||
-      (await deps.store.physical(replacementId)))
+    id &&
+    (!UUID_PATTERN.test(id) ||
+      id === eventId ||
+      (await deps.store.physical(id)) ||
+      (
+        await deps.store.db.query(
+          "SELECT 1 FROM lifecycle_courier_projection WHERE kind='ovitrap' AND id=?",
+          [id],
+        )
+      ).length)
   )
     throw new Error("New physical identity must be unused.");
-  return { eventId, replacementId };
+  return id;
+}
+/** Only the explicit new-start writer supplies the fresh event UUID and validated original source. */
+function requireActiveSource(source: LifecycleSource, ovitrapId: string): void {
+  if (source.isRetired || source.physical.id !== ovitrapId || source.epoch.is_closed !== false)
+    throw new Error("No authorized active physical ovitrap.");
 }
 export async function startDraft(
   deps: Dependencies,
-  input: StartInput,
-  current: StoredLifecycle,
-): Promise<LifecycleDraft> {
+  input: StartInput & {
+    readonly source: LifecycleSource;
+    readonly freshEventId: string;
+    readonly deviceTime: string;
+  },
+): Promise<CurrentLifecycleDraft> {
+  const { source, freshEventId, deviceTime } = input;
   const shiftId = await deps.shiftId();
   if (!shiftId) throw new ShiftBlockedError();
-  const pending = pendingDraft(current, input, shiftId);
-  if (pending) return pending;
-  const source = await deps.store.physical(input.ovitrapId);
-  const { assignment } = await deps.store.capture.snapshots();
-  if (
-    !source ||
-    source.isRetired ||
-    !assignment?.points.some((point) => point.id === source.point.id)
-  )
-    throw new Error("No authorized active physical ovitrap.");
+  requireActiveSource(source, input.ovitrapId);
+  const { catalog, rules, ...audit } = source;
   return {
     ...EMPTY,
-    ...(await deps.store.configuration()),
-    ...(await newIdentity(deps, input.kind)),
-    deviceTime: deps.now().toISOString(),
+    catalog,
+    rules,
+    eventId: freshEventId,
+    schemaVersion: 2,
+    source: audit,
+    replacementId: await replacementIdentity(deps, input.kind, freshEventId),
+    deviceTime,
     shiftId,
     kind: input.kind,
-    ovitrapId: source.id,
+    ovitrapId: source.physical.id,
     point: source.point,
-    assignment,
     manualCapture: input.manualCapture,
   };
 }

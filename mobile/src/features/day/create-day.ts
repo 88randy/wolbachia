@@ -14,17 +14,22 @@ import { DayStore } from "./store.ts";
 import { DayService } from "./service.ts";
 import { androidLocation } from "./android-location.ts";
 import { inspectMapFile } from "./inspect-map-file.ts";
+import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import { OutboxWorkOverlay } from "./local-work.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly tokens: TokenStore & Pick<CredentialStore, "getSnapshot">;
   readonly requests: () => SessionRequests;
+  readonly getCaptureIdentity?: () => EvidenceIdentity | null;
 }
 export function createDayBundle(deps: Dependencies): DayBundleService {
   return new DayBundleService({
     store: new DayStore(deps.db),
     now: () => new Date(),
     getScopeKey: () => sessionScope(deps.tokens),
+    ...(deps.getCaptureIdentity === undefined
+      ? {}
+      : { getCaptureIdentity: deps.getCaptureIdentity }),
     transport: async (etag) => {
       const baseUrl = deps.tokens.getOrigin();
       const scope = sessionScope(deps.tokens);

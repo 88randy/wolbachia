@@ -4,13 +4,14 @@ import type { Dependencies } from "./ports.ts";
 import type { Correction } from "./events.ts";
 import { correctionEvent } from "./events.ts";
 import { identityGuard } from "./store.ts";
-import type { LifecycleDraft } from "./types.ts";
+import type { LifecycleDraft, Configuration } from "./types.ts";
 export async function commitCorrection(
   deps: Dependencies,
   draft: LifecycleDraft,
-  correction: Correction,
+  input: Correction & { readonly configuration: Configuration },
 ): Promise<void> {
-  const { catalog } = await deps.store.configuration();
+  const { configuration, ...correction } = input;
+  const { catalog } = configuration;
   if (
     !catalog?.voidReasons.some((item) => item.code === correction.reasonCode) ||
     !validReason(correction.reason)

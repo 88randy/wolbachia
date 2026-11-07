@@ -7,7 +7,7 @@ import {
   CONTRACT_IDS,
   QUADRANT_REFERENCE,
 } from "./lifecycle-contract-fixtures.ts";
-import type { LifecycleDraft } from "../../src/features/ovitrap-lifecycle/types.ts";
+import type { LegacyLifecycleDraft as LifecycleDraft } from "../../src/features/ovitrap-lifecycle/types.ts";
 import { ASSIGNMENT, CATALOG, RULES } from "./m-08-fixtures.ts";
 
 export const PROJECTION_NOW = new Date("2026-11-06T20:00:00Z");

@@ -1,6 +1,9 @@
 import type { Assignment, Evidence, Point, Rules } from "../ovitrap-check/types.ts";
 import type { ChecklistItem } from "../shift-open/domain.ts";
 import type { FieldEventEnvelope, OutboxEvent } from "../../outbox/outbox-event.ts";
+import type { Schemas } from "@wolbachia/api-client";
+import type { EvidenceFence } from "../../attachments/types.ts";
+import type { CaptureTransportHandle } from "./capture-context-contract.ts";
 export type LifecycleKind = "replace" | "relocate" | "remove";
 export type RecoveryState = "recovered" | "unrecovered" | "unconfirmed";
 export interface LifecycleCatalog {
@@ -13,12 +16,24 @@ export interface LifecycleCatalog {
 export interface LifecycleRules extends Rules {
   readonly closedHouseWeeks: number | null;
   readonly incidents: number | null;
+  readonly relocationParameters?: {
+    readonly closedHouseWeeks: Pick<
+      Schemas["SnapshotParameter"],
+      "version_id" | "value" | "effective_from"
+    > | null;
+    readonly incidents: Pick<
+      Schemas["SnapshotParameter"],
+      "version_id" | "value" | "effective_from"
+    > | null;
+  };
 }
 export interface Configuration {
   readonly catalog: LifecycleCatalog | null;
   readonly rules: LifecycleRules | null;
 }
-export interface LifecycleDraft extends Configuration {
+export interface LegacyLifecycleDraft extends Configuration {
+  readonly schemaVersion?: undefined;
+  readonly source?: undefined;
   readonly eventId: string;
   readonly deviceTime: string;
   readonly shiftId: string;
@@ -36,6 +51,75 @@ export interface LifecycleDraft extends Configuration {
   readonly evidence: readonly Evidence[];
   readonly discardedEvidence: readonly Evidence[];
   readonly reviewAcknowledged: boolean;
+}
+/** Server publication and owned local evidence are different provenance, never interchangeable floors. */
+export type LifecyclePhysicalSource =
+  | {
+      readonly kind: "downloaded";
+      readonly id: string;
+      readonly version: string;
+      readonly sequence: number;
+    }
+  | {
+      readonly kind: "owned-local";
+      readonly id: string;
+      readonly sourceEventId: string;
+      readonly relation: "replacement" | "capture";
+      readonly status: OutboxEvent["status"];
+      readonly receipt: {
+        readonly projectionSequence: number;
+        readonly isReconciled: boolean;
+      } | null;
+    };
+export interface LifecycleSource extends Configuration {
+  readonly context: Schemas["CaptureContext"];
+  readonly physical: LifecyclePhysicalSource;
+  readonly isRetired: boolean;
+  readonly point: Point & {
+    readonly version: number;
+    readonly blockId: string;
+    readonly quadrantId: string;
+    readonly centerId: string;
+  };
+  readonly epoch: Pick<Schemas["QuadrantReference"], "revision" | "is_closed" | "closure_id">;
+  readonly organization: Pick<Schemas["MeOrganization"], "id" | "timezone" | "epi_week">;
+}
+export interface CurrentLifecycleDraft extends Omit<
+  LegacyLifecycleDraft,
+  "assignment" | "schemaVersion" | "source"
+> {
+  readonly schemaVersion: 2;
+  readonly source: Omit<LifecycleSource, "catalog" | "rules">;
+  readonly assignment?: never;
+}
+export type LifecycleDraft = LegacyLifecycleDraft | CurrentLifecycleDraft;
+export type LifecycleSourceRequest =
+  | { readonly kind: "new"; readonly ovitrapId: string }
+  | { readonly kind: "correction"; readonly sourceEventId: string };
+export interface LifecycleSourceTurn {
+  readonly assertCurrent: () => Promise<void>;
+  readonly source: LifecycleSource | null;
+  readonly handle: CaptureTransportHandle;
+  readonly ownerFence: EvidenceFence;
+  readonly canCapture: boolean;
+  readonly resolve: (request: LifecycleSourceRequest) => Promise<LifecycleSource>;
+  readonly write: <T>(commit: () => Promise<T>) => Promise<T>;
+}
+export interface LifecycleSourceOperation {
+  readonly expectedEventId: string | null;
+  readonly isCurrent: () => boolean;
+  read<T>(
+    request: LifecycleSourceRequest | null,
+    use: (turn: LifecycleSourceTurn) => Promise<T>,
+  ): Promise<T>;
+  admit<T>(turn: LifecycleSourceTurn, sqlOnly: () => Promise<T>): Promise<T>;
+}
+export interface LifecycleSourcePort {
+  capture(expectedEventId: string | null, isDraftCurrent: () => boolean): LifecycleSourceOperation;
+  read<T>(
+    request: LifecycleSourceRequest | null,
+    use: (turn: LifecycleSourceTurn) => Promise<T>,
+  ): Promise<T>;
 }
 export type DraftPatch = Partial<
   Pick<LifecycleDraft, "reasonCode" | "otherText" | "recovery" | "reviewAcknowledged">
@@ -80,6 +164,7 @@ export interface PhysicalOvitrap {
   readonly replacedBy: string | null;
 }
 export interface StoredLifecycle {
+  readonly recovery?: "blocked_ownership" | "unsupported_draft";
   readonly draft: LifecycleDraft | null;
   readonly event: OutboxEvent | null;
   readonly proposal: RelocationProposal | null;

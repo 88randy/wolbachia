@@ -30,6 +30,7 @@ import { createScopedSyncTransport } from "../sync/scoped-sync-transport.ts";
 import { createAttachments } from "../attachments/create-attachments.ts";
 import { attachmentSyncHooks } from "../attachments/sync-hooks.ts";
 import type { Attachments } from "../attachments/create-attachments.ts";
+import { acceptedEvidenceOwner } from "../attachments/accepted-owner.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
@@ -60,23 +61,47 @@ export async function createServices(): Promise<AppServices> {
   const { server, credentials } = await loadIdentity(kv, outbox);
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);
   // Bootstrap cannot run until composition finishes; auth cleanup can use the short projection gate during load.
-  const bundle = createDayBundle({ db, tokens: credentials, requests: () => requests });
+  let acceptedAuth: AuthController | null = null;
+  const bundle = createDayBundle({
+    db,
+    tokens: credentials,
+    requests: () => requests,
+    getCaptureIdentity: () => captureIdentity(acceptedAuth, credentials, deviceId),
+  });
   const {
     auth,
     credentials: tokens,
     requests,
   } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  acceptedAuth = auth;
   const attachments = createAttachments({ db, auth, tokens, deviceId, requests });
   const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
   const engine = createEngine(shared, bundle);
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
-  const captures = createCaptures({ db, engine, requests, tokens, shiftOpen, attachments });
+  const captures = createCaptures({ db, engine, requests, tokens, shiftOpen, attachments }, bundle);
   return { ...shared, ...captures, engine, shiftOpen, day };
 }
+function captureIdentity(
+  auth: AuthController | null,
+  credentials: CredentialStore,
+  deviceId: string,
+) {
+  return acceptedEvidenceOwner({
+    profile: auth?.getSnapshot().profile ?? null,
+    credentials: credentials.getSnapshot(),
+    deviceId,
+  });
+}
 
-function createCaptures(deps: Parameters<typeof createOvitrapCheck>[0]) {
-  return { ovitrapCheck: createOvitrapCheck(deps), ovitrapLifecycle: createOvitrapLifecycle(deps) };
+function createCaptures(
+  deps: Parameters<typeof createOvitrapCheck>[0] & { tokens: CredentialStore },
+  bundle: DayBundleService,
+) {
+  return {
+    ovitrapCheck: createOvitrapCheck(deps),
+    ovitrapLifecycle: createOvitrapLifecycle({ ...deps, bundle }),
+  };
 }
 
 function createRuntimeAuth(

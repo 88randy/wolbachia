@@ -208,10 +208,10 @@ void test("task locations: current point deltas survive reopen and scope replace
     rmSync(directory, { recursive: true });
   }
 });
-void test("task locations: point-only downloads bind ownership and a failed replacement cannot partially change GPS or cursor", async () => {
+void test("task locations: point-only downloads remain cache and a failed replacement cannot partially change GPS or cursor", async () => {
   const h = await locationFixture();
   await h.store.replace(bundle([point()], []), FIXED_NOW);
-  assert.equal(await hasLocalRecords(h.db), true);
+  assert.equal(await hasLocalRecords(h.db), false); // M3: downloaded point cache is not authored owner work.
   await h.store.replace(bundle([point()]), FIXED_NOW);
   await h.db.query(
     "CREATE TRIGGER fail_point_write BEFORE INSERT ON day_sampling_point BEGIN SELECT RAISE(ABORT,'storage unavailable'); END",

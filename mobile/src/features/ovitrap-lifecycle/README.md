@@ -1,5 +1,59 @@
 # M-09 lifecycle capture (#138)
 
+## Current composition checkpoint — M3
+
+The production composition now forwards the existing synchronous acceptedEvidenceOwner
+through createDayBundle. One private source turn captures the original transport
+before awaits, then reads its durable context and accepted attachment binding.
+Factories, GPS/files/HTTP and consumer callbacks hold NEITHER the bundle network
+queue nor the short projection gate. Interactive admission follows credentials →
+original projection writer → SQLite, checking the original unlock generation and
+displayed UUID/buffer before admission and durable revision/owner/session/generation
+inside the write. A lock before admission rejects; already-admitted durable work
+survives while its late UI completion is discarded.
+
+The source joins the current physical UUID to the accepted canonical point/mirror,
+real block/quadrant/center, open epoch and ONE whole ready SYNC pair. Downloaded
+physical provenance retains its actual version/sequence. An owned local replacement
+instead retains its real source-event UUID/status and nullable actual receipt floor;
+it never acquires a made-up server version. No M08 Assignment, bags, reuse, stock,
+task or retained GPS is manufactured. Known physical retirement remains separate
+from point scope and prevents new start/save; correction keeps its existing policy.
+
+Only explicit fresh start calls startOwnedLifecycleDraft and writes private local
+schemaVersion2 with minimal source/configuration audit. Original UUID/time/shift and point/epoch provenance remain facts; chosen catalog/rules freeze at capture. Explicit pre-save configuration adoption preserves the original source audit. Restore/read/
+update cannot seal or relabel legacy JSON. Storage decoding alone gives no display
+permission: service reads require current proven owner/context/attachment binding
+and exact immutable owned facts. Another/unproven owner receives blocked recovery
+metadata with no private draft/history fields; the stored bytes are retained.
+
+No-file origin and every nonnull owner activation arbitrate on attachment_context
+in SQL. All three immutable lifecycle fact kinds protect their owner even before a
+photo exists. Origin compares its ORIGINAL accepted binding/generation, so either
+winner defeats the stale competitor, including A→B→A. Null/end deactivation preserves
+facts and cannot block final cleanup. SecureStore failure never exposes a usable
+new accepted identity; original proof/files and same-owner retry survive.
+
+Configuration HTTP closures and publication retain the original turn. Publication
+CAS is exact; stored publication revision is audit, not a geometry/permission or
+rule-version hash. Same-owner/session config does not become a grant when a later
+page advances authority. Rules retain actual OP03 version_id/value/effective_from
+provenance where present. V2 advisory is explicitly unavailable/advisory_not_loaded
+and never displays the historical partial local count as the real aggregate. The
+actual #287 exact-cutoff/cache consumer remains REQUIRED in M4/M5.
+
+hasLocalRecords excludes only the eight exact known downloaded kinds and standalone
+point cache. All outbox statuses, drafts, shift data, files, owned facts and unknown
+private kinds remain protected. No floor is deleted by this classification. The
+historical/evaluated SQL1–15 and all point/receipt builders remain unchanged; this
+checkpoint adds no schema, table, queue, ownership backfill or old-APK bridge.
+
+Owning Node/SQLite tests extend the existing source/privacy/owner/slow-port journeys,
+including both owner and lock winner orders. This is production composition evidence,
+not native qualification. Full feedback/B33 task joins, reason limits from Me.limits,
+actual #287 advisory, foreground GPS and shared #246 evidence/Undo integration remain
+in M4/M5. Camera #253 and Q1/Q2 device/accessibility gates remain separate and UNRUN.
+The M1/M2 checkpoint descriptions and older notes below are historical phase records.
 ## Current contract continuation — M1
 
 The historical implementation and verification notes below describe the legacy
@@ -438,3 +492,11 @@ native acquisition253 and real126 feedback are NOT implemented in this phase.
 The runtime acquisition port remains honestly unavailable and no draft is saved
 successfully without its required inputs. PR219 remains DRAFT / Refs138; API/native,
 MO01, force-stop, TalkBack and full138 acceptance remain unmet.
+
+New v2 origins also seal their private draftSchemaVersion alongside the immutable
+UUID/point/physical/kind tuple. The format tag never grants access: display still
+requires original owned proof plus a current authenticated handle/binding. A delayed
+legacy restore cannot acquire display authority by copying an already-owned v2 UUID.
+Old raw JSON/facts are never rewritten or backfilled, and another/unproven owner
+continues to see blocked recovery only. A same-owner fresh session may read proven
+historical work without rewriting the original capture session or rules.

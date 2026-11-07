@@ -17,8 +17,12 @@ import {
   fixtureBundle,
 } from "./support/lifecycle-capture-fixture.ts";
 import { PROJECTION_IDENTITY } from "./support/lifecycle-projection-fixtures.ts";
-import { startOwnedLifecycleDraft } from "../src/features/ovitrap-lifecycle/new-owned-draft.ts";
-import { startDraft } from "../src/features/ovitrap-lifecycle/new-draft.ts";
+import { createLifecycleSourcePort } from "../src/features/ovitrap-lifecycle/source-context.ts";
+import { AttachmentStore } from "../src/attachments/attachment-store.ts";
+import { acceptedEvidenceOwner } from "../src/attachments/accepted-owner.ts";
+import { CredentialStore, EMPTY_CREDENTIALS } from "../src/auth/credential-store.ts";
+import { memorySecrets, deferred } from "./support/auth-fakes.ts";
+
 const SOURCE = "44444444-4444-4444-8444-444444444444";
 const PHOTO = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", fileRef: "file:///capture.jpg" };
 const reason = (code: string) => ({
@@ -40,57 +44,96 @@ async function harness(local?: TestStores) {
     });
   await hydrateLifecycleCaptureFixture(stores.db, ASSIGNMENT);
   const store = new LifecycleStore(stores.db);
-  await store.saveConfiguration({
-    catalog: {
-      version: CATALOG.version,
-      replace: [reason("damaged"), reason("other")],
-      relocate: [reason("closed-house"), reason("other")],
-      remove: [reason("abandoned"), reason("other")],
-      voidReasons: [reason("other")],
-    },
-    rules: { ...RULES, closedHouseWeeks: 2, incidents: 3 },
+  const credentials = new CredentialStore(memorySecrets());
+  await credentials.update(() => ({
+    ...EMPTY_CREDENTIALS,
+    origin: PROJECTION_IDENTITY.owner.issuer,
+    sessionId: PROJECTION_IDENTITY.sessionId,
+    pair: { access: "synthetic-m09-access", refresh: "synthetic-m09-refresh" },
+  }));
+  await credentials.runExclusive((transaction) => {
+    transaction.grantUnlock(credentials.unlockGate());
   });
+  const profile = {
+    username: "m09-fixture",
+    firstName: "Test",
+    permissions: [],
+    userId: PROJECTION_IDENTITY.owner.userId,
+    sessionId: PROJECTION_IDENTITY.sessionId,
+    issuer: PROJECTION_IDENTITY.owner.issuer,
+    organization: {
+      id: PROJECTION_IDENTITY.owner.organizationId,
+      slug: "fixture",
+      name: "Fixture",
+      country: "MX",
+      timezone: "America/Mexico_City",
+      epi_week: "iso" as const,
+      languages: ["es-MX"],
+      label_phone: "",
+      support_contact: "",
+      logo_url: null,
+    },
+  };
+  await stores.kv.set("session_profile", JSON.stringify(profile));
+  const identity = () =>
+    acceptedEvidenceOwner({
+      profile,
+      credentials: credentials.getSnapshot(),
+      deviceId: PROJECTION_IDENTITY.owner.deviceId,
+    });
+  await new AttachmentStore(stores.db).bindSession(identity());
+  const bundle = new DayBundleService({
+    store: new DayStore(stores.db),
+    now: () => FIXED_NOW,
+    getCaptureIdentity: identity,
+    transport: () => Promise.reject(new Error("Explicit fixture hydration only")),
+  });
+  const source = createLifecycleSourcePort(bundle, credentials, stores.db);
+  await bundle.captureLifecycleSource()(null, (turn) =>
+    store.saveConfiguration(
+      {
+        catalog: {
+          version: CATALOG.version,
+          replace: [reason("damaged"), reason("other")],
+          relocate: [reason("closed-house"), reason("other")],
+          remove: [reason("abandoned"), reason("other")],
+          voidReasons: [reason("other")],
+        },
+        rules: { ...RULES, closedHouseWeeks: 2, incidents: 3 },
+      },
+      turn,
+    ),
+  );
   const engine = engineFor(stores);
   const deps = {
     store,
     engine,
+    source,
     now: () => FIXED_NOW,
     uuid: () => `aaaaaaaa-aaaa-4aaa-8aaa-${String(++sequence).padStart(12, "0")}`,
     gps: { locate: () => Promise.resolve({ lat: 19, lng: -99, accuracy_m: 5 }) },
     evidence: { capture: () => Promise.resolve(PHOTO) },
     shiftId: () => Promise.resolve("55555555-5555-4555-8555-555555555555"),
   };
-  return { ...stores, store, engine, deps, service: new LifecycleService(deps) };
+  return {
+    ...stores,
+    store,
+    engine,
+    deps,
+    bundle,
+    credentials,
+    source,
+    service: new LifecycleService(deps),
+  };
 }
 async function begin(h: Awaited<ReturnType<typeof harness>>, kind: LifecycleDraft["kind"]) {
-  const current = await h.store.read();
-  if (current.draft && !current.event)
-    return startDraft(h.deps, { kind, ovitrapId: SOURCE, manualCapture: false }, current);
-  const handle = await new DayStore(h.db).captureTransport(PROJECTION_IDENTITY, () => true);
-  assert.ok(handle);
-  const draft = await startOwnedLifecycleDraft({
-    store: h.store,
-    handle,
-    uuid: h.deps.uuid,
-    expectedEventId: current.draft?.eventId ?? null,
-    create: (freshEventId) => {
-      let isFirst = true;
-      return startDraft(
-        {
-          ...h.deps,
-          uuid: () => {
-            if (!isFirst) return h.deps.uuid();
-            isFirst = false;
-            return freshEventId;
-          },
-        },
-        { kind, ovitrapId: SOURCE, manualCapture: false },
-        current,
-      );
-    },
-  });
-  h.service.draftBuffer.rebind(draft.eventId);
-  return draft;
+  const previous = await h.store.read();
+  const state = await h.service.start(
+    { kind, ovitrapId: SOURCE, manualCapture: false },
+    previous.draft?.eventId ?? null,
+  );
+  assert.ok(state.draft);
+  return state.draft;
 }
 async function complete(h: Awaited<ReturnType<typeof harness>>, draft: LifecycleDraft) {
   await h.service.update(
@@ -120,6 +163,17 @@ void test("AC1: replacement retains fixed point code/lineage and reserves fresh 
   assert.equal(replacement?.point.code, POINT.code);
   assert.notEqual(replacement.id, SOURCE);
   assert.equal(replacement.isRetired, false);
+  const localSource = await h.bundle.captureLifecycleSource()(
+    { kind: "new", ovitrapId: first.replacementId },
+    (turn) => Promise.resolve(turn.source?.physical),
+  );
+  assert.equal(localSource?.kind, "owned-local");
+  assert.equal(localSource.sourceEventId, first.eventId);
+  assert.equal(
+    localSource.receipt,
+    null,
+    "pending local identity has no fabricated server version or receipt floor",
+  );
   const next = await h.service.start(
     { kind: "replace", ovitrapId: first.replacementId, manualCapture: false },
     first.eventId,
@@ -324,9 +378,15 @@ void test("AC2: advisory thresholds use delivered values and fixed-point local e
     await h.store.capture.begin(check);
     await h.outbox.enqueue(captureEvent(check), h.store.capture.commitStatements(check));
   }
-  assert.deepEqual(await relocationSuggestion(h.db, draft), { closedHouseWeeks: 2 });
+  assert.deepEqual(await relocationSuggestion(h.db, draft), {
+    state: "unavailable",
+    reason: "advisory_not_loaded",
+  });
+  assert.equal((await h.service.read()).suggestion, null);
+  const legacy = { ...draft, schemaVersion: undefined, source: undefined, assignment: ASSIGNMENT };
+  assert.deepEqual(await relocationSuggestion(h.db, legacy), { closedHouseWeeks: 2 });
   assert.equal(
-    await relocationSuggestion(h.db, { ...draft, rules: { ...draft.rules, closedHouseWeeks: 3 } }),
+    await relocationSuggestion(h.db, { ...legacy, rules: { ...draft.rules, closedHouseWeeks: 3 } }),
     null,
   );
   await h.service.update(
@@ -491,7 +551,83 @@ void test("AC3: stale displayed action cannot flush another draft's buffered inp
   const buffer = new LifecycleDraftBuffer();
   buffer.edit(old.eventId, { otherText: "wrong" });
   await assert.rejects(buffer.persist(h.service, next.eventId), StaleCaptureError);
+  await originalSourceDuringSlowWork();
+  await admittedCommitBeforeLock();
 });
+
+async function originalSourceDuringSlowWork() {
+  for (const change of ["projection", "lock"] as const) {
+    const h = await harness();
+    const draft = await begin(h, "relocate");
+    const before = await h.db.query("SELECT draft FROM lifecycle_draft");
+    const entered = deferred<undefined>(),
+      resume = deferred<undefined>();
+    const service = new LifecycleService({
+      ...h.deps,
+      gps: {
+        locate: async () => {
+          entered.resolve(undefined);
+          await resume.promise;
+          return { lat: 19, lng: -99, accuracy_m: 5 };
+        },
+      },
+    });
+    const pending = service.refreshGps(draft.eventId);
+    await entered.promise;
+    await h.credentials.runExclusive(() => undefined); // No credential gate is held during the port await.
+    if (change === "lock") await h.credentials.lock();
+    else
+      await h.bundle.applyProjectionChanges({
+        cursor: "while-gps-held",
+        has_more: false,
+        assignments: [],
+        map_manifests: [],
+        capture_context: fixtureBundle(ASSIGNMENT).capture_context,
+      });
+    resume.resolve(undefined);
+    await assert.rejects(pending, /scope|stale|changed/i);
+    assert.deepEqual(await h.db.query("SELECT draft FROM lifecycle_draft"), before);
+    assert.deepEqual(await h.db.query("SELECT * FROM outbox_event"), []);
+  }
+}
+async function admittedCommitBeforeLock() {
+  const local = await createStores(),
+    entered = deferred<undefined>(),
+    resume = deferred<undefined>();
+  let armed = false;
+  const db: SqlExecutor = {
+    query: (sql, params) => local.db.query(sql, params),
+    runAtomically: async (statements) => {
+      if (
+        armed &&
+        statements.some((statement) => statement.sql.includes("INSERT INTO lifecycle_capture"))
+      ) {
+        armed = false;
+        entered.resolve(undefined);
+        await resume.promise;
+      }
+      await local.db.runAtomically(statements);
+    },
+  };
+  const h = await harness(storesFor(db)),
+    draft = await begin(h, "relocate");
+  await complete(h, draft);
+  const before = (await h.store.read()).draft;
+  armed = true;
+  const saving = h.service.save(draft.eventId);
+  await entered.promise;
+  const locking = h.credentials.lock(); // Restricts immediately; waits for already-admitted SQL.
+  resume.resolve(undefined);
+  await assert.rejects(saving, StaleCaptureError); // Late UI completion is ignored, not a rollback claim.
+  await locking;
+  assert.deepEqual((await h.store.read()).draft, before);
+  assert.equal(
+    (await h.db.query("SELECT event_id FROM lifecycle_capture"))[0]?.event_id,
+    draft.eventId,
+  );
+  assert.equal((await h.db.query("SELECT count(*) AS total FROM outbox_event"))[0]?.total, 1);
+  assert.equal((await h.db.query("SELECT count(*) AS total FROM lifecycle_evidence"))[0]?.total, 1);
+}
 
 void test("AC3 regression: a draft switched during departure authorization rejects before native ports", async () => {
   const h = await harness();
@@ -528,7 +664,66 @@ void test("AC3 regression: a draft switched during departure authorization rejec
   release(original.shiftId);
   await assert.rejects(pending, StaleCaptureError);
   assert.equal(nativeCalls, 0);
+  await lockedDepartureRejectsBeforePorts();
 });
+
+async function lockedDepartureRejectsBeforePorts() {
+  const h = await harness(),
+    draft = await begin(h, "relocate");
+  await complete(h, draft);
+  const retained = () =>
+    Promise.all([
+      h.db.query("SELECT * FROM lifecycle_draft"),
+      h.db.query("SELECT * FROM outbox_event"),
+      h.db.query("SELECT * FROM lifecycle_evidence"),
+      h.db.query("SELECT * FROM attachment_file"),
+    ]);
+  const before = await retained();
+  const entered = deferred<undefined>(),
+    resume = deferred<string>();
+  let nativeCalls = 0;
+  const service = new LifecycleService({
+    ...h.deps,
+    shiftId: () => {
+      entered.resolve(undefined);
+      return resume.promise;
+    },
+    gps: {
+      locate: () => {
+        nativeCalls++;
+        return Promise.resolve(null);
+      },
+    },
+    evidence: {
+      capture: () => {
+        nativeCalls++;
+        return Promise.resolve(PHOTO);
+      },
+    },
+  });
+  const outcomes = Promise.allSettled([
+    service.captureEvidence(draft.eventId),
+    service.refreshGps(draft.eventId),
+  ]);
+  await entered.promise;
+  await h.credentials.lock();
+  assert.equal(
+    (await h.service.read()).draft?.eventId,
+    draft.eventId,
+    "background read identity remains valid while interactive actions are locked",
+  );
+  resume.resolve(draft.shiftId);
+  assert.deepEqual(
+    (await outcomes).map((result) => result.status),
+    ["rejected", "rejected"],
+  );
+  assert.equal(
+    nativeCalls,
+    0,
+    "lock during departure authorization must defeat native initiation, including the queued action",
+  );
+  assert.deepEqual(await retained(), before);
+}
 
 import { hasLocalRecords } from "../src/db/owner-data.ts";
 import {
@@ -565,7 +760,11 @@ void test("AC3 regression: downloaded projections bind owner and resolve new phy
   const local = await createStores();
   const trap = downloadedTrap(SOURCE);
   await local.db.runAtomically(courierBundleStatements({ ovitraps: [trap], sampling_points: [] }));
-  assert.equal(await hasLocalRecords(local.db), true);
+  assert.equal(
+    await hasLocalRecords(local.db),
+    false,
+    "downloaded projections are cache, not authored owner work",
+  );
   const h = await harness(local);
   const next = downloadedTrap("99999999-9999-4999-8999-999999999999");
   await h.db.runAtomically(
@@ -583,7 +782,23 @@ void test("AC3 regression: downloaded projections bind owner and resolve new phy
       sampling_points: [],
     }),
   );
-  assert.equal((await h.store.physical(next.id))?.point.code, POINT.code);
+  const source = await h.bundle.captureLifecycleSource()(
+    { kind: "new", ovitrapId: next.id },
+    (turn) => Promise.resolve(turn.source),
+  );
+  assert.equal(source?.point.code, POINT.code);
+  assert.equal(source.physical.kind, "downloaded");
+  const started = await h.service.start(
+    { kind: "remove", ovitrapId: next.id, manualCapture: false },
+    null,
+  );
+  assert.equal(started.draft?.schemaVersion, 2);
+  assert.equal("assignment" in started.draft, false);
+  assert.equal(
+    await hasLocalRecords(local.db),
+    true,
+    "explicit owned draft is protected even before a photo",
+  );
 });
 void test("AC2 regression: rejected void attempts retain history and do not mark a proposal voided", async () => {
   const h = await harness();
@@ -786,14 +1001,19 @@ function assertScreenControls(
 void test("AC2: a draft started before configuration can adopt later downloaded catalog and rules", async () => {
   const h = await harness();
   const config = await h.store.configuration();
-  await h.store.saveConfiguration({ catalog: null, rules: null });
+  await h.source.read(null, (turn) =>
+    h.store.saveConfiguration({ catalog: null, rules: null }, turn),
+  );
   const draft = await begin(h, "relocate");
-  await h.store.saveConfiguration(config);
+  await h.source.read(null, (turn) => h.store.saveConfiguration(config, turn));
   assert.equal((await h.service.read()).catalogChanged, true);
   const adopted = await h.service.adoptSnapshots(draft.eventId);
   assert.equal(adopted.draft?.catalog?.version, config.catalog?.version);
   assert.ok(config.rules);
-  await h.store.saveConfiguration({ ...config, rules: { ...config.rules, version: "rules-v2" } });
+  const rules = config.rules;
+  await h.source.read(null, (turn) =>
+    h.store.saveConfiguration({ ...config, rules: { ...rules, version: "rules-v2" } }, turn),
+  );
   assert.equal((await h.service.read()).catalogChanged, true);
 });
 import { runSyncPass } from "../src/sync/sync-pass.ts";
@@ -1125,13 +1345,14 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
   const bundle = new DayBundleService({
     store: new DayStore(h.db),
     now: () => FIXED_NOW,
+    getCaptureIdentity: () => PROJECTION_IDENTITY,
     transport: () =>
       Promise.resolve({
         kind: "bundle",
         body: {
+          ...fixtureBundle(ASSIGNMENT),
           bundle_version: "bootstrap-lifecycle",
           schema_version: "schema-1",
-          scope_revision: "scope-1",
           next_change_at: null,
           map_manifest_ready: false,
           assignments: [],

@@ -11,12 +11,20 @@ import type { SqlExecutor } from "../src/db/sql.ts";
 import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
 import { lifecycleEvent } from "../src/features/ovitrap-lifecycle/events.ts";
 import { LifecycleStore } from "../src/features/ovitrap-lifecycle/store.ts";
+import { LifecycleService } from "../src/features/ovitrap-lifecycle/service.ts";
 import { startOwnedLifecycleDraft } from "../src/features/ovitrap-lifecycle/new-owned-draft.ts";
+import { startDraft } from "../src/features/ovitrap-lifecycle/new-draft.ts";
+import { AttachmentStore } from "../src/attachments/attachment-store.ts";
+import type {
+  LifecycleSourceTurn,
+  CurrentLifecycleDraft,
+} from "../src/features/ovitrap-lifecycle/types.ts";
 import { readHistoryChange } from "../src/features/ovitrap-lifecycle/history-contract.ts";
 import { retainedProposal } from "../src/features/ovitrap-lifecycle/retained-proposal.ts";
 import { capturePointScopeSql } from "../src/features/ovitrap-lifecycle/context-sql.ts";
 import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { runSyncPass } from "../src/sync/sync-pass.ts";
+import { RemoteSessionEnded } from "../src/auth/session-requests.ts";
 import { accepted, answer, httpFailure } from "./support/scripted-transport.ts";
 import { makeEnvelope } from "./support/factories.ts";
 import { openTestDatabase } from "./support/sqlite-executor.ts";
@@ -32,6 +40,7 @@ import {
 } from "./support/lifecycle-contract-fixtures.ts";
 import {
   PROJECTION_IDENTITY,
+  PROJECTION_TRAP,
   PROJECTION_NOW,
   projectionBundle,
   projectionChanges,
@@ -134,13 +143,16 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
   );
   const currentHandle = await store.captureTransport(PROJECTION_IDENTITY, () => true);
   assert.ok(currentHandle);
+  const reusedTurn = await projectionStartTurn(local.executor);
   await assert.rejects(
     startOwnedLifecycleDraft({
       store: lifecycle,
       handle: currentHandle,
+      ownerFence: reusedTurn.ownerFence,
+      admit: reusedTurn.write,
       expectedEventId: legacyDraft.eventId,
       uuid: () => legacyDraft.eventId,
-      create: (id) => Promise.resolve(projectionDraft(id)),
+      create: (id) => currentProjectionDraft(local.executor, reusedTurn, id),
     }),
     /CHECK constraint/,
   );
@@ -151,6 +163,17 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
     originalOrigin,
   );
   await lifecycle.begin(freshDraft, legacyDraft.eventId); // Proven original may be restored, never resealed.
+  const copiedUuid = { ...legacyDraft, eventId: freshDraft.eventId };
+  await lifecycle.begin(copiedUuid, freshDraft.eventId);
+  const copiedBefore = await local.executor.query("SELECT draft FROM lifecycle_draft");
+  const copiedTurn = await projectionStartTurn(local.executor);
+  assert.equal(
+    (await lifecycle.readOwned(copiedTurn)).recovery,
+    "blocked_ownership",
+    "restored legacy JSON cannot acquire a new v2 origin by copying its UUID",
+  );
+  assert.deepEqual(await local.executor.query("SELECT draft FROM lifecycle_draft"), copiedBefore);
+  await lifecycle.begin(freshDraft, freshDraft.eventId);
   assert.equal(await store.needsBootstrap(), false);
   local.close();
   local = await openTestDatabase(path);
@@ -455,15 +478,89 @@ async function prepareProjectionCapture(db: SqlExecutor, id = CONTRACT_IDS.sourc
     await store.begin(draft, previous.draft?.eventId ?? null);
     return draft;
   }
-  const handle = await new DayStore(db).captureTransport(PROJECTION_IDENTITY, () => true);
-  assert.ok(handle);
+  const turn = await projectionStartTurn(db);
   return startOwnedLifecycleDraft({
     store,
-    handle,
+    handle: turn.handle,
+    ownerFence: turn.ownerFence,
+    admit: turn.write,
     expectedEventId: previous.draft?.eventId ?? null,
     uuid: () => id,
-    create: (freshEventId) => Promise.resolve(projectionDraft(freshEventId)),
+    create: (freshEventId) => currentProjectionDraft(db, turn, freshEventId),
   });
+}
+async function projectionStartTurn(db: SqlExecutor) {
+  const identity = PROJECTION_IDENTITY;
+  await new KvStore(db).set(
+    "session_profile",
+    JSON.stringify({
+      userId: identity.owner.userId,
+      sessionId: identity.sessionId,
+      issuer: identity.owner.issuer,
+      organization: {
+        id: identity.owner.organizationId,
+        timezone: "America/Mexico_City",
+        epi_week: "iso",
+      },
+    }),
+  );
+  await new AttachmentStore(db).bindSession(identity);
+  const bundle = new DayBundleService({
+    store: new DayStore(db),
+    now: () => PROJECTION_NOW,
+    getCaptureIdentity: () => identity,
+    transport: () => Promise.reject(new Error("Explicit bootstrap already provided")),
+  });
+  return bundle.captureLifecycleSource()(
+    { kind: "new", ovitrapId: PROJECTION_TRAP.id },
+    async (turn) => {
+      const template = projectionDraft();
+      await new LifecycleStore(db).saveConfiguration(
+        { catalog: template.catalog, rules: template.rules },
+        turn,
+      );
+      return {
+        ...turn,
+        source: await turn.resolve({ kind: "new", ovitrapId: PROJECTION_TRAP.id }),
+      };
+    },
+  );
+}
+async function currentProjectionDraft(
+  db: SqlExecutor,
+  turn: LifecycleSourceTurn,
+  eventId: string,
+): Promise<CurrentLifecycleDraft> {
+  assert.ok(turn.source);
+  const template = projectionDraft(eventId);
+  const draft = await startDraft(
+    {
+      store: new LifecycleStore(db),
+      engine: { enqueue: () => Promise.reject(new Error("Fixture creation only")) },
+      now: () => PROJECTION_NOW,
+      uuid: () => eventId,
+      gps: { locate: () => Promise.resolve(null) },
+      evidence: { capture: () => Promise.resolve(null) },
+      shiftId: () => Promise.resolve(template.shiftId),
+    },
+    {
+      kind: "relocate",
+      ovitrapId: PROJECTION_TRAP.id,
+      manualCapture: false,
+      source: turn.source,
+      freshEventId: eventId,
+      deviceTime: PROJECTION_NOW.toISOString(),
+    },
+  );
+  return {
+    ...draft,
+    gps: template.gps,
+    proposedLocation: template.proposedLocation,
+    reasonCode: template.reasonCode,
+    otherText: template.otherText,
+    evidence: template.evidence,
+    reviewAcknowledged: true,
+  };
 }
 function terminalProposal() {
   return {
@@ -491,6 +588,24 @@ void test("C3/C7: only newly owned sources retain immutable terminal dependencie
   );
   await saveProjectionCapture(local.executor, legacyId);
   await migrate(local.executor);
+  const legacyBefore = await local.executor.query("SELECT * FROM lifecycle_capture");
+  const unproven = await new LifecycleService({
+    store: new LifecycleStore(local.executor),
+    engine: { enqueue: () => Promise.reject(new Error("Unproven work must stay local")) },
+    now: () => PROJECTION_NOW,
+    uuid: () => CONTRACT_IDS.source,
+    gps: { locate: () => Promise.resolve(null) },
+    evidence: { capture: () => Promise.resolve(null) },
+    shiftId: () => Promise.resolve(CONTRACT_IDS.history),
+  }).read();
+  assert.equal(
+    unproven.draft,
+    null,
+    "storage decoding cannot expose unproven private capture fields",
+  );
+  assert.deepEqual(unproven.history, []);
+  assert.equal(unproven.recovery, "blocked_ownership");
+  assert.deepEqual(await local.executor.query("SELECT * FROM lifecycle_capture"), legacyBefore);
   const store = new DayStore(local.executor);
   let identity = PROJECTION_IDENTITY;
   const service = new DayBundleService({
@@ -797,6 +912,7 @@ void test("C4: the original transport identity and durable revision defeat late 
   await fresh.refresh();
   const handle = await store.captureTransport(PROJECTION_IDENTITY, () => true);
   assert.ok(handle);
+  const creatingTurn = await projectionStartTurn(local.executor);
   let originEntered!: () => void;
   let originRelease!: () => void;
   const originBarrier = new Promise<void>((resolve) => {
@@ -808,12 +924,14 @@ void test("C4: the original transport identity and durable revision defeat late 
   const creating = startOwnedLifecycleDraft({
     store: new LifecycleStore(local.executor),
     handle,
+    ownerFence: creatingTurn.ownerFence,
+    admit: creatingTurn.write,
     expectedEventId: null,
     uuid: () => CONTRACT_IDS.source,
     create: async (eventId) => {
       originEntered();
       await originResume;
-      return projectionDraft(eventId);
+      return currentProjectionDraft(local.executor, creatingTurn, eventId);
     },
   });
   await originBarrier;
@@ -883,4 +1001,27 @@ void test("C4: the original transport identity and durable revision defeat late 
     "pending",
   );
   assert.equal(await new KvStore(local.executor).get("sync_cursor"), null);
+  await recovery.refresh();
+  await projectionStartTurn(local.executor);
+  let selected: typeof PROJECTION_IDENTITY | null = null;
+  const originallyMissing = new DayBundleService({
+    store: new DayStore(local.executor),
+    now: () => PROJECTION_NOW,
+    getCaptureIdentity: () => selected,
+    transport: () => Promise.reject(new Error("No request required")),
+  });
+  const originalRead = originallyMissing.captureLifecycleSource();
+  selected = PROJECTION_IDENTITY;
+  await assert.rejects(
+    originalRead({ kind: "new", ovitrapId: PROJECTION_TRAP.id }, () => Promise.resolve(true)),
+    RemoteSessionEnded,
+    "a missing original identity cannot adopt the later proven owner",
+  );
+  assert.equal(
+    await originallyMissing.captureLifecycleSource()(
+      { kind: "new", ovitrapId: PROJECTION_TRAP.id },
+      (turn) => Promise.resolve(turn.source?.physical.id),
+    ),
+    PROJECTION_TRAP.id,
+  );
 });

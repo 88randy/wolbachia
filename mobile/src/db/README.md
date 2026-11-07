@@ -83,3 +83,13 @@ behavior. The existing native/physical qualification remains owner-authorized an
 UNRUN; neither Node success nor an APK build replaces it. Adding a future released
 migration requires supported DDL/profile and compatibility tests, never an edit to
 an old array or an inferred upgrade of an unknown retained file.
+
+## Authored local work versus downloaded cache (#138 M3)
+
+owner-data.hasLocalRecords excludes only the exact downloaded ovitrap/point,
+quadrant/block and four history kinds plus the standalone point cache. It retains
+ALL outbox statuses, drafts, shift data, adopted-only files, immutable owned facts
+and unknown/private kinds regardless of availability. This reader never deletes
+floor storage or changes server-reset/final-cleanup rules. M3's runtime owner/origin
+admission uses existing schema15 and attachment_context; evaluated SQL1–15 and its
+historical import closure remain exact. No migration/backfill/adoption is added.

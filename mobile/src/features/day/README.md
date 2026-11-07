@@ -12,8 +12,7 @@ the existing immutable outbox and capture evidence.
 
 The same DayStore transaction now owns history3/quadrant2 and private lifecycle
 context/readiness KV state. It consumes actual capture_context1 under an optional
-already-proven EvidenceIdentity from DayBundleService. The production port wiring
-remains M3. Me/display scope, task rows and DTO self UUIDs never prove that identity.
+already-proven EvidenceIdentity from DayBundleService. Production createServices now forwards acceptedEvidenceOwner through createDayBundle. Me/display scope, task rows and DTO self UUIDs never prove that identity.
 
 Only complete committed full replacement hydrates the new consumer. Empty sections
 and grants are meaningful denial. Missing/null/unavailable metadata narrows it;
@@ -139,3 +138,15 @@ immutable capture/file/journal preservation. P9/P10 now say completed tasks rath
 than reviewed points; this deliberate S05-Dia copy deviation distinguishes
 operational completion from server review. Node SQLite does not certify native
 light/dark, TalkBack, 130% font or physical-device qualification.
+
+### Private lifecycle source turn (#138 M3)
+
+captureLifecycleSource captures its original transport before awaits and reads real
+point/physical/epoch/config context under this SAME writer. The returned consumer
+runs outside BOTH the short projection gate and the network queue. Slow/native/HTTP
+work never owns either gate. Only a local commit enters credentials → original
+projection writer → SQLite with original interactive/owner/session/generation and
+durable revision checks. No task/Assignment/Me permission reconstruction exists.
+Downloaded and owned-local physical provenance stay distinct. Legacy decoding is
+not ownership; service display hides private data without current proven owned facts.
+The detailed protocol and remaining M4/M5/native limits live in lifecycle/README.md.

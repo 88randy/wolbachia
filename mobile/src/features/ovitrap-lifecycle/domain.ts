@@ -31,7 +31,11 @@ function contextGate(draft: LifecycleDraft): string | null {
   )
     return "reason";
   if (!draft.rules?.version || draft.rules.isConfigured === false) return "rules";
-  if (!draft.assignment.points.some((point) => point.id === draft.point.id)) return "scope";
+  if (
+    draft.schemaVersion !== 2 &&
+    !draft.assignment.points.some((point) => point.id === draft.point.id)
+  )
+    return "scope";
   return validOther(draft) ? null : "other";
 }
 function evidenceGate(draft: LifecycleDraft): string | null {

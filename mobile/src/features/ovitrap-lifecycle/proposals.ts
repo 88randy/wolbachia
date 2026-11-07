@@ -2,6 +2,9 @@ import { readText } from "../../db/sql.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { OvitrapStore } from "../ovitrap-check/store.ts";
 import { UUID_PATTERN } from "../ovitrap-check/domain.ts";
+import { readLifecycleDraft } from "./draft-context.ts";
+import { ownerKey } from "../../attachments/types.ts";
+import type { CaptureTransportHandle } from "./capture-context-contract.ts";
 import type {
   HistoryItem,
   LifecycleDraft,
@@ -17,7 +20,7 @@ export async function readProposal(
     [eventId],
   );
   if (!row) return null;
-  const draft = JSON.parse(readText(row, "draft")) as LifecycleDraft;
+  const draft = readLifecycleDraft(JSON.parse(readText(row, "draft")));
   if (!draft.proposedLocation) throw new Error("Proposal location missing.");
   const [latest] = await db.query(
     "SELECT decision FROM lifecycle_decision WHERE proposal_event_id=? ORDER BY decided_at DESC,id DESC LIMIT 1",
@@ -58,13 +61,20 @@ async function historyItem(db: SqlExecutor, draft: LifecycleDraft): Promise<Hist
 export async function readHistory(
   db: SqlExecutor,
   pointId: string,
+  handle?: CaptureTransportHandle,
 ): Promise<readonly HistoryItem[]> {
   const rows = await db.query(
-    "SELECT draft FROM lifecycle_capture WHERE point_id=? ORDER BY rowid DESC",
-    [pointId],
+    `SELECT draft FROM lifecycle_capture c WHERE point_id=? ${
+      handle
+        ? `AND EXISTS(
+      SELECT 1 FROM lifecycle_courier_projection source WHERE source.kind='lifecycle.owned-source' AND source.id=c.event_id
+        AND json_extract(source.body,'$.ownerKey')=?)`
+        : ""
+    } ORDER BY rowid DESC`,
+    handle ? [pointId, ownerKey(handle.owner)] : [pointId],
   );
   return Promise.all(
-    rows.map((row) => historyItem(db, JSON.parse(readText(row, "draft")) as LifecycleDraft)),
+    rows.map((row) => historyItem(db, readLifecycleDraft(JSON.parse(readText(row, "draft"))))),
   );
 }
 function validateDecision(decision: RelocationDecision): void {

@@ -795,6 +795,16 @@ phone, API, Docker or database service is required for this fix.
 
 ## M-09: replace, relocate, remove (#138)
 
+Current M3 continuation: production now wires the proven capture identity and real
+point/physical/quadrant provider, explicit v2 new start and current-session admission
+without a fabricated M08 Assignment. Owned/unproven legacy data remains recoverable
+and private; no-file origin shares the existing file-owner SQL arbiter. See the
+feature README's current M3 checkpoint for exact invariants/evidence. Actual #287
+advisory, feedback/task UI, foreground GPS and #246 lifecycle evidence bridge remain
+in M4/M5; camera253 and native/Q1/Q2 are not completed by this checkpoint. Older
+implementation paragraphs below are historical and do not establish current API or
+physical acceptance.
+
 P15-P17 are entered from the selected point/physical ovitrap in M-08 and implemented
 in [ovitrap-lifecycle](src/features/ovitrap-lifecycle/README.md). the unmerged #138 decision draft records the
 owner-supplied decisions. Service/store/ports and `use-m-09` reuse the existing
