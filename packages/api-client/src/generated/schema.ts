@@ -1236,6 +1236,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/incidents/{id}/owner-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["incidents_owner_options_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/incidents/{id}/reassign/": {
         parameters: {
             query?: never;
@@ -1282,6 +1308,32 @@ export interface paths {
          *     `APIView`s do not have.
          */
         post: operations["incidents_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/incidents/context-options/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["incidents_context_options_list"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -4841,6 +4893,20 @@ export interface components {
             readonly cleared_at: string | null;
             readonly clearance: components["schemas"]["InspectionClearanceRead"] | null;
         };
+        IncidentActionPermissions: {
+            comment: boolean;
+            reassign: boolean;
+            change_severity: boolean;
+            close: boolean;
+            void: boolean;
+        };
+        IncidentActionPrerequisites: {
+            is_open: boolean;
+            has_void_dependents: boolean;
+            is_severity_protected: boolean;
+            close_evidence_min: number;
+            can_upload_evidence: boolean;
+        };
         IncidentBlockedBy: {
             reason: string;
             unblocked_by_role: components["schemas"]["UnblockedByRoleEnum"];
@@ -4851,6 +4917,15 @@ export interface components {
             code: components["schemas"]["CodeEnum"];
             detail: string;
             blocked_by: components["schemas"]["IncidentBlockedBy"][];
+        };
+        IncidentContextOption: {
+            /** Format: uuid */
+            center_id: string;
+            center_code: string;
+            center_name: string;
+            /** Format: uuid */
+            quadrant_id: string | null;
+            quadrant_code: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -4885,6 +4960,7 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
             readonly policy_version: string;
+            readonly author_display: string | null;
         };
         /**
          * @description * `report` - report
@@ -4898,7 +4974,47 @@ export interface components {
          * @enum {string}
          */
         IncidentEventActionEnum: "report" | "comment" | "reassign" | "change_severity" | "close" | "void" | "escalate" | "reminder";
+        IncidentEvidence: {
+            /** Format: uuid */
+            id: string;
+            is_readable: boolean;
+            is_verified: boolean | null;
+            /** Format: date-time */
+            verified_at: string | null;
+            content_type: string | null;
+            size_bytes: number | null;
+        };
+        IncidentLinkedRecord: {
+            kind: (components["schemas"]["IncidentLinkedRecordKindEnum"] | components["schemas"]["NullEnum"]) | null;
+            available: boolean;
+            /** Format: uuid */
+            id: string | null;
+            code: string | null;
+            is_voided: boolean | null;
+        };
+        /**
+         * @description * `field_event` - field_event
+         *     * `review_item` - review_item
+         *     * `motorcycle` - motorcycle
+         *     * `ovitrap` - ovitrap
+         *     * `lot` - lot
+         *     * `bag` - bag
+         * @enum {string}
+         */
+        IncidentLinkedRecordKindEnum: "field_event" | "review_item" | "motorcycle" | "ovitrap" | "lot" | "bag";
         IncidentListItem: components["schemas"]["Incident"] | components["schemas"]["ReportedIncident"];
+        IncidentOwnedBlocker: {
+            /** Format: uuid */
+            id: string;
+            kind: string;
+            is_active: boolean;
+            resource: components["schemas"]["IncidentLinkedRecord"];
+        };
+        IncidentOwnerOption: {
+            /** Format: uuid */
+            membership_id: string;
+            label: string;
+        };
         IncidentReportPayloadRequest: {
             /**
              * Format: uuid
@@ -4954,6 +5070,16 @@ export interface components {
             readonly report_evidence_min: number;
             readonly close_evidence_min: number;
             readonly blocker_kinds: unknown;
+        };
+        IncidentTypeSnapshot: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            label: string;
+            icon: string;
+            is_other: boolean;
+            report_evidence_min: number;
+            close_evidence_min: number;
         };
         IncidentVoidRequest: {
             expected_revision: number;
@@ -5947,6 +6073,16 @@ export interface components {
             readonly logo_url: string | null;
             revision: number;
         };
+        /**
+         * @description * `field_event` - field_event
+         *     * `direct_report` - direct_report
+         *     * `review_decision` - review_decision
+         *     * `inventory_condition` - inventory_condition
+         *     * `lab_reception` - lab_reception
+         *     * `unknown` - unknown
+         * @enum {string}
+         */
+        OriginEnum: "field_event" | "direct_report" | "review_decision" | "inventory_condition" | "lab_reception" | "unknown";
         OriginalEnvelope: {
             unavailable?: boolean;
             version?: number;
@@ -6288,6 +6424,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["FuelLoad"][];
         };
+        PaginatedIncidentContextOptionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["IncidentContextOption"][];
+        };
         PaginatedIncidentListItemList: {
             /** @example 123 */
             count: number;
@@ -6302,6 +6453,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["IncidentListItem"][];
+        };
+        PaginatedIncidentOwnerOptionList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["IncidentOwnerOption"][];
         };
         PaginatedIncidentTypeList: {
             /** @example 123 */
@@ -7752,6 +7918,15 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly stage: number;
+            readonly owner_display: string | null;
+            readonly type_snapshot: components["schemas"]["IncidentTypeSnapshot"] | null;
+            readonly origin: components["schemas"]["OriginEnum"];
+            readonly linked_record: components["schemas"]["IncidentLinkedRecord"];
+            readonly blockers: components["schemas"]["IncidentOwnedBlocker"][];
+            readonly evidence: components["schemas"]["IncidentEvidence"][];
+            readonly action_permissions: components["schemas"]["IncidentActionPermissions"];
+            readonly action_prerequisites: components["schemas"]["IncidentActionPrerequisites"] | null;
         };
         /**
          * @description * `species` - species
@@ -11004,6 +11179,11 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                reportable?: "true" | "false";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -11125,9 +11305,19 @@ export interface operations {
     incidents_list: {
         parameters: {
             query?: {
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                assigned_to_me?: "true" | "false";
                 center?: string;
                 /** @description Exact code in reported mode only; fleet mode retains its legacy filters. */
                 code?: string;
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                escalated?: "true" | "false";
                 /**
                  * @description * `fleet` - fleet
                  *     * `reported` - reported
@@ -11135,8 +11325,22 @@ export interface operations {
                 kind?: "fleet" | "reported";
                 /** @description Exact motorcycle UUID; applies only to fleet incident lists. */
                 motorcycle?: string;
-                /** @description Which field to use when ordering the results. */
+                /** @description Reported only: comma-separated code,created_at,deadline,severity with optional -. Critical rows always first; default deadline ascending/null last, created_at,id. Fleet preserves its existing created_at order. */
                 ordering?: string;
+                /**
+                 * @description * `field_event` - field_event
+                 *     * `direct_report` - direct_report
+                 *     * `review_decision` - review_decision
+                 *     * `inventory_condition` - inventory_condition
+                 *     * `lab_reception` - lab_reception
+                 *     * `unknown` - unknown
+                 */
+                origin?: "field_event" | "direct_report" | "review_decision" | "inventory_condition" | "lab_reception" | "unknown";
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                overdue?: "true" | "false";
                 owner?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
@@ -11156,6 +11360,7 @@ export interface operations {
                  *     * `voided` - voided
                  */
                 state?: "open" | "closed" | "voided";
+                type?: string;
                 type_id?: string;
             };
             header?: {
@@ -11401,6 +11606,44 @@ export interface operations {
             };
         };
     };
+    incidents_owner_options_list: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this motorcycle block event. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedIncidentOwnerOptionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     incidents_reassign_create: {
         parameters: {
             query?: never;
@@ -11480,6 +11723,47 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["IncidentConflictResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    incidents_context_options_list: {
+        parameters: {
+            query: {
+                /**
+                 * @description * `read` - read
+                 *     * `create` - create
+                 */
+                action: "read" | "create";
+                center?: string;
+                page?: number;
+                page_size?: number;
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedIncidentContextOptionList"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

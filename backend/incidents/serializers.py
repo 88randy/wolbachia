@@ -1,14 +1,81 @@
 """Public schemas with no storage keys, invented roster or implicit organization selector."""
 
+from collections.abc import Mapping
 from typing import Any, Literal
+from uuid import UUID
 
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from core.filters import CODE_MAX_LENGTH
 from core.serializers import OrgScopedModelSerializer
 from incidents.configuration import validate_unique_blocker_kinds
 from incidents.models import Incident, IncidentEvent, IncidentTypeVersion, Severity
+from incidents.origins import CREATION_ORIGINS
 from ovitraps.payloads import StrictPayloadSerializer
+from uploads.access import UploadActor, actor_from_request
+
+
+def _actor(context: Mapping[str, Any]) -> UploadActor | None:
+    request = context.get("request")
+    return (
+        actor_from_request(request)
+        if request is not None and hasattr(request, "organization")
+        else None
+    )
+
+
+class IncidentTypeSnapshotSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    label = serializers.CharField()  # type: ignore[assignment]  # public resource label
+    icon = serializers.CharField()
+    is_other = serializers.BooleanField()
+    report_evidence_min = serializers.IntegerField(min_value=0)
+    close_evidence_min = serializers.IntegerField(min_value=1)
+
+
+class IncidentLinkedRecordSerializer(serializers.Serializer[Any]):
+    kind = serializers.ChoiceField(
+        choices=["field_event", "review_item", "motorcycle", "ovitrap", "lot", "bag"],
+        allow_null=True,
+    )
+    available = serializers.BooleanField()
+    id = serializers.UUIDField(allow_null=True)
+    code = serializers.CharField(allow_null=True)
+    is_voided = serializers.BooleanField(allow_null=True)
+
+
+class IncidentOwnedBlockerSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.CharField()
+    is_active = serializers.BooleanField()
+    resource = IncidentLinkedRecordSerializer()
+
+
+class IncidentEvidenceSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    is_readable = serializers.BooleanField()
+    is_verified = serializers.BooleanField(allow_null=True)
+    verified_at = serializers.DateTimeField(allow_null=True)
+    content_type = serializers.CharField(allow_null=True)
+    size_bytes = serializers.IntegerField(allow_null=True)
+
+
+class IncidentActionPermissionsSerializer(serializers.Serializer[Any]):
+    comment = serializers.BooleanField()
+    reassign = serializers.BooleanField()
+    change_severity = serializers.BooleanField()
+    close = serializers.BooleanField()
+    void = serializers.BooleanField()
+
+
+class IncidentActionPrerequisitesSerializer(serializers.Serializer[Any]):
+    is_open = serializers.BooleanField()
+    has_void_dependents = serializers.BooleanField()
+    is_severity_protected = serializers.BooleanField()
+    close_evidence_min = serializers.IntegerField(min_value=1)
+    can_upload_evidence = serializers.BooleanField()
 
 
 class IncidentBlockedBySerializer(serializers.Serializer[Any]):
@@ -25,6 +92,13 @@ class IncidentConflictResponseSerializer(serializers.Serializer[Any]):
 
 
 class IncidentEventSerializer(OrgScopedModelSerializer):
+    author_display = serializers.SerializerMethodField()
+
+    def get_author_display(self, obj: IncidentEvent) -> str | None:
+        from incidents.workspace_projection import event_author_display
+
+        return event_author_display(_actor(self.context), obj)
+
     class Meta:
         model = IncidentEvent
         fields = [
@@ -45,6 +119,7 @@ class IncidentEventSerializer(OrgScopedModelSerializer):
             "created_by",
             "created_at",
             "policy_version",
+            "author_display",
         ]
         read_only_fields = fields
 
@@ -57,6 +132,60 @@ class ReportedIncidentSerializer(OrgScopedModelSerializer):
     deadline = serializers.DateTimeField(read_only=True, allow_null=True)
     timeline = IncidentEventSerializer(source="events", many=True, read_only=True)
     publication_state = serializers.SerializerMethodField()
+    stage = serializers.IntegerField(read_only=True)
+    owner_display = serializers.SerializerMethodField()
+    type_snapshot = serializers.SerializerMethodField()
+    origin = serializers.SerializerMethodField()
+    linked_record = serializers.SerializerMethodField()
+    blockers = serializers.SerializerMethodField()
+    evidence = serializers.SerializerMethodField()
+    action_permissions = serializers.SerializerMethodField()
+    action_prerequisites = serializers.SerializerMethodField()
+
+    def _projection(self, obj: Incident) -> dict[str, Any]:
+        from incidents.workspace_projection import workspace_projection
+
+        if not hasattr(self, "_workspace_cache"):
+            self._workspace_cache: dict[UUID, dict[str, Any]] = {}
+        cache = self._workspace_cache
+        if obj.pk not in cache:
+            cache[obj.pk] = workspace_projection(_actor(self.context), obj)
+        return cache[obj.pk]
+
+    def get_owner_display(self, obj: Incident) -> str | None:
+        return self._projection(obj)["owner_display"]
+
+    @extend_schema_field(IncidentTypeSnapshotSerializer(allow_null=True))
+    def get_type_snapshot(self, obj: Incident) -> dict[str, Any] | None:
+        return self._projection(obj)["type_snapshot"]
+
+    @extend_schema_field(serializers.ChoiceField(choices=CREATION_ORIGINS))
+    def get_origin(self, obj: Incident) -> str:
+        return (
+            getattr(obj, "creation_origin", "unknown")
+            if self._projection(obj)["type_snapshot"] is not None
+            else "unknown"
+        )
+
+    @extend_schema_field(IncidentLinkedRecordSerializer())
+    def get_linked_record(self, obj: Incident) -> dict[str, Any]:
+        return self._projection(obj)["linked_record"]
+
+    @extend_schema_field(IncidentOwnedBlockerSerializer(many=True))
+    def get_blockers(self, obj: Incident) -> list[dict[str, Any]]:
+        return self._projection(obj)["blockers"]
+
+    @extend_schema_field(IncidentEvidenceSerializer(many=True))
+    def get_evidence(self, obj: Incident) -> list[dict[str, Any]]:
+        return self._projection(obj)["evidence"]
+
+    @extend_schema_field(IncidentActionPermissionsSerializer())
+    def get_action_permissions(self, obj: Incident) -> dict[str, bool]:
+        return self._projection(obj)["action_permissions"]
+
+    @extend_schema_field(IncidentActionPrerequisitesSerializer(allow_null=True))
+    def get_action_prerequisites(self, obj: Incident) -> dict[str, Any] | None:
+        return self._projection(obj)["action_prerequisites"]
 
     def get_publication_state(self, obj: Incident) -> Literal["outboxed", "pending_outbox"]:
         return "outboxed" if obj.notice_outboxed else "pending_outbox"  # type: ignore[attr-defined]
@@ -82,6 +211,15 @@ class ReportedIncidentSerializer(OrgScopedModelSerializer):
             "publication_state",
             "created_at",
             "created_by",
+            "stage",
+            "owner_display",
+            "type_snapshot",
+            "origin",
+            "linked_record",
+            "blockers",
+            "evidence",
+            "action_permissions",
+            "action_prerequisites",
         ]
         read_only_fields = fields
 
@@ -216,8 +354,41 @@ class IncidentFilterSerializer(StrictPayloadSerializer):
     type_id = serializers.UUIDField(required=False)
     center = serializers.UUIDField(required=False)
     quadrant = serializers.UUIDField(required=False)
+    assigned_to_me = serializers.ChoiceField(choices=["true", "false"], required=False)
+    overdue = serializers.ChoiceField(choices=["true", "false"], required=False)
+    escalated = serializers.ChoiceField(choices=["true", "false"], required=False)
+    type = serializers.UUIDField(required=False)
+    origin = serializers.ChoiceField(choices=CREATION_ORIGINS, required=False)
     code = serializers.CharField(
         max_length=CODE_MAX_LENGTH,
         required=False,
         help_text="Exact code in reported mode only; fleet mode retains its legacy filters.",
     )
+
+
+class IncidentTypeQuerySerializer(StrictPayloadSerializer):
+    reportable = serializers.ChoiceField(choices=["true", "false"], required=False)
+
+
+class IncidentOptionQuerySerializer(StrictPayloadSerializer):
+    search = serializers.CharField(required=False, allow_blank=True, max_length=200)
+    page = serializers.IntegerField(required=False, min_value=1)
+    page_size = serializers.IntegerField(required=False, min_value=1)
+
+
+class IncidentContextQuerySerializer(IncidentOptionQuerySerializer):
+    action = serializers.ChoiceField(choices=["read", "create"])
+    center = serializers.UUIDField(required=False)
+
+
+class IncidentContextOptionSerializer(serializers.Serializer[Any]):
+    center_id = serializers.UUIDField()
+    center_code = serializers.CharField()
+    center_name = serializers.CharField()
+    quadrant_id = serializers.UUIDField(allow_null=True)
+    quadrant_code = serializers.CharField(allow_null=True)
+
+
+class IncidentOwnerOptionSerializer(serializers.Serializer[Any]):
+    membership_id = serializers.UUIDField(source="pk")
+    label = serializers.CharField()  # type: ignore[assignment]  # minimal owner display label
