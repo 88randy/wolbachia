@@ -8,6 +8,7 @@ from uuid import uuid4
 import pytest
 from django.db import close_old_connections
 
+from field_sync.models import ACCEPTED_CODE
 from lab.commands import execute_lab_command
 from lab.exceptions import LabInProgressError
 from lab.models import EggCountAttempt, RecountRequest
@@ -58,7 +59,7 @@ def mixed_void_batch(context, blocked_capture, code):
     )
     results = sync_batch(batch, [first, second], None).results
     assert [(row.status, row.code) for row in results] == [
-        ("accepted", "ok"),
+        ("accepted", ACCEPTED_CODE),
         ("rejected", "ovitrap_void_blocked"),
     ]
 
