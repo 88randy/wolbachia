@@ -269,6 +269,14 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "transfer.read",
+        "transfer.receive",
+        "discrepancy.read",
+        "discrepancy.close",
+        "relocation.decide",
+        "quadrant.close",
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "location.read",
         "lot.read",
@@ -297,6 +305,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "location.read",
         "lot.read",
@@ -308,6 +318,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     }
     assert by_slug["community_promoter"] == reader
     assert by_slug["warehouse"] == {
+        "transfer.read",
+        "transfer.create",
+        "transfer.dispatch",
+        "transfer.receive",
+        "discrepancy.read",
+        FIELD_UPLOAD,
         *reader,
         "supply_type.read",
         "supply_type.create",
@@ -335,6 +351,16 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "transfer.read",
+        "transfer.create",
+        "transfer.dispatch",
+        "transfer.receive",
+        "discrepancy.read",
+        "discrepancy.close",
+        "relocation.decide",
+        "quadrant.close",
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "supply_type.create",
         "supply_type.update",
@@ -586,6 +612,7 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
     ("slug", "code"),
     [
         ("courier", FIELD_UPLOAD),
+        ("warehouse", FIELD_UPLOAD),
         ("supervisor", FIELD_UPLOAD),
         ("admin", FIELD_UPLOAD),
         ("courier", FIELD_EVENT_SYNC),

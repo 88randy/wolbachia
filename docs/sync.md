@@ -56,7 +56,7 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 - `results` has one entry per event, **in request order**. `code` is `accepted` for accepted events. The phone shows plain-language text from `packages/i18n` (keys `sync.result.<camelCase code>`); the API never returns user-facing text.
 - `changes.reviews` are the courier's own review items (rejected or in-review events) after `cursor`. Send the returned `cursor` in the next request. `has_more: true` means "pull again now" (a long backlog is paged, `API_CURSOR_PAGE_SIZE`, default 100). **Deviation from the issue contract:** `has_more` was added; without it the phone cannot tell a full page from the end.
 - `changes.catalog_version` and `changes.rules_version` are the `version` hashes of `/field/catalog/` and `/field/rules/`. When one differs from the phone's, it downloads that snapshot (`If-None-Match`).
-- `changes.assignments` does not exist yet (#8, #9); adding a field later is not a breaking change.
+- The nine domain arrays and root `changes.capture_context` are specified in [bootstrap and projection recovery](#bootstrap-and-projection-recovery-b-13-110) and [paired current capture context](#paired-current-capture-context-289); they do not change event verdicts.
 - The phone validates the 200 shape before applying it. A malformed response retries with backoff; missing per-event results become transient failures, while valid results and cursor bookkeeping commit atomically.
 - A **final upload** (below) answers with `X-Session-Revoked: true` and an empty `changes` (`cursor`, versions `null`).
 
@@ -468,6 +468,8 @@ sample. Full decisions and assumptions: backend/ovitraps/README.md and ADR 99.
 | `ovitrap_point_version_unavailable` | in_review, no operational effects |
 | `ovitrap_too_far` | in_review, no operational effects |
 | `ovitrap_speed_anomaly` | in_review, no operational effects |
+| `late_work_after_quadrant_close` | in_review, no effects before original historical authority/inputs are proved and accepted once by the existing review owner. |
+| `captured_after_quadrant_close` | in_review, no effects; supervisor decisions cannot grant retroactive work authority in the closed captured epoch. |
 | `ovitrap_void_blocked` | rejected, no operational effects |
 
 Every code maps to sync.result.<camelCase> in es-MX/en. Lock contention retains
@@ -545,7 +547,7 @@ administrator's later revocation. Admin includes it for explicit delegation.
 
 Response fields are `bundle_version`, `schema_version`, `generated_at`,
 `scope_revision`, `cursor`, `catalog_version`, `rules_version`, `next_change_at`,
-`map_manifest_ready`, followed by these fixed sections in order: `assignments`,
+`map_manifest_ready`, `capture_context` (#289), followed by these fixed sections in order: `assignments`,
 `supplies`, `permits`, `eligibility`, `history`, `map_manifests`, `quadrants`,
 `sampling_points`, `ovitraps`. Every section is
 present as a list, even when its dependency has no producer. Catalog/rules versions,
@@ -575,7 +577,7 @@ tests the recovery contract, not actual phone storage.
 
 A revoked phone still has only its explicitly authorized one final sync upload:
 it gets empty reviews and all nine typed arrays, null cursor/configuration versions
-and next_change_at, and false has_more. Bootstrap never consumes or grants that
+and next_change_at/capture_context, and false has_more. Bootstrap never consumes or grants that
 upload. No new operational effects are applied to in_review events here;
 authorized acceptance and applying supported effects once are implemented by #113.
 
@@ -615,6 +617,86 @@ rows exposed only by a different action grant in sync. Both feeds independently 
 API_CURSOR_PAGE_SIZE, advancing s/c only to the last delivered row in that feed.
 has_more is true if either feed has another visible row. Replaying an older cursor
 may repeat entries: clients deduplicate by resource/version and review id.
+
+## Paired current capture context (#289)
+
+The optional, nullable root `capture_context` belongs to bootstrap and changes,
+not a new BundleProducer or event envelope. Every current bootstrap 200 and normal
+sync page emits an object; every field inside it is required:
+
+| Field | Source, from the same captured ctx |
+| --- | --- |
+| schema_version | Fixed capture-metadata schema 1. |
+| permission | Existing FIELD_EVENT_SYNC (`field_event.sync`) constant. |
+| user_id / organization_id | ctx.user.pk / ctx.organization.pk for this authenticated, pinned batch. No mutable identity reread. |
+| scope_revision | The exact computed revision used for bootstrap root/cursor or the returned changes cursor r. |
+| grants | Every complete WorkScope in ctx.scope.grants containing FIELD_EVENT_SYNC, after member/profile intersection and government clamp. Canonical JSON ordering; no axis union. |
+
+Each WorkScope has centers and quadrants with explicit mode none/selected/all and
+canonical UUID ids. Empty selected and none deny the applicable dimension. All
+requires an actual grant. The payload uses the existing MeScopeSerializer grammar
+for each whole pair; effective_scope already normalizes saved scopes. Me's
+independently folded display scope is never used. `grants: []`
+is a complete known absence of capture grants (e.g. bootstrap-only readers), not
+missing data. A sync-only caller still receives no domain rows without bootstrap
+scope. No new permission code/default, admin profile read, Me query, session
+secret, device token, assignment, GPS or original capture proof is emitted.
+
+The root BOOTSTRAP_SCHEMA_VERSION advances 1→2. Outer schema_version remains the
+opaque root/producers hash, with every individual producer schema/payload unchanged.
+Scope revision already includes that boundary and captured configuration generations,
+so old signed cursors fail before ingest and supported revoke→regrant does not
+revalidate an earlier cursor. Bootstrap hashes the new context in bundle_version;
+generated_at and cursor remain excluded, avoiding timestamp churn. A permission-only
+generation change changes ETag without a geometry change. Each normal page repeats
+its context, even when it has no rows; no feed row or timestamp watermark is added.
+
+Ordinary HTTP omitted/null cursor is decoded to ChangesCursor(0,0,None): ctx is
+captured and initial changes include metadata. A stream from zero is still not a
+complete bootstrap. The explicit internal None branch, used by final upload,
+does not capture ctx or pull and returns null. It grants no download/capture access.
+Do not recapture ctx after ingest: a concurrent configuration commit may make this
+response an earlier coherent observation, with its next pull detecting invalid_cursor.
+The projector does no SQL or I/O and acquires no new locks after the courier lock.
+
+### Consumer recovery and compatibility
+
+The new DTO is additive/optional so old consumers retain their known fields and
+opaque-schema handling. The intentional root boundary requires their existing
+invalid_cursor→bootstrap recovery. A new consumer with an old/missing/unsupported
+normal context must remain capture-unavailable. This does not certify every
+historical draft APK or database lineage.
+
+#138 owns strict decoding and local publication: only a validated full bootstrap
+can atomically commit context, actual downloaded foundations, owner/session binding
+and durable readiness through the existing DayStore writer. A delta or a context
+alone cannot clear absent/legacy readiness. A later page can refresh only a matching
+already hydrated revision, using equality rather than ordering hashes. Pending
+readiness omits If-None-Match and survives offline, write failure, unexpected 304 and
+restart; an ordinary 304 retains only its already proven same-owner cache. Known
+empty grants deny capture without forcing endless bootstrap recovery.
+
+On invalid_cursor/observed revoke, invalidate current authority before awaiting
+recovery, retaining drafts, original rule/catalog/authority facts and outbox/evidence
+UUIDs. Missing/null normal metadata where an observation is expected also makes
+old context audit-only. A same-session internal no-pull null supplies no new
+observation and cannot undo an invalidation. Final mode always blocks new capture;
+null does not renew permission. Keep event receipts before existing full cleanup
+and #222 retry. Projection publication remains separate from outbox settlement,
+with idempotent replay rather than network/file I/O inside one giant transaction.
+
+The local authority revision/CAS advances across absent/null and observed A→B→A
+or regrant. It is independent of the server hash. A new login/session/device/issuer/
+org or reinstall cannot reuse readiness or adopt old data from a username, same UUID,
+matching grant hash or fresh Me alone. No immediate remote erasure is promised for
+offline retained bytes; hide active cached access when revocation is observed.
+
+For M09, join an actual physical/fixed point UUID to its real quadrant and center,
+then require one complete matching grant at the capture/correction transaction
+boundary under the applicable current/original policy. Downloaded rows/tasks,
+retained GPS/Assignment, B17 history, B33 receipts and #287 advisory are not current
+capture authority. Do not fabricate M08 bags/reuse/stock or rewrite captured events.
+The backend addition implements none of those mobile/native integration gates.
 
 ## Bundle producer registry and EVERY change writer
 
@@ -933,3 +1015,51 @@ Recovery uses bounded (created_at,id) pages that advance even over pending cause
 No storage/network/mail under sync locks and no new sync projection is introduced.
 record.void retains linked incident/history; incident closure resolves owned holds
 only and does not compensate other domain facts. See ADR 133 and incidents/README.md.
+
+## Signed facility custody (#106 / B-09)
+
+`transfer.dispatch` schema1 carries transfer_id plus command_id, expected_revision
+and signature_upload_id. `transfer.receive` schema1 adds the closed scanned union,
+missing assertions/photo coverage and evidence_ids. Optional dispatch_source_event_id
+names the real same-transfer dispatch FieldEvent. These two families explicitly use
+checks_shift=False; facility custody has no Shift contract. They are distinct from
+future supplies.receive/B10. Current field_event.sync and the actual transfer action
+each need ONE binding over both endpoints/all line pairs. Global identity/device/
+session, clock and final-upload gates remain. No role/GPS/measurement grants custody.
+
+| Code | Verdict / client consequence |
+| --- | --- |
+| `transfer_inaccessible` | Rejected: unknown/foreign/unauthorized real transfer/source; no existence disclosure. |
+| `transfer_state_conflict` | In review: unavailable signed dispatch, stale command/state or conflicting receipt assertions. Keep original capture/signature. |
+| `transfer_evidence_required` | In review: unfinished/missing/reused/wrong-actor signature/photo. Keep pending files for independent upload. |
+| `transfer_safety_blocked` | In review: mandatory current expiry/type/protocol/storage/condition/hold policy prevents effects. |
+| `transfer_void_blocked` | Rejected correction: stock/dependents lack exact supported compensation; retain old signed effects/history. |
+
+NEW in_review sources retain original FieldEvent/ReviewItem, payload hash, both
+clocks/rules/catalog/evidence declarations and selected immutable capture facts
+with ZERO operational TransferEvent/StockOperation/hold/success receipts. Canonical113
+later applies once with genuine original authority, current reviewer action+decide
+and current mandatory safety. Different sender/receiver authors use transfer_source
+only for an exact real same-transfer effective dispatch/link/hash/typed child
+subject. No source is invented and no child is automatically replayed. Original
+ingest status/time/payload stay unchanged after the canonical effect receipt.
+
+Handler effects precede FieldEvent storage: declared UUID/hash is retained first,
+and append-only TransferSourceLink is completed after the REAL source and primary
+evidence exist. Reviewed linkage follows the canonical effect receipt. Signature
+and photo uploads keep actual FieldEvent primary parent plus secondary custody refs;
+byte finalization never accepts a source. HTTP invents no source/courier recipient.
+
+The ONE existing history producer advances schema2→3 for transfer_custody. Its id
+is immutable TransferEvent UUID, separate transfer_id names the parent, and phase
+dispatch|receive/revision/hash/source verdict/void flag/subjects are shared by
+changes/bootstrap after current complete-vector scope and before paging. Only
+real original source couriers receive records. Old review/shift/relocation shapes
+stay exact. Internal publication receipts dedupe persistence, not delivery.
+
+record.void invokes the actual custody owner and preserves old manifests/legs.
+No-effects cancellation or exact PRIOR supported return compensation is allowed;
+consumed/unsupported dependents stay blocked. ack_missing is not return proof.
+Canonical reason_code/Other and normalized10-visible/1000-max note apply to EVERY
+transfer void without changing other owners' resolver. No old leg leaves SUM.
+See backend/inventory/transfers/README.md for the HTTP contract and test ownership.

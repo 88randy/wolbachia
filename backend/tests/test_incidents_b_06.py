@@ -524,6 +524,11 @@ def test_unique_facade_preserves_fleet_default_and_rich_scoped_contract(case, ma
     rich = client.get(url, {"kind": "reported"})
     assert rich.status_code == 200
     assert [row["id"] for row in rich.data["results"]] == [str(center_only.pk), str(first.pk)]
+    foreign_motorcycle = MotorcycleFactory(organization=foreign_case.actor.organization)
+    for reference in ("", "not-a-uuid", str(foreign_motorcycle.pk)):
+        ignored = client.get(url, {"kind": "reported", "motorcycle": reference})
+        assert ignored.status_code == 200
+        assert ignored.data == rich.data
     assert client.get(url, {"kind": "reported", "code": first.code}).data["count"] == 1
     assert client.get(url, {"kind": "reported", "code": "\x00"}).status_code == 400
     for incident in (hidden_center, hidden_quadrant, foreign):
@@ -554,6 +559,14 @@ def test_unique_facade_preserves_fleet_default_and_rich_scoped_contract(case, ma
     assert legacy.data == client.get(url, {"kind": "fleet"}).data
     assert [row["id"] for row in legacy.data["results"]] == [str(fault.pk)]
     assert "timeline" not in legacy.data["results"][0]
+    second_motorcycle = MotorcycleFactory(
+        organization=case.actor.organization, center_id=case.field.point.center_id
+    )
+    make_fault(second_motorcycle, case.actor.user)
+    fleet = client.get(url, {"kind": "fleet", "motorcycle": str(motorcycle.pk), "page_size": 1})
+    assert fleet.status_code == 200
+    assert fleet.data["count"] == 1
+    assert [row["id"] for row in fleet.data["results"]] == [str(fault.pk)]
     client.force_authenticate(case.actor.user)
     invalid = client.patch(
         f"/api/v1/incident-types/{case.version.item_id}/",

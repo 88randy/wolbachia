@@ -6,8 +6,9 @@ insert-only. Stock is the sum of signed movements, never an editable balance.
 
 An authored admission produces the sole opening credit. Drafts with missing
 metadata or biological protocol create no stock effects. Once admitted, quantity,
-identity and location cannot be edited; future transfers/compensations belong to
-#106/#107 and must consume the same ledger and locked dispatch safety gate.
+identity and location cannot be edited. #106 adds signed facility custody and
+bounded compensation through the SAME ledger and current safety evaluator; #107
+courier custody remains separate. See transfers/README.md.
 
 Biological protocols are named, explicitly supplied versions: no shelf life,
 species, temperature/humidity band or reading hours are seeded. Both configured
@@ -211,7 +212,8 @@ are 400. Existing instant facets and status stay available; no implicit threshol
 
 Unknown/foreign/out-of-scope references share 404; missing action is 403; invalid
 query shape/range is coded 400 validation_error. Empty options is 200 empty page.
-No read locks, writes, grants, defaults, migrations or policy changes are introduced.
+Those #270 read endpoints introduced no read locks, writes, grants, defaults,
+migrations or policy changes.
 The grouped test_inventory_read_contract.py cases cover PG parity, late revocation,
 pagination, real admissions/provenance, exact pins, blocker/date SQL and one HTTP
 boundary. Local pure/ORM-compilation checks do not establish PostgreSQL execution;
@@ -219,3 +221,56 @@ real focused PostgreSQL and full backend CI/coverage remain required before clos
 Read primitives: [Exists](https://docs.djangoproject.com/en/5.2/ref/models/expressions/#exists-subqueries),
 [DISTINCT](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#distinct),
 [UNION](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#union).
+
+## Signed facility custody (#106)
+
+transfers/ adds real transfer/discrepancy routes, signed expected/actual manifests,
+immutable command receipts, one-ledger dispatch/actual receipt and bounded recovery
+or return. No editable balance or transit Location is created. Current positive
+custody and ONE binding over both endpoints/all line contexts control onward work.
+History at a location remains a scoped signed leg even after balance0; it does not
+grant current lot metadata or the private counterpart's whole transfer.
+
+Lot GET list/detail adds explicit custody_location=UUID. Default remains legacy
+admission scope/initial safety; selected context requires real positive custody
+and lot.read at that site. A custody-only detail without context returns a safe409
+only after authorization. Original actor is redacted; storage_context_required is
+not an existence probe. Movement source_transfer is minimal and null unless the
+reader has complete current transfer.read, regardless of a historic location facet.
+
+Conditions add a strict explicit-location branch. New rows retain capture_mode,
+capture_location_id and exact LocationVersion; legacy omitted-location captures
+remain a named compatibility adapter. A and B may be measured at the same instant;
+an exact legacy reading can certify ONLY its original proven location. A measurement
+at B needs its own condition.create scope but no stock and grants no custody.
+P(lot,site,time) keeps global biological holds and uses only that site's slots and
+current storage. Null Lot.protocol never inherits nested supply configuration.
+
+See transfers/README.md for closed outcome wire choices, source/review/history
+integration, primary evidence, global locks, new SQL and criterion/test ownership.
+
+## Exact movement lot codes (#292)
+
+Only `GET /locations/{id}/movements/` accepts optional `lot_code`. It filters
+the existing signed ledger by exact human code, including when current stock at
+that location is zero. It does not resolve current lot metadata or admission scope.
+Validation delegates to the public CodeQuerySerializer: surrounding whitespace
+trimmed, at most 50 characters, nonblank and no NUL. Errors use the normal 400
+envelope under `fields.lot_code`. A UUID-looking code remains a code; repeated
+parameters use the last value. No substring, case folding, wildcard or comma-list
+interpretation is added.
+
+The real parent location is authorized first. Like the existing lot UUID facet,
+the code reference must have a leg in current tenant/paired-scope `scoped_legs`;
+unknown, foreign and wholly inaccessible codes share safe 404. Then all filters
+intersect on the requested location's already permitted rows before count, stable
+ordering and paging. Readable references in another permitted location can return
+an empty page here; contradictory readable `lot`/`lot_code` filters also return an
+empty page. Existing UUID/operation/piece/unit/time/default-order behavior remains.
+No stock, lot list/detail, condition or PATCH action gains this parameter.
+
+Historical rows retain their actual movement/operation/source/event identities,
+signed decimal quantities, unit pins and existing transfer metadata redaction.
+Zero stock does not erase history or grant current custody/whole-transfer access.
+Owning tests extend existing read-contract and B-to-C custody groups; generic code
+grammar stays owned by tests/test_code_filter.py. SQL execution requires PostgreSQL.

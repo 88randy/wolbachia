@@ -4,6 +4,45 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#289 adds optional/nullable root capture_context to Bootstrap and Changes. Its
+required object fields are capture schema 1, field_event.sync permission, self
+user/org UUIDs, scope_revision and complete effective paired grants. Known empty
+grants deny; missing/unsupported normal metadata is unavailable. The root bundle
+contract advances from 1 to 2 without changing any producer payload/version. Old cursor r
+requires existing bootstrap recovery before ingest; outer schema/hash is opaque.
+Normal null/omitted HTTP cursor returns initial changes/context, not a full bundle;
+final/internal no-pull context is null and never grants capture. Me and #287's
+advisory are not substitutes. #138 owns durable readiness, owner/session/ABA fences
+and the real M09 provider; this generated contract does not implement them or native
+qualification. See [sync contract](../../docs/sync.md#paired-current-capture-context-289).
+
+#287 adds the active-DeviceBearer GET /field/ovitrap-advisories/{id}/ with mandatory
+aware `at`. Its optional point-wide OP03 aggregate requires BOTH existing paired
+field.bootstrap and field_event.sync authorities; no new grant or capture permission.
+Read `state` before using nullable result fields. Rule context carries actual
+parameter version/value/effective_from tuples; it is not original capture proof.
+ETag depends on computed state/content: future_cutoff can become available when
+the clock reaches at without business writes, so revalidate rather than trusting
+unchanged stored facts. A new unproved offline cutoff remains unavailable. No new
+bootstrap/feed/queue/geometry/task or mobile integration is added. See the
+[advisory contract](../../docs/api-conventions.md#scoped-relocation-advisory-287).
+
+#126 adds approve/reject relocation decisions, observational quadrant readiness,
+atomic epoch closure and separate intervention.read/create routes. The single typed
+CourierHistoryEntry is a discriminated union of its retained review/shift branch
+and relocation_proposal, shared by changes/bootstrap. Task links refer to real
+ScheduledTask identities/owners. DecisionEnum keeps its existing geography choices;
+RelocationDecisionEnum is explicit. See ../../backend/geography/decisions/README.md
+for temporal proof, immutable sources and verification boundaries.
+
+#280 adds an optional nonnegative `version` to the existing catalog-item activate
+and deactivate POST bodies. Omitting the body/version remains supported. A stale
+precondition returns `409 catalog_version_conflict`, including a stale no-op.
+Successful write responses carry their exact write-time `catalog_version`; use
+that returned version for conditional Undo rather than a later read. Integer
+catalog revisions are distinct from field snapshot content hashes. See the
+[catalog contract](../../backend/catalogs/README.md#conditional-availability-280).
+
 #113 adds page-number review queue/detail, immutable accept/void/open-incident
 decisions, optional source-bound safety disposition and CLOSED-shift approve/
 observe. Source ingest/provenance remain separate from current decision state.
@@ -171,3 +210,11 @@ The schema includes relocation.read proposal listing and ovitrap.read physical
 history, retirement/suggestion fields, abandoned/removed incident markers and the
 additive optional courier is_retired field. Event payloads/results remain documented
 in docs/sync.md. Regenerate both artifacts with api:generate; do not edit them.
+
+#106 adds facility /transfers/ and /discrepancies/ reads/actions, closed scan and
+resolution unions, and the fifth transfer_event attachment context. Lot reads add
+explicit custody_location/safety_location_id, movements retain true source IDs and
+redact source_transfer without whole transfer.read, and conditions distinguish
+explicit-location captures from the legacy initial adapter. The same typed history
+union gains transfer_custody under schema3; no runtime client or screen is added.
+See ../../backend/inventory/transfers/README.md for replay, safety and permissions.

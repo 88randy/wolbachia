@@ -43,6 +43,10 @@ class VoidReviewAdapter(ReviewAdapter):
 
         target = find_void_target(ctx)
         if target.voided_at is not None:
+            if target.type in {"transfer.dispatch", "transfer.receive"}:
+                from inventory.transfers.voids import inspect_void
+
+                return inspect_void(source, target)
             from ovitraps.models import OvitrapVoid
             from reviews.inspection import validated_original_payload
 
@@ -81,6 +85,10 @@ class VoidReviewAdapter(ReviewAdapter):
             from reviews.exceptions import ReviewBlockedError
 
             raise ReviewBlockedError(("void_effect_unavailable",))
+        if target.type in {"transfer.dispatch", "transfer.receive"}:
+            from inventory.transfers.voids import void_materialization
+
+            return void_materialization(ctx.envelope.id, target)
         from ovitraps.models import OvitrapVoid
 
         correction = OvitrapVoid.objects.filter(

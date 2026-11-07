@@ -19,6 +19,7 @@ from catalogs.permissions import (
 )
 from catalogs.selectors import build_catalog_snapshot, list_catalogs, with_item_usage
 from catalogs.serializers import (
+    CatalogAvailabilitySerializer,
     CatalogItemCreateSerializer,
     CatalogItemFilterSerializer,
     CatalogItemSerializer,
@@ -132,6 +133,8 @@ class CatalogItemViewSet(
             "create": CatalogItemCreateSerializer,
             "partial_update": CatalogItemUpdateSerializer,
             "reorder": CatalogReorderSerializer,
+            "activate": CatalogAvailabilitySerializer,
+            "deactivate": CatalogAvailabilitySerializer,
         }
         return by_action.get(self.action, CatalogItemSerializer)
 
@@ -150,15 +153,22 @@ class CatalogItemViewSet(
         payload.is_valid(raise_exception=True)
         return Response(self._read(update_catalog_item(item, payload.validated_data)))
 
-    @extend_schema(request=None, responses={200: CatalogItemSerializer})
+    @extend_schema(request=CatalogAvailabilitySerializer, responses={200: CatalogItemSerializer})
     @action(detail=True, methods=["post"])
     def deactivate(self, request: Request, *args: object, **kwargs: object) -> Response:
-        return Response(self._read(deactivate_catalog_item(self.get_object(), request.user)))  # type: ignore[arg-type]
+        item = self.get_object()
+        payload = self.get_serializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        changed = deactivate_catalog_item(item, request.user, **payload.validated_data)  # type: ignore[arg-type]
+        return Response(self._read(changed))
 
-    @extend_schema(request=None, responses={200: CatalogItemSerializer})
+    @extend_schema(request=CatalogAvailabilitySerializer, responses={200: CatalogItemSerializer})
     @action(detail=True, methods=["post"])
     def activate(self, request: Request, *args: object, **kwargs: object) -> Response:
-        return Response(self._read(activate_catalog_item(self.get_object())))
+        item = self.get_object()
+        payload = self.get_serializer(data=request.data)
+        payload.is_valid(raise_exception=True)
+        return Response(self._read(activate_catalog_item(item, **payload.validated_data)))
 
     @extend_schema(
         request=CatalogReorderSerializer, responses={200: CatalogReorderResponseSerializer}

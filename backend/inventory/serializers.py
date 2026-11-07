@@ -10,6 +10,7 @@ from django.utils.functional import cached_property
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.filters import CodeQuerySerializer
 from core.serializers import OrgScopedModelSerializer
 from field_sync.envelope import MAX_PLAUSIBLE_TIME, MIN_PLAUSIBLE_TIME
 from geography.geometry import validate_location
@@ -204,6 +205,10 @@ class ConditionWriteSerializer(StrictPayloadSerializer):
     )
 
 
+class ExplicitConditionWriteSerializer(ConditionWriteSerializer):
+    location_id = serializers.UUIDField()
+
+
 class ProtocolSerializer(OrgScopedModelSerializer):
     incident_type = serializers.SerializerMethodField()
 
@@ -343,6 +348,8 @@ class LotSerializer(OrgScopedModelSerializer):
     supply_version = SupplySerializer(read_only=True)
     location_version = RetainedLocationSerializer(read_only=True, allow_null=True)
     admission_id = serializers.UUIDField(source="lot.admission.pk", read_only=True, allow_null=True)
+    safety_location_id = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
 
     class Meta:
         model = LotVersion
@@ -373,6 +380,7 @@ class LotSerializer(OrgScopedModelSerializer):
             "expiry_date",
             "timezone",
             "status",
+            "safety_location_id",
             "missing_fields",
             "blocked_by",
             "stock_url",
@@ -384,8 +392,26 @@ class LotSerializer(OrgScopedModelSerializer):
     def _safety(self, version: LotVersion) -> LotSafety:
         cache = self.safety_cache
         if version.pk not in cache:
-            cache[version.pk] = lot_safety(version)
+            cache[version.pk] = lot_safety(version, location=self.context.get("custody_location"))
         return cache[version.pk]
+
+    @extend_schema_field(serializers.UUIDField(allow_null=True))
+    def get_safety_location_id(self, version: LotVersion) -> str | None:
+        location = self.context.get("custody_location")
+        identifier = location.pk if location is not None else version.initial_location_id
+        return str(identifier) if identifier else None
+
+    @extend_schema_field(serializers.UUIDField(allow_null=True))
+    def get_created_by(self, version: LotVersion) -> str | None:
+        if "request" not in self.context:
+            return None
+        actor = actor_from_request(self.context["request"])
+        original = current_scope(actor).allows(
+            "lot.read",
+            str(version.lot.center_id),
+            str(version.lot.quadrant_id) if version.lot.quadrant_id else None,
+        )
+        return str(version.created_by_id) if original and version.created_by_id else None
 
     @cached_property
     def safety_cache(self) -> dict[UUID, LotSafety]:
@@ -406,9 +432,11 @@ class LotSerializer(OrgScopedModelSerializer):
         ]
 
     def get_stock_url(self, version: LotVersion) -> str | None:
-        if version.initial_location_id is None:
+        location = self.context.get("custody_location")
+        identifier = location.pk if location is not None else version.initial_location_id
+        if identifier is None:
             return None
-        return f"/api/v1/locations/{version.initial_location_id}/stock/?lot={version.lot_id}"
+        return f"/api/v1/locations/{identifier}/stock/?lot={version.lot_id}"
 
 
 class ConditionSerializer(OrgScopedModelSerializer):
@@ -423,6 +451,8 @@ class ConditionSerializer(OrgScopedModelSerializer):
             "lot_id",
             "lot_version_id",
             "location_version_id",
+            "capture_mode",
+            "capture_location_id",
             "device_time",
             "server_received_at",
             "temperature_c",
@@ -441,10 +471,13 @@ class ConditionSerializer(OrgScopedModelSerializer):
 
     def _can_read_incident(self, reading: ConditionReading) -> bool:
         actor = actor_from_request(self.context["request"])
+        from inventory.conditions import reading_context
+
+        context = reading_context(reading)
         return current_scope(actor).allows(
             "incident.read",
-            str(reading.lot.center_id),
-            str(reading.lot.quadrant_id) if reading.lot.quadrant_id else None,
+            str(context.center_id),
+            str(context.quadrant_id) if context.quadrant_id else None,
         )
 
     def get_incident(self, reading: ConditionReading) -> str | None:
@@ -488,7 +521,10 @@ class OptionalReferenceField(serializers.Field[UUID | str, Any, str, Any]):
 class InventoryQuerySerializer(serializers.Serializer[Any]):
     supply = serializers.UUIDField(required=False)
     location = serializers.UUIDField(required=False)
+    custody_location = serializers.UUIDField(required=False)
+    location_id = serializers.UUIDField(required=False)
     lot = serializers.UUIDField(required=False)
+    lot_code = serializers.CharField(required=False, allow_blank=True, trim_whitespace=False)
     center = serializers.UUIDField(required=False)
     status = serializers.ChoiceField(choices=["draft", "available", "blocked"], required=False)
     is_active = serializers.ChoiceField(choices=["true", "false"], required=False)
@@ -509,6 +545,7 @@ class InventoryQuerySerializer(serializers.Serializer[Any]):
             "insecticide_free_required",
             "condition_slot_missing",
             "condition_breach",
+            "transfer_discrepancy_hold",
         ],
         required=False,
     )
@@ -521,6 +558,13 @@ class InventoryQuerySerializer(serializers.Serializer[Any]):
     device_time_before = serializers.DateTimeField(required=False)
     local_date = serializers.DateField(required=False)
     evaluation = serializers.ChoiceField(choices=["normal", "breach", "unassessed"], required=False)
+
+    def validate_lot_code(self, value: str) -> str:
+        """Reuse the public code grammar while retaining this query field's error path."""
+        query = CodeQuerySerializer(data={"code": value})
+        if not query.is_valid():
+            raise serializers.ValidationError(query.errors["code"])
+        return str(query.validated_data["code"])
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
         attrs = self._expiry_bounds(attrs)
@@ -551,9 +595,41 @@ class MovementSerializer(OrgScopedModelSerializer):
     location_code = serializers.CharField(source="location.code", read_only=True)
     unit = serializers.CharField(source="unit_version.unit", read_only=True)
     source_kind = serializers.ChoiceField(
-        source="operation.source_kind", choices=["lot_admission"], read_only=True
+        source="operation.source_kind",
+        choices=["lot_admission", "transfer_dispatch", "transfer_receive", "transfer_resolution"],
+        read_only=True,
     )
     source_id = serializers.UUIDField(source="operation.source_id", read_only=True)
+    source_transfer = serializers.SerializerMethodField()
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "id": {"type": "string", "format": "uuid"},
+                "code": {"type": "string"},
+                "event_id": {"type": "string", "format": "uuid"},
+            },
+            "required": ["id", "code", "event_id"],
+        }
+    )
+    def get_source_transfer(self, movement: StockMovement) -> dict[str, str] | None:
+        from inventory.transfers.scope import allows_transfer_vector, transfer_contexts
+
+        event = movement.operation.transfer_event
+        if event is None or "request" not in self.context:
+            return None
+        actor = actor_from_request(self.context["request"])
+        if not allows_transfer_vector(
+            current_scope(actor), "transfer.read", transfer_contexts(event.transfer)
+        ):
+            return None
+        return {
+            "id": str(event.transfer_id),
+            "code": event.transfer.code,
+            "event_id": str(event.pk),
+        }
 
     class Meta:
         model = StockMovement
@@ -572,6 +648,7 @@ class MovementSerializer(OrgScopedModelSerializer):
             "unit_version_id",
             "source_kind",
             "source_id",
+            "source_transfer",
             "created_at",
             "created_by",
         ]

@@ -10,6 +10,16 @@ declared UUID/uploader/device binding. Already-bound evidence follows REAL paren
 read authority; follow-up case links never grant access. Verification/sorted locks
 and before/after-I/O download authorization remain, without storage/ACL bypass.
 
+Binding replay and existing-link reauthorization share one explicit four-parent
+resolver (#281). A review-only link keeps its real review UUID through authorize,
+renew, PUT and finalize; it is never treated as incident/None. Same-target replay
+keeps the immutable link, a different authorized target returns
+`upload_already_bound` (`409`), and malformed/ambiguous links fail closed (`404`). Current
+review subject-vector scope must grant both review_item.decide and field.upload
+for attach/byte mutations. Downloads separately require current review_item.read;
+verification and a retained link grant no durable access. Existing parent ACLs,
+locks, default grants, audit records and exactly-one-parent SQL guards are unchanged.
+
 Private local storage, not S3. No MEDIA/static route exposes the evidence root;
 git and the backend Docker build context both exclude private_uploads/.
 Pillow 13.0.0 verifies and fully decodes JPEG/PNG, applies EXIF orientation and
@@ -39,7 +49,7 @@ Optional client_id is the immutable organization-scoped offline capture UUID.
 Clients declaring evidence UUIDs must
 supply it unchanged. Without it, a lost authorization response cannot recover the
 new server UUID; capture clients should supply it. Optional context is
-{kind: field_event|motorcycle_fault, id: UUID}. Existing-event binding requires
+{kind: field_event|motorcycle_fault|incident|review_item, id: UUID}. Existing-event binding requires
 client_id, that exact declared UUID, source author and pinned capture device.
 Fault binding requires field.upload and service_clear, or the capturing fault
 author's field_event.sync, in the current motorcycle center. Unassigned motorcycles
@@ -141,6 +151,11 @@ FK rollback and Event barriers for renewal, permission loss and competing finali
 Existing consumer tests use tests/uploads_support.py to create verification facts
 only when they never read bytes; real storage tests remain here. No sleep/fake DB.
 PostgreSQL-marked tests/migrations/races require real CI when the engine is absent.
+../tests/test_review_upload_parent_281.py exercises the actual public review-parent
+lifecycle with canonical review fixtures and synthetic images, same-binding replay,
+current attach/read/scope revocation, foreign concealment and reparent rejection.
+It isolates only unrelated notice delivery; PostgreSQL collection is not HTTP/SQL
+execution evidence. The existing parent and pure image/storage tests remain in B-04.
 
 Official references: https://pypi.org/project/pillow/13.0.0/,
 https://pillow.readthedocs.io/en/stable/reference/Image.html,
@@ -161,3 +176,15 @@ Downloads require current incident.read and paired parent scope; in_review-only
 sources also require review_item.read. Source void keeps authorized history readable.
 Finalization takes no Incident/Organization/source row lock and grants no durable
 parent access. Both source/metadata arrival orders retain original ingest semantics.
+
+## Signed custody parent (#106)
+
+The fifth closed parent is transfer_event, an ACTUAL immutable TransferEvent UUID.
+HTTP dispatch/receive/resolution evidence binds that parent atomically with the
+exact signed manifest. Renew/finalize revalidate the original actor, declared proof,
+current action+field.upload over ONE complete transfer vector; recovery/return also
+require receive. Download requires whole current transfer.read, never a single
+historic leg's scope. Sync signatures/photos retain FieldEvent primary parent and
+secondary transfer references; in_review downloads additionally need review.read.
+_resolve_link_target still rejects zero/multiple parents and preserves all four
+legacy parent policies. No new storage/sanitizer or callback to accept a source.

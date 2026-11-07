@@ -8,6 +8,12 @@ from core.schema import ApiAutoSchema
 class InventoryAutoSchema(ApiAutoSchema):
     def _get_request_body(self, direction: str = "request") -> dict[str, Any] | None:
         body = super()._get_request_body(direction)
+        if (
+            body
+            and self.method == "POST"
+            and getattr(self.view, "action", None) == "create_condition"
+        ):
+            body["required"] = True
         if self.method != "PATCH" or not body:
             return body
         body["required"] = True

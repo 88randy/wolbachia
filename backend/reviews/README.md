@@ -183,3 +183,27 @@ real frame after effect/receipt. No old FK is filled, no UUID coincidence grants
 access, and no late locks/general fault/config listeners are added. Repeated
 noncurrent payloads are deduplicated under the original courier lock; original
 approval/history and lifecycle remain immutable.
+
+#126 extends this same history producer to schema2 with relocation_proposal;
+the review/shift branch retains its fields. Current real proposal/point subjects
+authorize changes/bootstrap before paging. Only late_work_after_quadrant_close is
+added to OvitrapReviewAdapter's reviewable codes; postclosure capture cannot gain
+retroactive authority. The owner retains original epoch/assignment/closure identity
+alongside selected point/rules/speed facts. See ../geography/decisions/README.md.
+
+#106 adds the concrete TransferReviewAdapter, retained inventory boundary and a
+transfer_source dependency beneath the same owner. Current action and decide each
+require ONE binding covering both endpoints/all lines. Original field.sync remains
+historical proof; a reviewer does not need a new sync credential. No retroactive
+signature, protocol, scope or safety default is inferred. Unknown capture pins and
+partial materialization block acceptance. The only cross-author SQL exception is
+the exact real signed dispatch link/hash plus typed same-transfer child snapshot;
+old ovitrap/shift/void branches retain their predicates. Source hooks append no FK
+to an unstored FieldEvent: linkage follows the real canonical effect receipt.
+
+The same history producer advances to schema3 with transfer_custody event UUID id
+and transfer_id, shared by changes/bootstrap after current complete-vector scope.
+Its real original source courier is the recipient; HTTP creates no courier record.
+VoidReviewAdapter delegates actual transfer audit inspection to its domain owner;
+old manifests/legs remain immutable, consumed/uncompensated effects block void.
+See ../inventory/transfers/README.md for SQL and test ownership.

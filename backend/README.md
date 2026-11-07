@@ -124,6 +124,14 @@ cd .. && npm run api:generate             # validate the schema, re-export opena
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
+CI runs every test once across two serial PostgreSQL partitions (`regular` and the
+five whole migration-test modules), then the original `checks` job validates both
+current artifacts and applies the existing 85% gate to their combined statement
+coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
+original test assertions and coverage source/omit list are unchanged (15 configured
+apps; `shifts` remains outside that historical list). See [`ci/README.md`](ci/README.md)
+for exact-attempt conservation, failure handling, timing evidence and compute costs.
+
 ## Settings and environment
 
 Deployment variables are documented in [`.env.example`](.env.example) and the tables below. Settings are chosen only by a real `DJANGO_SETTINGS_MODULE` environment variable or `--settings`, never by `.env`. Required everywhere: `DATABASE_URL`, `REDIS_URL`; `DJANGO_SECRET_KEY` in dev and prod (tests use a fixed key). Production also requires `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; `manage.py check --deploy` is clean with `config.settings.prod`.
@@ -273,8 +281,9 @@ the mobile transport/final-upload capability limits (#246).
 
 inventory/ provides versioned supply/location masters and lots, immutable opening
 stock/pieces, named biological protocols/readings and owned condition holds.
-Stock balances derive from signed movements. No transfer, assigned courier stock,
-dispatch or compensation workflow is claimed. See inventory/README.md for the
+Stock balances derive from signed movements. Signed facility transfers and bounded
+discrepancy compensation are implemented by inventory/transfers/ (#106); assigned
+courier stock remains separate. See inventory/README.md for the
 exact API, strict two-slot policy, initial-custody integration seams, authorization,
 automatic incident source and real PostgreSQL verification boundary.
 

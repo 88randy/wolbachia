@@ -10,7 +10,7 @@ from geography.selectors import build_quadrant_references, build_sampling_points
 def register_geography_producers() -> None:
     from field_sync.producers import BundleProducer, register
 
-    register(BundleProducer("quadrants", 1, build_quadrant_references, QuadrantReferenceSerializer))
+    register(BundleProducer("quadrants", 2, build_quadrant_references, QuadrantReferenceSerializer))
     register(
         BundleProducer("sampling_points", 1, build_sampling_points, SamplingPointBundleSerializer)
     )

@@ -5,7 +5,7 @@ from uuid import UUID
 from field_sync.models import CourierChange
 from field_sync.producers import ProducerContext
 from reviews.models import ReviewDecision, ShiftDecision
-from reviews.scope import SubjectFacts, subject_facts, vector_allows
+from reviews.scope import SubjectFacts, subject_allows, subject_facts
 
 
 def visible_history_contexts(ctx: ProducerContext) -> dict[UUID, tuple[dict[str, str | None], ...]]:
@@ -19,7 +19,7 @@ def visible_history_contexts(ctx: ProducerContext) -> dict[UUID, tuple[dict[str,
         if key not in current:
             current[key] = _current_subjects(row)
         facts = current[key]
-        if vector_allows(ctx.scope, ctx.permission, facts.contexts, facts.resolved):
+        if subject_allows(ctx.scope, ctx.permission, facts):
             visible[row.pk] = facts.contexts
     return visible
 
@@ -29,6 +29,10 @@ def _current_subjects(row: CourierChange) -> SubjectFacts:
         identifier = UUID(row.resource_id)
     except ValueError:
         return SubjectFacts()
+    if row.resource_type == "history.transfer_custody":
+        from inventory.transfers.history import history_subjects
+
+        return history_subjects(row.organization_id, row.courier_id, identifier)
     if row.resource_type == "history.review_decision":
         decision = (
             ReviewDecision.objects.filter(
@@ -62,4 +66,18 @@ def _current_subjects(row: CourierChange) -> SubjectFacts:
 
         contexts, resolved = shift_subjects(decision.shift)
         return SubjectFacts(resolved, tuple(contexts), "shift", decision.shift_id)
+    if row.resource_type == "history.relocation_proposal":
+        from geography.decisions.producers import proposal_subjects
+        from ovitraps.lifecycle.models import RelocationProposal
+
+        proposal = (
+            RelocationProposal.objects.filter(
+                organization_id=row.organization_id,
+                pk=identifier,
+                event__created_by_id=row.courier_id,
+            )
+            .select_related("ovitrap__sampling_point__block__quadrant")
+            .first()
+        )
+        return SubjectFacts() if proposal is None else proposal_subjects(proposal)
     return SubjectFacts()

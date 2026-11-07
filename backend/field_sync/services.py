@@ -556,6 +556,12 @@ class EventProcessor:
         from incidents.notices import stored_source
 
         stored_source(event)
+        from geography.decisions.producers import stored_source as stored_relocation_source
+
+        stored_relocation_source(event)
+        from inventory.transfers.history import stored_source as stored_transfer_source
+
+        stored_transfer_source(event)
 
     def _event_fields(self, envelope: EventEnvelope, outcome: Verdict) -> dict[str, Any]:
         batch, gps = self.batch, envelope.gps

@@ -18,6 +18,7 @@ from field_sync.producers import build_sections, bundle_schema_version
 from field_sync.selectors import producer_context
 from field_sync.services import bootstrap_bundle, sync_batch
 from organizations.models import all_scope
+from organizations.services import assign_profiles
 from tests.ovitrap_support import CAPTURED, envelope, ingest, second_courier, setup_field
 from tests.test_field_sync_b_13 import BOOTSTRAP, batch_context
 
@@ -39,7 +40,11 @@ def pull(batch, cursor):
 def test_new_producers_have_concrete_contracts_and_change_schema_boundary(monkeypatch):
     keys = ("quadrants", "sampling_points", "ovitraps")
     assert producers.SECTION_KEYS[-3:] == keys
-    assert all(producers.PRODUCERS[key].schema_version == 1 for key in keys)
+    assert {key: producers.PRODUCERS[key].schema_version for key in keys} == {
+        "quadrants": 2,
+        "sampling_points": 1,
+        "ovitraps": 1,
+    }
     current = bundle_schema_version()
     monkeypatch.setattr(
         producers,
@@ -285,20 +290,27 @@ def test_scope_revision_invalidates_cursor_and_bootstrap_replaces_downloaded_row
 
 
 @pytest.mark.django_db
-def test_restoring_identical_scope_still_invalidates_cursor(field):
+def test_restoring_identical_scope_still_invalidates_cursor(field, monkeypatch):
     """Rows published while the courier was out of scope have no change for it."""
     phone = phone_for(field.batch)
-    cursor = phone.client.get(BOOTSTRAP).data["cursor"]
-    original = field.membership.scope
-    for scope in (
-        {"centers": {"mode": "none", "ids": []}, "quadrants": {"mode": "none", "ids": []}},
-        original,
-    ):
-        field.membership.scope = scope
-        field.membership.revision += 1
-        field.membership.save(update_fields=["scope", "revision"])
-    invalid = phone.sync([], cursor=cursor)
+    before = phone.client.get(BOOTSTRAP)
+    profiles = list(field.membership.profiles.all())
+    # The real writer bumps retained generations even when the final grants repeat.
+    assign_profiles(field.membership, [])
+    denied = phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=before["ETag"])
+    assert denied.status_code == 403
+    assign_profiles(field.membership, profiles)
+    invalid = phone.sync([], cursor=before.data["cursor"])
     assert (invalid.status_code, invalid.data["code"]) == (400, "invalid_cursor")
+    after = phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=before["ETag"])
+    assert after.status_code == 200
+    assert after.data["sampling_points"] == before.data["sampling_points"]
+    assert after.data["capture_context"]["grants"] == before.data["capture_context"]["grants"]
+    assert after.data["scope_revision"] != before.data["scope_revision"]
+    assert after["ETag"] != before["ETag"]
+    monkeypatch.setattr(timezone, "now", lambda: CAPTURED + timedelta(seconds=1))
+    unchanged = phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=after["ETag"])
+    assert unchanged.status_code == 304
 
 
 @pytest.mark.django_db
@@ -349,7 +361,7 @@ def test_quadrant_republish_upserts_resolution_points_and_ovitraps_in_same_scope
     )
     for batch, cursor in zip((field.batch, peer), cursors, strict=True):
         changes = pull(batch, cursor)
-        assert [row["resource_version"] for row in changes.quadrants] == ["2"]
+        assert [row["data"]["revision"] for row in changes.quadrants] == [2]
         assert len(changes.sampling_points) == len(changes.ovitraps) == 1
         point = changes.sampling_points[0]
         assert point["action"] == "upsert"
@@ -474,10 +486,10 @@ def test_geography_creation_and_publication_writers_emit_exact_versions(field):
     publish_block(block, BlockPublication(field.membership, 1, polygon()))
     publish_point(point, PointChange(field.membership, 1, [-99.9951, 20.005]))
     changes = pull(field.batch, before)
-    assert [(row["resource_type"], row["resource_version"]) for row in changes.quadrants] == [
-        ("quadrant", "1"),
-        ("block", "1"),
-        ("block", "2"),
+    assert [(row["resource_type"], row["data"]["revision"]) for row in changes.quadrants] == [
+        ("quadrant", 1),
+        ("block", 1),
+        ("block", 2),
     ]
     assert [(row["resource_id"], row["resource_version"]) for row in changes.sampling_points] == [
         (str(point.pk), "1"),

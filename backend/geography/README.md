@@ -18,6 +18,11 @@ ordering/filtering before pagination and reject foreign parents with those queri
 
 ## Geometry and decisions
 
+B33 (#126) adds append-only relocation decisions, real next-day task provenance,
+third-party metadata and closure of an exact QuadrantVersion. See
+[decisions/README.md](decisions/README.md) for original proof, current scope, raw
+guards, lock order and verification boundaries.
+
 Owner decisions applied: no django.contrib.gis/GDAL/PostGIS. Store GeoJSON in
 JSONField and use the already locked Shapely 2.2.0/GEOS wheel. Polygon only,
 [longitude,latitude], finite WGS84 bounds, explicit closed rings, holes validated

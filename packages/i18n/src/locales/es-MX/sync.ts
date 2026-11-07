@@ -2,6 +2,10 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const sync = {
+  "sync.result.lateWorkAfterQuadrantClose":
+    "La captura es anterior al cierre del cuadrante. Un supervisor debe validar su autorización histórica antes de aplicarla.",
+  "sync.result.capturedAfterQuadrantClose":
+    "La captura se hizo después del cierre del cuadrante. No autoriza trabajo nuevo ahí. Contacta a tu supervisor.",
   // Result of sending a record to the server (phone inbox)
   "sync.inbox.acceptedTitle": "Enviado",
   "sync.inbox.acceptedHint": "El servidor ya recibió este registro. No tienes que hacer nada más.",
@@ -115,4 +119,14 @@ export const sync = {
     "Falta validar un registro previo. Tu supervisor debe revisar la captura conservada.",
   "sync.result.motorcycleSafetyHold":
     "La motocicleta tiene una retención de seguridad. La captura se conservó para revisión.",
+  "sync.result.transferInaccessible":
+    "La transferencia no está disponible dentro de tu ámbito autorizado.",
+  "sync.result.transferStateConflict":
+    "La transferencia requiere revisar sus registros previos. Conserva la captura y la firma.",
+  "sync.result.transferEvidenceRequired":
+    "Falta evidencia verificada de la transferencia. Conserva la firma y los archivos pendientes.",
+  "sync.result.transferSafetyBlocked":
+    "Las condiciones actuales impiden aplicar la transferencia. La captura quedó para revisión.",
+  "sync.result.transferVoidBlocked":
+    "La transferencia tiene efectos o registros dependientes. Consulta a tu supervisor para corregirla.",
 } as const satisfies AreaCatalog<"sync">;

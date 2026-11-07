@@ -1,3 +1,4 @@
+import { inventory } from "./inventory.ts";
 import { ui } from "./ui.ts";
 import { analytics } from "./analytics.ts";
 import { refresh } from "./refresh.ts";
@@ -22,6 +23,7 @@ import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const esMX = {
+  ...inventory,
   ...ui,
   ...analytics,
   ...refresh,

@@ -88,7 +88,7 @@ class EventHandler:
     same savepoint; it may raise `EventRejected` to refuse the void. `checks_shift` (default
     True): the pipeline runs the registered envelope checks on the event (`shifts` registers one that
     validates its `shift_id`: the shift must exist, be the sender's and not be closed before the
-    event); only the shift events and `record.void` opt out.
+    event); only shift events, `record.void`, `transfer.dispatch` and `transfer.receive` opt out.
     """
 
     event_type: str

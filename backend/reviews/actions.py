@@ -34,7 +34,12 @@ from reviews.models import (
 )
 from reviews.permissions import REVIEW_ITEM_DECIDE
 from reviews.safety_dispositions import SafetyProof
-from reviews.scope import SubjectFacts, subject_facts, unresolved_scope_allows, vector_allows
+from reviews.scope import (
+    SubjectFacts,
+    subject_allows,
+    subject_facts,
+    unresolved_scope_allows,
+)
 from reviews.transactions import review_transaction
 from uploads.access import UploadActor, current_scope
 
@@ -73,7 +78,7 @@ def visible_review(actor: UploadActor, item_id: UUID, permission: str) -> Review
         facts = SubjectFacts()
     scope = current_scope(actor)
     allowed = (
-        vector_allows(scope, permission, facts.contexts)
+        subject_allows(scope, permission, facts)
         if facts.resolved
         else unresolved_scope_allows(scope, permission)
     )
@@ -86,6 +91,10 @@ def reference_sources(source: FieldEvent) -> set[UUID]:
     from shifts.models import Shift
 
     identifiers: set[UUID] = set()
+    if source.type in {"transfer.dispatch", "transfer.receive"}:
+        from inventory.transfers.dependencies import source_references
+
+        identifiers.update(source_references(source.organization, source.payload))
     try:
         envelope = original_source_envelope(source)
     except ValueError:
@@ -173,6 +182,12 @@ def decide_review(
                 open_review_incident(actor, item, decision, request.evidence_ids)
             publish_review_decision(decision, source)
             publish_source_shift_invalidation(source, cause=decision)
+            from geography.decisions.producers import stored_source
+
+            stored_source(source, cause=decision)
+            from inventory.transfers.history import stored_source as stored_transfer_source
+
+            stored_transfer_source(source, cause=decision)
     return decision
 
 
@@ -274,6 +289,11 @@ def _prepare_accept(
         raise ReviewBlockedError(("handler_unavailable",))
     from reviews.boundaries import retain_domain_boundary
 
+    if evaluation.subjects.resource_kind == "transfer":
+        from inventory.transactions import inventory_transaction
+
+        stack.enter_context(inventory_transaction(organization=source.organization))
+
     retain_domain_boundary(evaluation.context, handler, evaluation.subjects)
     publisher = None
     if evaluation.subjects.resource_kind == "sampling_point":
@@ -324,7 +344,10 @@ def _resolve_dependencies(source: FieldEvent, actor: UploadActor) -> None:
         parent = _dependency_parent(source, dependency)
         if (
             parent is None
-            or (dependency.kind != "ovitrap" and parent.created_by_id != source.created_by_id)
+            or (
+                dependency.kind not in {"ovitrap", "transfer_source"}
+                and parent.created_by_id != source.created_by_id
+            )
             or not is_effective(parent)
         ):
             raise ReviewBlockedError(("causal_parent_pending",))
@@ -356,6 +379,10 @@ def _resolve_dependencies(source: FieldEvent, actor: UploadActor) -> None:
 
 
 def _dependency_parent(source: FieldEvent, dependency: ReviewDependency) -> FieldEvent | None:
+    if dependency.kind == "transfer_source":
+        from inventory.transfers.dependencies import dependency_parent
+
+        return dependency_parent(source, dependency)
     if dependency.kind == "void_target":
         return FieldEvent.objects.filter(
             organization=source.organization,

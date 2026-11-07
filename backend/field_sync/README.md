@@ -1,5 +1,43 @@
 # field_sync
 
+## Paired current capture context (#289)
+
+Bootstrap and every normal changes page expose optional/nullable root
+capture_context: schema_version 1, permission field_event.sync, self user/org UUIDs,
+scope_revision and complete effective WorkScope pairs. The pure selector projects
+only the SAME captured ctx.scope grants containing FIELD_EVENT_SYNC; member/profile
+intersection and government restrictions are already applied. It performs no Me,
+permission/profile read, SQL, new lock or I/O. MeScopeSerializer supplies the existing
+canonical grammar per whole pair, without using display-only get_scope. Never union
+axes. Empty grants is known denial; absence/null is not an implicit grant.
+
+The root bundle contract advances from 1 to 2; registered producer versions, SECTION_KEYS,
+payloads and feed writers stay unchanged. Metadata/root/cursor share one computed
+scope revision. ETag includes metadata and generation but excludes generated_at/
+cursor, so a scope-only or revoke/regrant generation changes the body even with
+unchanged geometry. Existing live bearer/route checks still run before 304. This is
+a current observation, not original authority, a capability or offline permanence.
+
+Normal omitted/null HTTP cursor decodes to ChangesCursor() and publishes initial
+metadata. It is not a complete bootstrap. Explicit internal None/final upload emits
+null context and pulls nothing. Concurrent admin changes after ctx capture remain
+detectable on next pull; do not recompute ctx/revision after ingest or add a late
+Organization/User/source lock.
+
+#138 owns actual decode/materialize/provider/SQL readiness and owner/session/ABA
+fences. Full bootstrap alone hydrates missing foundations; old body/delta/304 cannot
+prove readiness. Preserve immutable drafts/outbox/evidence and final receipts before
+cleanup. Same-user new sessions/reinstalls cannot adopt unproved legacy ownership.
+Offline revocation has its observation limit. This does not supply fake M08 bag/
+reuse/inventory assignments or implement GPS, camera #253, B33 history, #287 advisory
+consumption or native qualification. See docs/sync.md#paired-current-capture-context-289.
+
+Criterion map: test_field_sync_b_13 covers pure pairs/schema, public disjoint scope,
+old-root-cursor replay and both existing captured-configuration barriers;
+test_bundle_producers_196 extends real assign_profiles revoke/regrant plus semantic
+ETag; test_sync_api retains exact final no-pull shape with null context. SQL/HTTP/
+barrier tests require PostgreSQL; collection/DB-free passes are not execution proof.
+
 ## Review integration (#113)
 
 Every NEW in_review result rolls back its inner operational savepoint and callbacks.
@@ -196,7 +234,9 @@ added because parent identities are immutable (D7b).
 Courier ovitrap schema 1 adds optional is_retired, default false when absent.
 Existing fields retain their meanings. Resource hashes include outgoing live
 lineage/removal UUIDs; replacement/removal use the same atomic fan-out boundary,
-while relocation proposals emit no geometry or courier changes. See
+while relocation proposals emit no geometry or physical projection changes.
+B33 publishes their typed history through the existing113 producer after the real
+source exists, with its internal publication receipt. See
 ../ovitraps/lifecycle/README.md and ../../docs/sync.md for locks and acceptance map.
 
 ## Independent evidence references (#102)
@@ -215,3 +255,12 @@ after actual FieldEvent/ReviewItem/evidence linkage; a review callback produces 
 a scoped audit intent, never an Incident/owner/blocker. Immutable committed causes
 support keyset recovery after callback/broker loss. No delivery or #113 acceptance
 is asserted; current final-upload entitlement/session ordering remains unchanged.
+
+#106 registers only transfer.dispatch/transfer.receive schema1. They do not require
+a Shift, so checks_shift=False is explicit for these two families; global actor,
+clock/final-upload and source digest gates remain. They are not supplies.receive.
+NEW review retains source facts/evidence with0 operational custody/stock effects.
+_store links the actual accepted source after its snapshot and primary evidence
+exist. Reviewed application waits for canonical113's exact effect receipt. The ONE
+history producer is schema3 with an additive transfer_custody branch; old review,
+shift and relocation shapes remain. No fake HTTP courier or delivery receipt.

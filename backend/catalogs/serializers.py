@@ -74,6 +74,10 @@ class CatalogReorderSerializer(serializers.Serializer[Any]):
     ordered_ids = serializers.ListField(child=serializers.UUIDField(), max_length=200)
 
 
+class CatalogAvailabilitySerializer(serializers.Serializer[Any]):
+    version = serializers.IntegerField(min_value=0, required=False)
+
+
 class CatalogReorderResponseSerializer(serializers.Serializer[Any]):
     version = serializers.IntegerField(read_only=True)
     items = CatalogItemSerializer(many=True, read_only=True)

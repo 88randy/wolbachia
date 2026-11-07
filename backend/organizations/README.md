@@ -308,3 +308,17 @@ Existing Organization-serialized assign_profiles/update_profile/update_membershi
 also preserve current configured terminals and open cases' effective terminal
 paired scope. Historical versions alone do not prevent retiring a former owner.
 There is no new personnel/duty-roster CRUD or late User row lock.
+
+#126 uses the same once-only seed ledger: admin/supervisor receive relocation.decide,
+quadrant.close and intervention.read/create; entomologist receives intervention.read/create
+(documented W32 access). No other default profile receives these actions, including
+coordinator/government. Custom roles and previously revoked codes remain unchanged.
+Intervention metadata never grants company release or permit authority.
+
+#106 uses the same once-only seeded_permission_codes ledger. Admin gets
+transfer.read/create/dispatch/receive and discrepancy.read/close; warehouse gets
+the first five except close, plus field.upload once; supervisor gets transfer.read,
+transfer.receive and discrepancy.read/close. Courier, entomologist, coordinator and
+government get no new custody actions. No role-name authorization, new field.sync,
+bootstrap, incident or personnel grants. Custom roles, previously seeded revocations,
+membership/profile scopes and government portal boundary remain authoritative.
