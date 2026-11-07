@@ -395,7 +395,13 @@ def test_inventory_intent_binds_real_signature_once_and_download_uses_current_ac
 ):
     from inventory.allocations.commands import IntentExecution
     from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent
-    from inventory.allocations.models import ReturnDeclaration
+    from inventory.allocations.models import (
+        InventoryIntentExecution,
+        ReturnAcceptance,
+        ReturnDeclaration,
+    )
+    from inventory.exceptions import InventoryConflictError
+    from inventory.models import StockOperation
     from tests.sync_support import event
     from tests.test_inventory_allocations_b_10 import receive_capture
 
@@ -438,17 +444,29 @@ def test_inventory_intent_binds_real_signature_once_and_download_uses_current_ac
     intent_id = UUID(prepared.body["intent"]["id"])
     settings.UPLOADS_PRIVATE_ROOT = tmp_path / "inventory-private"
     private = SimpleNamespace(actor=context.actor, member=context.member, content=image_bytes())
-    identifier, lease = authorize(private, identifier=identifier)
-    put(private, identifier, lease)
     target = AttachmentTarget("inventory_intent", intent_id)
+    identifier, lease = authorize(private, identifier=identifier, context=target)
+    link = AttachmentLink.objects.get(upload__public_id=identifier)
+    assert link.inventory_intent_id == intent_id
+    assert not UploadVerification.objects.filter(upload=link.upload).exists()
+    command = IntentExecution(
+        intent_id, "return_accept", declaration.event.assignment.reconciliation.pk
+    )
+    operations_before = StockOperation.objects.count()
+    with pytest.raises(InventoryConflictError) as pending:
+        execute_inventory_intent(private.actor, command)
+    assert pending.value.blocked_by[0]["reason"] == "supply_evidence_required"
+    assert not InventoryIntentExecution.objects.filter(intent_id=intent_id).exists()
+    assert not ReturnAcceptance.objects.filter(declaration=declaration).exists()
+    assert StockOperation.objects.count() == operations_before
+    with pytest.raises(Http404):
+        download_attachment(private.actor, identifier)
+    put(private, identifier, lease)
     assert finalize_upload(private.actor, identifier, target)["state"] == "verified"
     assert finalize_upload(private.actor, identifier, target)["state"] == "verified"
     link = AttachmentLink.objects.get(upload__public_id=identifier)
     assert link.inventory_intent_id == intent_id
     assert AttachmentLink.objects.filter(upload=link.upload).count() == 1
-    command = IntentExecution(
-        intent_id, "return_accept", declaration.event.assignment.reconciliation.pk
-    )
     accepted = execute_inventory_intent(private.actor, command)
     assert execute_inventory_intent(private.actor, command).body == accepted.body
     content, mime = download_attachment(private.actor, identifier)

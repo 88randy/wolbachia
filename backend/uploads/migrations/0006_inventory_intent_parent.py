@@ -11,7 +11,6 @@ BEGIN
   IF NEW.inventory_intent_id IS NOT NULL THEN
     IF NOT COALESCE(EXISTS(SELECT 1 FROM inventory_inventoryintent intent
       JOIN uploads_upload upload ON upload.id=NEW.upload_id
-      JOIN uploads_uploadverification verified ON verified.upload_id=upload.id
       WHERE intent.id=NEW.inventory_intent_id AND intent.organization_id=NEW.organization_id
       AND upload.organization_id=NEW.organization_id AND upload.uploader_id=intent.created_by_id
       AND NEW.created_by_id=upload.uploader_id
