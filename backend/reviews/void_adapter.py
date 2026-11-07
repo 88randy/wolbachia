@@ -43,6 +43,10 @@ class VoidReviewAdapter(ReviewAdapter):
 
         target = find_void_target(ctx)
         if target.voided_at is not None:
+            if target.type in {"supplies.receive", "supplies.reconcile"}:
+                from inventory.allocations.write_offs import inspect_supply_void
+
+                return inspect_supply_void(source, target)
             if target.type in {"transfer.dispatch", "transfer.receive"}:
                 from inventory.transfers.voids import inspect_void
 
@@ -89,6 +93,18 @@ class VoidReviewAdapter(ReviewAdapter):
             from inventory.transfers.voids import void_materialization
 
             return void_materialization(ctx.envelope.id, target)
+        if target.type in {"supplies.receive", "supplies.reconcile"}:
+            from inventory.allocations.write_offs import inspect_supply_void
+
+            source = FieldEvent.objects.filter(pk=ctx.envelope.id).first()
+            if source is not None:
+                return dict(inspect_supply_void(source, target).materialization)
+            from inventory.allocations.models import SupplyVoidAudit
+
+            audit = SupplyVoidAudit.objects.get(
+                organization=ctx.organization, declared_source_uuid=ctx.envelope.id
+            )
+            return {"supply_void_audit_id": str(audit.pk), "target_event_id": str(target.pk)}
         from ovitraps.models import OvitrapVoid
 
         correction = OvitrapVoid.objects.filter(

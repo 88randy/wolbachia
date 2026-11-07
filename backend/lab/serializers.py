@@ -121,6 +121,20 @@ class RejectionWriteSerializer(LabCommandSerializer, RejectionValuesSerializer):
     queue_context = LabQueueQuerySerializer(required=False, default=dict)
 
 
+class CountCorrectionValuesSerializer(CountValuesSerializer):
+    measurement_kind = serializers.ChoiceField(
+        choices=["physical_measurement", "data_correction"], required=False
+    )
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        attrs = super().validate(attrs)
+        if attrs.get("measurement_kind") == "physical_measurement":
+            attrs.pop(
+                "measurement_kind"
+            )  # Keep legacy canonical Command shape/hash on omission/default.
+        return attrs
+
+
 class LabReplacementSerializer(StrictPayloadSerializer):
     """Closed variants reuse their real structural owners; there is no target override."""
 
@@ -130,7 +144,11 @@ class LabReplacementSerializer(StrictPayloadSerializer):
         if not isinstance(value, dict) or value.get("kind") not in ("count", "rejection"):
             raise serializers.ValidationError({"kind": ["invalid_choice"]})
         payload = {key: item for key, item in value.items() if key != "kind"}
-        owner = CountValuesSerializer if value["kind"] == "count" else RejectionValuesSerializer
+        owner = (
+            CountCorrectionValuesSerializer
+            if value["kind"] == "count"
+            else RejectionValuesSerializer
+        )
         parsed = owner(data=payload)
         parsed.is_valid(raise_exception=True)
         return {"kind": value["kind"], **parsed.validated_data}
@@ -144,7 +162,7 @@ class LabVoidSerializer(LabCommandSerializer):
     queue_context = LabQueueQuerySerializer(required=False, default=dict)
 
 
-class CountReplacementSerializer(CountValuesSerializer):
+class CountReplacementSerializer(CountCorrectionValuesSerializer):
     kind = serializers.ChoiceField(choices=["count"])
 
 
@@ -321,7 +339,14 @@ class LabMethodPinSerializer(serializers.Serializer[Any]):
     content_hash = serializers.CharField()
 
 
+class LabMaterialSerializer(serializers.Serializer[Any]):
+    available = serializers.BooleanField()
+    disposition_id = serializers.UUIDField(allow_null=True)
+    reason = serializers.ChoiceField(choices=["bag_disposed"], allow_null=True)
+
+
 class LabCountSerializer(serializers.Serializer[Any]):
+    material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
     value = serializers.IntegerField(min_value=0, max_value=MAX_OBSERVATION)
@@ -344,6 +369,7 @@ class LabCountSerializer(serializers.Serializer[Any]):
 
 
 class LabRejectionSerializer(serializers.Serializer[Any]):
+    material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
     method_version = serializers.UUIDField()
@@ -391,6 +417,7 @@ class LabReceiptSerializer(serializers.Serializer[Any]):
 
 
 class LabBagSummarySerializer(serializers.Serializer[Any]):
+    material = LabMaterialSerializer(required=False)
     status = serializers.ChoiceField(
         choices=[
             "expected",

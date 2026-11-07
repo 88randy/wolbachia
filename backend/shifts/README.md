@@ -69,3 +69,12 @@ The existing severe-check MotorcycleBlockEvent is enqueued as a minimal notice c
 after commit. Its original status/flags/audit remain authoritative and are not
 duplicated into a reported Incident. Publication checks current scope and appends
 deduplicated B-07 intents; no broker/mail/storage I/O runs under Motorcycle locks.
+
+## Nonblocking supply differences (#107)
+
+After ordinary accepted close guards, append real B10 reconciliation frames inside
+the existing savepoint; nonzero/unknown differences open one retained discrepancy
+but never block close. Reviewed NEW close rolls back these effects. Post-store
+publishes the actual supply frame. Late real HTTP acceptance/justification adds
+authoritative frame facts to validation and invalidates an approval through its
+existing history publisher, without reopening Shift or manufacturing FieldEvents.

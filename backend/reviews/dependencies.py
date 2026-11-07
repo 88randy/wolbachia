@@ -78,6 +78,10 @@ def classify_dependencies(
     if envelope.type == "record.void":
         return _void_dependency(batch, envelope, candidates)
     pending = []
+    if envelope.type in {"supplies.receive", "supplies.reconcile"}:
+        from inventory.allocations.review import classify_supply_dependencies
+
+        pending.append(classify_supply_dependencies(batch, envelope, candidates))
     if (
         envelope.shift_id is not None
         and envelope.type != "shift.open"

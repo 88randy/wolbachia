@@ -530,6 +530,156 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/courier-assignments/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["courier_assignments_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["courier_assignments_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courier-assignments/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["courier_assignments_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        patch: operations["courier_assignments_partial_update"];
+        trace?: never;
+    };
+    "/api/v1/courier-assignments/{id}/release/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["courier_assignments_release_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courier-assignments/{id}/release-cancellations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["courier_assignments_release_cancellations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/courier-assignments/suggestion/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["courier_assignments_suggestion_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/devices/": {
         parameters: {
             query?: never;
@@ -1332,6 +1482,58 @@ export interface paths {
          *     `APIView`s do not have.
          */
         get: operations["incidents_context_options_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-intents/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["inventory_intents_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/inventory-intents/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["inventory_intents_retrieve"];
         put?: never;
         post?: never;
         delete?: never;
@@ -2760,6 +2962,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/reconciliations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["reconciliations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reconciliations/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["reconciliations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reconciliations/{id}/justify/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["reconciliations_justify_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/reconciliations/{id}/returns/accept/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["reconciliations_returns_accept_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/recount-requests/": {
         parameters: {
             query?: never;
@@ -3591,6 +3897,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/supply-types/{supply_id}/material-mappings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["supply_types_material_mappings_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["supply_types_material_mappings_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/supply-types/{supply_id}/transit-policies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["supply_types_transit_policies_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["supply_types_transit_policies_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/supply-types/protocol-incident-type-options/": {
         parameters: {
             query?: never;
@@ -3788,6 +4166,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/write-offs/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["write_offs_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["write_offs_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/write-offs/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["write_offs_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -3825,6 +4265,14 @@ export interface components {
          * @enum {string}
          */
         ActorKindEnum: "human" | "system";
+        ActualSupplyLine: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            release_line_id: string;
+            /** Format: decimal */
+            quantity: string;
+        };
         AdvisoryParameters: {
             closed_house_weeks_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
             incidents_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
@@ -3866,6 +4314,51 @@ export interface components {
             target: number;
             blockers: components["schemas"]["Blocker"][];
         };
+        AssignmentLine: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            piece_id?: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: decimal */
+            quantity: string;
+        };
+        AssignmentLineRequest: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            piece_id?: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: decimal */
+            quantity: string;
+        };
+        AssignmentOutcome: {
+            assignment: components["schemas"]["SupplyAssignmentRead"];
+        };
+        /**
+         * @description * `assignment_release` - assignment_release
+         * @enum {string}
+         */
+        AssignmentReleaseIntentKindEnum: "assignment_release";
+        AssignmentReleaseIntentRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            evidence?: components["schemas"]["EvidenceRoleRequest"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "AssignmentReleaseIntentRequest";
+            /** Format: uuid */
+            assignment_id: string;
+        };
         AssignmentRequestRequest: {
             expected_revision: number;
             /** Format: uuid */
@@ -3892,9 +4385,10 @@ export interface components {
          *     * `review_item` - review_item
          *     * `transfer_event` - transfer_event
          *     * `lab_rejection` - lab_rejection
+         *     * `inventory_intent` - inventory_intent
          * @enum {string}
          */
-        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection";
+        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection" | "inventory_intent";
         AttachmentTargetRequest: {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
@@ -3951,6 +4445,67 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `bag_disposal` - bag_disposal
+         * @enum {string}
+         */
+        BagDisposalIntentKindEnum: "bag_disposal";
+        BagDisposalIntentRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            evidence?: components["schemas"]["EvidenceRoleRequest"][];
+            reason_code: string;
+            reason: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "BagDisposalIntentRequest";
+            /** Format: uuid */
+            bag_id: string;
+            /** Format: uuid */
+            owner_id: string;
+            /** Format: date */
+            date: string;
+        };
+        BagDisposalRead: {
+            /** Format: uuid */
+            owner_id: string;
+            /** Format: date */
+            date: string;
+            reason_code: string;
+            reason: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by: string;
+            /** Format: uuid */
+            rpbi_upload_id: string | null;
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "bag";
+            /** Format: uuid */
+            bag_id: string;
+            /** Format: uuid */
+            reading_id: string;
+            /** Format: uuid */
+            source_event_id: string;
+            /** Format: uuid */
+            collector_id: string;
+            dependency_proof: {
+                [key: string]: unknown;
+            };
+        };
+        /**
+         * @description * `bag` - bag
+         * @enum {string}
+         */
+        BagDisposalReadKindEnum: "bag";
         /** @enum {unknown} */
         BlankEnum: "";
         /**
@@ -4060,9 +4615,7 @@ export interface components {
             assignments: {
                 [key: string]: unknown;
             }[];
-            supplies: {
-                [key: string]: unknown;
-            }[];
+            supplies: components["schemas"]["SupplyBundle"][];
             permits: {
                 [key: string]: unknown;
             }[];
@@ -4074,6 +4627,9 @@ export interface components {
             quadrants: components["schemas"]["QuadrantReference"][];
             sampling_points: components["schemas"]["SamplingPointBundle"][];
             ovitraps: components["schemas"]["OvitrapBundle"][];
+        };
+        CancellationOutcome: {
+            cancellation: components["schemas"]["SupplyCancellation"];
         };
         /** @description Self current SYNC observation; no session secret or immutable source authority. */
         CaptureContext: {
@@ -4209,7 +4765,7 @@ export interface components {
             next_change_at: string | null;
             capture_context?: components["schemas"]["CaptureContext"] | null;
             assignments: components["schemas"]["ProducerChange"][];
-            supplies: components["schemas"]["ProducerChange"][];
+            supplies: components["schemas"]["SupplyChange"][];
             permits: components["schemas"]["ProducerChange"][];
             eligibility: components["schemas"]["ProducerChange"][];
             history: components["schemas"]["HistoryChange"][];
@@ -4369,6 +4925,7 @@ export interface components {
             total_examined?: number;
             /** Format: uuid */
             method_version?: string;
+            measurement_kind?: components["schemas"]["MeasurementKindEnum"];
             /**
              * @description discriminator enum property added by openapi-typescript
              * @enum {string}
@@ -4426,13 +4983,26 @@ export interface components {
          * @enum {string}
          */
         CourierHistoryEffectStateEnum: "applied_review" | "adopted_legacy" | "discarded" | "incident_open" | "approved" | "observed";
-        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"] | components["schemas"]["TransferHistoryEntry"] | components["schemas"]["LabHistoryEntry"];
+        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"] | components["schemas"]["TransferHistoryEntry"] | components["schemas"]["LabHistoryEntry"] | components["schemas"]["SupplyHistoryEntry"];
         /**
          * @description * `review_decision` - review_decision
          *     * `shift_validation` - shift_validation
          * @enum {string}
          */
         CourierHistoryKindEnum: "review_decision" | "shift_validation";
+        CreateAssignmentRequest: {
+            /** Format: uuid */
+            command_id: string;
+            /** Format: uuid */
+            courier_id: string;
+            /** Format: uuid */
+            origin_id: string;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            shift_id?: string | null;
+            lines: components["schemas"]["AssignmentLineRequest"][];
+        };
         CreateIncidentTypeRequest: {
             code: string;
             label: string;
@@ -4582,6 +5152,16 @@ export interface components {
          * @enum {string}
          */
         EventStatusEnum: "accepted" | "rejected" | "in_review";
+        EvidenceRole: {
+            /** Format: uuid */
+            upload_id: string;
+            role: components["schemas"]["SupplyEvidenceRoleEnum"];
+        };
+        EvidenceRoleRequest: {
+            /** Format: uuid */
+            upload_id: string;
+            role: components["schemas"]["SupplyEvidenceRoleEnum"];
+        };
         EvidenceUploadRequestRequest: {
             content_type: components["schemas"]["ContentTypeEnum"];
             size_bytes: number;
@@ -4611,6 +5191,10 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        ExecuteInventoryIntentRequest: {
+            /** Format: uuid */
+            intent_id: string;
         };
         ExpectedScan: {
             /**
@@ -5142,6 +5726,10 @@ export interface components {
             link: string;
             current_revision?: number;
         };
+        InventoryIntentRead: {
+            intent: components["schemas"]["SupplyIntent"];
+            execution: components["schemas"]["SupplySavedExecution"] | null;
+        };
         /**
          * @description * `biofactory` - biofactory
          *     * `warehouse` - warehouse
@@ -5154,7 +5742,11 @@ export interface components {
         InventoryRevisionRequest: {
             expected_revision: number;
         };
+        JustificationOutcome: {
+            justification: components["schemas"]["SupplyJustification"];
+        };
         LabBagSummary: {
+            material?: components["schemas"]["LabMaterial"];
             status: components["schemas"]["LabBagSummaryStatusEnum"];
             revision: number;
             /** Format: uuid */
@@ -5181,6 +5773,7 @@ export interface components {
             command_id: string;
         };
         LabCount: {
+            material?: components["schemas"]["LabMaterial"];
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -5285,6 +5878,12 @@ export interface components {
          * @enum {string}
          */
         LabHistoryEntryKindEnum: "lab_receipt" | "lab_discrepancy" | "lab_count" | "lab_void" | "lab_rejection";
+        LabMaterial: {
+            available: boolean;
+            /** Format: uuid */
+            disposition_id: string | null;
+            reason: (components["schemas"]["ReasonEnum"] | components["schemas"]["NullEnum"]) | null;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -5461,6 +6060,7 @@ export interface components {
             receipt: components["schemas"]["LabReceipt"];
         };
         LabRejection: {
+            material?: components["schemas"]["LabMaterial"];
             /** Format: uuid */
             id: string;
             /** Format: uuid */
@@ -5720,6 +6320,73 @@ export interface components {
          * @enum {string}
          */
         LotPlacementOptionKindEnum: "location" | "center_only_draft";
+        /**
+         * @description * `lot_write_off` - lot_write_off
+         * @enum {string}
+         */
+        LotWriteOffIntentKindEnum: "lot_write_off";
+        LotWriteOffIntentRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            evidence?: components["schemas"]["EvidenceRoleRequest"][];
+            reason_code: string;
+            reason: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "LotWriteOffIntentRequest";
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            location_id: string;
+            /** Format: uuid */
+            piece_id?: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: decimal */
+            quantity: string;
+            /** Format: uuid */
+            owner_id: string;
+            /** Format: date */
+            date: string;
+        };
+        LotWriteOffRead: {
+            /** Format: uuid */
+            owner_id: string;
+            /** Format: date */
+            date: string;
+            reason_code: string;
+            reason: string;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            created_by: string;
+            /** Format: uuid */
+            rpbi_upload_id: string | null;
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "lot";
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            location_id: string;
+            quantity: string;
+            /** Format: uuid */
+            piece_id: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+        };
+        /**
+         * @description * `lot` - lot
+         * @enum {string}
+         */
+        LotWriteOffReadKindEnum: "lot";
         LotWriteRequest: {
             /** @default 0 */
             expected_revision: number;
@@ -5778,6 +6445,16 @@ export interface components {
             quadrant_id: string;
             licensed: boolean;
         };
+        MaterialMappingRequest: {
+            /** Format: uuid */
+            supply_version_id: string;
+            expected_revision: number;
+            action: components["schemas"]["SupplyMappingActionEnum"];
+            /** Format: decimal */
+            quantity: string;
+            reference: string;
+            is_active: boolean;
+        };
         /** @description `organization` is null when the user has several organizations and sent no header. */
         Me: {
             user: components["schemas"]["MeUser"];
@@ -5831,6 +6508,12 @@ export interface components {
             first_name: string;
             last_name: string;
         };
+        /**
+         * @description * `physical_measurement` - physical_measurement
+         *     * `data_correction` - data_correction
+         * @enum {string}
+         */
+        MeasurementKindEnum: "physical_measurement" | "data_correction";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -6036,6 +6719,16 @@ export interface components {
                 code: string;
                 /** Format: uuid */
                 event_id: string;
+            } | null;
+            readonly source_supply: {
+                /** @enum {string} */
+                kind: "supply_receive" | "supply_reconcile" | "supply_return" | "lot_write_off" | "supply_compensation";
+                /** Format: uuid */
+                id: string;
+                /** Format: uuid */
+                assignment_id: string | null;
+                /** Format: uuid */
+                source_event_id: string | null;
             } | null;
             /** Format: date-time */
             readonly created_at: string;
@@ -6994,6 +7687,36 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Stock"][];
         };
+        PaginatedSupplyAssignmentReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SupplyAssignmentRead"][];
+        };
+        PaginatedSupplyConfigurationReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SupplyConfigurationRead"][];
+        };
         PaginatedSupplyList: {
             /** @example 123 */
             count: number;
@@ -7009,6 +7732,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Supply"][];
         };
+        PaginatedSupplyReconciliationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SupplyReconciliation"][];
+        };
         PaginatedTransferList: {
             /** @example 123 */
             count: number;
@@ -7023,6 +7761,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Transfer"][];
+        };
+        PaginatedWriteOffReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["WriteOffRead"][];
         };
         /** @description Resolves the link first, so a bad link never reveals the password rules. */
         PasswordResetConfirmRequest: {
@@ -7105,6 +7858,12 @@ export interface components {
             epi_week?: components["schemas"]["EpiWeekEnum"];
             label_phone?: string;
             support_contact?: string;
+        };
+        PatchedReviseAssignmentRequest: {
+            /** Format: uuid */
+            command_id?: string;
+            expected_revision?: number;
+            lines?: components["schemas"]["AssignmentLineRequest"][];
         };
         PatchedSupplyWriteRequest: {
             /** @default 0 */
@@ -7190,6 +7949,7 @@ export interface components {
             point: components["schemas"]["SamplingPoint"];
             spacing_warnings: components["schemas"]["SpacingWarning"][];
         };
+        PrepareInventoryIntentRequest: components["schemas"]["AssignmentReleaseIntentRequest"] | components["schemas"]["ReleaseCancelIntentRequest"] | components["schemas"]["ReturnAcceptIntentRequest"] | components["schemas"]["ReconcileJustifyIntentRequest"] | components["schemas"]["LotWriteOffIntentRequest"] | components["schemas"]["BagDisposalIntentRequest"];
         PrepareLineRequest: {
             /** Format: uuid */
             lot_id: string;
@@ -7207,6 +7967,9 @@ export interface components {
             /** Format: uuid */
             destination_id: string;
             lines: components["schemas"]["PrepareLineRequest"][];
+        };
+        PreparedIntentOutcome: {
+            intent: components["schemas"]["SupplyIntent"];
         };
         PreviewRequestRequest: {
             /** Format: uuid */
@@ -7257,6 +8020,11 @@ export interface components {
          * @enum {string}
          */
         ProjectionUpsertActionEnum: "upsert";
+        /**
+         * @description * `photo` - photo
+         * @enum {string}
+         */
+        ProofRolesEnum: "photo";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -7534,6 +8302,11 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `bag_disposed` - bag_disposed
+         * @enum {string}
+         */
+        ReasonEnum: "bag_disposed";
         ReassignRequest: {
             expected_revision: number;
             /** Format: uuid */
@@ -7654,6 +8427,28 @@ export interface components {
             no_reading_type_version: string;
         };
         /**
+         * @description * `reconcile_justify` - reconcile_justify
+         * @enum {string}
+         */
+        ReconcileJustifyIntentKindEnum: "reconcile_justify";
+        ReconcileJustifyIntentRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            evidence?: components["schemas"]["EvidenceRoleRequest"][];
+            reason_code: string;
+            reason: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "ReconcileJustifyIntentRequest";
+            /** Format: uuid */
+            reconciliation_id: string;
+            /** Format: uuid */
+            discrepancy_id: string;
+        };
+        /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
          *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
@@ -7715,6 +8510,29 @@ export interface components {
             /** @default 0 */
             expected_revision: number;
             queue_context?: components["schemas"]["LabQueueQueryRequest"];
+        };
+        /**
+         * @description * `release_cancel` - release_cancel
+         * @enum {string}
+         */
+        ReleaseCancelIntentKindEnum: "release_cancel";
+        ReleaseCancelIntentRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            evidence?: components["schemas"]["EvidenceRoleRequest"][];
+            reason_code: string;
+            reason: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "ReleaseCancelIntentRequest";
+            /** Format: uuid */
+            release_id: string;
+        };
+        ReleaseOutcome: {
+            release: components["schemas"]["SupplyRelease"];
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -8003,6 +8821,29 @@ export interface components {
             readonly location_id: string;
             readonly code: string;
             readonly name: string;
+        };
+        /**
+         * @description * `return_accept` - return_accept
+         * @enum {string}
+         */
+        ReturnAcceptIntentKindEnum: "return_accept";
+        ReturnAcceptIntentRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            evidence?: components["schemas"]["EvidenceRoleRequest"][];
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "ReturnAcceptIntentRequest";
+            /** Format: uuid */
+            declaration_id: string;
+            /** Format: decimal */
+            quantity: string;
+        };
+        ReturnAcceptanceOutcome: {
+            acceptance: components["schemas"]["SupplyReturnAcceptance"];
         };
         /** @description A review item as the phone's inbox sees it (the courier's own events only). */
         ReviewChange: {
@@ -8665,9 +9506,14 @@ export interface components {
          *     * `transfer_dispatch` - transfer_dispatch
          *     * `transfer_receive` - transfer_receive
          *     * `transfer_resolution` - transfer_resolution
+         *     * `supply_receive` - supply_receive
+         *     * `supply_reconcile` - supply_reconcile
+         *     * `supply_return` - supply_return
+         *     * `lot_write_off` - lot_write_off
+         *     * `supply_compensation` - supply_compensation
          * @enum {string}
          */
-        SourceKindEnum: "lot_admission" | "transfer_dispatch" | "transfer_receive" | "transfer_resolution";
+        SourceKindEnum: "lot_admission" | "transfer_dispatch" | "transfer_receive" | "transfer_resolution" | "supply_receive" | "supply_reconcile" | "supply_return" | "lot_write_off" | "supply_compensation";
         /**
          * @description * `accepted` - accepted
          *     * `in_review` - in_review
@@ -8742,6 +9588,264 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        SupplyAssignmentRead: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            courier_id: string;
+            /** Format: uuid */
+            origin_id: string;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            shift_id: string | null;
+            revision: number;
+            /** Format: uuid */
+            version_id: string;
+            planning_proof: {
+                [key: string]: unknown;
+            };
+            lines: components["schemas"]["AssignmentLine"][];
+        };
+        SupplyBundle: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            courier_id: string;
+            /** Format: uuid */
+            origin_id: string;
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            shift_id: string | null;
+            revision: number;
+            /** Format: uuid */
+            version_id: string;
+            planning_proof: {
+                [key: string]: unknown;
+            };
+            lines: components["schemas"]["AssignmentLine"][];
+            /** Format: uuid */
+            organization_id: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id: string | null;
+            reconciliation: components["schemas"]["SupplyReconciliation"] | null;
+            releases: components["schemas"]["SupplyReleaseBundle"][];
+            receipts: components["schemas"]["SupplyReceiptBundle"][];
+        };
+        SupplyCancellation: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            release_id: string;
+        };
+        SupplyChange: {
+            sequence: number;
+            action: components["schemas"]["ProjectionUpsertActionEnum"];
+            resource_type: string;
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["SupplyBundle"];
+        };
+        SupplyConfigurationRead: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            supply_version_id: string;
+            revision: number;
+            is_active: boolean;
+            reference: string;
+            name?: string;
+            procedure?: string;
+            mode?: components["schemas"]["SupplyTransitModeEnum"];
+            proof_roles?: components["schemas"]["ProofRolesEnum"][];
+            action?: components["schemas"]["SupplyMappingActionEnum"];
+            quantity?: string;
+        };
+        /** @enum {string} */
+        SupplyEvidenceRoleEnum: "signature" | "rpbi" | "photo";
+        SupplyExecutionBody: {
+            release?: components["schemas"]["SupplyRelease"];
+            cancellation?: components["schemas"]["SupplyCancellation"];
+            acceptance?: components["schemas"]["SupplyReturnAcceptance"];
+            justification?: components["schemas"]["SupplyJustification"];
+            write_off?: components["schemas"]["WriteOffRead"];
+        };
+        SupplyFrame: {
+            /** Format: uuid */
+            assignment_id: string;
+            lines: components["schemas"]["SupplyFrameLine"][];
+        };
+        SupplyFrameLine: {
+            /** Format: uuid */
+            assignment_line_id: string;
+            plan_revision: number;
+            planned: string;
+            credited: string | null;
+            used: string;
+            returned: string;
+            shrinkage: string;
+            difference: string | null;
+            delivery_variance: string | null;
+        };
+        SupplyHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "supply_plan" | "supply_release" | "supply_cancel" | "supply_receipt" | "supply_reconcile" | "supply_return" | "supply_justify" | "supply_bag_disposal";
+            source_kind: components["schemas"]["SupplyHistorySourceKindEnum"];
+            /** Format: uuid */
+            assignment_id: string | null;
+            /** Format: uuid */
+            bag_id: string | null;
+            /** Format: uuid */
+            actor_id: string;
+            /** Format: date-time */
+            at: string;
+            subjects: components["schemas"]["HistorySubject"][];
+            /** Format: uuid */
+            source_event_id: string | null;
+            source_status: (components["schemas"]["SourceStatusEnum"] | components["schemas"]["NullEnum"]) | null;
+            source_code: string | null;
+            /** Format: date-time */
+            voided_at: string | null;
+        };
+        /**
+         * @description * `supply_plan` - supply_plan
+         *     * `supply_release` - supply_release
+         *     * `supply_cancel` - supply_cancel
+         *     * `supply_receipt` - supply_receipt
+         *     * `supply_reconcile` - supply_reconcile
+         *     * `supply_return` - supply_return
+         *     * `supply_justify` - supply_justify
+         *     * `supply_bag_disposal` - supply_bag_disposal
+         * @enum {string}
+         */
+        SupplyHistoryEntryKindEnum: "supply_plan" | "supply_release" | "supply_cancel" | "supply_receipt" | "supply_reconcile" | "supply_return" | "supply_justify" | "supply_bag_disposal";
+        /** @enum {string} */
+        SupplyHistorySourceKindEnum: "plan" | "release" | "cancel" | "receipt" | "reconcile" | "return" | "justify" | "bag_disposal";
+        SupplyIntent: {
+            /** Format: uuid */
+            id: string;
+            kind: components["schemas"]["SupplyIntentKindEnum"];
+            expected_revision: number;
+            input_hash: string;
+            evidence: components["schemas"]["EvidenceRole"][];
+        };
+        /**
+         * @description * `assignment_release` - assignment_release
+         *     * `release_cancel` - release_cancel
+         *     * `return_accept` - return_accept
+         *     * `reconcile_justify` - reconcile_justify
+         *     * `lot_write_off` - lot_write_off
+         *     * `bag_disposal` - bag_disposal
+         * @enum {string}
+         */
+        SupplyIntentKindEnum: "assignment_release" | "release_cancel" | "return_accept" | "reconcile_justify" | "lot_write_off" | "bag_disposal";
+        SupplyJustification: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            frame_id: string;
+        };
+        /** @enum {string} */
+        SupplyMappingActionEnum: "place" | "check";
+        SupplyReceiptBundle: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            event_id: string;
+            /** Format: uuid */
+            source_event_id: string;
+            /** Format: uuid */
+            release_id: string;
+            /** Format: uuid */
+            signature_upload_id: string;
+            voided: boolean;
+            lines: components["schemas"]["ActualSupplyLine"][];
+        };
+        SupplyReconciliation: {
+            /** Format: uuid */
+            id: string;
+            assignment: components["schemas"]["SupplyAssignmentRead"];
+            revision: number;
+            /** Format: uuid */
+            frame_id: string | null;
+            frame: components["schemas"]["SupplyFrame"] | null;
+            /** Format: uuid */
+            discrepancy_id: string | null;
+            justification_ids: string[];
+        };
+        SupplyRelease: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            assignment_id: string;
+            revision: number;
+            proof: {
+                [key: string]: unknown;
+            };
+        };
+        SupplyReleaseBundle: {
+            /** Format: uuid */
+            id: string;
+            plan_revision: number;
+            manifest_hash: string;
+            lines: components["schemas"]["SupplyReleasedLine"][];
+        };
+        SupplyReleasedLine: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            assignment_line_id: string;
+            quantity: string;
+            /** Format: uuid */
+            transit_policy_id: string | null;
+        };
+        SupplyReturnAcceptance: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            declaration_id: string;
+            quantity: string;
+            revision: number;
+        };
+        SupplySavedExecution: {
+            status: number;
+            response: components["schemas"]["SupplyExecutionBody"];
+            written_revision: number;
+        };
+        SupplySuggestion: {
+            status: components["schemas"]["SupplySuggestionStatusEnum"];
+            /** Format: date */
+            date: string;
+            /** Format: uuid */
+            courier_id: string;
+            lines: components["schemas"]["SupplySuggestionLine"][];
+            schedule_revision?: number;
+            unconfigured_actions?: components["schemas"]["SupplyMappingActionEnum"][];
+        };
+        SupplySuggestionLine: {
+            /** Format: uuid */
+            supply_version_id: string;
+            /** Format: uuid */
+            mapping_id: string;
+            quantity: string;
+        };
+        /**
+         * @description * `unavailable` - unavailable
+         *     * `unconfigured` - unconfigured
+         *     * `assessed` - assessed
+         * @enum {string}
+         */
+        SupplySuggestionStatusEnum: "unavailable" | "unconfigured" | "assessed";
+        /** @enum {string} */
+        SupplyTransitModeEnum: "manual_evidence_review";
         SupplyWriteRequest: {
             /** @default 0 */
             expected_revision: number;
@@ -9019,6 +10123,17 @@ export interface components {
         };
         /** @enum {string} */
         TransferStateEnum: "prepared" | "dispatched" | "received" | "discrepancy" | "resolved";
+        TransitPolicyRequest: {
+            /** Format: uuid */
+            supply_version_id: string;
+            expected_revision: number;
+            name: string;
+            procedure: string;
+            reference: string;
+            mode: components["schemas"]["SupplyTransitModeEnum"];
+            proof_roles: components["schemas"]["ProofRolesEnum"][];
+            is_active: boolean;
+        };
         /**
          * @description * `rule_context_unavailable` - rule_context_unavailable
          *     * `organization_context_unavailable` - organization_context_unavailable
@@ -9158,6 +10273,10 @@ export interface components {
             /** Format: date */
             week: string;
         };
+        WriteOffOutcome: {
+            write_off: components["schemas"]["WriteOffRead"];
+        };
+        WriteOffRead: components["schemas"]["LotWriteOffRead"] | components["schemas"]["BagDisposalRead"];
         /** @description One validation failure of a field: a machine code plus its parameters. */
         FieldError: {
             code: string;
@@ -10276,6 +11395,266 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Center"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    courier_assignments_list: {
+        parameters: {
+            query?: {
+                assignment?: string;
+                center?: string;
+                courier?: string;
+                created_at_before?: string;
+                created_at_from?: string;
+                date?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSupplyAssignmentReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    courier_assignments_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateAssignmentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    courier_assignments_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplyAssignmentRead"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    courier_assignments_partial_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedReviseAssignmentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AssignmentOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    courier_assignments_release_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecuteInventoryIntentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReleaseOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    courier_assignments_release_cancellations_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecuteInventoryIntentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CancellationOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    courier_assignments_suggestion_retrieve: {
+        parameters: {
+            query: {
+                courier?: string;
+                date: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplySuggestion"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -11764,6 +13143,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedIncidentContextOptionList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    inventory_intents_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrepareInventoryIntentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PreparedIntentOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    inventory_intents_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InventoryIntentRead"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -14464,6 +15911,160 @@ export interface operations {
             };
         };
     };
+    reconciliations_list: {
+        parameters: {
+            query?: {
+                assignment?: string;
+                center?: string;
+                courier?: string;
+                created_at_before?: string;
+                created_at_from?: string;
+                date?: string;
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSupplyReconciliationList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    reconciliations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplyReconciliation"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    reconciliations_justify_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecuteInventoryIntentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JustificationOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    reconciliations_returns_accept_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecuteInventoryIntentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReturnAcceptanceOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     recount_requests_list: {
         parameters: {
             query?: {
@@ -16036,6 +17637,156 @@ export interface operations {
             };
         };
     };
+    supply_types_material_mappings_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                supply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSupplyConfigurationReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    supply_types_material_mappings_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                supply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MaterialMappingRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplyConfigurationRead"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    supply_types_transit_policies_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                supply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSupplyConfigurationReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    supply_types_transit_policies_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                supply_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TransitPolicyRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SupplyConfigurationRead"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     supply_types_protocol_incident_type_options_list: {
         parameters: {
             query?: {
@@ -16391,6 +18142,124 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevokedSessions"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    write_offs_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                created_at_before?: string;
+                created_at_from?: string;
+                date?: string;
+                /**
+                 * @description * `lot` - lot
+                 *     * `bag` - bag
+                 */
+                kind?: "lot" | "bag";
+                /**
+                 * @description * `created_at` - created_at
+                 *     * `-created_at` - -created_at
+                 */
+                ordering?: "created_at" | "-created_at";
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedWriteOffReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    write_offs_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ExecuteInventoryIntentRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteOffOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    write_offs_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["WriteOffRead"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

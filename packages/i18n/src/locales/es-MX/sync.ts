@@ -129,4 +129,16 @@ export const sync = {
     "Las condiciones actuales impiden aplicar la transferencia. La captura quedó para revisión.",
   "sync.result.transferVoidBlocked":
     "La transferencia tiene efectos o registros dependientes. Consulta a tu supervisor para corregirla.",
+  "sync.result.supplyInaccessible":
+    "El registro de materiales no está disponible en tu ámbito de trabajo autorizado.",
+  "sync.result.supplyVoidBlocked":
+    "El registro tiene efectos de custodia o registros dependientes. Consulta a tu supervisor para corregirlo.",
+  "sync.result.supplyAssignmentChanged":
+    "La asignación cambió después de la captura. Conserva el recibo real firmado para su revisión.",
+  "sync.result.supplyStateConflict":
+    "Es necesario revisar registros anteriores de materiales. Conserva la captura y la firma.",
+  "sync.result.supplyEvidenceRequired":
+    "Falta evidencia verificada de materiales. Conserva la firma y los archivos pendientes para su revisión.",
+  "sync.result.supplyTransitUnavailable":
+    "Es necesario revisar el procedimiento de traslado o su evidencia. No se aplicó el uso sin verificar.",
 } as const satisfies AreaCatalog<"sync">;

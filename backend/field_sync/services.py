@@ -261,7 +261,9 @@ def check_deferred_constraints_now() -> None:
 
 
 def sync_batch(
-    batch: BatchContext, envelopes: list[EventEnvelope], cursor: ChangesCursor | None
+    batch: BatchContext,
+    envelopes: list[EventEnvelope],
+    cursor: ChangesCursor | None,
 ) -> SyncOutcome:
     """Ingest a batch and pull the courier's changes in one locked transaction (writes).
 
@@ -270,10 +272,40 @@ def sync_batch(
     (`40P01`) is `429 sync_in_progress`: the transaction rolls back (a final upload is given
     back) and the phone retries the same batch, which event ids make safe (decision 72).
     """
+    from reviews.boundaries import (
+        current_batch_preparation,
+        prepare_batch_participants,
+        prepared_batch_boundary,
+    )
+
+    prepared = current_batch_preparation() or prepare_batch_participants(batch, envelopes)
     try:
-        with transaction.atomic():
-            lock_courier_batches(batch)
+        with transaction.atomic(), prepared_batch_boundary(prepared):
             set_batch_lock_timeout()
+            lock_sync_users(prepared.users)
+            if not batch.is_final_upload and batch.observed_session_id is not None:
+                from uploads.access import UploadActor, lock_actor
+
+                lock_actor(
+                    UploadActor(
+                        batch.user,
+                        batch.organization,
+                        batch.device.pk,
+                        batch.observed_session_id,
+                        batch.observed_pair_id,
+                    )
+                )
+            _lock_prepared_sources(batch, prepared)
+            if prepared.retains_organization:
+                batch = replace(
+                    batch,
+                    organization=Organization.objects.select_for_update(
+                        nowait=True, no_key=True
+                    ).get(pk=batch.organization.pk),
+                )
+            if prepare_batch_participants(batch, envelopes) != prepared:
+                raise SyncInProgressError
+            lock_courier_batches(batch)
             ctx = None if cursor is None else producer_context(batch, FIELD_EVENT_SYNC)
             if cursor is not None and ctx is not None:
                 revision = scope_revision(ctx)
@@ -289,6 +321,35 @@ def sync_batch(
             raise SyncInProgressError from None
         raise
     return SyncOutcome(results, changes)
+
+
+def lock_sync_users(identifiers: tuple[UUID, ...]) -> None:
+    """Actor is part of this ONE sorted closure, before any session/domain acquisition."""
+    from accounts.models import User
+
+    try:
+        rows = list(
+            User.objects.filter(pk__in=identifiers)
+            .order_by("pk")
+            .select_for_update(nowait=True, no_key=True)
+        )
+        if len(rows) != len(set(identifiers)):
+            raise SyncInProgressError
+    except OperationalError as error:
+        if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
+            raise SyncInProgressError from None
+        raise
+
+
+def _lock_prepared_sources(batch: BatchContext, prepared: Any) -> None:  # noqa: ANN401 -- concrete immutable BatchPreparation
+    identities = dict(prepared.sources)
+    rows = list(
+        FieldEvent.objects.filter(organization=batch.organization, pk__in=identities)
+        .order_by("pk")
+        .select_for_update(nowait=True, no_key=True)
+    )
+    if len(rows) != len(identities) or any(row.created_by_id != identities[row.pk] for row in rows):
+        raise SyncInProgressError
 
 
 def ingest_batch(batch: BatchContext, envelopes: list[EventEnvelope]) -> list[EventResult]:
@@ -562,6 +623,9 @@ class EventProcessor:
         from inventory.transfers.history import stored_source as stored_transfer_source
 
         stored_transfer_source(event)
+        from inventory.allocations.history import stored_source as stored_supply_source
+
+        stored_supply_source(event)
 
     def _event_fields(self, envelope: EventEnvelope, outcome: Verdict) -> dict[str, Any]:
         batch, gps = self.batch, envelope.gps
@@ -623,6 +687,29 @@ class EventProcessor:
                 batch.device.pk,
             )
             return EventResult(envelope.id, EventStatus.REJECTED, EVENT_ID_CONFLICT)
+        supply = FieldEvent.objects.filter(
+            pk=envelope.id,
+            organization=batch.organization,
+            type__in=("supplies.receive", "supplies.reconcile"),
+        ).first()
+        if supply is not None:
+            if (
+                envelope.type != supply.type
+                or envelope.schema_version != supply.schema_version
+                or stored.payload_sha256 != envelope.payload_info.sha256
+            ):
+                return EventResult(envelope.id, EventStatus.REJECTED, EVENT_ID_CONFLICT)
+            from inventory.allocations.review import authorize_source
+
+            try:
+                authorize_source(
+                    EventContext(
+                        batch.organization, batch.user, batch.device, envelope, batch.received_at
+                    ),
+                    supply.payload,
+                )
+            except EventRejected:
+                return EventResult(envelope.id, EventStatus.REJECTED, "supply_inaccessible")
         if envelope.type == VOID_EVENT_TYPE:
             from reviews.models import ReviewSourceSnapshot
             from reviews.source_identity import same_envelope

@@ -21,6 +21,7 @@ OVITRAP_EVENTS = frozenset(
 )
 INCIDENT_EVENTS = frozenset({"incident.report", "emergency.accident"})
 TRANSFER_EVENTS = frozenset({"transfer.dispatch", "transfer.receive"})
+SUPPLY_EVENTS = frozenset({"supplies.receive", "supplies.reconcile"})
 
 
 @dataclass(frozen=True)
@@ -41,7 +42,7 @@ def _allows_motorcycle(scope: EffectiveScope, permission: str, motorcycle: Motor
 
 def declared_upload_ids(event: FieldEvent) -> set[UUID]:
     if (
-        event.type not in OVITRAP_EVENTS | INCIDENT_EVENTS | TRANSFER_EVENTS
+        event.type not in OVITRAP_EVENTS | INCIDENT_EVENTS | TRANSFER_EVENTS | SUPPLY_EVENTS
         and event.type != "fuel.load"
     ):
         return set()
@@ -52,6 +53,8 @@ def declared_upload_ids(event: FieldEvent) -> set[UUID]:
         if not isinstance(references, list):
             return set()
         references = [*references, event.payload.get("signature_upload_id")]
+    if event.type in SUPPLY_EVENTS:
+        references = _supply_upload_references(event.payload)
     if not isinstance(references, list):
         return set()
     identifiers = set()
@@ -61,6 +64,15 @@ def declared_upload_ids(event: FieldEvent) -> set[UUID]:
         except (ValueError, TypeError, AttributeError):
             continue
     return identifiers
+
+
+def _supply_upload_references(payload: dict[str, Any]) -> list[Any]:
+    references = [payload.get("signature_upload_id")]
+    for key, field in (("used", "transit_evidence_ids"), ("shrinkage", "evidence_ids")):
+        for row in payload.get(key, []):
+            if isinstance(row, dict) and isinstance(row.get(field), list):
+                references.extend(row[field])
+    return references
 
 
 def _event_dimensions(event: FieldEvent) -> tuple[str | None, str | None]:
@@ -109,12 +121,8 @@ def authorize_target(
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
     scope = current_scope(actor)
-    if target.kind == "lab_rejection":
-        from lab.evidence import authorize_rejection_attachment
-
-        return authorize_rejection_attachment(actor, target.identifier, upload)
-    if target.kind == "transfer_event":
-        return _transfer_attachment_target(actor, target, upload)
+    if target.kind in {"inventory_intent", "lab_rejection", "transfer_event"}:
+        return _domain_attachment_target(actor, target, upload)
     if target.kind == "review_item":
         return _review_attachment_target(actor, target, scope)
     if target.kind == "incident":
@@ -161,6 +169,22 @@ def authorize_target(
     if target.kind != "field_event":
         raise Http404
     return _field_attachment_target(actor, target, upload)
+
+
+def _domain_attachment_target(
+    actor: UploadActor, target: AttachmentTarget, upload: Upload
+) -> dict[str, object]:
+    if target.kind == "inventory_intent":
+        from inventory.allocations.evidence import authorize_intent_attachment
+
+        return authorize_intent_attachment(actor, target.identifier, upload)
+    if target.kind == "lab_rejection":
+        from lab.evidence import authorize_rejection_attachment
+
+        return authorize_rejection_attachment(actor, target.identifier, upload)
+    if target.kind == "transfer_event":
+        return _transfer_attachment_target(actor, target, upload)
+    raise Http404
 
 
 def _field_attachment_target(
@@ -215,6 +239,11 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     from uploads.services import _resolve_link_target
 
     parent = _resolve_link_target(link)
+    if parent.kind == "inventory_intent":
+        from inventory.allocations.evidence import authorize_intent_download
+
+        authorize_intent_download(actor, parent.identifier)
+        return
     if parent.kind == "lab_rejection":
         from lab.evidence import authorize_rejection_download
 
@@ -326,6 +355,11 @@ def _authorize_event_download(
     event = FieldEvent.objects.filter(pk=event_id, organization=actor.organization).first()
     if event is None:
         raise Http404
+    if event.type in SUPPLY_EVENTS:
+        from inventory.allocations.evidence import authorize_source_download
+
+        authorize_source_download(actor, event)
+        return
     if event.type in TRANSFER_EVENTS:
         from reviews.inspection import original_source_envelope
         from reviews.scope import subject_allows, subject_facts
@@ -360,6 +394,17 @@ def _authorize_event_download(
 
 
 def has_event_upload_scope(scope: EffectiveScope, event: FieldEvent) -> bool:
+    if event.type in SUPPLY_EVENTS:
+        from inventory.allocations.permissions import SOURCE_PERMISSIONS
+        from inventory.allocations.scope import allows_supply_vector
+        from reviews.inspection import original_source_envelope
+        from reviews.scope import subject_facts
+
+        facts = subject_facts(event.organization, original_source_envelope(event))
+        return facts.resolved and all(
+            allows_supply_vector(scope, permission, list(facts.contexts))
+            for permission in (FIELD_UPLOAD, FIELD_EVENT_SYNC, SOURCE_PERMISSIONS[event.type])
+        )
     if event.type in TRANSFER_EVENTS:
         from reviews.inspection import original_source_envelope
         from reviews.scope import subject_allows, subject_facts

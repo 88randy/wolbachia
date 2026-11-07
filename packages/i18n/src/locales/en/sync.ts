@@ -127,4 +127,16 @@ export const sync: Record<keyof typeof source, string> = {
     "Current conditions prevent applying the transfer. The capture was kept for review.",
   "sync.result.transferVoidBlocked":
     "The transfer has effects or dependent records. Contact your supervisor to correct it.",
+  "sync.result.supplyInaccessible":
+    "The supply record is unavailable in your authorized work scope.",
+  "sync.result.supplyVoidBlocked":
+    "The supply record has custody effects or dependent records. Contact your supervisor to correct it.",
+  "sync.result.supplyAssignmentChanged":
+    "The assignment changed after capture. Keep the signed actual receipt for review.",
+  "sync.result.supplyStateConflict":
+    "The supply record needs its earlier records reviewed. Keep the capture and signature.",
+  "sync.result.supplyEvidenceRequired":
+    "Verified supply evidence is missing. Keep the signature and pending files for review.",
+  "sync.result.supplyTransitUnavailable":
+    "The transit procedure or its evidence needs review. No unverified use was applied.",
 };

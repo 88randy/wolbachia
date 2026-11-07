@@ -27,6 +27,7 @@ EXPECTED_COHORTS = {
     "migrations-material": {
         "tests/test_transfer_migrations_106.py",
         "tests/test_lab_migrations_114.py",
+        "tests/test_inventory_allocations_migrations_107.py",
     },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
@@ -123,8 +124,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 7
-        )  # One regular node and six whole migration owners.
+            validate_fragments(bundles, expected) == 8
+        )  # One regular node and seven whole migration owners.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)

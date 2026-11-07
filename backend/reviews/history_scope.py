@@ -11,7 +11,7 @@ from reviews.scope import SubjectFacts, subject_allows, subject_facts
 def visible_history_contexts(ctx: ProducerContext) -> dict[UUID, tuple[dict[str, str | None], ...]]:
     rows = CourierChange.objects.filter(
         organization=ctx.organization, courier=ctx.user, kind="history"
-    ).only("id", "resource_type", "resource_id", "courier_id", "organization_id")
+    ).only("id", "resource_type", "resource_id", "courier_id", "organization_id", "payload")
     current: dict[tuple[str, str], SubjectFacts] = {}
     visible = {}
     for row in rows.iterator():
@@ -19,6 +19,10 @@ def visible_history_contexts(ctx: ProducerContext) -> dict[UUID, tuple[dict[str,
         if key not in current:
             current[key] = _current_subjects(row)
         facts = current[key]
+        if row.resource_type.startswith("history.supply_") and not subject_allows(
+            ctx.scope, facts.facts.get("own_permission", ""), facts
+        ):
+            continue
         if subject_allows(ctx.scope, ctx.permission, facts):
             visible[row.pk] = facts.contexts
     return visible
@@ -29,14 +33,8 @@ def _current_subjects(row: CourierChange) -> SubjectFacts:
         identifier = UUID(row.resource_id)
     except ValueError:
         return SubjectFacts()
-    if row.resource_type.startswith("history.lab_"):
-        from lab.history import lab_history_subjects
-
-        return lab_history_subjects(
-            row.organization_id,
-            row.courier_id,
-            (row.resource_type.removeprefix("history."), identifier),
-        )
+    if row.resource_type.startswith(("history.supply_", "history.lab_")):
+        return _owned_domain_subjects(row, identifier)
     if row.resource_type == "history.transfer_custody":
         from inventory.transfers.history import history_subjects
 
@@ -89,3 +87,17 @@ def _current_subjects(row: CourierChange) -> SubjectFacts:
         )
         return SubjectFacts() if proposal is None else proposal_subjects(proposal)
     return SubjectFacts()
+
+
+def _owned_domain_subjects(row: CourierChange, identifier: UUID) -> SubjectFacts:
+    if row.resource_type.startswith("history.supply_"):
+        from inventory.allocations.history import history_subjects
+
+        return history_subjects(row)
+    from lab.history import lab_history_subjects
+
+    return lab_history_subjects(
+        row.organization_id,
+        row.courier_id,
+        (row.resource_type.removeprefix("history."), identifier),
+    )

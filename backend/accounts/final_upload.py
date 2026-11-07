@@ -3,14 +3,18 @@
 import sys
 from http import HTTPStatus
 from typing import Any
+from uuid import UUID
 
 from django.db import transaction
+from rest_framework.exceptions import APIException
 from rest_framework.request import Request
 from rest_framework.response import Response
 
 from accounts.exceptions import SessionRevokedError
-from accounts.models import DeviceSession
-from accounts.revocation import consume_final_upload
+from accounts.models import DeviceSession, User
+from accounts.revocation import consume_final_upload, is_final_upload_available
+from core.exceptions import DomainError
+from core.time import server_now
 
 SESSION_REVOKED_HEADER = "X-Session-Revoked"
 
@@ -40,6 +44,7 @@ class FinalUploadMixin:
     allows_revoked_final_upload = True
     final_upload_methods: tuple[str, ...] = ("POST",)
     is_final_upload = False
+    final_upload_contention_errors: tuple[type[DomainError], ...] = ()
     _final_upload_transaction: Any = None
 
     def initial(self, request: Request, *args: Any, **kwargs: Any) -> None:  # noqa: ANN401
@@ -49,10 +54,47 @@ class FinalUploadMixin:
             return
         if request.method not in self.final_upload_methods:
             raise SessionRevokedError
+        deferred_error = None
+        try:
+            participants = self.prepare_final_upload_participants(request)
+        except (APIException, DomainError) as error:
+            # Expected API/domain preparation errors share the canonical fresh eligibility boundary.
+            deferred_error = error
+            participants = ()
         self._final_upload_transaction = transaction.atomic()
         self._final_upload_transaction.__enter__()
+        self._acquire_final_upload_participants(
+            session, tuple(sorted({session.user_id, *participants}))
+        )
         consume_final_upload(session)
         self.is_final_upload = True
+        if deferred_error is not None:
+            raise deferred_error
+
+    def prepare_final_upload_participants(self, request: Request) -> tuple[UUID, ...]:
+        """Opt-in domain hook: authenticated, bounded, read-only and outside retained locks."""
+        return ()
+
+    def lock_final_upload_participants(self, identifiers: tuple[UUID, ...]) -> None:
+        """Default opt-in views retain actor-only locking and their existing lifecycle."""
+        list(User.objects.filter(pk__in=identifiers).order_by("pk").select_for_update(no_key=True))
+
+    def _acquire_final_upload_participants(
+        self, session: DeviceSession, identifiers: tuple[UUID, ...]
+    ) -> None:
+        try:
+            # Roll back an unsuccessful closure before any fresh query; release partial User locks.
+            with transaction.atomic():
+                self.lock_final_upload_participants(identifiers)
+        except self.final_upload_contention_errors as error:
+            if error.status_code != HTTPStatus.TOO_MANY_REQUESTS:
+                raise
+            # No Device/Session/domain lock here. Withdrawal still outranks retryable contention.
+            fresh = DeviceSession.objects.filter(pk=session.pk, user_id=session.user_id).first()
+            now = server_now()
+            if fresh is None or not is_final_upload_available(fresh, now):
+                raise SessionRevokedError from error
+            raise
 
     def finalize_response(
         self,

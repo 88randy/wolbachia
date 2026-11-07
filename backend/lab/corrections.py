@@ -137,6 +137,7 @@ def replacement_result(
         return None, None, ()
     receipt = bag.lab_receipt
     if replacement["kind"] == "rejection":
+        # The common rejection writer requires real physical material; replay happens upstream.
         rejection = create_rejection(RejectionCreation(actor, command, bag, receipt, replacement))
         return None, rejection, ()
     count, causes = create_count(

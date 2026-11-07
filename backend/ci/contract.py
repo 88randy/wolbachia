@@ -13,7 +13,11 @@ MIGRATION_PARTITIONS = {
         {"tests/test_geography_migrations_b_33.py", "tests/test_review_migrations_113.py"}
     ),
     "migrations-material": frozenset(
-        {"tests/test_transfer_migrations_106.py", "tests/test_lab_migrations_114.py"}
+        {
+            "tests/test_transfer_migrations_106.py",
+            "tests/test_lab_migrations_114.py",
+            "tests/test_inventory_allocations_migrations_107.py",
+        }
     ),
 }
 PARTITION_NAMES = ("regular", *MIGRATION_PARTITIONS)

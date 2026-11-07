@@ -243,3 +243,20 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | anulación de resultado | lab result void | LabResultVoid, LabResultRevision | Immutable catalog reason/note and optional atomic same-Bag replacement. |
 | solicitud de reconteo independiente | recount request | RecountRequest | Durable first-counter/source/rule cause; #115 owns execution, adjudication and reuse. |
 | muestra diaria de control | daily recount sample | DailyRecountSample | Closed org-local-day population/selection proof; a request is not an executed recount. |
+
+## Courier custody additions (#107)
+
+SupplyAssignment: explicit courier custodian/dated immutable plan, not a Location.
+OriginReleaseProof: genuine origin eligibility and reservation manifest, not receipt.
+SupplyReceipt: signed actual credited custody; zero differs from missing receipt.
+SupplyUse / SupplyShrinkage: explicit source/line deltas in the original declared unit.
+ReturnDeclaration: uncredited courier statement. ReturnAcceptance: separately signed
+warehouse custody transfer to the real destination. ReconciliationVersion: immutable
+R-U-T-S frame, with separate Q-R delivery variance. SupplyDiscrepancy: one retained
+case per reconciliation; SupplyDiscrepancyDecision explains one exact frame without
+inventing stock. InventoryIntent: concrete immutable HTTP evidence declaration,
+before operational execution. LotWriteOff: numeric loss from available Location
+custody. BagDisposition: whole real Bag disposal preserving Lab/source/QA history.
+CourierTransitPolicyVersion: named authored evidence-review procedure, not a seeded
+scientific recipe or a storage certification. Material unavailable: actual disposed
+material cannot support another physical act even when its audit can be corrected.
