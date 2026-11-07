@@ -27,7 +27,7 @@ export function assertInventoryAction(scope: InventoryReadScope, signal: AbortSi
   assertInventoryRead(scope, signal);
   if (scope.readContext?.mode === "custody") throw new CancelledError({ revert: true });
 }
-/** The inventory view fence also controls placeholders; a query key alone cannot do that. */
+/** Private entry keys and remounted consumers retain the central session placeholder policy. */
 export function inventoryScopedOptions<T>(
   scope: InventoryReadScope,
   request: { key: readonly unknown[]; queryFn: QueryFunction<T> },
@@ -47,10 +47,5 @@ export function inventoryScopedOptions<T>(
   return {
     ...options,
     enabled: scope.identity.isSettled && scope.readContext?.mode !== "invalid",
-    meta: { ...options.meta, inventoryView: fence },
-    placeholderData: (
-      previous: T | undefined,
-      query: { meta?: Record<string, unknown> } | undefined,
-    ) => (query?.meta?.["inventoryView"] === fence ? previous : undefined),
   };
 }

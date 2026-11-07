@@ -232,7 +232,11 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   await page.getByRole("link", { name: custody.code, exact: true }).click();
   const beforeHistory = server.reads.length;
   await page.getByRole("tab", { name: "Movimientos", exact: true }).click();
-  await page.getByRole("textbox", { name: "Código", exact: true }).fill("LOT-NEW");
+  const historyCode = page
+    .getByRole("tabpanel", { name: "Movimientos", exact: true })
+    .getByRole("region", { name: "Filtros", exact: true })
+    .getByRole("textbox", { name: "Código", exact: true });
+  await historyCode.fill("LOT-NEW");
   await expect
     .poll(() =>
       server.reads
@@ -255,7 +259,7 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
     page.getByRole("heading", { name: "Custodia no disponible", exact: true }),
   ).toBeVisible();
   await page.goBack();
-  await expect(page.getByRole("textbox", { name: "Código", exact: true })).toHaveValue("LOT-NEW");
+  await expect(historyCode).toHaveValue("LOT-NEW");
   expect(server.writes).toHaveLength(2);
   await page.goto("/inventory/locations");
   await expect(page.getByRole("link", { name: "Synthetic store", exact: false })).toBeVisible();

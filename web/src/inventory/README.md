@@ -105,9 +105,11 @@ derives a location from a center/grant. This metadata is not write authority.
 Lot code lookup and UUID detail use that same explicit location. Contextual code
 lookup omits the implicit admission-center facet; an explicitly selected list
 center still filters original admission and survives record/back navigation.
-Read keys, placeholder metadata and request acceptance include the private view
-entry as well as session/organization/authorization. Same-center B1/B2/B1 gets a
-fresh read; even an obsolete rejected response cannot become current data.
+Read keys and request acceptance include the private view entry as well as
+session/organization/authorization. The central session helper owns placeholder
+reuse. List and record observers remount per private view entry, including their
+stock/ledger children. Same-center B1/B2/B1 gets a fresh read; even an obsolete
+rejected response cannot become current data.
 The list/detail consumer must own its exact current route before a query or action
 gate can start, including the transient old outlet during navigation. Manual
 reconciliation is a separate inventory-only read purpose: it checks the original
