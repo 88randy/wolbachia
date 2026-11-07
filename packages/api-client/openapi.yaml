@@ -3451,6 +3451,11 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: custody_location
+        schema:
+          type: string
+          format: uuid
       - in: path
         name: id
         schema:

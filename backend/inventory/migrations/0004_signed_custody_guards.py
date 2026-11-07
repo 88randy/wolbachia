@@ -151,7 +151,7 @@ BEGIN
     END IF;
     RETURN NEW;
 END; $$ LANGUAGE plpgsql;
-CREATE TRIGGER inventory_{name}_custody_guard BEFORE INSERT OR UPDATE OR DELETE ON inventory_{name}
+CREATE TRIGGER inventory_{name}_guard BEFORE INSERT OR UPDATE OR DELETE ON inventory_{name}
 FOR EACH ROW EXECUTE FUNCTION inventory_{name}_custody_guard();"""
     for name, condition in CHECKS.items()
 )
@@ -393,7 +393,7 @@ DROP FUNCTION inventory_transfer_ledger_guard();
     )
     + "\nDROP FUNCTION inventory_custody_complete();\n"
     + "\n".join(
-        f"DROP TRIGGER inventory_{name}_custody_guard ON inventory_{name}; DROP FUNCTION inventory_{name}_custody_guard();"
+        f"DROP TRIGGER inventory_{name}_guard ON inventory_{name}; DROP FUNCTION inventory_{name}_custody_guard();"
         for name in reversed(CHECKS)
     )
 )

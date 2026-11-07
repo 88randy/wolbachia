@@ -10145,7 +10145,9 @@ export interface operations {
     };
     lots_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                custody_location?: string;
+            };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
                 "X-Organization"?: string;

@@ -65,6 +65,27 @@ def test_authenticated_schema_metadata_does_not_require_inventory_option_targets
         "/api/v1/supply-types/protocol-incident-type-options/",
     } <= response.json()["paths"].keys()
     schema = response.json()
+    lot_detail = schema["paths"]["/api/v1/lots/{id}/"]
+    detail_query = {
+        parameter["name"]: {**parameter, "required": parameter.get("required", False)}
+        for parameter in lot_detail["get"]["parameters"]
+        if parameter["in"] == "query"
+    }
+    assert detail_query == {
+        "custody_location": {
+            "in": "query",
+            "name": "custody_location",
+            "required": False,
+            "schema": {"type": "string", "format": "uuid"},
+        }
+    }
+    list_context = next(
+        parameter
+        for parameter in schema["paths"]["/api/v1/lots/"]["get"]["parameters"]
+        if parameter["name"] == "custody_location"
+    )
+    assert list_context == detail_query["custody_location"]
+    assert not any(parameter["in"] == "query" for parameter in lot_detail["patch"]["parameters"])
     body = schema["paths"]["/api/v1/lots/{id}/conditions/"]["post"]["requestBody"]
     assert body["required"] is True
     capture_name = body["content"]["application/json"]["schema"]["$ref"].split("/")[-1]

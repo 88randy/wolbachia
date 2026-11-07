@@ -126,7 +126,7 @@ def prepared(custody, quantity="3"):
                         "lot_id": context.lot.pk,
                         "piece_id": None,
                         "quantity": Decimal(quantity),
-                        "unit_version_id": context.supply_version.pk,
+                        "unit_version_id": context.lot.admission.lot_version.supply_version_id,
                     }
                 ],
             },
@@ -435,8 +435,15 @@ def test_explicit_destination_conditions_need_no_stock_and_initial_readings_do_n
     from tests.inventory_support import capture, configure_incident
 
     monkeypatch.setattr("inventory.conditions.server_now", lambda: AT + timedelta(hours=1))
+    monkeypatch.setattr("inventory.selectors.server_now", lambda: AT)
     context = inventory_context(org_a, make_member, biological=True)
+    admitted_unit = context.lot.admission.lot_version.supply_version_id
     configure_incident(context)
+    assert context.supply_version.pk != admitted_unit
+    assert (
+        StockMovement.objects.get(lot=context.lot, location=context.location).unit_version_id
+        == admitted_unit
+    )
     context.profile.permission_codes = [*context.profile.permission_codes, *TRANSFER_CODES]
     context.profile.save(update_fields=["permission_codes"])
     center = Center.objects.create(
@@ -486,7 +493,9 @@ def test_explicit_destination_conditions_need_no_stock_and_initial_readings_do_n
         assert reading.capture_location_id == destination.pk
     assert lot_safety(current_lot(context.lot), AT, destination).status == "available"
     assert not StockMovement.objects.filter(lot=context.lot, location=destination).exists()
-    sent = dispatch_transfer(dispatch_request(context.actor, prepared((context, destination))))
+    preparation = prepared((context, destination))
+    assert preparation.event.transfer.lines.get().unit_version_id == admitted_unit
+    sent = dispatch_transfer(dispatch_request(context.actor, preparation))
     receive_transfer(receive_request(context.actor, sent))
     actual = lot_versions(context.actor, "lot.read", destination).get(lot=context.lot)
     assert actual.computed_status == lot_safety(actual, AT, destination).status == "available"

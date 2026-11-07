@@ -6,7 +6,13 @@ from uuid import UUID
 from django.db.models import QuerySet
 from django.http import Http404
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import PolymorphicProxySerializer, extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import (
+    OpenApiParameter,
+    PolymorphicProxySerializer,
+    extend_schema,
+    extend_schema_view,
+)
 from rest_framework import mixins, serializers, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -312,6 +318,9 @@ class LocationViewSet(InventoryVersionViewSet):
         return self.get_paginated_response(StockSerializer(page, many=True).data)
 
 
+@extend_schema_view(
+    retrieve=extend_schema(parameters=[OpenApiParameter("custody_location", OpenApiTypes.UUID)])
+)
 class LotViewSet(InventoryVersionViewSet):
     queryset = LotVersion.objects.all()
     serializer_class = LotSerializer
