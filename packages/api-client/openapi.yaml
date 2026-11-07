@@ -1376,6 +1376,308 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/community-activities/:
+    get:
+      operationId: community_activities_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: code
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 30
+      - in: query
+        name: date_before
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: date_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - name: ordering
+        required: false
+        in: query
+        description: 'Comma-separated fields: activity_date, created_at, code, attendance,
+          id. Prefix with - for descending. Unsupported or blank terms return 400.
+          Ties use id ascending.'
+        schema:
+          type: string
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: type_id
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: zone_id
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - community-activities
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityActivityPage'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: community_activities_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - community-activities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCommunityActivityRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityReceipt'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/community-activities/{id}/:
+    get:
+      operationId: community_activities_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this community activity.
+        required: true
+      tags:
+      - community-activities
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityActivity'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/community-activities/{id}/void/:
+    post:
+      operationId: community_activities_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this community activity.
+        required: true
+      tags:
+      - community-activities
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VoidCommunityActivityRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityReceipt'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/community-activities/zone-options/:
+    get:
+      operationId: community_activities_zone_options_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: action
+        schema:
+          enum:
+          - read
+          - create
+          type: string
+          minLength: 1
+        description: |-
+          * `read` - read
+          * `create` - create
+        required: true
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: page
+        schema:
+          type: integer
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+          maxLength: 100
+      tags:
+      - community-activities
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommunityZoneOptionsPage'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/devices/:
     get:
       operationId: devices_list
@@ -11547,6 +11849,400 @@ components:
       required:
       - expected_revision
       - text
+    CommunityActivity:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+        revision:
+          type: integer
+          readOnly: true
+        is_voided:
+          type: boolean
+          readOnly: true
+        type_id:
+          type: string
+          format: uuid
+          readOnly: true
+        type_snapshot:
+          allOf:
+          - $ref: '#/components/schemas/CommunityTypeSnapshot'
+          readOnly: true
+        zone_id:
+          type: string
+          format: uuid
+          readOnly: true
+        zone_code:
+          type: string
+          readOnly: true
+        zone_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        center_id:
+          type: string
+          format: uuid
+          readOnly: true
+        quadrant_id:
+          type: string
+          format: uuid
+          readOnly: true
+        activity_date:
+          type: string
+          format: date
+          readOnly: true
+        captured_timezone:
+          type: string
+          readOnly: true
+        attendance:
+          type: integer
+          readOnly: true
+        agreements:
+          type: string
+          readOnly: true
+        other_text:
+          type: string
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityEvent'
+          readOnly: true
+        incident:
+          allOf:
+          - $ref: '#/components/schemas/CommunityIncidentReference'
+          nullable: true
+          readOnly: true
+      required:
+      - activity_date
+      - agreements
+      - attendance
+      - captured_timezone
+      - center_id
+      - code
+      - created_at
+      - created_by
+      - events
+      - id
+      - incident
+      - is_voided
+      - other_text
+      - quadrant_id
+      - revision
+      - type_id
+      - type_snapshot
+      - zone_code
+      - zone_id
+      - zone_version_id
+    CommunityActivityPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityActivity'
+        totals:
+          $ref: '#/components/schemas/CommunityTotals'
+      required:
+      - count
+      - next
+      - previous
+      - results
+      - totals
+    CommunityEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+        action:
+          $ref: '#/components/schemas/CommunityEventActionEnum'
+        command_id:
+          type: string
+          format: uuid
+        origin:
+          $ref: '#/components/schemas/CommunityEventOriginEnum'
+        device_time:
+          type: string
+          format: date-time
+          nullable: true
+        server_received_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+        reason:
+          type: string
+        reason_code:
+          type: string
+      required:
+      - action
+      - command_id
+      - created_at
+      - created_by
+      - device_time
+      - id
+      - origin
+      - reason
+      - reason_code
+      - revision
+      - server_received_at
+    CommunityEventActionEnum:
+      enum:
+      - create
+      - void
+      type: string
+      description: |-
+        * `create` - create
+        * `void` - void
+    CommunityEventOriginEnum:
+      enum:
+      - http
+      - field
+      type: string
+      description: |-
+        * `http` - http
+        * `field` - field
+    CommunityHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/CommunityHistoryEntryKindEnum'
+        activity_id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        command_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        revision:
+          type: integer
+          maximum: 2
+          minimum: 1
+        type_id:
+          type: string
+          format: uuid
+        type_snapshot:
+          $ref: '#/components/schemas/CommunityTypeSnapshot'
+        zone_id:
+          type: string
+          format: uuid
+        zone_version_id:
+          type: string
+          format: uuid
+        activity_date:
+          type: string
+          format: date
+        attendance:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        is_voided:
+          type: boolean
+        source_event_id:
+          type: string
+          format: uuid
+        source_device_time:
+          type: string
+          format: date-time
+        source_server_received_at:
+          type: string
+          format: date-time
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorySubject'
+      required:
+      - activity_date
+      - activity_id
+      - attendance
+      - code
+      - command_id
+      - event_id
+      - id
+      - is_voided
+      - kind
+      - revision
+      - source_device_time
+      - source_event_id
+      - source_server_received_at
+      - subjects
+      - type_id
+      - type_snapshot
+      - zone_id
+      - zone_version_id
+    CommunityHistoryEntryKindEnum:
+      enum:
+      - community_activity
+      type: string
+      description: '* `community_activity` - community_activity'
+    CommunityIncidentReference:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        state:
+          $ref: '#/components/schemas/IncidentStateEnum'
+      required:
+      - code
+      - id
+      - state
+    CommunityReceipt:
+      type: object
+      properties:
+        activity_id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        command_id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        revision:
+          type: integer
+          maximum: 2
+          minimum: 1
+        server_received_at:
+          type: string
+          format: date-time
+      required:
+      - activity_id
+      - code
+      - command_id
+      - event_id
+      - revision
+      - server_received_at
+    CommunityTotals:
+      type: object
+      properties:
+        active_activity_count:
+          type: integer
+          minimum: 0
+        attendance:
+          type: string
+          pattern: ^\d+$
+      required:
+      - active_activity_count
+      - attendance
+    CommunityTypeSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        label_es:
+          type: string
+        label_en:
+          type: string
+        is_other:
+          type: boolean
+        requires_photo:
+          type: boolean
+      required:
+      - code
+      - is_other
+      - label_en
+      - label_es
+      - requires_photo
+    CommunityZoneOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        quadrant_id:
+          type: string
+          format: uuid
+        quadrant_code:
+          type: string
+        center_id:
+          type: string
+          format: uuid
+        center_code:
+          type: string
+      required:
+      - center_code
+      - center_id
+      - code
+      - id
+      - quadrant_code
+      - quadrant_id
+    CommunityZoneOptionsPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/CommunityZoneOption'
+      required:
+      - count
+      - next
+      - previous
+      - results
     Condition:
       type: object
       description: |-
@@ -11869,9 +12565,11 @@ components:
       - $ref: '#/components/schemas/RelocationHistoryEntry'
       - $ref: '#/components/schemas/TransferHistoryEntry'
       - $ref: '#/components/schemas/LabHistoryEntry'
+      - $ref: '#/components/schemas/CommunityHistoryEntry'
       discriminator:
         propertyName: kind
         mapping:
+          community_activity: '#/components/schemas/CommunityHistoryEntry'
           review_decision: '#/components/schemas/ReviewHistoryEntry'
           shift_validation: '#/components/schemas/ReviewHistoryEntry'
           relocation_proposal: '#/components/schemas/RelocationHistoryEntry'
@@ -11889,6 +12587,40 @@ components:
       description: |-
         * `review_decision` - review_decision
         * `shift_validation` - shift_validation
+    CreateCommunityActivityRequest:
+      type: object
+      properties:
+        type_id:
+          type: string
+          format: uuid
+        zone_id:
+          type: string
+          format: uuid
+        attendance:
+          type: integer
+          maximum: 9007199254740991
+          minimum: 0
+          format: int64
+        agreements:
+          type: string
+          maxLength: 1000
+        other_text:
+          type: string
+          default: ''
+          maxLength: 1000
+        incident_id:
+          type: string
+          format: uuid
+          nullable: true
+        command_id:
+          type: string
+          format: uuid
+      required:
+      - agreements
+      - attendance
+      - command_id
+      - type_id
+      - zone_id
     CreateIncidentTypeRequest:
       type: object
       properties:
@@ -22476,6 +23208,29 @@ components:
       type: string
       description: "* `not_requested` - not_requested\n* `zero_examined` - zero_examined\n*
         `` - "
+    VoidCommunityActivityRequest:
+      type: object
+      description: Shared HTTP and sync body. The target-aware resolver validates
+        the choice and text.
+      properties:
+        reason_code:
+          type: string
+          maxLength: 64
+        reason:
+          type: string
+          maxLength: 1000
+          default: ''
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          maximum: 1
+          minimum: 1
+      required:
+      - command_id
+      - expected_revision
+      - reason_code
     VoidRequest:
       type: object
       description: Shared HTTP and sync body. The target-aware resolver validates

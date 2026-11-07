@@ -7,14 +7,18 @@ not import it. No new Python dependency, application behavior or migration is in
 then executes one disjoint selection serially. The single closed registry
 `contract.MIGRATION_PARTITIONS` declares these whole-module cohorts:
 
-- `migrations-foundation`: inventory105 and void-reason migration owners.
-- `migrations-field`: geography and review113 migration owners.
-- `migrations-material`: transfer106 and lab114 migration owners.
+- `migrations-foundation`: inventory105.
+- `migrations-field`: geography.
+- `migrations-material`: transfer106.
+- `migrations-void-reason`: void-reason.
+- `migrations-review`: review113.
+- `migrations-lab`: lab114.
+- `migrations-community`: community127.
 
-`regular` retains exactly the complement of the six migration modules. The
+`regular` retains exactly the complement of the seven migration modules. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
-detector; no second module registry exists. Every cohort must be nonempty and no
-module can belong to two cohorts. Each selection retains its original collected
+detector; no second module registry exists. Every cohort must contain exactly one
+whole module and no module can belong to two cohorts. Each selection retains its original collected
 order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
 `-m`, external `PYTEST_ADDOPTS`,
@@ -38,13 +42,14 @@ incomplete evidence cannot become a successful fragment.
 
 Shard coverage is **data only** (`--cov-report= --cov-fail-under=0`), never a passing
 whole-backend percentage. The existing coverage source/omit configuration remains
-unchanged except the new Lab domain: 16 configured apps, migrations/WSGI/ASGI omitted, and the historical
+unchanged except adding the Lab and Community domains: 17 configured apps,
+migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires all four matrix results to succeed. It runs
+The original `checks` job first requires all eight matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-four exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+eight exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
@@ -58,7 +63,7 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: all four fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all eight fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
@@ -68,9 +73,11 @@ cannot pass it. It executes no tests and emits no fragment or passing-test count
 `PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
 protection or repository setting is changed.
 
-All four test jobs and final `checks` keep their 15-minute timeout and standard runner.
-The four PostgreSQL test services and final drift service duplicate setup work and can
-increase runner-minutes/storage. The target is at least three minutes' headroom per
+All eight test jobs and final `checks` keep their 15-minute timeout and standard runner.
+The eight PostgreSQL test services and final drift service duplicate setup work and can
+increase runner-minutes/storage. Compared with the previous four-partition workflow,
+four additional standard-runner jobs repeat checkout, dependency and database setup;
+tests still execute exactly once. The target is at least three minutes' headroom per
 job, to be measured in actual changed-head CI. Historic adjacent log intervals are
 not individual test/SQL timings and no host-resource cause or speedup is certified.
 

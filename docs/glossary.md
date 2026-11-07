@@ -117,6 +117,12 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
+| actividad comunitaria | community activity | `CommunityActivity`, `/community-activities/` | One aggregate attendance observation, not a resident list or a unique-person metric. Public `zone_id` is the actual Block UUID and retains its BlockVersion. |
+| vínculo de queja | complaint incident link | `ComplaintIncidentLink` | Immutable link to a real reported Incident in the same pair; it never grants Incident/evidence read authority or closes independent holds. |
+| recibo de actividad | community command receipt | `CommunityCommandReceipt` | Exact original actor/body/target/origin identity; HTTP never fabricates a FieldEvent and cross-origin reuse conflicts. |
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
 | anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason`, `void_reason_code` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 

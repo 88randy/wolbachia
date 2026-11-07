@@ -41,6 +41,7 @@ class StoredEvent:
     status: str
     status_code: str
     status_params: dict[str, Any]
+    type: str = ""
 
 
 def find_stored_event(event_id: uuid.UUID) -> StoredEvent | None:
@@ -60,6 +61,7 @@ def find_stored_event(event_id: uuid.UUID) -> StoredEvent | None:
             "status",
             "status_code",
             "status_params",
+            "type",
         )
         .first()
     )
