@@ -29,6 +29,7 @@ EXPECTED_COHORTS = {
     "migrations-review": {"tests/test_review_migrations_113.py"},
     "migrations-lab": {"tests/test_lab_migrations_114.py"},
     "migrations-community": {"tests/test_community_migrations_127.py"},
+    "migrations-supplies": {"tests/test_inventory_allocations_migrations_107.py"},
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
 
@@ -124,8 +125,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 8
-        )  # One regular node and seven whole migration owners.
+            validate_fragments(bundles, expected) == 9
+        )  # One regular node and eight whole migration owners.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -150,6 +151,13 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
     for malformed in (
         {**EXPECTED_COHORTS, "migrations-foundation": set()},
         {**EXPECTED_COHORTS, "migrations-field": EXPECTED_COHORTS["migrations-foundation"]},
+        {
+            name: modules | EXPECTED_COHORTS["migrations-void-reason"]
+            if name == "migrations-foundation"
+            else modules
+            for name, modules in EXPECTED_COHORTS.items()
+            if name != "migrations-void-reason"
+        },
         {
             **{key: value for key, value in EXPECTED_COHORTS.items() if key != "migrations-lab"},
             "migrations-material": EXPECTED_COHORTS["migrations-material"]

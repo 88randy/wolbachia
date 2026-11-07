@@ -1219,3 +1219,97 @@ type/Block/time/authority facts. Only real source-backed activities publish one
 aggregate history branch to the original real courier. No private wording or Incident
 identities enter that branch; HTTP-only rows do not invent a FieldEvent or recipient.
 No client Community screen/cache/native qualification is delivered here.
+
+## Courier supplies and material disposal (#107)
+
+All routes use /api/v1/, current membership-derived organization and session/CSRF
+for web commands. Field captures use the existing pinned DeviceBearer sync entry.
+No organization input, role-name authorization or advisory can grant custody.
+Per action, ONE contributing grant must cover the complete paired center/quadrant
+vector of real origin, persisted work points and return destinations. Courier
+receive/reconcile also require self ownership; ordinary current field_event.sync
+is checked independently. Unknown, foreign and inaccessible identities are opaque
+404. Lists scope before filters/count/order/page. Denied empty vectors reveal no
+schedule metadata; legitimately center-only authorized empty suggestions are valid.
+
+GET/POST courier-assignments/ and GET/PATCH courier-assignments/{id}/ expose plans.
+Create requires command_id, courier_id, origin_id, date, optional shift_id, and
+nonempty lines of {id,lot_id,piece_id:null|UUID,unit_version_id,quantity}. PATCH
+requires command_id, expected_revision and complete replacement lines. Planning
+creates no reservation or movement. Replay binds create/revise mode, exact target
+and canonical input, returns the immutable written version and rechecks current
+authority. Same command with different mode/target/content conflicts.
+
+GET courier-assignments/suggestion/?date=YYYY-MM-DD&courier=UUID uses real published
+due tasks, actual owner revisions and rule pins. No published schedule returns
+unavailable, missing authored mappings returns unconfigured; assessed can be empty.
+Only material aggregates and configuration availability are public; contributing
+task, ownership and rule identifiers remain private. The query requires date;
+its only optional facet is courier (omission selects the authenticated user).
+No guessed daily-target allocation or write occurs. Supply-type transit-policies/
+and material-mappings/ GET/POST publish immutable named configuration, with
+expected_revision (zero initially). Existing supply_type.update owns publication.
+Transit mode is manual_evidence_review, with real photo proof; no recipe is seeded.
+
+POST inventory-intents/ prepares a concrete immutable evidence parent, with
+command_id, kind, expected_revision and evidence:[{upload_id,role}]. It has ZERO
+operational effects. Six closed kinds: assignment_release (assignment_id),
+release_cancel (release_id, reason_code, reason), return_accept (declaration_id,
+quantity), reconcile_justify (reconciliation_id, discrepancy_id, reason_code,
+reason), lot_write_off (lot_id, location_id, piece_id, unit_version_id, quantity,
+owner_id, date, reason_code, reason), bag_disposal (bag_id, owner_id, date,
+reason_code, reason). GET inventory-intents/{id}/ returns its immutable prepared
+body and nullable exact saved execution. Declare file UUID/role before B04 bytes,
+then finalize to target {kind:inventory_intent,id:UUID}; there is one real resolver.
+Signature/RPBI are actual verified files, not client flags or URLs. No upload grant
+is implied by domain access; retained private downloads use current necessary
+domain authority, independently of field.upload.
+
+Execution bodies are {intent_id}: POST courier-assignments/{id}/release/ or
+release-cancellations/, reconciliations/{id}/returns/accept/ or justify/, and
+write-offs/. Replays reauthorize before returning the saved original response,
+not latest state; mismatched endpoint/target is concealed. Release reserves only
+the proven actual origin stock; shared availability is signed Location balance
+minus active uncredited reservations, also honored by facility transfers. Receipt
+debits origin and credits an Assignment custodian. A return declaration grants no
+stock; separate signed warehouse acceptance atomically debits custody and credits
+the real destination, without imposing dispatch eligibility on unsafe returns.
+Decimal quantities use the pinned declared unit; Piece identity is indivisible.
+
+GET reconciliations/ and {id}/ retain versioned frames Q,R,U,T,S,D, with
+D=R-U-T-S and separate delivery variance Q-R. Missing R is null; a signed zero
+is zero. One discrepancy per reconciliation retains its original facts;
+justification appends against the exact current frame and creates no stock.
+Differences never block an otherwise valid shift.close. Its real saved frame is
+projected to supplies; late effective supply sources, their voids and actual
+acceptance/justification invalidate an existing
+closed-shift approval through its sole history publisher, without reopening it.
+
+GET write-offs/ and {id}/?kind=lot|bag expose distinct typed immutable facts.
+Lot loss cannot exceed unreserved on-hand quantity; biological loss requires
+finished RPBI evidence. Bag disposal is one whole real Bag/Reading/source, never
+an inferred egg quantity. It requires actual receipt/result and a current closed
+local-day unselected draw proof with no unresolved recount; missing/stale/open QA
+is unavailable, never clearance. Disposal preserves original scientific and source
+audit. Future #115 obligations remain material_unavailable. Only a proved
+historical count replacement may use measurement_kind=data_correction on the
+actual predecessor; omitted/physical_measurement retains the exact legacy command
+shape/hash/replay. No first count, rejection or new physical measurement is allowed
+after disposal. No material restoration or QA/recount completion is implied.
+
+Assignment and reconciliation lists intersect date, center, courier, assignment,
+created_at_from and created_at_before. Write-off lists instead support date,
+center, created_at_from, created_at_before and kind; neither courier nor assignment
+is a write-off facet. List ordering is created_at or -created_at with UUID tie
+break and ordinary page/page_size. Repeated recognized facets are invalid.
+All B10 reasoned corrections require the common normalized catalog reason plus
+at least10 visible and at most1000 stored characters for EVERY code. This extra
+feature rule does not alter the common Other-only requirement. Validation uses
+400 fields; state conflicts use409 inventory_state_conflict with safe blocked_by;
+real TRY contention uses429 inventory_in_progress/Retry-After. No partial effects.
+
+Location movements retain signed quantity, source_kind and source_id. Optional
+nullable source_supply adds only real typed kind/id/assignment/source-event UUIDs
+under current complete supply authority; null without private supply read context.
+It grants no actor PII and leaves source_transfer unchanged. Page-level relation
+lookup/prefetch avoids one metadata query per movement or Assignment.

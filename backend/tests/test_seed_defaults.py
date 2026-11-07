@@ -274,6 +274,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     assert by_slug["courier"] == {
         "community_activity.read",
         "community_activity.create",
+        "supply_assignment.receive",
+        "supply_assignment.reconcile",
         "incident.read",
         "incident.create",
         *reader,
@@ -285,6 +287,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
     assert by_slug["supervisor"] == {
         "community_activity.read",
         "community_activity.void",
+        "inventory.reconcile",
         "egg_count.void",
         "transfer.read",
         "transfer.receive",
@@ -322,6 +325,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "bag.dispose",
         "bag.receive",
         "egg_count.create",
         "egg_count.read",
@@ -345,6 +349,9 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "community_activity.create",
     }
     assert by_slug["warehouse"] == {
+        "inventory.allocate",
+        "inventory.reconcile",
+        "inventory.write_off",
         "transfer.read",
         "transfer.create",
         "transfer.dispatch",
@@ -383,6 +390,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "community_activity.read",
         "community_activity.create",
         "community_activity.void",
+        "inventory.allocate",
+        "inventory.reconcile",
+        "inventory.write_off",
+        "supply_assignment.receive",
+        "supply_assignment.reconcile",
+        "bag.dispose",
         "bag.receive",
         "egg_count.create",
         "egg_count.read",
@@ -492,6 +505,8 @@ def test_seeded_codes_are_recorded_on_the_profile() -> None:
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
+        "supply_assignment.receive",
+        "supply_assignment.reconcile",
     ]
 
 
@@ -518,6 +533,8 @@ def test_seed_adds_permission_codes_without_removing_existing() -> None:
         "motorcycle.read",
         "organization.read",
         "rule_parameter.read",
+        "supply_assignment.receive",
+        "supply_assignment.reconcile",
         "widget.read",
     ]
 
@@ -546,6 +563,8 @@ def test_seed_grants_only_codes_never_seeded_before() -> None:
         "courier": (
             "community_activity.read",
             "community_activity.create",
+            "supply_assignment.receive",
+            "supply_assignment.reconcile",
             "incident.read",
             "incident.create",
             "field.upload",
@@ -703,7 +722,9 @@ def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government
     organization = create_organization(SPEC)
     warehouse = Profile.objects.get(organization=organization, slug="warehouse")
     warehouse.permission_codes = [
-        code for code in warehouse.permission_codes if code != "lot.update"
+        code
+        for code in warehouse.permission_codes
+        if code not in ("lot.update", "inventory.allocate", FIELD_UPLOAD)
     ]
     warehouse.save(update_fields=["permission_codes"])
     custom = Profile.objects.create(
@@ -717,6 +738,8 @@ def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government
     warehouse.refresh_from_db()
     custom.refresh_from_db()
     assert "lot.update" not in warehouse.permission_codes
+    assert "inventory.allocate" not in warehouse.permission_codes
+    assert FIELD_UPLOAD not in warehouse.permission_codes
     assert "supply_type.deactivate" not in warehouse.permission_codes
     assert custom.permission_codes == ["lot.read"]
     assert Profile.objects.get(organization=organization, slug="government").permission_codes == [

@@ -2,7 +2,9 @@
 
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
-from typing import Any
+from contextvars import ContextVar
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from field_sync.envelope import BatchContext, EventEnvelope
@@ -13,17 +15,265 @@ from reviews.contracts import HandlerPreparation
 from reviews.dependencies import BatchCandidates, classify_dependencies
 from reviews.scope import SubjectFacts, subject_facts, vector_allows
 
+if TYPE_CHECKING:
+    from uploads.access import UploadActor
+
+
+@dataclass(frozen=True)
+class BatchPreparation:
+    """Only authentic existing row identities; candidate IDs are declared by this batch."""
+
+    users: tuple[UUID, ...]
+    sources: tuple[tuple[UUID, UUID], ...]
+    candidates: frozenset[UUID]
+    retains_organization: bool
+
+
+@dataclass(frozen=True)
+class ReviewUserPreparation:
+    source_id: UUID
+    source_authors: dict[UUID, UUID | None]
+    humans: frozenset[UUID]
+
+
+_batch_preparation: ContextVar[BatchPreparation | None] = ContextVar(
+    "review_batch_preparation", default=None
+)
+
+
+def current_batch_preparation() -> BatchPreparation | None:
+    return _batch_preparation.get()
+
+
+def prepare_batch_participants(
+    batch: BatchContext, envelopes: list[EventEnvelope]
+) -> BatchPreparation:
+    from field_sync.registry import get_handler
+
+    identifiers: set[UUID] = set()
+    users = {batch.user.pk}
+    for envelope in envelopes:
+        context = EventContext(
+            batch.organization, batch.user, batch.device, envelope, batch.received_at
+        )
+        identifiers.update(_batch_source_ids(context))
+        users.update(_domain_users(context))
+    rows = list(FieldEvent.objects.filter(organization=batch.organization, pk__in=identifiers))
+    if any(row.created_by_id is None for row in rows):
+        from field_sync.exceptions import SyncInProgressError
+
+        raise SyncInProgressError
+    users.update(row.created_by_id for row in rows)
+    retains = any(
+        (handler := get_handler(envelope.type, envelope.schema_version)) is not None
+        and handler.review_adapter is not None
+        for envelope in envelopes
+    )
+    return BatchPreparation(
+        tuple(sorted(users)),
+        tuple(sorted((row.pk, row.created_by_id) for row in rows)),
+        frozenset(envelope.id for envelope in envelopes),
+        retains,
+    )
+
+
+def _batch_source_ids(ctx: EventContext) -> set[UUID]:
+    from field_sync.exceptions import EventNeedsReview, EventRejected
+    from shifts.models import Shift
+
+    identifiers = set(
+        FieldEvent.objects.filter(
+            organization=ctx.organization, created_by=ctx.user, pk=ctx.envelope.id
+        ).values_list("pk", flat=True)
+    )
+    if ctx.envelope.voids_event_id is not None:
+        identifiers.update(
+            FieldEvent.objects.filter(
+                organization=ctx.organization, created_by=ctx.user, pk=ctx.envelope.voids_event_id
+            ).values_list("pk", flat=True)
+        )
+    if ctx.envelope.shift_id is not None:
+        identifiers.update(
+            Shift.objects.filter(
+                organization=ctx.organization, courier=ctx.user, pk=ctx.envelope.shift_id
+            ).values_list("opened_event_id", flat=True)
+        )
+    try:
+        if ctx.envelope.type in {"transfer.dispatch", "transfer.receive"}:
+            from inventory.transfers.dependencies import source_references as transfer_references
+            from inventory.transfers.review import authorize_source
+
+            authorize_source(ctx, ctx.envelope.payload)
+            identifiers.update(transfer_references(ctx.organization, ctx.envelope.payload))
+        if ctx.envelope.type in {"supplies.receive", "supplies.reconcile"}:
+            from inventory.allocations.review import authorize_source
+            from inventory.allocations.review import source_references as supply_references
+
+            authorize_source(ctx, ctx.envelope.payload)
+            identifiers.update(supply_references(ctx))
+        marker = _authorized_marker_source(ctx)
+        if marker is not None:
+            identifiers.add(marker)
+    except (EventRejected, EventNeedsReview, KeyError, TypeError, ValueError):
+        pass  # The regular per-event validator retains precedence and immutable rejection.
+    return identifiers
+
+
+def _domain_users(ctx: EventContext) -> set[UUID]:
+    from inventory.allocations.transactions import assignment_participants
+
+    if ctx.envelope.type in {"supplies.receive", "supplies.reconcile"}:
+        from inventory.allocations.review import source_participants
+
+        return set(source_participants(ctx))
+    if ctx.envelope.type == "shift.close":
+        from inventory.allocations.reconciliation import close_assignment_rows
+
+        return {
+            identifier
+            for assignment in close_assignment_rows(ctx)
+            for identifier in assignment_participants(assignment).users
+        }
+    if ctx.envelope.type == "record.void" and ctx.envelope.voids_event_id is not None:
+        from dataclasses import replace
+
+        from reviews.inspection import original_source_envelope
+
+        target = (
+            FieldEvent.objects.filter(
+                organization=ctx.organization,
+                pk=ctx.envelope.voids_event_id,
+                created_by=ctx.user,
+                type__in=("supplies.receive", "supplies.reconcile"),
+            )
+            .exclude(status="rejected")
+            .first()
+        )
+        if target is not None:
+            return _domain_users(replace(ctx, envelope=original_source_envelope(target)))
+    return set()
+
+
+def _review_domain_users(source: FieldEvent) -> set[UUID]:
+    author = source.created_by
+    if author is None:
+        return set()
+    from inventory.allocations.models import SupplyAssignment
+    from inventory.allocations.transactions import assignment_participants
+    from reviews.inspection import original_source_envelope
+
+    if source.type in {"supplies.receive", "supplies.reconcile"}:
+        try:
+            identifier = UUID(str(source.payload.get("assignment_id")))
+        except (AttributeError, TypeError, ValueError):
+            return set()
+        assignment = SupplyAssignment.objects.filter(
+            organization=source.organization, pk=identifier, courier_id=source.created_by_id
+        ).first()
+        return set() if assignment is None else set(assignment_participants(assignment).users)
+    try:
+        envelope = original_source_envelope(source)
+    except ValueError:
+        return set()
+    context = EventContext(
+        source.organization, author, source.device, envelope, source.server_received_at
+    )
+    if source.type == "record.void" and context.envelope.voids_event_id is not None:
+        target = FieldEvent.objects.filter(
+            organization=source.organization,
+            pk=context.envelope.voids_event_id,
+            created_by=source.created_by,
+            type__in=("supplies.receive", "supplies.reconcile", "shift.close"),
+        ).first()
+        return set() if target is None else _review_domain_users(target)
+    return _domain_users(context) if source.type == "shift.close" else set()
+
+
+@contextmanager
+def prepared_batch_boundary(prepared: BatchPreparation) -> Iterator[None]:
+    token = _batch_preparation.set(prepared)
+    try:
+        yield
+    finally:
+        _batch_preparation.reset(token)
+
+
+def require_prepared_source_ids(identifiers: set[UUID]) -> None:
+    prepared = _batch_preparation.get()
+    if prepared is not None and not identifiers.issubset(
+        {row[0] for row in prepared.sources} | prepared.candidates
+    ):
+        from field_sync.exceptions import SyncInProgressError
+
+        raise SyncInProgressError
+
+
+@contextmanager
+def prepare_review_users(
+    actor: "UploadActor", source: FieldEvent, references: set[UUID]
+) -> Iterator[ReviewUserPreparation]:
+    """Extend the SAME review transaction with authentic known-source authors, before sessions."""
+    from django.db import DatabaseError, transaction
+
+    from accounts.models import User
+    from field_sync.exceptions import SyncInProgressError
+    from field_sync.services import RETRYABLE_SQLSTATES, set_batch_lock_timeout
+
+    identities = dict(
+        FieldEvent.objects.filter(
+            organization=actor.organization, pk__in=references | {source.pk}
+        ).values_list("pk", "created_by_id")
+    )
+    humans = {
+        actor.user.pk,
+        source.review_item.courier_id,
+        *_review_domain_users(source),
+        *(identifier for identifier in identities.values() if identifier is not None),
+    }
+    try:
+        with transaction.atomic():
+            set_batch_lock_timeout()
+            rows = list(
+                User.objects.filter(pk__in=humans)
+                .order_by("pk")
+                .select_for_update(nowait=True, no_key=True)
+            )
+            if len(rows) != len(humans):
+                raise SyncInProgressError
+            yield ReviewUserPreparation(source.pk, identities, frozenset(humans))
+    except DatabaseError as error:
+        if getattr(error.__cause__, "sqlstate", None) in RETRYABLE_SQLSTATES:
+            raise SyncInProgressError from error
+        raise
+
+
+def require_same_review_sources(
+    actor: "UploadActor", prepared: ReviewUserPreparation, references: set[UUID]
+) -> None:
+    from field_sync.exceptions import SyncInProgressError
+
+    current = dict(
+        FieldEvent.objects.filter(
+            organization=actor.organization, pk__in=references | set(prepared.source_authors)
+        ).values_list("pk", "created_by_id")
+    )
+    source = FieldEvent.objects.get(pk=prepared.source_id)
+    if current != prepared.source_authors or not _review_domain_users(source).issubset(
+        prepared.humans
+    ):
+        raise SyncInProgressError
+
 
 def lock_source_references(ctx: EventContext) -> None:
     from shifts.models import Shift
 
     identifiers = set()
     if ctx.envelope.type in {"transfer.dispatch", "transfer.receive"}:
-        from inventory.transfers.dependencies import source_references
+        from inventory.transfers.dependencies import source_references as transfer_references
         from inventory.transfers.review import authorize_source
 
         authorize_source(ctx, ctx.envelope.payload)
-        identifiers.update(source_references(ctx.organization, ctx.envelope.payload))
+        identifiers.update(transfer_references(ctx.organization, ctx.envelope.payload))
     if ctx.envelope.voids_event_id is not None:
         owned_target = FieldEvent.objects.filter(
             organization=ctx.organization, created_by=ctx.user, pk=ctx.envelope.voids_event_id
@@ -39,6 +289,13 @@ def lock_source_references(ctx: EventContext) -> None:
     marker_source_id = _authorized_marker_source(ctx)
     if marker_source_id is not None:
         identifiers.add(marker_source_id)
+    if ctx.envelope.type in {"supplies.receive", "supplies.reconcile"}:
+        from inventory.allocations.review import authorize_source
+        from inventory.allocations.review import source_references as supply_references
+
+        authorize_source(ctx, ctx.envelope.payload)
+        identifiers.update(supply_references(ctx))
+    require_prepared_source_ids(identifiers)
     list(
         FieldEvent.objects.filter(organization=ctx.organization, pk__in=identifiers)
         .order_by("pk")
@@ -169,7 +426,10 @@ def prepare_ingest(  # noqa: PLR0913 -- explicit batch, source, registered handl
     causal = classify_dependencies(batch, envelope, candidates)
     subjects = subject_facts(batch.organization, envelope)
     with ExitStack() as stack:
-        if subjects.resource_kind == "transfer":
+        if (
+            subjects.resource_kind in {"transfer", "supply_assignment"}
+            or envelope.type == "shift.close"
+        ):
             from inventory.transactions import inventory_transaction
 
             stack.enter_context(inventory_transaction(organization=batch.organization))

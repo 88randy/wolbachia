@@ -1129,3 +1129,58 @@ Current community_activity.read plus the existing full subject permission filter
 precede LIMIT/cursor/bootstrap. The payload builder is shared by bootstrap/changes;
 persisting during revocation is not a read grant. Root bootstrap2, capture_context,
 other producer versions and the six current upload parents remain unchanged.
+
+## Signed courier supply sources (#107)
+
+The registered schema1 sources supplies.receive and supplies.reconcile use the
+same authenticated ingestion/review lifecycle and normal shift checks. Receipt
+payload: command_id, assignment_id, expected_revision (reconciliation),
+plan_revision, release_id, signature_upload_id, actual_lines of
+{id,release_line_id,quantity}, discrepancies[]. Actual zero is valid. A changed
+plan keeps the signed original observation in review with no operational effects.
+Acceptance needs original context, current actor/original-author/reviewer paired
+authority and genuine release/source proof; it cannot fabricate missing proof.
+
+Reconcile payload: command_id, assignment_id, expected_revision and used/returned/
+shrinkage deltas. Each row references receipt_line_id and receipt_source_event_id.
+Used rows carry quantity, work_kind field_event with real work_source_id OR manual
+with manual_reason, plus exact transit_policy_id and transit_evidence_ids. Both
+require the actual pinned active named procedure and review of original transit
+proof; no storage Location or on-hand safety reading is invented for courier use.
+Returns carry real destination_id and quantity, and give zero destination credit.
+Shrinkage carries reason_code, normalized reason and nonempty evidence_ids. Empty
+file-free returns do not require field.upload; real files require it independently.
+
+New result codes: supply_inaccessible (opaque rejection), supply_void_blocked
+(dependent/current-custodian rejection), supply_assignment_changed,
+supply_state_conflict, supply_evidence_required and supply_transit_unavailable
+(retained review with zero NEW effects). The registry keys are
+`supply_inaccessible`, `supply_void_blocked`, `supply_assignment_changed`,
+`supply_state_conflict`, `supply_evidence_required` and `supply_transit_unavailable`.
+An inactive selected canonical reason uses existing void_reason_code_deactivated;
+invalid reason input stays per-event invalid_payload. Every B10 void reason has
+the feature-specific10-visible/1000-stored limit, retaining global normalization.
+
+Actual command/event/line UUIDs, exact payload hashes, original ingest verdicts,
+device/server clocks and rule/catalog pins are retained. Duplicate source IDs
+recheck current action/self/full-vector authority before returning the saved
+verdict; changed content does not repost. Cross-source deltas use the genuine
+same-author supplies.receive dependency, without expanding other review families.
+Generic record.void calls the concrete current-custody compensation hook; consumed
+material or dependent declarations require their real correction first or safe409/
+supply_void_blocked. No DELETE, status rewrite or second history publisher exists.
+
+Supplies producer1 now projects actual own assignments/releases/receipts/frame and
+justification facts. History advances5→6 with eight typed supply kinds; root
+bootstrap remains2 and all old kinds stay intact. Current complete-vector/own-action
+filtering happens before serialization, count and cursor LIMIT. The new own codes
+participate in scope_revision; clients must use existing capture readiness and
+bootstrap invalidation on scope changes. Hiding a delta is not deletion or renewed
+authority for a cached assignment. Signed source/evidence audit remains retained;
+revoked release eligibility does not invent a restriction on factual return review.
+
+Preparation closes over all authentic actor/courier/historical authors and known
+source FEs BEFORE sorted Users→Device→Session→Pair→known FEs→Organization arbiter
+→planned courier TRY→domain→Uploads. Changed closure aborts for fresh preparation
+outside retained locks. Final upload uses the ONE existing lifecycle/savepoint and
+fresh eligibility precedence; no new device bridge or transport grant is implied.

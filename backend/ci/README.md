@@ -14,8 +14,9 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-review`: review113.
 - `migrations-lab`: lab114.
 - `migrations-community`: community127.
+- `migrations-supplies`: courier-supplies107.
 
-`regular` retains exactly the complement of the seven migration modules. The
+`regular` retains exactly the complement of the eight migration modules. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; no second module registry exists. Every cohort must contain exactly one
 whole module and no module can belong to two cohorts. Each selection retains its original collected
@@ -47,9 +48,9 @@ migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires all eight matrix results to succeed. It runs
+The original `checks` job first requires all nine matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-eight exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+nine exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
@@ -63,7 +64,7 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: all eight fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all nine fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
@@ -73,10 +74,10 @@ cannot pass it. It executes no tests and emits no fragment or passing-test count
 `PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
 protection or repository setting is changed.
 
-All eight test jobs and final `checks` keep their 15-minute timeout and standard runner.
-The eight PostgreSQL test services and final drift service duplicate setup work and can
-increase runner-minutes/storage. Compared with the previous four-partition workflow,
-four additional standard-runner jobs repeat checkout, dependency and database setup;
+All nine test jobs and final `checks` keep their 15-minute timeout and standard runner.
+The nine PostgreSQL test services and final drift service duplicate setup work and can
+increase runner-minutes/storage. Compared with the canonical eight-partition workflow,
+one additional standard-runner job repeats checkout, dependency and database setup;
 tests still execute exactly once. The target is at least three minutes' headroom per
 job, to be measured in actual changed-head CI. Historic adjacent log intervals are
 not individual test/SQL timings and no host-resource cause or speedup is certified.
@@ -92,3 +93,19 @@ Verified interfaces: [pytest collection hooks](https://docs.pytest.org/en/stable
 [coverage 7.17.1 public data](https://github.com/coveragepy/coveragepy/blob/7.17.1/coverage/sqldata.py),
 [artifact upload v7.0.2](https://github.com/actions/upload-artifact/tree/cf430e030ddbb5b0abf93d22962f4752f3646cd9),
 [artifact download v8.0.1](https://github.com/actions/download-artifact/tree/3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c).
+
+## Eighth whole migration owner (#107)
+
+tests/test_inventory_allocations_migrations_107.py is classified as a COMPLETE
+MigrationExecutor owner, alongside the seven canonical modules unchanged. It upgrades
+real old custody/Lab/source rows, checks append-only/tenant/custodian/source guards,
+empty reverse and populated refusal/restoration. Exhaustive disjoint inventory,
+exact setup/call/teardown union, combined85% threshold and900s job budgets remain.
+Its two collected nodes remain together in `migrations-supplies`. The first real
+#107 run exposed a900s field-cohort timeout and only34s material headroom; the
+complete migration modules therefore each receive their own explicit cohort,
+including the subsequently canonical Community owner and the Supply owner.
+This retains every owner and assertion, adds service/setup/runner-minutes, and does
+not predict a speedup. Collection/offline graph checks do not execute SQL. Fresh
+changed-head CI must measure every cohort against the three-minute headroom target.
+No timeout/classifier cut or local non-PostgreSQL substitute qualifies it.

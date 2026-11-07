@@ -59,6 +59,9 @@ def create_rejection(creation: RejectionCreation) -> LabRejection:
     actor, bag, values = creation.actor, creation.bag, creation.values
     if not scoped_bags(actor, FIELD_UPLOAD).filter(pk=bag.pk).exists():
         raise Http404
+    from lab.dependencies import require_physical_material
+
+    require_physical_material(bag)
     if RecountRequest.objects.filter(
         count__bag=bag, supersession__isnull=False, supersession__replacement__isnull=True
     ).exists():

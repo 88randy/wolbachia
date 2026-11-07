@@ -1678,6 +1678,374 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/courier-assignments/:
+    get:
+      operationId: courier_assignments_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: assignment
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: courier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: created_at_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_at_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - courier-assignments
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplyAssignmentReadList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: courier_assignments_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - courier-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAssignmentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/courier-assignments/{id}/:
+    get:
+      operationId: courier_assignments_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - courier-assignments
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyAssignmentRead'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: courier_assignments_partial_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - courier-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReviseAssignmentRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AssignmentOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/courier-assignments/{id}/release/:
+    post:
+      operationId: courier_assignments_release_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - courier-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteInventoryIntentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReleaseOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/courier-assignments/{id}/release-cancellations/:
+    post:
+      operationId: courier_assignments_release_cancellations_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - courier-assignments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteInventoryIntentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancellationOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/courier-assignments/suggestion/:
+    get:
+      operationId: courier_assignments_suggestion_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: courier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+        required: true
+      tags:
+      - courier-assignments
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplySuggestion'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/devices/:
     get:
       operationId: devices_list
@@ -3771,6 +4139,92 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedIncidentContextOptionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/inventory-intents/:
+    post:
+      operationId: inventory_intents_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - inventory-intents
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrepareInventoryIntentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PreparedIntentOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/inventory-intents/{id}/:
+    get:
+      operationId: inventory_intents_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - inventory-intents
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InventoryIntentRead'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -7829,6 +8283,237 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/reconciliations/:
+    get:
+      operationId: reconciliations_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: assignment
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: courier
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: created_at_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_at_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - reconciliations
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplyReconciliationList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/reconciliations/{id}/:
+    get:
+      operationId: reconciliations_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - reconciliations
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyReconciliation'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/reconciliations/{id}/justify/:
+    post:
+      operationId: reconciliations_justify_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - reconciliations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteInventoryIntentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/JustificationOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/reconciliations/{id}/returns/accept/:
+    post:
+      operationId: reconciliations_returns_accept_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - reconciliations
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteInventoryIntentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReturnAcceptanceOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/recount-requests/:
     get:
       operationId: recount_requests_list
@@ -10106,6 +10791,212 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/supply-types/{supply_id}/material-mappings/:
+    get:
+      operationId: supply_types_material_mappings_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: supply_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - supply-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplyConfigurationReadList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: supply_types_material_mappings_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: supply_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - supply-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialMappingRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyConfigurationRead'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/supply-types/{supply_id}/transit-policies/:
+    get:
+      operationId: supply_types_transit_policies_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: path
+        name: supply_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - supply-types
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedSupplyConfigurationReadList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: supply_types_transit_policies_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: supply_id
+        schema:
+          type: string
+          format: uuid
+        required: true
+      tags:
+      - supply-types
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TransitPolicyRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupplyConfigurationRead'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/supply-types/protocol-incident-type-options/:
     get:
       operationId: supply_types_protocol_incident_type_options_list
@@ -10638,6 +11529,182 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/write-offs/:
+    get:
+      operationId: write_offs_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: created_at_before
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: created_at_from
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: date
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - lot
+          - bag
+          type: string
+          minLength: 1
+        description: |-
+          * `lot` - lot
+          * `bag` - bag
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          type: string
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - write-offs
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedWriteOffReadList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: write_offs_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - write-offs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExecuteInventoryIntentRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteOffOutcome'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/write-offs/{id}/:
+    get:
+      operationId: write_offs_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$
+        required: true
+      tags:
+      - write-offs
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WriteOffRead'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
 components:
   schemas:
     AcknowledgeMissing:
@@ -10685,6 +11752,23 @@ components:
       description: |-
         * `human` - human
         * `system` - system
+    ActualSupplyLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        release_line_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - id
+      - quantity
+      - release_line_id
     AdvisoryParameters:
       type: object
       properties:
@@ -10782,6 +11866,91 @@ components:
       - quadrant
       - revision
       - target
+    AssignmentLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - id
+      - lot_id
+      - quantity
+      - unit_version_id
+    AssignmentLineRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        lot_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - id
+      - lot_id
+      - quantity
+      - unit_version_id
+    AssignmentOutcome:
+      type: object
+      properties:
+        assignment:
+          $ref: '#/components/schemas/SupplyAssignmentRead'
+      required:
+      - assignment
+    AssignmentReleaseIntentKindEnum:
+      enum:
+      - assignment_release
+      type: string
+      description: '* `assignment_release` - assignment_release'
+    AssignmentReleaseIntentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRoleRequest'
+        kind:
+          $ref: '#/components/schemas/AssignmentReleaseIntentKindEnum'
+        assignment_id:
+          type: string
+          format: uuid
+      required:
+      - assignment_id
+      - command_id
+      - expected_revision
+      - kind
     AssignmentRequestRequest:
       type: object
       properties:
@@ -10834,6 +12003,7 @@ components:
       - review_item
       - transfer_event
       - lab_rejection
+      - inventory_intent
       type: string
       description: |-
         * `field_event` - field_event
@@ -10842,6 +12012,7 @@ components:
         * `review_item` - review_item
         * `transfer_event` - transfer_event
         * `lab_rejection` - lab_rejection
+        * `inventory_intent` - inventory_intent
     AttachmentTargetRequest:
       type: object
       properties:
@@ -10978,6 +12149,115 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    BagDisposalIntentKindEnum:
+      enum:
+      - bag_disposal
+      type: string
+      description: '* `bag_disposal` - bag_disposal'
+    BagDisposalIntentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRoleRequest'
+        reason_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        kind:
+          $ref: '#/components/schemas/BagDisposalIntentKindEnum'
+        bag_id:
+          type: string
+          format: uuid
+        owner_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+      required:
+      - bag_id
+      - command_id
+      - date
+      - expected_revision
+      - kind
+      - owner_id
+      - reason
+      - reason_code
+    BagDisposalRead:
+      type: object
+      properties:
+        owner_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        reason_code:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+        rpbi_upload_id:
+          type: string
+          format: uuid
+          nullable: true
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/BagDisposalReadKindEnum'
+        bag_id:
+          type: string
+          format: uuid
+        reading_id:
+          type: string
+          format: uuid
+        source_event_id:
+          type: string
+          format: uuid
+        collector_id:
+          type: string
+          format: uuid
+        dependency_proof:
+          type: object
+          additionalProperties: {}
+      required:
+      - bag_id
+      - collector_id
+      - created_at
+      - created_by
+      - date
+      - dependency_proof
+      - id
+      - kind
+      - owner_id
+      - reading_id
+      - reason
+      - reason_code
+      - rpbi_upload_id
+      - source_event_id
+    BagDisposalReadKindEnum:
+      enum:
+      - bag
+      type: string
+      description: '* `bag` - bag'
     BlankEnum:
       enum:
       - ''
@@ -11237,8 +12517,7 @@ components:
         supplies:
           type: array
           items:
-            type: object
-            additionalProperties: {}
+            $ref: '#/components/schemas/SupplyBundle'
         permits:
           type: array
           items:
@@ -11288,6 +12567,13 @@ components:
       - schema_version
       - scope_revision
       - supplies
+    CancellationOutcome:
+      type: object
+      properties:
+        cancellation:
+          $ref: '#/components/schemas/SupplyCancellation'
+      required:
+      - cancellation
     CaptureContext:
       type: object
       description: Self current SYNC observation; no session secret or immutable source
@@ -11649,7 +12935,7 @@ components:
         supplies:
           type: array
           items:
-            $ref: '#/components/schemas/ProducerChange'
+            $ref: '#/components/schemas/SupplyChange'
         permits:
           type: array
           items:
@@ -12466,6 +13752,8 @@ components:
         method_version:
           type: string
           format: uuid
+        measurement_kind:
+          $ref: '#/components/schemas/MeasurementKindEnum'
         kind:
           $ref: '#/components/schemas/CountReplacementKindEnum'
       required:
@@ -12566,6 +13854,7 @@ components:
       - $ref: '#/components/schemas/TransferHistoryEntry'
       - $ref: '#/components/schemas/LabHistoryEntry'
       - $ref: '#/components/schemas/CommunityHistoryEntry'
+      - $ref: '#/components/schemas/SupplyHistoryEntry'
       discriminator:
         propertyName: kind
         mapping:
@@ -12574,6 +13863,14 @@ components:
           shift_validation: '#/components/schemas/ReviewHistoryEntry'
           relocation_proposal: '#/components/schemas/RelocationHistoryEntry'
           transfer_custody: '#/components/schemas/TransferHistoryEntry'
+          supply_plan: '#/components/schemas/SupplyHistoryEntry'
+          supply_release: '#/components/schemas/SupplyHistoryEntry'
+          supply_cancel: '#/components/schemas/SupplyHistoryEntry'
+          supply_receipt: '#/components/schemas/SupplyHistoryEntry'
+          supply_reconcile: '#/components/schemas/SupplyHistoryEntry'
+          supply_return: '#/components/schemas/SupplyHistoryEntry'
+          supply_justify: '#/components/schemas/SupplyHistoryEntry'
+          supply_bag_disposal: '#/components/schemas/SupplyHistoryEntry'
           lab_receipt: '#/components/schemas/LabHistoryEntry'
           lab_discrepancy: '#/components/schemas/LabHistoryEntry'
           lab_count: '#/components/schemas/LabHistoryEntry'
@@ -12587,6 +13884,35 @@ components:
       description: |-
         * `review_decision` - review_decision
         * `shift_validation` - shift_validation
+    CreateAssignmentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        courier_id:
+          type: string
+          format: uuid
+        origin_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        shift_id:
+          type: string
+          format: uuid
+          nullable: true
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentLineRequest'
+      required:
+      - command_id
+      - courier_id
+      - date
+      - lines
+      - origin_id
     CreateCommunityActivityRequest:
       type: object
       properties:
@@ -12957,6 +14283,28 @@ components:
         * `accepted` - Accepted
         * `rejected` - Rejected
         * `in_review` - In Review
+    EvidenceRole:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/SupplyEvidenceRoleEnum'
+      required:
+      - role
+      - upload_id
+    EvidenceRoleRequest:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+        role:
+          $ref: '#/components/schemas/SupplyEvidenceRoleEnum'
+      required:
+      - role
+      - upload_id
     EvidenceUploadRequestRequest:
       type: object
       properties:
@@ -13025,6 +14373,14 @@ components:
       - id
       - point
       - point_version
+    ExecuteInventoryIntentRequest:
+      type: object
+      properties:
+        intent_id:
+          type: string
+          format: uuid
+      required:
+      - intent_id
     ExpectedScan:
       type: object
       properties:
@@ -14263,6 +15619,18 @@ components:
       - link
       - reason
       - unblocked_by_role
+    InventoryIntentRead:
+      type: object
+      properties:
+        intent:
+          $ref: '#/components/schemas/SupplyIntent'
+        execution:
+          allOf:
+          - $ref: '#/components/schemas/SupplySavedExecution'
+          nullable: true
+      required:
+      - execution
+      - intent
     InventoryLocationKindEnum:
       enum:
       - biofactory
@@ -14287,9 +15655,18 @@ components:
           minimum: 0
       required:
       - expected_revision
+    JustificationOutcome:
+      type: object
+      properties:
+        justification:
+          $ref: '#/components/schemas/SupplyJustification'
+      required:
+      - justification
     LabBagSummary:
       type: object
       properties:
+        material:
+          $ref: '#/components/schemas/LabMaterial'
         status:
           $ref: '#/components/schemas/LabBagSummaryStatusEnum'
         revision:
@@ -14344,6 +15721,8 @@ components:
     LabCount:
       type: object
       properties:
+        material:
+          $ref: '#/components/schemas/LabMaterial'
         id:
           type: string
           format: uuid
@@ -14586,6 +15965,24 @@ components:
         * `lab_count` - lab_count
         * `lab_void` - lab_void
         * `lab_rejection` - lab_rejection
+    LabMaterial:
+      type: object
+      properties:
+        available:
+          type: boolean
+        disposition_id:
+          type: string
+          format: uuid
+          nullable: true
+        reason:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/ReasonEnum'
+          - $ref: '#/components/schemas/NullEnum'
+      required:
+      - available
+      - disposition_id
+      - reason
     LabMethod:
       type: object
       description: |-
@@ -14987,6 +16384,8 @@ components:
     LabRejection:
       type: object
       properties:
+        material:
+          $ref: '#/components/schemas/LabMaterial'
         id:
           type: string
           format: uuid
@@ -15647,6 +17046,132 @@ components:
       description: |-
         * `location` - location
         * `center_only_draft` - center_only_draft
+    LotWriteOffIntentKindEnum:
+      enum:
+      - lot_write_off
+      type: string
+      description: '* `lot_write_off` - lot_write_off'
+    LotWriteOffIntentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRoleRequest'
+        reason_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        kind:
+          $ref: '#/components/schemas/LotWriteOffIntentKindEnum'
+        lot_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        owner_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+      required:
+      - command_id
+      - date
+      - expected_revision
+      - kind
+      - location_id
+      - lot_id
+      - owner_id
+      - quantity
+      - reason
+      - reason_code
+      - unit_version_id
+    LotWriteOffRead:
+      type: object
+      properties:
+        owner_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        reason_code:
+          type: string
+        reason:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        created_by:
+          type: string
+          format: uuid
+        rpbi_upload_id:
+          type: string
+          format: uuid
+          nullable: true
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/LotWriteOffReadKindEnum'
+        lot_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+      required:
+      - created_at
+      - created_by
+      - date
+      - id
+      - kind
+      - location_id
+      - lot_id
+      - owner_id
+      - piece_id
+      - quantity
+      - reason
+      - reason_code
+      - rpbi_upload_id
+      - unit_version_id
+    LotWriteOffReadKindEnum:
+      enum:
+      - lot
+      type: string
+      description: '* `lot` - lot'
     LotWriteRequest:
       type: object
       properties:
@@ -15785,6 +17310,33 @@ components:
       - sha256
       - size_bytes
       - version
+    MaterialMappingRequest:
+      type: object
+      properties:
+        supply_version_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        action:
+          $ref: '#/components/schemas/SupplyMappingActionEnum'
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        reference:
+          type: string
+          minLength: 1
+        is_active:
+          type: boolean
+      required:
+      - action
+      - expected_revision
+      - is_active
+      - quantity
+      - reference
+      - supply_version_id
     Me:
       type: object
       description: '`organization` is null when the user has several organizations
@@ -15936,6 +17488,14 @@ components:
       - id
       - last_name
       - username
+    MeasurementKindEnum:
+      enum:
+      - physical_measurement
+      - data_correction
+      type: string
+      description: |-
+        * `physical_measurement` - physical_measurement
+        * `data_correction` - data_correction
     Membership:
       type: object
       description: |-
@@ -16428,6 +17988,35 @@ components:
           - code
           - event_id
           readOnly: true
+        source_supply:
+          type: object
+          nullable: true
+          properties:
+            kind:
+              type: string
+              enum:
+              - supply_receive
+              - supply_reconcile
+              - supply_return
+              - lot_write_off
+              - supply_compensation
+            id:
+              type: string
+              format: uuid
+            assignment_id:
+              type: string
+              format: uuid
+              nullable: true
+            source_event_id:
+              type: string
+              format: uuid
+              nullable: true
+          required:
+          - kind
+          - id
+          - assignment_id
+          - source_event_id
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -16451,6 +18040,7 @@ components:
       - quantity
       - source_id
       - source_kind
+      - source_supply
       - source_transfer
       - supply_id
       - unit
@@ -18116,6 +19706,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Stock'
+    PaginatedSupplyAssignmentReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyAssignmentRead'
+    PaginatedSupplyConfigurationReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyConfigurationRead'
     PaginatedSupplyList:
       type: object
       required:
@@ -18139,6 +19775,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Supply'
+    PaginatedSupplyReconciliationList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyReconciliation'
     PaginatedTransferList:
       type: object
       required:
@@ -18162,6 +19821,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Transfer'
+    PaginatedWriteOffReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/WriteOffRead'
     PasswordResetConfirmRequest:
       type: object
       description: Resolves the link first, so a bad link never reveals the password
@@ -18368,6 +20050,19 @@ components:
         support_contact:
           type: string
           maxLength: 200
+    PatchedReviseAssignmentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 1
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentLineRequest'
     PatchedSupplyWriteRequest:
       type: object
       properties:
@@ -18590,6 +20285,18 @@ components:
       required:
       - point
       - spacing_warnings
+    PrepareInventoryIntentRequest:
+      required:
+      - kind
+      oneOf:
+      - $ref: '#/components/schemas/AssignmentReleaseIntentRequest'
+      - $ref: '#/components/schemas/ReleaseCancelIntentRequest'
+      - $ref: '#/components/schemas/ReturnAcceptIntentRequest'
+      - $ref: '#/components/schemas/ReconcileJustifyIntentRequest'
+      - $ref: '#/components/schemas/LotWriteOffIntentRequest'
+      - $ref: '#/components/schemas/BagDisposalIntentRequest'
+      discriminator:
+        propertyName: kind
     PrepareLineRequest:
       type: object
       properties:
@@ -18634,6 +20341,13 @@ components:
       - destination_id
       - lines
       - origin_id
+    PreparedIntentOutcome:
+      type: object
+      properties:
+        intent:
+          $ref: '#/components/schemas/SupplyIntent'
+      required:
+      - intent
     PreviewRequestRequest:
       type: object
       properties:
@@ -18746,6 +20460,11 @@ components:
       - upsert
       type: string
       description: '* `upsert` - upsert'
+    ProofRolesEnum:
+      enum:
+      - photo
+      type: string
+      description: '* `photo` - photo'
     Protocol:
       type: object
       description: |-
@@ -19468,6 +21187,11 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    ReasonEnum:
+      enum:
+      - bag_disposed
+      type: string
+      description: '* `bag_disposed` - bag_disposed'
     ReassignRequest:
       type: object
       properties:
@@ -19723,6 +21447,48 @@ components:
       - expected_revision
       - missing_type_version
       - no_reading_type_version
+    ReconcileJustifyIntentKindEnum:
+      enum:
+      - reconcile_justify
+      type: string
+      description: '* `reconcile_justify` - reconcile_justify'
+    ReconcileJustifyIntentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRoleRequest'
+        reason_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        kind:
+          $ref: '#/components/schemas/ReconcileJustifyIntentKindEnum'
+        reconciliation_id:
+          type: string
+          format: uuid
+        discrepancy_id:
+          type: string
+          format: uuid
+      required:
+      - command_id
+      - discrepancy_id
+      - expected_revision
+      - kind
+      - reason
+      - reason_code
+      - reconciliation_id
     RecountRequest:
       type: object
       description: |-
@@ -19863,6 +21629,51 @@ components:
       - evidence_ids
       - method_version
       - reason
+    ReleaseCancelIntentKindEnum:
+      enum:
+      - release_cancel
+      type: string
+      description: '* `release_cancel` - release_cancel'
+    ReleaseCancelIntentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRoleRequest'
+        reason_code:
+          type: string
+          minLength: 1
+          maxLength: 64
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        kind:
+          $ref: '#/components/schemas/ReleaseCancelIntentKindEnum'
+        release_id:
+          type: string
+          format: uuid
+      required:
+      - command_id
+      - expected_revision
+      - kind
+      - reason
+      - reason_code
+      - release_id
+    ReleaseOutcome:
+      type: object
+      properties:
+        release:
+          $ref: '#/components/schemas/SupplyRelease'
+      required:
+      - release
     Relocation:
       type: object
       description: |-
@@ -20564,6 +22375,46 @@ components:
       - id
       - location_id
       - name
+    ReturnAcceptIntentKindEnum:
+      enum:
+      - return_accept
+      type: string
+      description: '* `return_accept` - return_accept'
+    ReturnAcceptIntentRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRoleRequest'
+        kind:
+          $ref: '#/components/schemas/ReturnAcceptIntentKindEnum'
+        declaration_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+      required:
+      - command_id
+      - declaration_id
+      - expected_revision
+      - kind
+      - quantity
+    ReturnAcceptanceOutcome:
+      type: object
+      properties:
+        acceptance:
+          $ref: '#/components/schemas/SupplyReturnAcceptance'
+      required:
+      - acceptance
     ReviewChange:
       type: object
       description: A review item as the phone's inbox sees it (the courier's own events
@@ -22180,12 +24031,22 @@ components:
       - transfer_dispatch
       - transfer_receive
       - transfer_resolution
+      - supply_receive
+      - supply_reconcile
+      - supply_return
+      - lot_write_off
+      - supply_compensation
       type: string
       description: |-
         * `lot_admission` - lot_admission
         * `transfer_dispatch` - transfer_dispatch
         * `transfer_receive` - transfer_receive
         * `transfer_resolution` - transfer_resolution
+        * `supply_receive` - supply_receive
+        * `supply_reconcile` - supply_reconcile
+        * `supply_return` - supply_return
+        * `lot_write_off` - lot_write_off
+        * `supply_compensation` - supply_compensation
     SourceStatusEnum:
       enum:
       - accepted
@@ -22357,6 +24218,615 @@ components:
       - specification
       - unit
       - version
+    SupplyAssignmentRead:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        courier_id:
+          type: string
+          format: uuid
+        origin_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        shift_id:
+          type: string
+          format: uuid
+          nullable: true
+        revision:
+          type: integer
+          minimum: 1
+        version_id:
+          type: string
+          format: uuid
+        planning_proof:
+          type: object
+          additionalProperties: {}
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentLine'
+      required:
+      - courier_id
+      - date
+      - id
+      - lines
+      - origin_id
+      - planning_proof
+      - revision
+      - shift_id
+      - version_id
+    SupplyBundle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        courier_id:
+          type: string
+          format: uuid
+        origin_id:
+          type: string
+          format: uuid
+        date:
+          type: string
+          format: date
+        shift_id:
+          type: string
+          format: uuid
+          nullable: true
+        revision:
+          type: integer
+          minimum: 1
+        version_id:
+          type: string
+          format: uuid
+        planning_proof:
+          type: object
+          additionalProperties: {}
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/AssignmentLine'
+        organization_id:
+          type: string
+          format: uuid
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        reconciliation:
+          allOf:
+          - $ref: '#/components/schemas/SupplyReconciliation'
+          nullable: true
+        releases:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyReleaseBundle'
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyReceiptBundle'
+      required:
+      - center_id
+      - courier_id
+      - date
+      - id
+      - lines
+      - organization_id
+      - origin_id
+      - planning_proof
+      - quadrant_id
+      - receipts
+      - reconciliation
+      - releases
+      - revision
+      - shift_id
+      - version_id
+    SupplyCancellation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        release_id:
+          type: string
+          format: uuid
+      required:
+      - id
+      - release_id
+    SupplyChange:
+      type: object
+      properties:
+        sequence:
+          type: integer
+          minimum: 1
+        action:
+          $ref: '#/components/schemas/ProjectionUpsertActionEnum'
+        resource_type:
+          type: string
+        resource_id:
+          type: string
+        resource_version:
+          type: string
+        data:
+          $ref: '#/components/schemas/SupplyBundle'
+      required:
+      - action
+      - data
+      - resource_id
+      - resource_type
+      - resource_version
+      - sequence
+    SupplyConfigurationRead:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        supply_version_id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+        is_active:
+          type: boolean
+        reference:
+          type: string
+        name:
+          type: string
+        procedure:
+          type: string
+        mode:
+          $ref: '#/components/schemas/SupplyTransitModeEnum'
+        proof_roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofRolesEnum'
+        action:
+          $ref: '#/components/schemas/SupplyMappingActionEnum'
+        quantity:
+          type: string
+      required:
+      - id
+      - is_active
+      - reference
+      - revision
+      - supply_version_id
+    SupplyEvidenceRoleEnum:
+      type: string
+      enum:
+      - signature
+      - rpbi
+      - photo
+    SupplyExecutionBody:
+      type: object
+      properties:
+        release:
+          $ref: '#/components/schemas/SupplyRelease'
+        cancellation:
+          $ref: '#/components/schemas/SupplyCancellation'
+        acceptance:
+          $ref: '#/components/schemas/SupplyReturnAcceptance'
+        justification:
+          $ref: '#/components/schemas/SupplyJustification'
+        write_off:
+          $ref: '#/components/schemas/WriteOffRead'
+    SupplyFrame:
+      type: object
+      properties:
+        assignment_id:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyFrameLine'
+      required:
+      - assignment_id
+      - lines
+    SupplyFrameLine:
+      type: object
+      properties:
+        assignment_line_id:
+          type: string
+          format: uuid
+        plan_revision:
+          type: integer
+          minimum: 1
+        planned:
+          type: string
+        credited:
+          type: string
+          nullable: true
+        used:
+          type: string
+        returned:
+          type: string
+        shrinkage:
+          type: string
+        difference:
+          type: string
+          nullable: true
+        delivery_variance:
+          type: string
+          nullable: true
+      required:
+      - assignment_line_id
+      - credited
+      - delivery_variance
+      - difference
+      - plan_revision
+      - planned
+      - returned
+      - shrinkage
+      - used
+    SupplyHistoryEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/SupplyHistoryEntryKindEnum'
+        source_kind:
+          $ref: '#/components/schemas/SupplyHistorySourceKindEnum'
+        assignment_id:
+          type: string
+          format: uuid
+          nullable: true
+        bag_id:
+          type: string
+          format: uuid
+          nullable: true
+        actor_id:
+          type: string
+          format: uuid
+        at:
+          type: string
+          format: date-time
+        subjects:
+          type: array
+          items:
+            $ref: '#/components/schemas/HistorySubject'
+        source_event_id:
+          type: string
+          format: uuid
+          nullable: true
+        source_status:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/SourceStatusEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        source_code:
+          type: string
+          nullable: true
+        voided_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - actor_id
+      - assignment_id
+      - at
+      - bag_id
+      - id
+      - kind
+      - source_code
+      - source_event_id
+      - source_kind
+      - source_status
+      - subjects
+      - voided_at
+    SupplyHistoryEntryKindEnum:
+      enum:
+      - supply_plan
+      - supply_release
+      - supply_cancel
+      - supply_receipt
+      - supply_reconcile
+      - supply_return
+      - supply_justify
+      - supply_bag_disposal
+      type: string
+      description: |-
+        * `supply_plan` - supply_plan
+        * `supply_release` - supply_release
+        * `supply_cancel` - supply_cancel
+        * `supply_receipt` - supply_receipt
+        * `supply_reconcile` - supply_reconcile
+        * `supply_return` - supply_return
+        * `supply_justify` - supply_justify
+        * `supply_bag_disposal` - supply_bag_disposal
+    SupplyHistorySourceKindEnum:
+      type: string
+      enum:
+      - plan
+      - release
+      - cancel
+      - receipt
+      - reconcile
+      - return
+      - justify
+      - bag_disposal
+    SupplyIntent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/SupplyIntentKindEnum'
+        expected_revision:
+          type: integer
+          minimum: 0
+        input_hash:
+          type: string
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/EvidenceRole'
+      required:
+      - evidence
+      - expected_revision
+      - id
+      - input_hash
+      - kind
+    SupplyIntentKindEnum:
+      enum:
+      - assignment_release
+      - release_cancel
+      - return_accept
+      - reconcile_justify
+      - lot_write_off
+      - bag_disposal
+      type: string
+      description: |-
+        * `assignment_release` - assignment_release
+        * `release_cancel` - release_cancel
+        * `return_accept` - return_accept
+        * `reconcile_justify` - reconcile_justify
+        * `lot_write_off` - lot_write_off
+        * `bag_disposal` - bag_disposal
+    SupplyJustification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        frame_id:
+          type: string
+          format: uuid
+      required:
+      - frame_id
+      - id
+    SupplyMappingActionEnum:
+      type: string
+      enum:
+      - place
+      - check
+    SupplyReceiptBundle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        source_event_id:
+          type: string
+          format: uuid
+        release_id:
+          type: string
+          format: uuid
+        signature_upload_id:
+          type: string
+          format: uuid
+        voided:
+          type: boolean
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActualSupplyLine'
+      required:
+      - event_id
+      - id
+      - lines
+      - release_id
+      - signature_upload_id
+      - source_event_id
+      - voided
+    SupplyReconciliation:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assignment:
+          $ref: '#/components/schemas/SupplyAssignmentRead'
+        revision:
+          type: integer
+          minimum: 0
+        frame_id:
+          type: string
+          format: uuid
+          nullable: true
+        frame:
+          allOf:
+          - $ref: '#/components/schemas/SupplyFrame'
+          nullable: true
+        discrepancy_id:
+          type: string
+          format: uuid
+          nullable: true
+        justification_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+      required:
+      - assignment
+      - discrepancy_id
+      - frame
+      - frame_id
+      - id
+      - justification_ids
+      - revision
+    SupplyRelease:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assignment_id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        proof:
+          type: object
+          additionalProperties: {}
+      required:
+      - assignment_id
+      - id
+      - proof
+      - revision
+    SupplyReleaseBundle:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        plan_revision:
+          type: integer
+          minimum: 1
+        manifest_hash:
+          type: string
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyReleasedLine'
+      required:
+      - id
+      - lines
+      - manifest_hash
+      - plan_revision
+    SupplyReleasedLine:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        assignment_line_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+        transit_policy_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - assignment_line_id
+      - id
+      - quantity
+      - transit_policy_id
+    SupplyReturnAcceptance:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        declaration_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+      required:
+      - declaration_id
+      - id
+      - quantity
+      - revision
+    SupplySavedExecution:
+      type: object
+      properties:
+        status:
+          type: integer
+        response:
+          $ref: '#/components/schemas/SupplyExecutionBody'
+        written_revision:
+          type: integer
+      required:
+      - response
+      - status
+      - written_revision
+    SupplySuggestion:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/SupplySuggestionStatusEnum'
+        date:
+          type: string
+          format: date
+        courier_id:
+          type: string
+          format: uuid
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplySuggestionLine'
+        schedule_revision:
+          type: integer
+        unconfigured_actions:
+          type: array
+          items:
+            $ref: '#/components/schemas/SupplyMappingActionEnum'
+      required:
+      - courier_id
+      - date
+      - lines
+      - status
+    SupplySuggestionLine:
+      type: object
+      properties:
+        supply_version_id:
+          type: string
+          format: uuid
+        mapping_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+      required:
+      - mapping_id
+      - quantity
+      - supply_version_id
+    SupplySuggestionStatusEnum:
+      enum:
+      - unavailable
+      - unconfigured
+      - assessed
+      type: string
+      description: |-
+        * `unavailable` - unavailable
+        * `unconfigured` - unconfigured
+        * `assessed` - assessed
+    SupplyTransitModeEnum:
+      type: string
+      enum:
+      - manual_evidence_review
     SupplyWriteRequest:
       type: object
       properties:
@@ -22998,6 +25468,42 @@ components:
       - received
       - discrepancy
       - resolved
+    TransitPolicyRequest:
+      type: object
+      properties:
+        supply_version_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        procedure:
+          type: string
+          minLength: 1
+        reference:
+          type: string
+          minLength: 1
+        mode:
+          $ref: '#/components/schemas/SupplyTransitModeEnum'
+        proof_roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/ProofRolesEnum'
+        is_active:
+          type: boolean
+      required:
+      - expected_revision
+      - is_active
+      - mode
+      - name
+      - procedure
+      - proof_roles
+      - reference
+      - supply_version_id
     UnavailableReasonEnum:
       enum:
       - rule_context_unavailable
@@ -23272,6 +25778,22 @@ components:
           format: date
       required:
       - week
+    WriteOffOutcome:
+      type: object
+      properties:
+        write_off:
+          $ref: '#/components/schemas/WriteOffRead'
+      required:
+      - write_off
+    WriteOffRead:
+      oneOf:
+      - $ref: '#/components/schemas/LotWriteOffRead'
+      - $ref: '#/components/schemas/BagDisposalRead'
+      discriminator:
+        propertyName: kind
+        mapping:
+          lot: '#/components/schemas/LotWriteOffRead'
+          bag: '#/components/schemas/BagDisposalRead'
     FieldError:
       type: object
       description: 'One validation failure of a field: a machine code plus its parameters.'

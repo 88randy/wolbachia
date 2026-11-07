@@ -13,6 +13,7 @@ MIGRATION_PARTITIONS = {
     "migrations-review": frozenset({"tests/test_review_migrations_113.py"}),
     "migrations-lab": frozenset({"tests/test_lab_migrations_114.py"}),
     "migrations-community": frozenset({"tests/test_community_migrations_127.py"}),
+    "migrations-supplies": frozenset({"tests/test_inventory_allocations_migrations_107.py"}),
 }
 PARTITION_NAMES = ("regular", *MIGRATION_PARTITIONS)
 MIGRATION_MODULES = frozenset(

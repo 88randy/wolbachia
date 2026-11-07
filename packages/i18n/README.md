@@ -106,3 +106,10 @@ dev-only style preview) in both locales.
 in es-MX/en. The sampling label explicitly says per 100 first counts. These are
 labels for existing configuration controls, not a laboratory client screen or
 scientific method default.
+
+## Supply source verdicts (#107)
+
+Both sync catalogs include six actual B10 result keys for inaccessible, blocked
+void, changed assignment, state conflict, missing evidence and unavailable transit.
+Existing inactive-reason/clock/final-upload codes are reused. Review messages retain
+the capture/signature; no text claims physical use or warehouse credit was applied.
