@@ -273,8 +273,9 @@ the mobile transport/final-upload capability limits (#246).
 
 inventory/ provides versioned supply/location masters and lots, immutable opening
 stock/pieces, named biological protocols/readings and owned condition holds.
-Stock balances derive from signed movements. No transfer, assigned courier stock,
-dispatch or compensation workflow is claimed. See inventory/README.md for the
+Stock balances derive from signed movements. Signed facility transfers and bounded
+discrepancy compensation are implemented by inventory/transfers/ (#106); assigned
+courier stock remains separate. See inventory/README.md for the
 exact API, strict two-slot policy, initial-custody integration seams, authorization,
 automatic incident source and real PostgreSQL verification boundary.
 

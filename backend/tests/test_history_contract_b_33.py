@@ -48,3 +48,26 @@ def test_invalid_shared_history_cannot_enter_either_delivery_contract(mutation):
     }
     serializer = CourierHistoryEntrySerializer(data=payload | mutation)
     assert not serializer.is_valid()
+
+
+def test_transfer_history_uses_event_identity_without_invented_review_or_shift_fields():
+    payload = {
+        "kind": "transfer_custody",
+        "id": str(uuid4()),
+        "transfer_id": str(uuid4()),
+        "transfer_code": "SYNTHETIC-TRANSFER",
+        "phase": "receive",
+        "revision": 3,
+        "manifest_hash": "a" * 64,
+        "source_event_id": str(uuid4()),
+        "source_status": "in_review",
+        "source_code": "causal_parent_pending",
+        "voided_at": None,
+        "subjects": [{"center_id": str(uuid4()), "quadrant_id": None}],
+    }
+    serializer = CourierHistoryEntrySerializer(data=payload)
+    assert serializer.is_valid(), serializer.errors
+    assert serializer.data == payload
+    assert payload["id"] != payload["transfer_id"]
+    assert "review_item_id" not in serializer.data
+    assert "shift_id" not in serializer.data

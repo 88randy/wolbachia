@@ -71,6 +71,10 @@ def classify_dependencies(
     handler = get_handler(envelope.type, envelope.schema_version)
     if handler is None or handler.review_adapter is None:
         return HandlerPreparation()
+    if envelope.type in {"transfer.dispatch", "transfer.receive"}:
+        from inventory.transfers.dependencies import classify_transfer_dependency
+
+        return classify_transfer_dependency(batch, envelope, candidates)
     if envelope.type == "record.void":
         return _void_dependency(batch, envelope, candidates)
     pending = []

@@ -1015,3 +1015,51 @@ Recovery uses bounded (created_at,id) pages that advance even over pending cause
 No storage/network/mail under sync locks and no new sync projection is introduced.
 record.void retains linked incident/history; incident closure resolves owned holds
 only and does not compensate other domain facts. See ADR 133 and incidents/README.md.
+
+## Signed facility custody (#106 / B-09)
+
+`transfer.dispatch` schema1 carries transfer_id plus command_id, expected_revision
+and signature_upload_id. `transfer.receive` schema1 adds the closed scanned union,
+missing assertions/photo coverage and evidence_ids. Optional dispatch_source_event_id
+names the real same-transfer dispatch FieldEvent. These two families explicitly use
+checks_shift=False; facility custody has no Shift contract. They are distinct from
+future supplies.receive/B10. Current field_event.sync and the actual transfer action
+each need ONE binding over both endpoints/all line pairs. Global identity/device/
+session, clock and final-upload gates remain. No role/GPS/measurement grants custody.
+
+| Code | Verdict / client consequence |
+| --- | --- |
+| `transfer_inaccessible` | Rejected: unknown/foreign/unauthorized real transfer/source; no existence disclosure. |
+| `transfer_state_conflict` | In review: unavailable signed dispatch, stale command/state or conflicting receipt assertions. Keep original capture/signature. |
+| `transfer_evidence_required` | In review: unfinished/missing/reused/wrong-actor signature/photo. Keep pending files for independent upload. |
+| `transfer_safety_blocked` | In review: mandatory current expiry/type/protocol/storage/condition/hold policy prevents effects. |
+| `transfer_void_blocked` | Rejected correction: stock/dependents lack exact supported compensation; retain old signed effects/history. |
+
+NEW in_review sources retain original FieldEvent/ReviewItem, payload hash, both
+clocks/rules/catalog/evidence declarations and selected immutable capture facts
+with ZERO operational TransferEvent/StockOperation/hold/success receipts. Canonical113
+later applies once with genuine original authority, current reviewer action+decide
+and current mandatory safety. Different sender/receiver authors use transfer_source
+only for an exact real same-transfer effective dispatch/link/hash/typed child
+subject. No source is invented and no child is automatically replayed. Original
+ingest status/time/payload stay unchanged after the canonical effect receipt.
+
+Handler effects precede FieldEvent storage: declared UUID/hash is retained first,
+and append-only TransferSourceLink is completed after the REAL source and primary
+evidence exist. Reviewed linkage follows the canonical effect receipt. Signature
+and photo uploads keep actual FieldEvent primary parent plus secondary custody refs;
+byte finalization never accepts a source. HTTP invents no source/courier recipient.
+
+The ONE existing history producer advances schema2→3 for transfer_custody. Its id
+is immutable TransferEvent UUID, separate transfer_id names the parent, and phase
+dispatch|receive/revision/hash/source verdict/void flag/subjects are shared by
+changes/bootstrap after current complete-vector scope and before paging. Only
+real original source couriers receive records. Old review/shift/relocation shapes
+stay exact. Internal publication receipts dedupe persistence, not delivery.
+
+record.void invokes the actual custody owner and preserves old manifests/legs.
+No-effects cancellation or exact PRIOR supported return compensation is allowed;
+consumed/unsupported dependents stay blocked. ack_missing is not return proof.
+Canonical reason_code/Other and normalized10-visible/1000-max note apply to EVERY
+transfer void without changing other owners' resolver. No old leg leaves SUM.
+See backend/inventory/transfers/README.md for the HTTP contract and test ownership.

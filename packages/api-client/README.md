@@ -210,3 +210,11 @@ The schema includes relocation.read proposal listing and ovitrap.read physical
 history, retirement/suggestion fields, abandoned/removed incident markers and the
 additive optional courier is_retired field. Event payloads/results remain documented
 in docs/sync.md. Regenerate both artifacts with api:generate; do not edit them.
+
+#106 adds facility /transfers/ and /discrepancies/ reads/actions, closed scan and
+resolution unions, and the fifth transfer_event attachment context. Lot reads add
+explicit custody_location/safety_location_id, movements retain true source IDs and
+redact source_transfer without whole transfer.read, and conditions distinguish
+explicit-location captures from the legacy initial adapter. The same typed history
+union gains transfer_custody under schema3; no runtime client or screen is added.
+See ../../backend/inventory/transfers/README.md for replay, safety and permissions.

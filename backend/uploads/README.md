@@ -176,3 +176,15 @@ Downloads require current incident.read and paired parent scope; in_review-only
 sources also require review_item.read. Source void keeps authorized history readable.
 Finalization takes no Incident/Organization/source row lock and grants no durable
 parent access. Both source/metadata arrival orders retain original ingest semantics.
+
+## Signed custody parent (#106)
+
+The fifth closed parent is transfer_event, an ACTUAL immutable TransferEvent UUID.
+HTTP dispatch/receive/resolution evidence binds that parent atomically with the
+exact signed manifest. Renew/finalize revalidate the original actor, declared proof,
+current action+field.upload over ONE complete transfer vector; recovery/return also
+require receive. Download requires whole current transfer.read, never a single
+historic leg's scope. Sync signatures/photos retain FieldEvent primary parent and
+secondary transfer references; in_review downloads additionally need review.read.
+_resolve_link_target still rejects zero/multiple parents and preserves all four
+legacy parent policies. No new storage/sanitizer or callback to accept a source.
