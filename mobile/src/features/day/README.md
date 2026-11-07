@@ -33,6 +33,23 @@ projections BEFORE its separate receipt/cursor transaction and settles final rec
 before removing downloads. The lifecycle README and owning SQLite tests describe
 failure/replay, epoch floors and ownership; these are not native qualification.
 
+### Known invalid-cursor recovery (#138 M4)
+
+`recoverProjections` first suspends capture readiness in the original short writer,
+using its original durable revision CAS. The same transaction advances authority,
+records the predecessor, marks full-body recovery pending and invalidates attachment
+admission. It preserves downloaded caches, true M08 Assignment/supply context,
+immutable owned facts, drafts, events, evidence and the old cursor. Recovery then
+continues only from that confirmed successor under the same transport identity;
+it never captures a replacement owner after an await.
+
+This is an explicit recovery transition, not an ordinary refresh or network error.
+A normal offline refresh preserves a still-valid context. Once an invalid cursor
+is observed, failed HTTP, unexpected304 and cold reopen retain pending readiness.
+Only a committed complete bootstrap body may hydrate it again; stale configuration
+or capture writers fail inside SQL. Projection publication and receipt/cursor
+settlement remain separate, and final JSON receipts still precede full cleanup.
+
 The assignments v2/v3 producer (`backend/scheduling/courier_feed.py` and
 `backend/scheduling/selectors.py`) sends `task.point` as the sampling-point UUID.
 It sends no coordinates. `task.code` is a task identifier that can include action

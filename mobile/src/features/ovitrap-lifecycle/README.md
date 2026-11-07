@@ -500,3 +500,25 @@ legacy restore cannot acquire display authority by copying an already-owned v2 U
 Old raw JSON/facts are never rewritten or backfilled, and another/unproven owner
 continues to see blocked recovery only. A same-owner fresh session may read proven
 historical work without rewriting the original capture session or rules.
+
+## M4 publisher and recovery arbitration checkpoint
+
+Known `invalid_cursor` recovery now suspends capture authority durably before its
+bootstrap HTTP wait, under the original DayBundleService projection turn and SQL
+CAS. It advances the existing revision/predecessor chain and full-body pending flag,
+preserving genuine M08 Assignment data, caches and all authored facts. Only that
+confirmed successor can publish recovery; no current-owner recapture, cursor/hash
+ordering, fake DTO, Assignment reconstruction or new store is involved.
+
+An ordinary offline refresh alone does not revoke a valid context. Failed recovery,
+304 and file reopen stay capture-unavailable until an actual full body commits.
+The owning C3/C4 readiness journey also proves stale config/capture admission fails
+at SQL while original drafts, evidence, outbox UUIDs and cursor survive. Existing
+C4 original-handle/ABA and C3 two-boundary/final-receipt tests remain the owners for
+those distinct invariants. Evaluated SQL1–15 and its16-module import closure are exact;
+no migration, backfill, legacy adoption or device database execution is added.
+
+Full M5 feedback/history3/B33 task joins, actual287 OP03 consumption, Me.limits,
+foreground GPS, shared246 evidence Save/Undo, forms and accessibility remain required.
+Camera253/visual203 are separate holds. Node/file-backed SQLite results do not
+qualify Q1/Q2, native SQLCipher, physical restart or the two device profiles.

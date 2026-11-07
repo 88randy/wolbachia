@@ -227,6 +227,14 @@ export class DayBundleService {
     if (await this.#deps.store.needsCleanup()) await this.clearSessionData();
   };
   revoke = (): Promise<void> => this.#network.run(this.clearSessionData);
+  #suspendCaptureForRecovery(turn: ProjectionTurn): Promise<ProjectionTurn> {
+    return turn.write(async () => {
+      await this.#deps.store.suspendCaptureForRecovery(turn.handle);
+      const handle = await this.#deps.store.advanceCaptureTransport(turn.handle);
+      this.#publish();
+      return { ...turn, handle };
+    });
+  }
   syncHooks(): SyncHooks {
     let turn: ProjectionTurn = {
       write: this.captureProjectionWriter(),
@@ -243,6 +251,7 @@ export class DayBundleService {
         turn = await this.#apply(changes, turn);
       },
       recoverProjections: async () => {
+        turn = await this.#suspendCaptureForRecovery(turn);
         const recovered = await this.#refresh(true, turn);
         if (recovered === null) throw new RemoteSessionEnded();
         turn = recovered;

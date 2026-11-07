@@ -107,7 +107,18 @@ function observedState(input: PublicationInput) {
     : { ready: false };
 }
 export function contextPublication(input: PublicationInput): readonly SqlStatement[] {
-  const state = observedState(input);
+  return publishContextState(observedState(input), input.handle);
+}
+/** Known invalid-cursor recovery suspends authority before HTTP, under the ORIGINAL CAS. */
+export function captureRecoveryStatements(
+  handle: CaptureTransportHandle | null,
+): readonly SqlStatement[] {
+  return [...captureContextCas(handle), ...publishContextState({ ready: false }, handle)];
+}
+function publishContextState(
+  state: ReturnType<typeof observedState>,
+  handle: CaptureTransportHandle | null,
+): readonly SqlStatement[] {
   return [
     mutateCaptureAuthority({ assignmentSql: "json_extract(kv.value,'$.assignment')" }),
     {
@@ -115,7 +126,7 @@ export function contextPublication(input: PublicationInput): readonly SqlStateme
       ON CONFLICT(key) DO UPDATE SET value=excluded.value`,
       params: [
         CAPTURE_CONTEXT_KEY,
-        JSON.stringify({ ...state, previousRevision: input.handle?.revision ?? null }),
+        JSON.stringify({ ...state, previousRevision: handle?.revision ?? null }),
       ],
     },
     {

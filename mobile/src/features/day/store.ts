@@ -6,6 +6,7 @@ import { revokeCaptureScope } from "../ovitrap-lifecycle/current-scope.ts";
 import {
   advanceCaptureTransport,
   captureContextCas,
+  captureRecoveryStatements,
   contextPublication,
   invalidateCaptureContext,
   readCaptureTransport,
@@ -154,6 +155,10 @@ export class DayStore {
       ...invalidateCaptureContext,
       revokeCaptureScope(),
     ]);
+  }
+  /** Preserve caches and authored facts while a known-invalid cursor requires a new full body. */
+  async suspendCaptureForRecovery(handle: CaptureTransportHandle | null): Promise<void> {
+    await this.#db.runAtomically([...captureRecoveryStatements(handle), INVALIDATE_ATTACHMENTS]);
   }
   /** Older parsers may have discarded fields even while their ETag/cursor remain valid. */
   async needsBootstrap(includeLifecycle = true): Promise<boolean> {

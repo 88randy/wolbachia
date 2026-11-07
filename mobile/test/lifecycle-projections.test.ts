@@ -223,7 +223,143 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
     "valid empty input is known denial, not endless bootstrap",
   );
   await assert.rejects(saveProjectionCapture(local.executor), /could not be saved/);
+  await invalidCursorReadiness(directory);
 });
+
+async function invalidCursorReadiness(directory: string) {
+  const path = join(directory, "invalid-cursor.sqlite");
+  let local = await openTestDatabase(path);
+  try {
+    let store = new DayStore(local.executor);
+    let mode: "body" | "offline" | "hold" | "304" = "body";
+    let entered!: () => void;
+    let release!: () => void;
+    const waiting = new Promise<void>((resolve) => {
+      entered = resolve;
+    });
+    const resume = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const etags: (string | null)[] = [];
+    const transport = async (etag: string | null) => {
+      etags.push(etag);
+      if (mode === "hold") {
+        entered();
+        await resume;
+        throw new Error("recovery offline");
+      }
+      if (mode === "offline") throw new Error("ordinary offline");
+      return mode === "304"
+        ? { kind: "unchanged" as const }
+        : { kind: "bundle" as const, body: projectionBundle() };
+    };
+    const service = () =>
+      new DayBundleService({
+        store,
+        now: () => PROJECTION_NOW,
+        getCaptureIdentity: () => PROJECTION_IDENTITY,
+        transport,
+      });
+    let bundle = service();
+    await bundle.refresh();
+    const capture = new OvitrapStore(local.executor);
+    await capture.publishSnapshots(
+      { ...(await capture.snapshots()), assignment: projectionDraft().assignment },
+      await capture.assignmentAuthority(),
+    );
+    await bundle.refresh();
+    await saveProjectionCapture(local.executor);
+    const draft = await prepareProjectionCapture(local.executor, CONTRACT_IDS.actor);
+    const turn = await projectionStartTurn(local.executor);
+    const kept = () => recoveryFacts(local.executor);
+    const before = await kept();
+    const cursor = await new KvStore(local.executor).get("sync_cursor");
+    mode = "offline";
+    await assert.rejects(bundle.refresh(), /ordinary offline/);
+    assert.equal(await store.needsBootstrap(), false, "ordinary offline is not known scope loss");
+    await turn.assertCurrent();
+    assert.deepEqual(await kept(), before);
+    const outbox = new OutboxRepository(local.executor, () => PROJECTION_NOW);
+    mode = "hold";
+    const pending = runSyncPass(
+      {
+        outbox,
+        kv: new KvStore(local.executor),
+        ...bundle.syncHooks(),
+        deviceId: CONTRACT_IDS.device,
+        now: () => PROJECTION_NOW,
+        transport: () => Promise.resolve(httpFailure(400, "invalid_cursor")),
+      },
+      { batchSize: 50 },
+    ).then(
+      (value) => ({ value, error: null }),
+      (error: unknown) => ({ value: null, error }),
+    );
+    await waiting;
+    try {
+      assert.equal(
+        await store.needsBootstrap(),
+        true,
+        "known invalid cursor must suspend ready authority BEFORE recovery HTTP completes",
+      );
+      await assert.rejects(
+        outbox.enqueue(
+          lifecycleEvent(draft),
+          new LifecycleStore(local.executor).commitStatements(draft),
+        ),
+        /could not be saved/,
+      );
+      await assert.rejects(
+        new LifecycleStore(local.executor).saveConfiguration({ catalog: null, rules: null }, turn),
+        /stale|changed/i,
+      );
+      assert.deepEqual(await kept(), before);
+      assert.equal(await new KvStore(local.executor).get("sync_cursor"), cursor);
+    } finally {
+      release();
+      await pending;
+    }
+    assert.match(String((await pending).error), /recovery offline/);
+    local.close();
+    local = await openTestDatabase(path);
+    store = new DayStore(local.executor);
+    bundle = service();
+    assert.equal(await store.needsBootstrap(), true, "reopen retains suspended readiness");
+    assert.deepEqual(await kept(), before);
+    mode = "304";
+    await assert.rejects(bundle.refresh(), /requires a body/);
+    assert.equal(await store.needsBootstrap(), true);
+    assert.equal(await new KvStore(local.executor).get("sync_cursor"), cursor);
+    mode = "body";
+    await bundle.refresh();
+    assert.equal(await store.needsBootstrap(), false);
+    assert.deepEqual(etags.slice(-3), [null, null, null]);
+    assert.deepEqual(await kept(), before);
+    await new OutboxRepository(local.executor, () => PROJECTION_NOW).enqueue(
+      lifecycleEvent(draft),
+      new LifecycleStore(local.executor).commitStatements(draft),
+    );
+    assert.deepEqual(
+      (await local.executor.query("SELECT id FROM outbox_event ORDER BY id")).map((row) => row.id),
+      [CONTRACT_IDS.actor, CONTRACT_IDS.source].sort(),
+    );
+  } finally {
+    local.close();
+  }
+}
+
+async function recoveryFacts(db: SqlExecutor) {
+  return Promise.all([
+    new OvitrapStore(db).snapshots().then((value) => value.assignment),
+    db.query("SELECT * FROM lifecycle_courier_projection ORDER BY kind,id"),
+    db.query("SELECT * FROM day_sampling_point ORDER BY id"),
+    db.query("SELECT * FROM lifecycle_draft"),
+    db.query("SELECT * FROM lifecycle_capture ORDER BY event_id"),
+    db.query("SELECT * FROM lifecycle_evidence ORDER BY event_id,evidence_id"),
+    db.query("SELECT id,payload,device_time FROM outbox_event ORDER BY id"),
+    db.query("SELECT * FROM lifecycle_receipt ORDER BY event_id,ovitrap_id"),
+  ]);
+}
 
 async function assertKnownQuadrantInvalidation(db: SqlExecutor, bundle: DayBundleService) {
   const open = { ...QUADRANT_REFERENCE, is_closed: false, closure_id: null };
