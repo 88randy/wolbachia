@@ -5,15 +5,20 @@ import re
 from collections import Counter
 from typing import Any
 
+MIGRATION_PARTITIONS = {
+    "migrations-foundation": frozenset(
+        {"tests/test_inventory_migrations_105.py", "tests/test_void_reason_migration.py"}
+    ),
+    "migrations-field": frozenset(
+        {"tests/test_geography_migrations_b_33.py", "tests/test_review_migrations_113.py"}
+    ),
+    "migrations-material": frozenset(
+        {"tests/test_transfer_migrations_106.py", "tests/test_lab_migrations_114.py"}
+    ),
+}
+PARTITION_NAMES = ("regular", *MIGRATION_PARTITIONS)
 MIGRATION_MODULES = frozenset(
-    {
-        "tests/test_inventory_migrations_105.py",
-        "tests/test_void_reason_migration.py",
-        "tests/test_review_migrations_113.py",
-        "tests/test_geography_migrations_b_33.py",
-        "tests/test_transfer_migrations_106.py",
-        "tests/test_lab_migrations_114.py",
-    }
+    module for modules in MIGRATION_PARTITIONS.values() for module in modules
 )
 
 
@@ -26,12 +31,22 @@ def partition_nodes(nodes: list[str]) -> dict[str, list[str]]:
     require(isinstance(nodes, list) and bool(nodes), "empty inventory")
     require(all(isinstance(node, str) and "::" in node for node in nodes), "invalid node")
     require(len(nodes) == len(set(nodes)), "duplicate node")
+    modules = [module for cohort in MIGRATION_PARTITIONS.values() for module in cohort]
+    require(
+        all(MIGRATION_PARTITIONS.values())
+        and len(modules) == len(set(modules))
+        and set(modules) == MIGRATION_MODULES,
+        "empty, overlapping or incomplete migration registry",
+    )
     owners = {node.split("::")[0] for node in nodes}
     require(owners >= MIGRATION_MODULES, "missing migration owner")
-    parts = {
-        shard: [node for node in nodes if (node.split("::")[0] in MIGRATION_MODULES) == migration]
-        for shard, migration in (("regular", False), ("migrations", True))
-    }
+    parts = {"regular": [node for node in nodes if node.split("::")[0] not in MIGRATION_MODULES]}
+    parts.update(
+        {
+            shard: [node for node in nodes if node.split("::")[0] in cohort]
+            for shard, cohort in MIGRATION_PARTITIONS.items()
+        }
+    )
     require(all(parts.values()), "empty partition")
     return parts
 
@@ -82,12 +97,21 @@ def validate_fragment(bundle: dict[str, Any], expected: dict[str, Any]) -> None:
         raise ValueError("CI evidence: malformed fragment") from error
 
 
-def validate_pair(bundles: list[dict[str, Any]], expected: dict[str, Any]) -> int:
-    require(len(bundles) == 2, "both fragments required")
+def validate_fragments(bundles: list[dict[str, Any]], expected: dict[str, Any]) -> int:
+    require(len(bundles) == len(PARTITION_NAMES), "all current fragments required")
     for bundle in bundles:
         validate_fragment(bundle, expected)
-    require({bundle["shard"] for bundle in bundles} == {"regular", "migrations"}, "duplicate shard")
-    first, second = (bundle["session"] for bundle in bundles)
-    require(first["all"] == second["all"], "ordered inventories differ")
-    require(first["postgres"] == second["postgres"], "database versions differ")
+    require(
+        {bundle["shard"] for bundle in bundles} == set(PARTITION_NAMES),
+        "duplicate or missing shard",
+    )
+    first = bundles[0]["session"]
+    require(
+        all(bundle["session"]["all"] == first["all"] for bundle in bundles),
+        "ordered inventories differ",
+    )
+    require(
+        all(bundle["session"]["postgres"] == first["postgres"] for bundle in bundles),
+        "database versions differ",
+    )
     return len(first["all"])
