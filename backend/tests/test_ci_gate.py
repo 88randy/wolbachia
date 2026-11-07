@@ -6,13 +6,30 @@ import sys
 import warnings
 
 import pytest
+import yaml
 from coverage import CoverageData
 
 from ci.aggregate import GateInputs, combine_coverage, verify_inputs
-from ci.contract import MIGRATION_MODULES, partition_nodes, validate_pair
+from ci.contract import MIGRATION_MODULES, partition_nodes, validate_fragments
 from ci.coverage_data import read_coverage
-from ci.evidence import digest, write_json
+from ci.evidence import BACKEND, digest, write_json
 from ci.runner import run_child
+
+EXPECTED_COHORTS = {
+    "migrations-foundation": {
+        "tests/test_inventory_migrations_105.py",
+        "tests/test_void_reason_migration.py",
+    },
+    "migrations-field": {
+        "tests/test_geography_migrations_b_33.py",
+        "tests/test_review_migrations_113.py",
+    },
+    "migrations-material": {
+        "tests/test_transfer_migrations_106.py",
+        "tests/test_lab_migrations_114.py",
+    },
+}
+EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
 
 
 def fragments():
@@ -21,7 +38,12 @@ def fragments():
     ]
     identity = {"repository": "example/repo", "run_id": "12", "run_attempt": "1"}
     results = []
-    for shard, selected in (("regular", nodes[:1]), ("migrations", nodes[1:])):
+    for shard in EXPECTED_PARTITIONS:
+        selected = (
+            nodes[:1]
+            if shard == "regular"
+            else [node for node in nodes if node.split("::")[0] in EXPECTED_COHORTS[shard]]
+        )
         reports = [
             {"nodeid": node, "when": phase, "outcome": "passed", "duration": 0.01, "xfail": False}
             for node in selected
@@ -53,6 +75,7 @@ def fragments():
         "none",
         "missing_fragment",
         "duplicate_shard",
+        "unknown_shard",
         "foreign_attempt",
         "different_inventory",
         "duplicate_node",
@@ -68,6 +91,7 @@ def fragments():
     ],
 )
 def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
+    """Keep the existing owner/node IDs while extending its contract to every cohort."""
     bundles, expected = fragments()
     regular = bundles[0]
     session = regular["session"]
@@ -80,6 +104,7 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         "unfinished_session": (session, "exit", 2),
         "collection_error": (session, "collection_errors", 1),
         "foreign_database": (session["postgres"], "vendor", "sqlite"),
+        "unknown_shard": (bundles[-1], "shard", "migrations"),
     }
     if fault in changes:
         target, key, value = changes[fault]
@@ -87,9 +112,9 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
     elif fault == "missing_fragment":
         bundles.pop()
     elif fault == "duplicate_shard":
-        bundles[1] = copy.deepcopy(regular)
+        bundles[-1] = copy.deepcopy(regular)
     elif fault == "different_inventory":
-        bundles[1]["session"]["all"].reverse()
+        bundles[-1]["session"]["all"].reverse()
     elif fault == "duplicate_node":
         session["all"].append(session["all"][0])
     elif fault == "duplicate_call":
@@ -98,26 +123,38 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_pair(bundles, expected) == 7
+            validate_fragments(bundles, expected) == 7
         )  # One regular node and six whole migration owners.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
-            validate_pair(bundles, expected)
+            validate_fragments(bundles, expected)
 
 
 def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners(
     tmp_path,
     monkeypatch,
 ):
-    from ci import pytest_plugin
+    from ci import contract, pytest_plugin
 
     bundles, _ = fragments()
     nodes = bundles[0]["session"]["all"]
     parts = partition_nodes(nodes)
+    assert tuple(parts) == EXPECTED_PARTITIONS
     assert parts["regular"] == nodes[:1]
-    assert parts["migrations"] == nodes[1:]
+    for shard, modules in EXPECTED_COHORTS.items():
+        assert parts[shard] == [node for node in nodes if node.split("::")[0] in modules]
+    assert sorted(node for selected in parts.values() for node in selected) == sorted(nodes)
     with pytest.raises(ValueError, match="CI evidence"):
         partition_nodes(nodes[:-1])
+    for malformed in (
+        {**EXPECTED_COHORTS, "migrations-foundation": set()},
+        {**EXPECTED_COHORTS, "migrations-field": EXPECTED_COHORTS["migrations-foundation"]},
+    ):
+        with monkeypatch.context() as changed:
+            changed.setattr(contract, "MIGRATION_PARTITIONS", malformed)
+            with pytest.raises(ValueError, match="CI evidence"):
+                partition_nodes(nodes)
+    assert_partition_workflow()
     monkeypatch.setattr(pytest_plugin, "BACKEND", tmp_path)
     for module in MIGRATION_MODULES:
         path = tmp_path / module
@@ -137,7 +174,7 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
     }
     rejected = {}
     for label, source in forms.items():
-        (tmp_path / "tests/test_sixth_owner.py").write_text(source, encoding="utf-8")
+        (tmp_path / "tests/test_unclassified_owner.py").write_text(source, encoding="utf-8")
         try:
             pytest_plugin._verify_migration_owners()
         except ValueError as error:
@@ -151,6 +188,33 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         "package_alias",
     ]
     assert all("unclassified migration owner" in error for error in rejected.values())
+
+
+def assert_partition_workflow():
+    workflow = yaml.safe_load((BACKEND.parent / ".github/workflows/backend.yml").read_text())
+    jobs = workflow["jobs"]
+    assert jobs["tests"]["strategy"]["matrix"]["shard"] == list(EXPECTED_PARTITIONS)
+    assert jobs["tests"]["strategy"]["fail-fast"] is False
+    assert jobs["tests"]["timeout-minutes"] == jobs["checks"]["timeout-minutes"] == 15
+    rollup = jobs["migration_status"]
+    assert rollup["name"] == "PostgreSQL (migrations)"
+    assert rollup["needs"] == ["tests"]
+    assert "always()" in rollup["if"]
+    assert rollup["steps"][0]["env"]["PARTITIONS_RESULT"] == "${{ needs.tests.result }}"
+    assert "always()" in jobs["checks"]["if"]
+    assert jobs["checks"]["needs"] == ["tests", "migration_status"]
+    downloads = [
+        step["with"]
+        for step in jobs["checks"]["steps"]
+        if step.get("uses", "").startswith("actions/download-artifact@")
+    ]
+    prefix = "backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-"
+    assert [download["name"] for download in downloads] == [
+        prefix + shard for shard in EXPECTED_PARTITIONS
+    ]
+    assert [download["path"] for download in downloads] == [
+        f"backend/.pytest_cache/ci-downloads/{shard}" for shard in EXPECTED_PARTITIONS
+    ]
 
 
 @pytest.mark.parametrize("fault", ["none", "missing", "corrupt", "branch", "foreign", "empty"])
@@ -198,22 +262,25 @@ def test_runner_persists_actual_child_exit_even_when_child_fails(tmp_path, statu
     assert json.loads(receipt.read_text(encoding="utf-8"))["actual_child_exit"] == status
 
 
-@pytest.mark.parametrize("fault", ["none", "missing", "corrupt", "digest", "identity"])
+@pytest.mark.parametrize("fault", ["none", "missing", "corrupt", "digest", "identity", "extra"])
 def test_aggregate_requires_two_current_inputs_even_if_one_has_full_coverage(tmp_path, fault):
     source = tmp_path / "source"
     source.mkdir()
     module = source / "app.py"
     module.write_text("first = 1\nsecond = 2\n", encoding="utf-8")
     bundles, expected = fragments()
+    downloads = tmp_path / "downloads"
+    downloads.mkdir()
     for bundle in bundles:
-        directory = tmp_path / bundle["shard"]
+        directory = downloads / bundle["shard"]
         directory.mkdir()
         coverage = directory / "coverage.data"
         recorded = CoverageData(basename=str(coverage))
         recorded.add_lines({str(module): {1, 2}})
         recorded.write()
+        recorded.close()
         bundle["coverage_sha256"] = digest(coverage)
-        if bundle["shard"] == "migrations":
+        if bundle["shard"] == "migrations-material":
             if fault == "digest":
                 bundle["coverage_sha256"] = "0" * 64
             elif fault == "identity":
@@ -223,12 +290,16 @@ def test_aggregate_requires_two_current_inputs_even_if_one_has_full_coverage(tmp
                 bundle["coverage_sha256"] = digest(coverage)
         write_json(directory / "manifest.json", bundle)
     if fault == "missing":
-        (tmp_path / "migrations/manifest.json").unlink()
-    inputs = GateInputs(directory=tmp_path, sources=(source,))
+        (downloads / "migrations-material/manifest.json").unlink()
+    elif fault == "extra":
+        (downloads / "old-migrations").mkdir()
+    inputs = GateInputs(directory=downloads, sources=(source,))
     if fault == "none":
         assert [path.parent.name for path in verify_inputs(inputs, expected)] == [
             "regular",
-            "migrations",
+            "migrations-foundation",
+            "migrations-field",
+            "migrations-material",
         ]
     else:
         with pytest.raises(ValueError, match="CI evidence"):
@@ -237,19 +308,21 @@ def test_aggregate_requires_two_current_inputs_even_if_one_has_full_coverage(tmp
 
 def test_verified_coverage_combine_keeps_both_line_sets_and_direct_exit(tmp_path):
     source = tmp_path / "app.py"
-    source.write_text("first = 1\nsecond = 2\n", encoding="utf-8")
+    source.write_text("first = 1\nsecond = 2\nthird = 3\nfourth = 4\n", encoding="utf-8")
     paths = []
-    for line in (1, 2):
+    for line in (1, 2, 3, 4):
         path = tmp_path / f"coverage-{line}.data"
         recorded = CoverageData(basename=str(path))
         recorded.add_lines({str(source): {line}})
         recorded.write()
+        recorded.close()
         paths.append(path)
     combined = tmp_path / "combined.data"
     combine_coverage(paths, combined)
     recorded = CoverageData(basename=str(combined))
     recorded.read()
-    assert recorded.lines(str(source)) == [1, 2]
+    assert recorded.lines(str(source)) == [1, 2, 3, 4]
+    recorded.close()
     assert (tmp_path / "combine-exit.json").is_file()
 
 
