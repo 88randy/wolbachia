@@ -4839,6 +4839,7 @@ export interface components {
             readonly is_cleared: boolean;
             /** Format: date-time */
             readonly cleared_at: string | null;
+            readonly clearance: components["schemas"]["InspectionClearanceRead"] | null;
         };
         IncidentBlockedBy: {
             reason: string;
@@ -4957,6 +4958,24 @@ export interface components {
         IncidentVoidRequest: {
             expected_revision: number;
             reason: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        InspectionClearanceRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly reviewer: string;
+            readonly reason: string;
+            readonly evidence_ids: string[];
         };
         Intervention: {
             /** Format: uuid */
@@ -11114,6 +11133,8 @@ export interface operations {
                  *     * `reported` - reported
                  */
                 kind?: "fleet" | "reported";
+                /** @description Exact motorcycle UUID; applies only to fleet incident lists. */
+                motorcycle?: string;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 owner?: string;
@@ -12966,6 +12987,7 @@ export interface operations {
     motorcycles_responsibility_letters_list: {
         parameters: {
             query?: {
+                include_voided?: boolean;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -13081,6 +13103,7 @@ export interface operations {
     motorcycles_services_list: {
         parameters: {
             query?: {
+                include_voided?: boolean;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */

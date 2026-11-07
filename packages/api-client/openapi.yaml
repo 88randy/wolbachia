@@ -2822,6 +2822,12 @@ paths:
         description: |-
           * `fleet` - fleet
           * `reported` - reported
+      - in: query
+        name: motorcycle
+        schema:
+          type: string
+          format: uuid
+        description: Exact motorcycle UUID; applies only to fleet incident lists.
       - name: ordering
         required: false
         in: query
@@ -5702,6 +5708,10 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
       - in: path
         name: motorcycle_id
         schema:
@@ -5866,6 +5876,10 @@ paths:
           type: string
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
       - in: path
         name: motorcycle_id
         schema:
@@ -12674,8 +12688,14 @@ components:
           format: date-time
           readOnly: true
           nullable: true
+        clearance:
+          allOf:
+          - $ref: '#/components/schemas/InspectionClearanceRead'
+          readOnly: true
+          nullable: true
       required:
       - blocked_reason
+      - clearance
       - cleared_at
       - created_at
       - created_by
@@ -12972,6 +12992,43 @@ components:
       required:
       - expected_revision
       - reason
+    InspectionClearanceRead:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reviewer:
+          type: string
+          format: uuid
+          readOnly: true
+        reason:
+          type: string
+          readOnly: true
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          readOnly: true
+      required:
+      - created_at
+      - evidence_ids
+      - id
+      - reason
+      - reviewer
     Intervention:
       type: object
       properties:
