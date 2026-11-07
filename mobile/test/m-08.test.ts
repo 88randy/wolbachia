@@ -850,10 +850,10 @@ void test("regression: SQL skipped immutable edits are reported and discarded af
   );
   await prepareCheck(h.service);
   const update = h.store.update.bind(h.store);
-  h.store.update = async (draft) => {
+  h.store.update = async (draft, version) => {
     entered.resolve();
     await release.promise;
-    return update(draft);
+    return update(draft, version);
   };
   const buffer = h.service.draftBuffer;
   const editingDraft = (await h.service.read()).draft;

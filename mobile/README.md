@@ -285,6 +285,12 @@ availability is invented when B-05/bootstrap data is absent.
   the outbox immutability triggers remain in force. A guarded update compares the
   original rejected event id, preventing competing corrections from replacing a
   newer attempt. Ordinary start/resume never resets a rejected attempt.
+- The existing departure gate reads its draft, opening decision and current
+  catalog/map coherently. M08 camera acquisition retains a guard for those exact
+  validated facts through final reference publication (#253); a late severe review
+  cannot be hidden by an unchanged shift UUID. The gate policy is unchanged and
+  catalog/map remain available before a shift draft exists. Benign fact changes
+  conservatively require a retake; physical qualification remains pending.
 - Snapshot refreshes publish only the latest requested read at the same edit
   revision. Unmount invalidates in-flight reads, so a delayed pending snapshot
   cannot hide a newer rejection or overwrite courier input.
@@ -348,9 +354,10 @@ There is no egg-count input, draft field or event payload field.
   bag, release-device and sample. Wrong-kind/failed scans always open P21; only an
   explicit manual action sets `manual_capture=true`. A pending draft for a different
   target blocks switching with a resume message instead of silently editing it.
-- **[ASSUMPTION]** Native scanner/camera/GPS integration is unavailable in this build.
-  Production `ScannerPort`, `GpsPort` and `EvidencePort` return unavailable/null;
-  manual ovitrap UUID and human bag entry work without camera dependencies. A typed
+- Native scanner/GPS integration remains unavailable in this build. Production
+  `ScannerPort` and `GpsPort` return unavailable/null; #253 supplies the M08 camera
+  `EvidencePort`, with physical qualification still pending. Manual ovitrap UUID
+  and human bag entry remain available. A typed
   bag QR preserves its UUID; a scanned bag UUID resolves its human code from cached
   bootstrap context, otherwise the courier must type the printed human code. The
   UUID history stays local even when manual editing removes the active association.
@@ -815,8 +822,15 @@ with scripted HTTP responses. They prove file bytes/hash, immutable ownership,
 restart/replay/linking, selection fairness, unrelated receipts and stale-context
 refusal. They do not execute a live #102 backend or certify native storage/network.
 
-The native capture port still returns unavailable: [#253](https://github.com/88randy/wolbachia/issues/253)
-is an implementation dependency, not merely device qualification. The productive
+M08 now receives camera-only ImagePicker58.0.10 acquisition through
+[#253](https://github.com/88randy/wolbachia/issues/253), with exact unsaved-draft,
+owner/session, live shift/assignment and cancellation guards before adoption.
+Permission-induced local lock requires unlock/retry before launch; an already
+launched same-context camera can finish privately beneath AuthGate. Cold orphan
+results are ignored. Pending-photo Undo removes only the draft reference, never
+private bytes, journal rows or history. No gallery/microphone permission is used.
+Physical acquisition/lifecycle/API/accessibility acceptance remains
+[UNRUN](../docs/qa/native-photo-253.md); code/CI is a partial draft delivery. The productive
 #138 bridge remains pending explicit serial integration, including migration
 lineage and its current physical/scope authority; no lifecycle module is copied
 here. Generic lifecycle payload/dependency shapes are covered separately. Actual

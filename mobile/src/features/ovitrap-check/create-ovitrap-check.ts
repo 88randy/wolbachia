@@ -7,7 +7,7 @@ import type { SessionRequests } from "../../auth/session-requests.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import type { SyncEngine } from "../../sync/sync-engine.ts";
 import type { ShiftOpenService } from "../shift-open/service.ts";
-import { captureShiftId } from "./shift-authorization.ts";
+import { captureShiftId, readCaptureShift } from "./shift-authorization.ts";
 import { OvitrapService } from "./service.ts";
 import { readCatalog, readRules } from "./snapshots.ts";
 import { OvitrapStore } from "./store.ts";
@@ -16,13 +16,13 @@ import type { Attachments } from "../../attachments/create-attachments.ts";
 import { captureConfiguration } from "../../attachments/capture-configuration.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
-  readonly shiftOpen: Pick<ShiftOpenService, "read">;
+  readonly shiftOpen: Pick<ShiftOpenService, "read" | "readWithGuard">;
   readonly engine: SyncEngine;
   readonly requests: SessionRequests;
   readonly tokens: TokenStore & Pick<CredentialStore, "getSnapshot">;
   readonly gps?: GpsPort;
   readonly scanner?: ScannerPort;
-  readonly evidence?: EvidencePort;
+  readonly evidence: EvidencePort;
   readonly attachments?: Attachments;
   readonly assignments?: { read(): Promise<Assignment | null> };
 }
@@ -53,7 +53,7 @@ function requireSession(tokens: Dependencies["tokens"], session: Credentials): v
   )
     throw new Error("Snapshot session changed.");
 }
-/** No native additions: unsupported scanner/GPS/evidence remain explicit unavailable ports. */
+/** Evidence acquisition is explicit; unsupported scanner/GPS retain their existing unavailable ports. */
 export function createOvitrapCheck(deps: Dependencies): OvitrapService {
   const store = new OvitrapStore(deps.db);
   return new OvitrapService({
@@ -65,6 +65,7 @@ export function createOvitrapCheck(deps: Dependencies): OvitrapService {
     scanner: deps.scanner ?? { scan: () => Promise.resolve({ status: "unavailable" }) },
     ...captureConfiguration({ port: deps.evidence, store, attachments: deps.attachments }),
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
+    evidenceShift: () => readCaptureShift(deps.shiftOpen),
     refresh: () => download(deps, store),
   });
 }

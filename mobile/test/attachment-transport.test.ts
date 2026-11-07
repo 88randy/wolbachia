@@ -5,7 +5,7 @@ import { createApiClient } from "@wolbachia/api-client";
 import type { SessionRequests } from "../src/auth/session-requests.ts";
 import { SessionRequests as ActualSessionRequests } from "../src/auth/session-requests.ts";
 import { PrivateAttachmentTransport } from "../src/attachments/attachment-transport.ts";
-import { EvidenceCapture } from "../src/attachments/capture-evidence.ts";
+import { FixtureEvidenceCapture as EvidenceCapture } from "./support/capture-fixture.ts";
 import { AttachmentSync } from "../src/attachments/attachment-sync.ts";
 import { attachmentSyncHooks } from "../src/attachments/sync-hooks.ts";
 import { SyncEngine } from "../src/sync/sync-engine.ts";
