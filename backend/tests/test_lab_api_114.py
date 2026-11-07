@@ -243,7 +243,7 @@ def test_real_cookie_command_keeps_csrf_and_committed_receipt_wiring(monkeypatch
     client.force_login(context.actor.user)
     values = {"code": bag.code, "command_id": str(uuid4())}
     assert client.post("/api/v1/bags/receive/", values, format="json").status_code == 403
-    assert client.get("/api/v1/auth/csrf/").status_code == 200
+    assert client.get("/api/v1/auth/csrf/").status_code == 204
     token = client.cookies["csrftoken"].value
     result = client.post("/api/v1/bags/receive/", values, format="json", HTTP_X_CSRFTOKEN=token)
     assert result.status_code == 200

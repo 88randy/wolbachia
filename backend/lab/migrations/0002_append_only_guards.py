@@ -255,15 +255,20 @@ END; $$ LANGUAGE plpgsql;
 CREATE FUNCTION lab_complete_guard() RETURNS trigger AS $$
 DECLARE observed integer; required integer; entry record;
 BEGIN
-    IF TG_TABLE_NAME='lab_labcommand' AND NOT EXISTS(SELECT 1 FROM lab_labcommandresult r WHERE r.command_id=NEW.id)
-      THEN RAISE EXCEPTION 'Lab command must commit its exact result'; END IF;
-    IF TG_TABLE_NAME='lab_labcommandresult' AND NEW.status IN (200,201) THEN
-      IF NOT EXISTS(SELECT 1 FROM lab_labcommand c WHERE c.id=NEW.command_id AND
+    -- Select the table before a separate statement binds its specific NEW fields.
+    IF TG_TABLE_NAME='lab_labcommand' THEN
+      IF NOT EXISTS(SELECT 1 FROM lab_labcommandresult r WHERE r.command_id=NEW.id)
+        THEN RAISE EXCEPTION 'Lab command must commit its exact result'; END IF;
+    END IF;
+    IF TG_TABLE_NAME='lab_labcommandresult' THEN
+      IF NEW.status IN (200,201) THEN
+        IF NOT EXISTS(SELECT 1 FROM lab_labcommand c WHERE c.id=NEW.command_id AND
         ((c.action IN ('receive','receive_reading') AND EXISTS(SELECT 1 FROM lab_bagreceipt p WHERE p.command_id=c.id AND p.created_by_id=c.created_by_id))
         OR (c.action='count' AND EXISTS(SELECT 1 FROM lab_eggcountattempt p WHERE p.command_id=c.id AND p.bag_id=c.target_id AND p.created_by_id=c.created_by_id))
         OR (c.action='reject' AND EXISTS(SELECT 1 FROM lab_labrejection p WHERE p.command_id=c.id AND p.bag_id=c.target_id AND p.created_by_id=c.created_by_id))
         OR (c.action IN ('void_count','void_rejection') AND EXISTS(SELECT 1 FROM lab_labresultvoid p WHERE p.command_id=c.id AND c.target_id IN (p.count_id,p.rejection_id) AND p.created_by_id=c.created_by_id))))
-        THEN RAISE EXCEPTION 'Successful Lab command must retain its exact authored effect'; END IF;
+          THEN RAISE EXCEPTION 'Successful Lab command must retain its exact authored effect'; END IF;
+      END IF;
     END IF;
     IF TG_TABLE_NAME IN ('lab_eggcountattempt','lab_labrejection','lab_labresultvoid') THEN
       IF NOT EXISTS(SELECT 1 FROM lab_labresultrevision r WHERE r.command_id=NEW.command_id
@@ -287,8 +292,9 @@ BEGIN
           AND u.organization_id=NEW.organization_id AND u.uploader_id=NEW.created_by_id AND l.lab_rejection_id=NEW.id)
           THEN RAISE EXCEPTION 'Rejection evidence is not its verified exact parent'; END IF;
       END LOOP;
-    ELSIF TG_TABLE_NAME='lab_recountrequest' AND NOT EXISTS(SELECT 1 FROM lab_recountrequestcause c WHERE c.request_id=NEW.id)
-      THEN RAISE EXCEPTION 'Recount request must retain a real cause';
+    ELSIF TG_TABLE_NAME='lab_recountrequest' THEN
+      IF NOT EXISTS(SELECT 1 FROM lab_recountrequestcause c WHERE c.request_id=NEW.id)
+        THEN RAISE EXCEPTION 'Recount request must retain a real cause'; END IF;
     ELSIF TG_TABLE_NAME='lab_dailyrecountsample' THEN
       SELECT count(*) INTO observed FROM lab_eggcountattempt c WHERE c.organization_id=NEW.organization_id
         AND c.created_at>=NEW.utc_from AND c.created_at<NEW.utc_before
