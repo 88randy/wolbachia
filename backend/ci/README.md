@@ -3,11 +3,21 @@
 This package belongs only to `.github/workflows/backend.yml`; application code does
 not import it. No new Python dependency, application behavior or migration is involved.
 
-`python -m ci.runner regular` and `python -m ci.runner migrations` each collect the
-complete ordered pytest inventory, then execute disjoint selections serially. The
-six whole modules in `contract.MIGRATION_MODULES` retain their original upgrade,
-raw-SQL, protected reverse and restoration assertions. A direct MigrationExecutor
-owner outside that manifest fails collection. No `-k`, `-m`, external `PYTEST_ADDOPTS`,
+`python -m ci.runner <partition>` collects the complete ordered pytest inventory,
+then executes one disjoint selection serially. The single closed registry
+`contract.MIGRATION_PARTITIONS` declares these whole-module cohorts:
+
+- `migrations-foundation`: inventory105 and void-reason migration owners.
+- `migrations-field`: geography and review113 migration owners.
+- `migrations-material`: transfer106 and lab114 migration owners.
+
+`regular` retains exactly the complement of the six migration modules. The
+derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
+detector; no second module registry exists. Every cohort must be nonempty and no
+module can belong to two cohorts. Each selection retains its original collected
+order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
+A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
+`-m`, external `PYTEST_ADDOPTS`,
 xdist, skipped/xfail success or automatic retry is accepted. Adding a new owner
 requires an explicit manifest review, not copying or weakening its tests.
 
@@ -32,14 +42,15 @@ unchanged except the new Lab domain: 16 configured apps, migrations/WSGI/ASGI om
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires both matrix results to succeed. It runs
+The original `checks` job first requires all four matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-two exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+four exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
 readability, nonempty executed lines, statement mode and allowed source paths.
-Both consumed inputs and the exact executed-line union are checked. Only that union is
+Every consumed input and the exact executed-line union are checked. Unexpected
+artifact directories fail rather than silently remaining unconsumed. Only that union is
 reported, with the existing **85%** threshold. Combine/report child exits are also
 durable before parsing; warned/skipped combine inputs fail the gate.
 
@@ -47,12 +58,18 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: both fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all four fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
-Both test jobs and final `checks` keep their 15-minute timeout and standard runner.
-The two PostgreSQL test services and final drift service duplicate setup work and can
+The old `PostgreSQL (migrations)` check remains as an honest compatibility rollup.
+It requires the complete matrix to succeed, so failed/cancelled/skipped partitions
+cannot pass it. It executes no tests and emits no fragment or passing-test count.
+`PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
+protection or repository setting is changed.
+
+All four test jobs and final `checks` keep their 15-minute timeout and standard runner.
+The four PostgreSQL test services and final drift service duplicate setup work and can
 increase runner-minutes/storage. The target is at least three minutes' headroom per
 job, to be measured in actual changed-head CI. Historic adjacent log intervals are
 not individual test/SQL timings and no host-resource cause or speedup is certified.

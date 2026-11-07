@@ -7,7 +7,7 @@ import sys
 from contextlib import nullcontext
 from pathlib import Path
 
-from ci.contract import require, validate_fragment
+from ci.contract import PARTITION_NAMES, require, validate_fragment
 from ci.coverage_data import read_coverage
 from ci.evidence import BACKEND, coverage_sources, current_identity, digest, read_json, write_json
 
@@ -26,7 +26,7 @@ def run_child(command: tuple[str, ...], receipt: Path, log: Path | None = None) 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("shard", choices=("regular", "migrations"))
+    parser.add_argument("shard", choices=PARTITION_NAMES)
     options = parser.parse_args()
     require(not os.environ.get("PYTEST_ADDOPTS"), "external pytest selection is forbidden")
     identity = current_identity()
