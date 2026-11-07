@@ -230,6 +230,39 @@ async function increaseFleetText(page: Page) {
   expect(sizes.after).toBeCloseTo(sizes.before * 1.3, 1);
 }
 type LocaleCell = { language: (typeof LANGUAGES)[number]; theme: (typeof THEMES)[number] };
+async function expectRecordReflow(page: Page, language: LocaleCell["language"]) {
+  const main = page.getByRole("main");
+  const bounds = await main.evaluate((element) => {
+    const rect = element.getBoundingClientRect();
+    return {
+      left: Math.max(0, rect.left),
+      right: Math.min(rect.right, document.documentElement.clientWidth),
+      client: element.clientWidth,
+      scroll: element.scrollWidth,
+    };
+  });
+  expect(bounds.scroll).toBeLessThanOrEqual(bounds.client);
+  const heading = main.getByRole("heading", { level: 1, name: RECORD.code, exact: true });
+  const refresh = main.getByRole("button", {
+    name: language === "en" ? "Refresh record" : "Actualizar ficha",
+    exact: true,
+  });
+  for (const control of [heading, refresh]) {
+    await expect(control).toBeVisible();
+    const shape = await control.evaluate((element) => {
+      const rect = element.getBoundingClientRect();
+      return {
+        left: rect.left,
+        right: rect.right,
+        height: rect.height,
+        lineHeight: Number.parseFloat(getComputedStyle(element).lineHeight),
+      };
+    });
+    expect(shape.left).toBeGreaterThanOrEqual(Math.floor(bounds.left));
+    expect(shape.right).toBeLessThanOrEqual(Math.ceil(bounds.right));
+    if (control === heading) expect(shape.height).toBeLessThanOrEqual(Math.ceil(shape.lineHeight));
+  }
+}
 function recordTab(page: Page, name: string) {
   return page
     .getByRole("navigation", {
@@ -355,7 +388,19 @@ async function exerciseRecordWrites(page: Page, cell: LocaleCell, fleet: FleetMo
   const en = cell.language === "en";
   await exerciseService(page, cell, fleet);
   await recordTab(page, en ? "Services" : "Servicios").click();
-  await expect(page.getByRole("table", { name: en ? "Services" : "Servicios" })).toBeVisible();
+  const services = page.getByRole("table", { name: en ? "Services" : "Servicios" });
+  if (writesIn(cell)) {
+    await expect(services).toBeVisible();
+    await expect(services.getByText(SERVICE.notes, { exact: true })).toBeVisible();
+  } else {
+    await expect(
+      page.getByText(en ? "There are no records here yet" : "Aquí todavía no hay registros", {
+        exact: true,
+      }),
+    ).toBeVisible();
+    await expect(services).toHaveCount(0);
+    expect(fleet.writes.filter((path) => path.endsWith("/services/"))).toHaveLength(0);
+  }
   await recordTab(page, en ? "Responsibility letters" : "Responsivas").click();
   await expect(
     page.getByRole("table", { name: en ? "Responsibility letters" : "Responsivas" }),
@@ -373,6 +418,7 @@ for (const language of LANGUAGES) {
     test(`fleet keyboard journey and reflow: ${language}, ${theme}`, async ({ page }) => {
       await rememberPreferences(page, theme, language);
       await page.addInitScript((key) => {
+        document.cookie = "csrftoken=e2e-csrf; path=/";
         window.localStorage.setItem(key, "norte");
       }, STORAGE_KEYS.organization);
       await mockApi(page, {
@@ -467,6 +513,7 @@ for (const language of LANGUAGES) {
       expect(new URL(page.url()).searchParams.get("is_blocked")).toBe("true");
       await expectNoHorizontalScroll(page);
       await increaseFleetText(page);
+      await expectRecordReflow(page, language);
       fleet.faults = [
         {
           id: FAULT_ID,

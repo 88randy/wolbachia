@@ -36,11 +36,8 @@ export function MotorcycleRecordHeader(props: Props) {
   const { t } = useTranslation();
   const isVerified = error === null && !isRefreshing;
   return (
-    <Card
-      title={<span className={styles.code}>{motorcycle.code}</span>}
-      headingLevel={1}
-      actions={<HeaderActions {...props} />}
-    >
+    <Card title={<span className={styles.code}>{motorcycle.code}</span>} headingLevel={1}>
+      <HeaderActions {...props} />
       {isVerified && motorcycle.is_blocked && (
         <p className={styles.hint}>
           <span>{t("fleet.status.blocked")}</span> · {t(blockedReasonKey(motorcycle))}
