@@ -8,7 +8,13 @@ from rest_framework import serializers
 from core.exceptions import FieldValidationError
 from core.serializers import OrgScopedModelSerializer
 from core.void_reason import VoidReasonField
-from fleet.models import EfficiencyStatus, FuelLoad, ResponsibilityLetter, ServiceRecord
+from fleet.models import (
+    EfficiencyStatus,
+    FuelLoad,
+    InspectionClearance,
+    ResponsibilityLetter,
+    ServiceRecord,
+)
 from shifts.models import MotorcycleBlockEvent
 
 HISTORY_FIELDS = [
@@ -141,9 +147,28 @@ class FuelFilterSerializer(serializers.Serializer[Any]):
     date_before = serializers.DateTimeField(required=False)
 
 
+class FleetIncidentFilterSerializer(serializers.Serializer[Any]):
+    motorcycle = serializers.UUIDField(
+        required=False, help_text="Exact motorcycle UUID; applies only to fleet incident lists."
+    )
+
+
+class InspectionClearanceReadSerializer(OrgScopedModelSerializer):
+    reviewer = serializers.UUIDField(source="reviewer_id", read_only=True)
+    evidence_ids = serializers.ListField(child=serializers.UUIDField(), read_only=True)
+
+    class Meta:
+        model = InspectionClearance
+        fields = ["id", "created_at", "reviewer", "reason", "evidence_ids"]
+        read_only_fields = fields
+
+
 class IncidentSerializer(OrgScopedModelSerializer):
     is_cleared = serializers.BooleanField(read_only=True)
     cleared_at = serializers.DateTimeField(read_only=True, allow_null=True)
+    clearance = InspectionClearanceReadSerializer(
+        source="inspection_clearance", read_only=True, allow_null=True
+    )
 
     class Meta:
         model = MotorcycleBlockEvent
@@ -156,5 +181,6 @@ class IncidentSerializer(OrgScopedModelSerializer):
             "created_by",
             "is_cleared",
             "cleared_at",
+            "clearance",
         ]
         read_only_fields = fields

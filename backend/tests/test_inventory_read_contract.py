@@ -17,6 +17,7 @@ from rest_framework.test import APIRequestFactory
 
 from accounts.models import User
 from catalogs.services import deactivate_catalog_item
+from core.filters import CODE_MAX_LENGTH
 from geography.models import Quadrant
 from incidents.configuration import write_type
 from inventory.conditions import record_condition
@@ -64,6 +65,75 @@ def test_authenticated_schema_metadata_does_not_require_inventory_option_targets
         "/api/v1/locations/placement-options/",
         "/api/v1/supply-types/protocol-incident-type-options/",
     } <= response.json()["paths"].keys()
+    schema = response.json()
+    lot_detail = schema["paths"]["/api/v1/lots/{id}/"]
+    detail_query = {
+        parameter["name"]: {**parameter, "required": parameter.get("required", False)}
+        for parameter in lot_detail["get"]["parameters"]
+        if parameter["in"] == "query"
+    }
+    assert detail_query == {
+        "custody_location": {
+            "in": "query",
+            "name": "custody_location",
+            "required": False,
+            "schema": {"type": "string", "format": "uuid"},
+        }
+    }
+    list_context = next(
+        parameter
+        for parameter in schema["paths"]["/api/v1/lots/"]["get"]["parameters"]
+        if parameter["name"] == "custody_location"
+    )
+    assert list_context == detail_query["custody_location"]
+    assert not any(parameter["in"] == "query" for parameter in lot_detail["patch"]["parameters"])
+    movement_query = schema["paths"]["/api/v1/locations/{id}/movements/"]["get"]["parameters"]
+    assert [
+        {**parameter, "required": parameter.get("required", False)}
+        for parameter in movement_query
+        if parameter["in"] == "query" and parameter["name"] == "lot_code"
+    ] == [
+        {
+            "in": "query",
+            "name": "lot_code",
+            "required": False,
+            "schema": {"type": "string", "maxLength": CODE_MAX_LENGTH},
+        }
+    ]
+    for path in (
+        "/api/v1/locations/{id}/stock/",
+        "/api/v1/lots/",
+        "/api/v1/lots/{id}/",
+        "/api/v1/lots/{id}/conditions/",
+    ):
+        assert not any(
+            parameter["in"] == "query" and parameter["name"] == "lot_code"
+            for operation in schema["paths"][path].values()
+            for parameter in operation.get("parameters", [])
+        )
+    body = schema["paths"]["/api/v1/lots/{id}/conditions/"]["post"]["requestBody"]
+    assert body["required"] is True
+    capture_name = body["content"]["application/json"]["schema"]["$ref"].split("/")[-1]
+    assert {"$ref": "#/components/schemas/ConditionWriteRequest"} in schema["components"][
+        "schemas"
+    ][capture_name]["oneOf"]
+    assert schema["components"]["schemas"]["ConditionWriteRequest"] == {
+        "type": "object",
+        "properties": {
+            "device_time": {"type": "string", "format": "date-time"},
+            "temperature_c": {
+                "type": "string",
+                "format": "decimal",
+                "pattern": r"^-?\d{0,6}(?:\.\d{0,6})?$",
+            },
+            "humidity_pct": {
+                "type": "string",
+                "format": "decimal",
+                "pattern": r"^-?\d{0,3}(?:\.\d{0,6})?$",
+            },
+        },
+        "required": ["device_time", "humidity_pct", "temperature_c"],
+    }
     connection_guard.assert_not_called()
 
 
@@ -290,6 +360,7 @@ def test_real_movement_legs_explain_stock_with_exact_filters_and_persisted_prove
     )
     for values, expected in (
         ({"lot": str(second.lot_id)}, 1),
+        ({"lot": str(second.lot_id), "lot_code": context.lot.code}, 0),
         ({"supply": str(context.supply.pk), "unit": "piece"}, 3),
         ({"piece": str(first.piece_id)}, 1),
         ({"piece": "none"}, 0),
@@ -654,6 +725,7 @@ def test_http_read_contract_wires_action_only_options_dual_scope_and_undisclosed
     member.profiles.update(permission_codes=["location.read"])
     movements = f"/api/v1/locations/{context.location.pk}/movements/"
     assert api_client.get(movements).json()["count"] == 0
+    assert api_client.get(movements, {"lot_code": context.lot.code}).status_code == 404
     assert (
         api_client.get(owners, {"center": str(context.center.pk), "quadrant": "none"}).status_code
         == 403
@@ -661,15 +733,28 @@ def test_http_read_contract_wires_action_only_options_dual_scope_and_undisclosed
     member.profiles.update(permission_codes=["location.read", "lot.read"])
     assert api_client.get(movements).json()["count"] == 1
     assert api_client.get(movements, {"piece": "none"}).json()["count"] == 1
+    invalid_code = api_client.get(movements, {"lot_code": "  "})
+    assert invalid_code.status_code == 400
+    assert invalid_code.data["fields"] == {"lot_code": [{"code": "blank", "params": {}}]}
     for params in (
         {"lot": str(foreign.lot.pk)},
+        {"lot_code": foreign.lot.code},
+        {"lot_code": "UNKNOWN-" + uuid4().hex},
+        {"lot_code": str(context.lot.pk)},
         {"operation": str(foreign.lot.admission.operation.pk)},
         {"piece": str(uuid4())},
         {"supply": str(foreign.supply.pk)},
     ):
         assert api_client.get(movements, params).status_code == 404
     assert api_client.get(f"/api/v1/locations/{foreign.location.pk}/movements/").status_code == 404
+    assert (
+        api_client.get(
+            f"/api/v1/locations/{foreign.location.pk}/movements/", {"lot_code": "  "}
+        ).status_code
+        == 404
+    )
     member.profiles.update(permission_codes=["location.update", "lot.update"])
+    assert api_client.get(movements, {"lot_code": "  "}).status_code == 403
     Center.objects.filter(pk=context.center.pk).update(is_active=False)
     assert api_client.get(owners, {"location": str(context.location.pk)}).status_code == 404
     assert api_client.get(placements, {"lot": str(context.lot.pk)}).status_code == 404

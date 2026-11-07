@@ -131,12 +131,18 @@ def test_a_void_may_name_any_shift_because_it_corrects_an_old_event(phone: Phone
     assert FieldEvent.objects.get(pk=target["id"]).voided_at is not None
 
 
-def test_only_the_shift_events_and_the_void_opt_out_of_the_shift_check() -> None:
+def test_only_documented_shift_independent_events_opt_out_of_the_shift_check() -> None:
     from field_sync.registry import HANDLERS
 
     opted_out = {key[0] for key, handler in HANDLERS.items() if not handler.checks_shift}
 
-    assert opted_out == {"shift.open", "shift.close", "record.void"}
+    assert opted_out == {
+        "shift.open",
+        "shift.close",
+        "record.void",
+        "transfer.dispatch",
+        "transfer.receive",
+    }
 
 
 def test_without_a_registered_envelope_check_the_shift_id_is_not_validated(

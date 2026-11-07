@@ -481,6 +481,84 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/discrepancies/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["discrepancies_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/discrepancies/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["discrepancies_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/discrepancies/{id}/close/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["discrepancies_close_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/bootstrap/": {
         parameters: {
             query?: never;
@@ -2853,6 +2931,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/transfers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["transfers_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["transfers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["transfers_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/dispatch/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["transfers_dispatch_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/transfers/{id}/receive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["transfers_receive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/users/{id}/revoke-device-sessions/": {
         parameters: {
             query?: never;
@@ -2878,6 +3070,33 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        AcknowledgeMissing: {
+            /** Format: uuid */
+            line_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "ack_missing";
+            /** Format: decimal */
+            quantity: string;
+        };
+        /**
+         * @description * `ack_missing` - ack_missing
+         * @enum {string}
+         */
+        AcknowledgeMissingKindEnum: "ack_missing";
+        AcknowledgeMissingRequest: {
+            /** Format: uuid */
+            line_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "ack_missing";
+            /** Format: decimal */
+            quantity: string;
+        };
         /**
          * @description * `human` - human
          *     * `system` - system
@@ -2949,9 +3168,10 @@ export interface components {
          *     * `motorcycle_fault` - motorcycle_fault
          *     * `incident` - incident
          *     * `review_item` - review_item
+         *     * `transfer_event` - transfer_event
          * @enum {string}
          */
-        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item";
+        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event";
         AttachmentTargetRequest: {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
@@ -3099,6 +3319,7 @@ export interface components {
             /** Format: date-time */
             generated_at: string;
             scope_revision: string;
+            capture_context?: components["schemas"]["CaptureContext"] | null;
             cursor: string;
             catalog_version: string;
             rules_version: string;
@@ -3123,6 +3344,23 @@ export interface components {
             sampling_points: components["schemas"]["SamplingPointBundle"][];
             ovitraps: components["schemas"]["OvitrapBundle"][];
         };
+        /** @description Self current SYNC observation; no session secret or immutable source authority. */
+        CaptureContext: {
+            schema_version: number;
+            permission: components["schemas"]["PermissionEnum"];
+            /** Format: uuid */
+            user_id: string;
+            /** Format: uuid */
+            organization_id: string;
+            scope_revision: string;
+            grants: components["schemas"]["MeScope"][];
+        };
+        /**
+         * @description * `legacy_initial` - legacy_initial
+         *     * `explicit_location` - explicit_location
+         * @enum {string}
+         */
+        CaptureModeEnum: "legacy_initial" | "explicit_location";
         CapturedProvenance: {
             /** Format: uuid */
             snapshot_id: string | null;
@@ -3238,6 +3476,7 @@ export interface components {
             has_more: boolean;
             /** Format: date-time */
             next_change_at: string | null;
+            capture_context?: components["schemas"]["CaptureContext"] | null;
             assignments: components["schemas"]["ProducerChange"][];
             supplies: components["schemas"]["ProducerChange"][];
             permits: components["schemas"]["ProducerChange"][];
@@ -3262,11 +3501,21 @@ export interface components {
             reason: string;
             expected_revision: number;
         };
+        CloseDiscrepancyRequest: {
+            expected_revision: number;
+            reason: string;
+            evidence_ids: string[];
+            resolution: components["schemas"]["ResolutionBodyRequest"];
+        };
         CloseRequest: {
             expected_revision: number;
             reason: string;
             evidence_ids: string[];
         };
+        ClosedOutcome: components["schemas"]["AcknowledgeMissing"] | components["schemas"]["ReceivingOutcome"] | components["schemas"]["CorrectionOutcome"];
+        ClosedOutcomeRequest: components["schemas"]["AcknowledgeMissingRequest"] | components["schemas"]["ReceivingOutcomeRequest"] | components["schemas"]["CorrectionOutcomeRequest"];
+        ClosedScan: components["schemas"]["ExpectedScan"] | components["schemas"]["IdentifiedExtra"] | components["schemas"]["UnidentifiedExtra"];
+        ClosedScanRequest: components["schemas"]["ExpectedScanRequest"] | components["schemas"]["IdentifiedExtraRequest"] | components["schemas"]["UnidentifiedExtraRequest"];
         ClosureBlocker: {
             reason: string;
             permission: string;
@@ -3299,6 +3548,9 @@ export interface components {
             readonly lot_version_id: string;
             /** Format: uuid */
             readonly location_version_id: string | null;
+            readonly capture_mode: components["schemas"]["CaptureModeEnum"];
+            /** Format: uuid */
+            readonly capture_location_id: string | null;
             /** Format: date-time */
             readonly device_time: string;
             /** Format: date-time */
@@ -3320,6 +3572,7 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        ConditionCaptureRequestRequest: components["schemas"]["ConditionWriteRequest"] | components["schemas"]["ExplicitConditionWriteRequest"];
         ConditionWriteRequest: {
             /** Format: date-time */
             device_time: string;
@@ -3334,6 +3587,41 @@ export interface components {
          * @enum {string}
          */
         ContentTypeEnum: "image/jpeg" | "image/png";
+        CorrectionOutcome: {
+            /** Format: uuid */
+            line_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "reference_signed_correction";
+            /** Format: decimal */
+            quantity: string;
+            /** Format: uuid */
+            correction_transfer_id: string;
+            /** Format: uuid */
+            receipt_event_id: string;
+        };
+        /**
+         * @description * `reference_signed_correction` - reference_signed_correction
+         * @enum {string}
+         */
+        CorrectionOutcomeKindEnum: "reference_signed_correction";
+        CorrectionOutcomeRequest: {
+            /** Format: uuid */
+            line_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "reference_signed_correction";
+            /** Format: decimal */
+            quantity: string;
+            /** Format: uuid */
+            correction_transfer_id: string;
+            /** Format: uuid */
+            receipt_event_id: string;
+        };
         /**
          * @description * `upsert` - upsert
          *     * `remove` - remove
@@ -3368,7 +3656,7 @@ export interface components {
          * @enum {string}
          */
         CourierHistoryEffectStateEnum: "applied_review" | "adopted_legacy" | "discarded" | "incident_open" | "approved" | "observed";
-        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"];
+        CourierHistoryEntry: components["schemas"]["ReviewHistoryEntry"] | components["schemas"]["RelocationHistoryEntry"] | components["schemas"]["TransferHistoryEntry"];
         /**
          * @description * `review_decision` - review_decision
          *     * `shift_validation` - shift_validation
@@ -3422,6 +3710,67 @@ export interface components {
             readonly revoked_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Discrepancy: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: uuid */
+            readonly transfer_id: string;
+            readonly transfer: components["schemas"]["Transfer"];
+            /** Format: uuid */
+            readonly receipt_event_id: string;
+            readonly lines: components["schemas"]["DiscrepancyLine"][];
+            readonly holds: components["schemas"]["TransferHold"][];
+            readonly status: components["schemas"]["DiscrepancyStatusEnum"];
+            readonly revision: number;
+            readonly resolution: components["schemas"]["TransferEvent"] | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        DiscrepancyLine: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["DiscrepancyLineKindEnum"];
+            /** Format: uuid */
+            readonly line_id: string | null;
+            /** Format: decimal */
+            readonly quantity: string;
+            readonly observation: unknown;
+        };
+        /**
+         * @description * `missing` - missing
+         *     * `identified_extra` - identified_extra
+         *     * `unidentified_extra` - unidentified_extra
+         * @enum {string}
+         */
+        DiscrepancyLineKindEnum: "missing" | "identified_extra" | "unidentified_extra";
+        /** @enum {string} */
+        DiscrepancyStatusEnum: "open" | "closed";
+        DispatchTransferRequest: {
+            /** Format: uuid */
+            command_id: string;
+            /** Format: uuid */
+            signature_upload_id: string;
+            expected_revision: number;
         };
         /**
          * @description * `unavailable` - Unavailable
@@ -3493,6 +3842,37 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        ExpectedScan: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "expected";
+            /** Format: uuid */
+            scan_id: string;
+            /** Format: uuid */
+            line_id: string;
+            /** Format: decimal */
+            quantity: string;
+        };
+        /**
+         * @description * `expected` - expected
+         * @enum {string}
+         */
+        ExpectedScanKindEnum: "expected";
+        ExpectedScanRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "expected";
+            /** Format: uuid */
+            scan_id: string;
+            /** Format: uuid */
+            line_id: string;
+            /** Format: decimal */
+            quantity: string;
+        };
         /**
          * @description * `unrecovered` - unrecovered
          *     * `recovered` - recovered
@@ -3507,6 +3887,35 @@ export interface components {
          * @enum {string}
          */
         ExpiryBasisEnum: "laid_on";
+        ExplicitConditionWriteRequest: {
+            /** Format: date-time */
+            device_time: string;
+            /** Format: decimal */
+            temperature_c: string;
+            /** Format: decimal */
+            humidity_pct: string;
+            /** Format: uuid */
+            location_id: string;
+        };
+        ExtraObservation: {
+            kind: components["schemas"]["ExtraObservationKindEnum"];
+            /** Format: uuid */
+            scan_id?: string;
+            /** Format: uuid */
+            lot_id?: string;
+            /** Format: uuid */
+            piece_id?: string | null;
+            /** Format: uuid */
+            unit_version_id?: string;
+            unidentified_code?: string;
+            quantity: string;
+        };
+        /**
+         * @description * `identified_extra` - identified_extra
+         *     * `unidentified_extra` - unidentified_extra
+         * @enum {string}
+         */
+        ExtraObservationKindEnum: "identified_extra" | "unidentified_extra";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -3619,6 +4028,45 @@ export interface components {
             /** Format: uuid */
             quadrant_id: string | null;
         };
+        IdentifiedExtra: {
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            piece_id: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "identified_extra";
+            /** Format: uuid */
+            scan_id: string;
+        };
+        /**
+         * @description * `identified_extra` - identified_extra
+         * @enum {string}
+         */
+        IdentifiedExtraKindEnum: "identified_extra";
+        IdentifiedExtraRequest: {
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            piece_id: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: decimal */
+            quantity: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "identified_extra";
+            /** Format: uuid */
+            scan_id: string;
+        };
         /**
          * @description * `piece` - piece
          *     * `lot` - lot
@@ -3673,6 +4121,7 @@ export interface components {
             readonly is_cleared: boolean;
             /** Format: date-time */
             readonly cleared_at: string | null;
+            readonly clearance: components["schemas"]["InspectionClearanceRead"] | null;
         };
         IncidentBlockedBy: {
             reason: string;
@@ -3791,6 +4240,24 @@ export interface components {
         IncidentVoidRequest: {
             expected_revision: number;
             reason: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        InspectionClearanceRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly reviewer: string;
+            readonly reason: string;
+            readonly evidence_ids: string[];
         };
         Intervention: {
             /** Format: uuid */
@@ -3999,6 +4466,8 @@ export interface components {
             readonly expiry_date: string | null;
             readonly timezone: string;
             readonly status: components["schemas"]["InventoryLotStatusEnum"];
+            /** Format: uuid */
+            readonly safety_location_id: string | null;
             readonly missing_fields: string[];
             readonly blocked_by: components["schemas"]["InventoryBlocker"][];
             readonly stock_url: string | null;
@@ -4055,6 +4524,24 @@ export interface components {
             expires_at?: string | null;
             /** Format: date */
             expiry_date?: string | null;
+        };
+        ManifestEvidence: {
+            /** Format: uuid */
+            upload_id: string;
+            role: components["schemas"]["RoleEnum"];
+            sha256: string;
+            coverage: string[];
+        };
+        ManifestLine: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            piece_id: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            quantity: string;
         };
         /** @description Metadata only; a producer must report missing/failed assets as unlicensed or incomplete. */
         MapManifest: {
@@ -4158,6 +4645,20 @@ export interface components {
          * @enum {string}
          */
         MethodEnum: "PUT";
+        MissingAssertion: {
+            /** Format: uuid */
+            line_id: string;
+            /** Format: decimal */
+            quantity: string;
+            evidence_ids: string[];
+        };
+        MissingAssertionRequest: {
+            /** Format: uuid */
+            line_id: string;
+            /** Format: decimal */
+            quantity: string;
+            evidence_ids: string[];
+        };
         MobileLoginResponse: {
             access: string;
             refresh: string;
@@ -4299,6 +4800,13 @@ export interface components {
             readonly source_kind: components["schemas"]["SourceKindEnum"];
             /** Format: uuid */
             readonly source_id: string;
+            readonly source_transfer: {
+                /** Format: uuid */
+                id: string;
+                code: string;
+                /** Format: uuid */
+                event_id: string;
+            } | null;
             /** Format: date-time */
             readonly created_at: string;
             /** Format: uuid */
@@ -4637,6 +5145,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Device"][];
+        };
+        PaginatedDiscrepancyList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Discrepancy"][];
         };
         PaginatedFuelLoadList: {
             /** @example 123 */
@@ -5073,6 +5596,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Supply"][];
         };
+        PaginatedTransferList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Transfer"][];
+        };
         /** @description Resolves the link first, so a bad link never reveals the password rules. */
         PasswordResetConfirmRequest: {
             uid: string;
@@ -5189,6 +5727,17 @@ export interface components {
             blocker_kinds?: components["schemas"]["BlockerKindsEnum"][];
             is_active?: boolean;
         };
+        /**
+         * @description * `field_event.sync` - field_event.sync
+         * @enum {string}
+         */
+        PermissionEnum: "field_event.sync";
+        /**
+         * @description * `dispatch` - dispatch
+         *     * `receive` - receive
+         * @enum {string}
+         */
+        PhaseEnum: "dispatch" | "receive";
         PlacementOption: components["schemas"]["QuadrantPlacementOption"] | components["schemas"]["LotPlacementOption"];
         PointPublicationRequest: {
             expected_revision: number;
@@ -5227,6 +5776,24 @@ export interface components {
         PointWrite: {
             point: components["schemas"]["SamplingPoint"];
             spacing_warnings: components["schemas"]["SpacingWarning"][];
+        };
+        PrepareLineRequest: {
+            /** Format: uuid */
+            lot_id: string;
+            /** Format: uuid */
+            piece_id: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: decimal */
+            quantity: string;
+        };
+        PrepareTransferRequest: {
+            code: string;
+            /** Format: uuid */
+            origin_id: string;
+            /** Format: uuid */
+            destination_id: string;
+            lines: components["schemas"]["PrepareLineRequest"][];
         };
         PreviewRequestRequest: {
             /** Format: uuid */
@@ -5561,6 +6128,58 @@ export interface components {
             revision: number;
             owners: components["schemas"]["OwnershipResult"][];
         };
+        ReceiveTransferRequest: {
+            /** Format: uuid */
+            command_id: string;
+            /** Format: uuid */
+            signature_upload_id: string;
+            expected_revision: number;
+            scanned: components["schemas"]["ClosedScanRequest"][];
+            missing: components["schemas"]["MissingAssertionRequest"][];
+            evidence_ids: string[];
+            /** Format: uuid */
+            dispatch_source_event_id?: string;
+        };
+        ReceivingOutcome: {
+            /** Format: uuid */
+            line_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "recover_dest" | "return_origin";
+            /** Format: decimal */
+            quantity: string;
+            /** Format: uuid */
+            dispatch_event_id: string;
+            /** Format: uuid */
+            receipt_event_id: string;
+            /** Format: uuid */
+            signature_upload_id: string;
+        };
+        /**
+         * @description * `recover_dest` - recover_dest
+         *     * `return_origin` - return_origin
+         * @enum {string}
+         */
+        ReceivingOutcomeKindEnum: "recover_dest" | "return_origin";
+        ReceivingOutcomeRequest: {
+            /** Format: uuid */
+            line_id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "recover_dest" | "return_origin";
+            /** Format: decimal */
+            quantity: string;
+            /** Format: uuid */
+            dispatch_event_id: string;
+            /** Format: uuid */
+            receipt_event_id: string;
+            /** Format: uuid */
+            signature_upload_id: string;
+        };
         RefreshRequest: {
             refresh: string;
             /** Format: uuid */
@@ -5784,6 +6403,9 @@ export interface components {
          * @enum {string}
          */
         RequiredFieldsEnum: "species" | "strain" | "generation" | "laid_on" | "estimated_organism_count";
+        ResolutionBodyRequest: {
+            outcomes: components["schemas"]["ClosedOutcomeRequest"][];
+        };
         /**
          * @description * `motorcycle` - motorcycle
          *     * `ovitrap_marker` - ovitrap_marker
@@ -6120,6 +6742,12 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
         };
+        /**
+         * @description * `signature` - signature
+         *     * `photo` - photo
+         * @enum {string}
+         */
+        RoleEnum: "signature" | "photo";
         /**
          * @description A parameter with the value in force now. Values are JSON numbers; null means no version yet.
          *
@@ -6500,9 +7128,12 @@ export interface components {
         SourceEnum: "official_import" | "company_rule";
         /**
          * @description * `lot_admission` - lot_admission
+         *     * `transfer_dispatch` - transfer_dispatch
+         *     * `transfer_receive` - transfer_receive
+         *     * `transfer_resolution` - transfer_resolution
          * @enum {string}
          */
-        SourceKindEnum: "lot_admission";
+        SourceKindEnum: "lot_admission" | "transfer_dispatch" | "transfer_receive" | "transfer_resolution";
         /**
          * @description * `accepted` - accepted
          *     * `in_review` - in_review
@@ -6668,6 +7299,193 @@ export interface components {
          */
         TaskActionEnum: "place" | "check";
         /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Transfer: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly code: string;
+            /** Format: uuid */
+            readonly origin_id: string;
+            /** Format: uuid */
+            readonly destination_id: string;
+            readonly lines: components["schemas"]["TransferLine"][];
+            readonly events: components["schemas"]["TransferEvent"][];
+            readonly revision: number;
+            readonly state: components["schemas"]["TransferStateEnum"];
+            readonly outstanding: {
+                [key: string]: string;
+            };
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        TransferEvent: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly transfer_id: string;
+            readonly revision: number;
+            readonly kind: components["schemas"]["TransferEventKindEnum"];
+            /** Format: uuid */
+            readonly command_id: string;
+            readonly manifest: components["schemas"]["TransferManifest"];
+            readonly manifest_hash: string;
+            /** Format: date-time */
+            readonly device_time: string;
+            /** Format: date-time */
+            readonly server_received_at: string;
+            /** Format: uuid */
+            readonly declared_source_uuid: string | null;
+            /** Format: uuid */
+            readonly operation_id: string | null;
+            /** Format: uuid */
+            readonly discrepancy_id: string | null;
+            /** Format: uuid */
+            readonly created_by: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        /**
+         * @description * `prepared` - prepared
+         *     * `dispatch` - dispatch
+         *     * `receive` - receive
+         *     * `resolution` - resolution
+         * @enum {string}
+         */
+        TransferEventKindEnum: "prepared" | "dispatch" | "receive" | "resolution";
+        TransferHistoryEntry: {
+            /** Format: uuid */
+            id: string;
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "transfer_custody";
+            /** Format: uuid */
+            transfer_id: string;
+            transfer_code: string;
+            phase: components["schemas"]["PhaseEnum"];
+            revision: number;
+            manifest_hash: string;
+            /** Format: uuid */
+            source_event_id: string;
+            source_status: components["schemas"]["SourceStatusEnum"];
+            source_code: string;
+            /** Format: date-time */
+            voided_at: string | null;
+            subjects: components["schemas"]["HistorySubject"][];
+        };
+        /**
+         * @description * `transfer_custody` - transfer_custody
+         * @enum {string}
+         */
+        TransferHistoryEntryKindEnum: "transfer_custody";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        TransferHold: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly lot_id: string;
+            /** Format: uuid */
+            readonly location_id: string;
+            /** Format: uuid */
+            readonly piece_id: string | null;
+            /** Format: uuid */
+            readonly resolution_id: string | null;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        TransferLine: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly lot_id: string;
+            /** Format: uuid */
+            readonly piece_id: string | null;
+            /** Format: uuid */
+            readonly unit_version_id: string;
+            /** Format: decimal */
+            readonly quantity: string;
+            /** Format: uuid */
+            readonly origin_version_id: string;
+            /** Format: uuid */
+            readonly destination_version_id: string;
+        };
+        TransferManifest: {
+            lines?: components["schemas"]["ManifestLine"][];
+            evidence: components["schemas"]["ManifestEvidence"][];
+            /** Format: uuid */
+            dispatch_event_id?: string;
+            scanned?: components["schemas"]["ClosedScan"][];
+            received?: {
+                [key: string]: string;
+            };
+            missing?: components["schemas"]["MissingAssertion"][];
+            extras?: components["schemas"]["ExtraObservation"][];
+            duplicates?: string[];
+            /** Format: uuid */
+            discrepancy_id?: string;
+            reason?: string;
+            outcomes?: components["schemas"]["ClosedOutcome"][];
+            source_facts?: components["schemas"]["TransferObservedFacts"];
+        };
+        TransferObservedFacts: {
+            version: number;
+            available: boolean;
+            /** Format: uuid */
+            transfer_id: string;
+            prepared_hash: string;
+            identity_hash: string;
+            pins: components["schemas"]["TransferObservedPin"][];
+            /** Format: date-time */
+            observed_at: string;
+        };
+        TransferObservedPin: {
+            /** Format: uuid */
+            line_id: string;
+            /** Format: uuid */
+            lot_version_id: string;
+            /** Format: uuid */
+            supply_version_id: string;
+            /** Format: uuid */
+            protocol_id: string | null;
+            /** Format: uuid */
+            origin_version_id: string;
+            /** Format: uuid */
+            destination_version_id: string;
+            available_at_observation: string;
+        };
+        /** @enum {string} */
+        TransferStateEnum: "prepared" | "dispatched" | "received" | "discrepancy" | "resolved";
+        /**
          * @description * `rule_context_unavailable` - rule_context_unavailable
          *     * `organization_context_unavailable` - organization_context_unavailable
          *     * `future_cutoff` - future_cutoff
@@ -6684,6 +7502,35 @@ export interface components {
          * @enum {string}
          */
         UnblockedByRoleEnum: "admin" | "supervisor";
+        UnidentifiedExtra: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "unidentified_extra";
+            /** Format: uuid */
+            scan_id: string;
+            unidentified_code: string;
+            /** Format: decimal */
+            quantity: string;
+        };
+        /**
+         * @description * `unidentified_extra` - unidentified_extra
+         * @enum {string}
+         */
+        UnidentifiedExtraKindEnum: "unidentified_extra";
+        UnidentifiedExtraRequest: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            kind: "unidentified_extra";
+            /** Format: uuid */
+            scan_id: string;
+            unidentified_code: string;
+            /** Format: decimal */
+            quantity: string;
+        };
         /**
          * @description * `m` - Meters
          *     * `km_h` - Kilometers Per Hour
@@ -7850,6 +8697,133 @@ export interface operations {
             };
         };
     };
+    discrepancies_list: {
+        parameters: {
+            query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                created_at_before?: string;
+                created_at_from?: string;
+                lot?: string;
+                /** @description Comma-separated fields: code, created_at. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description Case-insensitive search across: code. */
+                search?: string;
+                status?: "open" | "closed";
+                transfer?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedDiscrepancyList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    discrepancies_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this discrepancy. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Discrepancy"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    discrepancies_close_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this discrepancy. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CloseDiscrepancyRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     field_bootstrap_list: {
         parameters: {
             query?: never;
@@ -8413,6 +9387,8 @@ export interface operations {
                  *     * `reported` - reported
                  */
                 kind?: "fleet" | "reported";
+                /** @description Exact motorcycle UUID; applies only to fleet incident lists. */
+                motorcycle?: string;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 owner?: string;
@@ -8931,6 +9907,7 @@ export interface operations {
                 created_at_before?: string;
                 created_at_from?: string;
                 lot?: string;
+                lot_code?: string;
                 operation?: string;
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -9104,10 +10081,11 @@ export interface operations {
     lots_list: {
         parameters: {
             query?: {
-                blocked_by?: "supply_type_inactive" | "lot_expired" | "protocol_not_configured" | "storage_safety_not_configured" | "insecticide_free_required" | "condition_slot_missing" | "condition_breach";
+                blocked_by?: "supply_type_inactive" | "lot_expired" | "protocol_not_configured" | "storage_safety_not_configured" | "insecticide_free_required" | "condition_slot_missing" | "condition_breach" | "transfer_discrepancy_hold";
                 center?: string;
                 /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
                 code?: string;
+                custody_location?: string;
                 expiry_before?: string;
                 expiry_before_date?: string;
                 expiry_from?: string;
@@ -9189,7 +10167,9 @@ export interface operations {
     };
     lots_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                custody_location?: string;
+            };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
                 "X-Organization"?: string;
@@ -9270,6 +10250,7 @@ export interface operations {
                 device_time_from?: string;
                 evaluation?: "breach" | "normal" | "unassessed";
                 local_date?: string;
+                location_id?: string;
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
                 page?: number;
@@ -9322,7 +10303,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["ConditionWriteRequest"];
+                "application/json": components["schemas"]["ConditionCaptureRequestRequest"];
             };
         };
         responses: {
@@ -9606,6 +10587,7 @@ export interface operations {
     motorcycles_responsibility_letters_list: {
         parameters: {
             query?: {
+                include_voided?: boolean;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -9721,6 +10703,7 @@ export interface operations {
     motorcycles_services_list: {
         parameters: {
             query?: {
+                include_voided?: boolean;
                 /** @description Which field to use when ordering the results. */
                 ordering?: string;
                 /** @description A page number within the paginated result set. */
@@ -12360,6 +13343,223 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Intervention"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    transfers_list: {
+        parameters: {
+            query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                created_at_before?: string;
+                created_at_from?: string;
+                destination?: string;
+                lot?: string;
+                /** @description Comma-separated fields: code, created_at. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                origin?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description Case-insensitive search across: code. */
+                search?: string;
+                state?: "prepared" | "dispatched" | "received" | "discrepancy" | "resolved";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTransferList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    transfers_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PrepareTransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    transfers_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this transfer. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Transfer"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    transfers_dispatch_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this transfer. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DispatchTransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    transfers_receive_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                /** @description A UUID string identifying this transfer. */
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReceiveTransferRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
+                };
+            };
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TransferEvent"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

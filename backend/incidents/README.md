@@ -93,3 +93,10 @@ Unavailable type/terminal leaves inventory's durable hold pending for recovery.
 Closing derives that one hold's resolution; there is no Incident -> Lot locking
 callback. Existing human/source-evidence checks, fleet default list, escalation,
 publication and read/download policies retain their current interfaces.
+
+#106 explicit-location condition captures derive automatic incident center/quadrant
+from the exact retained measurement LocationVersion, rather than the lot's original
+admission. The original inventory.v1 source/hash and legacy adapter are preserved.
+A condition at B requires its own current paired condition.create, even at0 stock;
+it proves no custody. Global owned biological holds still apply at every transfer
+phase, with no clearing callback from a transfer resolution to another incident.

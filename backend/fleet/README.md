@@ -67,6 +67,35 @@ center scope. Foreign/out-of-scope parents and write references return 404.
 - GET /incidents/: severe-check block audits and their inspection-clearance state,
   scoped through motorcycle center; page-number paging and created_at ordering.
 
+### Scoped fault history and clearance reads (#296)
+
+The single incident facade defaults to fleet mode. Its optional exact
+`motorcycle=<UUID>` facet applies only to that mode. The current motorcycle.read
+action is required before validation/discovery, and the parent is resolved through
+the same tenant/effective-center Motorcycle queryset as the existing fault list.
+Unknown, foreign and inaccessible parents share 404; malformed or blank values
+return the normal 400 envelope under fields.motorcycle. Repeated parameters use
+the last value. Filtering precedes count, ordering and paging; an authorized parent
+without faults returns an empty page. Omitting the facet preserves the old list.
+Reported mode ignores the unsupported parameter, including malformed values; no
+reported filter, grant or write behavior changes.
+
+Fleet rows retain is_cleared/cleared_at and add nullable `clearance` with exactly
+`id`, `created_at`, `reviewer`, `reason` and `evidence_ids` from the real immutable
+InspectionClearance. Reviewer is its User UUID, without a name/email/profile lookup.
+Evidence values are original public upload UUIDs, not URLs or bytes. Current
+motorcycle.read alone permits this audit projection; it grants no clearance,
+manage or upload action. The existing exact-fault download policy still checks
+current organization/read authority before and after private I/O.
+
+The two nested services/responsibility-letters GET lists now advertise their
+existing optional `include_voided` parameter. Runtime semantics are unchanged:
+case-insensitive literal true includes voided rows; other values retain default
+hiding. POST/void actions gain no parameter or validation. No model, writer,
+permission/default, blocker or allocation behavior changes. The existing B05/B06
+journeys and OpenAPI owner cover these additions; B04 remains the private-download
+authority owner rather than a duplicated test matrix.
+
 Admin reads require motorcycle.read. Service/letter writes require
 motorcycle.manage; clear-fault requires motorcycle.service_clear. Admin/supervisor
 receive service_clear through existing once-only seed bookkeeping; revoked grants

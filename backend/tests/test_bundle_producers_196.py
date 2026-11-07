@@ -18,6 +18,7 @@ from field_sync.producers import build_sections, bundle_schema_version
 from field_sync.selectors import producer_context
 from field_sync.services import bootstrap_bundle, sync_batch
 from organizations.models import all_scope
+from organizations.services import assign_profiles
 from tests.ovitrap_support import CAPTURED, envelope, ingest, second_courier, setup_field
 from tests.test_field_sync_b_13 import BOOTSTRAP, batch_context
 
@@ -289,20 +290,27 @@ def test_scope_revision_invalidates_cursor_and_bootstrap_replaces_downloaded_row
 
 
 @pytest.mark.django_db
-def test_restoring_identical_scope_still_invalidates_cursor(field):
+def test_restoring_identical_scope_still_invalidates_cursor(field, monkeypatch):
     """Rows published while the courier was out of scope have no change for it."""
     phone = phone_for(field.batch)
-    cursor = phone.client.get(BOOTSTRAP).data["cursor"]
-    original = field.membership.scope
-    for scope in (
-        {"centers": {"mode": "none", "ids": []}, "quadrants": {"mode": "none", "ids": []}},
-        original,
-    ):
-        field.membership.scope = scope
-        field.membership.revision += 1
-        field.membership.save(update_fields=["scope", "revision"])
-    invalid = phone.sync([], cursor=cursor)
+    before = phone.client.get(BOOTSTRAP)
+    profiles = list(field.membership.profiles.all())
+    # The real writer bumps retained generations even when the final grants repeat.
+    assign_profiles(field.membership, [])
+    denied = phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=before["ETag"])
+    assert denied.status_code == 403
+    assign_profiles(field.membership, profiles)
+    invalid = phone.sync([], cursor=before.data["cursor"])
     assert (invalid.status_code, invalid.data["code"]) == (400, "invalid_cursor")
+    after = phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=before["ETag"])
+    assert after.status_code == 200
+    assert after.data["sampling_points"] == before.data["sampling_points"]
+    assert after.data["capture_context"]["grants"] == before.data["capture_context"]["grants"]
+    assert after.data["scope_revision"] != before.data["scope_revision"]
+    assert after["ETag"] != before["ETag"]
+    monkeypatch.setattr(timezone, "now", lambda: CAPTURED + timedelta(seconds=1))
+    unchanged = phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=after["ETag"])
+    assert unchanged.status_code == 304
 
 
 @pytest.mark.django_db

@@ -89,6 +89,9 @@ class AttachmentLink(EvidenceRecord):
     review_item = models.ForeignKey(
         "reviews.ReviewItem", null=True, on_delete=models.PROTECT, related_name="attachments"
     )
+    transfer_event = models.ForeignKey(
+        "inventory.TransferEvent", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
 
     class Meta(EvidenceRecord.Meta):
         constraints = [
@@ -99,24 +102,35 @@ class AttachmentLink(EvidenceRecord):
                         fault__isnull=True,
                         incident__isnull=True,
                         review_item__isnull=True,
+                        transfer_event__isnull=True,
                     )
                     | models.Q(
                         field_event__isnull=True,
                         fault__isnull=False,
                         incident__isnull=True,
                         review_item__isnull=True,
+                        transfer_event__isnull=True,
                     )
                     | models.Q(
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=False,
                         review_item__isnull=True,
+                        transfer_event__isnull=True,
                     )
                     | models.Q(
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,
                         review_item__isnull=False,
+                        transfer_event__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=False,
                     )
                 ),
                 name="attachment_exactly_one_parent",
