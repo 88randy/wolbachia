@@ -174,8 +174,8 @@ BEGIN
           THEN RAISE EXCEPTION 'Lab implausible observation requires explicit confirmation'; END IF;
       ELSE
         IF metadata->>'method_version' IS DISTINCT FROM NEW.method_version_id::text
-          OR metadata->>'reason' IS DISTINCT FROM NEW.reason OR NOT metadata->'evidence_ids' @> NEW.evidence_ids
-          OR NOT NEW.evidence_ids @> metadata->'evidence_ids'
+          OR metadata->>'reason' IS DISTINCT FROM NEW.reason OR NOT ((metadata->'evidence_ids') @> NEW.evidence_ids)
+          OR NOT (NEW.evidence_ids @> (metadata->'evidence_ids'))
           THEN RAISE EXCEPTION 'Lab rejection differs from exact submitted facts'; END IF;
       END IF;
     ELSIF TG_TABLE_NAME='lab_labresultvoid' THEN

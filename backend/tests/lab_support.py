@@ -12,7 +12,7 @@ from organizations.models import all_scope
 from organizations.services import ADMINISTRATION_PERMISSIONS
 from ovitraps.models import Bag, OvitrapReading
 from tests.factories import RuleParameterFactory, RuleParameterVersionFactory
-from tests.ovitrap_support import CAPTURED, envelope, ingest, setup_field
+from tests.ovitrap_support import CAPTURED, envelope, ingest, make_point, setup_field
 from uploads.access import UploadActor
 
 AT = CAPTURED + timedelta(hours=1)
@@ -45,9 +45,20 @@ def lab_context(monkeypatch):
     return SimpleNamespace(field=field, actor=actor, member=field.membership)
 
 
-def capture_bag(context, code="LAB-114", **values):
-    sent = envelope(context.field, "ovitrap.check", payload={"bag_code": code, **values})
-    assert ingest(context.field, sent).status == "accepted"
+def capture_bag(context, code="LAB-114", *, new_source=False, **values):
+    field = context.field
+    if new_source:
+        field = SimpleNamespace(
+            **{
+                **vars(field),
+                "point": make_point(field.point.block.quadrant, f"LAB-P-{uuid4()}"),
+                "identity": uuid4(),
+            }
+        )
+        assert ingest(field, envelope(field)).status == "accepted"
+    sent = envelope(field, "ovitrap.check", payload={"bag_code": code, **values})
+    result = ingest(field, sent)
+    assert result.status == "accepted", result
     reading = OvitrapReading.objects.get(event_id=sent.id)
     return Bag.objects.get(reading=reading) if reading.paddle_present else reading
 

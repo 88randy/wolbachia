@@ -109,7 +109,7 @@ def test_verified_reporting_does_not_infer_examined_sample_from_full_paddle_coun
         method.method_id,
     )
     assert count_projection(count)["method"]["name"] == method.name
-    later_bag = capture_bag(context, "UNVERIFIED-METHOD")
+    later_bag = capture_bag(context, "UNVERIFIED-METHOD", new_source=True)
     receive(context, later_bag)
     unavailable = execute_lab_command(
         context.actor,

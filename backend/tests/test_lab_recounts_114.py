@@ -30,7 +30,7 @@ def test_closed_day_snapshot_requests_exact_selection_and_recovers_without_dupli
     receive(context, first)
     context.actor = counter
     counted = execute_lab_command(context.actor, count_input(context, first, 1))
-    second = capture_bag(context, "DAY-SECOND")
+    second = capture_bag(context, "DAY-SECOND", new_source=True)
     context.actor = receiver
     receive(context, second)
     context.actor = counter

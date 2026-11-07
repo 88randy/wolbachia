@@ -40,7 +40,7 @@ def mixed_void_batch(context, blocked_capture, code):
     from field_sync.services import sync_batch
     from tests.ovitrap_support import CAPTURED
 
-    uncounted = capture_bag(context, code)
+    uncounted = capture_bag(context, code, new_source=True)
     first = replace(
         blocked_capture,
         id=uuid4(),

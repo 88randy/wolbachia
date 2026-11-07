@@ -22,7 +22,9 @@ def test_receipt_is_continuous_exactly_once_and_no_paddle_is_real_reading_only(m
     assert again.replayed is True
     assert again.body == first.body
     assert receive(context, bag).body["code"] == "already_received"
-    reading = capture_bag(context, None, paddle_present=False, has_eggs=None)
+    reading = capture_bag(
+        context, None, new_source=True, paddle_present=False, has_eggs=None, paddle_type=None
+    )
     missing_paddle = command(context, "receive_reading", LabTarget("reading", reading.pk))
     assert missing_paddle.status == 200
     assert missing_paddle.body["bag"] is None
@@ -105,7 +107,7 @@ def test_expected_missing_retains_pending_cause_and_real_policy_recovers_one_cas
     )
     assert repeated.body["incident_id"] == str(link.incident_id)
     assert ReceptionDiscrepancy.objects.count() == Incident.objects.count() == 1
-    later_bag = capture_bag(context, "LATER-DISCREPANCY")
+    later_bag = capture_bag(context, "LATER-DISCREPANCY", new_source=True)
     monkeypatch.setattr(
         "django.utils.timezone.now", lambda: discrepancy.created_at + timedelta(minutes=1)
     )
@@ -139,19 +141,23 @@ def test_expected_missing_retains_pending_cause_and_real_policy_recovers_one_cas
 
 
 def test_known_voided_source_records_no_reading_without_inventing_another_parent(monkeypatch):
-    from field_sync.models import FieldEvent
+    from ovitraps.models import OvitrapVoid
+    from tests.ovitrap_support import envelope, ingest
 
     context = lab_context(monkeypatch)
     bag = capture_bag(context)
     source = bag.event
     original_receipt = receive(context, bag).body["receipt"]["id"]
-    # Canonical permitted source-void fields; no current Lab result exists.
-    FieldEvent.objects.filter(pk=source.pk).update(
-        voided_at=source.server_received_at,
-        voided_by=context.actor.user,
-        void_reason="Synthetic source correction",
-        void_reason_code="other",
+    correction = envelope(
+        context.field,
+        "record.void",
+        voids_event_id=source.pk,
+        payload={"reason_code": "other", "reason": "Synthetic source correction"},
     )
+    assert ingest(context.field, correction).status == "accepted"
+    source.refresh_from_db()
+    assert source.voided_at is not None
+    assert OvitrapVoid.objects.get(target_event=source).event_id == correction.id
     bag.refresh_from_db()
     result = receive(context, bag)
     assert result.status == 409
