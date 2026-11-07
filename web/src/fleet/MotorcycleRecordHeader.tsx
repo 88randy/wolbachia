@@ -6,22 +6,40 @@ import type { Motorcycle } from "./fleet-query";
 import { FleetRecordFeedback } from "./FleetRecordFeedback";
 import { MotorcycleActions } from "./MotorcycleActions";
 import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
+import { Button } from "../ui/Button";
 interface Props {
   motorcycle: Motorcycle;
   error: unknown;
   onRetry: () => void;
   isRefreshing: boolean;
 }
-/** Keep readiness and actions tied to the same verified record, including during refresh. */
-export function MotorcycleRecordHeader({ motorcycle, error, onRetry, isRefreshing }: Props) {
+function HeaderActions({ motorcycle, error, onRetry, isRefreshing }: Props) {
   const { t } = useTranslation();
   const isVerified = error === null && !isRefreshing;
-  const badge = isVerified ? <MotorcycleStatusBadge motorcycle={motorcycle} compact /> : undefined;
+  return (
+    <div className={styles.actions}>
+      {isVerified && <MotorcycleStatusBadge motorcycle={motorcycle} compact />}
+      <Button
+        id={`fleet-record-refresh-${motorcycle.id}`}
+        variant="secondary"
+        aria-disabled={isRefreshing}
+        onClick={onRetry}
+      >
+        {t("fleet.action.refresh")}
+      </Button>
+    </div>
+  );
+}
+/** Keep readiness and actions tied to the same verified record, including during refresh. */
+export function MotorcycleRecordHeader(props: Props) {
+  const { motorcycle, error, onRetry, isRefreshing } = props;
+  const { t } = useTranslation();
+  const isVerified = error === null && !isRefreshing;
   return (
     <Card
       title={<span className={styles.code}>{motorcycle.code}</span>}
       headingLevel={1}
-      actions={badge}
+      actions={<HeaderActions {...props} />}
     >
       {isVerified && motorcycle.is_blocked && (
         <p className={styles.hint}>

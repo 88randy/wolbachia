@@ -208,6 +208,19 @@ def void_ovitrap_event(ctx: EventContext, target: FieldEvent) -> None:
     except ValidationError as error:
         raise EventRejected(INVALID_PAYLOAD, rejection_params(error)) from None
     lock_organization(ctx)
+    from lab.dependencies import check_source_void_completion, source_lab_blockers
+
+    if blockers := source_lab_blockers(target):
+        raise EventRejected(codes.VOID_BLOCKED, {"blocked_by": blockers})
+    if not check_source_void_completion(target.pk):
+        raise EventRejected(
+            codes.VOID_BLOCKED,
+            {
+                "blocked_by": [
+                    {"reason": "lab_result_active", "unblocked_by_role": "supervisor", "link": ""}
+                ]
+            },
+        )
     if target.type == "ovitrap.place":
         accessible_point(ctx, UUID(target.payload["sampling_point_id"]))
     else:

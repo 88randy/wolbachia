@@ -138,6 +138,18 @@ def test_seeded_parameters_have_the_expected_types_and_units() -> None:
         Decimal(200),
     )
     assert current_values(organization)["daily_task_target"] == 40
+    for key, default, minimum, maximum in (
+        ("lab_count_plausibility_limit", 1000, 100, 10000),
+        ("lab_recount_sample_per_100", 5, 1, 20),
+    ):
+        parameter = RuleParameter.objects.get(organization=organization, key=key)
+        assert (parameter.value_type, parameter.unit, parameter.min_value, parameter.max_value) == (
+            "integer",
+            "count",
+            Decimal(minimum),
+            Decimal(maximum),
+        )
+        assert current_values(organization)[key] == default
 
 
 def test_catalogs_follow_the_open_and_closed_defaults() -> None:
@@ -269,6 +281,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "egg_count.void",
         "transfer.read",
         "transfer.receive",
         "discrepancy.read",
@@ -305,6 +318,12 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "bag.receive",
+        "egg_count.create",
+        "egg_count.read",
+        "lab_rejection.create",
+        "lab_method.read",
+        FIELD_UPLOAD,
         "intervention.read",
         "intervention.create",
         "supply_type.read",
@@ -351,6 +370,14 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "bag.receive",
+        "egg_count.create",
+        "egg_count.read",
+        "egg_count.void",
+        "lab_rejection.create",
+        "lab_method.read",
+        "lab_method.manage",
+        "lab_method.verify",
         "transfer.read",
         "transfer.create",
         "transfer.dispatch",
@@ -611,6 +638,8 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
 @pytest.mark.parametrize(
     ("slug", "code"),
     [
+        ("entomologist", FIELD_UPLOAD),
+        ("supervisor", "egg_count.void"),
         ("courier", FIELD_UPLOAD),
         ("warehouse", FIELD_UPLOAD),
         ("supervisor", FIELD_UPLOAD),
@@ -679,6 +708,8 @@ def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government
 @pytest.mark.parametrize(
     ("slug", "code"),
     [
+        ("entomologist", FIELD_UPLOAD),
+        ("supervisor", "egg_count.void"),
         ("courier", FIELD_UPLOAD),
         ("supervisor", FIELD_UPLOAD),
         ("admin", FIELD_UPLOAD),

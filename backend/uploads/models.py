@@ -92,6 +92,9 @@ class AttachmentLink(EvidenceRecord):
     transfer_event = models.ForeignKey(
         "inventory.TransferEvent", null=True, on_delete=models.PROTECT, related_name="attachments"
     )
+    lab_rejection = models.ForeignKey(
+        "lab.LabRejection", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
 
     class Meta(EvidenceRecord.Meta):
         constraints = [
@@ -103,6 +106,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
                     )
                     | models.Q(
                         field_event__isnull=True,
@@ -110,6 +114,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
                     )
                     | models.Q(
                         field_event__isnull=True,
@@ -117,6 +122,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=False,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
                     )
                     | models.Q(
                         field_event__isnull=True,
@@ -124,6 +130,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=False,
                         transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
                     )
                     | models.Q(
                         field_event__isnull=True,
@@ -131,6 +138,15 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=False,
+                        lab_rejection__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=False,
                     )
                 ),
                 name="attachment_exactly_one_parent",

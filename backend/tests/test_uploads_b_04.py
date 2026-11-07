@@ -336,6 +336,58 @@ def test_clear_fault_consumes_only_its_bound_verified_evidence_and_private_downl
         download_attachment(private.actor, identifier)
 
 
+@pytest.mark.django_db(transaction=True)
+def test_lab_rejection_consumes_real_verified_bytes_and_exact_void_only_parent_access(
+    monkeypatch, make_member, tmp_path, settings
+):
+    from lab.access import LabTarget
+    from organizations.models import all_scope
+    from tests.lab_support import capture_bag, command, lab_context, receive, synthetic_method
+
+    context = lab_context(monkeypatch)
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "lab-private"
+    private = SimpleNamespace(actor=context.actor, member=context.member, content=image_bytes())
+    method = synthetic_method(context)
+    bag = capture_bag(context)
+    receive(context, bag)
+    identifier, lease = authorize(private)
+    put(private, identifier, lease)
+    finalize_upload(private.actor, identifier)
+    result = command(
+        context,
+        "reject",
+        LabTarget("bag", bag.pk),
+        {
+            "expected_revision": 0,
+            "method_version": method.pk,
+            "reason": "Synthetic physical sample integrity rejection",
+            "evidence_ids": [identifier],
+        },
+    )
+    rejection_id = UUID(result.body["rejection"]["id"])
+    assert AttachmentLink.objects.get(upload__public_id=identifier).lab_rejection_id == rejection_id
+    assert (
+        finalize_upload(private.actor, identifier, AttachmentTarget("lab_rejection", rejection_id))[
+            "state"
+        ]
+        == "verified"
+    )
+    user, member = make_member(context.actor.organization, ["egg_count.void"])
+    member.scope = all_scope()
+    member.save(update_fields=["scope"])
+    profile = member.profiles.get()
+    profile.scope = all_scope()
+    profile.save(update_fields=["scope"])
+    reader = UploadActor(user, context.actor.organization)
+    content, mime = download_attachment(reader, identifier)
+    assert mime == "image/png"
+    assert Image.open(BytesIO(content)).size == (5, 3)
+    profile.permission_codes = []
+    profile.save(update_fields=["permission_codes"])
+    with pytest.raises(Http404):
+        download_attachment(reader, identifier)
+
+
 def _background(job):
     try:
         return job()

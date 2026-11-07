@@ -1063,3 +1063,24 @@ consumed/unsupported dependents stay blocked. ack_missing is not return proof.
 Canonical reason_code/Other and normalized10-visible/1000-max note apply to EVERY
 transfer void without changing other owners' resolver. No old leg leaves SUM.
 See backend/inventory/transfers/README.md for the HTTP contract and test ownership.
+
+## Laboratory result history (#114)
+
+Lab adds no courier event type or sync writer. Authenticated server commands retain
+real Bag/Reading/source identity and exact command results. Unknown codes create
+nothing. Recount requests are durable, but independent execution belongs to #115.
+
+The ONE history producer advances from 3 to 4. Its additive Lab variants are
+lab_receipt, lab_discrepancy, lab_count, lab_rejection and lab_void. id is the actual
+Lab fact UUID, with real bag_id/reading_id/source_event_id, original source clocks,
+author, result/QA/configuration state and current subject vector. System QA causes
+update the genuine human count's projection; they forge no human QA action or
+FieldEvent. The public publisher still owns CourierChange plus publication-receipt
+version deduplication, and recipients are authentic prepared original collectors.
+
+All four old review/shift/relocation/transfer mappings, refs, whole-transfer scope,
+root schema2/capture_context and other producer versions remain. The outer hash is
+opaque. Current source/recipient FIELD_BOOTSTRAP authority filters before cursor,
+LIMIT, bootstrap and changes. Persistence during download loss grants no access;
+a later regrant sees the updated retained projection. Nothing here proves courier
+delivery or implements a Lab screen, count on the phone, or independent QA execution.

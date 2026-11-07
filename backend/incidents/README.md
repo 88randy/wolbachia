@@ -100,3 +100,15 @@ admission. The original inventory.v1 source/hash and legacy adapter are preserve
 A condition at B requires its own current paired condition.create, even at0 stock;
 it proves no custody. Global owned biological holds still apply at every transfer
 phase, with no clearing callback from a transfer resolution to another incident.
+
+## Laboratory reception sources (#114)
+
+`lab_sources.py` consumes a persisted, already authorized reception discrepancy
+under Lab's retained Organization arbiter. The exact CAS-configured incident type
+must have a current real owner chain, zero report photos and no invented blockers.
+An unavailable type leaves the original discrepancy explicitly configuration
+pending; bounded recovery creates its system origin and incident once. It creates
+no surrogate Bag, Reading, FieldEvent, upload or human report. The original source
+collector and discrepancy author are prepared before Organization, even when they
+are different people. This adapter preserves the existing incident publication,
+scope, evidence, escalation and independent resolution owners.

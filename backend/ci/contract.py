@@ -12,6 +12,7 @@ MIGRATION_MODULES = frozenset(
         "tests/test_review_migrations_113.py",
         "tests/test_geography_migrations_b_33.py",
         "tests/test_transfer_migrations_106.py",
+        "tests/test_lab_migrations_114.py",
     }
 )
 

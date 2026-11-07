@@ -109,6 +109,10 @@ def authorize_target(
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
     scope = current_scope(actor)
+    if target.kind == "lab_rejection":
+        from lab.evidence import authorize_rejection_attachment
+
+        return authorize_rejection_attachment(actor, target.identifier, upload)
     if target.kind == "transfer_event":
         return _transfer_attachment_target(actor, target, upload)
     if target.kind == "review_item":
@@ -208,10 +212,21 @@ def _review_attachment_target(
 
 def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     """Follow current parent read/history policy, including authorized voided history."""
-    scope = current_scope(actor)
     from uploads.services import _resolve_link_target
 
     parent = _resolve_link_target(link)
+    if parent.kind == "lab_rejection":
+        from lab.evidence import authorize_rejection_download
+
+        authorize_rejection_download(actor, parent.identifier)
+        return
+    _authorize_other_download(actor, link, parent)
+
+
+def _authorize_other_download(
+    actor: UploadActor, link: AttachmentLink, parent: AttachmentTarget
+) -> None:
+    scope = current_scope(actor)
     if parent.kind == "transfer_event":
         _authorize_transfer_download(actor, parent.identifier)
         return

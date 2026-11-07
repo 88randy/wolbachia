@@ -75,3 +75,36 @@
 .feedbackSlot {
   min-height: var(--web-control-sm);
 }
+.formFields {
+  display: grid;
+  gap: var(--space-2);
+  padding: 0;
+  margin: var(--space-2) 0;
+  border: 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.formFields label {
+  display: grid;
+  gap: var(--space-1);
+}
+.formFields input,
+.formFields select,
+.formFields textarea {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--space-1);
+  border: 1px solid var(--color-border-soft);
+  border-radius: var(--radius-inner);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font: inherit;
+}
+.provenance {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-family: var(--font-family-mono);
+  max-width: 100%;
+}
