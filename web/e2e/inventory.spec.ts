@@ -237,6 +237,7 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
     .getByRole("region", { name: "Filtros", exact: true })
     .getByRole("textbox", { name: "Código", exact: true });
   await historyCode.fill("LOT-NEW");
+  await historyCode.press("Enter");
   await expect
     .poll(() =>
       server.reads
