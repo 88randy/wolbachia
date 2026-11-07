@@ -249,7 +249,12 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
         ),
     )
     .toBe(true);
-  await expect(page.getByText("Recepción de transferencia", { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Movimientos", exact: true }).getByRole("cell", {
+      name: "Recepción de transferencia cd000000-0000-0000-0000-000000000099",
+      exact: true,
+    }),
+  ).toBeVisible();
   expect(
     server.reads
       .slice(beforeHistory)
