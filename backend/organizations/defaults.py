@@ -20,7 +20,13 @@ from catalogs.permissions import (
 from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
-from geography.permissions import GEOGRAPHY_WRITE_CODES, QUADRANT_READ
+from geography.permissions import (
+    GEOGRAPHY_WRITE_CODES,
+    INTERVENTION_CREATE,
+    INTERVENTION_READ,
+    QUADRANT_CLOSE,
+    QUADRANT_READ,
+)
 from incidents.permissions import (
     INCIDENT_CLOSE,
     INCIDENT_CREATE,
@@ -33,8 +39,13 @@ from inventory.permissions import ENTOMOLOGIST_CODES as INVENTORY_ENTOMOLOGIST_C
 from inventory.permissions import SUPERVISOR_CODES as INVENTORY_SUPERVISOR_CODES
 from inventory.permissions import WAREHOUSE_CODES as INVENTORY_WAREHOUSE_CODES
 from organizations.models import Organization, Profile
-from ovitraps.permissions import OVITRAP_REMOVAL_RESOLVE, READ_CODES, READING_READ
-from reviews.permissions import REVIEW_ITEM_READ
+from ovitraps.permissions import (
+    OVITRAP_REMOVAL_RESOLVE,
+    READ_CODES,
+    READING_READ,
+    RELOCATION_DECIDE,
+)
+from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from rules.permissions import (
     RULE_PARAMETER_READ,
     RULE_PARAMETER_VERSION_CREATE,
@@ -43,13 +54,23 @@ from rules.permissions import (
 )
 from rules.seeds import missing_parameter_keys, seed_default_rule_parameters
 from scheduling.permissions import RISK_IMPORT_APPLY, SCHEDULE_MANAGE, SCHEDULE_READ
-from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
+from shifts.permissions import (
+    MOTORCYCLE_MANAGE,
+    MOTORCYCLE_READ,
+    MOTORCYCLE_UNBLOCK,
+    SHIFT_READ,
+    SHIFT_VALIDATE,
+)
 from uploads.limits import FIELD_UPLOAD
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    RELOCATION_DECIDE,
+    QUADRANT_CLOSE,
+    INTERVENTION_READ,
+    INTERVENTION_CREATE,
     *INVENTORY_ADMIN_CODES,
     *MANAGEMENT_CODES,
     OVITRAP_REMOVAL_RESOLVE,
@@ -78,6 +99,8 @@ ADMIN_CODES = (
     RULE_PARAMETER_VERSION_VOID,
     *ADMIN_AUTH_PERMISSION_CODES,  # device and session administration (#4)
     REVIEW_ITEM_READ,
+    REVIEW_ITEM_DECIDE,
+    SHIFT_VALIDATE,
     SHIFT_READ,
     MOTORCYCLE_READ,
     MOTORCYCLE_MANAGE,
@@ -95,6 +118,10 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    RELOCATION_DECIDE,
+    QUADRANT_CLOSE,
+    INTERVENTION_READ,
+    INTERVENTION_CREATE,
     *INVENTORY_SUPERVISOR_CODES,
     INCIDENT_READ,
     INCIDENT_CREATE,
@@ -108,6 +135,8 @@ SUPERVISOR_CODES = (
     QUADRANT_READ,
     *READ_ONLY_CODES,
     REVIEW_ITEM_READ,
+    REVIEW_ITEM_DECIDE,
+    SHIFT_VALIDATE,
     SHIFT_READ,
     MOTORCYCLE_READ,
     MOTORCYCLE_UNBLOCK,
@@ -118,6 +147,8 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
+        INTERVENTION_READ,
+        INTERVENTION_CREATE,
         *READ_ONLY_CODES,
         *INVENTORY_ENTOMOLOGIST_CODES,
         READING_READ,

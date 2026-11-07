@@ -10,7 +10,7 @@ One English name per domain term across backend, mobile and web. Spanish appears
 | autorización temporal de carga | upload lease | UploadLease, Upload-Lease | Append-only 15-minute authenticated PUT authorization. |
 | recibo de bytes originales | upload source | UploadSource, sha256 | Immutable private original object; never served. |
 | verificación de evidencia | upload verification | UploadVerification, verified_at | Sanitized image plus its separate SHA-256; no parent authority implied. |
-| vínculo de evidencia | attachment link | AttachmentLink, context | One immutable authorized source/fault binding per upload. |
+| vínculo de evidencia | attachment link | AttachmentLink, context | Exactly one immutable field_event, motorcycle_fault, incident or review_item parent per upload. Current parent authorization is rechecked; retained verification never grants permanent access or reparenting. |
 
 Rules:
 
@@ -39,6 +39,7 @@ Rules:
 | revisar | check | `check` (action) | Fixed action. |
 | reemplazar | replace | `replace` (action) | Fixed action. |
 | reubicar | relocate | `relocate` (action), `/relocations/` | Fixed action; also a proposal that the supervisor approves. |
+| sugerencia de reubicación | relocation advisory | `/field/ovitrap-advisories/{id}/`, `as_of` | Optional point-wide OP03 aggregate at an explicit source cutoff with observed rule provenance; neither original capture proof nor capture permission. |
 | retirar | remove | `remove` (action) | Fixed action. |
 | resolución de retiro no recuperado | removal resolution | `RemovalResolution`, `removal.resolve` | Supervisor's append-only recovered_later or written_off disposition for one removal; original recovery evidence remains unchanged. |
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
@@ -51,11 +52,13 @@ Rules:
 | --- | --- | --- | --- |
 | catálogo | catalog | `/catalogs/`, `Catalog`, `slug` | Per-organization option list (e.g. `removal-reason`). Created by the seed; `is_open` says it ends with "Other". |
 | opción de catálogo | catalog item | `/catalogs/{slug}/items/`, `CatalogItem`, `code` | One option; deactivated (`is_active`), never deleted. Labels `label_es` / `label_en` are data. |
+| revisión de catálogo | catalog revision | `Catalog.revision`, item `catalog_version`, request `version` | Integer counter for one Catalog, checked by reorder and conditional availability. Item responses retain that write's revision; field configuration snapshot versions are separate content hashes. |
 | Otro (especificar) | other item | `is_other`, code `other` | Fixed last item of an open catalog; cannot be deactivated; choosing it requires free text. |
 | parámetro de regla | rule parameter | `/rule-parameters/`, `RuleParameter`, `key` | A threshold (e.g. `max_distance_to_point_m`) with type, unit and optional bounds. |
 | versión de parámetro | rule parameter version | `/rule-parameters/{key}/versions/`, `RuleParameterVersion` | One value from `effective_from` on; insert-only; voided (not deleted) if wrong and still scheduled. |
 | modo de alcance | scope mode | `scope.centers.mode`, `scope.quadrants.mode` | Explicit none/selected/all; empty selected denies, all requires an explicit grant, selected never expands to new centers. |
 | alcance efectivo | effective scope | `effective_scope` | The action-granting profile scope intersects membership scope in both applicable dimensions; unrelated grants never combine into a new pair. |
+| contexto de captura | capture context | `capture_context` | Current self effective `field_event.sync` whole paired grants observed in bootstrap/changes; neither immutable original authority nor a permanent offline permission. |
 | revisión de configuración | configuration revision | `ConfigurationRevision`, `revision`, `expected_revision` | Immutable authored snapshot of organization settings, profile permissions or membership assignments. |
 | paquete de configuración | snapshot | `/field/catalog/`, `/field/rules/`, `version` | Compact copy of a configuration that the phone keeps offline; `version` is a content hash and the `ETag`. |
 
@@ -123,7 +126,7 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | --- | --- | --- | --- |
 | lote de sincronización | sync batch | `events` in `POST /field/sync/` | The events the phone uploads in one request. Never "batch" for supply lots (that is `lot`). |
 | evento de campo | field event | `FieldEvent`, `event`, `/field/sync/` | One immutable record sent by the phone; its id is a UUID generated on the phone. Status `accepted`, `rejected` or `in_review`. |
-| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | What a supervisor must look at: a rejected or in-review field event. Insert-only; decisions arrive with #22. |
+| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | A rejected or in-review field event for supervisor review. Insert-only ingest history; later ReviewDecision records remain separate. |
 
 ## Devices and sessions
 
@@ -189,3 +192,24 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | acuse de escalamiento | escalation receipt | EscalationReceipt | Unique stage/deadline; final reminders also use rolling hours. |
 | intención de aviso | notice intent | IncidentNoticeIntent | Durable scoped B-07 producer fact, never delivery proof. |
 | origen de incidente | incident origin | IncidentOrigin | Explicit adoption of an opaque ovitrap marker; no historic ID rewrite. |
+
+## Append-only review decisions (#113)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| decisión de revisión | review decision | ReviewDecision | Separate immutable audit; original ingest never rewritten. |
+| recibo de efecto | effect receipt | ReviewEffectReceipt | Exactly-once applied operation or proven legacy adoption. |
+| disposición de seguridad | safety disposition | ReviewSafetyDisposition | Current administrative attestation with real inspection/proof; only its source hold. |
+| validación de jornada | shift validation | ShiftDecision | Approve/observe a CLOSED frame, independent from Shift lifecycle. |
+| historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
+| resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |
+| reserva de identidad padre | parent claim | ReviewParentClaim | Immutable typed identity reservation for one source; cancellation does not reassign it or authorize a child. |
+
+## Geography decisions (#126)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| decisión de reubicación | relocation decision | RelocationDecision | Terminal audit references the immutable proposal source. |
+| tarea del día siguiente | next-day task | NextDayTask | Unique proposal/decision provenance to a real ScheduledTask on the next org-local date. |
+| intervención de terceros | third-party intervention | ThirdPartyIntervention | Metadata across authorized real blocks; no company release authority. |
+| cierre de cuadrante | quadrant closure | QuadrantClosure | Immutable audit of one published QuadrantVersion; no implicit reopening. |

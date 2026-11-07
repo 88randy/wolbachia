@@ -157,7 +157,7 @@ def test_replacement_retains_point_code_lineage_and_fans_out_once(field):
 
 
 @pytest.mark.django_db
-def test_relocation_is_only_a_replayable_proposal_without_feed_or_geometry_change(field):
+def test_relocation_is_replayable_without_physical_feed_or_geometry_change(field):
     from field_sync.models import CourierChange
     from geography.models import PointVersion
     from ovitraps.lifecycle.models import RelocationProposal
@@ -171,7 +171,8 @@ def test_relocation_is_only_a_replayable_proposal_without_feed_or_geometry_chang
     assert proposal.new_location == sent.payload["proposed_location"]
     assert proposal.event_id == sent.id
     assert list(PointVersion.objects.values("id", "location")) == original
-    assert not CourierChange.objects.exists()
+    assert not CourierChange.objects.exclude(kind="history").exists()
+    assert CourierChange.objects.get(kind="history").resource_type == "history.relocation_proposal"
 
 
 @pytest.mark.django_db
@@ -320,6 +321,9 @@ def test_abandoned_or_removed_findings_link_one_incident_through_removal(field, 
 @pytest.mark.django_db
 @pytest.mark.parametrize("kind", ["replace", "relocate", "remove"])
 def test_foreign_unknown_and_ungranted_physical_identity_share_one_rejection(field, kind):
+    from types import SimpleNamespace
+
+    from field_sync.services import sync_batch
     from organizations.models import all_scope
 
     foreign = setup_field()
@@ -329,19 +333,36 @@ def test_foreign_unknown_and_ungranted_physical_identity_share_one_rejection(fie
         for identifier in (foreign.identity, uuid4())
     ]
     ingest(field, envelope(field))
+    pending_field = SimpleNamespace(**{**vars(field), "identity": uuid4()})
+    assert ingest(pending_field, envelope(pending_field, gps=None)).status == "in_review"
     field.membership.scope = {**all_scope(), "quadrants": {"mode": "none", "ids": []}}
     field.membership.save(update_fields=["scope"])
     results.append(ingest(field, lifecycle(field, kind)))
+    results.append(ingest(pending_field, lifecycle(pending_field, kind)))
+    raw_field = SimpleNamespace(**{**vars(field), "identity": uuid4()})
+    parent = replace(
+        envelope(raw_field, gps=None), index=1, device_time=CAPTURED + timedelta(seconds=1)
+    )
+    child = lifecycle(raw_field, kind)
+    results.append(sync_batch(field.batch, [child, parent], None).results[0])
     assert {(row.status, row.code, str(row.params)) for row in results} == {
         ("rejected", "ovitrap_inaccessible", "{}")
     }
 
 
 @pytest.mark.django_db
-def test_replacement_and_removal_stale_identity_review_without_second_effect(field):
+@pytest.mark.parametrize("final_upload", [False, True])
+def test_replacement_and_removal_stale_identity_review_without_second_effect(field, final_upload):
+    from field_sync.services import sync_batch
     from ovitraps.lifecycle.models import PhysicalOvitrapLineage, RemovalAttempt
+    from ovitraps.models import Ovitrap
+    from reviews.models import ReviewParentClaim, ReviewSourceSnapshot
 
-    ingest(field, envelope(field))
+    placed = envelope(field)
+    assert ingest(field, placed).status == "accepted"
+    original_claim = ReviewParentClaim.objects.get(
+        organization=field.batch.organization, kind="ovitrap", identity=field.identity
+    )
     sent = lifecycle(field, "replace")
     assert ingest(field, sent).status == "accepted"
     for kind in ("replace", "relocate", "remove"):
@@ -349,7 +370,26 @@ def test_replacement_and_removal_stale_identity_review_without_second_effect(fie
         assert (result.status, result.code) == ("in_review", "ovitrap_stale_identity")
     field.identity = sent.payload["replacement_id"]
     reused = lifecycle(field, "replace", payload={"replacement_id": sent.payload["ovitrap_id"]})
-    assert ingest(field, reused).code == "ovitrap_stale_identity"
+    batch = replace(field.batch, is_final_upload=final_upload)
+    result = sync_batch(batch, [reused], None).results[0]
+    assert result.status == "in_review"
+    assert result.code == (
+        "final_upload_after_revoke" if final_upload else "ovitrap_stale_identity"
+    )
+    snapshot = ReviewSourceSnapshot.objects.get(source_event_id=reused.id)
+    assert "ovitrap_stale_identity" in snapshot.facts["observed_codes"]
+    assert sync_batch(batch, [reused], None).results[0] == result
+    retained = ReviewParentClaim.objects.get(pk=original_claim.pk)
+    assert retained.source_event_id == placed.id
+    assert retained.identity == original_claim.identity
+    assert (
+        ReviewParentClaim.objects.filter(
+            organization=field.batch.organization, kind="ovitrap", identity=retained.identity
+        ).count()
+        == 1
+    )
+    assert not ReviewParentClaim.objects.filter(source_event_id=reused.id).exists()
+    assert Ovitrap.objects.count() == 2
     assert PhysicalOvitrapLineage.objects.count() == 1
     assert not RemovalAttempt.objects.exists()
 
@@ -388,9 +428,24 @@ def test_void_replacement_restores_old_identity_without_mutating_source_or_linea
 @pytest.mark.parametrize("dependent", ["reading", "replacement", "decision", "placement"])
 def test_void_dependency_gates_preserve_source_and_compensation_boundary(field, dependent):
     from field_sync.models import FieldEvent
-    from ovitraps.lifecycle.models import RelocationDecision, RelocationProposal
+    from ovitraps.lifecycle.models import RelocationProposal
     from ovitraps.models import OvitrapVoid
 
+    if dependent == "decision":
+        from geography.models import BlockVersion, QuadrantVersion
+        from tests.test_geography_b_11 import polygon
+
+        field.profile.permission_codes.append("relocation.decide")
+        field.profile.save(update_fields=["permission_codes"])
+        geography = {
+            "organization": field.batch.organization,
+            "created_by": field.batch.user,
+            "geometry": polygon(east=-99.98),
+            "revision": 1,
+            "effective_from": CAPTURED - timedelta(days=30),
+        }
+        QuadrantVersion.objects.create(**geography, quadrant=field.point.block.quadrant)
+        BlockVersion.objects.create(**geography, block=field.point.block)
     ingest(field, envelope(field))
     kind = (
         "relocate"
@@ -400,12 +455,15 @@ def test_void_dependency_gates_preserve_source_and_compensation_boundary(field, 
     sent = lifecycle(field, kind)
     assert ingest(field, sent).status == "accepted"
     if dependent == "decision":
-        RelocationDecision.objects.create(
-            organization=field.batch.organization,
-            created_by=field.batch.user,
-            event=FieldEvent.objects.get(pk=sent.id),
-            proposal=RelocationProposal.objects.get(),
-            decision="approved",
+        from geography.decisions.services import RelocationDecisionRequest, decide_relocation
+        from uploads.access import UploadActor
+
+        decide_relocation(
+            UploadActor(field.batch.user, field.batch.organization),
+            RelocationProposal.objects.get().pk,
+            RelocationDecisionRequest(
+                "approved", "Verified original relocation and physical evidence", 0
+            ),
         )
     elif dependent == "placement":
         assert (
@@ -456,7 +514,7 @@ def test_foreign_author_and_scope_loss_voids_never_expose_dependencies(field):
 @pytest.mark.django_db
 def test_closed_house_suggestion_uses_latest_epi_weeks_and_is_advisory(field):
     from ovitraps.lifecycle.selectors import suggest_relocation
-    from ovitraps.models import Ovitrap
+    from ovitraps.models import Ovitrap, OvitrapReading
 
     ingest(field, envelope(field))
     trap = Ovitrap.objects.get()
@@ -483,14 +541,88 @@ def test_closed_house_suggestion_uses_latest_epi_weeks_and_is_advisory(field):
         ingest(field, lifecycle(field, "relocate", device_time=CAPTURED + timedelta(days=7))).status
         == "accepted"
     )
+    from ovitraps.lifecycle.advisory_selectors import select_advisory_observation
+    from rules.models import RuleParameter
+    from tests.factories import RuleParameterVersionFactory
+
+    parameter = RuleParameter.objects.get(
+        organization=field.batch.organization, key="closed_house_weeks_to_relocate"
+    )
+    RuleParameterVersionFactory(
+        parameter=parameter, value=8, effective_from=CAPTURED + timedelta(days=8)
+    )
+    # The existing two weeks plus six later weeks fill the actual configured upper bound.
+    for offset in range(14, 50, 7):
+        instant = CAPTURED + timedelta(days=offset)
+        field.batch = replace(field.batch, sent_at=instant, received_at=instant)
+        assert (
+            ingest(
+                field,
+                envelope(
+                    field,
+                    "ovitrap.check",
+                    device_time=instant,
+                    payload={
+                        "finding": "closed-house",
+                        "paddle_present": False,
+                        "has_eggs": None,
+                        "paddle_type": None,
+                        "bag_code": None,
+                    },
+                ),
+            ).status
+            == "accepted"
+        )
+    # A second physical identity makes the same point/week's second reading legitimate.
+    replacement = lifecycle(field, "replace", device_time=instant)
+    assert ingest(field, replacement).status == "accepted"
+    field.identity = replacement.payload["replacement_id"]
+    new_trap = Ovitrap.objects.get(client_uuid=field.identity)
+    assert new_trap.pk != trap.pk
+    assert new_trap.sampling_point_id == trap.sampling_point_id
+    assert (
+        ingest(
+            field,
+            envelope(
+                field,
+                "ovitrap.check",
+                device_time=instant,
+                payload={
+                    "finding": "closed-house",
+                    "paddle_present": False,
+                    "has_eggs": None,
+                    "paddle_type": None,
+                    "bag_code": None,
+                },
+            ),
+        ).status
+        == "accepted"
+    )
+    observed = select_advisory_observation(trap, instant)
+    assert (
+        OvitrapReading.objects.filter(
+            ovitrap__sampling_point=trap.sampling_point, epi_week=observed.required_epi_weeks[0]
+        ).count()
+        == 2
+    )
+    assert observed.required_epi_weeks == tuple(f"2026-W{week:02d}" for week in range(13, 5, -1))
+    assert observed.observed_closed_house_weeks == observed.required_epi_weeks
+    assert len(observed.observed_closed_house_weeks) == 8  # Duplicate visit adds no label.
+    later = select_advisory_observation(trap, instant + timedelta(days=7))
+    assert later.observed_closed_house_weeks == observed.required_epi_weeks[:-1]
+    assert len(later.observed_closed_house_weeks) == 7  # Earliest existing reading is outside.
 
 
 @pytest.mark.django_db
 def test_incident_threshold_counts_fixed_point_across_physical_replacements(field):
+    from field_sync.services import sync_batch
+    from ovitraps.lifecycle.advisory_selectors import select_advisory_observation
     from ovitraps.lifecycle.selectors import suggest_relocation
     from ovitraps.models import Ovitrap
+    from tests.ovitrap_support import second_courier
 
     ingest(field, envelope(field))
+    first_identity = field.identity
     for index in range(3):
         checked = envelope(
             field,
@@ -503,7 +635,12 @@ def test_incident_threshold_counts_fixed_point_across_physical_replacements(fiel
                 "bag_code": None,
             },
         )
-        assert ingest(field, checked).status == "accepted"
+        result = (
+            sync_batch(second_courier(field), [checked], None).results[0]
+            if index == 1
+            else ingest(field, checked)
+        )
+        assert result.status == "accepted"
         trap = Ovitrap.objects.get(
             organization=field.batch.organization, client_uuid=field.identity
         )
@@ -512,6 +649,12 @@ def test_incident_threshold_counts_fixed_point_across_physical_replacements(fiel
             sent = lifecycle(field, "replace")
             assert ingest(field, sent).status == "accepted"
             field.identity = sent.payload["replacement_id"]
+    original = Ovitrap.objects.get(client_uuid=first_identity)
+    assert select_advisory_observation(original, CAPTURED).incident_count == 3
+    assert select_advisory_observation(trap, CAPTURED - timedelta(seconds=1)).incident_count == 0
+    assert ingest(field, void_event(field, checked)).status == "accepted"
+    assert select_advisory_observation(original, CAPTURED).incident_count == 2
+    assert not suggest_relocation(trap, CAPTURED)
 
 
 @pytest.mark.django_db

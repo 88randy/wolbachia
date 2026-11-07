@@ -142,8 +142,8 @@ and [Django queryset ordering](https://docs.djangoproject.com/en/5.2/ref/models/
 | Permissions | A profile holds permission codes `<resource>.<action>`; a view declares `required_permissions` (action → code) and DRF `HasPermissionCode` checks the code of the current action against the union of the user's active profiles in the active organization. | Accepted |
 | Field snapshots (#3) | `GET /field/catalog/` and `GET /field/rules/` return the whole configuration in one compact body with a `version` (SHA-256 of the canonical JSON of the content). The same value is the `ETag` (`"<version>"`); `Cache-Control: private, no-cache`; `Vary: X-Organization` (the answer depends on the active organization). A matching `If-None-Match` (weak `W/` prefix and `*` accepted) gets `304` with no body, after authentication and permissions are checked. Catalog snapshot: `{version, catalogs: [{slug, label_es, label_en, is_open, items: [{id, code, label_es, label_en, icon, sort, is_other, requires_photo}]}]}`, active items only, "Other" last; a blank `label_en` means "use `label_es`". Rules snapshot: `{version, next_change_at, parameters: [{key, value_type, unit, value, effective_from, version_id}]}`; `value` is a JSON number, or `null` when the parameter has no value yet ("not configured"); versions scheduled for later and voided versions are left out, and the earliest scheduled one is `next_change_at` (it is part of the hash). The `version` is a consistency token: the values that applied at a past instant come from the version history, not from the hash. Mobile refreshes when sync reports a new `catalog_version` / `rules_version` (#5), on login (`If-None-Match`) and when `next_change_at` passes. | Accepted |
 | Rule parameters (#3) | `GET /rule-parameters/` and `GET /rule-parameters/{key}/` (lookup by key): `{key, value_type: integer\|decimal, unit: m\|km_h\|s\|min\|day\|week\|count\|km_l, min_value, max_value, value, effective_from, version_id, next_change_at}`. `GET /rule-parameters/{key}/versions/` is the history, newest first (voided versions only with `?include_voided=true`; any value other than `true` or `false` is `400 validation_error` with `fields.include_voided`; the filter runs before paging), and `GET .../versions/{id}/` one version; each is `{id, value, effective_from, effective_date, reason, status: scheduled\|in_force\|superseded\|voided, created_by, created_by_username, created_at, voided_at, voided_by, voided_by_username, void_reason_code, void_reason}` (usernames are the only author data exposed, are `null` for seed versions and are kept for users who left the organization; `GET .../versions/{id}/` returns a voided version regardless of the filter). `POST .../versions/` takes `{value, effective_from, reason}` where `effective_from` is a local calendar date (`YYYY-MM-DD`): today takes effect immediately (several versions for today are allowed; the latest `effective_from` wins, so a seeded value can be corrected on day one), a future date at 00:00 in the organization's timezone (at most 365 days ahead, one non-voided version per date), a past date is rejected. `POST .../versions/{id}/void/ {reason_code, reason?}` voids a version that has not taken effect yet (`409 version_not_scheduled` otherwise, `409 already_voided` twice): it stays in the history, leaves the value in force and the snapshots, and frees its date. There is no `PUT`, `PATCH` or `DELETE` on versions (`405`); parameters are created by the seed, so there is no `POST` on `/rule-parameters/`. Parameters are per organization (no regional override). The seed has 16 parameters; `revisit_interval_days` (integer, unit `day`, default 7, range 1 to 28) comes from decisions OP02/OP03. `pin_max_attempts` (#209) is an integer count, default 3, inclusive range 1 to 10, delivered through the existing rules snapshot; rerunning `seed_organization_defaults --apply` adds it to older organizations without overwriting their versions. | Accepted |
-| Catalog items (#3) | `GET /catalogs/` lists catalogs with integer `version` (created by the seed, no `POST`). Item reads add read-only integer `catalog_version` (same-read catalog revision), `usage_count`, compatible `in_use`, `created_by`/`created_by_username`, nullable `deactivated_at`, `deactivated_by`/`deactivated_by_username` (#182). `GET/POST /catalogs/{slug}/items/`, `GET/PATCH /catalogs/{slug}/items/{id}/`; no `PUT` or `DELETE`. `POST` takes `{code, label_es, label_en?, icon?, sort?, requires_photo?}`: `code` is lowercase (`^[a-z0-9][a-z0-9_-]*$`, max 64) and `other` is reserved for the fixed "Other" item; `icon` is `^[a-z0-9-]+$` (max 64); `sort` is 0 to 10000, and an omitted `sort` appends after active non-Other items (inactive sorts are ignored). `PATCH` edits labels, icon, `sort` (individual edit; atomic reorder uses `POST .../items/reorder/ {version, ordered_ids}`) and `requires_photo`; `code`, `is_other` and `is_active` are ignored. `POST …/deactivate/` and `POST …/activate/` are idempotent. A catalog holds at most 200 active items. A catalog slug or item of another organization is `404`. | Accepted |
-| Error codes (#3, #182) | Reorder adds `409 catalog_version_conflict` and `400 validation_error` with `fields.ordered_ids` code `reorder_ids_mismatch`. Field errors (`400 validation_error`, `fields`): `duplicate_code` and `reserved_code` (item `code`), `sort_exhausted` (item `sort`), `effective_from_in_past`, `effective_from_too_far` and `duplicate_effective_date` (version `effective_from`), `not_an_integer` and `out_of_range` (version `value`; `out_of_range` params are `{min, max}`, `null` when unbounded). Plus `409 other_item_cannot_be_deactivated`, `409 catalog_item_limit_reached` and `409 version_not_scheduled`. Services raise `core.exceptions.FieldValidationError` to report a coded field error with `params`. | Accepted |
+| Catalog items (#3) | `GET /catalogs/` lists catalogs with integer `version` (created by the seed, no `POST`). Item reads add read-only integer `catalog_version` (same-read catalog revision), `usage_count`, compatible `in_use`, `created_by`/`created_by_username`, nullable `deactivated_at`, `deactivated_by`/`deactivated_by_username` (#182). `GET/POST /catalogs/{slug}/items/`, `GET/PATCH /catalogs/{slug}/items/{id}/`; no `PUT` or `DELETE`. `POST` takes `{code, label_es, label_en?, icon?, sort?, requires_photo?}`: `code` is lowercase (`^[a-z0-9][a-z0-9_-]*$`, max 64) and `other` is reserved for the fixed "Other" item; `icon` is `^[a-z0-9-]+$` (max 64); `sort` is 0 to 10000, and an omitted `sort` appends after active non-Other items (inactive sorts are ignored). `PATCH` edits labels, icon, `sort` (individual edit; atomic reorder uses `POST .../items/reorder/ {version, ordered_ids}`) and `requires_photo`; `code`, `is_other` and `is_active` are ignored. `POST …/deactivate/` and `POST …/activate/` accept optional `{version: nonnegative integer}` (#280); absent body/version retains unconditional behavior. Supplied versions compare atomically with the locked catalog revision before mutation or no-op; stale intent is `409 catalog_version_conflict`, even when the requested state already matches. Matching repeated actions remain no-ops. Item write responses carry their exact write-time `catalog_version`, unaffected by a later writer before serialization; conditional Undo sends that returned version. Action/object/organization access precedes version validation. A catalog holds at most 200 active items. A catalog slug or item of another organization is `404`. | Accepted |
+| Error codes (#3, #182, #280) | Reorder and conditional availability use `409 catalog_version_conflict` and `400 validation_error` with `fields.ordered_ids` code `reorder_ids_mismatch`. Field errors (`400 validation_error`, `fields`): `duplicate_code` and `reserved_code` (item `code`), `sort_exhausted` (item `sort`), `effective_from_in_past`, `effective_from_too_far` and `duplicate_effective_date` (version `effective_from`), `not_an_integer` and `out_of_range` (version `value`; `out_of_range` params are `{min, max}`, `null` when unbounded). Plus `409 other_item_cannot_be_deactivated`, `409 catalog_item_limit_reached` and `409 version_not_scheduled`. Services raise `core.exceptions.FieldValidationError` to report a coded field error with `params`. | Accepted |
 | Permission codes (#3) | `catalog.read`, `catalog_item.create`, `catalog_item.update`, `catalog_item.deactivate`, `catalog_item.activate`, `rule_parameter.read` (parameter list and snapshot), `rule_parameter_version.read` (history), `rule_parameter_version.create`, `rule_parameter_version.void`. Seeded once per profile created by the seed: `admin` all; `courier`, `supervisor`, `entomologist`, `community_promoter` `catalog.read` and `rule_parameter.read` (the field snapshots need them). Admin lists of items also run under `catalog.read`. | Accepted |
 | Auth endpoints (#4) | `GET /auth/csrf/` `204` + CSRF cookie. `POST /auth/login/` `{username, password, device_id?, app_version?, label?}`: with `device_id` (mobile) `200 {access, refresh, me, server_time}` and the `Device` is registered or updated in the active organization; without it (web) `200 {me, server_time}` + session cookie, CSRF enforced (`403 permission_denied` without it; send the cookie value as `X-CSRFToken`). `POST /auth/refresh/` `{refresh, device_id}` `200 {access, refresh, server_time}`. `POST /auth/logout/` `204`, idempotent (web: ends the session, CSRF enforced; mobile: revokes the session, also with an expired token). `POST /auth/password-reset/` `{email}` `202` with an empty body, always. `POST /auth/password-reset/confirm/` `{uid, token, new_password}` `204`. Token responses are `Cache-Control: no-store`. | Accepted |
 | Tokens (#4) | Opaque random tokens, stored only as SHA-256 digests in `TokenPair` rows (one per issued pair; live families kept in full, ended families pruned by retention #54, device session audit rows kept). Access: 15 min. Refresh: 30 days idle, single use: exchanging it consumes the pair and issues a child pair. A consumed refresh token presented again inside 60 s is a lost response and is accepted once more (a sibling pair; every pair issued in the window stays valid, and the replaced access token works until the window closes) **only if no token issued after it has been used**; and the parent has fewer than 3 children; otherwise, outside the window, the whole session is revoked; beyond the cap the duplicate is refused with `429 throttled` and `Retry-After` until the window closes, without revoking (`refresh_reuse`, logged `refresh_reuse_detected`; accepted duplicates are logged `refresh_grace_retry`). Per parent only the first sibling ever used (access token used or refresh exchanged) is valid: using or refreshing another sibling afterwards revokes the session (`refresh_reuse`). Logout and the final upload also require the current pair (not replaced beyond the window, not a retired sibling). Refresh also revokes the session when the user is deactivated or the pinned membership ended. A mobile session pins its organization: `X-Organization` naming another one is `403 no_active_membership`. A login on a device supersedes the user's earlier sessions on it (`superseded`). Lifetimes are env settings [PENDING client]. | Accepted |
@@ -432,14 +432,65 @@ field sync; out-of-range week/day returns 400 out_of_range, never date overflow.
 | Contract | Rule |
 | --- | --- |
 | GET /api/v1/field/bootstrap/ | Live pinned bearer device token, field.bootstrap, token/membership organization only; no final-upload entitlement. One courier try-locked transaction builds fixed assignments/supplies/permits/eligibility/history/map_manifests/quadrants/sampling_points/ovitraps lists and cursor. |
-| Bootstrap metadata | bundle_version (content hash/ETag), schema_version (opaque registered-schema hash), generated_at, scope_revision, cursor, catalog_version, rules_version, next_change_at, map_manifest_ready. Private no-cache, Vary X-Organization; conditional 304 only after auth/permission. |
-| Sync producer arrays | Six typed changes arrays with sequence/action/resource_type/resource_id/resource_version/data, plus nullable next_change_at. Independent sequence pages; has_more if either stream remains. Existing event order and final-upload restriction are preserved. |
+| Bootstrap metadata | bundle_version (content hash/ETag), schema_version (opaque registered-schema hash), generated_at, scope_revision, cursor, catalog_version, rules_version, next_change_at, map_manifest_ready, capture_context (#289). Private no-cache, Vary X-Organization; conditional 304 only after auth/permission. |
+| Sync producer arrays | Nine typed changes arrays with sequence/action/resource_type/resource_id/resource_version/data, plus nullable next_change_at and root capture_context (#289). Independent sequence pages; has_more if either stream remains. Existing event order and final-upload restriction are preserved. |
 | Cursor v2 | Signed o/u/s/c/r, bound to effective paired scope and field.bootstrap/field_event.sync codes; v1, expired or changed scope returns 400 invalid_cursor before ingest. Recover with bootstrap and retain unsent phone events. |
 | Producer isolation | Registered schemas from AppConfig.ready(); producer filters organization/courier and applicable center/quadrant; defense-in-depth metadata check precedes serialization. Foreign rows remain undisclosed. Every change writer holds courier lock through domain write, append and commit. |
 | Maps | Licensed PMTiles manifests only; incomplete/unavailable/unlicensed assets keep readiness false. Native asset download/hash verification is separate (M-01). |
 
 See [sync.md](sync.md#bootstrap-and-projection-recovery-b-13-110) for version
 compatibility, producer registration, recovery and the existing error-code table.
+
+
+### Paired current capture context (#289)
+
+Bootstrap and changes add optional/nullable `capture_context`. A current-server
+bootstrap 200 and every normal sync page, including an empty/initial page, emit:
+
+```text
+{schema_version: 1, permission: "field_event.sync", user_id: UUID,
+ organization_id: UUID, scope_revision: opaque SHA-256,
+ grants: [{centers: {mode: none|selected|all, ids: UUID[]},
+           quadrants: {mode: none|selected|all, ids: UUID[]}}, ...]}
+```
+
+All object fields are required. Every whole grant comes from the SAME captured
+ProducerContext, filtered to FIELD_EVENT_SYNC after existing membership/profile
+intersection and government clamping. Keep pairs intact; never union dimensions
+from different grants. Empty grants is known denial; absent/null/unsupported
+normal metadata is unavailable. The existing canonical scope grammar applies to
+each entry. Self user/org UUIDs come from ctx identities; no Me/admin requery,
+profile inference, session secret, token, geometry or assignment is returned.
+The live DeviceBearer route checks stay field.bootstrap for bootstrap and
+field_event.sync for normal sync. This adds no grant or capture capability.
+
+The root bundle contract advances 1→2, without changing SECTION_KEYS or any
+producer version/payload. Outer schema_version stays an opaque hash; nested
+capture schema is 1. Scope revision includes the root schema and captured
+membership/profile generations. Old cursor r fails before ingest, including
+revoke→regrant to identical grants. Context/root/cursor use the same computed
+revision. Bundle ETag includes the context, excludes generated_at/cursor, and
+changes on permission generation even with identical geometry. Authentication
+and current permission checks still precede conditional 304. Hashes are equality
+tokens, never owner identities, local generations or sortable revisions.
+
+Normal HTTP omitted/null cursor decodes to ChangesCursor() and returns context
+with initial changes; that is not a complete bootstrap. Final/internal no-pull
+None returns null context and no download authority. An admin commit after ctx
+capture may leave a coherent earlier observation; the next pull detects its
+changed generation. No late configuration read/lock is introduced.
+
+#138 owns the consumer: full-body context/foundations/readiness commit through
+the existing projection writer and proven owner/session fence. Delta pages cannot
+hydrate missing foundations. Pending recovery omits ETag across offline/304/write
+failure/restart; known empty grants deny without a recovery loop. Old or unsupported
+normal metadata invalidates active permission, retaining prior context only for
+audit. Final null never renews capture; final receipts precede full cleanup.
+Observed revocation/ABA and new sessions/reinstalls invalidate local authority
+before recovery; a username, same UUID or fresh Me cannot adopt legacy data.
+Offline revocation is observable only after contact, not remote immediate erasure.
+This current observation never replaces frozen rules/original authority or changes
+immutable events, B17/B33, #287 advisory, GPS/evidence/camera or native qualification.
 
 
 ## Ovitrap lifecycle (#112, B-15)
@@ -485,6 +536,60 @@ normalized 10..1000 visible-character text and preserve lifecycle/decision depen
 No stock compensation exists in this baseline. Quadrant closure writers remain
 follow-ups. ADR 120 and backend/ovitraps/lifecycle/
 README.md document SQL guards, lock order and the acceptance map.
+
+## Scoped relocation advisory (#287)
+
+GET `/field/ovitrap-advisories/{id}/?at=<RFC3339>` is a narrow DeviceBearer-only
+aggregate read. The existing history endpoint still requires `ovitrap.read`. The id is the
+physical client UUID; the server resolves its actual same-organization fixed point,
+including retained replaced/removed identities. Require BOTH field.bootstrap and
+field_event.sync, each paired with that real center AND quadrant in one effective
+grant. No grant/default changes or final-upload capability. A cached validator is
+never permission; current identity/membership/scope are rechecked before 304.
+This policy was chosen by the orchestrator under delegated authority.
+
+`at` is mandatory with an explicit offset/Z, inclusive 2020-01-01 and
+exclusive 2100-01-01 UTC. Bad/missing values are 400 validation_error fields.at.
+The response has schema_version=1, version, physical_ovitrap_id, point_id, as_of,
+state=available|unavailable, unavailable_reason and six result fields:
+rule_context, rule_context_version, required_epi_weeks,
+observed_closed_house_weeks, incident_count, suggested. Available reason is null.
+Unavailable reason is future_cutoff|rule_context_unavailable|
+organization_context_unavailable; ALL six result fields are null, never fake zeros.
+Unknown application/storage failures propagate, rather than becoming unavailable.
+
+Available rule_context is `{timezone,epi_week,parameters}`. Parameters has exactly
+closed_house_weeks_to_relocate and incidents_to_relocate, each the actual selected
+`{version_id,value,effective_from}`. Its component hash is not the original event's
+full rules_version. Required weeks are N newest-first organization-local ISO/MMWR
+labels, including the week containing at; 1<=N<=8. Observed weeks are their distinct
+matching subset in the SAME order, at most N labels. Incident count uses nonvoid
+OvitrapIncidentLink sources at that fixed point across physical lineage/couriers
+with device_time<=at, without an incident week window or general #104 Incident count.
+Suggested is the canonical OR of all N closed-house weeks or the configured count.
+
+`as_of` is a source device-time cutoff and effective-rule selection, not the time
+the server first knew all facts. Late arrivals, actual reviewed effects and voids
+can change later same-at results. Version/ETag hash identity/cutoff and computed
+state/content, without request-now churn. A future_cutoff result can become
+available solely as the clock reaches at: recompute before 304 and return 200/new
+version when state changes. Equal computed state/content retains its version.
+Use private,no-cache and Vary:X-Organization, with no public cache or source/GPS/
+author/evidence detail. Auth bookkeeping stays outside this bounded business read.
+
+Fresh account locks precede Organization NOWAIT NO KEY UPDATE, then fresh paired
+scope and point-filtered facts in one short transaction. No late User/source/
+courier locks or external I/O. Contention uses existing retryable 429. No model,
+migration, event, producer/feed, geometry or task effect is added.
+
+#138 consumes optional downloaded/dated guidance only under the SAME proved cutoff
+and rule context; a new unproved offline cutoff stays unavailable without blocking
+capture. This read and Me's display projection do not authorize capture or repair
+original source proof. Preserve frozen capture hashes/time/UUID. Hide active cached
+guidance on observed scope/owner/session revocation. Fully offline retained data
+cannot be immediately remotely erased. No new scheduler/delta promise is made;
+explicit revalidation uses the existing request lifecycle. #138/#130 native
+qualification and #253 acquisition remain separate.
 
 ## Unrecovered removal resolution (#217)
 
@@ -676,3 +781,138 @@ inventory identities; deferred checks share bounded rollback. No I/O in SQL.
 429 inventory_in_progress has Retry-After:1. No sync event/result/localization change.
 Real transfer/debit/current-destination authority is #106/#107, not an invented
 route/writer here. Details: ../backend/inventory/README.md.
+
+### Inventory read additions (#270)
+
+All new lists use standard count/next/previous/results page-number pagination,
+current tenant/action authority and scoped filtering before count/page. Missing
+actions return 403; missing/foreign/out-of-scope references share 404. Invalid
+query shapes, bounds and values return coded 400 validation_error. No write,
+grant, model, default or custody workflow is added.
+
+| GET route | Input and boundary | Projection |
+| --- | --- | --- |
+| /locations/{id}/movements/ | Current location.read parent/placement plus lot.read for each real lot; lot/supply/operation UUID, piece=UUID\|none, exact unit, inclusive created_at_from and exclusive created_at_before; ordering=created_at\|lot_code\|quantity, optional minus, default -created_at, id tie. Scoped operation filters never expand foreign legs. | id, operation_id, line_number, lot_id, lot_code, supply_id, location_id, location_code, piece_id, signed Decimal quantity, unit, unit_version_id, source_kind=lot_admission, actual source_id, created_at, nullable created_by User reference. |
+| /locations/owner-options/ | Create: center + quadrant=UUID\|none under location.create. Update: location only under location.update; derive immutable placement. Active actual Center required in both modes. search and ordering=label\|-label, membership UUID tie. | membership_id, label only; full name with username fallback, duplicate eligible labels disambiguated with username. |
+| /locations/placement-options/ | Closed create modes: action=location.create\|lot.create + center. Update: lot only, derives lot.update and actual immutable pair; overrides refused. Active Center required. Search actual code, stable kind/code/id ties. | location.create: kind=quadrant\|center_only, quadrant_id, code. lot modes: kind=location\|center_only_draft, location_id, code, quadrant_id, is_read_only. Admitted lots expose only exact retained readonly Location. |
+| /supply-types/protocol-incident-type-options/ | No supply: supply_type.create; supply=UUID: supply_type.update on actual org master, even when work axes are none. Search code/label, code/id order. | Active configured latest_types: incident_type_version_id, code, label; version UUID is the accepted ProtocolWrite.incident_type_id. No incident.read or new terminal policy. |
+
+Location create maps its choice to center_id/quadrant_id. Lot create maps a real
+Location to initial_location_id, deriving quadrant server-side, or sends center_id
+only for a center-only draft. LotWrite never accepts quadrant_id. Lot update
+choices match its original actual pair; only a center-only draft can clear location.
+The existing writer revalidates all choices when saving.
+
+Owner eligibility uses DISTINCT raw scope values with the shared whole-shape
+safe_scope/contains normalizer, then a lazy SQL predicate requiring eligible raw
+membership scope AND the SAME assigned active same-org location.read Profile's
+eligible raw scope, excluding any active same-org government binding. Count/page
+follow eligibility. No full membership/user roster or second authorization grammar
+is introduced. Final evaluation sees revocations; new raw scopes may wait until
+refresh. O(D) distinct scopes/binds can approach N; values are never capped or
+broadened. See inventory/README.md for the cost and PostgreSQL verification gate.
+
+Additive Lot.supply_version is the exact pinned Supply projection, including its
+protocol; admission_id is the real admission UUID or null. Lot.location_version
+is exactly {id,location_id,code,name} from its retained location_version_id or null.
+These labels belong to lot.read, even without current location.read; current
+Location geometry/owner/safety/stock remains separately authorized. Protocol adds
+incident_type={incident_type_version_id,code,label}|null from its exact retained FK.
+Location adds owner_label under location.read. Existing fields remain unchanged.
+
+Lot blocked_by accepts supply_type_inactive|lot_expired|protocol_not_configured|
+storage_safety_not_configured|insecticide_free_required|condition_slot_missing|
+condition_breach, matching current evaluate_lot facts before paging, including
+drafts. expiry_from_date/expiry_before_date (YYYY-MM-DD) resolve organization-local
+day starts inclusive/exclusive, including DST. They cannot mix with the same-bound
+expiry_from/expiry_before instant; inverted resolved bounds are refused. Existing
+instant facets/orders/status remain; no implicit expires-soon threshold exists.
+## Append-only reviews (#113)
+
+GET /review-items/ uses StandardPagination (count/next/previous/results), kind/code
+filters, server search and explicit ordering. Detail separates immutable original
+source/provenance from current state/evaluation and revision-ordered decisions.
+POST {id}/accept/, void/ or open-incident/ requires review_item.decide and
+{expected_revision,reason,evidence_ids?}; returns 201 immutable ReviewDecision.
+is_terminal/audit_only/decision_state are server-derived/read-only. Source status,
+subject/effect receipt/terminal flags are not writable. Stale revisions return
+409 review_conflict; unsafe effects 409 review_blocked with blocked_by; contention
+uses existing retryable 429. Tenant/actor/current paired scopes are rechecked.
+
+Unknown source scope has a narrow read/audit exception: ONE contributing grant
+for that requested permission explicitly has centers=all AND quadrants=all. No
+cross-profile union/dimension borrowing or missing-axis inference. Accept stays
+blocked. Void under this exception is AUDIT ONLY/nonterminal/pending, with no
+source/operational mutation, foreign lookup/labels or unattributable hold clear.
+
+Optional void safety_disposition={inspection_id,attest_safe_now:true} applies only
+to NEW/unapplied severe source with exact bound Motorcycle. It also needs current
+motorcycle.service_clear, real same-Motorcycle unvoided ServiceRecord inspection
+and verified exact ReviewItem evidence. Missing proof retains pending hold with
+409 safety_disposition_required. Current administrative attestation uses server
+time, never photo/date/performed_at as physical-time proof. Referenced inspection
+void is 409 service_has_safety_disposition. Other faults/holds remain intact.
+
+POST /shifts/{id}/approve/ or observe/ needs shift.validate, revision/reason and a
+CLOSED frame. It appends audit without changing Shift lifecycle. Every current
+source center/quadrant plus Motorcycle context must be covered. Later sources
+invalidate approval without deleting history. Cookie CSRF, pinned bearer and
+default-deny action mapping remain inherited; no new permission/force-close route.
+
+Review uploads keep one immutable REAL parent. Follow-up Incident is a current
+reviewer report at server_now/source_event=None; its review link is audit, never
+parent-read authority. The typed history v1 owner appends real CourierChange plus
+publication receipt once and filters actual current subjects BEFORE LIMIT/cursor/
+bootstrap. See ../backend/reviews/README.md for causal, legacy and safety boundaries.
+
+## Relocation decisions, interventions and quadrant closure (#126)
+
+POST /relocations/{id}/approve/ and reject/ consume {reason, expected_revision} under
+relocation.decide. The initial revision is0 and the sole terminal revision is1;
+replay/stale state is409, with no second effect. Approval returns the exact authored
+PointVersion of the same SamplingPoint/code. Rejection returns the real next-local-day
+ScheduledTask link; neither endpoint fabricates a FieldEvent or task assignment.
+The unique server decided_at anchor controls discovery, point effective time,
+org-local task date and history; created_at remains real insertion audit time.
+
+GET /third-party-interventions/ requires intervention.read and POST requires
+intervention.create for every actual block's paired center/quadrant. Filters are
+type, block, date_from/date_to overlap; ordering is created_at/date_from/date_to,
+with page-number pagination. This UUID-only resource has no ?code filter. Other
+requires text, product/source are bounded and nonblank, and date_from <= date_to.
+This record conveys no company release authority.
+
+GET /quadrants/{id}/closure/ under quadrant.close reports the exact epoch/revision,
+readiness, closure audit and safe blockers. POST close/ consumes expected_revision,
+rechecks all blockers atomically and appends one QuadrantClosure. It never retires
+points, rewrites source status or silently reopens geography. Live deployed physical
+identities, unresolved/unconfirmed removals, active pending relocation/removal
+reviews and explicitly owned104 quadrant_closure holds remain authoritative.
+The closure DTO exposes epoch/revision/author/time; its immutable internal causal
+snapshot/source IDs are not returned by GET or POST. Only exact retirement facts
+consumed by readiness become void dependencies, never an inferred old epoch.
+Current quadrants producer schema2 includes is_closed/closure_id on quadrant rows
+only. Blocks retain six fields. Quadrant resource_version is an opaque content hash;
+data.revision remains the geometry revision. Bootstrap and closure/new-epoch upserts
+share the same builder. Older retained six-field changes keep their original shape,
+without an invented open status; the schema-bound cursor invalidates to a current
+bootstrap. Closure publication is atomic with its audit and uses only preplanned
+current download recipients.
+Hidden causes expose no reference/count; only authorized real causes identify an
+unblocking action. An explicit new QuadrantVersion is the existing new-work path.
+
+Preclosure captures first delivered after close enter late_work_after_quadrant_close
+review before effects. Only original configuration/scope and retained capture facts
+can support acceptance once by the existing113 owner. Captured-at equality or later
+uses captured_after_quadrant_close, with0 effects and no retroactive authority.
+The single113 history producer advances to schema2 for relocation_proposal; changes
+and bootstrap share the same typed shape/current visibility. Its publication receipt
+is internal persistence, not delivery. v3 tasks retain real source/owner semantics.
+OP03 still counts B15 OvitrapIncidentLink markers at the fixed point, without an
+invented time window or general104 Incident authority. Mobile138 advisory work and
+native/photo verification are outside this backend issue.
+
+Action permissions remain default deny with paired center/quadrant scope and
+foreign404, cookie+CSRF or pinned bearer. Reasons use the shared normalized10-visible
+minimum/1000 maximum. Only400 has fields;409 has safe blocked_by, contention429.
+See ../backend/geography/decisions/README.md for lock order, raw guards and tests.

@@ -1,5 +1,21 @@
 # scheduling
 
+B33 rejection links a real next-org-local-day check task and actual due-day owner
+through the existing v3 assignment producer. Task identity/provenance is preserved
+when reused. Generation skips a closed current QuadrantVersion; neither a review
+nor a relocation decision silently opens new geography work. See
+../geography/decisions/README.md for the transaction and original-source boundaries.
+
+## Review integration (#113)
+
+Task completion now requires effective sources (accepted ingest or receipt).
+Retained legacy in_review place/check rows alone cannot complete tasks. Adoption
+appends its receipt then emits the real completion delta with the ALREADY retained
+fanout publisher/courier locks, without replay/late-lock callback/second queue.
+Normal accepted handler completion keeps its atomic pending overlay and rolls back
+when reviewed. Task ownership/risk inputs and assignment producer version remain.
+reviews owns the separate single typed review/whole-shift history producer.
+
 B-12 / #109: protocol-labelled risk imports, courier allocations and day/week
 planning. The owner's supplied full issue and lead decisions define this work;
 GitHub inventory remains unverified (401 reported by the lead). No route

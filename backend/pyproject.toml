@@ -104,7 +104,7 @@ ignore_missing_imports = true
 
 # `strict = true` cannot be set per module, so the strict flags are listed one by one.
 [[tool.mypy.overrides]]
-module = ["services", "*.services", "selectors", "*.selectors", "accounts.token_retention", "fleet.fuel_services", "shifts.access", "inventory.access", "inventory.conditions", "inventory.masters", "inventory.transactions", "incidents.automatic"]
+module = ["services", "*.services", "selectors", "*.selectors", "accounts.token_retention", "fleet.fuel_services", "shifts.access", "inventory.access", "inventory.conditions", "inventory.masters", "inventory.transactions", "inventory.option_selectors", "incidents.automatic", "ovitraps.lifecycle.advisory", "ovitraps.lifecycle.advisory_selectors"]
 disallow_any_generics = true
 disallow_subclassing_any = true
 disallow_untyped_calls = true

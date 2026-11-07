@@ -1,7 +1,8 @@
 import json
 import uuid
+from copy import deepcopy
 from dataclasses import dataclass, field, replace
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 from django.conf import settings
 from django.contrib.postgres.expressions import ArraySubquery
@@ -22,7 +23,7 @@ from field_sync.producers import (
     map_manifests_ready,
 )
 from organizations.models import Membership, Organization, Profile
-from organizations.scope import Dimension, EffectiveScope
+from organizations.scope import Dimension, EffectiveScope, WorkScope
 from organizations.services import effective_scope
 from reviews.models import ReviewItem
 from reviews.selectors import list_courier_reviews
@@ -65,10 +66,18 @@ def find_stored_event(event_id: uuid.UUID) -> StoredEvent | None:
     return None if row is None else StoredEvent(**row)
 
 
+class CaptureContext(TypedDict):
+    schema_version: Literal[1]
+    permission: str
+    user_id: str
+    organization_id: str
+    scope_revision: str
+    grants: list[WorkScope]
+
+
 @dataclass(frozen=True)
 class Changes:
-    """The downstream part of a sync answer. `cursor` and the versions are None only when the
-    answer is empty on purpose (a revoked phone's final upload)."""
+    """The downstream answer; explicit no-pull (including final upload) has no context/cursor."""
 
     cursor: str | None = None
     reviews: list[ReviewItem] = field(default_factory=list)
@@ -76,6 +85,7 @@ class Changes:
     rules_version: str | None = None
     has_more: bool = False
     next_change_at: str | None = None
+    capture_context: CaptureContext | None = None
     assignments: list[dict[str, Any]] = field(default_factory=list)
     supplies: list[dict[str, Any]] = field(default_factory=list)
     permits: list[dict[str, Any]] = field(default_factory=list)
@@ -179,6 +189,20 @@ def scope_revision(ctx: ProducerContext) -> str:
     )
 
 
+def capture_context(ctx: ProducerContext, *, revision: str) -> CaptureContext:
+    """Project only captured self SYNC pairs, never a new read or original capture authority."""
+    grants = [deepcopy(scope) for codes, scope in ctx.scope.grants if FIELD_EVENT_SYNC in codes]
+    grants.sort(key=lambda scope: json.dumps(scope, sort_keys=True, separators=(",", ":")))
+    return {
+        "schema_version": 1,
+        "permission": FIELD_EVENT_SYNC,
+        "user_id": str(ctx.user.pk),
+        "organization_id": str(ctx.organization.pk),
+        "scope_revision": revision,
+        "grants": grants,
+    }
+
+
 def latest_change_sequence(batch: BatchContext | CourierContext) -> int:
     value = (
         CourierChange.objects.for_org(batch.organization)
@@ -207,9 +231,16 @@ def _change_scope_filter(ctx: ProducerContext) -> Q:
 
 
 def list_courier_changes(ctx: ProducerContext, after: int) -> tuple[list[CourierChange], bool]:
+    from reviews.history_scope import visible_history_contexts
+
+    history_ids = visible_history_contexts(ctx)
+
     rows = list(
         CourierChange.objects.for_org(ctx.organization)
-        .filter(_change_scope_filter(ctx), courier=ctx.user, sequence__gt=after)
+        .filter(
+            Q(kind="history", pk__in=history_ids) | (~Q(kind="history") & _change_scope_filter(ctx))
+        )
+        .filter(courier=ctx.user, sequence__gt=after)
         .order_by("sequence")[: settings.API_CURSOR_PAGE_SIZE + 1]
     )
     return rows[: settings.API_CURSOR_PAGE_SIZE], len(rows) > settings.API_CURSOR_PAGE_SIZE
@@ -239,11 +270,12 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerConte
     rows, has_more = list_courier_changes(
         replace(ctx, permission=FIELD_BOOTSTRAP), cursor.change_sequence
     )
+    revision = scope_revision(ctx)
     position = replace(
         cursor,
         sequence=page.items[-1].courier_sequence if page.items else cursor.sequence,
         change_sequence=rows[-1].sequence if rows else cursor.change_sequence,
-        scope_revision=scope_revision(ctx),
+        scope_revision=revision,
     )
     rules = build_rules_snapshot(batch.organization, batch.received_at)
     return Changes(
@@ -252,6 +284,7 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerConte
         catalog_version=str(build_catalog_snapshot(batch.organization)["version"]),
         rules_version=str(rules["version"]),
         next_change_at=rules["next_change_at"],
+        capture_context=capture_context(ctx, revision=revision),
         has_more=page.has_more or has_more,
         **_typed_changes(rows),
     )
@@ -267,6 +300,7 @@ def build_bootstrap(batch: BatchContext) -> dict[str, Any]:
     payload = {
         "schema_version": bundle_schema_version(),
         "scope_revision": revision,
+        "capture_context": capture_context(ctx, revision=revision),
         "catalog_version": build_catalog_snapshot(batch.organization)["version"],
         "rules_version": rules["version"],
         "next_change_at": rules["next_change_at"],

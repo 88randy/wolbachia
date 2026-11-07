@@ -95,7 +95,7 @@ def test_an_event_captured_before_the_shift_closed_is_accepted_even_if_it_arrive
     assert result["status"] == "accepted"
 
 
-def test_an_event_captured_after_the_shift_closed_is_applied_but_goes_to_review(
+def test_an_event_captured_after_the_shift_closed_is_reviewed_without_effect(
     phone: Phone,
 ) -> None:
     closed_at = timezone.now() - timedelta(hours=2)
@@ -111,7 +111,7 @@ def test_an_event_captured_after_the_shift_closed_is_applied_but_goes_to_review(
 
     assert (result["status"], result["code"]) == ("in_review", "captured_after_shift_close")
     assert result["params"] == {"shift_id": str(shift.pk)}
-    assert Widget.objects.count() == 1
+    assert not Widget.objects.exists()
 
 
 def test_a_void_may_name_any_shift_because_it_corrects_an_old_event(phone: Phone) -> None:

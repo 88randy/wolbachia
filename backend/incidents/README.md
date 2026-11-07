@@ -1,5 +1,18 @@
 # Scoped incidents (B-06)
 
+## Review integration (#113)
+
+Review follow-up creates a CURRENT reviewer Incident at server_now/source_event=None
+plus ReviewIncidentLink BEFORE evidence bind. Current incident.create AND
+review_item.decide must cover the exact current source context/actual type/chain.
+The persisted internal review_decision is freshly checked for tenant/actor/item/
+kind/full context/type/description/evidence. Original source OneToOne stays free
+for later valid source acceptance. Exact case/item/source verified evidence still
+requires REAL parent authorize_download: case read never replaces revoked parent
+read, with no reparent/durable grant. Source FE void intentionally keeps its case/
+timeline/owned holds per #104. Pending severe open_incident remains nonterminal and
+retains its safety hold. #105 AutomaticIncidentOrigin remains separate/unchanged.
+
 Incidents retain immutable type versions and a numbered, append-only timeline.
 `type_id` on capture is an **IncidentTypeVersion UUID**, not a catalog item UUID.
 The type management URL identifies the stable `incident-type` CatalogItem. Other

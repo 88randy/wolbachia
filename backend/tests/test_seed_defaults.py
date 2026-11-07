@@ -26,11 +26,17 @@ from organizations.services import (
     create_organization,
     seed_default_profiles,
 )
-from reviews.permissions import REVIEW_ITEM_READ
+from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from rules import permissions as rule_codes
 from rules.models import RuleParameter, RuleParameterVersion
 from rules.seeds import DEFAULT_PARAMETER_SEEDS, seed_default_rule_parameters
-from shifts.permissions import MOTORCYCLE_MANAGE, MOTORCYCLE_READ, MOTORCYCLE_UNBLOCK, SHIFT_READ
+from shifts.permissions import (
+    MOTORCYCLE_MANAGE,
+    MOTORCYCLE_READ,
+    MOTORCYCLE_UNBLOCK,
+    SHIFT_READ,
+    SHIFT_VALIDATE,
+)
 from tests.factories import OrganizationFactory
 from uploads.limits import FIELD_UPLOAD
 
@@ -263,6 +269,10 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "relocation.decide",
+        "quadrant.close",
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "location.read",
         "lot.read",
@@ -283,12 +293,16 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "quadrant.read",
         *reader,
         REVIEW_ITEM_READ,
+        REVIEW_ITEM_DECIDE,
+        SHIFT_VALIDATE,
         SHIFT_READ,
         MOTORCYCLE_READ,
         MOTORCYCLE_UNBLOCK,
         MOTORCYCLE_SERVICE_CLEAR,
     }
     assert by_slug["entomologist"] == {
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "location.read",
         "lot.read",
@@ -327,6 +341,10 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "relocation.decide",
+        "quadrant.close",
+        "intervention.read",
+        "intervention.create",
         "supply_type.read",
         "supply_type.create",
         "supply_type.update",
@@ -373,6 +391,8 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         rule_codes.RULE_PARAMETER_VERSION_VOID,
         *ADMIN_AUTH_PERMISSION_CODES,
         REVIEW_ITEM_READ,
+        REVIEW_ITEM_DECIDE,
+        SHIFT_VALIDATE,
         SHIFT_READ,
         MOTORCYCLE_READ,
         MOTORCYCLE_MANAGE,
@@ -582,6 +602,8 @@ def seeded_profile(slug: str) -> tuple[Organization, Profile]:
         ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),
         ("admin", REVIEW_ITEM_READ),
+        ("admin", REVIEW_ITEM_DECIDE),
+        ("supervisor", SHIFT_VALIDATE),
         ("supervisor", SHIFT_READ),
         ("admin", SHIFT_READ),
         ("courier", MOTORCYCLE_READ),
@@ -647,6 +669,8 @@ def test_inventory_seed_keeps_warehouse_revocation_custom_profile_and_government
         ("admin", FIELD_EVENT_SYNC),
         ("supervisor", REVIEW_ITEM_READ),
         ("supervisor", SHIFT_READ),
+        ("admin", REVIEW_ITEM_DECIDE),
+        ("supervisor", SHIFT_VALIDATE),
         ("courier", MOTORCYCLE_READ),
         ("admin", MOTORCYCLE_MANAGE),
         ("admin", MOTORCYCLE_UNBLOCK),

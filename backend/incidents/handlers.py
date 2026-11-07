@@ -31,17 +31,21 @@ CODES = (
 
 
 def apply_incident(ctx: EventContext, data: dict[str, Any]) -> None:
-    if ctx.review_code:
+    if ctx.review_code and not ctx.acknowledges(ctx.review_code):
         raise EventNeedsReview(ctx.review_code)
     actor = UploadActor(ctx.user, ctx.organization, ctx.device.pk)
     context = _source_context(ctx, data)
-    scope = current_scope(actor)
+    scope = (
+        ctx.review_authorization.historical_scope
+        if ctx.review_authorization
+        else current_scope(actor)
+    )
     try:
         require_context(scope, FIELD_EVENT_SYNC, context)
         require_context(scope, INCIDENT_CREATE, context)
     except Http404:
         raise EventRejected(INCIDENT_INACCESSIBLE) from None
-    if context.marker:
+    if context.marker and ctx.review_authorization is None:
         original = FieldEvent.objects.select_for_update(nowait=True, no_key=True).get(
             organization=ctx.organization, pk=context.marker.event_id
         )
@@ -58,7 +62,13 @@ def apply_incident(ctx: EventContext, data: dict[str, Any]) -> None:
             raise EventNeedsReview(INCIDENT_CONFIGURATION_UNAVAILABLE)
         data = {**data, "type_id": version.pk}
     capture = IncidentCapture(
-        actor, data, context, ctx.envelope.device_time, ctx.server_received_at, ctx.envelope.id
+        actor,
+        data,
+        context,
+        ctx.envelope.device_time,
+        ctx.server_received_at,
+        ctx.envelope.id,
+        ctx.review_authorization,
     )
     try:
         version = capture_version(capture)

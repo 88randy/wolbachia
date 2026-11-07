@@ -24,6 +24,32 @@ Focused evidence: `tests/test_table_queries_224.py` catalog/item cases; existing
 - Limits: 200 active items per catalog (`409 catalog_item_limit_reached`, also when reactivating); `icon` is a token `^[a-z0-9-]+$`.
 - `label_en` may be blank: clients fall back to `label_es`. Labels are data, the only user-facing text the API returns.
 
+## Conditional availability (#280)
+
+Existing activate/deactivate actions accept optional `{version: nonnegative integer}`.
+Bodyless callers and an omitted version retain unconditional behavior. A supplied
+version must match the Catalog revision under the existing Catalog→item lock,
+before any mutation or no-op. Stale intent returns `409 catalog_version_conflict`
+without changing state, authorship, timestamps or revision, even when the target
+state already matches. A matching repeated action remains a no-op.
+
+Availability and update responses retain the exact locked Catalog object; create
+already assigns it. Their `catalog_version` therefore belongs to that write, not
+a later writer between service return and HTTP serialization. Read projections
+still report their same-read revision. This integer is separate from the field
+snapshot content hash, whose contract is unchanged. Conditional Undo must send the
+version returned by its original write; checking state or reading before an
+unconditional inverse action cannot prevent the two-editor ABA race.
+
+Existing action permissions and object/organization lookup precede payload
+validation. Fixed Other, active-item capacity, audit metadata, default grants and
+historical references retain their existing rules. No model or migration changes.
+Evidence: the focused availability group in `tests/test_catalog_services.py`,
+HTTP wiring in `tests/test_catalog_api.py` and real lock-wait/post-service response
+barriers in `tests/test_catalog_availability_concurrency.py`. PostgreSQL execution
+requires the existing isolated CI database; collection alone does not prove these
+transaction boundaries.
+
 ## Layout
 
 | File | What it does |

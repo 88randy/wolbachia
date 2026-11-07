@@ -2,6 +2,10 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const sync = {
+  "sync.result.lateWorkAfterQuadrantClose":
+    "La captura es anterior al cierre del cuadrante. Un supervisor debe validar su autorización histórica antes de aplicarla.",
+  "sync.result.capturedAfterQuadrantClose":
+    "La captura se hizo después del cierre del cuadrante. No autoriza trabajo nuevo ahí. Contacta a tu supervisor.",
   // Result of sending a record to the server (phone inbox)
   "sync.inbox.acceptedTitle": "Enviado",
   "sync.inbox.acceptedHint": "El servidor ya recibió este registro. No tienes que hacer nada más.",
@@ -111,4 +115,8 @@ export const sync = {
     "La referencia del incidente no está disponible dentro de tu ámbito autorizado.",
   "sync.result.incidentEvidenceRequired":
     "Falta evidencia verificada del incidente. Conserva los archivos pendientes; la captura requiere revisión.",
+  "sync.result.causalParentPending":
+    "Falta validar un registro previo. Tu supervisor debe revisar la captura conservada.",
+  "sync.result.motorcycleSafetyHold":
+    "La motocicleta tiene una retención de seguridad. La captura se conservó para revisión.",
 } as const satisfies AreaCatalog<"sync">;

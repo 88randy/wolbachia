@@ -25,7 +25,6 @@ from field_sync.services import (
     set_batch_lock_timeout,
 )
 from organizations.models import Membership, Organization
-from organizations.selectors import filter_by_effective_scope
 from ovitraps import codes
 from ovitraps.capture import Capture, capture_context
 from ovitraps.findings import CatalogChoice, resolve_item, validate_other_text
@@ -40,13 +39,14 @@ from ovitraps.lifecycle.models import (
 )
 from ovitraps.lifecycle.selectors import active_ovitraps, is_active, scoped_removal
 from ovitraps.models import Ovitrap, OvitrapReading
-from ovitraps.selectors import accessible_ovitrap, projected_ovitraps, sync_membership
+from ovitraps.selectors import accessible_ovitrap, event_scoped, projected_ovitraps
 from ovitraps.services import (
     _append_ovitrap_void,
     emit_ovitrap,
     lock_organization,
     point_fanout_scope,
 )
+from reviews.effect_receipts import is_effective
 
 REASON_CATALOGS = {
     "replace": "replacement-reason",
@@ -64,14 +64,12 @@ class LifecycleCapture:
 
 
 def _scoped_identity(ctx: EventContext, identifier: UUID) -> Ovitrap:
-    from field_sync.permissions import FIELD_EVENT_SYNC
 
-    visible = filter_by_effective_scope(
+    visible = event_scoped(
         Ovitrap.objects.filter(organization=ctx.organization).select_related(
             "sampling_point__block__quadrant"
         ),
-        sync_membership(ctx),
-        FIELD_EVENT_SYNC,
+        ctx,
     )
     ovitrap = visible.filter(client_uuid=identifier).first()
     if ovitrap is None:
@@ -286,6 +284,26 @@ def void_lifecycle_event(ctx: EventContext, target: FieldEvent) -> None:
 
 def _check_void_dependents(ctx: EventContext, target: FieldEvent, ovitrap: Ovitrap) -> None:
     blockers: list[dict[str, str]] = []
+    if target.type in {"ovitrap.remove", "ovitrap.replace"}:
+        from geography.decisions.models import QuadrantClosure
+        from geography.decisions.retirements import closure_dependency
+
+        for closure in QuadrantClosure.objects.filter(
+            organization=ctx.organization,
+            quadrant_version__quadrant=ovitrap.sampling_point.block.quadrant,
+        ).select_related("quadrant_version"):
+            dependency = closure_dependency(
+                closure.readiness_snapshot, target.pk, closure.quadrant_version.revision
+            )
+            if dependency is not False:
+                blockers.append(
+                    {
+                        "resource": "quadrant_closure"
+                        if dependency
+                        else "quadrant_closure_proof_unavailable",
+                        "id": str(closure.pk),
+                    }
+                )
     if target.type == "ovitrap.replace":
         lineage = PhysicalOvitrapLineage.objects.filter(
             organization=ctx.organization, event=target
@@ -375,7 +393,7 @@ def resolve_removal(
             request.expected_state != "unrecovered"
             or removal.recovery_state != "unrecovered"
             or removal.event.voided_at is not None
-            or removal.event.status != "accepted"
+            or not is_effective(removal.event)
             or RemovalResolution.objects.filter(removal=removal).exists()
         ):
             raise RemovalConflictError

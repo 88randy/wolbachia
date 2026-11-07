@@ -4,6 +4,7 @@ from field_sync.registry import EventHandler, register
 from ovitraps.codes import CODES
 from ovitraps.lifecycle.serializers import PAYLOAD_SERIALIZERS
 from ovitraps.lifecycle.services import apply_lifecycle, void_lifecycle_event
+from ovitraps.review import OvitrapReviewAdapter
 
 
 def register_lifecycle_handlers() -> None:
@@ -16,5 +17,6 @@ def register_lifecycle_handlers() -> None:
                 apply_lifecycle,
                 on_void=void_lifecycle_event,
                 codes=CODES,
+                review_adapter=OvitrapReviewAdapter(),
             )
         )

@@ -1,5 +1,19 @@
 # fleet
 
+## Review integration (#113)
+
+NEW in_review FuelLoad writes roll back. Baselines/maxima/metrics require shared
+effective source selection (accepted ingest or receipt). Legacy adoption never
+changes provisional/threshold/baseline/history or reruns the writer. Fuel v1 facts
+copy the SAME selected original baseline/neighbors/maximum/thresholds/assessment
+before rollback. Changed original applicability blocks fuel_context_changed;
+unknown causal baseline is not invented. Severe review safety proof is current
+administrative attestation, not maintenance: real Motorcycle -> fresh ServiceRecord
+inspection locks, review_item.decide + motorcycle.service_clear, exact review proof.
+Only its own derived hold ends. void_history under those same locks and the raw
+BEFORE UPDATE guard refuse dependent inspection void (service_has_safety_disposition).
+No fake BlockEvent/InspectionClearance; other #103 faults remain.
+
 Issue #103 (B-05), backend only. Reuses shifts.Motorcycle, Shift and the existing
 motorcycles viewset. No field-catalog snapshot fields change. Read ../README.md,
 ../shifts/README.md and ../../docs/sync.md before changing these flows.
@@ -73,13 +87,14 @@ ORM immutable managers and PostgreSQL triggers reject updates/deletes. Service a
 letter void metadata can transition once through the shared resolver; payloads
 remain intact. Fuel event is unique and entirely immutable. Fuel void is refused
 (fuel_event_not_voidable), preserving every dependent interval and original ingest
-verdict; correction/acceptance decisions belong to #22.
+verdict; #113 acceptance preserves this real dependent-interval rule.
 
 Each service explicitly configures optional service_interval_km/days; absent values
 stay null, with no inferred sample-screen schedule. Its immutable provenance keeps
 source service id and both intervals. Detail metrics expose last_service,
 next_service_due_km/date, latest_odometer, latest_efficiency, efficiency_status and
-due_metric_provenance. Voided services and provisional fuel never enter metrics.
+due_metric_provenance. Voided services and fuel without an effective source never
+enter metrics; adopted legacy rows keep their original provisional flag.
 Dates add configured days to performed_at, not server receipt time.
 
 ## Fuel
@@ -100,17 +115,16 @@ Compare unrounded efficiency: 15 and 60 are inclusive with the seeded rules; 14.
 odometer retains evidence in review. No advisory refuses capture or shift close.
 A replay returns the immutable original event result and creates no second FuelLoad.
 
-The fuel handler inserts provisional evidence inside the motorcycle lock's nested
-savepoint, then raises any review signal only after that savepoint exits normally.
-Raising inside the lock would roll back the capture before sync could keep it.
+The fuel handler captures its original calculation facts before raising review.
+The pipeline rolls back the operational savepoint while retaining preparation
+locks, then persists those copied facts with the immutable source/item.
 
 [ASSUMPTION] No upload/evidence model exists: receipt/document/evidence references
 are opaque UUIDs validated for format, not verified storage ownership. No storage
 call is made. Receipt null is explicit; evidence lists are bounded to 50 ids.
-[ASSUMPTION] #22 acceptance is not implemented in reviews. All externally flagged
-or fuel-advisory in_review rows persist provisional=True and have no operational
-effects. This issue adds no acceptance endpoint and never rewrites the original
-FieldEvent status, either timestamp, snapshot token or provenance.
+#113 supported acceptance applies once or adopts complete legacy rows via a
+receipt. NEW externally flagged/advisory sources create no FuelLoad until accepted.
+No original FieldEvent status, clock, snapshot token or provenance is rewritten.
 [ASSUMPTION] Fuel decimals allow three litre and two currency decimal places;
 service interval representation is per-service configuration, not a global default.
 

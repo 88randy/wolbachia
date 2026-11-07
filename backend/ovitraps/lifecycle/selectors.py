@@ -1,10 +1,8 @@
 """Derived physical state, advisory relocation thresholds and chronological provenance."""
 
-from datetime import datetime, timedelta
-from math import isfinite
+from datetime import datetime
 from typing import Any, cast
 from uuid import UUID
-from zoneinfo import ZoneInfo
 
 from django.db.models import Exists, OuterRef, Q, QuerySet, Subquery, TextField, Value
 from django.db.models.fields.json import KeyTextTransform
@@ -12,25 +10,28 @@ from django.db.models.functions import Coalesce, Lower, Replace
 from django.utils import timezone
 from rest_framework.exceptions import NotFound
 
-from core.time import epi_week_label
 from field_sync.models import FieldEvent
 from geography.models import SamplingPoint
 from organizations.models import Membership, Organization
 from organizations.selectors import filter_by_effective_scope
+from ovitraps.lifecycle.advisory_selectors import (
+    THRESHOLD_KEYS as THRESHOLD_KEYS,
+)
+from ovitraps.lifecycle.advisory_selectors import (
+    relocation_thresholds as relocation_thresholds,
+)
+from ovitraps.lifecycle.advisory_selectors import (
+    select_advisory_observation,
+)
 from ovitraps.lifecycle.models import (
-    OvitrapIncidentLink,
     PhysicalOvitrapLineage,
     RelocationDecision,
     RelocationProposal,
     RemovalAttempt,
     RemovalResolution,
 )
-from ovitraps.models import Ovitrap, OvitrapReading
+from ovitraps.models import Ovitrap
 from ovitraps.permissions import OVITRAP_REMOVAL_RESOLVE
-from rules.seeds import DEFAULT_PARAMETER_SEEDS
-from rules.selectors import get_values_in_force
-
-THRESHOLD_KEYS = ("closed_house_weeks_to_relocate", "incidents_to_relocate")
 
 
 def retirement_rows(
@@ -118,54 +119,10 @@ def scoped_removal(member: Membership, identifier: UUID) -> RemovalAttempt:
     return cast(RemovalAttempt, removal)
 
 
-def relocation_thresholds(values: dict[str, int | float | None]) -> tuple[int, int] | None:
-    definitions = {seed.key: seed for seed in DEFAULT_PARAMETER_SEEDS}
-    resolved = []
-    for key in THRESHOLD_KEYS:
-        value, definition = values.get(key), definitions[key]
-        if (
-            value is None
-            or isinstance(value, bool)
-            or not isfinite(value)
-            or value != int(value)
-            or value < definition.min_value
-            or (definition.max_value is not None and value > definition.max_value)
-        ):
-            return None
-        resolved.append(int(value))
-    return resolved[0], resolved[1]
-
-
 def suggest_relocation(ovitrap: Ovitrap, at: datetime | None = None) -> bool:
-    instant = at or timezone.now()
-    thresholds = relocation_thresholds(get_values_in_force(ovitrap.organization, instant))
-    if thresholds is None:
-        return False
-    weeks, incidents = thresholds
-    local_date = instant.astimezone(ZoneInfo(ovitrap.organization.timezone)).date()
-    labels = [
-        epi_week_label(local_date - timedelta(weeks=offset), ovitrap.organization.epi_week)
-        for offset in range(weeks)
-    ]
-    readings = OvitrapReading.objects.filter(
-        organization=ovitrap.organization,
-        ovitrap__sampling_point_id=ovitrap.sampling_point_id,
-        finding_code="closed-house",
-        epi_week__in=labels,
-        event__device_time__lte=instant,
-        event__voided_at__isnull=True,
-    )
-    if readings.values("epi_week").distinct().count() >= weeks:
-        return True
-    return (
-        OvitrapIncidentLink.objects.filter(
-            organization=ovitrap.organization,
-            ovitrap__sampling_point_id=ovitrap.sampling_point_id,
-            event__device_time__lte=instant,
-            event__voided_at__isnull=True,
-        ).count()
-        >= incidents
-    )
+    """Legacy history bool: missing rules are false; unexpected failures propagate."""
+    observation = select_advisory_observation(ovitrap, at or timezone.now())
+    return observation is not None and observation.suggested
 
 
 def relocation_proposals(organization: Organization) -> QuerySet[RelocationProposal]:

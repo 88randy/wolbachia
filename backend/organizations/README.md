@@ -5,6 +5,13 @@ Read the root backend README and `docs/api-conventions.md` before changing this 
 
 ## Scope and authorization
 
+#113 extracts only the pure active-profile paired-scope/government fold for reuse
+by historical review proof. The current wrapper retains User/Organization/member
+activity and same-tenant active-profile checks. FUTURE role revisions include slug;
+old active snapshots lacking identity fail historical proof closed. No snapshot
+backfill, current-profile inference, new grant/default or historical activity
+fabrication is introduced.
+
 `Membership.scope` and `Profile.scope` have exactly two dimensions:
 
 ```json
@@ -301,3 +308,9 @@ Existing Organization-serialized assign_profiles/update_profile/update_membershi
 also preserve current configured terminals and open cases' effective terminal
 paired scope. Historical versions alone do not prevent retiring a former owner.
 There is no new personnel/duty-roster CRUD or late User row lock.
+
+#126 uses the same once-only seed ledger: admin/supervisor receive relocation.decide,
+quadrant.close and intervention.read/create; entomologist receives intervention.read/create
+(documented W32 access). No other default profile receives these actions, including
+coordinator/government. Custom roles and previously revoked codes remain unchanged.
+Intervention metadata never grants company release or permit authority.
