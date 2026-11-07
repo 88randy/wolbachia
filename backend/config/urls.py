@@ -24,6 +24,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("fleet.urls")),
     path("", include("incidents.urls")),
     path("", include("inventory.urls")),
+    path("", include("lab.urls")),
     path("", include("shifts.urls")),
     path("", include("geography.urls")),
     path("", include("ovitraps.urls")),

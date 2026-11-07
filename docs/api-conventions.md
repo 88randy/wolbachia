@@ -1035,3 +1035,81 @@ Null Lot.protocol never inherits nested SupplyTypeVersion protocol.
 HTTP evidence has the fifth transfer_event parent; sync retains actual FieldEvent
 primary parent. See ../backend/inventory/transfers/README.md for locks, mandatory
 phase safety, source/review/history, exact resolution proofs and SQL test ownership.
+
+## Laboratory reception and authoritative counts (#114)
+
+All paths retain the existing /api/v1 prefix and inherited current session/bearer,
+organization and CSRF boundaries. UUID identities are not human codes or grants.
+Unknown, foreign and action-invisible Bag codes/references return the same 404.
+Unknown scans create NO command, receipt, Reading, Bag, FieldEvent, incident,
+attachment or count. One action-granting binding must cover the actual center AND
+quadrant after current membership intersection. GET never creates discrepancies.
+
+| Method / path | Current action and behavior |
+| --- | --- |
+| POST /bags/receive/ | bag.receive; {code,command_id}; exact real Bag receipt, or retained no-reading discrepancy/configuration gate. |
+| POST /readings/{id}/receive/ | bag.receive; {command_id}; real no-paddle Reading only, receipt.bag_id=null; no count queue entry. |
+| POST /bags/{id}/mark-missing/ | bag.receive; {command_id,reason}; explicit real expected unreceived paddle observation, not a guessed delivery. |
+| GET /lab-receptions/ | bag.receive; scoped paginated physical receipt observations. |
+| GET /lab-reception-discrepancies/[{id}/] | bag.receive; real cause, exact source proof, incident_id or explicit configuration_pending. Case details require their own current incident.read. |
+| GET /egg-counts/queue/ | egg_count.create; current effective received paddles with no current result, scope/filter before order/page. |
+| POST /bags/{id}/counts/ | egg_count.create; {command_id,value,expected_revision=0,confirmed_implausible=false,viable_eggs?,total_examined?,method_version?,queue_context?}; 201 count/next_bag/queue_snapshot. |
+| POST /bags/{id}/rejections/ | lab_rejection.create AND paired field.upload; {command_id,expected_revision=0,method_version,reason,evidence_ids,queue_context?}; real verified evidence and method required. |
+| GET /egg-counts/[{id}/], /lab-rejections/[{id}/] | egg_count.read; immutable results plus exact method/source/rule/author pins and current revision/void state. include_voided=false remains default. |
+| GET /egg-counts/{id}/void-context/, /lab-rejections/{id}/void-context/ | egg_count.void; minimal exact target/revision/value or rejection reason/method/evidence/dependent facts, without broad list/history/queue access. |
+| POST /egg-counts/{id}/void/, /lab-rejections/{id}/void/ | egg_count.void; command_id,expected_revision,reason_code,reason, optional closed count/rejection replacement with no target override. Replacement also requires same-pair create authority; rejection also requires its own create/upload. |
+| GET /lab-reception-incident-policy/ | incident.manage_type; revision, nullable policy and explicit configuration availability. |
+| POST /lab-reception-incident-policy/versions/ | incident.manage_type; expected_revision plus missing_type_version and no_reading_type_version. Exact same-org current type versions, real terminal/chain, zero report photos, no invented blockers; stale publication is 409. |
+| GET/POST /lab-methods/ | lab_method.read/manage; named immutable method configuration. No procedure or operational approval is seeded. |
+| GET/POST /lab-methods/{id}/versions/ | lab_method.read/manage; exact effective procedure/reference versions with CAS and current availability. |
+| POST /lab-methods/{id}/versions/{version}/verify/ or withdraw/ | lab_method.verify; expected_revision and explicit reference; retained decision against that exact content hash. |
+| GET /recount-requests/ | egg_count.read; real pending/superseded first-counter/cause facts; no execution/adjudication/reuse action. |
+
+Legacy Bag/Reading fields, reading.read, status=active|voided|all, exact code and
+point/week filters remain. Additive Lab projections require current corresponding
+Lab authority; Bag lab_status filtering also requires bag.receive. New Lab pages
+support applicable real center/quadrant/point/week/code, author/method, QA state,
+created_from/created_before and ordering. Queue context is a closed allowlist of
+center/quadrant/point/week/code and created_at/code ascending/descending, not an org
+selector or grant. Pagination uses StandardPagination and stable id ties.
+
+value and examined/viable inputs are strict nonnegative integers <=2**53-1, never
+Boolean, fractional, string or unavailable-zero coercions. OP06 defaults to 1000,
+bounds 100..10000. Larger observations require explicit confirmation AND a durable
+independent request. Positive count against original has_eggs=false has its own
+cause. Lagged/index-excluded effective paddles remain countable. Simple counts need
+no method. Viability/rejection require an exact current named verified procedure.
+Store viable/examined integers and Decimal6 100*viable/examined; zero examined is
+null+zero_examined, unrequested is null+not_requested. No examined<=value inference.
+A result's method projection is its exact historical FK, never latest config.
+
+A command UUID identifies one actor/action/target/canonical payload. Under current
+identity and ALL original response-subject authority, replay returns its immutable
+committed result BEFORE current method/catalog/source/CAS checks. It preserves the
+original next_bag and queue as_of/context after unrelated queue activity. The next
+candidate is not reserved. A changed input uses a new UUID; another actor sees no
+cached body. Do not auto-post/retry an ambiguous write or advance on 409/429. Domain
+conflict results can be durable; invalid/foreign/unauthorized inputs create none.
+
+400 field errors cover structural/reason validation. Coded 409 gates include
+already_received, no_reading, lab_state_conflict, lab_command_conflict,
+lab_configuration_unavailable, lab_method_unverified, lab_confirmation_required,
+lab_evidence_required and lab_recount_dependency. Reception conflicts can carry the
+real discrepancy_id and nullable incident_id; pending configuration is never a
+claimed incident. Known contention is 429 lab_in_progress with Retry-After.
+
+Void always resolves a current canonical reason code and retains a normalized note
+of 10 visible..1000 stored characters, including non-Other codes. Original attempts,
+evidence and authors remain. Same-Bag replacements use one revision transaction;
+pending requests retain supersession/carried obligation or block with 409. Source
+void preserves audit and refuses active results through the existing ovitrap hook
+and exact deferred Lab constraint. The hook maps that SQL marker outside its
+failed savepoint, restores DEFERRED explicitly after success, and leaves all other
+guards/errors untouched. No query runs in an aborted transaction.
+
+OP05 creates actual immediate causes and deterministic closed LOCAL-day draws:
+ceil(N*rate/100), minimum one for nonempty N; default rate 5, bounds 1..20. Retain real
+members/selection, rule versions, timezone/UTC interval and configuration/hash proof.
+Recovery/supplements are idempotent and retain earlier facts. #115 owns independent
+execution, blind adjudication and paddle reuse. A technical configuration record or
+synthetic fixture is not biological certification. No Lab client screen is delivered.

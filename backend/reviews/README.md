@@ -207,3 +207,14 @@ Its real original source courier is the recipient; HTTP creates no courier recor
 VoidReviewAdapter delegates actual transfer audit inspection to its domain owner;
 old manifests/legs remain immutable, consumed/uncompensated effects block void.
 See ../inventory/transfers/README.md for SQL and test ownership.
+
+## Laboratory history (#114)
+
+Lab appends to this SAME typed history owner. Producer 4 preserves all original
+review/shift/relocation/transfer fields and refs; root bootstrap stays 2. Lab
+receipt/discrepancy/count/rejection/void facts resolve their current authentic
+Reading and original collector before scope/cursor/limit. System request causes
+update the real human count's QA projection; no fake ReviewItem, decision,
+recipient or independent-counter action is produced. Stored projections survive
+temporary download loss; regrant still reads through current FIELD_BOOTSTRAP.
+publish_history remains the sole receipt/change writer.

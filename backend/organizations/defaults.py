@@ -41,6 +41,9 @@ from inventory.permissions import WAREHOUSE_CODES as INVENTORY_WAREHOUSE_CODES
 from inventory.transfers.permissions import ADMIN_CODES as TRANSFER_ADMIN_CODES
 from inventory.transfers.permissions import SUPERVISOR_CODES as TRANSFER_SUPERVISOR_CODES
 from inventory.transfers.permissions import WAREHOUSE_CODES as TRANSFER_WAREHOUSE_CODES
+from lab.permissions import ADMIN_CODES as LAB_ADMIN_CODES
+from lab.permissions import COUNT_VOID
+from lab.permissions import ENTOMOLOGIST_CODES as LAB_ENTOMOLOGIST_CODES
 from organizations.models import Organization, Profile
 from ovitraps.permissions import (
     OVITRAP_REMOVAL_RESOLVE,
@@ -70,6 +73,7 @@ from uploads.limits import FIELD_UPLOAD
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    *LAB_ADMIN_CODES,
     *TRANSFER_ADMIN_CODES,
     RELOCATION_DECIDE,
     QUADRANT_CLOSE,
@@ -122,6 +126,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    COUNT_VOID,
     *TRANSFER_SUPERVISOR_CODES,
     RELOCATION_DECIDE,
     QUADRANT_CLOSE,
@@ -152,6 +157,8 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
+        *LAB_ENTOMOLOGIST_CODES,
+        FIELD_UPLOAD,
         INTERVENTION_READ,
         INTERVENTION_CREATE,
         *READ_ONLY_CODES,

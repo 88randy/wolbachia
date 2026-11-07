@@ -72,6 +72,25 @@ def test_page_number_lists_expose_count_and_page_links(schema: dict[str, Any]) -
         "page",
         "page_size",
     }
+    # Lab's manual read projections must still expose their real StandardPagination contract.
+    for path in (
+        "egg-counts",
+        "lab-rejections",
+        "lab-receptions",
+        "lab-reception-discrepancies",
+        "recount-requests",
+    ):
+        operation = schema["paths"][f"/api/v1/{path}/"]["get"]
+        reference = operation["responses"]["200"]["content"]["application/json"]["schema"][
+            "$ref"
+        ].split("/")[-1]
+        assert set(schema["components"]["schemas"][reference]["properties"]) == {
+            "count",
+            "next",
+            "previous",
+            "results",
+        }
+        assert {"page", "page_size"} <= set(query_parameters(operation))
 
 
 def test_cursor_lists_expose_next_and_previous_without_count(schema: dict[str, Any]) -> None:

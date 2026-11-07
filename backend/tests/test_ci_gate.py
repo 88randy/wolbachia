@@ -97,7 +97,9 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
     elif fault == "missing_teardown":
         session["reports"].pop()
     if fault == "none":
-        assert validate_pair(bundles, expected) == 6
+        assert (
+            validate_pair(bundles, expected) == 7
+        )  # One regular node and six whole migration owners.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_pair(bundles, expected)

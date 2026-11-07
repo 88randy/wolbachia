@@ -227,3 +227,19 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | sobrante sin identificar | unidentified extra | unidentified_extra | Literal observation under an authorized real transfer, no resource FK or stock credit. |
 | recibo de comando | transfer command receipt | TransferCommandReceipt | Immutable replay proof; internal persistence, not delivery or a new client command on close. |
 | padre de evidencia de transferencia | transfer event parent | transfer_event | Fifth closed upload parent for HTTP custody; source captures retain their actual FieldEvent primary parent. |
+
+## Laboratory first-pass results (#114)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| recepción de laboratorio | bag receipt | BagReceipt, /bags/receive/ | A real authorized Reading; no-paddle has a null Bag and no count expectation. No courier delivery claim. |
+| discrepancia de recepción | reception discrepancy | ReceptionDiscrepancy | Real expected/missing or ineffective-source cause, distinct from facility-transfer discrepancies. |
+| política de incidencias de recepción | reception incident policy | ReceptionIncidentPolicyVersion | Public CAS mapping to exact real incident-type versions; configuration can remain pending. |
+| método de laboratorio | lab method | LabMethod, LabMethodVersion | Named immutable procedure/reference and retained verification; not a seeded scientific approval. |
+| primer conteo | first-pass egg count | EggCountAttempt | Authoritative nonnegative integer; zero is an observation, never missing data. |
+| huevos examinados | examined eggs | total_examined | Sample denominator retained with viable_eggs; no inferred relation to full paddle count. |
+| viabilidad | viability | viability_percent | Decimal6 ratio of viable/examined; null reason distinguishes zero_examined and not_requested. |
+| rechazo de laboratorio | lab rejection | LabRejection | Reasoned named-method result with exact verified private evidence, never value zero. |
+| anulación de resultado | lab result void | LabResultVoid, LabResultRevision | Immutable catalog reason/note and optional atomic same-Bag replacement. |
+| solicitud de reconteo independiente | recount request | RecountRequest | Durable first-counter/source/rule cause; #115 owns execution, adjudication and reuse. |
+| muestra diaria de control | daily recount sample | DailyRecountSample | Closed org-local-day population/selection proof; a request is not an executed recount. |

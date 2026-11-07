@@ -36,6 +36,7 @@ INSTALLED_APPS = [
     "scheduling",
     "incidents.apps.IncidentsConfig",
     "inventory",
+    "lab.apps.LabConfig",
 ]
 
 MIDDLEWARE = [
@@ -276,6 +277,14 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "recover-lab-reception-incidents": {
+        "task": "lab.tasks.recover_reception_incidents",
+        "schedule": 60.0,
+    },
+    "close-lab-local-days": {
+        "task": "lab.tasks.close_due_lab_days",
+        "schedule": crontab(minute=10),
+    },
     "recover-condition-incidents": {
         "task": "inventory.tasks.recover_condition_incidents",
         "schedule": 60.0,

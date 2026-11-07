@@ -29,6 +29,14 @@ def _current_subjects(row: CourierChange) -> SubjectFacts:
         identifier = UUID(row.resource_id)
     except ValueError:
         return SubjectFacts()
+    if row.resource_type.startswith("history.lab_"):
+        from lab.history import lab_history_subjects
+
+        return lab_history_subjects(
+            row.organization_id,
+            row.courier_id,
+            (row.resource_type.removeprefix("history."), identifier),
+        )
     if row.resource_type == "history.transfer_custody":
         from inventory.transfers.history import history_subjects
 

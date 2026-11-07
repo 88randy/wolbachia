@@ -33,6 +33,22 @@ class ParameterSeed:
 
 
 DEFAULT_PARAMETER_SEEDS = (
+    ParameterSeed(
+        "lab_count_plausibility_limit",
+        ValueType.INTEGER,
+        Unit.COUNT,
+        1000,
+        Decimal(100),
+        Decimal(10000),
+    ),
+    ParameterSeed(
+        "lab_recount_sample_per_100",
+        ValueType.INTEGER,
+        Unit.COUNT,
+        5,
+        Decimal(1),
+        Decimal(20),
+    ),
     # [ASSUMPTION] Operational daily target, never a capture cap; confirm bounds with client.
     ParameterSeed("daily_task_target", ValueType.INTEGER, Unit.COUNT, 40, Decimal(1), Decimal(200)),
     # [ASSUMPTION] Pilot accuracy policy; versioned per organization, never hard-coded in a handler.
