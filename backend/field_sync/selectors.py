@@ -173,7 +173,12 @@ def scope_revision(ctx: ProducerContext) -> str:
     outside the scope have no CourierChange for it. Any membership/profile revision bump, and any
     producer schema change (rows that were never delivered by changes), forces a re-bootstrap.
     """
-    relevant = {FIELD_BOOTSTRAP, FIELD_EVENT_SYNC}
+    relevant = {
+        FIELD_BOOTSTRAP,
+        FIELD_EVENT_SYNC,
+        "supply_assignment.receive",
+        "supply_assignment.reconcile",
+    }
     grants = [
         {"permissions": sorted(codes & relevant), "scope": scope}
         for codes, scope in ctx.scope.grants
@@ -231,14 +236,28 @@ def _change_scope_filter(ctx: ProducerContext) -> Q:
 
 
 def list_courier_changes(ctx: ProducerContext, after: int) -> tuple[list[CourierChange], bool]:
+    from django.db.models import CharField
+    from django.db.models.functions import Cast
+
+    from inventory.allocations.producers import current_supply_assignments
     from reviews.history_scope import visible_history_contexts
 
     history_ids = visible_history_contexts(ctx)
+    supply_ids = (
+        current_supply_assignments(ctx)
+        .annotate(_resource_id=Cast("pk", CharField()))
+        .values("_resource_id")
+    )
 
     rows = list(
         CourierChange.objects.for_org(ctx.organization)
         .filter(
-            Q(kind="history", pk__in=history_ids) | (~Q(kind="history") & _change_scope_filter(ctx))
+            Q(kind="history", pk__in=history_ids)
+            | (
+                Q(kind="supplies", resource_type="supply_assignment", resource_id__in=supply_ids)
+                & _change_scope_filter(ctx)
+            )
+            | (~Q(kind__in=("history", "supplies")) & _change_scope_filter(ctx))
         )
         .filter(courier=ctx.user, sequence__gt=after)
         .order_by("sequence")[: settings.API_CURSOR_PAGE_SIZE + 1]

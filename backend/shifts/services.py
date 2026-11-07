@@ -144,6 +144,9 @@ def close_shift(ctx: EventContext, data: dict[str, Any]) -> None:
             ODOMETER_DECREASED,
             {"previous_km": shift.odometer_open_km, "odometer_km": odometer_km},
         )
+    from inventory.allocations.reconciliation import append_close_frames
+
+    append_close_frames(ctx, shift)
 
 
 def _require_shift_id(ctx: EventContext) -> uuid.UUID:

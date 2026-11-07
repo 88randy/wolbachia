@@ -9,9 +9,9 @@ then executes one disjoint selection serially. The single closed registry
 
 - `migrations-foundation`: inventory105 and void-reason migration owners.
 - `migrations-field`: geography and review113 migration owners.
-- `migrations-material`: transfer106 and lab114 migration owners.
+- `migrations-material`: transfer106, lab114 and courier-supplies107 migration owners.
 
-`regular` retains exactly the complement of the six migration modules. The
+`regular` retains exactly the complement of the seven migration modules. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; no second module registry exists. Every cohort must be nonempty and no
 module can belong to two cohorts. Each selection retains its original collected
@@ -85,3 +85,17 @@ Verified interfaces: [pytest collection hooks](https://docs.pytest.org/en/stable
 [coverage 7.17.1 public data](https://github.com/coveragepy/coveragepy/blob/7.17.1/coverage/sqldata.py),
 [artifact upload v7.0.2](https://github.com/actions/upload-artifact/tree/cf430e030ddbb5b0abf93d22962f4752f3646cd9),
 [artifact download v8.0.1](https://github.com/actions/download-artifact/tree/3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c).
+
+## Seventh whole migration owner (#107)
+
+tests/test_inventory_allocations_migrations_107.py is classified as a COMPLETE
+MigrationExecutor owner, alongside the six existing modules unchanged. It upgrades
+real old custody/Lab/source rows, checks append-only/tenant/custodian/source guards,
+empty reverse and populated refusal/restoration. Exhaustive disjoint inventory,
+exact setup/call/teardown union, combined85% threshold and900s job budgets remain.
+Its two collected nodes remain in `migrations-material`, alongside the complete
+transfer106 and Lab114 modules. The previous #304 head measured that cohort at
+221 seconds including setup, leaving 679 seconds of its 900-second budget; this
+does not predict the added owner's cost. Collection/offline graph checks do not
+execute SQL. Fresh changed-head CI must measure every cohort's headroom; no
+timeout/classifier cut or local non-PostgreSQL substitute qualifies it.

@@ -274,3 +274,14 @@ stays opaque. Lab commands are server operations, not courier event types. Curre
 source/recipient subjects filter history before download; storing an updated QA
 projection grants no FIELD_BOOTSTRAP and proves no delivery. Independent requests
 are real; execution belongs to #115.
+
+## Courier supplies (#107)
+
+Two schema1 shift-checked sources use existing preparation/review/on_void and real
+post-store source identities. Complete historical User/source preparation precedes
+account locks even in final upload; no new sync endpoint or session writer exists.
+Supplies producer1 owns current self Assignment facts. History5 retains old kinds;
+root bootstrap2 is unchanged. Supply changes filter exact current full-vector and
+own action BEFORE count/order/LIMIT. Scope-revision changes require existing
+readiness/retention invalidation; cached hidden rows never authorize a capture.
+See docs/sync.md for typed source payloads, review codes and fresh replay authority.

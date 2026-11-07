@@ -240,3 +240,14 @@ closed count/rejection union with no Bag override. The sixth private parent is
 lab_rejection. The ONE history producer becomes 4 while root bundle 2, capture
 context and all four old kind mappings remain. Generated types supply no lab
 screen, independent execution or operational biological method approval.
+
+## Courier supplies and whole-Bag disposal (#107)
+
+Official schema/client include closed preparation and execution commands, current
+paired assignment/reconciliation/write-off reads, supplies1 and additive typed
+history5. InventoryIntent is the seventh concrete B04 parent, not a second uploader.
+Quantity strings and unknown-versus-zero receipts are preserved. Count replacement
+adds optional measurement_kind only for proved historical data correction after
+disposal; omitted/physical behavior and old command replay stay compatible.
+Generation must run twice from backend source and preserve all unrelated prior
+paths/components; never hand-edit the generated files. Client screens are outside107.

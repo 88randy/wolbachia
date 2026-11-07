@@ -94,6 +94,9 @@ def disposition_context(
 
 def record_count(actor: UploadActor, command: LabCommand, request: LabCommandInput) -> LabOutcome:
     bag, receipt, previous = disposition_context(actor, request)
+    from lab.dependencies import require_physical_material
+
+    require_physical_material(bag)
     previous_void = None if previous is None else previous.void
     predecessor = None if previous_void is None else previous_void.count
     count, causes = create_count(
@@ -116,6 +119,9 @@ def record_count(actor: UploadActor, command: LabCommand, request: LabCommandInp
 
 def create_count(creation: CountCreation) -> tuple[EggCountAttempt, tuple[str, ...]]:
     actor, bag, values = creation.actor, creation.bag, creation.values
+    from lab.dependencies import require_historical_correction
+
+    measurement_proof = require_historical_correction(bag, creation.replacement_of, values)
     rules = capture_lab_rules(actor.organization)
     try:
         evaluation = evaluate_count(
@@ -141,7 +147,7 @@ def create_count(creation: CountCreation) -> tuple[EggCountAttempt, tuple[str, .
         ordinal=ordinal,
         value=values["value"],
         rules=rules,
-        source_proof=reading_source_proof(bag.reading),
+        source_proof={**reading_source_proof(bag.reading), **measurement_proof},
         replacement_of=creation.replacement_of,
         **method_values,
     )

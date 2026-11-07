@@ -17,6 +17,7 @@ class AttachmentTargetSerializer(StrictPayloadSerializer):
             "review_item",
             "transfer_event",
             "lab_rejection",
+            "inventory_intent",
         ]
     )
     id = serializers.UUIDField()
@@ -34,7 +35,10 @@ class EvidenceUploadRequestSerializer(StrictPayloadSerializer):
         return value.lower()
 
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        if attrs.get("context", {}).get("kind") == "field_event" and "client_id" not in attrs:
+        if (
+            attrs.get("context", {}).get("kind") in {"field_event", "inventory_intent"}
+            and "client_id" not in attrs
+        ):
             raise serializers.ValidationError(
                 {
                     "client_id": [

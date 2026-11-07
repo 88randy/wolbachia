@@ -49,8 +49,8 @@ User rows are locked with `select_for_update(no_key=True)` (`FOR NO KEY UPDATE`)
 | Revoke a user's sessions | `User`, the sessions |
 | Revoke a device | `Device`, the device's sessions |
 | Token-family retention (`prune_ended_token_pairs`) | `DeviceSession` only, then delete its `TokenPair` family; re-check eligibility under the lock, never acquire `User` or `Device` afterwards |
-| Final upload (`consume_final_upload`) | `User`, `DeviceSession` |
-| Sync batch (`/field/sync/`, #5) | none of the above in a normal request; in a final upload it runs inside the `User` and `DeviceSession` locks above. Its serialization starts with a PostgreSQL advisory transaction lock (not a row lock), taken after them: first a *try* lock per (organization, user) (never waits: a second batch is `429 sync_in_progress`), then `SET LOCAL lock_timeout` (`SYNC_LOCK_TIMEOUT_MS`) for the rest of the transaction: any other wait (a primary key insert on an id another batch holds, a void target row, a rejection quota counter row) ends in `429 sync_in_progress` after the timeout, and a deadlock (`40P01`) does too |
+| Final upload (`consume_final_upload`) | All authentic prepared `User` rows, including the actor, in UUID order; then the existing actor/session consumption. Default opt-in views prepare only the actor. |
+| Sync batch (`/field/sync/`) | Prepared sorted `User` closure, actor `Device`/`DeviceSession`/`TokenPair` when applicable, sorted existing source `FieldEvent`s, required `Organization`, courier advisory **try** locks, then domain rows. A final upload reuses already held actor/session locks. Lock timeout/deadlock roll back the batch and preserve the single final upload. |
 
 Quota lock details (#56): the counter claim is a conditional increment after `get_or_create` under
 `EventProcessor._reject`'s savepoint. A duplicate id rolls the claim back; a whole-batch timeout
@@ -69,4 +69,21 @@ Revocation and rotation commit before they raise, so they must not run inside an
 
 ## `/field/sync/` (#5)
 
-`FinalUploadMixin` holds the `User` and `DeviceSession` locks for the whole view when a revoked phone makes its final upload: sync batches are bounded (`SYNC_MAX_EVENTS`, `SYNC_MAX_BODY_BYTES`) and no handler or pipeline code calls an external service (HTTP, storage, email). The batches of one courier are serialized with `pg_try_advisory_xact_lock` on (organization, user) and every later wait is capped by a lock timeout, not by more locks: a `Device` row lock taken after the session lock would run against the order above, and it would block the `Device.last_seen_at` update that every authenticated request does. The user lock is a try, so it never waits while holding the `User` and `DeviceSession` rows of a final upload; other waits last at most `SYNC_LOCK_TIMEOUT_MS` (then `429 sync_in_progress`, and the final upload is given back), so a final upload never waits long while holding those rows. `authenticate_header` makes a bearer-only view answer a request without credentials `401` (not `403`).
+`FinalUploadMixin` prepares bounded authentic source authors and custody participants outside
+retained locks. The actor belongs to the same sorted User closure. Preparation is reused by the
+sync transaction; a changed closure aborts with `429 sync_in_progress` before effects rather
+than acquiring a newly discovered User after a session/domain lock. Reacquiring an already held
+actor User does not introduce another lock level. No handler performs external I/O under locks.
+
+Only closure acquisition has an inner savepoint. If its explicit retryable contention error
+occurs, rollback releases partial User locks before a fresh, nonlocking read of the same real
+DeviceSession and the canonical `is_final_upload_available` predicate. Fresh withdrawal or
+absence returns `401 session_revoked` without spending; continued eligibility rethrows the
+original `429` and headers. This fallback acquires no Device, Session or domain lock. Successful
+acquisition enters the existing `consume_final_upload` exactly once. Its consumption and every
+view effect share the outer transaction; failed responses roll both back. Expected preparation
+errors from both APIException and DomainError families are deferred until that canonical fresh
+eligibility check. Withdrawal returns401 first; an eligible session preserves the original error
+and rollback. Unexpected exceptions propagate. The rule belongs to this single lifecycle,
+independently of which expected error a bounded domain preparation discovers.
+`authenticate_header` preserves bearer-only `401` answers.
