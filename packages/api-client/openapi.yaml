@@ -2657,6 +2657,17 @@ paths:
         description: Number of results to return per page.
         schema:
           type: integer
+      - in: query
+        name: reportable
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
       tags:
       - incident-types
       security:
@@ -2798,6 +2809,17 @@ paths:
         description: Slug of the active organization. Required only for users with
           more than one active membership; when sent it is always validated.
       - in: query
+        name: assigned_to_me
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
+      - in: query
         name: center
         schema:
           type: string
@@ -2810,6 +2832,17 @@ paths:
           maxLength: 50
         description: Exact code in reported mode only; fleet mode retains its legacy
           filters.
+      - in: query
+        name: escalated
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
       - in: query
         name: kind
         schema:
@@ -2828,12 +2861,43 @@ paths:
           type: string
           format: uuid
         description: Exact motorcycle UUID; applies only to fleet incident lists.
-      - name: ordering
-        required: false
-        in: query
-        description: Which field to use when ordering the results.
+      - in: query
+        name: ordering
         schema:
           type: string
+        description: 'Reported only: comma-separated code,created_at,deadline,severity
+          with optional -. Critical rows always first; default deadline ascending/null
+          last, created_at,id. Fleet preserves its existing created_at order.'
+      - in: query
+        name: origin
+        schema:
+          enum:
+          - field_event
+          - direct_report
+          - review_decision
+          - inventory_condition
+          - lab_reception
+          - unknown
+          type: string
+          minLength: 1
+        description: |-
+          * `field_event` - field_event
+          * `direct_report` - direct_report
+          * `review_decision` - review_decision
+          * `inventory_condition` - inventory_condition
+          * `lab_reception` - lab_reception
+          * `unknown` - unknown
+      - in: query
+        name: overdue
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
       - in: query
         name: owner
         schema:
@@ -2884,6 +2948,11 @@ paths:
           * `open` - open
           * `closed` - closed
           * `voided` - voided
+      - in: query
+        name: type
+        schema:
+          type: string
+          format: uuid
       - in: query
         name: type_id
         schema:
@@ -3167,6 +3236,65 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/{id}/owner-options/:
+    get:
+      operationId: incidents_owner_options_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this motorcycle block event.
+        required: true
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: search
+        schema:
+          type: string
+          maxLength: 200
+      tags:
+      - incidents
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentOwnerOptionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/incidents/{id}/reassign/:
     post:
       operationId: incidents_reassign_create
@@ -3272,6 +3400,75 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/IncidentConflictResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/incidents/context-options/:
+    get:
+      operationId: incidents_context_options_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: action
+        schema:
+          enum:
+          - read
+          - create
+          type: string
+          minLength: 1
+        description: |-
+          * `read` - read
+          * `create` - create
+        required: true
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: page
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          minimum: 1
+      - in: query
+        name: search
+        schema:
+          type: string
+          maxLength: 200
+      tags:
+      - incidents
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedIncidentContextOptionList'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -12703,6 +12900,45 @@ components:
       - id
       - is_cleared
       - motorcycle
+    IncidentActionPermissions:
+      type: object
+      properties:
+        comment:
+          type: boolean
+        reassign:
+          type: boolean
+        change_severity:
+          type: boolean
+        close:
+          type: boolean
+        void:
+          type: boolean
+      required:
+      - change_severity
+      - close
+      - comment
+      - reassign
+      - void
+    IncidentActionPrerequisites:
+      type: object
+      properties:
+        is_open:
+          type: boolean
+        has_void_dependents:
+          type: boolean
+        is_severity_protected:
+          type: boolean
+        close_evidence_min:
+          type: integer
+          minimum: 1
+        can_upload_evidence:
+          type: boolean
+      required:
+      - can_upload_evidence
+      - close_evidence_min
+      - has_void_dependents
+      - is_open
+      - is_severity_protected
     IncidentBlockedBy:
       type: object
       properties:
@@ -12734,6 +12970,29 @@ components:
       - blocked_by
       - code
       - detail
+    IncidentContextOption:
+      type: object
+      properties:
+        center_id:
+          type: string
+          format: uuid
+        center_code:
+          type: string
+        center_name:
+          type: string
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        quadrant_code:
+          type: string
+          nullable: true
+      required:
+      - center_code
+      - center_id
+      - center_name
+      - quadrant_code
+      - quadrant_id
     IncidentEvent:
       type: object
       description: |-
@@ -12806,9 +13065,14 @@ components:
         policy_version:
           type: string
           readOnly: true
+        author_display:
+          type: string
+          nullable: true
+          readOnly: true
       required:
       - action
       - actor_kind
+      - author_display
       - created_at
       - created_by
       - deadline
@@ -12844,10 +13108,108 @@ components:
         * `void` - void
         * `escalate` - escalate
         * `reminder` - reminder
+    IncidentEvidence:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        is_readable:
+          type: boolean
+        is_verified:
+          type: boolean
+          nullable: true
+        verified_at:
+          type: string
+          format: date-time
+          nullable: true
+        content_type:
+          type: string
+          nullable: true
+        size_bytes:
+          type: integer
+          nullable: true
+      required:
+      - content_type
+      - id
+      - is_readable
+      - is_verified
+      - size_bytes
+      - verified_at
+    IncidentLinkedRecord:
+      type: object
+      properties:
+        kind:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/IncidentLinkedRecordKindEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        available:
+          type: boolean
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        code:
+          type: string
+          nullable: true
+        is_voided:
+          type: boolean
+          nullable: true
+      required:
+      - available
+      - code
+      - id
+      - is_voided
+      - kind
+    IncidentLinkedRecordKindEnum:
+      enum:
+      - field_event
+      - review_item
+      - motorcycle
+      - ovitrap
+      - lot
+      - bag
+      type: string
+      description: |-
+        * `field_event` - field_event
+        * `review_item` - review_item
+        * `motorcycle` - motorcycle
+        * `ovitrap` - ovitrap
+        * `lot` - lot
+        * `bag` - bag
     IncidentListItem:
       oneOf:
       - $ref: '#/components/schemas/Incident'
       - $ref: '#/components/schemas/ReportedIncident'
+    IncidentOwnedBlocker:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          type: string
+        is_active:
+          type: boolean
+        resource:
+          $ref: '#/components/schemas/IncidentLinkedRecord'
+      required:
+      - id
+      - is_active
+      - kind
+      - resource
+    IncidentOwnerOption:
+      type: object
+      properties:
+        membership_id:
+          type: string
+          format: uuid
+        label:
+          type: string
+      required:
+      - label
+      - membership_id
     IncidentReportPayloadRequest:
       type: object
       properties:
@@ -12979,6 +13341,34 @@ components:
       - supervisor
       - supervisor_sla_seconds
       - terminal
+    IncidentTypeSnapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        label:
+          type: string
+        icon:
+          type: string
+        is_other:
+          type: boolean
+        report_evidence_min:
+          type: integer
+          minimum: 0
+        close_evidence_min:
+          type: integer
+          minimum: 1
+      required:
+      - close_evidence_min
+      - code
+      - icon
+      - id
+      - is_other
+      - label
+      - report_evidence_min
     IncidentVoidRequest:
       type: object
       properties:
@@ -15406,6 +15796,22 @@ components:
       - slug
       - support_contact
       - timezone
+    OriginEnum:
+      enum:
+      - field_event
+      - direct_report
+      - review_decision
+      - inventory_condition
+      - lab_reception
+      - unknown
+      type: string
+      description: |-
+        * `field_event` - field_event
+        * `direct_report` - direct_report
+        * `review_decision` - review_decision
+        * `inventory_condition` - inventory_condition
+        * `lab_reception` - lab_reception
+        * `unknown` - unknown
     OriginalEnvelope:
       type: object
       properties:
@@ -16104,6 +16510,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/FuelLoad'
+    PaginatedIncidentContextOptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentContextOption'
     PaginatedIncidentListItemList:
       type: object
       required:
@@ -16127,6 +16556,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IncidentListItem'
+    PaginatedIncidentOwnerOptionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentOwnerOption'
     PaginatedIncidentTypeList:
       type: object
       required:
@@ -19162,7 +19614,49 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        stage:
+          type: integer
+          readOnly: true
+        owner_display:
+          type: string
+          nullable: true
+          readOnly: true
+        type_snapshot:
+          allOf:
+          - $ref: '#/components/schemas/IncidentTypeSnapshot'
+          nullable: true
+          readOnly: true
+        origin:
+          allOf:
+          - $ref: '#/components/schemas/OriginEnum'
+          readOnly: true
+        linked_record:
+          allOf:
+          - $ref: '#/components/schemas/IncidentLinkedRecord'
+          readOnly: true
+        blockers:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentOwnedBlocker'
+          readOnly: true
+        evidence:
+          type: array
+          items:
+            $ref: '#/components/schemas/IncidentEvidence'
+          readOnly: true
+        action_permissions:
+          allOf:
+          - $ref: '#/components/schemas/IncidentActionPermissions'
+          readOnly: true
+        action_prerequisites:
+          allOf:
+          - $ref: '#/components/schemas/IncidentActionPrerequisites'
+          nullable: true
+          readOnly: true
       required:
+      - action_permissions
+      - action_prerequisites
+      - blockers
       - center
       - code
       - created_at
@@ -19170,7 +19664,11 @@ components:
       - deadline
       - description
       - device_time
+      - evidence
       - id
+      - linked_record
+      - origin
+      - owner_display
       - owner_id
       - publication_state
       - quadrant
@@ -19178,8 +19676,10 @@ components:
       - server_received_at
       - severity
       - source_event
+      - stage
       - state
       - timeline
+      - type_snapshot
       - type_version
     RequiredFieldsEnum:
       enum:

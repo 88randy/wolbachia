@@ -4,6 +4,16 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#304 adds reported incident workspace reads: assigned_to_me/overdue/escalated,
+stable type family and persisted origin filters, reported critical-first order,
+archived type/current authorized parent/evidence/action projections, and paged
+context-options/owner-options. Context action is read or create; owners are actual
+Membership UUIDs, not Me.user IDs. reportable=true on incident-types requires both
+current version and CatalogItem activity, without changing old submitted pins.
+The default fleet mode, six attachment parents, download authorization and all
+write/CAS bodies remain unchanged. Availability is not evidence admissibility or
+a durable permission. Full W6/W7 and W4 consumers remain separate issues.
+
 #289 adds optional/nullable root capture_context to Bootstrap and Changes. Its
 required object fields are capture schema 1, field_event.sync permission, self
 user/org UUIDs, scope_revision and complete effective paired grants. Known empty

@@ -91,6 +91,35 @@ def test_page_number_lists_expose_count_and_page_links(schema: dict[str, Any]) -
             "results",
         }
         assert {"page", "page_size"} <= set(query_parameters(operation))
+    for path in ("/api/v1/incidents/context-options/", "/api/v1/incidents/{id}/owner-options/"):
+        operation = schema["paths"][path]["get"]
+        reference = operation["responses"]["200"]["content"]["application/json"]["schema"][
+            "$ref"
+        ].split("/")[-1]
+        assert set(schema["components"]["schemas"][reference]["properties"]) == {
+            "count",
+            "next",
+            "previous",
+            "results",
+        }
+        assert {"page", "page_size", "search"} <= set(query_parameters(operation))
+    collection = query_parameters(schema["paths"]["/api/v1/incidents/"]["get"])
+    assert {"assigned_to_me", "overdue", "escalated", "type", "origin", "motorcycle"} <= set(
+        collection
+    )
+    assert "reportable" in query_parameters(schema["paths"]["/api/v1/incident-types/"]["get"])
+    assert not {"assigned_to_me", "overdue", "escalated", "reportable"} & set(
+        query_parameters(schema["paths"]["/api/v1/incidents/{id}/close/"]["post"])
+    )
+    reported = schema["components"]["schemas"]["ReportedIncident"]["properties"]
+    assert {
+        "stage",
+        "origin",
+        "type_snapshot",
+        "action_permissions",
+        "evidence",
+        "linked_record",
+    } <= set(reported)
 
 
 def test_cursor_lists_expose_next_and_previous_without_count(schema: dict[str, Any]) -> None:

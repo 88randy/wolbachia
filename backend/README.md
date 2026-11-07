@@ -12,6 +12,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 - **Mandatory:** serializers of org-scoped models extend `core.serializers.OrgScopedModelSerializer`, whose relational fields are `OrgScopedPrimaryKeyRelatedField` (never a plain `PrimaryKeyRelatedField`), so an id from another organization fails like a nonexistent one. Expose `created_by` and other non-org-scoped relations as read-only.
 - A list endpoint that must resolve human codes sets `code_lookup_field = "code"` on its viewset: `?code=` then filters by exact match (`core/filters.py`, see `docs/api-conventions.md`). Two list endpoints of different paging style need different serializer classes (OpenAPI component names).
 - Configuration tables opt in to `core.table_filters`: validated DRF search, explicit strict ordering and stable id ties on lists only. Their [exact query contract](../docs/api-conventions.md#configuration-table-queries-224) preserves scoped parents, existing defaults, protected Other and field snapshots (#224).
+- Reported incidents have scoped workspace filters, protected critical-first order, archived policy/current parent hints and action-paired form options; see [incidents/README.md](incidents/README.md#reported-workspace-reads-304). The default fleet facade and all incident writers remain independent (#304).
 - Django admin is not mounted on purpose (it can delete).
 
 ## Layout
