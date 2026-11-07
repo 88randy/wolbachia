@@ -94,6 +94,59 @@ controls to wrap at 320 px and increased text size. Shared widgets and tokens ar
 unchanged. Stock/ledger table filters use the existing controller builders;
 parent `view`/`center` URL metadata survives clear-filter and tab actions.
 
+## Explicit custody reads (#293)
+
+The existing URLs accept a private `custody_location=<canonical UUID>` read
+context for lots and location navigation. Absence retains admission behavior;
+present blank, malformed or unsupported context renders an invalid-context state
+before target requests or editor hydration. It never falls back to admission or
+derives a location from a center/grant. This metadata is not write authority.
+
+Lot code lookup and UUID detail use that same explicit location. Contextual code
+lookup omits the implicit admission-center facet; an explicitly selected list
+center still filters original admission and survives record/back navigation.
+Read keys, placeholder metadata and request acceptance include the private view
+entry as well as session/organization/authorization. Same-center B1/B2/B1 gets a
+fresh read; even an obsolete rejected response cannot become current data.
+The list/detail consumer must own its exact current route before a query or action
+gate can start, including the transient old outlet during navigation. Manual
+reconciliation is a separate inventory-only read purpose: it checks the original
+immutable command code from its still-current admission form, including create
+screens whose URL does not yet contain that code. It does not grant a display
+route bypass, write, current B lookup or automatic replay.
+
+A stable inventory-only provider encloses the existing home and W8–W11 URLs,
+without adding a public route or global store. Private admission drafts and exact
+uncertain commands survive readonly/unavailable custody views. B never mounts an
+editor, action lookup or reconciliation form. Returning to A waits for its fresh
+original action gate; genuine current action/identity/organization loss still
+retires the proper draft. Known write replies may update only the same retained
+attempt under the original session. They cannot clear another/newer attempt or
+show stale success/error UI. There is no automatic replay.
+
+Returned safety_location_id must match the selected custody location. Initial
+quantity and original location/protocol pins are identified as admission facts,
+not B stock; B does not link that quantity to original A. Current balances come
+only from the existing authorized location stock read. Null protocol stays null.
+
+Ledger cells distinguish movement, operation, source kind/source UUID and optional
+transfer id/code/event_id. Four actual source kinds have localized labels; unknown
+future kinds have generic source copy. Null transfer metadata is valid redaction,
+causes no extra fetch and has no invented detail link. The existing discrepancy
+hold is translated without inventing a resolution action.
+
+After the actual #292 merge, the movements' human-code control sends exact
+`lot_code` directly to the real location ledger, including at zero current stock.
+It performs no current-lot resolution. Existing row-linked `lot` UUID and
+operation/piece/unit/time filters retain their meanings and intersect; the UUID
+facet is not an editable code control. Tabs and clear-filter actions retain
+custody metadata. No transfer/condition writer or #152/#154 screen is added.
+
+The four changed test owners are inventory-query, locations, inventory-session and
+the existing browser inventory spec. The latter uses its existing extracted
+`e2e/fixtures/inventory-mock.ts`, not a new harness or another accessibility matrix.
+Browser/contrast/manual qualification is separate from local Node evidence.
+
 ## Verification ownership (§9)
 
 | Criterion | Cheapest owning proof |

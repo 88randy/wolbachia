@@ -65,7 +65,7 @@ function identityColumns(context: Context): Column[] {
       link: (row) => ({
         to: "/inventory/lots/$code",
         params: { code: row.lot_code },
-        search: { center: location.center },
+        search: { custody_location: location.id },
       }),
     },
     quantityColumn(context),
@@ -88,18 +88,50 @@ const unitColumn: Column = {
     </>
   ),
 };
+const sourceLabels: Record<string, MessageKey> = {
+  lot_admission: "inventory.option.admission",
+  transfer_dispatch: "inventory.source.dispatch",
+  transfer_receive: "inventory.source.receive",
+  transfer_resolution: "inventory.source.resolution",
+};
+function TransferFacts({
+  transfer,
+  t,
+}: {
+  transfer: NonNullable<Schemas["Movement"]["source_transfer"]>;
+  t: Context["t"];
+}) {
+  return (
+    <p>
+      {t("inventory.source.transfer")}: {transfer.code}
+      <br />
+      {t("inventory.source.transferId")}: <span>{transfer.id}</span>
+      <br />
+      {t("inventory.source.transferEvent")}: <span>{transfer.event_id}</span>
+    </p>
+  );
+}
+function sourceValue(row: StockRow, t: Context["t"]) {
+  if (!("source_id" in row)) return null;
+  return (
+    <>
+      {t(sourceLabels[row.source_kind] ?? "inventory.source.unknown")}
+      <p>{row.source_id}</p>
+      {row.source_transfer && <TransferFacts transfer={row.source_transfer} t={t} />}
+    </>
+  );
+}
 function provenanceColumns({ t, format }: Context): Column[] {
   return [
     {
+      id: "movement",
+      headerKey: "inventory.field.movementId",
+      cell: (row) => ("id" in row ? row.id : null),
+    },
+    {
       id: "source",
       headerKey: "inventory.field.source",
-      cell: (row) =>
-        "source_id" in row ? (
-          <>
-            {t("inventory.option.admission")}
-            <p>{row.source_id}</p>
-          </>
-        ) : null,
+      cell: (row) => sourceValue(row, t),
     },
     {
       id: "created_at",

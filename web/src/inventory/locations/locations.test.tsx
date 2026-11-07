@@ -6,6 +6,7 @@ import {
   inventoryLocation,
   inventoryLot,
   inventoryPage,
+  inventoryMovement,
   INVENTORY_OWNER,
   INVENTORY_CENTER,
   INVENTORY_OPERATION,
@@ -104,6 +105,68 @@ test("a physical stock quantity links to actual server-filtered legs using the o
     view: "stock",
     center: location.center,
   });
+  const transferId = "cd000000-0000-0000-0000-000000000010";
+  const dispatchEvent = "cd000000-0000-0000-0000-000000000011";
+  const rows = [
+    inventoryMovement(),
+    inventoryMovement({
+      id: "cd000000-0000-0000-0000-000000000012",
+      operation_id: "cd000000-0000-0000-0000-000000000013",
+      source_kind: "transfer_dispatch",
+      source_id: dispatchEvent,
+      quantity: "-2",
+      source_transfer: { id: transferId, code: "TR-01", event_id: dispatchEvent },
+    }),
+    inventoryMovement({
+      id: "cd000000-0000-0000-0000-000000000014",
+      operation_id: "cd000000-0000-0000-0000-000000000015",
+      source_kind: "transfer_receive",
+      source_id: "cd000000-0000-0000-0000-000000000016",
+      source_transfer: null,
+    }),
+    inventoryMovement({
+      id: "cd000000-0000-0000-0000-000000000017",
+      operation_id: "cd000000-0000-0000-0000-000000000018",
+      source_kind: "transfer_resolution",
+      source_id: "cd000000-0000-0000-0000-000000000019",
+      quantity: "-1",
+    }),
+    {
+      ...inventoryMovement({
+        id: "cd000000-0000-0000-0000-000000000020",
+        operation_id: "cd000000-0000-0000-0000-000000000021",
+        source_id: "cd000000-0000-0000-0000-000000000022",
+      }),
+      source_kind: "future_source",
+    },
+  ];
+  api.setRoute(`GET /api/v1/locations/${location.id}/movements/`, () =>
+    Response.json(inventoryPage(rows)),
+  );
+  await user.click(screen.getByRole("tab", { name: "Movimientos" }));
+  for (const label of [
+    "Admisión inicial",
+    "Salida de transferencia",
+    "Recepción de transferencia",
+    "Resolución de transferencia",
+    "Origen no reconocido",
+  ])
+    await screen.findByText(label);
+  const dispatchRow = screen.getByText(rows[1]?.id ?? "").closest("tr");
+  expect(dispatchRow).not.toBeNull();
+  if (!dispatchRow) throw new Error("Expected the rendered dispatch movement row");
+  const dispatch = within(dispatchRow);
+  expect(dispatch.getByRole("link", { name: rows[1]?.operation_id })).toBeDefined();
+  expect(dispatch.getAllByText(dispatchEvent)).toHaveLength(2);
+  expect(dispatch.getByText(transferId)).toBeDefined();
+  expect(screen.queryByRole("link", { name: transferId })).toBeNull();
+  expect(api.requests.some((request) => request.path.startsWith("/api/v1/transfers/"))).toBe(false);
+  const lotLink = dispatch.getByRole("link", { name: lot.code });
+  expect(
+    new URL(lotLink.getAttribute("href") ?? "", "https://test.invalid").searchParams.get(
+      "custody_location",
+    ),
+  ).toBe(location.id);
 });
 
 test("location creation uses actual center-only placement and Membership owner, retaining unknown safety", async () => {

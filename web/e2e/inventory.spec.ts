@@ -93,6 +93,49 @@ async function expectContainedMarker(page: Page) {
   );
   expect(contained).toBe(true);
 }
+async function expectReadonlyCustody(page: Page, language: string) {
+  await expect(
+    page.getByText(
+      language === "en" ? "Custody view · read only" : "Consulta de custodia · sólo lectura",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", {
+      name: language === "en" ? "Observations" : "Observaciones",
+      exact: true,
+    }),
+  ).toHaveCount(0);
+  const refresh = page.getByRole("button", {
+    name: language === "en" ? "Refresh status" : "Actualizar estado",
+    exact: true,
+  });
+  await refresh.focus();
+  await expect(refresh).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expectNoAxeViolations(page);
+  await expectStatusContained(page, language);
+}
+async function expectStatusContained(page: Page, language: string) {
+  const contained = await page
+    .getByText(language === "en" ? "Draft · not dispatchable" : "Borrador · no despachable", {
+      exact: true,
+    })
+    .evaluate((status) => {
+      const main = status.closest("main")?.getBoundingClientRect();
+      const box = status.getBoundingClientRect();
+      return main !== undefined && box.left >= main.left && box.right <= main.right;
+    });
+  expect(contained).toBe(true);
+}
+async function expectPageKeyboard(page: Page, context: { path: string; language: string }) {
+  if (context.path === "/inventory/lots/LOT-01") {
+    await expectAdoptionKeyboard(page, context.language);
+    await expectStatusContained(page, context.language);
+  }
+  if (context.path.includes("custody_location"))
+    await expectReadonlyCustody(page, context.language);
+}
 function arrangeEdgeLocations(server: InventoryMock, path: string) {
   if (path !== "/inventory/locations") return;
   server.locationRows = [
@@ -157,6 +200,63 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
     ["POST", "e2e-csrf", "norte"],
     ["PATCH", "e2e-csrf", "norte"],
   ]);
+  const custody = inventoryLocation({
+    id: "cd000000-0000-0000-0000-000000000098",
+    code: "LOC-B",
+    name: "Synthetic custody store",
+  });
+  server.locationRows.push(custody);
+  await page.goto("/inventory/lots/LOT-NEW");
+  await page
+    .getByRole("textbox", { name: "Observaciones", exact: true })
+    .fill("Private admission browser draft");
+  await page.locator('a[href="/inventory"]').first().click();
+  await page.getByRole("link", { name: "Ubicaciones", exact: true }).click();
+  await page.getByRole("link", { name: custody.code, exact: true }).click();
+  await page.getByRole("link", { name: "LOT-NEW", exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`custody_location=${custody.id}`));
+  await expect(
+    page.getByText("Consulta de custodia · sólo lectura", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Observaciones", exact: true })).toHaveCount(0);
+  await expectNoAxeViolations(page);
+  await page.locator('a[href="/inventory"]').first().click();
+  await page.getByRole("link", { name: "Lotes", exact: true }).click();
+  await page.getByRole("link", { name: "LOT-NEW", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Observaciones", exact: true })).toHaveValue(
+    "Private admission browser draft",
+  );
+  server.emptyStockLocations.add(custody.id);
+  await page.locator('a[href="/inventory"]').first().click();
+  await page.getByRole("link", { name: "Ubicaciones", exact: true }).click();
+  await page.getByRole("link", { name: custody.code, exact: true }).click();
+  const beforeHistory = server.reads.length;
+  await page.getByRole("tab", { name: "Movimientos", exact: true }).click();
+  await page.getByRole("textbox", { name: "Código", exact: true }).fill("LOT-NEW");
+  await expect
+    .poll(() =>
+      server.reads
+        .slice(beforeHistory)
+        .some(
+          (url) =>
+            new URL(url).pathname === `/api/v1/locations/${custody.id}/movements/` &&
+            new URL(url).searchParams.get("lot_code") === "LOT-NEW",
+        ),
+    )
+    .toBe(true);
+  await expect(page.getByText("Recepción de transferencia", { exact: true })).toBeVisible();
+  expect(
+    server.reads
+      .slice(beforeHistory)
+      .some((url) => new URL(url).pathname.startsWith("/api/v1/lots/")),
+  ).toBe(false);
+  await page.getByRole("link", { name: "LOT-NEW", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "Custodia no disponible", exact: true }),
+  ).toBeVisible();
+  await page.goBack();
+  await expect(page.getByRole("textbox", { name: "Código", exact: true })).toHaveValue("LOT-NEW");
+  expect(server.writes).toHaveLength(2);
   await page.goto("/inventory/locations");
   await expect(page.getByRole("link", { name: "Synthetic store", exact: false })).toBeVisible();
   await expect.poll(async () => (await readMapWorkers(page)).messages).toBeGreaterThan(0);
@@ -237,6 +337,7 @@ for (const language of LANGUAGES) {
         "/inventory/lots",
         "/inventory/lots/LOT-01",
         "/inventory/locations/LOC-01",
+        `/inventory/lots/LOT-01?custody_location=${INVENTORY_LOCATION}`,
         "/inventory/locations",
       ]) {
         arrangeEdgeLocations(server, path);
@@ -247,7 +348,7 @@ for (const language of LANGUAGES) {
         await expectNoHorizontalScroll(page);
         await expectContainedControls(page);
         await expectNoAxeViolations(page);
-        if (path === "/inventory/lots/LOT-01") await expectAdoptionKeyboard(page, language);
+        await expectPageKeyboard(page, { path, language });
       }
       await attachInventoryScreenshot(page, `151-${language}-${theme}-320`, true);
       for (const width of [1280, 1440]) {

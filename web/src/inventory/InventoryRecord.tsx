@@ -1,8 +1,9 @@
-import { Link, useParams, useSearch } from "@tanstack/react-router";
+import { Link, useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
+import { ApiError } from "@wolbachia/api-client";
 import { Card } from "../ui/Card";
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { ErrorState } from "../ui/ErrorState";
@@ -15,7 +16,7 @@ import { useRetryWindow } from "../quadrants/geography/use-retry-window";
 import { inventoryRecordOptions } from "./inventory-query";
 import { InventoryEditGate } from "./InventoryEditGate";
 import { InventoryFormFeedback } from "./InventoryFormFeedback";
-import { useInventoryContext } from "./use-inventory-context";
+import { useInventoryContext, useInventoryCode } from "./use-inventory-context";
 import { useInventoryWrite } from "./use-inventory-write";
 import { LotSafetySummary } from "./lots/LotSafetySummary";
 import { LocationStock } from "./locations/LocationStock";
@@ -24,6 +25,7 @@ import page from "../styles/page.module.css";
 import styles from "./inventory.module.css";
 import { InventoryDraftMemory } from "./use-inventory-draft";
 import { InventoryFacts } from "./InventoryFacts";
+import { InventoryContextNotice } from "./InventoryContextNotice";
 const updatePermission = {
   supplies: "supply_type.update",
   lots: "lot.update",
@@ -46,19 +48,60 @@ function useDraftRetirement(options: { kind: InventoryKind; code: string; denied
       );
   }, [denied, code, kind, memory]);
 }
+function visibleRecord(
+  record: RecordValue | null | undefined,
+  target: { code: string; location?: string },
+) {
+  if (!record || record.code !== target.code) return null;
+  if (
+    target.location &&
+    (!("safety_location_id" in record) || record.safety_location_id !== target.location)
+  )
+    return null;
+  return record;
+}
+function deniedRecord({
+  query,
+  record,
+  editable,
+}: {
+  query: { error: unknown; isSuccess: boolean; isFetching: boolean; isPlaceholderData: boolean };
+  record: RecordValue | null;
+  editable: boolean;
+}) {
+  if (query.error instanceof ApiError && [403, 404].includes(query.error.status)) return true;
+  return query.isSuccess && !query.isFetching && !query.isPlaceholderData && (!record || !editable);
+}
 function useRecord(kind: InventoryKind) {
-  const { code = "" } = useParams({ strict: false });
-  const query = useQuery(inventoryRecordOptions(useInventoryContext(), kind, code));
-  const editable = useCan()(updatePermission[kind]);
-  const record = query.data?.code === code ? query.data : null;
-  const current = query.isSuccess && !query.isFetching && !query.isPlaceholderData;
-  useDraftRetirement({ kind, code, denied: current && (!record || !editable) });
+  const code = useInventoryCode() ?? "";
+  const scope = useInventoryContext();
+  const query = useQuery(inventoryRecordOptions(scope, kind, code));
+  const custody = kind === "lots" && scope.readContext.mode === "custody";
+  const readonly = scope.readContext.mode !== "admission";
+  const editable = useCan()(updatePermission[kind]) && !readonly;
+  const location =
+    custody && scope.readContext.mode === "custody" ? scope.readContext.location : undefined;
+  const record = visibleRecord(query.data, { code, ...(location ? { location } : {}) });
+  useDraftRetirement({
+    kind,
+    code,
+    denied: !readonly && deniedRecord({ query, record, editable }),
+  });
   useDocumentTitle(code);
-  return { query, record, editable };
+  return { query, record, editable, custody, readonly };
 }
 export function InventoryRecord({ kind }: { kind: InventoryKind }) {
   const model = useRecord(kind);
   if (model.query.isPending || model.query.isPlaceholderData) return <CardSkeleton />;
+  if (model.custody && (model.query.isError || !model.record))
+    return (
+      <InventoryContextNotice
+        state="unavailable"
+        onRetry={() => {
+          void model.query.refetch();
+        }}
+      />
+    );
   if (model.query.isError)
     return (
       <ErrorState
@@ -105,7 +148,6 @@ function RecordContent(props: ContentProps) {
   const refresh = () => {
     void props.model.query.refetch();
   };
-  const action = <RefreshAction refresh={refresh} />;
   const accepted = () => {
     setSaved(true);
   };
@@ -114,16 +156,18 @@ function RecordContent(props: ContentProps) {
       <Card title={props.record.code} headingLevel={1}>
         <div className={styles.actions}>
           <RecordBack kind={props.kind} />
-          {action}
+          <RefreshAction refresh={refresh} />
         </div>
         <p role="status">{saved ? t("inventory.state.saved") : ""}</p>
         <RecordFacts record={props.record} />
         <RecordEditor {...props} onSaved={accepted} />
-        <RetireSupply
-          record={props.record}
-          verifying={props.model.query.isFetching}
-          refresh={refresh}
-        />
+        {!props.model.readonly && (
+          <RetireSupply
+            record={props.record}
+            verifying={props.model.query.isFetching}
+            refresh={refresh}
+          />
+        )}
       </Card>
     </section>
   );
@@ -198,7 +242,7 @@ interface RetirementProps {
 }
 function useRetirement(record: RecordValue) {
   const allowed = useCan()("supply_type.deactivate");
-  const write = useInventoryWrite();
+  const write = useInventoryWrite(undefined, { kind: "supplies", code: record.code });
   const { failure, clearFailure } = write;
   const cooling = useRetryWindow(failure?.retryAt ?? 0);
   const retired = "is_active" in record && !record.is_active;

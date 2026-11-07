@@ -1,5 +1,29 @@
 import type { AreaCatalog } from "../area.ts";
 export const inventory = {
+  "inventory.context.invalidTitle": "Contexto de custodia no válido",
+  "inventory.context.invalid":
+    "Verifica el enlace de la ubicación o vuelve a la página anterior. No se usará la ubicación de admisión.",
+  "inventory.context.unavailableTitle": "Custodia no disponible",
+  "inventory.context.unavailable":
+    "No se pudo confirmar el lote en esta ubicación. Su historial autorizado puede seguir disponible aunque ya no tenga existencias.",
+  "inventory.context.readonlyTitle": "Consulta de custodia",
+  "inventory.context.readonly": "Consulta de custodia · sólo lectura",
+  "inventory.context.safety":
+    "El estado y los requisitos corresponden a la ubicación de custodia seleccionada.",
+  "inventory.context.admissionPins": "Datos originales de admisión",
+  "inventory.context.balance":
+    "La cantidad inicial y las versiones originales no son las existencias actuales de esta ubicación. Consulta sus existencias autorizadas.",
+  "inventory.source.dispatch": "Salida de transferencia",
+  "inventory.source.receive": "Recepción de transferencia",
+  "inventory.source.resolution": "Resolución de transferencia",
+  "inventory.source.unknown": "Origen no reconocido",
+  "inventory.source.transfer": "Transferencia",
+  "inventory.source.transferId": "ID de transferencia",
+  "inventory.source.transferEvent": "Evento de transferencia",
+  "inventory.field.movementId": "Movimiento",
+  "inventory.field.linkedLot": "Lote seleccionado (referencia)",
+  "inventory.blocker.transferDiscrepancyHold":
+    "Hay una retención por discrepancia de transferencia. El personal autorizado debe revisar su resolución.",
   "inventory.action.discardProtocol": "Descartar sólo los cambios de protocolo",
   "inventory.section.selected": "Configuración elegida para el próximo guardado",
   "inventory.section.currentRecord": "Registro actual del servidor",
@@ -87,6 +111,7 @@ export const inventory = {
   "inventory.field.supply": "Insumo",
   "inventory.field.location": "Ubicación inicial",
   "inventory.field.quantity": "Cantidad inicial",
+  "inventory.field.admissionQuantity": "Cantidad inicial de admisión",
   "inventory.field.provenance": "Procedencia",
   "inventory.field.species": "Especie",
   "inventory.field.strain": "Cepa",
