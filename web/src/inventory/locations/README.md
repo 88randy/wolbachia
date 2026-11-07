@@ -21,3 +21,14 @@ coordinates and the usable list. It never fetches the full location catalog.
 
 The parent README identifies tests for scope, links, geometry reconciliation,
 map parity and browser accessibility.
+
+#293 carries the real enclosing location UUID into stock/ledger lot links as
+custody_location. Movement cells label admission/transfer dispatch/transfer
+receipt/transfer resolution and generic unknown sources, preserving all actual
+identities. A redacted source_transfer remains null and triggers no lookup.
+The direct exact lot_code movement filter delivered by #292 works when stock is
+zero without resolving current lot metadata. Existing UUID/operation/piece/unit
+facets remain intersecting server filters; no manual UUID input or client scan
+is introduced. Context metadata survives tabs and clear filters. Historical rows
+remain available independently of current positive-custody lot metadata, subject
+to the backend's current location/lot authority.

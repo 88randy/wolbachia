@@ -88,7 +88,9 @@ export const MOVEMENT_TABLE: TableQueryConfig = {
   defaultOrdering: "-created_at",
   sortableIds: ["created_at", "lot_code", "quantity"],
   filters: [
-    ...STOCK_TABLE.filters,
+    text("lot", "inventory.field.linkedLot"),
+    ...STOCK_TABLE.filters.filter((filter) => filter.key !== "lot"),
+    text("lot_code", "inventory.field.code"),
     text("operation", "inventory.field.operation"),
     text("piece", "inventory.field.piece"),
     text("unit", "inventory.field.unit"),

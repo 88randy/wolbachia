@@ -61,6 +61,15 @@
   gap: var(--space-1);
   overflow-wrap: anywhere;
 }
+.safetyStatus {
+  min-width: 0;
+  max-width: 100%;
+}
+.safetyStatus > span {
+  width: fit-content;
+  max-width: 100%;
+  white-space: normal;
+}
 .mono {
   font-family: var(--font-family-mono);
   font-variant-numeric: tabular-nums;
