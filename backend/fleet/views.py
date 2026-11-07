@@ -4,7 +4,7 @@ from typing import Any, cast
 
 from django.db.models import DateTimeField, Exists, OuterRef, QuerySet, Subquery
 from django.shortcuts import get_object_or_404
-from drf_spectacular.utils import extend_schema, extend_schema_view
+from drf_spectacular.utils import OpenApiParameter, extend_schema, extend_schema_view
 from rest_framework import filters, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.request import Request
@@ -18,6 +18,7 @@ from fleet.models import FuelLoad, InspectionClearance, ResponsibilityLetter, Se
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from fleet.serializers import (
     ClearanceSerializer,
+    FleetIncidentFilterSerializer,
     FuelFilterSerializer,
     FuelLoadSerializer,
     IncidentSerializer,
@@ -76,7 +77,10 @@ class HistoryViewSet(
         return Response(self.get_serializer(result).data)
 
 
-@extend_schema_view(void=extend_schema(responses={200: ServiceRecordSerializer}))
+@extend_schema_view(
+    list=extend_schema(parameters=[OpenApiParameter("include_voided", bool)]),
+    void=extend_schema(responses={200: ServiceRecordSerializer}),
+)
 class ServiceViewSet(HistoryViewSet):
     queryset = ServiceRecord.objects.all()
     serializer_class = ServiceRecordSerializer
@@ -94,7 +98,10 @@ class ServiceViewSet(HistoryViewSet):
         )
 
 
-@extend_schema_view(void=extend_schema(responses={200: ResponsibilityLetterSerializer}))
+@extend_schema_view(
+    list=extend_schema(parameters=[OpenApiParameter("include_voided", bool)]),
+    void=extend_schema(responses={200: ResponsibilityLetterSerializer}),
+)
 class LetterViewSet(HistoryViewSet):
     queryset = ResponsibilityLetter.objects.all()
     serializer_class = ResponsibilityLetterSerializer
@@ -170,16 +177,22 @@ class IncidentViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.Gen
     def get_queryset(self) -> QuerySet[Any]:
         if getattr(self, "swagger_fake_view", False):
             return super().get_queryset().none()
+        query = FleetIncidentFilterSerializer(data=dict(self.request.query_params.items()))
+        query.is_valid(raise_exception=True)
         # BlockEvent predates fleet and has no center attribute: scope through Motorcycle explicitly.
         motorcycles = filter_by_effective_scope(
             Motorcycle.objects.filter(organization=self.request.organization),  # type: ignore[attr-defined]
             self.request.membership,  # type: ignore[attr-defined]
             MOTORCYCLE_READ,
         )  # type: ignore[attr-defined]
+        if "motorcycle" in query.validated_data:
+            parent = get_object_or_404(motorcycles, pk=query.validated_data["motorcycle"])
+            motorcycles = motorcycles.filter(pk=parent.pk)
         clearances = InspectionClearance.objects.filter(fault=OuterRef("pk"))
         return (
             super()
             .get_queryset()
+            .select_related("inspection_clearance")
             .filter(motorcycle__in=motorcycles, action="block", blocked_reason="severe_check")
             .annotate(
                 is_cleared=Exists(clearances),

@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from catalogs.models import CatalogItem
 from core.filters import CodeLookupFilter
 from core.views import OrgScopedViewSetMixin
+from fleet.serializers import FleetIncidentFilterSerializer
 from fleet.serializers import IncidentSerializer as FleetIncidentSerializer
 from fleet.views import IncidentViewSet as FleetIncidentViewSet
 from incidents.configuration import write_type
@@ -112,6 +113,7 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
                 description="Explicit representation selector. Default fleet preserves the legacy Incident component.",
             ),
             IncidentFilterSerializer,
+            FleetIncidentFilterSerializer,
         ],
         responses=PolymorphicProxySerializer(
             component_name="IncidentListItem",

@@ -93,6 +93,52 @@ def test_code_parameter_is_documented_on_opted_in_lists_only(schema: dict[str, A
     assert "code" not in query_parameters(paths["/api/v1/undeclared-widgets/"]["get"])
     assert "code" not in query_parameters(paths["/api/v1/widgets/{id}/"]["get"])
 
+    motorcycle = query_parameters(paths["/api/v1/incidents/"]["get"])["motorcycle"]
+    assert motorcycle.get("required", False) is False
+    assert motorcycle["schema"] == {"type": "string", "format": "uuid"}
+    assert "fleet" in motorcycle["description"].lower()
+    history_paths = {
+        "/api/v1/motorcycles/{motorcycle_id}/services/",
+        "/api/v1/motorcycles/{motorcycle_id}/responsibility-letters/",
+    }
+    for path, method, operation in operations(schema):
+        parameters = query_parameters(operation)
+        if path in history_paths and method == "get":
+            assert parameters["include_voided"].get("required", False) is False
+            assert parameters["include_voided"]["schema"] == {"type": "boolean"}
+        elif any(path.startswith(history_path) for history_path in history_paths):
+            assert "include_voided" not in parameters
+        if path.startswith("/api/v1/incidents/") and (path, method) != (
+            "/api/v1/incidents/",
+            "get",
+        ):
+            assert "motorcycle" not in parameters
+
+    components = schema["components"]["schemas"]
+    incident = components["Incident"]["properties"]
+    assert set(incident) == {
+        "id",
+        "motorcycle",
+        "field_event",
+        "blocked_reason",
+        "created_at",
+        "created_by",
+        "is_cleared",
+        "cleared_at",
+        "clearance",
+    }
+    clearance = incident["clearance"]
+    assert clearance["readOnly"] is True
+    assert clearance["nullable"] is True
+    reference = clearance["allOf"][0]["$ref"]
+    proof = components[reference.rsplit("/", 1)[-1]]["properties"]
+    assert set(proof) == {"id", "created_at", "reviewer", "reason", "evidence_ids"}
+    assert all(field["readOnly"] for field in proof.values())
+    assert proof["reviewer"]["format"] == "uuid"
+    assert proof["created_at"]["format"] == "date-time"
+    assert proof["evidence_ids"]["items"] == {"type": "string", "format": "uuid"}
+    assert "clearance" not in components["ReportedIncident"]["properties"]
+
 
 def test_organization_header_is_documented_on_scoped_operations(schema: dict[str, Any]) -> None:
     operation = schema["paths"]["/api/v1/widgets/"]["get"]
