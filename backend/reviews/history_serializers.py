@@ -78,6 +78,21 @@ class RelocationHistoryEntrySerializer(serializers.Serializer[Any]):
     subjects = HistorySubjectSerializer(many=True, allow_empty=False)
 
 
+class TransferHistoryEntrySerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(choices=["transfer_custody"])
+    transfer_id = serializers.UUIDField()
+    transfer_code = serializers.CharField()
+    phase = serializers.ChoiceField(choices=["dispatch", "receive"])
+    revision = serializers.IntegerField(min_value=1)
+    manifest_hash = serializers.CharField()
+    source_event_id = serializers.UUIDField()
+    source_status = serializers.ChoiceField(choices=["accepted", "in_review", "rejected"])
+    source_code = serializers.CharField()
+    voided_at = serializers.DateTimeField(allow_null=True)
+    subjects = HistorySubjectSerializer(many=True, allow_empty=False)
+
+
 class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
     """The single history producer validates and renders its two actual domain shapes."""
 
@@ -91,6 +106,8 @@ class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
 
     @staticmethod
     def _serializer(kind: str) -> type[serializers.Serializer[Any]]:
+        if kind == "transfer_custody":
+            return TransferHistoryEntrySerializer
         if kind == "relocation_proposal":
             return RelocationHistoryEntrySerializer
         if kind in {"review_decision", "shift_validation"}:
@@ -106,14 +123,16 @@ class CourierHistorySchema(OpenApiSerializerExtension):
         relocation = auto_schema.resolve_serializer(
             RelocationHistoryEntrySerializer(), direction
         ).ref
+        transfer = auto_schema.resolve_serializer(TransferHistoryEntrySerializer(), direction).ref
         return {
-            "oneOf": [review, relocation],
+            "oneOf": [review, relocation, transfer],
             "discriminator": {
                 "propertyName": "kind",
                 "mapping": {
                     "review_decision": review["$ref"],
                     "shift_validation": review["$ref"],
                     "relocation_proposal": relocation["$ref"],
+                    "transfer_custody": transfer["$ref"],
                 },
             },
         }

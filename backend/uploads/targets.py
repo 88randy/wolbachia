@@ -20,6 +20,7 @@ OVITRAP_EVENTS = frozenset(
     {"ovitrap.place", "ovitrap.check", "ovitrap.replace", "ovitrap.relocate", "ovitrap.remove"}
 )
 INCIDENT_EVENTS = frozenset({"incident.report", "emergency.accident"})
+TRANSFER_EVENTS = frozenset({"transfer.dispatch", "transfer.receive"})
 
 
 @dataclass(frozen=True)
@@ -39,11 +40,18 @@ def _allows_motorcycle(scope: EffectiveScope, permission: str, motorcycle: Motor
 
 
 def declared_upload_ids(event: FieldEvent) -> set[UUID]:
-    if event.type not in OVITRAP_EVENTS | INCIDENT_EVENTS and event.type != "fuel.load":
+    if (
+        event.type not in OVITRAP_EVENTS | INCIDENT_EVENTS | TRANSFER_EVENTS
+        and event.type != "fuel.load"
+    ):
         return set()
     references: Any = event.payload.get("evidence_ids", [])
     if event.type == "fuel.load":
         references = [event.payload.get("receipt_upload_id")]
+    if event.type in TRANSFER_EVENTS:
+        if not isinstance(references, list):
+            return set()
+        references = [*references, event.payload.get("signature_upload_id")]
     if not isinstance(references, list):
         return set()
     identifiers = set()
@@ -101,6 +109,8 @@ def authorize_target(
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
     scope = current_scope(actor)
+    if target.kind == "transfer_event":
+        return _transfer_attachment_target(actor, target, upload)
     if target.kind == "review_item":
         return _review_attachment_target(actor, target, scope)
     if target.kind == "incident":
@@ -146,6 +156,12 @@ def authorize_target(
         return {"fault": fault}
     if target.kind != "field_event":
         raise Http404
+    return _field_attachment_target(actor, target, upload)
+
+
+def _field_attachment_target(
+    actor: UploadActor, target: AttachmentTarget, upload: Upload
+) -> dict[str, object]:
     event = FieldEvent.objects.filter(organization=actor.organization, pk=target.identifier).first()
     if (
         event is None
@@ -158,7 +174,7 @@ def authorize_target(
         or event.created_by_id != actor.user.pk
         or event.device_id != upload.device_id
         or actor.device_id != event.device_id
-        or not has_event_upload_scope(scope, event)
+        or not has_event_upload_scope(current_scope(actor), event)
     ):
         raise Http404
     return {"field_event": event}
@@ -169,7 +185,7 @@ def _review_attachment_target(
 ) -> dict[str, object]:
     from reviews.inspection import original_source_envelope
     from reviews.models import ReviewItem
-    from reviews.scope import subject_facts, vector_allows
+    from reviews.scope import subject_allows, subject_facts
 
     item = (
         ReviewItem.objects.filter(organization=actor.organization, pk=target.identifier)
@@ -183,7 +199,7 @@ def _review_attachment_target(
     except ValueError:
         raise Http404 from None
     if not all(
-        vector_allows(scope, permission, facts.contexts, facts.resolved)
+        subject_allows(scope, permission, facts)
         for permission in ("review_item.decide", FIELD_UPLOAD)
     ):
         raise Http404
@@ -193,10 +209,16 @@ def _review_attachment_target(
 def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     """Follow current parent read/history policy, including authorized voided history."""
     scope = current_scope(actor)
+    from uploads.services import _resolve_link_target
+
+    parent = _resolve_link_target(link)
+    if parent.kind == "transfer_event":
+        _authorize_transfer_download(actor, parent.identifier)
+        return
     if link.review_item_id:
         from reviews.inspection import original_source_envelope
         from reviews.models import ReviewItem
-        from reviews.scope import subject_facts, vector_allows
+        from reviews.scope import subject_allows, subject_facts
 
         item = (
             ReviewItem.objects.filter(organization=actor.organization, pk=link.review_item_id)
@@ -209,7 +231,7 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
             facts = subject_facts(actor.organization, original_source_envelope(item.field_event))
         except ValueError:
             raise Http404 from None
-        if not vector_allows(scope, "review_item.read", facts.contexts, facts.resolved):
+        if not subject_allows(scope, "review_item.read", facts):
             raise Http404
         return
     if link.incident_id:
@@ -235,6 +257,52 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     _authorize_event_download(actor, scope, link.field_event_id)
 
 
+def _transfer_attachment_target(
+    actor: UploadActor, target: AttachmentTarget, upload: Upload
+) -> dict[str, object]:
+    from inventory.transfers.commands import TransferAuthority
+    from inventory.transfers.models import TransferEvent
+    from inventory.transfers.scope import require_transfer_scope
+
+    event = (
+        TransferEvent.objects.filter(
+            organization=actor.organization, pk=target.identifier, declared_source_uuid__isnull=True
+        )
+        .select_related("transfer__origin", "transfer__destination")
+        .first()
+    )
+    if (
+        event is None
+        or event.created_by_id != actor.user.pk
+        or not event.evidence_refs.filter(upload=upload).exists()
+    ):
+        raise Http404
+    permission = "discrepancy.close" if event.kind == "resolution" else f"transfer.{event.kind}"
+    require_transfer_scope(TransferAuthority(actor), permission, event.transfer)
+    if (
+        event.kind == "resolution"
+        and event.resolution.outcomes.filter(kind__in=["recover_dest", "return_origin"]).exists()
+    ):
+        require_transfer_scope(TransferAuthority(actor), "transfer.receive", event.transfer)
+    require_transfer_scope(TransferAuthority(actor), FIELD_UPLOAD, event.transfer)
+    return {"transfer_event": event}
+
+
+def _authorize_transfer_download(actor: UploadActor, identifier: UUID) -> None:
+    from inventory.transfers.commands import TransferAuthority
+    from inventory.transfers.models import TransferEvent
+    from inventory.transfers.scope import require_transfer_scope
+
+    event = (
+        TransferEvent.objects.filter(organization=actor.organization, pk=identifier)
+        .select_related("transfer__origin", "transfer__destination")
+        .first()
+    )
+    if event is None:
+        raise Http404
+    require_transfer_scope(TransferAuthority(actor), "transfer.read", event.transfer)
+
+
 def _authorize_event_download(
     actor: UploadActor, scope: EffectiveScope, event_id: UUID | None
 ) -> None:
@@ -243,6 +311,16 @@ def _authorize_event_download(
     event = FieldEvent.objects.filter(pk=event_id, organization=actor.organization).first()
     if event is None:
         raise Http404
+    if event.type in TRANSFER_EVENTS:
+        from reviews.inspection import original_source_envelope
+        from reviews.scope import subject_allows, subject_facts
+
+        facts = subject_facts(actor.organization, original_source_envelope(event))
+        if not subject_allows(scope, "transfer.read", facts) or (
+            event.status == "in_review" and not subject_allows(scope, "review_item.read", facts)
+        ):
+            raise Http404
+        return
     if event.type == "fuel.load":
         motorcycle = Motorcycle.objects.filter(
             organization=actor.organization, code=event.payload.get("motorcycle_id")
@@ -267,6 +345,15 @@ def _authorize_event_download(
 
 
 def has_event_upload_scope(scope: EffectiveScope, event: FieldEvent) -> bool:
+    if event.type in TRANSFER_EVENTS:
+        from reviews.inspection import original_source_envelope
+        from reviews.scope import subject_allows, subject_facts
+
+        facts = subject_facts(event.organization, original_source_envelope(event))
+        return all(
+            subject_allows(scope, permission, facts)
+            for permission in (FIELD_UPLOAD, FIELD_EVENT_SYNC, event.type)
+        )
     if event.type == "fuel.load":
         motorcycle = Motorcycle.objects.filter(
             organization_id=event.organization_id, code=event.payload.get("motorcycle_id")

@@ -1,5 +1,44 @@
 # M-09 lifecycle capture (#138)
 
+## Current contract continuation — M1
+
+The historical implementation and verification notes below describe the legacy
+wiring. Actual canonical fbb3b6b (#106) supplies history schema3
+(review/shift/relocation/transfer custody), quadrant schema2 and capture_context
+schema1. `history-contract.ts` and
+`quadrant-contract.ts` validate bootstrap bodies separately from change envelopes
+using the generated API aliases. Unknown history kinds and malformed envelopes
+throw before their consumer can settle a cursor. `CourierContractError.boundary`
+distinguishes an unusable envelope from an invalid body with a known identity;
+the existing point invalidation/version-floor implementation is unchanged.
+
+Review ingest status, actual effect, shift approval currency, nullable legacy
+relocation audit, source void and actual task reference remain distinct. Legacy
+six-field quadrants have UNKNOWN closure; blocks have no quadrant-closure state.
+Geometry revision stays an integer epoch and publication versions stay opaque.
+The transfer arm preserves the real TransferEvent UUID separately from its parent
+transfer_id, dispatch/receive phase, revision, opaque manifest hash, original
+source verdict/code, nullable voided_at and complete subjects vector. It does not
+invent a review item, shift, lifecycle proposal, task or Lab114 fact. Transfer
+history is retained data, never a capture grant, acceptance rewrite or stock action.
+
+`capture-context-contract.ts` accepts whole self SYNC pairs only under a caller's
+proven current transport owner/session and existing durable authority revision.
+It never creates that handle from DTO fields, Me, tasks or GPS, and never adopts
+legacy drafts/files. Duplicate IDs within a dimension reject; repeated complete
+grant pairs are retained. Empty grants are a known denial observation. Missing,
+null, unsupported or mismatched normal metadata is unavailable. Initial changes
+cannot hydrate missing bootstrap context; a page refreshes only a matching already
+hydrated revision. Cursor content is never decoded or ordered. Explicit final
+mode is unavailable; internal no-pull is no observation, not a renewal.
+
+These are pure decoders, not a new permission publisher. M2–M5 still own their
+production materialization, full-body durable readiness, owner/session/revision
+CAS, real source provider, feedback/GPS/shared evidence and UI composition.
+`mobile/test/lifecycle-contract.test.ts` covers this contract boundary with actual
+producer-shaped fixtures. Node contract tests do not qualify force-stop,
+SQLCipher, camera/GPS, actual API/review/task/upload or accessibility/device gates.
+
 Implementation plan (owner-supplied issue and accepted lead decisions):
 
 1. Test lifecycle identity/transactions, proposal-only geometry, recovery, feedback,

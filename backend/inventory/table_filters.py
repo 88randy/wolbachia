@@ -12,8 +12,8 @@ from rest_framework.filters import BaseFilterBackend
 from rest_framework.request import Request
 from rest_framework.views import APIView
 
-from inventory.access import require_scope, scoped_inventory
-from inventory.models import Location, Lot, StockMovement, SupplyType
+from inventory.access import require_scope
+from inventory.models import Location, Lot, SupplyType
 from inventory.serializers import InventoryQuerySerializer, OptionalReferenceField
 from organizations.models import Center
 from uploads.access import UploadActor, actor_from_request
@@ -66,7 +66,10 @@ class InventoryTableFilter(BaseFilterBackend):
             return []
         fields = InventoryQuerySerializer().fields
         result = []
-        for name in getattr(view, "inventory_facets", {}):
+        for name in (
+            *getattr(view, "inventory_facets", {}),
+            *getattr(view, "inventory_context_facets", ()),
+        ):
             field = fields[name]
             schema: dict[str, Any] = {"type": "string"}
             if isinstance(field, serializers.UUIDField):
@@ -133,13 +136,9 @@ MOVEMENT_FACETS = (
 def filter_movements(query: QuerySet[Any], request: Request) -> QuerySet[Any]:
     actor = actor_from_request(request)
     values = validated_query(request, MOVEMENT_FACETS)
-    visible = scoped_inventory(
-        StockMovement.objects.filter(
-            lot__in=scoped_inventory(Lot.objects.all(), actor, "lot.read")
-        ),
-        actor,
-        "location.read",
-    )
+    from inventory.transfers.custody import scoped_legs
+
+    visible = scoped_legs(actor)
     lookups = {
         "lot": "lot_id",
         "supply": "lot__supply_id",
@@ -150,7 +149,10 @@ def filter_movements(query: QuerySet[Any], request: Request) -> QuerySet[Any]:
         "created_at_before": "created_at__lt",
     }
     for name, value in values.items():
-        if name in ("lot", "supply"):
+        if name == "lot":
+            if not visible.filter(lot_id=value).exists():
+                raise Http404
+        elif name == "supply":
             require_relation(actor, (name, value), "lot.read")
         elif (
             name in ("operation", "piece")

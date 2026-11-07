@@ -32,6 +32,15 @@ def vector_allows(  # noqa: PLR0913 -- permission with the complete resolved sub
     )
 
 
+def subject_allows(scope: EffectiveScope, permission: str, subjects: SubjectFacts) -> bool:
+    """Transfer policy owns its stronger one-binding vector; old owner semantics remain exact."""
+    if subjects.resource_kind == "transfer":
+        from inventory.transfers.scope import allows_transfer_vector
+
+        return subjects.resolved and allows_transfer_vector(scope, permission, subjects.contexts)
+    return vector_allows(scope, permission, subjects.contexts, subjects.resolved)
+
+
 def _allows_context(scope: EffectiveScope, permission: str, context: dict[str, Any]) -> bool:
     center, quadrant = context["center_id"], context["quadrant_id"]
     if center is None:
@@ -69,6 +78,26 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
     if data is None:
         return SubjectFacts()
     try:
+        if envelope.type in {"transfer.dispatch", "transfer.receive"}:
+            from inventory.transfers.models import Transfer
+            from inventory.transfers.scope import transfer_contexts
+
+            transfer = (
+                Transfer.objects.filter(organization=organization, pk=data["transfer_id"])
+                .select_related("origin", "destination")
+                .first()
+            )
+            return (
+                SubjectFacts()
+                if transfer is None
+                else SubjectFacts(
+                    True,
+                    transfer_contexts(transfer),
+                    "transfer",
+                    transfer.pk,
+                    {"transfer_action": envelope.type},
+                )
+            )
         if envelope.type.startswith("ovitrap."):
             return _point_subject(organization, data)
         if envelope.type == "record.void":

@@ -84,6 +84,7 @@ const LOT_BASE: Schemas["Lot"] = {
   quadrant: null,
   protocol_id: INVENTORY_PROTOCOL,
   initial_location_id: INVENTORY_LOCATION,
+  safety_location_id: INVENTORY_LOCATION,
   location_version_id: "00000000-0000-4000-8000-000000000010",
   location_version: {
     id: "00000000-0000-4000-8000-000000000010",

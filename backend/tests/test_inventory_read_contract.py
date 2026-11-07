@@ -64,6 +64,51 @@ def test_authenticated_schema_metadata_does_not_require_inventory_option_targets
         "/api/v1/locations/placement-options/",
         "/api/v1/supply-types/protocol-incident-type-options/",
     } <= response.json()["paths"].keys()
+    schema = response.json()
+    lot_detail = schema["paths"]["/api/v1/lots/{id}/"]
+    detail_query = {
+        parameter["name"]: {**parameter, "required": parameter.get("required", False)}
+        for parameter in lot_detail["get"]["parameters"]
+        if parameter["in"] == "query"
+    }
+    assert detail_query == {
+        "custody_location": {
+            "in": "query",
+            "name": "custody_location",
+            "required": False,
+            "schema": {"type": "string", "format": "uuid"},
+        }
+    }
+    list_context = next(
+        parameter
+        for parameter in schema["paths"]["/api/v1/lots/"]["get"]["parameters"]
+        if parameter["name"] == "custody_location"
+    )
+    assert list_context == detail_query["custody_location"]
+    assert not any(parameter["in"] == "query" for parameter in lot_detail["patch"]["parameters"])
+    body = schema["paths"]["/api/v1/lots/{id}/conditions/"]["post"]["requestBody"]
+    assert body["required"] is True
+    capture_name = body["content"]["application/json"]["schema"]["$ref"].split("/")[-1]
+    assert {"$ref": "#/components/schemas/ConditionWriteRequest"} in schema["components"][
+        "schemas"
+    ][capture_name]["oneOf"]
+    assert schema["components"]["schemas"]["ConditionWriteRequest"] == {
+        "type": "object",
+        "properties": {
+            "device_time": {"type": "string", "format": "date-time"},
+            "temperature_c": {
+                "type": "string",
+                "format": "decimal",
+                "pattern": r"^-?\d{0,6}(?:\.\d{0,6})?$",
+            },
+            "humidity_pct": {
+                "type": "string",
+                "format": "decimal",
+                "pattern": r"^-?\d{0,3}(?:\.\d{0,6})?$",
+            },
+        },
+        "required": ["device_time", "humidity_pct", "temperature_c"],
+    }
     connection_guard.assert_not_called()
 
 

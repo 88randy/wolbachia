@@ -43,6 +43,7 @@ class LotSafetySnapshot:
     is_insecticide_free: bool | None
     slots: frozenset[int]
     unresolved_breaches: tuple[str, ...]
+    transfer_holds: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -63,6 +64,8 @@ def evaluate_lot(snapshot: LotSafetySnapshot, at: datetime) -> LotSafety:
         blockers.extend(_biological_blockers(snapshot))
     if snapshot.unresolved_breaches:
         blockers.append("condition_breach")
+    if snapshot.transfer_holds:
+        blockers.append("transfer_discrepancy_hold")
     status = "draft" if snapshot.missing_fields else ("blocked" if blockers else "available")
     return LotSafety(status, snapshot.missing_fields, tuple(blockers))
 

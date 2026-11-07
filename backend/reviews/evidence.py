@@ -7,7 +7,7 @@ from django.http import Http404
 from reviews.exceptions import ReviewBlockedError
 from reviews.inspection import original_source_envelope
 from reviews.models import ReviewItem
-from reviews.scope import subject_facts, vector_allows
+from reviews.scope import subject_allows, subject_facts
 from uploads.access import UploadActor, current_scope
 from uploads.limits import FIELD_UPLOAD
 from uploads.models import AttachmentLink, Upload, UploadVerification
@@ -48,9 +48,7 @@ def bind_review_evidence(
             if (
                 upload.uploader_id != actor.user.pk
                 or upload.device_id != actor.device_id
-                or not vector_allows(
-                    current_scope(actor), FIELD_UPLOAD, facts.contexts, facts.resolved
-                )
+                or not subject_allows(current_scope(actor), FIELD_UPLOAD, facts)
             ):
                 raise Http404
             AttachmentLink.objects.create(
