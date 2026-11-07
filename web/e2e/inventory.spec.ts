@@ -195,9 +195,18 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   await expect(page.getByRole("textbox", { name: "Cantidad inicial", exact: true })).toBeDisabled();
   await page.getByRole("link", { name: "Volver a la lista", exact: true }).click();
   await page.getByRole("link", { name: "2", exact: true }).click();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === `/inventory/locations/${inventoryLocation().code}` &&
+      url.searchParams.get("view") === "movements" &&
+      url.searchParams.get("lot") === server.lot.id,
+  );
+  const stockTab = page.getByRole("tab", { name: "Existencias", exact: true });
+  await stockTab.click();
+  await expect(stockTab).toHaveAttribute("aria-selected", "true");
   await selectInventorySort(page, `/api/v1/locations/${INVENTORY_LOCATION}/stock/`, "-piece_id");
-  await expect(page.getByText(INVENTORY_ADMISSION, { exact: true })).toBeVisible();
   await page.getByRole("link", { name: INVENTORY_OPERATION, exact: true }).click();
+  await expect(page.getByText(INVENTORY_ADMISSION, { exact: true })).toBeVisible();
   await selectInventorySort(
     page,
     `/api/v1/locations/${INVENTORY_LOCATION}/movements/`,
