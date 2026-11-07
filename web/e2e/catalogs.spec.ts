@@ -92,10 +92,22 @@ test("W63: add, edit, keyboard reorder, cancel a drag, deactivate with Undo", as
   await handle.dragTo(page.getByRole("button", { name: "Reordenar: Rociado" }));
   await expect(rows.nth(1)).toContainText("Actualizada");
   await page.getByRole("button", { name: "Deshacer", exact: true }).click();
+  const deactivation = page.waitForResponse(
+    (response) => response.url().endsWith("/deactivate/") && response.request().method() === "POST",
+  );
   await added.getByRole("button", { name: "Desactivar", exact: true }).click();
+  const receipt = await deactivation;
+  const sentVersion = (receipt.request().postDataJSON() as { version: number }).version;
+  expect(Number.isSafeInteger(sentVersion)).toBe(true);
+  const returnedVersion = ((await receipt.json()) as { catalog_version: number }).catalog_version;
+  expect(returnedVersion).toBeGreaterThan(sentVersion);
   await expect(added).toContainText("Desactivado");
   await expect(page.getByRole("dialog")).toHaveCount(0);
+  const activation = page.waitForRequest(
+    (request) => request.url().endsWith("/activate/") && request.method() === "POST",
+  );
   await page.getByRole("button", { name: "Deshacer", exact: true }).click();
+  expect((await activation).postDataJSON()).toEqual({ version: returnedVersion });
   await expect(added).toContainText("Activo");
   await expect(rows.last()).toContainText("Otro (especificar)");
   await expectNoAxeViolations(page);

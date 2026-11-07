@@ -29,7 +29,10 @@ export async function mockCatalogs(page: Page) {
     if (request.method() === "GET")
       return json(route, catalogItemFixturePage(readItems(state), request.url()));
     const body = (request.postData() ? request.postDataJSON() : {}) as WriteBody;
-    if (path.endsWith("/reorder/") && body.version !== state.version)
+    if (
+      ["/reorder/", "/activate/", "/deactivate/"].some((action) => path.endsWith(action)) &&
+      body.version !== state.version
+    )
       return route.fulfill({
         status: 409,
         json: { code: "catalog_version_conflict", detail: "Catalog changed." },

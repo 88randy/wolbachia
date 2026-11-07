@@ -1,5 +1,10 @@
 import type { refresh as source } from "../es-MX/refresh.ts";
 export const refresh: Record<keyof typeof source, string> = {
+  "refresh.availability.conflict":
+    "The catalog changed. Review the current state before another action.",
+  "refresh.availability.uncertain":
+    "We could not confirm the change. Review the current state before another action.",
+  "refresh.availability.review": "Review current state",
   "refresh.filters.catalogNavigation": "Find or sort catalogs",
   "refresh.filters.catalogPager": "Catalog pages",
   "refresh.filters.catalogsSearch": "Search catalogs",

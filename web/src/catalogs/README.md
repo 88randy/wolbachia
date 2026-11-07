@@ -17,7 +17,14 @@ omits the server facet; legacy `include_deactivated=true` preserves All. Clearin
 selects All explicitly. Search, inactive-only and alternate ordering disable drag with a notice.
 The sole draggable explicit order, sort ascending, also applies to the complete canonical query
 so both participating snapshots use the same server tie-breaking semantics.
-Configuration is deactivated or reactivated directly with optimistic feedback and session-guarded Undo, never voided.
+Configuration is deactivated or reactivated directly with optimistic feedback, never voided.
+Availability sends the displayed item catalog_version in the generated optional-version
+request. It captures and validates its own response item/state/catalog_version before
+query invalidation; only this exact receipt can authorize Undo. A newer read cannot
+replace that revision. A 409 refreshes current rows without an inverse effect. Lost,
+5xx or malformed success responses remain uncertain, offer read-only review and never
+replay. Session/view transitions (including A-B-A) and a newer availability attempt
+retire old receipts; optimistic state applies only to the originating row revision.
 Permissions independently hide create, edit/move, deactivate and activate controls.
 
 Reorder uses a visible focusable grip with pointer/keyboard dnd-kit sensors, moving active non-Other items in the full server-ordered id list and
@@ -27,8 +34,8 @@ visible rows used to form that drag, captured at pickup within one session/grant
 Neither a newer canonical read nor the separately cached catalog metadata authorizes an
 action based on older displayed rows. Undo instead uses its explicit returned revision. When pages straddle a
 write, the minimum may produce a spurious 409, which is safe. The server normalizes sorts atomically;
-Other stays fixed and inactive items keep their sort. Every completed attempt
-invalidates both catalog and item queries. A 409 catalog_version_conflict maps to a
+Other stays fixed and inactive items keep their sort. Every current completed attempt
+invalidates both catalog and item queries; obsolete view/session outcomes do not. A 409 catalog_version_conflict maps to a
 localized retry message, never server detail. Optimistic order replaces only active slots. Undo uses the version returned by that successful write; a newer server change makes Undo fail with the same conflict notice.
 
 Mutations use `useSessionGuard`: compare only the captured/current session revision,

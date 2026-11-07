@@ -1,5 +1,12 @@
+import { useCatalogAvailabilityContext } from "./use-catalog-availability-context";
 import { useCatalogFeedback } from "./use-catalog-feedback";
 import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
+import { can } from "../session/can";
+import { ME_QUERY_KEY } from "../session/me-key";
+import type { Me } from "../session/me";
+import { isSessionKnown } from "../session/session-revision";
 
 import { useApiClient } from "../api/ApiClientProvider";
 
@@ -22,18 +29,19 @@ export function useCatalogEditor(
   options: Options = {},
 ) {
   const client = useApiClient();
+  const queryClient = useQueryClient();
   const feedback = useCatalogFeedback();
   const write = useCatalogWrite();
+  const view = editorView(slug, items, options);
+  const availability = useCatalogAvailabilityContext(view.viewKey, view.isReady, feedback);
   const [dialog, setDialog] = useState<DialogState | null>(null);
   const path = (id: string) => ({ catalog_slug: slug, id });
   const save = useCatalogSave(slug, write, items);
   return {
     ...feedback,
-    isReady: options.isReady ?? true,
-    canReorder: options.canReorder ?? true,
-    viewKey: options.viewKey ?? slug,
-    displayedVersion:
-      options.displayedVersion ?? Math.min(...items.map((item) => item.catalog_version)),
+    ...availability,
+    ...view,
+    canChangeAvailability: (isActive: boolean) => hasAvailabilityPermission(queryClient, isActive),
     dialog,
     setDialog,
     write,
@@ -42,6 +50,24 @@ export function useCatalogEditor(
     save,
     items,
     slug,
+  };
+}
+/** Read accepted authority at invocation; retained Undo callbacks never capture a permission list. */
+function hasAvailabilityPermission(queryClient: QueryClient, isActive: boolean) {
+  const me = queryClient.getQueryData<Me>(ME_QUERY_KEY);
+  return (
+    isSessionKnown() &&
+    me !== undefined &&
+    can(me, isActive ? "catalog_item.activate" : "catalog_item.deactivate")
+  );
+}
+function editorView(slug: string, items: readonly CatalogItem[], options: Options) {
+  return {
+    isReady: options.isReady ?? true,
+    canReorder: options.canReorder ?? true,
+    viewKey: options.viewKey ?? slug,
+    displayedVersion:
+      options.displayedVersion ?? Math.min(...items.map((item) => item.catalog_version)),
   };
 }
 

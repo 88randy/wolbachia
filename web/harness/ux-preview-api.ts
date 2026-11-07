@@ -1,4 +1,6 @@
 import type { Schemas } from "@wolbachia/api-client";
+import { installInventoryPreview } from "./ux-preview-inventory";
+import { inventoryPreviewPermissions } from "../src/test/inventory-read-fixture";
 import { apiError, createFakeApi, makeMe, noContent } from "../src/test/fake-api";
 import type { RecordedRequest } from "../src/test/fake-api";
 import { CATALOG, CATALOG_ADMIN, catalogRows, makeCatalogItem } from "../src/test/catalog-fixtures";
@@ -14,8 +16,10 @@ export function createUxPreviewApi() {
     "GET /api/v1/me/": Response.json(
       makeMe({
         ...CATALOG_ADMIN,
+        scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
         permissions: [
           ...CATALOG_ADMIN.permissions,
+          ...inventoryPreviewPermissions,
           "device.read",
           "rule_parameter.read",
           "motorcycle.read",
@@ -46,6 +50,7 @@ export function createUxPreviewApi() {
       return Response.json({ version, items: rows });
     },
   });
+  installInventoryPreview(fake);
   const create = (request: RecordedRequest) => {
     const body = request.body as Schemas["CatalogItemCreateRequest"];
     const item = makeCatalogItem({ ...body, id: crypto.randomUUID() });
@@ -62,12 +67,15 @@ export function createUxPreviewApi() {
       return Response.json(rows.find((item) => item.id === id));
     });
     for (const action of ["activate", "deactivate"])
-      fake.setRoute(`POST ${ITEMS}${id}/${action}/`, () => {
+      fake.setRoute(`POST ${ITEMS}${id}/${action}/`, (request) => {
+        const body = request.body as Schemas["CatalogAvailabilityRequest"];
+        if (body.version !== version) return apiError(409, "catalog_version_conflict");
         rows = rows.map((item) =>
           item.id === id ? { ...item, is_active: action === "activate" } : item,
         );
         version += 1;
-        return Response.json(rows.find((item) => item.id === id));
+        const item = rows.find((item) => item.id === id);
+        return Response.json(item && { ...item, catalog_version: version });
       });
   };
   rows.forEach((item) => {

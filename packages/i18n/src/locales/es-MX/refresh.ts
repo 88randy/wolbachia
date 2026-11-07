@@ -1,5 +1,10 @@
 import type { AreaCatalog } from "../area.ts";
 export const refresh = {
+  "refresh.availability.conflict":
+    "El catálogo cambió. Revisa el estado actual antes de otra acción.",
+  "refresh.availability.uncertain":
+    "No pudimos confirmar el cambio. Revisa el estado actual antes de realizar otra acción.",
+  "refresh.availability.review": "Revisar estado actual",
   "refresh.filters.catalogNavigation": "Buscar u ordenar catálogos",
   "refresh.filters.catalogPager": "Paginar catálogos",
   "refresh.filters.catalogsSearch": "Buscar catálogo",

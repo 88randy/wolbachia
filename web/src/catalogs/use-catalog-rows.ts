@@ -11,7 +11,8 @@ export function useCatalogRows(items: TableData<CatalogItem>) {
   const editor = useCatalogEditorContext();
   const drag = useCatalogDrag(items, editor);
   const rows = orderedRows(drag.rows, editor.optimisticOrder).map((item) =>
-    editor.optimisticAvailability?.id === item.id
+    editor.optimisticAvailability?.id === item.id &&
+    editor.optimisticAvailability.version === item.catalog_version
       ? { ...item, is_active: editor.optimisticAvailability.isActive }
       : item,
   );

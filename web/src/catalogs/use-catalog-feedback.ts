@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useLanguage } from "../i18n/use-language";
 import { useToast } from "../ui/toast-context";
 import { useSessionGuard } from "../session/use-session-guard";
-type Availability = { id: string; isActive: boolean };
+type Availability = { id: string; isActive: boolean; version: number };
 /** Optimistic state and notices share the identity- and catalog-scoped editor lifetime. */
 export function useCatalogFeedback() {
   const revision = useSyncExternalStore(subscribeToRevision, currentRevision);

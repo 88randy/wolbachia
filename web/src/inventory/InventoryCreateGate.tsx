@@ -9,6 +9,7 @@ import { creationTargetOf, inventoryCreationAccessOptions } from "./inventory-cr
 import type { InventoryKind, InventoryRecord } from "./inventory-links";
 interface Props {
   kind: InventoryKind;
+  onCancel?: () => void;
   onSaved: (record: InventoryRecord) => void;
 }
 export function InventoryCreateGate(props: Props) {

@@ -4,6 +4,17 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#287 adds the active-DeviceBearer GET /field/ovitrap-advisories/{id}/ with mandatory
+aware `at`. Its optional point-wide OP03 aggregate requires BOTH existing paired
+field.bootstrap and field_event.sync authorities; no new grant or capture permission.
+Read `state` before using nullable result fields. Rule context carries actual
+parameter version/value/effective_from tuples; it is not original capture proof.
+ETag depends on computed state/content: future_cutoff can become available when
+the clock reaches at without business writes, so revalidate rather than trusting
+unchanged stored facts. A new unproved offline cutoff remains unavailable. No new
+bootstrap/feed/queue/geometry/task or mobile integration is added. See the
+[advisory contract](../../docs/api-conventions.md#scoped-relocation-advisory-287).
+
 #126 adds approve/reject relocation decisions, observational quadrant readiness,
 atomic epoch closure and separate intervention.read/create routes. The single typed
 CourierHistoryEntry is a discriminated union of its retained review/shift branch

@@ -3,7 +3,8 @@ import { invalidateCatalogs } from "./catalogs-query";
 import { act, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { apiError, createFakeApi, makeMe } from "../test/fake-api";
+import { apiError, createFakeApi, makeMe, FAKE_IDENTITY } from "../test/fake-api";
+import { commitKnown, readToken } from "../session/session-controller";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 import { pageOf } from "../test/rules-fixtures";
@@ -112,40 +113,98 @@ test("availability is announced by segments and English fallback remains editabl
     within(screen.getByRole("dialog")).getByText("No English label: using Spanish."),
   ).toBeDefined();
 });
-test("deactivation applies directly and its session-scoped Undo reactivates", async () => {
-  let rows = catalogRows();
-  const { api } = await open({
-    routes: {
-      [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
-      [`POST ${ITEMS_PATH}item-a/deactivate/`]: () => {
-        rows = rows.map((item) => (item.id === "item-a" ? { ...item, is_active: false } : item));
-        return Response.json(makeCatalogItem({ is_active: false }));
+test.each([
+  { isActive: true, grants: "both" },
+  { isActive: false, grants: "both" },
+  { isActive: true, grants: "initial-only" },
+  { isActive: false, grants: "initial-only" },
+  { isActive: true, grants: "revoked" },
+  { isActive: false, grants: "revoked" },
+])(
+  "availability $isActive Undo requires its own current inverse grant: $grants",
+  async ({ isActive, grants }) => {
+    const initial = isActive ? "deactivate" : "activate";
+    const inverse = isActive ? "activate" : "deactivate";
+    const permissions = ["catalog.read", `catalog_item.${initial}`];
+    let rows = catalogRows().map((item) =>
+      item.id === "item-a" ? { ...item, is_active: isActive } : item,
+    );
+    const { api, app } = await open({
+      permissions:
+        grants === "initial-only" ? permissions : [...permissions, `catalog_item.${inverse}`],
+      path: `${CATALOG_PATH}?is_active=all`,
+      routes: {
+        [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
+        [`POST ${ITEMS_PATH}item-a/${initial}/`]: () => {
+          rows = rows.map((item) => ({
+            ...item,
+            catalog_version: 1,
+            is_active: item.id === "item-a" ? !isActive : item.is_active,
+          }));
+          return Response.json(makeCatalogItem({ is_active: !isActive, catalog_version: 1 }));
+        },
+        [`POST ${ITEMS_PATH}item-a/${inverse}/`]: () => {
+          rows = rows.map((item) => ({
+            ...item,
+            catalog_version: 2,
+            is_active: item.id === "item-a" ? isActive : item.is_active,
+          }));
+          return Response.json(makeCatalogItem({ is_active: isActive, catalog_version: 2 }));
+        },
       },
-      [`POST ${ITEMS_PATH}item-a/activate/`]: () => {
-        rows = rows.map((item) => (item.id === "item-a" ? { ...item, is_active: true } : item));
-        return Response.json(makeCatalogItem());
-      },
-    },
-  });
-  const user = userEvent.setup();
-  await user.click(
-    within(screen.getByRole("row", { name: /spraying/ })).getByRole("button", {
-      name: "Desactivar",
-    }),
-  );
-  expect(await screen.findByRole("button", { name: "Deshacer" })).toBeDefined();
-  expect(
-    within(screen.getByRole("row", { name: /spraying/ })).getByText("Desactivado"),
-  ).toBeDefined();
-  await user.click(screen.getByRole("button", { name: "Deshacer" }));
-  await waitFor(() => {
-    expect(within(screen.getByRole("row", { name: /spraying/ })).getByText("Activo")).toBeDefined();
-  });
-  expect(screen.queryByRole("dialog")).toBeNull();
-  expect(
-    api.requests.filter((request) => request.method === "POST").map((request) => request.body),
-  ).toEqual([undefined, undefined]);
-});
+    });
+    const user = userEvent.setup();
+    await user.click(
+      within(screen.getByRole("row", { name: /spraying/ })).getByRole("button", {
+        name: isActive ? "Desactivar" : "Reactivar",
+      }),
+    );
+    await screen.findAllByText("Cambios guardados.");
+    if (grants === "initial-only") {
+      expect(screen.queryByRole("button", { name: "Deshacer" })).toBeNull();
+      expect(
+        api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+      ).toEqual([{ version: 0 }]);
+      return;
+    }
+    const undo = screen.getByRole("button", { name: "Deshacer" });
+    expect(
+      within(screen.getByRole("row", { name: /spraying/ })).getByText(
+        isActive ? "Desactivado" : "Activo",
+      ),
+    ).toBeDefined();
+    if (grants === "revoked") {
+      const me = makeMe({ permissions });
+      api.setRoute("GET /api/v1/me/", Response.json(me));
+      act(() => {
+        expect(
+          commitKnown(app.queryClient, readToken(), {
+            me,
+            attestation: FAKE_IDENTITY,
+            passive: true,
+          }),
+        ).toBe(true);
+      });
+      await user.click(undo);
+      expect(
+        api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+      ).toEqual([{ version: 0 }]);
+      return;
+    }
+    await user.click(undo);
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole("row", { name: /spraying/ })).getByText(
+          isActive ? "Activo" : "Desactivado",
+        ),
+      ).toBeDefined();
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+    ).toEqual([{ version: 0 }, { version: 1 }]);
+  },
+);
 
 test("a late submit after a same-identity revision change keeps the draft without extra refetches", async () => {
   let resolve!: (answer: Response) => void;
