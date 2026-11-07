@@ -17,6 +17,7 @@ import { FLEET_PAGE_SIZE } from "./fleet-table";
 import { TAB_KEYS } from "./use-fleet-tabs";
 import { FleetFilters } from "./FleetFilters";
 import { FleetHistoryVoidDialog } from "./FleetHistoryVoidDialog";
+import styles from "./fleet.module.css";
 interface Props {
   motorcycle: string;
   tab: HistoryTab;
@@ -57,16 +58,18 @@ function HistoryRows({ model, tab }: { model: Model; tab: HistoryTab }) {
   const format = useFormatDateTime();
   const reasonLabel = useVoidReasonLabel();
   return (
-    <DataTable<HistoryRow>
-      caption={t(TAB_KEYS[tab])}
-      columns={model.columns}
-      getRowId={(row) => row.id}
-      controller={model.controller}
-      data={pageTableData(model.query, model.controller.state.page, FLEET_PAGE_SIZE)}
-      voidOf={(row) =>
-        "voided_at" in row ? voidInfoOf(row, author, { formatWhen: format, reasonLabel }) : null
-      }
-    />
+    <div className={styles.history}>
+      <DataTable<HistoryRow>
+        caption={t(TAB_KEYS[tab])}
+        columns={model.columns}
+        getRowId={(row) => row.id}
+        controller={model.controller}
+        data={pageTableData(model.query, model.controller.state.page, FLEET_PAGE_SIZE)}
+        voidOf={(row) =>
+          "voided_at" in row ? voidInfoOf(row, author, { formatWhen: format, reasonLabel }) : null
+        }
+      />
+    </div>
   );
 }
 export function FleetHistory(props: Props) {

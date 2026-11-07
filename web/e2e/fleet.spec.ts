@@ -1,6 +1,6 @@
 import { expect, test } from "./fixtures/test";
 import type { Schemas } from "@wolbachia/api-client";
-import type { Page, Route } from "@playwright/test";
+import type { Locator, Page, Route } from "@playwright/test";
 import { Buffer } from "node:buffer";
 import { makeMe } from "../src/test/fake-api";
 import { STORAGE_KEYS } from "../src/storage/safe-storage";
@@ -336,6 +336,22 @@ function clearanceLabels(language: LocaleCell["language"]) {
         download: "Descargar evidencia autorizada",
       };
 }
+async function expectReadableHistoryAction(button: Locator) {
+  const layout = await button.evaluate((element) => {
+    const identity = element.closest("tr")?.querySelector("td a")?.firstChild;
+    if (!(identity instanceof Text)) throw new Error("Missing complete history identity");
+    const range = document.createRange();
+    range.setStart(identity, 0);
+    range.setEnd(identity, 4);
+    const rect = element.getBoundingClientRect();
+    const target = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+    return {
+      identityFirstFourFit: range.getClientRects().length === 1,
+      actionCenterExposed: target !== null && element.contains(target),
+    };
+  });
+  expect(layout).toEqual({ identityFirstFourFit: true, actionCenterExposed: true });
+}
 async function exerciseClearance(page: Page, cell: LocaleCell, fleet: FleetMock) {
   const labels = clearanceLabels(cell.language);
   await recordTab(page, labels.incidents).click();
@@ -344,6 +360,7 @@ async function exerciseClearance(page: Page, cell: LocaleCell, fleet: FleetMock)
   });
   await expect(button).toHaveAttribute("aria-disabled", "false");
   await button.focus();
+  await expectReadableHistoryAction(button);
   await page.keyboard.press("Enter");
   const dialog = page.getByRole("dialog");
   const cancel = dialog.getByRole("button", { name: labels.cancel, exact: true });

@@ -6,12 +6,18 @@ import type { MotorcycleDetail } from "./fleet-query";
 import type { useFleetOperations } from "./use-fleet-operations";
 import { ServiceRecordDialog } from "./ServiceRecordDialog";
 import { FaultClearanceDialog } from "./FaultClearanceDialog";
-function OperationDialog({ operations }: { operations: ReturnType<typeof useFleetOperations> }) {
+function OperationDialog({
+  operations,
+  scope,
+}: {
+  operations: ReturnType<typeof useFleetOperations>;
+  scope: FleetRecordScope;
+}) {
   if (!operations.visible || !operations.draft) return null;
   return operations.draft.kind === "service" ? (
     <ServiceRecordDialog draft={operations.draft} operations={operations} />
   ) : (
-    <FaultClearanceDialog draft={operations.draft} operations={operations} />
+    <FaultClearanceDialog draft={operations.draft} operations={operations} scope={scope} />
   );
 }
 export function FleetRecordOperations({
@@ -40,7 +46,7 @@ export function FleetRecordOperations({
       )}
       <p role="status">{operations.saved ? t("fleet.action.saved") : ""}</p>
       {operations.denied && <p role="alert">{t("fleet.write.denied")}</p>}
-      <OperationDialog operations={operations} />
+      <OperationDialog operations={operations} scope={scope} />
     </>
   );
 }

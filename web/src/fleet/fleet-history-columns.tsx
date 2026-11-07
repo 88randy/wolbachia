@@ -16,6 +16,7 @@ import type { TableState } from "../data-table/table-types";
 import { useFormatCalendarDate } from "../format/use-formatters";
 import { useSearch } from "@tanstack/react-router";
 import { HISTORY_PREFIX } from "./fleet-history-table";
+import styles from "./fleet.module.css";
 type Column = DataTableColumn<HistoryRow>;
 const NUMBER_COLUMNS = new Set(["odometer_km", "interval_km", "interval_days", "litres", "amount"]);
 export interface HistoryActions {
@@ -176,16 +177,17 @@ export function useFleetHistoryColumns(
       scalar("notes", "fleet.history.notes", (row) => ("notes" in row ? row.notes : null)),
     );
   if (tab !== "fuel") columns.push(actionColumn(actions, t));
-  return columns.map((column) =>
-    NUMBER_COLUMNS.has(column.id)
+  return columns.map((column) => ({
+    ...column,
+    cell: (row) => <div className={styles.historyCell}>{column.cell(row)}</div>,
+    ...(NUMBER_COLUMNS.has(column.id)
       ? {
-          ...column,
           link: (row) => ({
             to: "/fleet/motorcycles/$code",
             params: { code },
             search: { ...search, tab, [HISTORY_PREFIX[tab] + "source"]: row.id },
           }),
         }
-      : column,
-  );
+      : {}),
+  }));
 }

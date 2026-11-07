@@ -5,6 +5,7 @@ import { Button } from "../ui/Button";
 import type { HistoryActions } from "./fleet-history-columns";
 import { FleetEvidenceDownload } from "./FleetEvidenceDownload";
 import { FleetFactList } from "./FleetFactList";
+import { fleetClearFocusId } from "./use-fleet-dialog";
 type FaultProps = { fault: Schemas["Incident"]; actions: HistoryActions };
 function ClearanceAudit({ fault, actions }: FaultProps) {
   const { t } = useTranslation();
@@ -37,6 +38,7 @@ function ClearFaultAction({ fault, actions }: FaultProps) {
   return (
     <>
       <Button
+        id={fleetClearFocusId(actions.scope.focusOwner, fault.motorcycle, fault.id)}
         aria-disabled={actions.isUnverified || !actions.state}
         onClick={() => {
           if (!actions.isUnverified && actions.state) actions.onClear(fault, actions.state);

@@ -1,7 +1,8 @@
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
 import { FieldNotes } from "../forms/FieldNotes";
-import { useFleetDialog } from "./use-fleet-dialog";
+import { fleetClearFocusId, useFleetDialog } from "./use-fleet-dialog";
+import type { FleetRecordScope } from "./use-fleet-scope";
 import { FleetFaultEvidence } from "./FleetFaultEvidence";
 import { FleetOperationForm, fleetInputsBlocked } from "./FleetOperationForm";
 import type { FleetOperationProps } from "./FleetOperationForm";
@@ -46,14 +47,15 @@ function ClearanceReason({ draft, operations }: FleetOperationProps) {
     </div>
   );
 }
-export function FaultClearanceDialog({ draft, operations }: FleetOperationProps) {
+export function FaultClearanceDialog(props: FleetOperationProps & { scope: FleetRecordScope }) {
+  const { draft, operations, scope } = props;
   const { t } = useTranslation();
   const title = useId();
-  const modal = useFleetDialog(
-    draft.phase !== "idle",
-    operations.close,
-    `fleet-record-refresh-${draft.motorcycle}`,
-  );
+  const modal = useFleetDialog(draft.phase !== "idle", operations.close, {
+    openerId: fleetClearFocusId(scope.focusOwner, draft.motorcycle, draft.fault?.id ?? ""),
+    fallbackId: `fleet-record-refresh-${draft.motorcycle}`,
+    isCurrent: scope.isCurrent,
+  });
   const verified =
     draft.files.length > 0 && draft.files.every((file) => !!file.verifiedAt && !!file.uploadId);
   return (

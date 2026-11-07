@@ -24,6 +24,10 @@ public route or generated API changes belong to this feature.
   and restores the list address. Removing an unknown tab removes only that key.
   Source links select their real owning tab and say explicitly that the source
   may be off the accepted page. They never scan pages or imply a detail API.
+  Every history heading and cell has a usable width inside the horizontal scroller,
+  including complete UUIDs, actions and nested proof references. Private container
+  sizing reserves room beside the bounded sticky identity instead of collapsing
+  all columns to fit the page. The shared table and its scroller are unchanged.
 - `use-fleet-scope` adds a private route/actor/org/authorization/center entry epoch
   to the existing org query keys. It checks session revision and cancellation
   before and after reads. No response or placeholder crosses a different entry,
@@ -79,8 +83,11 @@ separate facts.
 
 The feature composes canonical Cards, DataTable, form fields, Buttons, native
 modals, status pills, tokens and localized messages. Native dialogs start on
-Cancel, refuse busy Escape/duplicates and restore focus; clearing a disappearing
-fault falls back to that same record's Refresh control. Shared widgets and
+Cancel, refuse busy Escape/duplicates and restore focus to the current logical
+opener even when the table replaces its DOM cell. Its ID contains only an opaque
+React owner/entry epoch and the motorcycle/fault UUIDs, never the authorization
+signature. Only an absent opener in that still-current owner may fall back to
+the record's Refresh control after clearance. Shared widgets and
 canonical #186 behavior are unchanged.
 
 ## Criterion → owning test

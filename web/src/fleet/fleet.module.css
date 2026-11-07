@@ -126,3 +126,37 @@
   font-family: var(--font-family-mono);
   max-width: 100%;
 }
+
+/* Keep readable columns inside the scroller, with room beside the sticky identity. */
+.history {
+  min-inline-size: 0;
+  container-type: inline-size;
+}
+.history th,
+.history td {
+  box-sizing: border-box;
+  inline-size: min(calc(var(--space-6) * 4), 60cqi);
+  min-inline-size: min(calc(var(--space-6) * 4), 60cqi);
+  max-inline-size: min(calc(var(--space-6) * 4), 60cqi);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.history th:first-child,
+.history td:first-child {
+  inline-size: min(calc(var(--space-6) * 2), 40cqi);
+  min-inline-size: min(calc(var(--space-6) * 2), 40cqi);
+  max-inline-size: min(calc(var(--space-6) * 2), 40cqi);
+}
+.historyCell {
+  display: block;
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.history th > :is(button, span) {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}

@@ -30,6 +30,7 @@ function useEntry(signature: string) {
   const latest = useRef(entry);
   latest.current = entry;
   return {
+    focusOwner: `fleet-${owner}-${String(entry.epoch)}`,
     context: `${owner}:${String(entry.epoch)}:${signature}`,
     isCurrent: () => latest.current === entry,
   };
@@ -62,6 +63,7 @@ export function useFleetScope(code: string, urlCenter?: string) {
     code,
     begin,
     context: entry.context,
+    focusOwner: entry.focusOwner,
     isCurrent: () =>
       entry.isCurrent() && isSessionKnown() && identity.revision === currentRevision(),
   };
