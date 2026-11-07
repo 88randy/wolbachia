@@ -181,7 +181,7 @@ def test_internal_audit_hold_query_and_current_device_user_keep_separate_purpose
         )
     client = admin_client(api_client, org_a, make_member)
     assert client.get(DEVICES, {"user": str(ana.pk)}).data["results"] == []
-    row = client.get(f"{DEVICES}{old.device_id}/").data
+    row = client.get(f"{DEVICES}{old.device_id}/").json()
     assert row["last_user"] == str(luis.pk)
     current.refresh_from_db()
     assert current.user_id == luis.pk

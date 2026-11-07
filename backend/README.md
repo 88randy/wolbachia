@@ -126,9 +126,10 @@ cd .. && npm run api:generate             # validate the schema, re-export opena
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
-CI runs every test once across ten serial PostgreSQL partitions (`regular` and
-nine cohorts containing one complete migration-test module each), then the
-original `checks` job validates all ten
+CI runs every test once across eleven internally serial PostgreSQL partitions:
+residual `regular`, one explicit `regular-integration` cohort containing the complete
+B10/B04 modules, and nine singleton complete migration-module cohorts. The
+original `checks` job validates all eleven
 current artifacts and applies the existing 85% gate to their combined statement
 coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
 original test assertions and coverage omit policy are unchanged; Community is added

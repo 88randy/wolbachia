@@ -31,13 +31,18 @@ EXPECTED_COHORTS = {
     "migrations-community": {"tests/test_community_migrations_127.py"},
     "migrations-supplies": {"tests/test_inventory_allocations_migrations_107.py"},
     "migrations-session-audit": {"tests/test_session_audit_migrations_181.py"},
+    "regular-integration": {
+        "tests/test_inventory_allocations_b_10.py",
+        "tests/test_uploads_b_04.py",
+    },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
 
 
 def fragments():
     nodes = ["tests/test_regular.py::test_regular"] + [
-        f"{module}::test_upgrade" for module in sorted(MIGRATION_MODULES)
+        f"{module}::test_upgrade"
+        for module in sorted(module for modules in EXPECTED_COHORTS.values() for module in modules)
     ]
     identity = {"repository": "example/repo", "run_id": "12", "run_attempt": "1"}
     results = []
@@ -126,8 +131,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 10
-        )  # One regular node and nine whole migration owners.
+            validate_fragments(bundles, expected) == 12
+        )  # Residual regular, nine migration owners and two complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -140,17 +145,33 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
     from ci import contract, pytest_plugin
 
     bundles, _ = fragments()
-    nodes = bundles[0]["session"]["all"]
+    collected = bundles[0]["session"]["all"]
+    nodes = [
+        *collected[:2],
+        "tests/test_uploads_b_04.py::test_earlier_case",
+        *collected[2:],
+        "tests/test_inventory_allocations_b_10.py::test_later_case",
+    ]
     parts = partition_nodes(nodes)
     assert tuple(parts) == EXPECTED_PARTITIONS
     assert parts["regular"] == nodes[:1]
     for shard, modules in EXPECTED_COHORTS.items():
         assert parts[shard] == [node for node in nodes if node.split("::")[0] in modules]
     assert sorted(node for selected in parts.values() for node in selected) == sorted(nodes)
-    with pytest.raises(ValueError, match="CI evidence"):
-        partition_nodes(nodes[:-1])
+    for absent in (
+        "tests/test_uploads_b_04.py",
+        "tests/test_inventory_allocations_migrations_107.py",
+    ):
+        with pytest.raises(ValueError, match="CI evidence"):
+            partition_nodes([node for node in nodes if node.split("::")[0] != absent])
     for malformed in (
         {**EXPECTED_COHORTS, "migrations-foundation": set()},
+        {**EXPECTED_COHORTS, "regular-integration": set()},
+        {
+            **EXPECTED_COHORTS,
+            "regular-integration": EXPECTED_COHORTS["regular-integration"]
+            | EXPECTED_COHORTS["migrations-foundation"],
+        },
         {**EXPECTED_COHORTS, "migrations-field": EXPECTED_COHORTS["migrations-foundation"]},
         {
             name: modules | EXPECTED_COHORTS["migrations-void-reason"]
@@ -166,10 +187,19 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         },
     ):
         with monkeypatch.context() as changed:
-            changed.setattr(contract, "MIGRATION_PARTITIONS", malformed)
+            changed.setattr(contract, "MODULE_PARTITIONS", malformed)
             with pytest.raises(ValueError, match="CI evidence"):
                 partition_nodes(nodes)
     assert_partition_workflow()
+    assert (
+        frozenset(
+            module
+            for name, modules in EXPECTED_COHORTS.items()
+            if name != "regular-integration"
+            for module in modules
+        )
+        == MIGRATION_MODULES
+    )
     monkeypatch.setattr(pytest_plugin, "BACKEND", tmp_path)
     for module in MIGRATION_MODULES:
         path = tmp_path / module

@@ -63,7 +63,9 @@ def retention_clock(monkeypatch, settings):
 
 
 def ended_session(**fields):
-    return DeviceSessionFactory(revoked_at=OLD, revoke_reason=RevokeReason.LOGOUT, **fields)
+    return DeviceSessionFactory(
+        **{"revoked_at": OLD, "revoke_reason": RevokeReason.LOGOUT, **fields}
+    )
 
 
 def expired_pair(**fields):

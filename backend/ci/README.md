@@ -5,7 +5,7 @@ not import it. No new Python dependency, application behavior or migration is in
 
 `python -m ci.runner <partition>` collects the complete ordered pytest inventory,
 then executes one disjoint selection serially. The single closed registry
-`contract.MIGRATION_PARTITIONS` declares these whole-module cohorts:
+`contract.MODULE_PARTITIONS` declares these whole-module cohorts:
 
 - `migrations-foundation`: inventory105.
 - `migrations-field`: geography.
@@ -16,11 +16,14 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-community`: community127.
 - `migrations-supplies`: courier-supplies107.
 - `migrations-session-audit`: session-audit181.
+- `regular-integration`: complete B10 supplies and B04 private-upload test modules.
 
-`regular` retains exactly the complement of the nine migration modules. The
+`regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
-detector; no second module registry exists. Every cohort must contain exactly one
-whole module and no module can belong to two cohorts. Each selection retains its original collected
+detector; the explicitly ordinary `regular-integration` cohort is excluded from that
+derived migration-only subset. No second module registry exists. Every migration
+cohort contains exactly one whole module; the ordinary cohort retains both whole
+modules. No module can belong to two cohorts. Each selection retains its original collected
 order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
 `-m`, external `PYTEST_ADDOPTS`,
@@ -49,9 +52,9 @@ migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires all ten matrix results to succeed. It runs
+The original `checks` job first requires all eleven matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-ten exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+eleven exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
@@ -65,7 +68,7 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: all ten fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all eleven fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
@@ -75,10 +78,10 @@ cannot pass it. It executes no tests and emits no fragment or passing-test count
 `PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
 protection or repository setting is changed.
 
-All ten test jobs and final `checks` keep their 15-minute timeout and standard runner.
-The ten PostgreSQL test services and final drift service duplicate setup work and can
+All eleven test jobs and final `checks` keep their 15-minute timeout and standard runner.
+The eleven PostgreSQL test services and final drift service duplicate setup work and can
 increase runner-minutes/storage. Session-audit181 adds one complete upgrade-owner
-cohort to the canonical nine-partition workflow, including its own setup/service;
+cohort to the canonical ten-partition workflow, including its own setup/service;
 tests still execute exactly once. The target is at least three minutes' headroom per
 job, to be measured in actual changed-head CI. Historic adjacent log intervals are
 not individual test/SQL timings and no host-resource cause or speedup is certified.
@@ -110,3 +113,22 @@ This retains every owner and assertion, adds service/setup/runner-minutes, and d
 not predict a speedup. Collection/offline graph checks do not execute SQL. Fresh
 changed-head CI must measure every cohort against the three-minute headroom target.
 No timeout/classifier cut or local non-PostgreSQL substitute qualifies it.
+
+## Ordinary integration cohort (#314)
+
+Run 42404126772/attempt 1 at source `518aedfb7d1388709431b4f3bc09c8c19a013e9a`
+passed 2,221 regular cases in 735.78s pytest / 764s job wall: 136s margin to 900,
+44s below the 180s target. The existing regular artifact reports 27 B10 nodes with
+57.008s summed setup/call/teardown and 35 B04 nodes with 38.321s, together 62 nodes
+and 95.329s observed phases. The 101.48s initial setup belongs to the original
+first selected case; it is not attributed to SQL/host/cache or removed from the
+remaining regular selection. These observations justify one explicit ordinary
+cohort, not product/test rewrites or a guaranteed wall-time reduction.
+
+Both modules keep every original case, assertion and collected order. The other
+regular modules remain in the residual `regular` cohort; all nine complete
+MigrationExecutor modules remain independently classified by their real AST owner.
+The unchanged final gate requires all eleven current fragments, including the ordinary
+cohort. Its additional standard service/setup/runner-minutes are explicit; actual
+final-head CI must measure every wall time/margin and the unchanged coverage union.
+No paid runner, retry, skip, timeout or coverage exception is introduced.
