@@ -13,16 +13,18 @@ from rest_framework.response import Response
 from core.filters import CodeLookupFilter
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
+from lab.facade import BagLabActions, ReadingLabActions
+from lab.permissions import BAG_RECEIVE, COUNT_CREATE, REJECTION_CREATE
 from ovitraps.lifecycle.serializers import OvitrapHistorySerializer
 from ovitraps.models import Bag, Ovitrap, OvitrapReading
 from ovitraps.permissions import OVITRAP_READ, READING_READ
 from ovitraps.selectors import filter_records
 from ovitraps.serializers import (
+    BagQuerySerializer,
     BagSerializer,
     IdentityQuerySerializer,
     OvitrapSerializer,
     ReadingSerializer,
-    RecordQuerySerializer,
 )
 
 
@@ -84,23 +86,50 @@ class OvitrapViewSet(RecordViewSet):
         return Response(OvitrapHistorySerializer(ovitrap_history(self.get_object())).data)
 
 
-class ReadingViewSet(RecordViewSet):
+class ReadingViewSet(ReadingLabActions, RecordViewSet):
+    http_method_names = ["get", "post", "head", "options"]
     queryset = OvitrapReading.objects.select_related(
         "event", "ovitrap__sampling_point__block__quadrant", "bag"
     )
     serializer_class = ReadingSerializer
-    required_permissions = {"list": READING_READ, "retrieve": READING_READ}
+    required_permissions = {"list": READING_READ, "retrieve": READING_READ, "receive": BAG_RECEIVE}
 
 
-@extend_schema_view(list=extend_schema(parameters=[RecordQuerySerializer]))
-class BagViewSet(RecordViewSet):
+@extend_schema_view(list=extend_schema(parameters=[BagQuerySerializer]))
+class BagViewSet(BagLabActions, RecordViewSet):
+    http_method_names = ["get", "post", "head", "options"]
     queryset = Bag.objects.select_related(
         "event", "reading__ovitrap__sampling_point__block__quadrant"
     )
     serializer_class = BagSerializer
-    required_permissions = {"list": READING_READ, "retrieve": READING_READ}
-    query_serializer_class = RecordQuerySerializer
+    required_permissions = {
+        "list": READING_READ,
+        "retrieve": READING_READ,
+        "receive": BAG_RECEIVE,
+        "mark_missing": BAG_RECEIVE,
+        "counts": COUNT_CREATE,
+        "rejections": REJECTION_CREATE,
+    }
+    query_serializer_class = BagQuerySerializer
     code_lookup_field = "code"
     filter_backends = [CodeLookupFilter, SearchFilter, OrderingFilter]
     search_fields = ["code"]
     ordering_fields = ["code", "created_at"]
+
+    def get_queryset(self) -> QuerySet[Any]:
+        rows = super().get_queryset()
+        if (
+            getattr(self, "swagger_fake_view", False)
+            or self.action != "list"
+            or "lab_status" not in self.request.query_params
+        ):
+            return rows
+        from lab.access import scoped_bags
+        from lab.selectors import annotate_lab_bags
+        from uploads.access import actor_from_request
+
+        # A lab status filter is an action-specific read, never a reading.read upgrade.
+        visible = scoped_bags(actor_from_request(self.request), BAG_RECEIVE)
+        return annotate_lab_bags(rows.filter(pk__in=visible)).filter(
+            **{"lab_status": self.request.query_params["lab_status"]}
+        )

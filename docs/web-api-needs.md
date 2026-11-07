@@ -207,3 +207,21 @@ The merged B-01 serializers are authoritative: country is read-only; profile sco
 W63 (#35): the boolean `in_use` is shown with an accessible icon/text badge in Status.
 The usage count, authorship and atomic reorder remain follow-up #182; the editor omits
 the design's count and author columns until the API provides those fields.
+
+## Laboratory API boundary (#114)
+
+B-18 supplies the real Bag/Reading reception/count/rejection/correction APIs in
+api-conventions.md, including current action-scoped queue and exact committed
+next/replay snapshots, minimal SUP void contexts, public incident policy and named
+method verification. Unknown scans create no parent. A missing method explicitly
+blocks viability/rejection while simple counting remains available. Null/zero,
+has_eggs=false, no effective reading, rejection and pending independent QA remain
+distinct. The two rule labels use the current configuration UI/i18n pattern.
+
+This backend change supplies no Lab client screen or scanner workflow. A future
+client must retain command UUID/input, current org/session/paired authority, drafts
+and ambiguous-write recovery, and must not select a new next candidate on a lost
+reply. It must present actual method/configuration blockers and exact source proof,
+not invent scientific defaults or delivery. #115 owns independent execution/blind
+adjudication/paddle reuse; durable RecountRequest ids are the handoff, not a claim
+that those operations already ran. Evidence follows the real sixth Lab parent.

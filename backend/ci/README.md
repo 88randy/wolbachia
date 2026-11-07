@@ -5,7 +5,7 @@ not import it. No new Python dependency, application behavior or migration is in
 
 `python -m ci.runner regular` and `python -m ci.runner migrations` each collect the
 complete ordered pytest inventory, then execute disjoint selections serially. The
-five whole modules in `contract.MIGRATION_MODULES` retain their original upgrade,
+six whole modules in `contract.MIGRATION_MODULES` retain their original upgrade,
 raw-SQL, protected reverse and restoration assertions. A direct MigrationExecutor
 owner outside that manifest fails collection. No `-k`, `-m`, external `PYTEST_ADDOPTS`,
 xdist, skipped/xfail success or automatic retry is accepted. Adding a new owner
@@ -28,7 +28,7 @@ incomplete evidence cannot become a successful fragment.
 
 Shard coverage is **data only** (`--cov-report= --cov-fail-under=0`), never a passing
 whole-backend percentage. The existing coverage source/omit configuration remains
-unchanged: 15 configured apps, migrations/WSGI/ASGI omitted, and the historical
+unchanged except the new Lab domain: 16 configured apps, migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 

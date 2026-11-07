@@ -294,3 +294,14 @@ escalation, plus an after-commit durable B-07 producer/recovery task. There rema
 one /incidents/ facade: GET defaults to the unchanged fleet contract; kind=reported
 selects rich incidents. See incidents/README.md for explicit roster/SLA requirements,
 lock order, private #102 evidence and external #49/#113/#246 boundaries.
+
+## Laboratory reception and counts (#114)
+
+lab/ implements real Bag/Reading reception, immutable first-pass observations and
+named-method viability/rejection, reasoned correction, durable independent-QA
+requests and closed-local-day sampling. It shares the existing private upload and
+typed history owners. Unknown scans create nothing; no method or delivery is
+invented. #115 owns independent execution/adjudication and paddle reuse. See
+lab/README.md for current paired authority, exact replay, configuration gates,
+lock/SQL boundaries and criterion owners. Lab is covered and strict; the existing
+combined statement-coverage gate stays 85%.
