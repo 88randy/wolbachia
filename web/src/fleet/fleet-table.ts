@@ -4,7 +4,7 @@ export const FLEET_PAGE_SIZE = 25;
 export const FLEET_TABLE: TableQueryConfig = {
   paging: "page",
   pageSize: FLEET_PAGE_SIZE,
-  sortableIds: [],
+  sortableIds: ["code", "plate", "created_at", "center"],
   supportsVoided: true,
   filters: [
     CENTER_FILTER,

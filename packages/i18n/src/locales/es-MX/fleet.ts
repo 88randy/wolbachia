@@ -1,8 +1,102 @@
 import type { AreaCatalog } from "../area.ts";
 export const fleet = {
+  "fleet.letter.scope":
+    "Este historial muestra cartas de responsabilidad emitidas. No expone condiciones de entrega/retorno ni firmas de jornadas.",
+  "fleet.history.actions": "Acciones",
+  "fleet.efficiency.value": "{value} km/L",
+  "fleet.history.id": "Referencia del registro",
+  "fleet.history.event": "Evento de origen",
+  "fleet.history.courier": "Referencia de repartidor",
+  "fleet.history.notes": "Observaciones",
+  "fleet.history.created": "Fecha de registro",
+  "fleet.history.author": "Referencia de autor",
+  "fleet.history.reference":
+    "Origen {id}: sólo se muestra la página aceptada. La referencia puede estar fuera de esta página; no se consulta todo el historial.",
+  "fleet.history.opaqueDocument": "Referencia de documento (descarga no acreditada)",
+  "fleet.history.provenance": "Procedencia registrada",
+  "fleet.service.kind": "Tipo de servicio",
+  "fleet.service.routine": "Preventivo",
+  "fleet.service.repair": "Reparación",
+  "fleet.service.inspection": "Inspección",
+  "fleet.service.date": "Fecha del servicio",
+  "fleet.service.odometer": "Odómetro (km)",
+  "fleet.service.intervalKm": "Intervalo de servicio (km, opcional)",
+  "fleet.service.intervalDays": "Intervalo de servicio (días, opcional)",
+  "fleet.service.hint":
+    "Los intervalos quedan sin configurar si están vacíos. Un servicio por sí solo no libera una falla grave.",
+  "fleet.action.service": "Registrar servicio",
+  "fleet.action.clearFault": "Liberar esta falla grave",
+  "fleet.action.review": "Revisar estado actual y conservar captura",
+  "fleet.action.refreshUnknown": "Actualizar ficha sin repetir el comando",
+  "fleet.write.readback":
+    "Última lectura explícita de esta ficha: revisión {revision}. No acredita el resultado del comando; sigue bloqueado.",
+  "fleet.action.discard": "Descartar este intento",
+  "fleet.action.busy": "Guardando…",
+  "fleet.action.refresh": "Actualizar ficha",
+  "fleet.action.blocked":
+    "La ficha está anulada o su estado actual no está confirmado. Actualiza o consulta a una persona con administración de flota.",
+  "fleet.write.invalid":
+    "Verifica los valores obligatorios y los límites del servidor antes de guardar.",
+  "fleet.write.conflict":
+    "El estado cambió. Se conservan la captura y la evidencia. Revisa la ficha actual antes de otro intento explícito.",
+  "fleet.write.uncertain":
+    "El resultado no está confirmado. Este comando no se repetirá. Actualiza la ficha y revisa o descarta el intento antes de una nueva captura.",
+  "fleet.write.retry":
+    "La solicitud fue rechazada. Se conserva la captura; se requiere un reintento explícito.",
+  "fleet.write.denied":
+    "No se pudo confirmar la autorización vigente. Se retiró la captura privada. Actualiza tu sesión y la ficha.",
+  "fleet.clear.title": "Liberar falla grave · {record}",
+  "fleet.clear.hint":
+    "Esta acción libera sólo la falla revisada. Los otros bloqueos y el estado de la moto siguen bajo autoridad del servidor. El registro de inspección o servicio es independiente.",
+  "fleet.clear.reason": "Motivo de la inspección",
+  "fleet.clear.fault": "Falla revisada",
+  "fleet.clear.revision": "Revisión de moto revisada",
+  "fleet.clear.open": "Falla grave pendiente",
+  "fleet.clear.closed": "Falla liberada",
+  "fleet.clear.reviewer": "Referencia de quien revisó",
+  "fleet.clear.proof": "Prueba inmutable de liberación",
+  "fleet.evidence.files": "Evidencia JPEG/PNG",
+  "fleet.evidence.hint":
+    "Selecciona hasta 50 archivos originales JPEG/PNG, de hasta 10 MiB cada uno. Sólo puede enviarse evidencia verificada para esta falla exacta.",
+  "fleet.evidence.upload": "Cargar y verificar evidencia",
+  "fleet.evidence.pending": "Pendiente de verificación",
+  "fleet.evidence.verified": "Evidencia verificada",
+  "fleet.evidence.failed":
+    "No se pudo verificar la evidencia. Conserva el archivo original y reintenta explícitamente.",
+  "fleet.evidence.invalid": "Usa hasta 50 archivos JPEG/PNG no vacíos de hasta 10 MiB cada uno.",
+  "fleet.evidence.download": "Descargar evidencia autorizada",
+  "fleet.evidence.downloadFailure":
+    "La evidencia no está disponible con la autorización vigente. Actualiza antes de reintentar.",
+  "fleet.summary.odometer": "Último odómetro registrado (km)",
+  "fleet.summary.nextKm": "Odómetro del próximo servicio (km)",
+  "fleet.summary.nextDate": "Fecha del próximo servicio",
+  "fleet.summary.lastService": "Servicio de origen",
+  "fleet.summary.efficiency": "Último rendimiento comparable (km/L)",
+  "fleet.efficiency.ok": "Intervalo comparable · informativo",
+  "fleet.efficiency.review": "Intervalo comparable · se recomienda revisar",
+  "fleet.efficiency.thresholds":
+    "Límites informativos registrados: {min}–{max} km/L. No autorizan la operación.",
+  "fleet.efficiency.detail":
+    "Consulta el historial de combustible para revisar el intervalo real y sus límites guardados.",
+  "fleet.fuel.comparison": "Comparación de rendimiento",
+  "fleet.fuel.from": "Desde (instante con zona horaria)",
+  "fleet.fuel.before": "Anterior a (instante con zona horaria)",
+  "fleet.fuel.litres": "Litros",
+  "fleet.fuel.amount": "Importe / moneda",
+  "fleet.fuel.shift": "Referencia de jornada",
+  "fleet.fuel.baseline": "Referencia de carga base",
+  "fleet.fuel.receipt": "Referencia de comprobante",
+  "fleet.fuel.pending": "Comprobante pendiente",
+  "fleet.fuel.provisional": "Provisional · excluido de indicadores comparables",
+  "fleet.fuel.full": "Llenado completo",
+  "fleet.fuel.partial": "Llenado parcial",
+  "fleet.fuel.deviceTime": "Hora de captura",
+  "fleet.fuel.serverTime": "Hora de recepción del servidor",
+  "fleet.fuel.rules": "Versiones de reglas / catálogo",
+  "fleet.letter.date": "Fecha de emisión",
   "fleet.page.title": "Motos",
   "fleet.page.gaps":
-    "El filtro por centro, kilometraje, próximo servicio y rendimiento todavía no están disponibles. Requieren el backend de flota B-05 (#103).",
+    "Los indicadores de kilometraje, servicio y rendimiento no están disponibles para toda la lista. Abre una ficha autorizada para consultar su detalle real.",
   "fleet.table.caption": "Motocicletas de la organización",
   "fleet.column.code": "Código",
   "fleet.column.plate": "Placa",
@@ -26,14 +120,6 @@ export const fleet = {
   "fleet.tab.fuel": "Combustible",
   "fleet.tab.incidents": "Incidentes",
   "fleet.tab.navigation": "Secciones de la ficha de moto",
-  "fleet.gap.title": "Todavía no disponible",
-  "fleet.gap.services":
-    "Falta el historial de servicios y próximos servicios del backend de flota B-05 (#103).",
-  "fleet.gap.responsibility": "Falta el historial de responsivas del backend de flota B-05 (#103).",
-  "fleet.gap.fuel":
-    "Faltan las cargas de combustible, kilometraje e intervalos comparables del backend de flota B-05 (#103). No se puede calcular el rendimiento.",
-  "fleet.gap.incidents":
-    "Falta el historial de incidentes y la liberación por falla del backend de flota B-05 (#103).",
   "fleet.gap.insufficient": "Datos insuficientes",
   "fleet.summary.unknown": "Sin dato",
   "fleet.summary.system": "Sistema / sin referencia de autor",
@@ -41,8 +127,7 @@ export const fleet = {
   "fleet.summary.createdBy": "Referencia de quien registró",
   "fleet.summary.voidedAt": "Fecha de anulación",
   "fleet.summary.voidedBy": "Referencia de quien anuló",
-  "fleet.summary.historyGap":
-    "El historial de bloqueos y desbloqueos aún no está disponible. Esta ficha muestra el estado actual; el historial completo requiere el backend B-05 (#103).",
+  "fleet.summary.historyGap": "Este estado no confirma una salida autorizada ni una asignación.",
   "fleet.unblock.title": "Desbloquear {record}",
   "fleet.unblock.hint":
     "Documenta la revisión y la evidencia en el motivo. Esta acción solo retira el bloqueo registrado por el servidor; debe realizarla una persona con permiso para desbloquear motos.",
@@ -54,6 +139,10 @@ export const fleet = {
     "La moto está anulada. No puede modificarse; una persona con permiso de administración puede registrar una nueva.",
   "fleet.action.notBlocked": "La moto no está bloqueada. No hay un bloqueo que retirar.",
   "fleet.action.saved": "Cambio guardado.",
+  "fleet.clear.reasonLimits":
+    "Captura entre {min} y {max} caracteres según la configuración vigente.",
+  "fleet.write.cooldown":
+    "Espera el plazo indicado por el servidor antes de otro intento manual. No se repetirá la solicitud.",
   "fleet.create.title": "Alta de moto",
   "fleet.create.invalidCode": "Escribe un código de hasta 50 caracteres.",
   "fleet.create.invalidPlate": "La placa puede tener hasta 20 caracteres.",
