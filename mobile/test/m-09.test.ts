@@ -12,6 +12,13 @@ import { engineFor, publishSnapshots } from "./support/m-08-harness.ts";
 import { ASSIGNMENT, CATALOG, POINT, RULES, makeDraft } from "./support/m-08-fixtures.ts";
 import type { TestStores } from "./support/factories.ts";
 import type { LifecycleDraft } from "../src/features/ovitrap-lifecycle/types.ts";
+import {
+  hydrateLifecycleCaptureFixture,
+  fixtureBundle,
+} from "./support/lifecycle-capture-fixture.ts";
+import { PROJECTION_IDENTITY } from "./support/lifecycle-projection-fixtures.ts";
+import { startOwnedLifecycleDraft } from "../src/features/ovitrap-lifecycle/new-owned-draft.ts";
+import { startDraft } from "../src/features/ovitrap-lifecycle/new-draft.ts";
 const SOURCE = "44444444-4444-4444-8444-444444444444";
 const PHOTO = { id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", fileRef: "file:///capture.jpg" };
 const reason = (code: string) => ({
@@ -25,11 +32,13 @@ let sequence = 0;
 async function harness(local?: TestStores) {
   const stores = local ?? (await createStores());
   const capture = new OvitrapStore(stores.db);
-  await publishSnapshots(capture, {
-    catalog: CATALOG,
-    rules: RULES,
-    assignment: { ...ASSIGNMENT, ovitraps: [{ id: SOURCE, point: POINT }] },
-  });
+  if ((await capture.snapshots()).assignment === null)
+    await publishSnapshots(capture, {
+      catalog: CATALOG,
+      rules: RULES,
+      assignment: { ...ASSIGNMENT, ovitraps: [{ id: SOURCE, point: POINT }] },
+    });
+  await hydrateLifecycleCaptureFixture(stores.db, ASSIGNMENT);
   const store = new LifecycleStore(stores.db);
   await store.saveConfiguration({
     catalog: {
@@ -54,12 +63,34 @@ async function harness(local?: TestStores) {
   return { ...stores, store, engine, deps, service: new LifecycleService(deps) };
 }
 async function begin(h: Awaited<ReturnType<typeof harness>>, kind: LifecycleDraft["kind"]) {
-  const state = await h.service.start(
-    { kind, ovitrapId: SOURCE, manualCapture: false },
-    (await h.store.read()).draft?.eventId ?? null,
-  );
-  assert.ok(state.draft);
-  return state.draft;
+  const current = await h.store.read();
+  if (current.draft && !current.event)
+    return startDraft(h.deps, { kind, ovitrapId: SOURCE, manualCapture: false }, current);
+  const handle = await new DayStore(h.db).captureTransport(PROJECTION_IDENTITY, () => true);
+  assert.ok(handle);
+  const draft = await startOwnedLifecycleDraft({
+    store: h.store,
+    handle,
+    uuid: h.deps.uuid,
+    expectedEventId: current.draft?.eventId ?? null,
+    create: (freshEventId) => {
+      let isFirst = true;
+      return startDraft(
+        {
+          ...h.deps,
+          uuid: () => {
+            if (!isFirst) return h.deps.uuid();
+            isFirst = false;
+            return freshEventId;
+          },
+        },
+        { kind, ovitrapId: SOURCE, manualCapture: false },
+        current,
+      );
+    },
+  });
+  h.service.draftBuffer.rebind(draft.eventId);
+  return draft;
 }
 async function complete(h: Awaited<ReturnType<typeof harness>>, draft: LifecycleDraft) {
   await h.service.update(
@@ -837,18 +868,20 @@ const SECOND_POINT = { ...POINT, id: "77777777-7777-4777-8777-777777777777", cod
 import { PLACEMENT_PREPARATION } from "../src/features/ovitrap-check/domain.ts";
 async function reviewCaptureHarness(mode: "check" | "place" = "check", local?: TestStores) {
   const h = await harness(local);
+  const assignment = {
+    ...ASSIGNMENT,
+    points: [POINT, SECOND_POINT],
+    ovitraps: [
+      { id: SOURCE, point: POINT },
+      { id: SECOND_SOURCE, point: SECOND_POINT },
+    ],
+  };
   await publishSnapshots(h.store.capture, {
     catalog: CATALOG,
     rules: RULES,
-    assignment: {
-      ...ASSIGNMENT,
-      points: [POINT, SECOND_POINT],
-      ovitraps: [
-        { id: SOURCE, point: POINT },
-        { id: SECOND_SOURCE, point: SECOND_POINT },
-      ],
-    },
+    assignment,
   });
+  await hydrateLifecycleCaptureFixture(h.db, assignment, { force: true });
   const check = new OvitrapService({
     ...h.deps,
     store: h.store.capture,
@@ -980,6 +1013,9 @@ async function currentRetirement(db: SqlExecutor): Promise<boolean> {
 }
 void test("review 3: downloaded active state overrides retired assignment fallback before current local effects", async () => {
   const h = await harness();
+  await h.db.runAtomically([
+    { sql: "DELETE FROM lifecycle_courier_projection WHERE kind='ovitrap'" },
+  ]);
   await publishSnapshots(h.store.capture, {
     catalog: CATALOG,
     rules: RULES,
@@ -988,6 +1024,7 @@ void test("review 3: downloaded active state overrides retired assignment fallba
   assert.equal(await currentRetirement(h.db), true);
   await downloadRetirement(h, "trap", false);
   assert.equal(await currentRetirement(h.db), false);
+  await hydrateLifecycleCaptureFixture(h.db, ASSIGNMENT, { force: true });
   const check = new OvitrapService({
     ...h.deps,
     store: h.store.capture,
@@ -1002,23 +1039,27 @@ void test("review 3: downloaded active state overrides retired assignment fallba
   await h.service.save(draft.eventId);
   assert.equal(await currentRetirement(h.db), true);
   const day = new DayStore(h.db);
-  const page = (sequence: number, isRetired: boolean, hasMore: boolean) =>
-    day.applyChanges({
-      assignments: [],
-      map_manifests: [],
-      sampling_points: [],
-      has_more: hasMore,
-      ovitraps: [
-        {
-          sequence,
-          action: "upsert",
-          resource_type: "ovitrap",
-          resource_id: SOURCE,
-          resource_version: String(sequence),
-          data: downloadedTrap(SOURCE, isRetired),
-        },
-      ],
-    });
+  const page = async (sequence: number, isRetired: boolean, hasMore: boolean) =>
+    day.applyChanges(
+      {
+        capture_context: fixtureBundle(ASSIGNMENT).capture_context,
+        assignments: [],
+        map_manifests: [],
+        sampling_points: [],
+        has_more: hasMore,
+        ovitraps: [
+          {
+            sequence,
+            action: "upsert",
+            resource_type: "ovitrap",
+            resource_id: SOURCE,
+            resource_version: String(sequence),
+            data: downloadedTrap(SOURCE, isRetired),
+          },
+        ],
+      },
+      await day.captureTransport(PROJECTION_IDENTITY, () => true),
+    );
   await page(11, false, true); // Older feed pages never override pending local removal.
   assert.equal(await currentRetirement(h.db), true);
   await h.outbox.claimPending(10);
@@ -1027,13 +1068,17 @@ void test("review 3: downloaded active state overrides retired assignment fallba
   assert.equal(await currentRetirement(h.db), true);
   await page(13, true, true);
   assert.equal(await currentRetirement(h.db), true);
-  await day.applyChanges({
-    assignments: [],
-    map_manifests: [],
-    ovitraps: [],
-    sampling_points: [],
-    has_more: false,
-  });
+  await day.applyChanges(
+    {
+      capture_context: fixtureBundle(ASSIGNMENT).capture_context,
+      assignments: [],
+      map_manifests: [],
+      ovitraps: [],
+      sampling_points: [],
+      has_more: false,
+    },
+    await day.captureTransport(PROJECTION_IDENTITY, () => true),
+  );
   assert.equal(await currentRetirement(h.db), true);
   await page(14, false, false); // A later server void reactivates an acknowledged removal.
   assert.equal(await currentRetirement(h.db), false);
@@ -1075,7 +1120,7 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
       (await h.db.query("SELECT generation FROM attachment_context WHERE slot=1"))[0]?.generation,
     );
   const beforeBootstrap = await generation();
-  assert.equal(await h.kv.get(KV_KEYS.dayCompletionBootstrapPending), "true");
+  assert.equal(await h.kv.get(KV_KEYS.dayCompletionBootstrapPending), null); // Explicit fixture bootstrap is already hydrated.
   let hasScope = true;
   const bundle = new DayBundleService({
     store: new DayStore(h.db),
@@ -1114,7 +1159,22 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
   const lateHooks = bundle.syncHooks();
   await bundle.clearSessionData();
   assert.equal(await generation(), beforeBootstrap + 3);
-  assert.equal((await h.db.query("SELECT * FROM lifecycle_courier_projection")).length, 0);
+  assert.equal(
+    (
+      await h.db.query(
+        "SELECT * FROM lifecycle_courier_projection WHERE kind NOT IN ('quadrant','block','lifecycle.owned-draft','lifecycle.owned-source','lifecycle.reviewed-proposal')",
+      )
+    ).length,
+    0,
+  );
+  assert.equal(
+    (
+      await h.db.query(
+        "SELECT * FROM lifecycle_courier_projection WHERE kind='lifecycle.owned-source'",
+      )
+    ).length,
+    1,
+  );
   assert.equal((await h.store.capture.snapshots()).assignment, null);
   assert.ok(lateHooks.applyProjectionChanges);
   const lateReply = answer([]);
@@ -1136,7 +1196,14 @@ void test("AC3 integration: bootstrap retirement and revocation share the projec
     }),
     RemoteSessionEnded,
   );
-  assert.equal((await h.db.query("SELECT * FROM lifecycle_courier_projection")).length, 0);
+  assert.equal(
+    (
+      await h.db.query(
+        "SELECT * FROM lifecycle_courier_projection WHERE kind NOT IN ('quadrant','block','lifecycle.owned-draft','lifecycle.owned-source','lifecycle.reviewed-proposal')",
+      )
+    ).length,
+    0,
+  );
   const retained = await h.store.read();
   assert.equal(retained.event, null);
   assert.deepEqual((await h.store.capture.event(draft.eventId))?.envelope.id, draft.eventId);
@@ -1213,11 +1280,8 @@ void test("AC3 upgrade: schema13 to14 backfills sent replacement/removal/void re
   const expected = await seedLifecycleUpgrade(fixture.executor);
   await migrateThrough(fixture.executor, 13);
   const before = await retainedLifecycleFacts(fixture.executor);
-  await migrate(fixture.executor);
-  assert.equal(
-    (await fixture.executor.query("PRAGMA user_version"))[0]?.user_version,
-    SCHEMA_VERSION,
-  );
+  await migrateThrough(fixture.executor, 14);
+  assert.equal((await fixture.executor.query("PRAGMA user_version"))[0]?.user_version, 14);
   assert.deepEqual(await retainedLifecycleFacts(fixture.executor), before);
   const receipts = await fixture.executor.query("SELECT * FROM lifecycle_receipt ORDER BY rowid");
   assert.deepEqual(
@@ -1225,11 +1289,26 @@ void test("AC3 upgrade: schema13 to14 backfills sent replacement/removal/void re
     expected,
   );
   const reopened = fixture.reopen();
-  await migrate(reopened);
+  await migrateThrough(reopened, 14);
   assert.deepEqual(await retainedLifecycleFacts(reopened), before);
   assert.deepEqual(
     await reopened.query("SELECT * FROM lifecycle_receipt ORDER BY rowid"),
     receipts,
+  );
+  await migrate(reopened);
+  const after15 = await retainedLifecycleFacts(reopened);
+  assert.deepEqual(
+    after15.map((rows, index) =>
+      index === 1 ? rows.filter((row) => row.key !== "lifecycle_bootstrap_pending") : rows,
+    ),
+    before,
+  );
+  assert.equal(await new KvStore(reopened).get("lifecycle_bootstrap_pending"), "true");
+  assert.deepEqual(
+    await reopened.query(
+      "SELECT * FROM lifecycle_courier_projection WHERE kind='lifecycle.owned-source'",
+    ),
+    [],
   );
 });
 
@@ -1255,7 +1334,7 @@ async function prepareScopeRace(
         );
 }
 const SCOPE_CHANGES = ["point", "bootstrap", "revoke"] as const;
-type ScopeChange = (typeof SCOPE_CHANGES)[number];
+type ScopeChange = (typeof SCOPE_CHANGES)[number] | "closed" | "unknown";
 const NARROWED_BUNDLE = {
   bundle_version: "narrowed",
   schema_version: "schema-1",
@@ -1270,6 +1349,7 @@ const NARROWED_BUNDLE = {
 };
 async function changeCurrentScope(db: SqlExecutor, change: ScopeChange): Promise<void> {
   const projections = new DayStore(db);
+  if (change === "closed" || change === "unknown") return changeCurrentEpoch(projections, change);
   if (change === "point")
     return projections.applyChanges({
       sampling_points: [
@@ -1286,9 +1366,45 @@ async function changeCurrentScope(db: SqlExecutor, change: ScopeChange): Promise
   if (change === "bootstrap") return projections.replace(NARROWED_BUNDLE, FIXED_NOW);
   return projections.revoke();
 }
-const SCOPE_RACE_CASES = (["m08-save", "m09-save", "m09-correct"] as const).flatMap((action) =>
-  SCOPE_CHANGES.map((scopeChange) => ({ action, scopeChange })),
-);
+async function changeCurrentEpoch(projections: DayStore, state: "closed" | "unknown") {
+  const reference = fixtureBundle(ASSIGNMENT).quadrants.find(
+    (row) => row.resource_type === "quadrant",
+  );
+  assert.ok(reference);
+  const legacy = {
+    resource_type: reference.resource_type,
+    id: reference.id,
+    code: reference.code,
+    center_id: reference.center_id,
+    quadrant_id: reference.quadrant_id,
+    revision: reference.revision,
+  };
+  const data = state === "closed" ? { ...legacy, is_closed: true, closure_id: POINT.id } : legacy;
+  await projections.applyChanges(
+    {
+      capture_context: fixtureBundle(ASSIGNMENT).capture_context,
+      quadrants: [
+        {
+          action: "upsert",
+          resource_type: "quadrant",
+          resource_id: POINT.id,
+          resource_version: `observed-${state}`,
+          sequence: 2,
+          data,
+        },
+      ],
+    },
+    await projections.captureTransport(PROJECTION_IDENTITY, () => true),
+  );
+}
+const SCOPE_RACE_CASES: readonly { action: ScopeRaceAction; scopeChange: ScopeChange }[] = [
+  ...(["m08-save", "m09-save", "m09-correct"] as const).flatMap((action) =>
+    SCOPE_CHANGES.map((scopeChange) => ({ action, scopeChange })),
+  ),
+  ...(["m08-save", "m09-save"] as const).flatMap((action) =>
+    (["closed", "unknown"] as const).map((scopeChange) => ({ action, scopeChange })),
+  ),
+];
 void test("review scope race: late configuration or assignment publication cannot restore M08/M09 authority at commit", async () => {
   for (const { action, scopeChange } of SCOPE_RACE_CASES) {
     const base = await createStores();
@@ -1329,6 +1445,10 @@ void test("review scope race: late configuration or assignment publication canno
     const draftsBefore = await base.db.query(
       "SELECT 'M08' AS kind,draft FROM ovitrap_draft UNION ALL SELECT 'M09',draft FROM lifecycle_draft",
     );
+    const evidenceBefore = await base.db.query(
+      "SELECT 'M08' AS kind,event_id,evidence_id,file_ref FROM ovitrap_evidence UNION ALL SELECT 'M09',event_id,evidence_id,file_ref FROM lifecycle_evidence ORDER BY kind,event_id,evidence_id",
+    );
+    const filesBefore = await base.db.query("SELECT * FROM attachment_file ORDER BY id");
     isArmed = true;
     const pending = run();
     await ready;
@@ -1351,6 +1471,13 @@ void test("review scope race: late configuration or assignment publication canno
       draftsBefore,
     );
     assert.equal((await base.db.query("SELECT event_id FROM lifecycle_void")).length, 0);
+    assert.deepEqual(
+      await base.db.query(
+        "SELECT 'M08' AS kind,event_id,evidence_id,file_ref FROM ovitrap_evidence UNION ALL SELECT 'M09',event_id,evidence_id,file_ref FROM lifecycle_evidence ORDER BY kind,event_id,evidence_id",
+      ),
+      evidenceBefore,
+    );
+    assert.deepEqual(await base.db.query("SELECT * FROM attachment_file ORDER BY id"), filesBefore);
   }
 });
 

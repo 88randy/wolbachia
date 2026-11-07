@@ -8,6 +8,7 @@ import type { SqlExecutor, SqlStatement } from "./sql.ts";
 import { KV_KEYS } from "./kv-store.ts";
 import { ATTACHMENT_SCHEMA } from "../attachments/schema.ts";
 import { schemaProfiles } from "./schema-profile.ts";
+import { LIFECYCLE_CONTEXT_SCHEMA } from "../features/ovitrap-lifecycle/context-schema.ts";
 import { inspectSchemaLineage } from "./schema-lineage.ts";
 
 /**
@@ -292,6 +293,7 @@ const MIGRATIONS: readonly (readonly string[])[] = [
         AND EXISTS(${currentPointScopeSql("c.point_id")}))
       BEGIN SELECT RAISE(ABORT,'current downloaded scope no longer grants this correction'); END`,
   ],
+  LIFECYCLE_CONTEXT_SCHEMA,
 ];
 
 /** Highest schema version this build knows. */

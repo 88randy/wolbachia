@@ -34,6 +34,24 @@ sqlite_* exemption. No business view is executed to infer lineage.
 
 ## Retained state and refusal
 
+### Additive lifecycle context schema15 (#138 M2)
+
+The registry appends schema15 only. All evaluated SQL1–14 remains exactly bound to
+SHA256062f4b955cc867b3b34adb8abb9aa6d0168b590320316579928ee465ff09a34d;
+historical builders/constants remain unchanged. New context SQL is isolated in the
+versioned lifecycle context-schema/context-sql modules. It adds readiness and
+capture/origin/immutable-fact guards in existing KV/projection tables, with no new
+table, ownership backfill, adoption, reset or historical JSON rewrite.
+
+An explicit fenced new-start writer generates the UUID and seals immutable origin;
+ordinary restore/update and migrations never do so. Unproven legacy drafts remain
+unchanged/recoverable but cannot acquire current ownership through hydration/save.
+The same source-derived profiles recognize the complete new prefix and continue
+rejecting unsupported old numeric-version collisions before OUR configuration or
+migration writes. The actual13→14 receipt-backfill test remains separate from its
+subsequent14→15 readiness/preservation assertions. Node temporary-file SQLite is
+not native SQLCipher, a supported bridge for old unmerged APK data, or device QA.
+
 This draft supports genuinely empty0, complete released1–11 and new complete12–14
 prefixes. The new prefixes contain BOTH attachments10 and completion-bootstrap11;
 an old unmerged M09 schema with the same version is still refused.

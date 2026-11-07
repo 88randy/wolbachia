@@ -23,6 +23,9 @@ import { createStores, FIXED_NOW, FIXED_DEVICE_ID, makeEnvelope } from "./suppor
 import type { TestStores } from "./support/factories.ts";
 import { makeDraft, POINT } from "./support/m-08-fixtures.ts";
 import { publishSnapshots } from "./support/m-08-harness.ts";
+import { fixtureBundle } from "./support/lifecycle-capture-fixture.ts";
+import { PROJECTION_IDENTITY } from "./support/lifecycle-projection-fixtures.ts";
+import { CONTRACT_IDS } from "./support/lifecycle-contract-fixtures.ts";
 import { parseBundle } from "../src/features/day/bundle-parser.ts";
 import { upsertTask } from "../src/features/day/projection-statements.ts";
 import { replaceSamplingPoints } from "../src/features/day/sampling-point-statements.ts";
@@ -110,11 +113,52 @@ async function saveCapture(
     rules: draft.rules,
     assignment: draft.assignment,
   });
+  const captureBundle = currentCaptureBundle(draft);
+  await new DayBundleService({
+    store: new DayStore(local.db),
+    now: () => FIXED_NOW,
+    getCaptureIdentity: () => PROJECTION_IDENTITY,
+    transport: () => Promise.resolve({ kind: "bundle", body: captureBundle }),
+  }).refresh();
   await store.begin(draft);
   const event = captureEvent(draft);
   assert.equal(Object.hasOwn(event.payload, "task_id"), false);
   await local.outbox.enqueue(event, store.commitStatements(draft));
   return event;
+}
+/** Current producer-shaped capture scope augments the owning v3 fixture; no completion/receipt assertion changes. */
+function currentCaptureBundle(draft: ReturnType<typeof makeDraft>) {
+  const capture = fixtureBundle(draft.assignment);
+  const current = bundle();
+  const point = current.sampling_points[0];
+  assert.ok(point);
+  const quadrant = {
+    resource_type: "quadrant",
+    id: point.quadrant_id,
+    quadrant_id: point.quadrant_id,
+    center_id: CONTRACT_IDS.center,
+    code: "Q-COMPLETION",
+    revision: 1,
+    is_closed: false,
+    closure_id: null,
+  };
+  return {
+    ...capture,
+    ...current,
+    scope_revision: capture.scope_revision,
+    capture_context: capture.capture_context,
+    quadrants: [
+      quadrant,
+      {
+        resource_type: "block",
+        id: point.block_id,
+        quadrant_id: point.quadrant_id,
+        center_id: CONTRACT_IDS.center,
+        code: "B-COMPLETION",
+        revision: 1,
+      },
+    ],
+  };
 }
 async function accept(local: TestStores, id: string) {
   await local.outbox.claimPending(50);

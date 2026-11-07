@@ -425,11 +425,15 @@ void test("AC2: correction transaction failure keeps original lineage and eviden
 
 void test("AC2: offline use consumes cached reuse eligibility before another capture can offer a third reuse", async () => {
   const h = await harness();
-  await publishSnapshots(h.store, {
-    catalog: CATALOG,
-    rules: RULES,
-    assignment: { ...ASSIGNMENT, reuse: [{ id: "paddle-1", reuses: 1, isEligible: true }] },
-  });
+  await publishSnapshots(
+    h.store,
+    {
+      catalog: CATALOG,
+      rules: RULES,
+      assignment: { ...ASSIGNMENT, reuse: [{ id: "paddle-1", reuses: 1, isEligible: true }] },
+    },
+    h.db,
+  );
   await h.service.startCheck(
     "44444444-4444-4444-8444-444444444444",
     true,
@@ -438,15 +442,19 @@ void test("AC2: offline use consumes cached reuse eligibility before another cap
   await prepareCheck(h.service);
   await h.service.update({ reuseId: "paddle-1" }, await currentEventId(h.store));
   await h.service.save(await currentEventId(h.store));
-  await publishSnapshots(h.store, {
-    catalog: CATALOG,
-    rules: RULES,
-    assignment: {
-      ...ASSIGNMENT,
-      version: "assignment-v2",
-      reuse: [{ id: "paddle-1", reuses: 1, isEligible: true }],
+  await publishSnapshots(
+    h.store,
+    {
+      catalog: CATALOG,
+      rules: RULES,
+      assignment: {
+        ...ASSIGNMENT,
+        version: "assignment-v2",
+        reuse: [{ id: "paddle-1", reuses: 1, isEligible: true }],
+      },
     },
-  });
+    h.db,
+  );
   await h.service.startCheck(
     "99999999-9999-4999-8999-999999999999",
     true,
@@ -511,7 +519,7 @@ void test("AC3: a revoked downloaded assignment blocks capture without losing it
     await currentEventId(h.store),
   );
   await prepareCheck(h.service);
-  await publishSnapshots(h.store, { catalog: CATALOG, rules: RULES, assignment: null });
+  await publishSnapshots(h.store, { catalog: CATALOG, rules: RULES, assignment: null }, h.db);
   assert.equal((await h.service.read()).isScopeBlocked, true);
   await assert.rejects(h.service.save(await currentEventId(h.store)));
   assert.equal((await h.service.read()).draft?.bagCode, "B-TEST");
@@ -647,11 +655,15 @@ void test("regression: November 5 and 12 under the W45 package are different cap
 
 void test("regression: missing organization week configuration blocks explicitly without guessing W45", async () => {
   const h = await harness();
-  await publishSnapshots(h.store, {
-    catalog: CATALOG,
-    rules: RULES,
-    assignment: { ...ASSIGNMENT, organization: undefined },
-  });
+  await publishSnapshots(
+    h.store,
+    {
+      catalog: CATALOG,
+      rules: RULES,
+      assignment: { ...ASSIGNMENT, organization: undefined },
+    },
+    h.db,
+  );
   await h.service.startCheck(
     "44444444-4444-4444-8444-444444444444",
     true,
@@ -1032,11 +1044,15 @@ void test("regression: retry after a post-begin read failure never saves the pre
     },
   };
   const target = "99999999-9999-4999-8999-999999999999";
-  await publishSnapshots(h.store, {
-    catalog: CATALOG,
-    rules: RULES,
-    assignment: { ...ASSIGNMENT, ovitraps: [{ id: target, point: POINT }] },
-  });
+  await publishSnapshots(
+    h.store,
+    {
+      catalog: CATALOG,
+      rules: RULES,
+      assignment: { ...ASSIGNMENT, ovitraps: [{ id: target, point: POINT }] },
+    },
+    h.db,
+  );
   assert.equal(
     await runCaptureAction(
       commands,

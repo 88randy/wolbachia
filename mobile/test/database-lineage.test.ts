@@ -29,7 +29,7 @@ void test("every released canonical prefix and cleared readiness state keeps its
   const original = HISTORY.families.find((family) => family.canonicalPrefix === 9);
   assert.ok(original);
   assert.deepEqual(
-    CANONICAL_MIGRATIONS.slice(11).map((statements) => digest(statements)),
+    CANONICAL_MIGRATIONS.slice(11, 14).map((statements) => digest(statements)),
     original.suffixes,
   );
   for (let version = 0; version <= SCHEMA_VERSION; version++) {
@@ -96,7 +96,11 @@ void test("future, nonempty-zero, partial/mixed and changed literal/constraints 
   assert.ok(identityView);
   const cases = [
     { name: "canonical11 falsely stamped12", version: 11, sql: "PRAGMA user_version=12" },
-    { name: "future15", version: 14, sql: "PRAGMA user_version=15" },
+    {
+      name: `future${String(SCHEMA_VERSION + 1)}`,
+      version: SCHEMA_VERSION,
+      sql: `PRAGMA user_version=${String(SCHEMA_VERSION + 1)}`,
+    },
     { name: "nonempty0", version: 0, sql: "CREATE TABLE foreign_fixture(id TEXT)" },
     { name: "partial attachments", version: 11, sql: "DROP TABLE attachment_context" },
     {

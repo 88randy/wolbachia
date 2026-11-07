@@ -3,6 +3,12 @@ import { courierPointChanges } from "./courier-point-projections.ts";
 import { parseSamplingPoints } from "../day/sampling-point-parser.ts";
 import { replaceSamplingPoints } from "../day/sampling-point-statements.ts";
 import { reconcileIdentityEffects } from "./identity-effects.ts";
+import { historyBundleStatements, historyChangeStatements } from "./history-projections.ts";
+import {
+  clearDownloadedProjections,
+  quadrantBundleStatements,
+  quadrantChangeStatements,
+} from "./quadrant-projections.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { readChange, readOvitrap, readPoint } from "./courier-validation.ts";
 interface Projection {
@@ -34,7 +40,7 @@ function section(input: unknown, key: "ovitraps" | "sampling_points"): readonly 
   if (!Array.isArray(rows)) throw new Error("Invalid courier section.");
   return rows;
 }
-/** Existing B-13 schemas only; no relocation producer/wire schema exists. */
+/** All downloaded kinds share the existing DayStore transaction and writer. */
 export function courierChangeStatements(changes: unknown): readonly SqlStatement[] {
   const isDrained =
     typeof changes === "object" &&
@@ -44,6 +50,8 @@ export function courierChangeStatements(changes: unknown): readonly SqlStatement
   return [
     ...section(changes, "ovitraps").map(changeStatement),
     ...courierPointChanges(section(changes, "sampling_points")),
+    ...historyChangeStatements(changes),
+    ...quadrantChangeStatements(changes),
     ...(isDrained ? [reconcileIdentityEffects(false)] : []),
   ];
 }
@@ -61,9 +69,11 @@ export function courierBundleStatements(bundle: unknown): readonly SqlStatement[
     body,
   }));
   return [
-    { sql: "DELETE FROM lifecycle_courier_projection" },
+    ...clearDownloadedProjections,
     ...replaceSamplingPoints(validPoints),
     ...[...traps, ...points].map(statement),
+    ...historyBundleStatements(bundle),
+    ...quadrantBundleStatements(bundle),
     replaceCaptureScope(
       points.map((point) => point.id),
       traps.map((trap) => trap.id),

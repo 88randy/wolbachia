@@ -8,6 +8,32 @@ the existing immutable outbox and capture evidence.
 
 ## Existing wire relationship (#221)
 
+### Lifecycle context checkpoint (#138 M2)
+
+The same DayStore transaction now owns history3/quadrant2 and private lifecycle
+context/readiness KV state. It consumes actual capture_context1 under an optional
+already-proven EvidenceIdentity from DayBundleService. The production port wiring
+remains M3. Me/display scope, task rows and DTO self UUIDs never prove that identity.
+
+Only complete committed full replacement hydrates the new consumer. Empty sections
+and grants are meaningful denial. Missing/null/unavailable metadata narrows it;
+changes can refresh only an already hydrated matching revision. Publication CAS
+and confirmed predecessor continuation preserve the ORIGINAL transport fence across
+pages and invalid-cursor recovery. A replacement current identity cannot rebind it.
+No cursor or revision hash is ordered; no second publisher/queue/scheduler exists.
+
+`needsBootstrap()` includes lifecycle readiness by default. DayBundleService opts
+into that recovery when the private identity port is present: pending omits ETag
+and unexpected304 stays an error. Callers without the port preserve legacy day-only
+recovery while M09 stays unavailable; they never acknowledge its pending flag.
+
+Revoke clears active downloads and marks quadrant/block floors unavailable, retaining
+immutable owned-draft/source/reviewed-proposal facts and all recovery data. Deferred
+final-session cleanup also invalidates authority durably. Sync still commits
+projections BEFORE its separate receipt/cursor transaction and settles final receipts
+before removing downloads. The lifecycle README and owning SQLite tests describe
+failure/replay, epoch floors and ownership; these are not native qualification.
+
 The assignments v2/v3 producer (`backend/scheduling/courier_feed.py` and
 `backend/scheduling/selectors.py`) sends `task.point` as the sampling-point UUID.
 It sends no coordinates. `task.code` is a task identifier that can include action

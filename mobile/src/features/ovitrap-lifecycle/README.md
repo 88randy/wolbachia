@@ -41,6 +41,77 @@ SQLCipher, camera/GPS, actual API/review/task/upload or accessibility/device gat
 
 Implementation plan (owner-supplied issue and accepted lead decisions):
 
+### M2 materialization checkpoint (M3–M5 still pending)
+
+DayStore remains the single downloaded-projection owner. History schema3 uses
+distinct `history.<kind>` keys; quadrant and block keys remain separate. Bootstrap
+uses its actual opaque bundle version as publication provenance. Deltas keep
+integer sequence separate from opaque content versions and geometry epochs.
+Unknown envelopes reject the page; malformed content with a consistent known
+identity becomes unavailable at that sequence. Duplicate full-body identities
+reject. The canonical #221 writer/floors and physical mirror/receipt overlays
+remain unchanged.
+
+Quadrant rows retain their geometry floor while `_available=false` removes active
+visibility. Same-epoch close is sticky across later open/legacy/invalid input,
+replacement, revoke and SQLite reopen; an actual newer epoch can open. Blocks
+have no closure. The shared `capturePointScopeSql` checks the canonical point,
+its explicit block/quadrant/center relation, closure and ONE complete self SYNC
+pair. Tasks, Assignment, GPS and crossed grant axes cannot supply authority.
+
+The optional private `getCaptureIdentity` port on the existing DayBundleService
+supplies an already proven EvidenceIdentity, read synchronously before awaits.
+Its original owner/session/revocation fence travels with the durable authority
+revision. The SQL CAS fails the entire transaction before any projection write
+when stale, including an empty replacement. Pages AND invalid-cursor recovery
+keep that original handle and advance only its confirmed durable predecessor.
+They never recapture whichever owner/revision is current after an await.
+
+Schema15 appends readiness/enforcement after unchanged evaluated1–14, with no new
+table, queue or backfill. Feature-private metadata uses the existing typed KV API
+and authority revision. Only a complete committed full body under proven ownership
+hydrates it. Missing/null/unsupported context narrows it; changes cannot hydrate
+it initially. Offline/failure/304/restart do not acknowledge readiness. Valid empty
+sections and empty grants acknowledge known denial. Without the optional identity
+port, legacy day downloads keep their existing ETag flow while M09 stays pending
+and unavailable. M3 must wire the real identity into the existing composition.
+
+Only explicit `startOwnedLifecycleDraft` generates a fresh UUID and seals an
+immutable `lifecycle.owned-draft` atomically with the existing draft/identity write.
+It captures the handle before its factory awaits and checks SQL CAS/current scope
+and prior UUID use. Ordinary begin/restore/update, hydration or a different UUID
+never seals/reseals origin. The M3 production start path is still unwired, so its
+unproven starts fail closed on save. Owning tests use the explicit private writer;
+they do not certify production start composition. No legacy JSON or UUID is repaired.
+
+New capture must match that origin, the real outbox event, point, physical UUID,
+kind and current stable owner. Its SAME capture/outbox/evidence transaction creates
+`lifecycle.owned-source`, retaining ORIGINAL session/revision/context as audit.
+Authenticated terminal relocation history retains `lifecycle.reviewed-proposal`
+only for a proven local source UUID AND point UUID. Remote-only/legacy captures
+never become owned proof. Evolving tasks/source-void state remain active history.
+Bootstrap/revoke clear active downloads but preserve all three immutable kinds.
+A fresh authorized session of the same stable owner can read its terminal proof;
+another owner cannot. Retention never grants current capture permission.
+
+The actual two-transaction protocol remains: projections commit before outbox
+results/cursor settlement. `lifecycle-projections.test.ts` injects failure between
+them, recovers `sending`, replays the original UUID and drains another page without
+duplicating the proof. Final responses narrow authority durably and persist receipts
+before cleanup. The tests also cover readiness/file reopen, epoch ordering, grant
+pairs, original-handle ABA, explicit origin, legacy refusal and owner privacy.
+Existing13→14 backfill assertions remain intact, followed by14→15 preservation;
+the source-derived lineage tests still refuse all seven unsupported shapes before
+OUR pragmas/writes.
+
+M2 is a partial checkpoint. M3–M5 still own the minimal real source provider,
+production read/start/save and current-session CAS composition, feedback UI,
+actual #287 advisory consumer, GPS and shared #246 evidence composition. The
+owner-data reader must later distinguish downloaded/invisible floors from authored
+owned facts without broadly ignoring unknown/private kinds. Camera acquisition
+remains #253. SQLCipher/physical force-stop, real API/decision/task/upload and
+accessibility/device gates remain UNRUN. The older notes below are historical.
+
 1. Test lifecycle identity/transactions, proposal-only geometry, recovery, feedback,
    correction and restart in `mobile/test/m-09.test.ts` using real SQLite/M-02.
 2. Append migration 12 after released canonical migrations 1–11: durable singleton draft, immutable captures,

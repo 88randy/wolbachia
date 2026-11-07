@@ -51,6 +51,10 @@ export class LifecycleStore {
     return physicalOvitrap(this.db, id);
   }
   async begin(draft: LifecycleDraft, eventId: string | null): Promise<void> {
+    await this.db.runAtomically(this.beginStatements(draft, eventId));
+  }
+  /** Ordinary restore/update path: this NEVER creates or reseals ownership. */
+  beginStatements(draft: LifecycleDraft, eventId: string | null): readonly SqlStatement[] {
     const reserve: SqlStatement[] = draft.replacementId
       ? [
           {
@@ -59,7 +63,7 @@ export class LifecycleStore {
           },
         ]
       : [];
-    await this.db.runAtomically([
+    return [
       identityGuard(eventId),
       ...reserve,
       {
@@ -69,7 +73,7 @@ export class LifecycleStore {
         sql: `INSERT INTO lifecycle_draft(slot,draft) VALUES(1,?) ON CONFLICT(slot) DO UPDATE SET draft=excluded.draft,event_id=NULL`,
         params: [JSON.stringify(draft)],
       },
-    ]);
+    ];
   }
   async update(draft: LifecycleDraft): Promise<void> {
     const rows = await this.db.query(
