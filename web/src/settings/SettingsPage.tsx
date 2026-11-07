@@ -8,7 +8,7 @@ export function SettingsPage() {
   return (
     <section className={styles.page}>
       <h1 className={styles.title}>{t("shell.nav.settings")}</h1>
-      <p className={styles.body}>{t("states.placeholder.body")}</p>
+      <p className={styles.body}>{t("refresh.settings.description")}</p>
       <SettingsLinks />
     </section>
   );

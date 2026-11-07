@@ -1,6 +1,7 @@
 import * as Primitive from "@radix-ui/react-dialog";
 import type { RefObject } from "react";
 import { useTranslation } from "react-i18next";
+import { DialogFooter } from "./DialogFooter";
 import { Button } from "./Button";
 import styles from "./ui.module.css";
 interface ConfirmActionsProps {
@@ -11,7 +12,7 @@ interface ConfirmActionsProps {
 export function ConfirmActions({ cancelRef, actionLabel, onConfirm }: ConfirmActionsProps) {
   const { t } = useTranslation();
   return (
-    <footer className={styles.dialogActions}>
+    <DialogFooter>
       <Primitive.Close asChild>
         <button ref={cancelRef} className={styles.cancel}>
           {t("common.actions.cancel")}
@@ -20,6 +21,6 @@ export function ConfirmActions({ cancelRef, actionLabel, onConfirm }: ConfirmAct
       <Button className={styles.destructive} onClick={onConfirm}>
         {actionLabel}
       </Button>
-    </footer>
+    </DialogFooter>
   );
 }

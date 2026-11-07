@@ -3,6 +3,9 @@ import type { ApiClient, Schemas } from "@wolbachia/api-client";
 import { invalidateOrgScoped, orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { SessionIdentity } from "../session/org-scoped-query";
 import type { QueryClient } from "@tanstack/react-query";
+import type { TableState } from "../data-table/table-types";
+import { toFilterParams } from "../data-table/table-state";
+import { CATALOG_PAGE_SIZE } from "./catalog-table";
 export type Catalog = Schemas["Catalog"];
 export type CatalogItem = Schemas["CatalogItem"];
 const ROOT = "catalogs";
@@ -43,10 +46,14 @@ export function catalogsQueryOptions({ client, identity }: CatalogScope) {
   });
 }
 
-/** Read every page in server order; the table has no paging so swaps see all active neighbors. */
-export function catalogItemsQueryOptions({ client, identity }: CatalogScope, slug: string) {
+/** Canonical metadata for capacity/create and the complete atomic reorder id set; never a filtered table. */
+export function catalogItemsQueryOptions(
+  { client, identity }: CatalogScope,
+  slug: string,
+  ordering?: "sort",
+) {
   return orgScopedQueryOptions(identity, {
-    key: [ROOT, "items", slug],
+    key: [ROOT, "items", slug, ordering],
     queryFn: async ({ signal }) => {
       const items: CatalogItem[] = [];
       let page = 1;
@@ -54,7 +61,10 @@ export function catalogItemsQueryOptions({ client, identity }: CatalogScope, slu
       while (hasNext) {
         const answer = unwrap(
           await client.GET("/api/v1/catalogs/{catalog_slug}/items/", {
-            params: { path: { catalog_slug: slug }, query: { page, page_size: PAGE_SIZE } },
+            params: {
+              path: { catalog_slug: slug },
+              query: { page, page_size: PAGE_SIZE, ordering },
+            },
             signal,
           }),
         );
@@ -64,6 +74,43 @@ export function catalogItemsQueryOptions({ client, identity }: CatalogScope, slu
       }
       return items;
     },
+  });
+}
+
+interface ItemPage {
+  scope: CatalogScope;
+  slug: string;
+  state: TableState;
+}
+/** The catalog picker is server-paged too; the unfiltered metadata query still resolves its selected record. */
+export function catalogPageOptions({ scope: { client, identity }, state }: Omit<ItemPage, "slug">) {
+  return orgScopedQueryOptions(identity, {
+    key: [ROOT, "navigation", state],
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await client.GET("/api/v1/catalogs/", {
+          params: {
+            query: { page: state.page, page_size: CATALOG_PAGE_SIZE, ...toFilterParams(state) },
+          },
+          signal,
+        }),
+      ),
+  });
+}
+/** Visible rows, count and paging always come from the filtered server list. */
+export function catalogItemPageOptions({ scope: { client, identity }, slug, state }: ItemPage) {
+  return orgScopedQueryOptions(identity, {
+    key: [ROOT, "item-page", slug, state],
+    queryFn: async ({ signal }) =>
+      unwrap(
+        await client.GET("/api/v1/catalogs/{catalog_slug}/items/", {
+          params: {
+            path: { catalog_slug: slug },
+            query: { page: state.page, page_size: CATALOG_PAGE_SIZE, ...toFilterParams(state) },
+          },
+          signal,
+        }),
+      ),
   });
 }
 

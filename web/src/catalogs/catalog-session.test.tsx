@@ -13,8 +13,8 @@ import { renderApp } from "../test/render-app";
 import { pageOf } from "../test/rules-fixtures";
 
 function deferred() {
-  let release!: (response: Response) => void;
-  const promise = new Promise<Response>((resolve) => {
+  let release!: (records: readonly unknown[]) => void;
+  const promise = new Promise<readonly unknown[]>((resolve) => {
     release = resolve;
   });
   return { promise, release };
@@ -43,8 +43,8 @@ test.each(["organization", "user"])(
         ? { ...CATALOG_ADMIN, organization: makeOrganization("sur", "South") }
         : { ...CATALOG_ADMIN, user: { ...CATALOG_ADMIN.user, id: "another-user" } };
     api.setRoute("GET /api/v1/me/", Response.json(next));
-    api.setRoute("GET /api/v1/catalogs/", () => catalogs.promise);
-    api.setRoute(`GET ${ITEMS_PATH}`, () => items.promise);
+    api.setRoute("GET /api/v1/catalogs/", async () => pageOf(await catalogs.promise));
+    api.setRoute(`GET ${ITEMS_PATH}`, async () => pageOf(await items.promise));
     await act(async () => {
       await app.queryClient.refetchQueries({ queryKey: ["me"] });
     });
@@ -55,14 +55,14 @@ test.each(["organization", "user"])(
     expect(app.router.state.location.pathname).toBe(CATALOG_PATH);
     expect(screen.queryByRole("link", { name: "Intervenciones" })).toBeNull();
     await act(async () => {
-      catalogs.release(pageOf([{ ...CATALOG, label_es: "B catalog" }]));
+      catalogs.release([{ ...CATALOG, label_es: "B catalog" }]);
       await catalogs.promise;
     });
     await screen.findByRole("link", { name: "B catalog" });
     expect(screen.queryByRole("row", { name: /Private A row/ })).toBeNull();
     expect(screen.queryByRole("dialog")).toBeNull();
     await act(async () => {
-      items.release(pageOf([makeCatalogItem({ label_es: "B row" })]));
+      items.release([makeCatalogItem({ label_es: "B row" })]);
       await items.promise;
     });
     await screen.findByRole("row", { name: /B row/ });

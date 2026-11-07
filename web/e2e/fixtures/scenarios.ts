@@ -256,7 +256,11 @@ export const scenarios: Scenario[] = [
       await page.locator("#rule-version-value").fill("8");
       await page.locator("#rule-version-date").fill("2026-12-20");
       await expect(page.getByRole("heading", { level: 3 })).toBeVisible();
-      await page.locator("form button[type=submit]").click();
+      await page
+        .locator("form")
+        .filter({ has: page.locator("#rule-version-value") })
+        .getByRole("button", { name: /Guardar versi\u00f3n|Save version/, exact: true })
+        .click();
       await expect(page.locator("#rule-version-reason-error")).toBeVisible();
     },
   },

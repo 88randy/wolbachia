@@ -45,12 +45,7 @@ export function InventoryCreateDialog({ kind }: { kind: InventoryKind }) {
 }
 function CreateDialog({ kind, title }: { kind: InventoryKind; title: string }) {
   const { t } = useTranslation();
-  const [open, setOpen] = useState(false);
-  const [saved, setSaved] = useState(false);
-  const onSaved = () => {
-    setSaved(true);
-    setOpen(false);
-  };
+  const { open, saved, onSaved, onCancel, setOpen } = useCreateDialog();
   return (
     <>
       <p role="status">{saved ? t("inventory.state.saved") : ""}</p>
@@ -61,8 +56,21 @@ function CreateDialog({ kind, title }: { kind: InventoryKind; title: string }) {
         open={open}
         onOpenChange={setOpen}
       >
-        {open && <InventoryCreateGate kind={kind} onSaved={onSaved} />}
+        {open && <InventoryCreateGate kind={kind} onSaved={onSaved} onCancel={onCancel} />}
       </Dialog>
     </>
   );
+}
+
+function useCreateDialog() {
+  const [open, setOpen] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const onSaved = () => {
+    setSaved(true);
+    setOpen(false);
+  };
+  const onCancel = () => {
+    setOpen(false);
+  };
+  return { open, saved, onSaved, onCancel, setOpen };
 }

@@ -1,4 +1,6 @@
 import { AdminSaveButton } from "./AdminSaveButton";
+import { DialogFooter } from "../../ui/DialogFooter";
+import { Button } from "../../ui/Button";
 import { useTranslation } from "react-i18next";
 import { useOnline } from "./use-online";
 import { ScopeFields } from "./ScopeFields";
@@ -32,12 +34,12 @@ export function ScopeEditForm({ editor, target, codes, onClose }: Props) {
       <RevisionReview editor={editor} />
       {editor.lookups.hasPending && <p role="status">{t("orgAdmin.scope.pending")}</p>}
       {!isOnline && <p>{t("orgAdmin.error.offline")}</p>}
-      <div className={styles.row}>
-        <AdminSaveButton isBlocked={isBlocked} isBusy={editor.writer.isBusy} />
-        <button type="button" disabled={editor.writer.isBusy} onClick={onClose}>
+      <DialogFooter>
+        <Button variant="secondary" disabled={editor.writer.isBusy} onClick={onClose}>
           {t("common.actions.cancel")}
-        </button>
-      </div>
+        </Button>
+        <AdminSaveButton isBlocked={isBlocked} isBusy={editor.writer.isBusy} />
+      </DialogFooter>
     </form>
   );
 }

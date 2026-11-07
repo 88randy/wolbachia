@@ -24,10 +24,15 @@ export function fleetIdentity(me: Me): string {
 }
 function fleetListParams(identity: SessionIdentity, state: TableState) {
   const blocked = state.filters["is_blocked"];
+  const sort = state.sort;
+  const ordering =
+    state.isSortExplicit && sort ? `${sort.direction === "desc" ? "-" : ""}${sort.id}` : undefined;
   return {
     ...centerQuery(identity, state.filters["center"]),
     page: state.page,
     page_size: FLEET_PAGE_SIZE,
+    ...(state.filters["code"] ? { code: state.filters["code"] } : {}),
+    ...(ordering ? { ordering } : {}),
     include_voided: state.includeVoided,
     ...(blocked === undefined ? {} : { is_blocked: blocked === "true" }),
   };

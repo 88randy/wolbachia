@@ -77,6 +77,11 @@ function readFilterValue(filter: FilterDefinition, raw: string): string | undefi
     return filter.options.some((option) => option.value === raw) ? raw : undefined;
   }
   const text = raw.trim();
+  if (
+    filter.format === "positive-integer" &&
+    (!/^[1-9][0-9]*$/.test(text) || !Number.isSafeInteger(Number(text)))
+  )
+    return undefined;
   return text !== "" && text.length <= filter.maxLength && !hasControl(text) ? text : undefined;
 }
 

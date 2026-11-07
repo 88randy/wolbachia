@@ -1,0 +1,38 @@
+.nav {
+  padding: var(--space-2) var(--space-3) 0;
+  color: var(--color-text-secondary);
+  font-size: var(--web-type-label-small-font-size);
+}
+.nav ol {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.nav li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.nav li + li::before {
+  content: "/";
+}
+.nav a {
+  color: inherit;
+  text-decoration: none;
+}
+.nav a:hover,
+.nav a:focus-visible {
+  color: var(--color-action-strong);
+  text-decoration: underline;
+}
+.nav [aria-current] {
+  color: var(--color-text-primary);
+}
+.nav[data-compact="true"] li:not(:nth-last-child(-n + 2)) {
+  display: none;
+}
