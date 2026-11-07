@@ -13,11 +13,12 @@ import { STATUS_PRESENTATION } from "../../ui/status-presentation.ts";
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: spacing[1],
   },
-  title: { flex: 1 },
+  title: { flexGrow: 1, flexBasis: spacing[6] * 3 },
 });
 
 /** One event the server refused or put in review, or that could not be sent: what happened, in plain words. */
@@ -30,7 +31,7 @@ export function ProblemCard({ item }: { readonly item: ProblemItem }) {
       <View style={styles.row}>
         <View style={styles.title}>
           <AppText variant="bodyStrong">{t(eventTypeKey(item.type))}</AppText>
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="caption" tone="secondary" isMonospace>
             {formatInboxTime(item.deviceTime, { locale })}
           </AppText>
         </View>

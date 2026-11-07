@@ -21,15 +21,17 @@ const createStyles = (theme: Theme) =>
       alignItems: "center",
       alignSelf: "flex-start",
       gap: mobileLayout.compactGap,
-      paddingHorizontal: spacing[1.5] - 2,
-      paddingVertical: 2,
-      borderRadius: radius.lg,
+      paddingHorizontal: spacing[1.5],
+      paddingVertical: spacing[0.5],
+      borderRadius: radius.full,
+      maxWidth: "100%",
     },
     success: { backgroundColor: theme.color.status.success.bg },
     warning: { backgroundColor: theme.color.status.warning.bg },
     critical: { backgroundColor: theme.color.status.critical.bg },
     info: { backgroundColor: theme.color.status.info.bg },
     neutral: { backgroundColor: theme.color.status.neutral.bg },
+    label: { flexShrink: 1 },
   });
 
 interface BadgeProps {
@@ -45,7 +47,7 @@ export function Badge({ tone, icon, label }: BadgeProps) {
   return (
     <View style={[styles.badge, styles[tone]]}>
       <Icon name={icon} color={color} size={ICON_SIZE} />
-      <AppText variant="captionStrong" style={{ color }}>
+      <AppText variant="status" style={[styles.label, { color }]}>
         {label}
       </AppText>
     </View>

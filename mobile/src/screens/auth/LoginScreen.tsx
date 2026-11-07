@@ -1,3 +1,4 @@
+import { BottomActions } from "../../ui/BottomActions.tsx";
 import { View } from "react-native";
 
 import type { AuthSnapshot } from "../../auth/auth-controller.ts";
@@ -16,7 +17,7 @@ export function LoginScreen({ snapshot }: { readonly snapshot: AuthSnapshot }) {
   return (
     <View style={styles.root}>
       <LoginContent snapshot={snapshot} form={form} />
-      <View style={styles.footer}>
+      <BottomActions>
         <Button
           label={t(
             form.isCleanupRetry
@@ -32,7 +33,7 @@ export function LoginScreen({ snapshot }: { readonly snapshot: AuthSnapshot }) {
           }
           onPress={form.isCleanupRetry ? form.retryCleanup : form.submit}
         />
-      </View>
+      </BottomActions>
       <ForgotPasswordSheet isOpen={form.isForgotOpen} close={form.closeForgot} />
     </View>
   );

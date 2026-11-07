@@ -5,16 +5,25 @@ import { KV_KEYS } from "../db/kv-store.ts";
 import type { KvStore } from "../db/kv-store.ts";
 import type { ColorScheme } from "../theme/ThemeProvider.tsx";
 
+export type ThemePreference = ColorScheme | "system";
+
 export interface Preferences {
-  readonly scheme: ColorScheme;
+  readonly scheme: ThemePreference;
   readonly locale: Locale;
 }
 
 const LOCALES: readonly Locale[] = ["es-MX", "en"];
 
-/** Light is the default; only an explicit saved choice turns dark on. */
-export function parseScheme(value: string | null): ColorScheme {
-  return value === "dark" ? "dark" : "light";
+/** Keep explicit choices; an unset/unknown value follows the system. */
+export function parseScheme(value: string | null): ThemePreference {
+  return value === "dark" || value === "light" ? value : "system";
+}
+
+export function resolveScheme(
+  preference: ThemePreference,
+  systemScheme: string | null | undefined,
+): ColorScheme {
+  return preference === "system" ? (systemScheme === "dark" ? "dark" : "light") : preference;
 }
 
 export function parseLocale(value: string | null): Locale {

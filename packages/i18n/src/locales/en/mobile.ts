@@ -2,6 +2,34 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  "mobile.preview.title": "Style preview",
+  "mobile.preview.sample": "Sample",
+  "mobile.preview.intro":
+    "Interface examples without real data. They do not save changes or send records.",
+  "mobile.preview.themeHint": "Follow the phone or choose an appearance.",
+  "mobile.preview.textScaleHint": "To review 130% text, use the phone text-size setting.",
+  "mobile.preview.system": "System",
+  "mobile.preview.light": "Light",
+  "mobile.preview.dark": "Dark",
+  "mobile.preview.toggleTheme": "Change appearance",
+  "mobile.preview.primary": "Finish review",
+  "mobile.preview.data": "Sample data",
+  "mobile.preview.progress": "Points checked · daily target",
+  "mobile.preview.received": "Received",
+  "mobile.preview.onPhone": "On the phone",
+  "mobile.preview.problem": "Needs attention",
+  "mobile.preview.review": "In review",
+  "mobile.preview.inactive": "Inactive",
+  "mobile.preview.fields": "Capture",
+  "mobile.preview.code": "Sample code",
+  "mobile.preview.disabled": "Action unavailable",
+  "mobile.preview.disabledHint":
+    "Example: configuration is missing. Your supervisor can enable this action.",
+  "mobile.preview.loading": "Loading on the phone",
+  "mobile.preview.empty": "No records yet",
+  "mobile.preview.partial": "The rest stays available",
+  "mobile.preview.error": "This example could not update. Retry; what you entered is still here.",
+  "mobile.preview.retryResult": "Example retry completed. No server was contacted.",
   "mobile.ovitrap.pendingDraft":
     "Another capture draft is pending. Resume it before switching ovitraps.",
   // M-08: P13, P14 and P21

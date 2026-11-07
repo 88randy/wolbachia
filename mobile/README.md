@@ -751,6 +751,86 @@ pass 214/214 and i18n tests pass 13/13. An earlier simultaneous verification run
 exhausted process memory; the required mobile command passes when run separately.
 No npm ci/install, Docker, Playwright or Expo build was run for this review.
 
+## Shared mobile visual refresh (#203)
+
+The shared UI follows #202 / decision 123: cool canvas, surface headers, 20 dp
+cards with soft token borders and cheap Android elevation, tinted icon/text pills,
+Inter prose and JetBrains Mono data. The old navy header and flatter board styling
+in `design/mobile` are historical; #203 takes precedence. Screen workflows,
+map styling, API contracts and token values are unchanged.
+
+- `AppText` adds `code` / `status` variants and `isMonospace` for dates, times,
+  quantities and identifiers without changing their existing size. Numbers and
+  overlines also use mono; badges are uppercase mono. Two JetBrains Mono weights
+  are bundled as local TTF assets through the same Expo font mechanism as Inter.
+  Direct per-weight imports add about 230 KB to the exported font assets, with no
+  runtime download. A failed font load still falls back instead of blocking boot.
+- Shared cards, buttons, fields, rows, notices and headers consume existing tokens.
+  Inputs keep visible external labels, use a focused border and select mono for
+  numeric keyboards. Disabled button text retains its contrasting secondary role.
+  Headers, rows and pills wrap; touch controls retain at least 48 dp targets.
+  No text receives a fixed height or `numberOfLines`.
+- `BottomActions` centralizes the full-width thumb-zone surface and bottom safe
+  area for the existing login, unlock and inbox actions.
+- `AppScrollView` / `AppFlatList` centralize visible native thin indicators in
+  both directions. Native Android controls the indicator color; the iOS
+  `indicatorStyle` follows the resolved light/dark theme. ESLint rejects direct
+  ScrollView/FlatList imports outside these wrappers, and rejects React Native
+  Alert, including alias/namespace/default-import escape routes. No native dialog
+  is introduced; existing in-app sheets and inline notices remain the feedback UI.
+- Appearance follows live system changes by default. Existing saved Light/Dark
+  choices keep their meaning. Settings offers System, Light and Dark; choosing
+  System restores live following without changing the stored language or data.
+
+### Review preview and evidence
+
+In a build with `EXPO_PUBLIC_DEV_TOOLS=1`, open Settings → developer tools →
+Style preview. The route is guarded by the same flag. Preview examples never
+read services, write storage, enqueue events or contact a server; the theme
+toggle is local to the preview. It includes fields, disabled state with a reason,
+all status tones, loading skeletons, empty and partial-error examples, and retry.
+
+[`preview/README.md`](preview/README.md) documents the repeatable browser harness.
+It renders the actual mobile components through React Native Web 0.21.4, using
+local font assets. Captures are explicitly labeled **browser renderer**; 130%
+is a browser approximation, not native Android qualification. Chrome DevTools
+returned inline captures for light/dark and the large-text examples, but its
+configured workspace roots denied saving PNGs in this worktree. No alternate
+filesystem path was used to bypass that restriction.
+
+Observed browser evidence is recorded in [`preview/evidence.json`](preview/evidence.json).
+Both themes, both locales and 130% text fit the 360 dp frame without horizontal
+overflow; checked controls measured 48/56 px (inputs expand with large text),
+local fonts loaded, switching appearance retained field contents and retry
+changed only the example. The browser SVG adapter emits two warnings for native
+decorative accessibility props. Browser evidence does not prove outdoor contrast
+perception, native layout, TalkBack, safe areas, keyboard avoidance or low-end
+performance. Those checks and owner visual approval remain **UNVERIFIED / required
+before merge**, together with CI's actual debug APK build.
+
+### Acceptance map
+
+| Criterion | Evidence |
+| --- | --- |
+| Follow system, preserve explicit settings | `test/visual-refresh.test.ts`: live-system changes vs stored Light/Dark and unknown fallback |
+| Mono data and sans prose | Same file: public typography contracts; Android JS export lists four Inter and two JetBrains Mono TTF assets |
+| Shared cards, statuses, fields, rows, bottom actions | Actual component browser preview in light/dark; all status tones have icon plus text; owner approval pending |
+| Outdoor targets and 130% wrapping | Browser measurements / scaled examples; no fixed text height or truncation; Android/TalkBack pending |
+| No native Alert, consistent indicators | ESLint negative probes for aliased, namespace and default imports; all current scroll regions use shared wrappers |
+| Existing behavior preserved | Full mobile tests with `--test-concurrency=1`, lint, formatting, typecheck; no API/data model changes |
+| Android build and final visuals | JS Android export verified locally; actual APK builds only in CI; owner/device approval pending |
+
+Dependencies: `@expo-google-fonts/jetbrains-mono` 0.4.1 (Expo-maintained,
+MIT/OFL-1.1, per-weight local assets) matches the existing Inter integration and
+avoids copying font binaries/licenses into app code. `react-native-web` 0.21.4
+(MIT, root **devDependency only**, React 18/19 peers) provides an honest renderer
+when a phone/emulator is unavailable; the Android entry never imports it.
+The harness reuses the existing Vite installation and adds no browser library
+to mobile production code. Verified references:
+[Expo fonts](https://docs.expo.dev/versions/latest/sdk/font/),
+[Expo Google Fonts](https://github.com/expo/google-fonts),
+[RN Web installation/compatibility](https://necolas.github.io/react-native-web/docs/installation/).
+
 
 ## Session-data cleanup recovery (#222)
 

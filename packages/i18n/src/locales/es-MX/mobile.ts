@@ -2,6 +2,36 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.preview.title": "Vista de estilos",
+  "mobile.preview.sample": "Ejemplo",
+  "mobile.preview.intro":
+    "Ejemplos de interfaz sin datos reales. No guardan cambios ni envían registros.",
+  "mobile.preview.themeHint": "Sigue el teléfono o elige una apariencia.",
+  "mobile.preview.textScaleHint":
+    "Para revisar texto al 130 %, usa el tamaño de texto del teléfono.",
+  "mobile.preview.system": "Sistema",
+  "mobile.preview.light": "Claro",
+  "mobile.preview.dark": "Oscuro",
+  "mobile.preview.toggleTheme": "Cambiar apariencia",
+  "mobile.preview.primary": "Terminar revisión",
+  "mobile.preview.data": "Datos de ejemplo",
+  "mobile.preview.progress": "Puntos revisados · meta del día",
+  "mobile.preview.received": "Recibido",
+  "mobile.preview.onPhone": "En el teléfono",
+  "mobile.preview.problem": "Con problema",
+  "mobile.preview.review": "En revisión",
+  "mobile.preview.inactive": "Sin actividad",
+  "mobile.preview.fields": "Captura",
+  "mobile.preview.code": "Código de ejemplo",
+  "mobile.preview.disabled": "Acción no disponible",
+  "mobile.preview.disabledHint":
+    "Ejemplo: falta una configuración. Tu supervisor puede habilitar esta acción.",
+  "mobile.preview.loading": "Cargando en el teléfono",
+  "mobile.preview.empty": "Aún sin registros",
+  "mobile.preview.partial": "El resto sigue disponible",
+  "mobile.preview.error":
+    "No se pudo actualizar este ejemplo. Reintenta; lo que capturaste sigue aquí.",
+  "mobile.preview.retryResult": "Reintento de ejemplo completado. No se contactó al servidor.",
   "mobile.ovitrap.pendingDraft":
     "Ya tienes un borrador de otra captura. Continúa ese borrador antes de cambiar de ovitrampa.",
   // M-08: P13, P14 and P21

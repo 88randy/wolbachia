@@ -10,42 +10,35 @@ import type { ReactNode } from "react";
 import { HomeScreen } from "../screens/HomeScreen.tsx";
 import { InboxScreen } from "../screens/InboxScreen.tsx";
 import { SettingsScreen } from "../screens/SettingsScreen.tsx";
+import { StylePreviewScreen } from "../screens/StylePreviewScreen.tsx";
+import { DEV_TOOLS_ENABLED } from "../config/build-config.ts";
 import { useTheme } from "../theme/ThemeProvider.tsx";
 import { useNavigation } from "./NavigationProvider.tsx";
 import type { Route } from "./routes.ts";
 
+const SCREENS = {
+  day: P9Screen,
+  map: P10Screen,
+  ovitrapCapture: OvitrapScreen,
+  openShift: OpenShiftScreen,
+  home: HomeScreen,
+  inbox: InboxScreen,
+  settings: SettingsScreen,
+  stylePreview: DEV_TOOLS_ENABLED ? StylePreviewScreen : HomeScreen,
+};
+
 function screenFor(route: Route): ReactNode {
-  switch (route.name) {
-    case "day":
-      return <P9Screen />;
-    case "map":
-      return <P10Screen />;
-    case "ovitrapCapture":
-      return <OvitrapScreen />;
-    case "ovitrapScanner":
-      return <ScannerScreen target={route.target} />;
-    case "invalidOvitrapCode":
-      return <P21Screen target={route.target} />;
-    case "openShift":
-      return <OpenShiftScreen />;
-    case "home":
-      return <HomeScreen />;
-    case "inbox":
-      return <InboxScreen />;
-    case "settings":
-      return <SettingsScreen />;
-  }
+  if (route.name === "ovitrapScanner") return <ScannerScreen target={route.target} />;
+  if (route.name === "invalidOvitrapCode") return <P21Screen target={route.target} />;
+  const Screen = SCREENS[route.name];
+  return <Screen />;
 }
 
-/**
- * Shows the screen on top of the stack. The home screen has the navy top bar (light status icons);
- * the inner screens have a surface header (icons follow the theme).
- */
+/** Shows the top route with status icons matching the surface header. */
 export function ScreenRouter() {
   const { route } = useNavigation();
   const { scheme } = useTheme();
-  const hasNavyBar = route.name === "home";
-  const statusStyle = hasNavyBar || scheme === "dark" ? "light" : "dark";
+  const statusStyle = scheme === "dark" ? "light" : "dark";
   return (
     <>
       <StatusBar style={statusStyle} />

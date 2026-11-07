@@ -1,0 +1,82 @@
+{
+  "issue": 203,
+  "recordedAtUtc": "2026-11-06T02:57:42Z",
+  "method": "Interactive Chrome DevTools MCP inspection of actual StylePreview and shared mobile components",
+  "renderer": {
+    "name": "React Native Web",
+    "version": "0.21.4",
+    "browser": "Chrome 157 on Windows",
+    "frame": {
+      "width": 360,
+      "height": 800
+    },
+    "devicePixelRatio": 1
+  },
+  "scenarios": [
+    {
+      "theme": "light",
+      "locale": "es-MX",
+      "textScalePercent": 100,
+      "horizontalOverflow": false,
+      "loadedFonts": [
+        "Inter 400",
+        "Inter 600",
+        "Inter 700",
+        "JetBrains Mono 400",
+        "JetBrains Mono 600"
+      ],
+      "minimumMeasuredControlPx": 48,
+      "buttonHeightPx": 56,
+      "inputHeightPx": 56
+    },
+    {
+      "theme": "dark",
+      "locale": "es-MX",
+      "textScalePercent": 100,
+      "inlineScreenshotReturned": true,
+      "fieldValuesRetainedAcrossThemeChange": true,
+      "errorEmptyLoadingStatesInspectedByScrolling": true
+    },
+    {
+      "theme": "dark",
+      "locale": "en",
+      "textScalePercent": 130,
+      "scaleIsBrowserApproximation": true,
+      "horizontalOverflow": false,
+      "elementsOutsideFrame": 0,
+      "numberFontSizePx": 52,
+      "minimumMeasuredControlPx": 48,
+      "inputHeightPx": 59.203125,
+      "retryChangesLocalExampleOnly": true,
+      "nonLocalResourceRequests": 0
+    },
+    {
+      "theme": "light",
+      "locale": "es-MX",
+      "textScalePercent": 130,
+      "scaleIsBrowserApproximation": true,
+      "horizontalOverflow": false,
+      "elementsOutsideFrame": 0,
+      "allFivePreviewFontsLoaded": true
+    }
+  ],
+  "screenshots": {
+    "inlineCapturesReturned": true,
+    "filesSaved": false,
+    "reason": "Chrome DevTools MCP rejected the absolute worktree PNG path as outside its configured workspace roots; no alternate path was used."
+  },
+  "rendererWarnings": [
+    "react-native-svg web renderer forwards native accessible=false to SVG DOM",
+    "react-native-svg web renderer forwards native importantForAccessibility to SVG DOM"
+  ],
+  "notVerified": [
+    "Android rendering",
+    "native 130% text scaling",
+    "TalkBack",
+    "outdoor readability",
+    "safe areas and software keyboard",
+    "low-end Android performance",
+    "actual CI debug APK build",
+    "owner final visual approval"
+  ]
+}

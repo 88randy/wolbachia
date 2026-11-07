@@ -12,7 +12,7 @@ export function ShiftStatus({ state }: { readonly state: ShiftSnapshot }) {
   if (opening === null) return null;
   return (
     <>
-      <AppText>{state.draft?.motorcycle_code}</AppText>
+      <AppText isMonospace>{state.draft?.motorcycle_code}</AppText>
       <Notice tone="info" icon="alert" message={t(deliveryKey(opening))} />
       <AppText>{t(STATUS_BADGE_KEY[opening.status])}</AppText>
       <AppText>{t("mobile.shiftOpen.reviewPending")}</AppText>
