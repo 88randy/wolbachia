@@ -8267,6 +8267,10 @@ components:
           format: date-time
         scope_revision:
           type: string
+        capture_context:
+          allOf:
+          - $ref: '#/components/schemas/CaptureContext'
+          nullable: true
         cursor:
           type: string
         catalog_version:
@@ -8338,6 +8342,37 @@ components:
       - schema_version
       - scope_revision
       - supplies
+    CaptureContext:
+      type: object
+      description: Self current SYNC observation; no session secret or immutable source
+        authority.
+      properties:
+        schema_version:
+          type: integer
+          maximum: 1
+          minimum: 1
+        permission:
+          $ref: '#/components/schemas/PermissionEnum'
+        user_id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        scope_revision:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        grants:
+          type: array
+          items:
+            $ref: '#/components/schemas/MeScope'
+      required:
+      - grants
+      - organization_id
+      - permission
+      - schema_version
+      - scope_revision
+      - user_id
     CapturedProvenance:
       type: object
       properties:
@@ -8648,6 +8683,10 @@ components:
         next_change_at:
           type: string
           format: date-time
+          nullable: true
+        capture_context:
+          allOf:
+          - $ref: '#/components/schemas/CaptureContext'
           nullable: true
         assignments:
           type: array
@@ -12938,6 +12977,11 @@ components:
           maxItems: 2
         is_active:
           type: boolean
+    PermissionEnum:
+      enum:
+      - field_event.sync
+      type: string
+      description: '* `field_event.sync` - field_event.sync'
     PlacementOption:
       oneOf:
       - $ref: '#/components/schemas/QuadrantPlacementOption'

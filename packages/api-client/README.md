@@ -4,6 +4,18 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#289 adds optional/nullable root capture_context to Bootstrap and Changes. Its
+required object fields are capture schema 1, field_event.sync permission, self
+user/org UUIDs, scope_revision and complete effective paired grants. Known empty
+grants deny; missing/unsupported normal metadata is unavailable. The root bundle
+contract advances from 1 to 2 without changing any producer payload/version. Old cursor r
+requires existing bootstrap recovery before ingest; outer schema/hash is opaque.
+Normal null/omitted HTTP cursor returns initial changes/context, not a full bundle;
+final/internal no-pull context is null and never grants capture. Me and #287's
+advisory are not substitutes. #138 owns durable readiness, owner/session/ABA fences
+and the real M09 provider; this generated contract does not implement them or native
+qualification. See [sync contract](../../docs/sync.md#paired-current-capture-context-289).
+
 #287 adds the active-DeviceBearer GET /field/ovitrap-advisories/{id}/ with mandatory
 aware `at`. Its optional point-wide OP03 aggregate requires BOTH existing paired
 field.bootstrap and field_event.sync authorities; no new grant or capture permission.
