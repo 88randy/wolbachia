@@ -2962,6 +2962,11 @@ paths:
           type: string
           format: uuid
       - in: query
+        name: lot_code
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
         name: operation
         schema:
           type: string
