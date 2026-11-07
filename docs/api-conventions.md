@@ -328,6 +328,25 @@ with motorcycle/courier/efficiency_status/date_from/date_before filters and serv
 ordering. GET /incidents/ lists severe-check block audits plus is_cleared and
 cleared_at inspection state, with page-number paging/server ordering.
 
+#296 adds fleet-only optional `motorcycle=<UUID>` to that existing incident GET
+collection (omitted kind remains fleet). Current motorcycle.read precedes reference
+discovery. The parent uses the existing tenant/effective-center Motorcycle queryset:
+unknown, foreign and denied UUIDs share 404; malformed/blank values return
+400 validation_error under fields.motorcycle. Repeated values use the last one.
+The exact parent filter precedes count/order/page; an authorized empty parent is
+an accepted empty page. No quadrant dimension or unrelated grant is borrowed.
+`kind=reported` continues ignoring this unsupported query, even when malformed.
+
+Each fleet row adds read-only `clearance: {id, created_at, reviewer, reason,
+evidence_ids} | null`, containing only its real InspectionClearance. Reviewer is
+the actual User UUID; evidence_ids are original public upload UUIDs, not URLs or
+download grants. Existing fields, including is_cleared/cleared_at, are unchanged.
+Current motorcycle.read permits the audit without manage/service_clear/field.upload;
+private downloads retain their current exact-fault read checks. Only the two nested
+history GET lists advertise existing optional boolean include_voided metadata:
+runtime still recognizes case-insensitive literal true, with no new parsing or
+query parameters on POST/void actions.
+
 POST /motorcycles/{id}/clear-fault/ accepts
 {fault_id,evidence_ids,reason,expected_revision}. Evidence is a nonempty UUID list;
 [ASSUMPTION] references are opaque until uploads exist. Reason uses shared normalized
