@@ -36,6 +36,12 @@ egg_count.read OR egg_count.void remains separate from queue/upload/close admiss
 New private fields deny/redact without current exact-pair incident.read, including
 create-only responses; no new permission is required to perform an existing write.
 
+An authorized ReviewItem reference combines the real source void stamp with its
+latest canonical decision_state. A terminal void is effective; audit-only void
+remains pending, while FieldEvent retains its original ingestion status. Nested
+read structures use their declared serializers once the shared projection is
+cached, preserving null/redacted fields and consistent UUID/datetime representations.
+
 Action booleans use each existing command's current whole paired scope. Separate
 prerequisites describe open state, void dependents, protected severity, pinned
 close minimum and field.upload; they do not certify selected/unbound evidence or

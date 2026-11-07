@@ -127,9 +127,9 @@ def test_reported_workspace_query_is_closed_and_uses_stable_type_identity():
     assert "origin" in invalid.errors
 
 
-def test_review_reference_keeps_void_state_from_its_real_field_event():
-    from incidents.workspace_projection import _reference
-    from reviews.models import ReviewItem
+def test_review_reference_keeps_void_state_from_its_real_field_event(monkeypatch):
+    from incidents.workspace_projection import _reference, linked_record
+    from reviews.models import ReviewDecision, ReviewIncidentLink, ReviewItem
 
     source_event = FieldEvent(pk=uuid4(), voided_at=AT)
     item = ReviewItem(pk=uuid4(), field_event=source_event)
@@ -140,6 +140,145 @@ def test_review_reference_keeps_void_state_from_its_real_field_event():
         "code": None,
         "is_voided": True,
     }
+    source_event.voided_at = None
+    source_event.status = "in_review"
+    actor = SimpleNamespace(organization=object())
+    incident = Incident(pk=uuid4())
+    incident.creation_origin = "review_decision"
+    latest = [None]
+    monkeypatch.setattr(
+        ReviewIncidentLink.objects,
+        "filter",
+        lambda **_kwargs: SimpleNamespace(first=lambda: SimpleNamespace(review_item_id=item.pk)),
+    )
+    monkeypatch.setattr(
+        ReviewItem,
+        "decisions",
+        SimpleNamespace(order_by=lambda order: SimpleNamespace(first=lambda: latest[0])),
+    )
+
+    def visible(current_actor, identifier, code):
+        assert (current_actor, identifier, code) == (actor, item.pk, "review_item.read")
+        return item
+
+    monkeypatch.setattr("reviews.actions.visible_review", visible)
+    for decision, is_voided in (
+        (None, False),
+        (ReviewDecision(kind="void", is_terminal=False), False),
+        (ReviewDecision(kind="accept", is_terminal=True), False),
+        (ReviewDecision(kind="void", is_terminal=True), True),
+    ):
+        latest[0] = decision
+        assert linked_record(actor, incident)["is_voided"] is is_voided
+        assert source_event.status == "in_review"
+        assert source_event.voided_at is None
+
+
+def test_reported_workspace_uses_declared_nested_read_representations(monkeypatch):
+    from incidents.serializers import ReportedIncidentSerializer
+    from incidents.workspace_projection import unavailable_record
+
+    snapshot_id, blocker_id, parent_id, evidence_id = (uuid4() for _ in range(4))
+    reference = {
+        "kind": "review_item",
+        "available": True,
+        "id": parent_id,
+        "code": None,
+        "is_voided": True,
+    }
+    snapshot = {
+        "id": snapshot_id,
+        "code": "review",
+        "label": "Review",
+        "icon": "alert",
+        "is_other": False,
+        "report_evidence_min": 0,
+        "close_evidence_min": 1,
+    }
+    evidence = {
+        "id": evidence_id,
+        "is_readable": True,
+        "is_verified": True,
+        "verified_at": AT,
+        "content_type": "image/jpeg",
+        "size_bytes": 12,
+    }
+    redacted = {
+        "id": uuid4(),
+        "is_readable": False,
+        "is_verified": None,
+        "verified_at": None,
+        "content_type": None,
+        "size_bytes": None,
+    }
+    projection = {
+        "type_snapshot": snapshot,
+        "linked_record": reference,
+        "blockers": [
+            {"id": blocker_id, "kind": "motorcycle", "is_active": True, "resource": reference}
+        ],
+        "evidence": [evidence, redacted],
+        "action_permissions": {
+            key: False
+            for key in (
+                "comment",
+                "reassign",
+                "change_severity",
+                "close",
+                "void",
+            )
+        },
+        "action_prerequisites": {
+            "is_open": True,
+            "has_void_dependents": True,
+            "is_severity_protected": False,
+            "close_evidence_min": 1,
+            "can_upload_evidence": False,
+        },
+    }
+    incident = Incident(pk=uuid4())
+    calls = []
+
+    def project(actor, obj):
+        assert actor is None
+        calls.append(obj)
+        return projection
+
+    monkeypatch.setattr("incidents.workspace_projection.workspace_projection", project)
+
+    def represent():
+        serializer = ReportedIncidentSerializer(incident)
+        # This pure boundary owns only the nested DTOs, not timeline/ACL queries.
+        for field in set(serializer.fields) - projection.keys():
+            serializer.fields.pop(field)
+        return serializer.data
+
+    data = represent()
+    assert data["type_snapshot"] == {**snapshot, "id": str(snapshot_id)}
+    assert data["linked_record"] == {**reference, "id": str(parent_id)}
+    assert data["blockers"] == [
+        {
+            "id": str(blocker_id),
+            "kind": "motorcycle",
+            "is_active": True,
+            "resource": {**reference, "id": str(parent_id)},
+        }
+    ]
+    assert data["evidence"] == [
+        {**evidence, "id": str(evidence_id), "verified_at": AT.isoformat().replace("+00:00", "Z")},
+        {**redacted, "id": str(redacted["id"])},
+    ]
+    assert data["action_permissions"] == projection["action_permissions"]
+    assert data["action_prerequisites"] == projection["action_prerequisites"]
+    assert calls == [incident]
+    projection.update(
+        type_snapshot=None, action_prerequisites=None, linked_record=unavailable_record()
+    )
+    redacted_data = represent()
+    assert redacted_data["type_snapshot"] is None
+    assert redacted_data["action_prerequisites"] is None
+    assert redacted_data["linked_record"] == unavailable_record()
+    assert calls == [incident, incident]
 
 
 @pytest.mark.django_db

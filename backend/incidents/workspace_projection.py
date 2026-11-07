@@ -189,7 +189,11 @@ def linked_record(actor: UploadActor, incident: Incident) -> dict[str, Any]:
             item = visible_review(actor, link.review_item_id, "review_item.read")
         except (Http404, PermissionDenied):
             return unavailable_record()
-        return _reference("review_item", item)
+        reference = _reference("review_item", item)
+        latest = item.decisions.order_by("-revision").first()
+        if latest is not None and latest.decision_state == "voided":
+            reference["is_voided"] = True
+        return reference
     if origin == "field_event":
         return _source_reference(actor, incident)
     adopted = getattr(incident, "origin", None)

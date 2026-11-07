@@ -157,7 +157,12 @@ class ReportedIncidentSerializer(OrgScopedModelSerializer):
 
     @extend_schema_field(IncidentTypeSnapshotSerializer(allow_null=True))
     def get_type_snapshot(self, obj: Incident) -> dict[str, Any] | None:
-        return self._projection(obj)["type_snapshot"]
+        snapshot = self._projection(obj)["type_snapshot"]
+        return (
+            None
+            if snapshot is None
+            else dict(IncidentTypeSnapshotSerializer(snapshot, context=self.context).data)
+        )
 
     @extend_schema_field(serializers.ChoiceField(choices=CREATION_ORIGINS))
     def get_origin(self, obj: Incident) -> str:
@@ -169,23 +174,46 @@ class ReportedIncidentSerializer(OrgScopedModelSerializer):
 
     @extend_schema_field(IncidentLinkedRecordSerializer())
     def get_linked_record(self, obj: Incident) -> dict[str, Any]:
-        return self._projection(obj)["linked_record"]
+        return dict(
+            IncidentLinkedRecordSerializer(
+                self._projection(obj)["linked_record"], context=self.context
+            ).data
+        )
 
     @extend_schema_field(IncidentOwnedBlockerSerializer(many=True))
     def get_blockers(self, obj: Incident) -> list[dict[str, Any]]:
-        return self._projection(obj)["blockers"]
+        return list(
+            IncidentOwnedBlockerSerializer(
+                self._projection(obj)["blockers"], many=True, context=self.context
+            ).data
+        )
 
     @extend_schema_field(IncidentEvidenceSerializer(many=True))
     def get_evidence(self, obj: Incident) -> list[dict[str, Any]]:
-        return self._projection(obj)["evidence"]
+        return list(
+            IncidentEvidenceSerializer(
+                self._projection(obj)["evidence"], many=True, context=self.context
+            ).data
+        )
 
     @extend_schema_field(IncidentActionPermissionsSerializer())
     def get_action_permissions(self, obj: Incident) -> dict[str, bool]:
-        return self._projection(obj)["action_permissions"]
+        return dict(
+            IncidentActionPermissionsSerializer(
+                self._projection(obj)["action_permissions"], context=self.context
+            ).data
+        )
 
     @extend_schema_field(IncidentActionPrerequisitesSerializer(allow_null=True))
     def get_action_prerequisites(self, obj: Incident) -> dict[str, Any] | None:
-        return self._projection(obj)["action_prerequisites"]
+        prerequisites = self._projection(obj)["action_prerequisites"]
+        return (
+            None
+            if prerequisites is None
+            else dict(
+                IncidentActionPrerequisitesSerializer(prerequisites, context=self.context).data
+            )
+        )
 
     def get_publication_state(self, obj: Incident) -> Literal["outboxed", "pending_outbox"]:
         return "outboxed" if obj.notice_outboxed else "pending_outbox"  # type: ignore[attr-defined]
