@@ -32,7 +32,23 @@ const UNVERIFIED_EVIDENCE = `(EXISTS(SELECT 1 FROM json_tree(waiting.payload) re
     OR (type='supplies.receive' AND NOT EXISTS(SELECT 1 FROM attachment_file f
       JOIN attachment_event b ON b.evidence_id=f.id AND b.event_id=waiting.id
       WHERE f.id=json_extract(waiting.payload,'$.signature_upload_id')
-        AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?))`;
+        AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?))
+    OR (type='fuel.load' AND json_type(payload,'$.receipt_upload_id') IS NOT NULL
+      AND json_type(payload,'$.receipt_upload_id')<>'null' AND
+      (json_type(payload,'$.receipt_upload_id')<>'text' OR NOT EXISTS(SELECT 1 FROM attachment_file f
+        JOIN attachment_event b ON b.evidence_id=f.id AND b.event_id=waiting.id
+        WHERE f.id=json_extract(waiting.payload,'$.receipt_upload_id')
+          AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?)))`;
+
+// One SyncEngine serializes claim and receipt. Fuel waits for its opening receipt; close JSON
+// waits for earlier fuel, including future retries and parked errors. Local saves never wait.
+// Only sent/rejected/in_review predecessors release normal transport; final JSON bypasses this.
+const UNSETTLED_FUEL = `(type='shift.close' AND EXISTS(SELECT 1 FROM outbox_event fuel
+  WHERE fuel.type='fuel.load' AND fuel.shift_id=waiting.shift_id AND fuel.seq<waiting.seq
+    AND fuel.local_status IN ('pending','sending','error')))`;
+const UNSETTLED_OPENING = `(type='fuel.load' AND EXISTS(SELECT 1 FROM outbox_event opening
+  WHERE opening.type='shift.open' AND opening.shift_id=waiting.shift_id
+    AND opening.local_status IN ('pending','sending','error')))`;
 
 /** Claim and timer share evidence/dependency/owner/final eligibility, before due/LIMIT/MIN. */
 function eligibleRows(
@@ -43,12 +59,12 @@ function eligibleRows(
   const evidenceOwner = fence?.ownerKey ?? "";
   return {
     sql: `WITH RECURSIVE waiting AS (SELECT * FROM outbox_event WHERE local_status='pending'),
-      ${DEPENDENCIES},blocked(id) AS (SELECT id FROM waiting WHERE (${isFinal ? "0" : UNVERIFIED_EVIDENCE}) ${holdFuture ? "OR retry_at>?" : ""}
+      ${DEPENDENCIES},blocked(id) AS (SELECT id FROM waiting WHERE (${isFinal ? "0" : `${UNVERIFIED_EVIDENCE} OR ${UNSETTLED_FUEL} OR ${UNSETTLED_OPENING}`}) ${holdFuture ? "OR retry_at>?" : ""}
         UNION SELECT edges.child FROM edges JOIN blocked ON edges.parent=blocked.id),
       eligible AS (SELECT * FROM waiting WHERE id NOT IN (SELECT id FROM blocked)
         AND ${fence === null ? "1" : CURRENT_FENCE})`,
     params: [
-      ...(isFinal ? [] : [evidenceOwner, evidenceOwner]),
+      ...(isFinal ? [] : [evidenceOwner, evidenceOwner, evidenceOwner]),
       ...(holdFuture ? [now] : []),
       ...(fence === null ? [] : fenceParams(fence)),
     ],

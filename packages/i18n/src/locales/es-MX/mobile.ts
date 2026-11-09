@@ -765,4 +765,79 @@ export const mobile = {
     "Revisión posterior: recibo anulado por el supervisor. La captura firmada se conserva.",
   "mobile.supplyReceipt.incidentOpen":
     "Revisión posterior: se abrió una incidencia. Esto no acepta ni anula el recibo.",
+  "mobile.fuel.title": "Cargar gasolina",
+  "mobile.fuel.subtitle": "Captura sin señal · moto de tu jornada",
+  "mobile.fuel.motorcycle": "Moto",
+  "mobile.fuel.motorcycleFixed": "La moto es la de tu jornada abierta; no se puede cambiar aquí.",
+  "mobile.fuel.litres": "Litros (L)",
+  "mobile.fuel.amount": "Monto (MXN)",
+  "mobile.fuel.odometer": "Odómetro actual (km)",
+  "mobile.fuel.fullRefill": "¿Llenaste el tanque?",
+  "mobile.fuel.fullRefillYes": "Sí · tanque lleno",
+  "mobile.fuel.fullRefillNo": "No · carga parcial",
+  "mobile.fuel.receipt": "Foto del ticket",
+  "mobile.fuel.receiptPreview": "Vista previa privada del ticket de esta carga",
+  "mobile.fuel.receiptCheck":
+    "Revisa que se lean los números. Si está borrosa, repite la foto con más luz y sin moverte; tus cantidades se conservan.",
+  "mobile.fuel.receiptSaved": "La foto original del ticket se conserva con esta carga.",
+  "mobile.fuel.noReceiptSaved":
+    "Esta carga se guardó sin foto del ticket; el recibo queda pendiente.",
+  "mobile.fuel.noReceipt":
+    "Sin foto del ticket. Puedes intentar tomarla o guardar la carga con el recibo pendiente.",
+  "mobile.fuel.takePhoto": "Tomar foto del ticket",
+  "mobile.fuel.retake": "Repetir foto del ticket",
+  "mobile.fuel.previewUnavailable":
+    "No pudimos mostrar la vista previa. La referencia se conserva; revisa la foto antes de guardar o vuelve a tomarla.",
+  "mobile.fuel.photoUnavailable":
+    "No pudimos abrir la cámara. Vuelve a intentar; tus cantidades y la foto anterior se conservan.",
+  "mobile.fuel.insufficient":
+    "Datos insuficientes para calcular el rendimiento: se necesitan cargas completas consecutivas con distancia conocida. Puedes guardar la carga y cerrar tu jornada.",
+  "mobile.fuel.unconfigured":
+    "No hay límites de rendimiento descargados para este intervalo. Puedes guardar; el servidor revisará la carga al recibirla.",
+  "mobile.fuel.decreased":
+    "El odómetro es menor que la lectura anterior. Revisa el número; puedes conservarlo y guardar la carga.",
+  "mobile.fuel.efficiencyOk":
+    "Rendimiento del intervalo comparable dentro de los límites informativos.",
+  "mobile.fuel.efficiencyReview":
+    "El rendimiento queda fuera del rango informativo. Revisa litros y odómetro; puedes guardar así y cerrar tu jornada.",
+  "mobile.fuel.saved": "Guardada en el teléfono · pendiente de recibir por el servidor.",
+  "mobile.fuel.serverReceived": "Carga recibida por el servidor.",
+  "mobile.fuel.reviewPending":
+    "Carga recibida por el servidor · pendiente de revisión. Las cantidades se conservan.",
+  "mobile.fuel.rejected":
+    "El servidor rechazó esta carga. La captura se conserva; revisa el motivo en la bandeja y avisa a tu supervisor.",
+  "mobile.fuel.receiptPending":
+    "Ticket pendiente de envío o verificación; no es una revisión de la carga.",
+  "mobile.fuel.receiptVerified":
+    "Foto del ticket verificada por el servidor; no es una revisión de la carga.",
+  "mobile.fuel.reviewedAccepted": "Revisión posterior: carga aceptada por el supervisor.",
+  "mobile.fuel.reviewedVoided":
+    "Revisión posterior: carga anulada. La captura original se conserva.",
+  "mobile.fuel.incidentOpen":
+    "Revisión posterior: se abrió una incidencia; la carga no queda aceptada ni anulada.",
+  "mobile.fuel.litresInvalid":
+    "Escribe litros mayores que cero, con hasta tres decimales y sin separadores de miles.",
+  "mobile.fuel.amountInvalid":
+    "Escribe un monto mayor que cero, con hasta dos decimales y sin separadores de miles.",
+  "mobile.fuel.odometerInvalid":
+    "Escribe kilómetros enteros entre 0 y 999999, sin separadores de miles.",
+  "mobile.fuel.unavailable":
+    "La jornada o los datos descargados no autorizan esta captura. Revisa tu jornada y vuelve a intentar; el borrador se conserva.",
+  "mobile.fuel.shiftRequired":
+    "Abre una jornada autorizada antes de cargar gasolina. Tu borrador se conserva.",
+  "mobile.fuel.staleDraft":
+    "La captura cambió mientras trabajabas. Revisa el borrador conservado y vuelve a intentar.",
+  "mobile.fuel.draftSaved":
+    "Borrador en este teléfono · revisa los datos antes de guardar la carga.",
+  "mobile.fuel.draftPending":
+    "Hay cambios pendientes de guardar en el teléfono. Vuelve a intentar antes de salir.",
+  "mobile.fuel.empty":
+    "Todavía no hay una captura de gasolina. Inicia una para la moto de tu jornada.",
+  "mobile.fuel.begin": "Iniciar captura de gasolina",
+  "mobile.fuel.beginAnother": "Capturar otra carga",
+  "mobile.fuel.save": "Guardar carga",
+  "mobile.fuel.working": "Guardando en el teléfono…",
+  "mobile.fuel.saveHint":
+    "Guardar conserva la carga en este teléfono. El envío y la revisión ocurren después.",
+  "mobile.fuel.inbox": "Ver envío y revisión en la bandeja",
 } as const satisfies AreaCatalog<"mobile">;

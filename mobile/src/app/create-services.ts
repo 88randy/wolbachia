@@ -36,11 +36,14 @@ import { createNativePhotoAcquisition } from "../attachments/native-photo-acquis
 import { acceptedEvidenceOwner } from "../attachments/accepted-owner.ts";
 import { createSupplyReceipt } from "../features/supply-receipt/create-supply-receipt.ts";
 import type { SupplyReceiptService } from "../features/supply-receipt/service.ts";
+import { createFuel } from "../features/fuel/create-fuel.ts";
+import type { FuelService } from "../features/fuel/service.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly attachments: Attachments;
   readonly supplyReceipt: SupplyReceiptService;
+  readonly fuel: FuelService;
   readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
@@ -84,11 +87,10 @@ export async function createServices(): Promise<AppServices> {
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
-  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
+  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
-  const shiftClose = createShiftClose({ ...captureDeps, day, bundle, auth, deviceId });
-  const supplyReceipt = createSupplyReceipt({ ...captureDeps, auth, bundle });
-  return { ...shared, ...captures, engine, shiftOpen, shiftClose, day, supplyReceipt };
+  const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId });
+  return { ...shared, ...captures, engine, shiftOpen, day, ...forms };
 }
 function captureIdentity(
   auth: AuthController | null,
@@ -115,6 +117,14 @@ function createCaptures(
       location: day.location,
       selectTask: (id, expected, admission) => day.select(id, expected, admission),
     }),
+  };
+}
+
+function createLocalForms(input: Parameters<typeof createShiftClose>[0]) {
+  return {
+    shiftClose: createShiftClose(input),
+    supplyReceipt: createSupplyReceipt(input),
+    fuel: createFuel(input),
   };
 }
 

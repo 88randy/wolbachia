@@ -742,4 +742,74 @@ export const mobile: Record<keyof typeof source, string> = {
     "Later review: receipt voided by the supervisor. The signed capture is retained.",
   "mobile.supplyReceipt.incidentOpen":
     "Later review: an incident was opened. This does not accept or void the receipt.",
+  "mobile.fuel.title": "Add fuel",
+  "mobile.fuel.subtitle": "Offline capture · current shift motorcycle",
+  "mobile.fuel.motorcycle": "Motorcycle",
+  "mobile.fuel.motorcycleFixed":
+    "This motorcycle belongs to your open shift and cannot be changed here.",
+  "mobile.fuel.litres": "Litres (L)",
+  "mobile.fuel.amount": "Amount (MXN)",
+  "mobile.fuel.odometer": "Current odometer (km)",
+  "mobile.fuel.fullRefill": "Did you fill the tank?",
+  "mobile.fuel.fullRefillYes": "Yes · full tank",
+  "mobile.fuel.fullRefillNo": "No · partial fill",
+  "mobile.fuel.receipt": "Receipt photo",
+  "mobile.fuel.receiptPreview": "Private preview of this fuel receipt",
+  "mobile.fuel.receiptCheck":
+    "Check that the numbers are readable. If blurry, retake the photo with more light and hold still; your quantities are retained.",
+  "mobile.fuel.receiptSaved": "The original receipt photo is retained with this load.",
+  "mobile.fuel.noReceiptSaved":
+    "This load was saved without a receipt photo; its receipt remains pending.",
+  "mobile.fuel.noReceipt":
+    "No receipt photo. Retry the camera or save the load with its receipt pending.",
+  "mobile.fuel.takePhoto": "Take receipt photo",
+  "mobile.fuel.retake": "Retake receipt photo",
+  "mobile.fuel.previewUnavailable":
+    "We could not show the preview. Its reference is retained; check the photo before saving or take it again.",
+  "mobile.fuel.photoUnavailable":
+    "We could not open the camera. Retry; your quantities and previous photo are retained.",
+  "mobile.fuel.insufficient":
+    "Insufficient efficiency data: consecutive full fills with a known distance are required. You can save the load and close your shift.",
+  "mobile.fuel.unconfigured":
+    "Efficiency limits for this interval have not been downloaded. You can save; the server will review the load when received.",
+  "mobile.fuel.decreased":
+    "The odometer is below the previous reading. Check the number; you can keep it and save the load.",
+  "mobile.fuel.efficiencyOk": "Comparable-interval efficiency is within the advisory limits.",
+  "mobile.fuel.efficiencyReview":
+    "Efficiency is outside the advisory range. Check litres and odometer; you can save as entered and close your shift.",
+  "mobile.fuel.saved": "Saved on the phone · awaiting server receipt.",
+  "mobile.fuel.serverReceived": "Fuel load received by the server.",
+  "mobile.fuel.reviewPending":
+    "Received by the server · awaiting review. Your quantities are retained.",
+  "mobile.fuel.rejected":
+    "The server rejected this load. The capture is retained; check the inbox reason and contact your supervisor.",
+  "mobile.fuel.receiptPending":
+    "Receipt upload or verification pending; this is not a review of the fuel load.",
+  "mobile.fuel.receiptVerified":
+    "Receipt photo verified by the server; this is not a review of the fuel load.",
+  "mobile.fuel.reviewedAccepted": "Later review: fuel load accepted by the supervisor.",
+  "mobile.fuel.reviewedVoided": "Later review: fuel load voided. The original capture is retained.",
+  "mobile.fuel.incidentOpen":
+    "Later review: an incident was opened; the fuel load is neither accepted nor voided.",
+  "mobile.fuel.litresInvalid":
+    "Enter litres greater than zero with up to three decimal places and no thousands separators.",
+  "mobile.fuel.amountInvalid":
+    "Enter an amount greater than zero with up to two decimal places and no thousands separators.",
+  "mobile.fuel.odometerInvalid":
+    "Enter whole kilometres from 0 to 999999 without thousands separators.",
+  "mobile.fuel.unavailable":
+    "Your shift or downloaded context does not authorize this capture. Check your shift and retry; the draft is retained.",
+  "mobile.fuel.shiftRequired":
+    "Open an authorized shift before adding fuel. Your draft is retained.",
+  "mobile.fuel.staleDraft":
+    "The capture changed while you were working. Review the retained draft and retry.",
+  "mobile.fuel.draftSaved": "Draft on this phone · check the values before saving the load.",
+  "mobile.fuel.draftPending": "Changes still need saving on the phone. Retry before leaving.",
+  "mobile.fuel.empty": "There is no fuel entry yet. Start one for your current shift motorcycle.",
+  "mobile.fuel.begin": "Start fuel entry",
+  "mobile.fuel.beginAnother": "Capture another load",
+  "mobile.fuel.save": "Save fuel load",
+  "mobile.fuel.working": "Saving on the phone…",
+  "mobile.fuel.saveHint": "Save retains the load on this phone. Upload and review happen later.",
+  "mobile.fuel.inbox": "View upload and review in the inbox",
 };

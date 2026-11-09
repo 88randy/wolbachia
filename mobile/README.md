@@ -1,5 +1,14 @@
 # mobile
 
+## M11 fuel capture (#140)
+
+P22 captures fuel offline for the current shift's fixed motorcycle. Durable raw
+fields survive receipt retake, failed storage and restart; Save shares the existing
+outbox/private file journal. Pending receipts and later server/review outcomes stay
+distinct. Unknown comparable history remains insufficient data. See the
+[feature contract and criterion map](src/features/fuel/README.md). Physical
+camera/force-stop/TalkBack/API qualification remains UNRUN.
+
 ## M05 courier supplies (#134)
 
 P8 is reachable from the open-shift home. It retains original released lines and

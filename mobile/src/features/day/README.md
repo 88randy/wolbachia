@@ -1,5 +1,14 @@
 # Day projections and task locations
 
+## Fuel capture context (#140)
+
+`withFuelContext` reuses the same short projection writer and downloaded paired
+capture context. Its original raw context/profile guard pins owner, session,
+scope/authority revisions and `field_event.sync`; upload permission is separate.
+The operational shift pins the motorcycle code. This reader neither invents a
+motorcycle-to-center mapping nor adds a fuel baseline producer. Exact B05 shift
+and B04 parent authority are still rechecked by the server.
+
 ## Courier supply projection (#134)
 
 The same DayStore transaction also publishes the actual `supplies` section into
