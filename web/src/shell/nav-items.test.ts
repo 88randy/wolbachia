@@ -11,7 +11,13 @@ describe("visibleNavGroups", () => {
     expect(
       idsOf(
         makeMe({
-          permissions: ["rule_parameter.read", "motorcycle.read", "quadrant.read", "location.read"],
+          permissions: [
+            "incident.read",
+            "rule_parameter.read",
+            "motorcycle.read",
+            "quadrant.read",
+            "location.read",
+          ],
         }),
       ),
     ).toHaveLength(13);
