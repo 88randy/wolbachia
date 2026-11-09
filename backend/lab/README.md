@@ -77,15 +77,15 @@ hook and a deferred SQL completion guard. The hook checks only this named deferr
 constraint in a savepoint, restores its deferred mode on success, and maps its exact
 SQL marker AND source UUID AFTER rollback, retaining
 `ovitrap_void_blocked` without queries in a broken transaction. Other failures
-propagate. #115 must extend dependencies before adding execution/adjudication facts.
+propagate. Independent execution and physical reuse retain those same dependencies.
 
 `recounts.py` creates immediate requests and deterministic closed LOCAL-day draws.
 The default rate is 5 per 100 first-pass counts (configurable 1..20), ceil/minimum
 one for nonempty population. Store real population members/hash, timezone, UTC
 bounds, rule/configuration proof and selection. Recovery is idempotent; supplements
 retain earlier selections/requests after corrections. Requests preserve the first
-counter and independent requirement. #115 owns actual second-counter execution,
-blind adjudication and paddle reuse; none is claimed performed here.
+counter and independent requirement. `independent_qa/` owns actual second/third
+execution, explicit adjudication and forward physical paddle identity/reuse (#115).
 
 The one public history publisher receives authentic human result facts. Lab adds
 five variants to the existing review/shift/relocation/transfer union and advances
@@ -130,10 +130,67 @@ Only an actual BagDisposition with current receipt/result and closed-day unselec
 assessment removes physical availability. Open/missing/stale draw and unresolved
 independent recount are blockers, never implicit clearance. Disposal retains Bag,
 Reading/source, count/method/rule proof and every QA obligation. Later #115 work
-must report material_unavailable, not infer completion or reuse.
+reports material_unavailable, never inferred completion or reuse.
 New first counts, physical replacements and rejections are blocked after disposal
 in the shared writer and additive SQL guard. Optional count-replacement
 measurement_kind=data_correction requires its real same-Bag/source/predecessor/
 command proof and preserves scientific pins. Omitted or physical_measurement keeps
 the old canonical command shape/hash and exact saved replay before material gates.
 No new Lab model, science default, ledger or history publisher is introduced.
+
+## Independent observations and physical reuse (#115)
+
+`independent_qa/` extends the existing Command, first-result, request and draw
+owners. Claims append real counter/role/current first/result/policy/cause pins.
+Independent attempts keep a distinct typed identity and never join first-pass
+sampling N. A strict exact difference greater than max(absolute tolerance,
+relative tolerance * first value / 100) needs a distinct third person and real
+third observation before selecting one original candidate. Equality stays within
+tolerance. Below tolerance the completing second counter may select with current
+recount.create; another adjudicator needs recount.adjudicate. The third needs both.
+Every selection retains the canonical reason plus a 10-visible/1000-stored note.
+
+The queue exposes nonnumeric work identity/state/CAS only. One central blindness
+predicate covers result/detail/void/request causes, Bag.lab, lab_status facets,
+history bootstrap/changes and stored responses before mutable execution gates.
+Hidden numeric/inferential rows are removed before filter/count/order/page/LIMIT;
+hidden Bag.lab is null, while field/receipt facts remain. Actual numeric or derived
+status delivery records a minimal immutable actor/count/surface receipt, even
+without a current recount grant. Later grants do not erase what was disclosed.
+Own first authors and previously exposed actors cannot become independent.
+Historical payloads and cached response bodies are never rewritten for redaction.
+
+Only completion of a genuinely new first observation records the forward blind
+boundary. Legacy/replayed/replacement observations do not acquire it. A legacy
+request may receive an explicit external operational independence assessment from
+a different current adjudicator with egg_count.read. It pins the exact request,
+first/result, target, role, real pair, opaque reference and reason. Second target
+requires create; third target requires create+adjudicate. Disclosure always wins.
+This declaration does not certify what somebody knew outside the system.
+
+EggPaddle registration is a forward human physical observation of a real positive
+Piece. Bindings require a later actual issue for this Bag's real collection/check
+or historical placement. A type label/code/UUID alone never establishes identity.
+The complete actor/source closure includes both placement and collection authors.
+Every later cycle requires both original collection clocks to follow the prior
+drying fact; a later ledger debit cannot turn an older collection into a new cycle.
+HTTP command retries authorize their saved subjects before current mutable state;
+a later binding never enlarges the original retry's authority vector. GET keeps
+the paddle's complete current read scope.
+Reuse requires the current negative selected observation, genuine closed-day
+member/frame and all current obligations resolved, named current verified QA and
+treatment procedures, actual evidence and the configured 0..2 bound. No procedure,
+verification, duration, chemical recipe or biological approval is seeded.
+
+Consumed material creates one typed PaddleStockReturn credit for its exact debit,
+Piece/lot/unit/cycle. Positive custody instead retains the canonical return_accept
+receipt and creates zero additional operations. Neither branch reverses SupplyUse.
+Later real QA selection after treatment remains awaiting_material; it cannot
+measure washed material, undo the return, erase a cause or authorize another cycle.
+Counts/rejections/corrections/source void preserve physical dependents or return
+their existing safe blocker. History7 extends the one publisher with three typed
+QA/reuse variants; root2 and supplies1 remain unchanged.
+
+The existing B19 service, Lab HTTP/history/concurrency, B04 real-byte and whole Lab
+MigrationExecutor owners cover these boundaries. Pure checks/collection do not
+qualify PostgreSQL guards, stock effects, migrations or races.

@@ -62,6 +62,16 @@ def _normalize(value: Any) -> Any:  # noqa: ANN401 -- recursive validated JSON b
 
 
 def execute_lab_command(actor: UploadActor, request: LabCommandInput) -> LabOutcome:
+    from lab.independent_qa.commands import QA_ACTIONS, execute_independent_command
+    from lab.independent_qa.evidence import PADDLE_ACTIONS
+
+    if request.action in PADDLE_ACTIONS:
+        from lab.independent_qa.paddles import execute_paddle_command
+
+        return execute_paddle_command(actor, request)
+
+    if request.action in QA_ACTIONS:
+        return execute_independent_command(actor, request)
     permission = ACTION_PERMISSION[request.action]
     prepared = prepare_lab_subject(actor, request.target, permission)
     with lab_transaction(actor, (prepared,)):
@@ -71,25 +81,35 @@ def execute_lab_command(actor: UploadActor, request: LabCommandInput) -> LabOutc
         for action in extra_permissions(request):
             if not scoped_readings(actor, action).filter(pk=prepared.reading_id).exists():
                 raise Http404
-        values = canonical_values(request.values)
-        digest = snapshot_hash(
-            {"action": request.action, "target": str(request.target.identifier), "values": values}
-        )
-        if existing := LabCommand.objects.filter(
-            organization=actor.organization, command_id=request.command_id
-        ).first():
-            return replay_command(actor, existing, (request, digest))
-        command = LabCommand.objects.create(
-            organization=actor.organization,
-            created_by=actor.user,
-            command_id=request.command_id,
-            action=request.action,
-            target_id=request.target.identifier,
-            input_hash=digest,
-            canonical_input=values,
-            source_id=prepared.source_id,
-        )
-        return apply_command(actor, command, request)
+        return execute_prepared_command(actor, request, prepared.source_id)
+
+
+def execute_prepared_command(
+    actor: UploadActor, request: LabCommandInput, source_id: UUID | None
+) -> LabOutcome:
+    """One persistence/replay kernel, called only inside the owning retained transaction."""
+    from lab.transactions import require_lab_lock
+
+    require_lab_lock(actor.organization.pk)
+    values = canonical_values(request.values)
+    digest = snapshot_hash(
+        {"action": request.action, "target": str(request.target.identifier), "values": values}
+    )
+    if existing := LabCommand.objects.filter(
+        organization=actor.organization, command_id=request.command_id
+    ).first():
+        return replay_command(actor, existing, (request, digest))
+    command = LabCommand.objects.create(
+        organization=actor.organization,
+        created_by=actor.user,
+        command_id=request.command_id,
+        action=request.action,
+        target_id=request.target.identifier,
+        input_hash=digest,
+        canonical_input=values,
+        source_id=source_id,
+    )
+    return apply_command(actor, command, request)
 
 
 def replay_command(
@@ -105,34 +125,59 @@ def replay_command(
     ):
         raise LabConflictError("lab_command_conflict")
     result = command.result
+    from lab.independent_qa.commands import authorize_saved_subject, publish_command_numbers
+
     for subject in result.subjects:
-        if (
-            not scoped_readings(actor, subject["permission"])
-            .filter(pk=subject["reading_id"])
-            .exists()
-        ):
-            raise Http404
+        authorize_saved_subject(actor, subject)
+    publish_command_numbers(actor, command, dict(result.body))
     return LabOutcome(result.status, dict(result.body), True)
 
 
 def apply_command(actor: UploadActor, command: LabCommand, request: LabCommandInput) -> LabOutcome:
-    try:
-        with transaction.atomic():
-            outcome = dispatch_command(actor, command, request)
-    except LabConflictError as error:
-        outcome = LabOutcome(
-            409, {"code": error.code, "detail": error.detail, "blocked_by": error.blocked_by}
+    from lab.independent_qa.services import response_publications
+
+    with response_publications(actor):
+        try:
+            with transaction.atomic():
+                outcome = dispatch_command(actor, command, request)
+        except LabConflictError as error:
+            outcome = LabOutcome(
+                409, {"code": error.code, "detail": error.detail, "blocked_by": error.blocked_by}
+            )
+    from lab.independent_qa.commands import QA_ACTIONS, command_subjects, complete_blind_boundary
+    from lab.independent_qa.evidence import PADDLE_ACTIONS
+
+    if request.action in PADDLE_ACTIONS:
+        from lab.independent_qa.paddles import paddle_subjects
+
+        subjects = paddle_subjects(actor, request)
+    elif request.action in QA_ACTIONS:
+        subjects = command_subjects(actor, command, request)
+    else:
+        reading = str(
+            prepare_lab_subject(actor, request.target, ACTION_PERMISSION[request.action]).reading_id
         )
-    reading = str(
-        prepare_lab_subject(actor, request.target, ACTION_PERMISSION[request.action]).reading_id
-    )
-    subjects = [
-        {"reading_id": reading, "permission": permission}
-        for permission in (ACTION_PERMISSION[request.action], *extra_permissions(request))
-    ]
+        subjects = [
+            {"reading_id": reading, "permission": permission}
+            for permission in (ACTION_PERMISSION[request.action], *extra_permissions(request))
+        ]
     if next_bag := outcome.body.get("next_bag"):
         subjects.append({"reading_id": str(next_bag["reading_id"]), "permission": COUNT_CREATE})
+    if next_recount := outcome.body.get("next_recount"):
+        from lab.permissions import RECOUNT_ADJUDICATE, RECOUNT_CREATE
+
+        subjects.append(
+            {"reading_id": str(next_recount["reading_id"]), "permission": RECOUNT_CREATE}
+        )
+        if next_recount["state"] == "awaiting_third":
+            subjects.append(
+                {"reading_id": str(next_recount["reading_id"]), "permission": RECOUNT_ADJUDICATE}
+            )
     body = canonical_values(outcome.body)
+    complete_blind_boundary(command)
+    from lab.independent_qa.commands import publish_command_numbers
+
+    publish_command_numbers(actor, command, body)
     LabCommandResult.objects.create(
         organization=actor.organization,
         created_by=actor.user,
@@ -166,6 +211,16 @@ def extra_permissions(request: LabCommandInput) -> tuple[str, ...]:
 def dispatch_command(
     actor: UploadActor, command: LabCommand, request: LabCommandInput
 ) -> LabOutcome:
+    from lab.independent_qa.commands import QA_ACTIONS, dispatch_independent_command
+    from lab.independent_qa.evidence import PADDLE_ACTIONS
+
+    if request.action in PADDLE_ACTIONS:
+        from lab.independent_qa.paddles import dispatch_paddle_command
+
+        return dispatch_paddle_command(actor, command, request)
+
+    if request.action in QA_ACTIONS:
+        return dispatch_independent_command(actor, command, request)
     from lab.corrections import void_result
     from lab.counting import record_count
     from lab.reception import record_reception

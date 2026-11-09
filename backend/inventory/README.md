@@ -288,3 +288,16 @@ HTTP evidence parent, disposal/Lab data-only correction and exact replay.
 Location read filters/order/balances remain unchanged. Only necessary real-source
 select_related paths and one private supply_request context support additive
 nullable source_supply metadata. Legacy source_transfer behavior is retained.
+
+## Physical paddle recovery (#115)
+
+PaddleStockReturn is the concrete typed recovery source in this same ledger.
+The consumed branch retains the authentic SupplyUse debit/receipt and credits
+exactly one same Piece/lot/unit at the authorized destination, once per debit and
+physical reuse cycle. It does not reverse consumption or release reservations.
+The positive-custody branch requires the actual canonical return_accept credit;
+treatment creates no second operation. Missing physical/QA/draw/method/evidence
+proof is unavailable, never implied by a field flag or an absent obligation.
+Movement GET exposes source_kind=paddle_return and that real stock-return UUID;
+the original nullable source_supply/source_transfer fields and all location/lot
+read filters, balances, scope and paging remain unchanged.

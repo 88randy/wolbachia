@@ -3,6 +3,7 @@
 from collections.abc import Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
+from dataclasses import dataclass
 from uuid import UUID
 
 from django.db import DatabaseError, transaction
@@ -26,6 +27,15 @@ _prepared_collectors: ContextVar[frozenset[UUID]] = ContextVar(
     "lab_collectors", default=frozenset()
 )
 _prepared_users: ContextVar[frozenset[UUID]] = ContextVar("lab_users", default=frozenset())
+
+
+@dataclass(frozen=True)
+class LabParticipants:
+    users: tuple[UUID, ...] = ()
+    sources: tuple[tuple[UUID, UUID], ...] = ()
+
+
+EMPTY_PARTICIPANTS = LabParticipants()
 
 
 def require_lab_lock(organization_id: UUID) -> None:
@@ -102,15 +112,21 @@ def publication_context(
 
 @contextmanager
 def lab_transaction(
-    actor: UploadActor, prepared: tuple[PreparedLabSubject, ...] = ()
+    actor: UploadActor,
+    prepared: tuple[PreparedLabSubject, ...] = (),
+    extra: LabParticipants = EMPTY_PARTICIPANTS,
 ) -> Iterator[Organization]:
-    collectors = {subject.collector_id for subject in prepared}
+    collectors = {subject.collector_id for subject in prepared} | {
+        user for _, user in extra.sources
+    }
     participants = {
         actor.user.pk,
         *collectors,
         *(author for subject in prepared for author in subject.author_ids),
+        *extra.users,
     }
     sources = {subject.source_id: subject.collector_id for subject in prepared}
+    sources.update(extra.sources)
     with mapped_transaction():
         users = lock_users(participants)
         lock_actor(actor)
