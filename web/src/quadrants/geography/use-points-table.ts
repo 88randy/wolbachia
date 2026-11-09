@@ -14,7 +14,7 @@ export interface PointsTableOptions {
 }
 export function usePointsTable({ scope, quadrant, controller }: PointsTableOptions) {
   const [point, setPoint] = useState<Schemas["SamplingPoint"] | null>(null);
-  const query = useQuery(pointsOptions(scope, quadrant, controller.state.page));
+  const query = useQuery(pointsOptions(scope, quadrant, controller.state));
   const columns = usePointColumns(setPoint);
   const voidOf = usePointRetirement(scope, quadrant);
   return {

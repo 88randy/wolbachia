@@ -16,6 +16,15 @@ export function CatalogTabs({ catalogs, slug }: { catalogs: readonly Catalog[]; 
           key={catalog.slug}
           to="/settings/catalogs/$slug"
           params={{ slug: catalog.slug }}
+          search={(previous) =>
+            Object.fromEntries(
+              Object.entries(previous).flatMap(([key, value]) =>
+                key.startsWith("catalog_") && typeof value === "string"
+                  ? [[key, value] as const]
+                  : [],
+              ),
+            )
+          }
           aria-current={slug === catalog.slug ? "page" : undefined}
           className={styles.tab}
         >

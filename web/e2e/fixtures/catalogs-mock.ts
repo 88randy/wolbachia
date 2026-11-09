@@ -1,6 +1,7 @@
 import type { Page, Route } from "@playwright/test";
 import type { CatalogItem } from "../../src/catalogs/catalogs-query";
 import { CATALOG, catalogRows, makeCatalogItem } from "../../src/test/catalog-fixtures";
+import { catalogItemFixturePage } from "../../src/test/catalog-list-fixture";
 
 interface WriteBody {
   code?: string;
@@ -25,9 +26,13 @@ export async function mockCatalogs(page: Page) {
     const path = new URL(request.url()).pathname;
     if (path === "/api/v1/catalogs/")
       return json(route, pageOf([{ ...CATALOG, version: state.version }]));
-    if (request.method() === "GET") return json(route, pageOf(readItems(state)));
+    if (request.method() === "GET")
+      return json(route, catalogItemFixturePage(readItems(state), request.url()));
     const body = (request.postData() ? request.postDataJSON() : {}) as WriteBody;
-    if (path.endsWith("/reorder/") && body.version !== state.version)
+    if (
+      ["/reorder/", "/activate/", "/deactivate/"].some((action) => path.endsWith(action)) &&
+      body.version !== state.version
+    )
       return route.fulfill({
         status: 409,
         json: { code: "catalog_version_conflict", detail: "Catalog changed." },

@@ -88,7 +88,10 @@ describe("fleet action boundaries", () => {
       },
     });
     await userEvent.click(await screen.findByRole("button", { name: "Alta de moto" }));
-    await userEvent.type(screen.getByRole("textbox", { name: "Código" }), "M-NEW");
+    await userEvent.type(
+      within(screen.getByRole("dialog")).getByRole("textbox", { name: "Código" }),
+      "M-NEW",
+    );
     await userEvent.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Guardar" }),
     );

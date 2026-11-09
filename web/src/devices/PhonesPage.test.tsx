@@ -132,13 +132,26 @@ describe("phones list (W67)", () => {
     expect(screen.getByRole("button", { name: "Quitar filtro Estado: Revocado" })).toBeDefined();
   });
 
-  test("opens straight from a shared address: page and filter come from the URL", async () => {
-    const { api } = await open(pageOf([phone()], 60), `${PHONES}?page=2&is_revoked=false`);
+  test("shared address forwards paging, search, status, current-user sessions and visible version ordering", async () => {
+    const { api } = await open(
+      pageOf([phone()], 60),
+      `${PHONES}?page=2&is_revoked=false&search=Luis&user=${ALLOWED.user.id}&ordering=-app_version`,
+    );
 
     expect(await screen.findByText("Página 2 de 3")).toBeDefined();
     expect(screen.getByRole("button", { name: "Quitar filtro Estado: Activo" })).toBeDefined();
     const query = queryOf(devicesRequests(api)[0] as RecordedRequest);
-    expect(Object.fromEntries(query)).toEqual({ page: "2", page_size: "25", is_revoked: "false" });
+    expect(Object.fromEntries(query)).toEqual({
+      page: "2",
+      page_size: "25",
+      is_revoked: "false",
+      search: "Luis",
+      user: ALLOWED.user.id,
+      ordering: "-app_version",
+    });
+    expect(screen.getByRole("columnheader", { name: /Versión/ }).getAttribute("aria-sort")).toBe(
+      "descending",
+    );
   });
 
   test("a parameter the list does not know is never sent and is announced", async () => {

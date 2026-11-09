@@ -5,11 +5,6 @@ import { UserMenuButton } from "./UserMenuButton";
 import { UserMenuPanel } from "./UserMenuPanel";
 import { useDismiss } from "./use-dismiss";
 
-interface UserMenuProps {
-  placement?: "topbar" | "sidebar";
-  collapsed?: boolean;
-}
-
 /** Keep disclosure focus and sign-out failure recovery independent of its placement. */
 function useUserMenuDisclosure() {
   const [isOpen, setIsOpen] = useState(false);
@@ -28,22 +23,16 @@ function useUserMenuDisclosure() {
   return { isOpen, setIsOpen, containerRef, buttonRef, signOut };
 }
 
-/** User disclosure anchored above the sidebar footer or below a top-bar trigger. */
-export function UserMenu({ placement = "topbar", collapsed = false }: UserMenuProps = {}) {
+/** One user disclosure in the top bar, available with either sidebar state. */
+export function UserMenu() {
   const panelId = useId();
   const { isOpen, setIsOpen, containerRef, buttonRef, signOut } = useUserMenuDisclosure();
   return (
-    <div
-      ref={containerRef}
-      className={styles.menu}
-      data-placement={placement}
-      data-collapsed={collapsed}
-    >
+    <div ref={containerRef} className={styles.menu}>
       <UserMenuButton
         ref={buttonRef}
         isOpen={isOpen}
         panelId={panelId}
-        collapsed={collapsed}
         onToggle={() => {
           setIsOpen((open) => !open);
         }}

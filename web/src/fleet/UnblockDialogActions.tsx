@@ -1,6 +1,6 @@
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
-import styles from "../void/void-dialog.module.css";
+import { DialogFooter } from "../ui/DialogFooter";
 import type { UnblockForm } from "./use-unblock-form";
 
 export function UnblockDialogActions({
@@ -12,7 +12,7 @@ export function UnblockDialogActions({
 }) {
   const { t } = useTranslation();
   return (
-    <div className={styles.actions}>
+    <DialogFooter>
       <Button
         variant="secondary"
         aria-disabled={form.isBusy}
@@ -29,6 +29,6 @@ export function UnblockDialogActions({
       >
         {t("fleet.unblock.confirm")}
       </Button>
-    </div>
+    </DialogFooter>
   );
 }
