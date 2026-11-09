@@ -812,4 +812,93 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.fuel.working": "Saving on the phone…",
   "mobile.fuel.saveHint": "Save retains the load on this phone. Upload and review happen later.",
   "mobile.fuel.inbox": "View upload and review in the inbox",
+  "mobile.incidents.title": "Report incident",
+  "mobile.incidents.subtitle": "Local capture and conversation with your team",
+  "mobile.incidents.emergency": "Emergency",
+  "mobile.incidents.emergencyHint":
+    "Get to safety. Saving does not confirm anyone received an alert.",
+  "mobile.incidents.report": "Incident",
+  "mobile.incidents.accident": "Accident",
+  "mobile.incidents.unavailable":
+    "Capture is unavailable with the current context. Drafts are retained; unlock the app or refresh your shift.",
+  "mobile.incidents.shiftRequired":
+    "Open or review your shift to report. The work-contact call does not require saving a report.",
+  "mobile.incidents.staleDraft":
+    "The capture changed while you worked. Previous content is retained; reopen it before retrying.",
+  "mobile.incidents.typeRequired": "Choose an incident type.",
+  "mobile.incidents.descriptionRequired": "Describe what happened to save the incident.",
+  "mobile.incidents.descriptionLong": "Shorten the description to 4000 characters and save again.",
+  "mobile.incidents.evidenceLimit":
+    "A capture supports up to 100 photos. Retain the rest on the phone.",
+  "mobile.incidents.photoUnavailable":
+    "The camera could not open. The capture is retained; retry when safe.",
+  "mobile.incidents.saved": "Saved on the phone: waiting to upload.",
+  "mobile.incidents.serverReceived": "Received by the server.",
+  "mobile.incidents.reviewPending":
+    "Received by the server: review required. The original capture is retained.",
+  "mobile.incidents.rejected":
+    "The server did not accept the report. It remains on the phone; review the reason in the inbox.",
+  "mobile.incidents.evidencePending":
+    "Photos await verification. The capture remains saved; use the inbox to retry upload.",
+  "mobile.incidents.noDeliveryPromise":
+    "Receiving a report does not confirm your supervisor read it or help is on its way.",
+  "mobile.incidents.description": "Description of what happened",
+  "mobile.incidents.optionalDescription": "Optional accident details",
+  "mobile.incidents.searchTypes": "Search incident types",
+  "mobile.incidents.noTypeMatches": "No matching types. Change your search.",
+  "mobile.incidents.noTypes":
+    "No downloaded types are available. Refresh types online or ask an administrator to review configuration.",
+  "mobile.incidents.chooseType": "Choose type",
+  "mobile.incidents.type": "Incident type",
+  "mobile.incidents.otherHint": "Other requires an explanation in the description.",
+  "mobile.incidents.evidence": "Evidence photos",
+  "mobile.incidents.evidenceMinimum": "Configured minimum photos for this type:",
+  "mobile.incidents.evidenceMissing":
+    "Required evidence is missing. You can retain the report; the server may send it for review.",
+  "mobile.incidents.uploadUnavailable":
+    "Your current context does not allow photo attachments. Keep the details and ask your supervisor for support.",
+  "mobile.incidents.takePhoto": "Add photo",
+  "mobile.incidents.photoPreview": "Incident evidence preview",
+  "mobile.incidents.previewUnavailable":
+    "This photo could not be displayed. The file is retained; review the capture before saving.",
+  "mobile.incidents.originalTime": "Original capture time (UTC)",
+  "mobile.incidents.gpsCaptured": "The available location was saved with the capture.",
+  "mobile.incidents.noGps": "No location was available. No location was inferred for this report.",
+  "mobile.incidents.mine": "My incidents and comments",
+  "mobile.incidents.pageHint":
+    "Only your reports available on the downloaded page. Refresh online for replies; this list may be incomplete.",
+  "mobile.incidents.repliesUnavailable":
+    "Team comments are retrieved online. Replying from mobile is not available yet.",
+  "mobile.incidents.noIncidents":
+    "None of your reports appear on this page yet. Save a report or refresh online.",
+  "mobile.incidents.readUnavailable":
+    "The current context does not allow reading this conversation. Drafts remain saved.",
+  "mobile.incidents.readFailed":
+    "Refresh could not complete. The capture and still-authorized phone content are retained. Retry online.",
+  "mobile.incidents.refreshing": "Refreshing types and comments...",
+  "mobile.incidents.refresh": "Refresh types, contact and comments",
+  "mobile.incidents.onPhone": "Captures retained on this phone",
+  "mobile.incidents.draftPending":
+    "Some text is waiting to save. Retry before closing the capture.",
+  "mobile.incidents.draftSaved": "Draft saved on the phone. Save the report to queue its upload.",
+  "mobile.incidents.empty":
+    "Start a report to choose its type, describe what happened and attach evidence.",
+  "mobile.incidents.accidentHint":
+    "You can save an accident without photos or details. No signal never confirms alert delivery.",
+  "mobile.incidents.saveHint":
+    "Save retains the report on this phone. Upload and review happen later.",
+  "mobile.incidents.working": "Saving on the phone...",
+  "mobile.incidents.save": "Save report on the phone",
+  "mobile.incidents.begin": "Start report",
+  "mobile.incidents.beginAccident": "Capture accident",
+  "mobile.incidents.safeClose": "Continue to shift closure",
+  "mobile.incidents.callWorkContact": "Call configured work contact",
+  "mobile.incidents.dialerOpened":
+    "The phone dialer opened. This confirms neither a call nor receipt of an alert; device and network availability apply.",
+  "mobile.incidents.dialerUnavailable":
+    "The call could not open. Use the device phone app and seek help when safe. The report is retained.",
+  "mobile.incidents.contactMissing":
+    "No validated work phone is available. No emergency number is configured for this app.",
+  "mobile.incidents.callFallback":
+    "If you need immediate help, use the device phone app and an emergency contact you know. Calls depend on the device and network.",
 };

@@ -11,6 +11,7 @@ import { useStyles, useTheme } from "../theme/ThemeProvider.tsx";
 import { LoginScreen } from "../screens/auth/LoginScreen.tsx";
 import { UnlockScreen } from "../screens/auth/UnlockScreen.tsx";
 import { Notice } from "../ui/Notice.tsx";
+import { LockedEmergencyCall } from "../features/incidents/LockedEmergencyCall.tsx";
 
 const createStyles = (theme: Theme) =>
   StyleSheet.create({
@@ -47,6 +48,7 @@ export function AuthOverlay({ snapshot, isWarning, keepWorking }: AuthOverlayPro
       ) : (
         <UnlockScreen key={snapshot.phase} snapshot={snapshot} />
       )}
+      <LockedEmergencyCall />
     </SafeAreaView>
   );
 }

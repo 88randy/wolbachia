@@ -1,5 +1,13 @@
 # mobile
 
+## M12 incidents and emergency (#141)
+
+P23/P24 retain reports/accidents and private photos offline in the existing
+outbox/journal. Supervisor conversations pull through the available REST reads;
+cached first-page ownership, missing emergency configuration and delivery limits
+remain explicit. See [feature README](src/features/incidents/README.md) for the
+contracts, original-source fences, criterion map and unrun native/API gates.
+
 ## M11 fuel capture (#140)
 
 P22 captures fuel offline for the current shift's fixed motorcycle. Durable raw

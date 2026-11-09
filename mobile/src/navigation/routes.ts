@@ -17,6 +17,8 @@ export type Route =
   | { readonly name: "openShift" }
   | { readonly name: "supplyReceipt" }
   | { readonly name: "fuel" }
+  | { readonly name: "incidents" }
+  | { readonly name: "emergency" }
   | { readonly name: "home" }
   | { readonly name: "inbox" }
   | { readonly name: "settings" }
