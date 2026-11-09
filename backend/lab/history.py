@@ -8,8 +8,11 @@ from lab.models import (
     EggCountAttempt,
     LabRejection,
     LabResultVoid,
+    PaddleReuse,
     ReceptionDiscrepancy,
     ReceptionIncidentLink,
+    RecountAttempt,
+    RecountResolution,
 )
 from lab.transactions import require_lab_lock, require_prepared_author, require_prepared_collector
 from ovitraps.models import OvitrapReading
@@ -23,17 +26,33 @@ KINDS = {
     "labresultvoid": "lab_void",
     "labrejection": "lab_rejection",
 }
-LabHistoryFact = BagReceipt | EggCountAttempt | LabRejection | LabResultVoid | ReceptionDiscrepancy
+LabHistoryFact = (
+    BagReceipt
+    | EggCountAttempt
+    | LabRejection
+    | LabResultVoid
+    | ReceptionDiscrepancy
+    | RecountAttempt
+    | RecountResolution
+    | PaddleReuse
+)
 HISTORY_MODELS = {
     "lab_receipt": BagReceipt,
     "lab_discrepancy": ReceptionDiscrepancy,
     "lab_count": EggCountAttempt,
     "lab_void": LabResultVoid,
     "lab_rejection": LabRejection,
+    "lab_recount": RecountAttempt,
+    "lab_adjudication": RecountResolution,
+    "lab_paddle_reuse": PaddleReuse,
 }
 
 
 def fact_reading(fact: LabHistoryFact) -> OvitrapReading:
+    if isinstance(fact, (RecountAttempt, RecountResolution)):
+        return fact.request.count.receipt.reading
+    if isinstance(fact, PaddleReuse):
+        return fact.binding.bag.reading
     if isinstance(fact, BagReceipt):
         return fact.reading
     if isinstance(fact, LabResultVoid):
@@ -141,6 +160,17 @@ def lab_history_subjects(
     reading = fact_reading(fact)
     if reading.event.created_by_id != courier_id:
         return SubjectFacts()
+    if isinstance(fact, PaddleReuse):
+        from lab.independent_qa.paddles import fact_contexts
+        from lab.permissions import PADDLE_REUSE
+
+        return SubjectFacts(
+            True,
+            tuple(fact_contexts(fact)),
+            "lab_paddle",
+            fact.pk,
+            {"own_permission": PADDLE_REUSE},
+        )
     quadrant = reading.ovitrap.sampling_point.block.quadrant
     return SubjectFacts(
         True,
@@ -148,3 +178,57 @@ def lab_history_subjects(
         "lab",
         reading.pk,
     )
+
+
+def publish_qa_fact(fact: RecountAttempt | RecountResolution | PaddleReuse) -> None:
+    require_lab_lock(fact.organization_id)
+    require_prepared_author(fact.created_by_id)
+    reading = (
+        fact.request.count.receipt.reading
+        if not isinstance(fact, PaddleReuse)
+        else fact.binding.bag.reading
+    )
+    collector = reading.event.created_by
+    if collector is None:
+        raise RuntimeError("A retained source requires its authentic collector")
+    require_prepared_collector(collector.pk)
+    quadrant = reading.ovitrap.sampling_point.block.quadrant
+    request = None if isinstance(fact, PaddleReuse) else fact.request
+    count_id = (
+        fact.first_result.count_id if isinstance(fact, PaddleReuse) else fact.request.count_id
+    )
+    kind = (
+        "lab_recount"
+        if isinstance(fact, RecountAttempt)
+        else "lab_adjudication"
+        if isinstance(fact, RecountResolution)
+        else "lab_paddle_reuse"
+    )
+    value = fact.value if isinstance(fact, RecountAttempt) else None
+    if isinstance(fact, RecountResolution):
+        selected = fact.selected_count if fact.selected_count is not None else fact.selected_attempt
+        if selected is None:
+            raise RuntimeError("A resolution requires its actual typed candidate")
+        value = selected.value
+    payload = {
+        "id": str(fact.pk),
+        "kind": kind,
+        "bag_id": str(reading.bag.pk),
+        "reading_id": str(reading.pk),
+        "source_event_id": str(reading.event_id),
+        "source_device_time": reading.event.device_time.isoformat(),
+        "source_server_received_at": reading.event.server_received_at.isoformat(),
+        "recorded_at": fact.created_at.isoformat(),
+        "author_id": str(fact.created_by_id),
+        "count_id": str(count_id),
+        "request_id": None if request is None else str(request.pk),
+        "value": value,
+        "attempt_id": str(fact.pk) if isinstance(fact, RecountAttempt) else None,
+        "resolution_id": str(fact.pk) if isinstance(fact, RecountResolution) else None,
+        "reuse_id": str(fact.pk) if isinstance(fact, PaddleReuse) else None,
+        "method_version_id": str(fact.method_version_id)
+        if not isinstance(fact, RecountResolution)
+        else None,
+        "subjects": [{"center_id": str(quadrant.center_id), "quadrant_id": str(quadrant.pk)}],
+    }
+    publish_history(kind, fact, collector, payload)

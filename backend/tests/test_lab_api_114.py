@@ -25,6 +25,99 @@ def test_lab_structural_commands_preserve_integer_and_closed_replacement_contrac
     )
     assert not replacement.is_valid()
     assert replacement.errors["bag_id"][0].code == "unknown_field"
+    from lab.independent_qa.serializers import IndependentCountSerializer, RecountClaimSerializer
+
+    independent = IndependentCountSerializer(
+        data={
+            "command_id": str(uuid4()),
+            "request_id": str(uuid4()),
+            "expected_revision": 1,
+            "expected_result_revision": 1,
+            "value": 0,
+            "method_version": str(uuid4()),
+        }
+    )
+    assert independent.is_valid(), independent.errors
+    incomplete_measurement = IndependentCountSerializer(
+        data={**independent.initial_data, "viable_eggs": 0}
+    )
+    assert not incomplete_measurement.is_valid()
+    assert "total_examined" in incomplete_measurement.errors
+    claim = RecountClaimSerializer(
+        data={
+            "command_id": str(uuid4()),
+            "expected_revision": 0,
+            "role": "second",
+            "counter_id": str(uuid4()),
+        }
+    )
+    assert not claim.is_valid()
+    assert claim.errors["counter_id"][0].code == "unknown_field"
+    from lab.independent_qa.serializers import PaddleReuseSerializer
+
+    naive = PaddleReuseSerializer(
+        data={
+            "command_id": str(uuid4()),
+            "expected_revision": 1,
+            "binding_id": str(uuid4()),
+            "expected_result_revision": 1,
+            "expected_qa_revision": 0,
+            "destination_location_id": str(uuid4()),
+            "source_movement_id": str(uuid4()),
+            "washed_at": "2026-11-07T12:00:00",
+            "dried_at": "2026-11-07T12:10:00Z",
+            "method_version": str(uuid4()),
+            "evidence_ids": [str(uuid4())],
+        }
+    )
+    assert not naive.is_valid()
+    assert naive.errors["washed_at"][0].code == "invalid"
+
+    from dataclasses import replace
+    from datetime import datetime, timedelta
+
+    from core.snapshots import snapshot_hash
+    from lab.access import LabTarget
+    from lab.commands import LabCommandInput, canonical_command_input, canonical_values
+
+    treatment = PaddleReuseSerializer(
+        data={
+            **naive.initial_data,
+            "washed_at": "2026-11-10T18:12:27.191489Z",
+            "dried_at": "2026-11-10T18:13:27.191489Z",
+        }
+    )
+    assert treatment.is_valid(), treatment.errors
+    values = dict(treatment.validated_data)
+    reuse = LabCommandInput(
+        "paddle_reuse", LabTarget("paddle", uuid4()), values.pop("command_id"), values
+    )
+    for microsecond in (191489, 191000, 0):
+        washed = values["washed_at"].replace(microsecond=microsecond)
+        dried = washed + timedelta(minutes=1)
+        request = replace(reuse, values={**values, "washed_at": washed, "dried_at": dried})
+        encoded = canonical_command_input(request)
+        assert encoded["washed_at"] == f"2026-11-10T18:12:27.{microsecond:06d}Z"
+        assert encoded["dried_at"] == f"2026-11-10T18:13:27.{microsecond:06d}Z"
+        assert datetime.fromisoformat(encoded["washed_at"]) == washed
+        assert datetime.fromisoformat(encoded["dried_at"]) == dried
+        assert canonical_command_input(request) == encoded
+        changed = replace(
+            request, values={**request.values, "washed_at": washed + timedelta(microseconds=1)}
+        )
+        assert snapshot_hash(canonical_command_input(changed)) != snapshot_hash(encoded)
+
+    legacy_count_values = dict(valid.validated_data)
+    legacy_count = LabCommandInput(
+        "count",
+        LabTarget("bag", uuid4()),
+        legacy_count_values.pop("command_id"),
+        legacy_count_values,
+    )
+    assert canonical_command_input(legacy_count) == canonical_values(legacy_count_values)
+    assert canonical_values({"instant": values["washed_at"]}) == {
+        "instant": "2026-11-10T18:12:27.191Z"
+    }
 
 
 def test_lab_public_schema_preserves_authentic_actions_and_single_history_owner(api_client):
@@ -42,6 +135,15 @@ def test_lab_public_schema_preserves_authentic_actions_and_single_history_owner(
         "lab-rejections/{id}/void-context/",
         "lab-reception-incident-policy/versions/",
         "recount-requests/",
+        "recounts/",
+        "recounts/{id}/claim/",
+        "recounts/{id}/adjudicate/",
+        "recounts/{id}/independence-attestations/",
+        "bags/{id}/recount/",
+        "egg-paddles/",
+        "egg-paddles/{id}/bindings/",
+        "egg-paddles/{id}/reuses/",
+        "lab-qa-policy/",
     ):
         assert "/api/v1/" + route in schema["paths"]
     mapping = schema["components"]["schemas"]["CourierHistoryEntry"]["discriminator"]["mapping"]
@@ -64,6 +166,9 @@ def test_lab_public_schema_preserves_authentic_actions_and_single_history_owner(
         "lab_rejection",
         "lab_void",
         "community_activity",
+        "lab_recount",
+        "lab_adjudication",
+        "lab_paddle_reuse",
     } == mapping.keys()
     history = schema["components"]["schemas"]["LabHistoryEntry"]["properties"]
     for field in ("count_id", "rejection_id"):
@@ -241,13 +346,13 @@ def test_void_only_target_context_is_usable_without_list_queue_or_replacement_gr
 
 
 @pytest.mark.django_db
-def test_real_cookie_command_keeps_csrf_and_committed_receipt_wiring(monkeypatch):
+def test_real_cookie_command_keeps_csrf_and_committed_receipt_wiring(monkeypatch, make_member):
     from rest_framework.test import APIClient
 
     from tests.lab_support import capture_bag, lab_context
 
     context = lab_context(monkeypatch)
-    bag = capture_bag(context)
+    bag = capture_bag(context, has_eggs=False)
     client = APIClient(enforce_csrf_checks=True)
     client.force_login(context.actor.user)
     values = {"code": bag.code, "command_id": str(uuid4())}
@@ -257,3 +362,116 @@ def test_real_cookie_command_keeps_csrf_and_committed_receipt_wiring(monkeypatch
     result = client.post("/api/v1/bags/receive/", values, format="json", HTTP_X_CSRFTOKEN=token)
     assert result.status_code == 200
     assert result.data["receipt"]["reading_id"] == str(bag.reading_id)
+    from lab.models import LabNumericDisclosure, RecountRequest
+    from tests.lab_support import actor_with_codes
+    from tests.test_lab_recounts_b_19 import configure_qa
+
+    qa_method = configure_qa(context)
+    counted = client.post(
+        f"/api/v1/bags/{bag.pk}/counts/",
+        {"command_id": str(uuid4()), "expected_revision": 0, "value": 1},
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert counted.status_code == 201
+    request = RecountRequest.objects.get(count_id=counted.data["count"]["id"])
+    blind = actor_with_codes(
+        context,
+        make_member,
+        ["reading.read", "bag.receive", "egg_count.read", "egg_count.void", "recount.create"],
+    )
+    client.force_login(blind.user)
+    assert client.get("/api/v1/auth/csrf/").status_code == 204
+    token = client.cookies["csrftoken"].value
+    assert client.get(f"/api/v1/bags/{bag.pk}/").data["lab"] is None
+    listed = client.get("/api/v1/bags/", {"code": bag.code})
+    assert listed.data["count"] == 1
+    assert listed.data["results"][0]["lab"] is None
+    assert (
+        client.get(
+            "/api/v1/bags/", {"code": bag.code, "lab_status": "awaiting_independent_qa"}
+        ).data["count"]
+        == 0
+    )
+    assert client.get("/api/v1/egg-counts/", {"code": bag.code}).data["count"] == 0
+    assert (
+        client.get(f"/api/v1/egg-counts/{counted.data['count']['id']}/void-context/").status_code
+        == 404
+    )
+    queued = client.get("/api/v1/recounts/", {"code": bag.code})
+    assert queued.status_code == 200
+    assert queued.data["results"][0]["id"] == str(request.pk)
+    assert not {"value", "viability", "causes", "first_counter"} & queued.data["results"][0].keys()
+    assert not LabNumericDisclosure.objects.filter(created_by=blind.user).exists()
+    claim = {"command_id": str(uuid4()), "expected_revision": 0, "role": "second"}
+    route = f"/api/v1/recounts/{request.pk}/claim/"
+    assert client.post(route, claim, format="json").status_code == 403
+    assert client.post(route, claim, format="json", HTTP_X_CSRFTOKEN=token).status_code == 201
+    assert client.get("/api/v1/recount-requests/", {"code": bag.code}).data["count"] == 0
+    independent = client.post(
+        f"/api/v1/bags/{bag.pk}/recount/",
+        {
+            "command_id": str(uuid4()),
+            "request_id": str(request.pk),
+            "expected_revision": 1,
+            "expected_result_revision": 1,
+            "value": 0,
+            "method_version": str(qa_method.pk),
+        },
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert independent.status_code == 201
+    detailed = client.get("/api/v1/recount-requests/", {"code": bag.code})
+    assert detailed.status_code == 200
+    details = detailed.data["results"][0]["independent_qa"]
+    assert details["resolution"] is None
+    assert [(row["candidate_kind"], row["value"]) for row in details["candidates"]] == [
+        ("first", 1),
+        ("second", 0),
+    ]
+    chosen = next(row for row in details["candidates"] if row["candidate_kind"] == "second")
+    assert chosen["method"]["id"] == str(qa_method.pk)
+    assert chosen["id"] == independent.data["attempt"]["id"]
+    decision = client.post(
+        f"/api/v1/recounts/{request.pk}/adjudicate/",
+        {
+            "command_id": str(uuid4()),
+            "expected_revision": details["expected_revision"],
+            "expected_result_revision": details["expected_result_revision"],
+            "final_attempt_id": chosen["id"],
+            "reason_code": "other",
+            "reason": "Choose the genuine own second observation through its public typed candidate",
+        },
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert decision.status_code == 201
+    selected = client.get("/api/v1/recount-requests/", {"code": bag.code}).data["results"][0][
+        "independent_qa"
+    ]["resolution"]
+    assert (selected["candidate_kind"], selected["final_attempt_id"]) == ("second", chosen["id"])
+    # A successful state facet can disclose even when the selected page is empty.
+    exposed = actor_with_codes(context, make_member, ["reading.read", "bag.receive"])
+    client.force_login(exposed.user)
+    assert client.get("/api/v1/auth/csrf/").status_code == 204
+    token = client.cookies["csrftoken"].value
+    assert (
+        client.get("/api/v1/bags/", {"code": bag.code, "lab_status": "rejected"}).data["count"] == 0
+    )
+    assert (
+        LabNumericDisclosure.objects.filter(
+            created_by=exposed.user, count_id=request.count_id
+        ).count()
+        == 1
+    )
+    profile = exposed.user.memberships.get(organization=context.actor.organization).profiles.get()
+    profile.permission_codes += ["recount.create"]
+    profile.save(update_fields=["permission_codes"])
+    refused = client.post(
+        route,
+        {**claim, "command_id": str(uuid4()), "expected_revision": 3},
+        format="json",
+        HTTP_X_CSRFTOKEN=token,
+    )
+    assert (refused.status_code, refused.data["code"]) == (409, "lab_recount_disclosed")
