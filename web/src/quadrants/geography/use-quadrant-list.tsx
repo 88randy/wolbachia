@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { QuadrantClosureLink } from "../../operations/closure/QuadrantClosureLink";
 import { useQuery } from "@tanstack/react-query";
 import type { Schemas } from "@wolbachia/api-client";
 import { useTableUrlState } from "../../data-table/use-table-url-state";
@@ -17,6 +18,9 @@ export function useQuadrantList(scope: GeographyScope) {
     controller,
     data: pageTableData(query, controller.state.page, PAGE_SIZE),
     getRowId: (row: Schemas["Quadrant"]) => row.id,
+    rowActions: scope.me.permissions.includes("quadrant.close")
+      ? (row: Schemas["Quadrant"]) => <QuadrantClosureLink code={row.code} />
+      : undefined,
   };
   return {
     table,

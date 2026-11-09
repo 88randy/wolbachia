@@ -1,0 +1,51 @@
+export const relocations = {
+  "relocations.workspace.blockers": "Bloqueos actuales y permisos responsables",
+  "relocations.workspace.offline":
+    "Sin conexión. Tu motivo se conserva. Reconéctate y revisa la evidencia actual antes de decidir; una persona con permiso para decidir reubicaciones puede resolver los bloqueos del servidor.",
+  "relocations.workspace.title": "Reubicaciones",
+  "relocations.workspace.status": "Estado de la decisión",
+  "relocations.workspace.pending": "Por decidir",
+  "relocations.workspace.approved": "Aprobada",
+  "relocations.workspace.rejected": "Rechazada",
+  "relocations.workspace.all": "Todas",
+  "relocations.workspace.code": "Código de propuesta",
+  "relocations.workspace.pointId": "Punto (ID)",
+  "relocations.workspace.point": "Folio del punto",
+  "relocations.workspace.ovitrap": "Ovitrampa (ID)",
+  "relocations.workspace.reason": "Motivo original",
+  "relocations.workspace.author": "Autor (ID)",
+  "relocations.workspace.createdAt": "Fecha de propuesta",
+  "relocations.workspace.deviceTime": "Hora del dispositivo",
+  "relocations.workspace.receivedAt": "Recibida por el servidor",
+  "relocations.workspace.unavailable": "No disponible",
+  "relocations.workspace.oldLocation": "Ubicación anterior (longitud, latitud)",
+  "relocations.workspace.newLocation": "Ubicación propuesta (longitud, latitud)",
+  "relocations.workspace.pointVersion": "Versión original del punto (ID)",
+  "relocations.workspace.evidence": "Referencias de evidencia original",
+  "relocations.workspace.capturedRules": "Reglas y versiones evaluadas al capturar",
+  "relocations.workspace.voided": "Captura anulada",
+  "relocations.workspace.saved": "Decisión registrada por el servidor.",
+  "relocations.workspace.decisionReason": "Motivo de la decisión",
+  "relocations.workspace.decidedAt": "Fecha de decisión",
+  "relocations.workspace.publishedVersion": "Versión publicada del mismo punto (ID):",
+  "relocations.workspace.task": "Tarea para el siguiente día:",
+  "relocations.workspace.noTask": "Esta respuesta no incluye una tarea para el siguiente día.",
+  "relocations.workspace.advisory": "Aviso del servidor:",
+  "relocations.workspace.historyPolicy":
+    "La captura original se conserva. Una decisión no reabre un cuadrante cerrado; los registros tardíos siguen la política histórica del servidor.",
+  "relocations.workspace.refresh": "Actualizar evidencia y estado",
+  "relocations.workspace.conflict":
+    "La propuesta cambió o está bloqueada. Revisa la evidencia actualizada y solicita al responsable indicado resolver el bloqueo; tu motivo se conserva.",
+  "relocations.workspace.decision": "Decidir reubicación",
+  "relocations.workspace.blocked":
+    "La propuesta ya tiene decisión o su captura fue anulada. Quien tenga permiso de revisión debe revisar el origen; esta pantalla no puede reemplazar una decisión.",
+  "relocations.workspace.reasonHint":
+    "El motivo es obligatorio para aprobar o rechazar. El servidor valida su longitud. Si rechazas, solo se mostrará la tarea que confirme el servidor.",
+  "relocations.workspace.reject": "Rechazar reubicación",
+  "relocations.workspace.approve": "Aprobar reubicación",
+  "relocations.workspace.defaultView":
+    "Vista inicial: propuestas por decidir. El servidor aplica los filtros, el orden y la paginación.",
+  "relocations.workspace.samePoint":
+    "Compara la ubicación anterior y la propuesta. El folio del punto se conserva.",
+  "relocations.workspace.openSelected": "Revisar propuesta seleccionada",
+};
