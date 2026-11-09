@@ -5,11 +5,23 @@ import { supplyDifference } from "./domain.ts";
 import type { Schemas } from "@wolbachia/api-client";
 export function SupplyEquation({ line }: { readonly line: Schemas["SupplyFrameLine"] }) {
   const t = useT();
-  return <Card>
-    <AppText variant="mono">{line.assignment_line_id}</AppText>
-    <AppText>{t("mobile.shiftClose.planned")}</AppText><AppText variant="mono">{line.planned}</AppText>
-    <AppText>{t("mobile.shiftClose.equation")}</AppText>
-    <AppText variant="mono">{[line.credited ?? t("mobile.shiftClose.unknown"), line.used, line.returned, line.shrinkage].join(" ? ")}</AppText>
-    <AppText>{t("mobile.shiftClose.difference")}</AppText><AppText variant="mono">{supplyDifference(line) ?? t("mobile.shiftClose.unknown")}</AppText>
-  </Card>;
+  const quantities = [
+    line.credited ?? t("mobile.shiftClose.unknown"),
+    line.used,
+    line.returned,
+    line.shrinkage,
+  ].join(" ? ");
+  return (
+    <Card>
+      <AppText variant="caption">{line.assignment_line_id}</AppText>
+      <AppText>{t("mobile.shiftClose.planned")}</AppText>
+      <AppText variant="bodyStrong">{line.planned}</AppText>
+      <AppText>{t("mobile.shiftClose.equation")}</AppText>
+      <AppText variant="bodyStrong">{quantities}</AppText>
+      <AppText>{t("mobile.shiftClose.difference")}</AppText>
+      <AppText variant="bodyStrong">
+        {supplyDifference(line) ?? t("mobile.shiftClose.unknown")}
+      </AppText>
+    </Card>
+  );
 }

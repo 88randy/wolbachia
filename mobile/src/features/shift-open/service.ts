@@ -69,10 +69,12 @@ export class ShiftOpenService {
     const { catalog, map, guard, locallyClosedAt, ...state } = await store.readGateFacts();
     const lastOdometer =
       state.draft === null ? null : await store.lastOdometer(state.draft.motorcycle_code);
-    const gate = locallyClosedAt ? "closed" : outcomeGate(
-      state.opening,
-      state.draft === null ? null : departureGate({ draft: state.draft, catalog, map }),
-    );
+    const gate = locallyClosedAt
+      ? "closed"
+      : outcomeGate(
+          state.opening,
+          state.draft === null ? null : departureGate({ draft: state.draft, catalog, map }),
+        );
     return {
       snapshot: {
         ...state,

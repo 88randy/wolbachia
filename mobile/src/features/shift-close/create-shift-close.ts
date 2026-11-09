@@ -25,19 +25,50 @@ interface Dependencies {
   readonly engine: SyncEngine;
   readonly shiftOpen: ShiftOpenService;
 }
+function currentOwner(deps: Dependencies): string | null {
+  const identity = acceptedEvidenceOwner({
+    profile: deps.auth.getSnapshot().profile,
+    credentials: deps.tokens.getSnapshot(),
+    deviceId: deps.deviceId,
+  });
+  return identity === null ? null : ownerKey(identity.owner);
+}
+async function pendingPoints(day: DayService) {
+  const snapshot = await day.read();
+  return buildDay({
+    ...snapshot,
+    location: { kind: "unavailable" },
+    now: new Date(),
+  }).pendingTasks.map(({ task }) => ({ taskId: task.id, pointCode: task.point_code }));
+}
 /** Close uses the existing short projection writer and actual session owner; no capture awaits network. */
 export function createShiftClose(deps: Dependencies): ShiftCloseService {
   let revision = 0;
-  deps.auth.subscribe(() => { revision += 1; });
+  deps.auth.subscribe(() => {
+    revision += 1;
+  });
   return new ShiftCloseService({
-    db: deps.db, now: () => new Date(), uuid: randomUUID,
-    identity: () => { const identity = acceptedEvidenceOwner({ profile: deps.auth.getSnapshot().profile, credentials: deps.tokens.getSnapshot(), deviceId: deps.deviceId }); return identity === null ? null : ownerKey(identity.owner); },
-    admission: () => deps.auth.getSnapshot().phase === "unlocked" && deps.auth.getSnapshot().profile?.permissions.includes("field_event.sync") ? String(revision) : null,
-    canReconcile: () => deps.auth.getSnapshot().profile?.permissions.includes("supply_assignment.reconcile") ?? false,
-    localDate: (instant) => captureLocalDate(instant, deps.auth.getSnapshot().profile?.organization?.timezone),
+    db: deps.db,
+    now: () => new Date(),
+    uuid: randomUUID,
+    identity: () => currentOwner(deps),
+    admission: () =>
+      deps.auth.getSnapshot().phase === "unlocked" &&
+      deps.auth.getSnapshot().profile?.permissions.includes("field_event.sync")
+        ? String(revision)
+        : null,
+    canReconcile: () =>
+      deps.auth.getSnapshot().profile?.permissions.includes("supply_assignment.reconcile") ?? false,
+    localDate: (instant) =>
+      captureLocalDate(instant, deps.auth.getSnapshot().profile?.organization?.timezone),
     serialize: (write) => deps.bundle.captureProjectionWriter()(write),
-    pending: async () => { const snapshot = await deps.day.read(); return buildDay({ ...snapshot, location: { kind: "unavailable" }, now: new Date() }).pendingTasks.map(({ task }) => ({ taskId: task.id, pointCode: task.point_code })); },
-    attachments: deps.attachments, photos: deps.evidence,
-    notify: () => { deps.day.stopLocation(); deps.shiftOpen.notifyLocalClose(); void deps.engine.hint(); },
+    pending: () => pendingPoints(deps.day),
+    attachments: deps.attachments,
+    photos: deps.evidence,
+    notify: () => {
+      deps.day.stopLocation();
+      deps.shiftOpen.notifyLocalClose();
+      void deps.engine.hint();
+    },
   });
 }

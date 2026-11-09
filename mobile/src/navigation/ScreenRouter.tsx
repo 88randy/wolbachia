@@ -18,9 +18,12 @@ import type { Route } from "./routes.ts";
 
 function screenFor(route: Route): ReactNode {
   if ("ovitrapId" in route) return <LifecycleRoute route={route} />;
+  if (route.name === "closeShift") return <CloseShiftScreen />;
   return mainScreenFor(route);
 }
-function mainScreenFor(route: Exclude<Route, { readonly ovitrapId: string }>): ReactNode {
+function mainScreenFor(
+  route: Exclude<Route, { readonly ovitrapId: string } | { readonly name: "closeShift" }>,
+): ReactNode {
   switch (route.name) {
     case "day":
       return <P9Screen />;
@@ -32,8 +35,6 @@ function mainScreenFor(route: Exclude<Route, { readonly ovitrapId: string }>): R
       return <ScannerScreen target={route.target} />;
     case "invalidOvitrapCode":
       return <P21Screen target={route.target} />;
-    case "closeShift":
-      return <CloseShiftScreen />;
     case "openShift":
       return <OpenShiftScreen />;
     case "home":

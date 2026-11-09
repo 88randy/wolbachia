@@ -30,9 +30,12 @@ const UNVERIFIED_EVIDENCE = `EXISTS(SELECT 1 FROM json_tree(waiting.payload) ref
         AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?
         AND EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=f.id AND b.event_id=waiting.id)))))`;
 
-
 /** Claim and timer share evidence/dependency/owner/final eligibility, before due/LIMIT/MIN. */
-function eligibleRows({ fence, isFinal }: EvidenceSelection, now: string, holdFuture = true): SqlStatement {
+function eligibleRows(
+  { fence, isFinal }: EvidenceSelection,
+  now: string,
+  holdFuture = true,
+): SqlStatement {
   return {
     sql: `WITH RECURSIVE waiting AS (SELECT * FROM outbox_event WHERE local_status='pending'),
       ${DEPENDENCIES},blocked(id) AS (SELECT id FROM waiting WHERE (${isFinal ? "0" : UNVERIFIED_EVIDENCE}) ${holdFuture ? "OR retry_at>?" : ""}

@@ -30,23 +30,33 @@ export class ShiftCloseService {
   readonly #deps: Dependencies;
   readonly #store: ShiftCloseStore;
   #tail: Promise<unknown> = Promise.resolve();
-  constructor(deps: Dependencies) { this.#deps = deps; this.#store = new ShiftCloseStore(deps.db); }
+  constructor(deps: Dependencies) {
+    this.#deps = deps;
+    this.#store = new ShiftCloseStore(deps.db);
+  }
   #write<Result>(action: (assertCurrent: () => void) => Promise<Result>): Promise<Result> {
     const owner = this.#deps.identity();
     const admission = this.#deps.admission === undefined ? owner : this.#deps.admission();
     const assertCurrent = () => {
       this.#requireOwner(owner);
-      if (admission === null || (this.#deps.admission === undefined ? owner : this.#deps.admission()) !== admission) throw new Error("Closing admission changed.");
+      if (
+        admission === null ||
+        (this.#deps.admission === undefined ? owner : this.#deps.admission()) !== admission
+      )
+        throw new Error("Closing admission changed.");
     };
-    const next = this.#tail.then(() => this.#deps.serialize(async () => {
-      assertCurrent();
-      return action(assertCurrent);
-    }));
+    const next = this.#tail.then(() =>
+      this.#deps.serialize(async () => {
+        assertCurrent();
+        return action(assertCurrent);
+      }),
+    );
     this.#tail = next.catch(() => undefined);
     return next;
   }
   #requireOwner(owner: string | null): asserts owner is string {
-    if (owner === null || this.#deps.identity() !== owner) throw new Error("Closing session changed.");
+    if (owner === null || this.#deps.identity() !== owner)
+      throw new Error("Closing session changed.");
   }
   async read() {
     const owner = this.#deps.identity();
@@ -60,33 +70,65 @@ export class ShiftCloseService {
     this.#requireOwner(owner);
     const snapshots = await new OvitrapStore(this.#deps.db).snapshots();
     this.#requireOwner(owner);
-    const pending = draft?.locallyClosedAt ? draft.pending : await this.#deps.pending();
+    const pending = await this.#pendingPoints(draft);
     this.#requireOwner(owner);
-    return { draft, opening, events, history, pending, canReconcile: this.#deps.canReconcile?.() ?? true, reasons: snapshots.catalog?.voidReasons ?? [] };
+    return {
+      draft,
+      opening,
+      events,
+      history,
+      pending,
+      canReconcile: this.#deps.canReconcile?.() ?? true,
+      reasons: snapshots.catalog?.voidReasons ?? [],
+    };
+  }
+  #pendingPoints(draft: CloseDraft | null): Promise<readonly PendingPoint[]> {
+    return draft?.locallyClosedAt ? Promise.resolve(draft.pending) : this.#deps.pending();
+  }
+  async #suppliesFor(opening: FieldEventEnvelope) {
+    const sources = await this.#store.supplies(
+      opening.shift_id ?? "",
+      this.#deps.localDate?.(opening.device_time) ?? null,
+    );
+    return sources.map((source) => ({ source, eventId: this.#deps.uuid(), returns: [] }));
   }
   start() {
     return this.#write(async (assertCurrent) => {
       const state = await this.read();
       if (state.draft !== null) return state;
-      const shiftId = state.opening?.envelope.shift_id;
+      const opening = state.opening;
+      const shiftId = opening?.envelope.shift_id;
       if (!shiftId) throw new Error("No local shift exists.");
       const ownerKey = this.#deps.identity();
       this.#requireOwner(ownerKey);
       const pending = await this.#deps.pending();
       this.#requireOwner(ownerKey);
-      const supplies = (await this.#store.supplies(shiftId, this.#deps.localDate?.(state.opening!.envelope.device_time) ?? null)).map((source) => ({ source, eventId: this.#deps.uuid(), returns: [] }));
+      const supplies = await this.#suppliesFor(opening.envelope);
       assertCurrent();
-      await this.#store.create({ supplies, shiftId, ownerKey, closeEventId: this.#deps.uuid(), odometer: "", note: "", pending, dispositions: {}, locallyClosedAt: null });
+      await this.#store.create({
+        supplies,
+        shiftId,
+        ownerKey,
+        closeEventId: this.#deps.uuid(),
+        odometer: "",
+        note: "",
+        pending,
+        dispositions: {},
+        locallyClosedAt: null,
+      });
       return this.read();
     });
   }
   update(patch: ClosePatch) {
     return this.#write(async (assertCurrent) => {
       const { draft } = await this.read();
-      if (draft === null || draft.locallyClosedAt !== null) throw new Error("Closing draft is unavailable.");
+      if (draft === null || draft.locallyClosedAt !== null)
+        throw new Error("Closing draft is unavailable.");
       assertCurrent();
       this.#requireOwner(draft.ownerKey);
-      await this.#deps.db.runAtomically([this.#store.replace(draft, applyClosePatch(draft, patch))]);
+      await this.#deps.db.runAtomically([
+        this.#store.replace(draft, applyClosePatch(draft, patch)),
+      ]);
       return this.read();
     });
   }
@@ -94,12 +136,21 @@ export class ShiftCloseService {
     return this.#write(async (assertCurrent) => {
       const state = await this.read();
       if (!state.draft || state.draft.locallyClosedAt) return state;
-      const date = state.opening ? this.#deps.localDate?.(state.opening.envelope.device_time) ?? null : null;
+      const date = state.opening
+        ? (this.#deps.localDate?.(state.opening.envelope.device_time) ?? null)
+        : null;
       const sources = await this.#store.supplies(state.draft.shiftId, date);
-      const additions = sources.filter((source) => !state.draft?.supplies.some((supply) => supply.source.id === source.id))
+      const additions = sources
+        .filter((source) => !state.draft?.supplies.some((supply) => supply.source.id === source.id))
         .map((source) => ({ source, eventId: this.#deps.uuid(), returns: [] }));
       assertCurrent();
-      if (additions.length) await this.#deps.db.runAtomically([this.#store.replace(state.draft, { ...state.draft, supplies: [...state.draft.supplies, ...additions] })]);
+      if (additions.length)
+        await this.#deps.db.runAtomically([
+          this.#store.replace(state.draft, {
+            ...state.draft,
+            supplies: [...state.draft.supplies, ...additions],
+          }),
+        ]);
       return this.read();
     });
   }
@@ -110,39 +161,107 @@ export class ShiftCloseService {
       if (!state.draft) throw new Error("No closing draft exists.");
       const pending = await this.#deps.pending();
       validateClose(state.draft, pending);
-      for (const supply of state.draft.supplies) {
-        if (supply.shrinkage?.some((line) => Number(line.quantity) !== 0 && !state.reasons.some((reason) => reason.code === line.reasonCode))) throw new Error("Current shrinkage reason is unavailable.");
-      }
+      this.#validateShrinkageReasons(state);
       const closed = { ...state.draft, pending, locallyClosedAt: this.#deps.now().toISOString() };
       const event = await this.#event(closed);
       assertCurrent();
       this.#requireOwner(closed.ownerKey);
       const reconciliations = reconciliationEvents(closed, event);
-      if (reconciliations.length && !state.canReconcile) throw new Error("Current reconciliation permission is unavailable.");
-      const events = [...reconciliations, event];
-      const bindings = await this.#bindings(closed, events);
-      assertCurrent();
-      await this.#deps.db.runAtomically([...events.map((source) => eventInsertStatement(source, source.device_time)), ...bindings, this.#store.replace(state.draft, closed, reconciliations.length ? this.#store.sourceGuard(reconciliations.map((source) => String(source.payload.assignment_id))) : undefined)]);
+      if (reconciliations.length && !state.canReconcile)
+        throw new Error("Current reconciliation permission is unavailable.");
+      await this.#commitClose({
+        original: state.draft,
+        closed,
+        reconciliations,
+        event,
+        assertCurrent,
+      });
       this.#deps.notify();
       return this.read();
     });
+  }
+  #validateShrinkageReasons(state: CloseSnapshot): void {
+    for (const supply of state.draft?.supplies ?? []) {
+      if (
+        supply.shrinkage?.some(
+          (line) =>
+            Number(line.quantity) !== 0 &&
+            !state.reasons.some((reason) => reason.code === line.reasonCode),
+        )
+      )
+        throw new Error("Current shrinkage reason is unavailable.");
+    }
+  }
+  async #commitClose(input: {
+    readonly original: CloseDraft;
+    readonly closed: CloseDraft;
+    readonly reconciliations: readonly FieldEventEnvelope[];
+    readonly event: FieldEventEnvelope;
+    readonly assertCurrent: () => void;
+  }): Promise<void> {
+    const { original, closed, reconciliations, event, assertCurrent } = input;
+    const events = [...reconciliations, event];
+    const bindings = await this.#bindings(closed, events);
+    assertCurrent();
+    const sourceGuard = reconciliations.length
+      ? this.#store.sourceGuard(
+          reconciliations.map((source) => String(source.payload.assignment_id)),
+        )
+      : undefined;
+    await this.#deps.db.runAtomically([
+      ...events.map((source) => eventInsertStatement(source, source.device_time)),
+      ...bindings,
+      this.#store.replace(original, closed, sourceGuard),
+    ]);
   }
   async #bindings(draft: CloseDraft, events: readonly FieldEventEnvelope[]) {
     const attachments = this.#deps.attachments;
     if (!attachments) return [];
     const fence = await attachments.session.capture();
-    return draft.supplies.filter((supply) => events.some((event) => event.id === supply.eventId)).flatMap((supply) => attachments.store.bindingStatements({ eventId: supply.eventId, evidenceIds: supply.photos?.map((photo) => photo.id) ?? [], fence }));
+    return draft.supplies
+      .filter((supply) => events.some((event) => event.id === supply.eventId))
+      .flatMap((supply) =>
+        attachments.store.bindingStatements({
+          eventId: supply.eventId,
+          evidenceIds: supply.photos?.map((photo) => photo.id) ?? [],
+          fence,
+        }),
+      );
   }
   async capturePhoto(eventId: string, signal: AbortSignal): Promise<void> {
-    const admission = this.#deps.admission === undefined ? this.#deps.identity() : this.#deps.admission();
+    const admission =
+      this.#deps.admission === undefined ? this.#deps.identity() : this.#deps.admission();
     const { draft } = await this.read();
     const { attachments, photos } = this.#deps;
-    if (!draft || draft.locallyClosedAt || !attachments || !photos || !draft.supplies.some((supply) => supply.eventId === eventId)) throw new Error("Closing photo unavailable.");
-    const assertCurrent = () => {
+    if (
+      !draft ||
+      draft.locallyClosedAt ||
+      !attachments ||
+      !photos ||
+      !draft.supplies.some((supply) => supply.eventId === eventId)
+    )
+      throw new Error("Closing photo unavailable.");
+    const assertCurrent = this.#photoGuard(draft, admission);
+    await captureClosePhoto({
+      store: this.#store,
+      draft,
+      eventId,
+      attachments,
+      port: photos,
+      signal,
+      assertCurrent,
+    });
+  }
+  #photoGuard(draft: CloseDraft, admission: string | null): () => void {
+    return () => {
       this.#requireOwner(draft.ownerKey);
-      if (admission === null || (this.#deps.admission === undefined ? this.#deps.identity() : this.#deps.admission()) !== admission) throw new Error("Closing admission changed.");
+      if (
+        admission === null ||
+        (this.#deps.admission === undefined ? this.#deps.identity() : this.#deps.admission()) !==
+          admission
+      )
+        throw new Error("Closing admission changed.");
     };
-    await captureClosePhoto({ store: this.#store, draft, eventId, attachments, port: photos, signal, assertCurrent });
   }
   async #event(draft: CloseDraft): Promise<FieldEventEnvelope> {
     const kv = new KvStore(this.#deps.db);
@@ -150,12 +269,24 @@ export class ShiftCloseService {
     const catalog = await kv.get("shift_open_catalog");
     const snapshots = await new OvitrapStore(this.#deps.db).snapshots();
     return {
-      id: draft.closeEventId, type: "shift.close", schema_version: 1,
-      shift_id: draft.shiftId, device_time: draft.locallyClosedAt ?? this.#deps.now().toISOString(),
-      gps: null, manual_capture: true, voids_event_id: null,
-      rules_version: snapshots.rules?.version ?? (rules === null ? "" : (JSON.parse(rules) as { version: string }).version),
-      catalog_version: snapshots.catalog?.version ?? (catalog === null ? "" : (JSON.parse(catalog) as { version: string }).version),
-      payload: { odometer_km: Number(draft.odometer), ...(draft.note.trim() ? { note: draft.note.trim() } : {}) },
+      id: draft.closeEventId,
+      type: "shift.close",
+      schema_version: 1,
+      shift_id: draft.shiftId,
+      device_time: draft.locallyClosedAt ?? this.#deps.now().toISOString(),
+      gps: null,
+      manual_capture: true,
+      voids_event_id: null,
+      rules_version:
+        snapshots.rules?.version ??
+        (rules === null ? "" : (JSON.parse(rules) as { version: string }).version),
+      catalog_version:
+        snapshots.catalog?.version ??
+        (catalog === null ? "" : (JSON.parse(catalog) as { version: string }).version),
+      payload: {
+        odometer_km: Number(draft.odometer),
+        ...(draft.note.trim() ? { note: draft.note.trim() } : {}),
+      },
     };
   }
 }

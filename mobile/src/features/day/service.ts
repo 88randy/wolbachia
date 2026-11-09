@@ -59,7 +59,9 @@ export class DayService {
   clearSelection(): Promise<void> {
     return this.#deps.navigation.clear();
   }
-  stopLocation(): void { this.#deps.location.stopAll?.(); }
+  stopLocation(): void {
+    this.#deps.location.stopAll?.();
+  }
   get location() {
     return this.#deps.location;
   }

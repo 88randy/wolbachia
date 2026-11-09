@@ -35,7 +35,10 @@ export interface CloseDraft {
   readonly dispositions: Readonly<Record<string, "leave_pending">>;
   readonly locallyClosedAt: string | null;
 }
-export type ClosePatch = Pick<Partial<CloseDraft>, "odometer" | "note" | "dispositions" | "supplies">;
+export type ClosePatch = Pick<
+  Partial<CloseDraft>,
+  "odometer" | "note" | "dispositions" | "supplies"
+>;
 const SCALE = 1_000_000n;
 function quantity(value: string): bigint {
   if (!/^-?\d+(?:\.\d{1,6})?$/.test(value)) throw new Error("Invalid supply quantity.");
@@ -48,15 +51,24 @@ export function supplyDifference(
   line: Pick<Schemas["SupplyFrameLine"], "credited" | "used" | "returned" | "shrinkage">,
 ): string | null {
   if (line.credited === null) return null;
-  const difference = quantity(line.credited) - quantity(line.used) - quantity(line.returned) - quantity(line.shrinkage);
+  const difference =
+    quantity(line.credited) -
+    quantity(line.used) -
+    quantity(line.returned) -
+    quantity(line.shrinkage);
   const absolute = difference < 0n ? -difference : difference;
-  const fraction = String(absolute % SCALE).padStart(6, "0").replace(/0+$/, "");
+  const fraction = String(absolute % SCALE)
+    .padStart(6, "0")
+    .replace(/0+$/, "");
   return `${difference < 0n ? "-" : ""}${String(absolute / SCALE)}${fraction ? `.${fraction}` : ""}`;
 }
 /** Complete receipt requires every closing source; a failed or unreceived source stays explicit. */
 export function closeDeliveryKey(events: readonly OutboxEvent[]): MessageKey {
   if (events.some((event) => event.status === "rejected")) return "mobile.shiftClose.rejected";
-  if (events.some((event) => ["pending", "sending", "error"].includes(event.status)) || !events.length)
+  if (
+    events.some((event) => ["pending", "sending", "error"].includes(event.status)) ||
+    !events.length
+  )
     return "mobile.shiftClose.phoneClosed";
   if (events.some((event) => event.status === "in_review")) return "mobile.shiftClose.inReview";
   return "mobile.shiftClose.serverReceived";
@@ -71,10 +83,12 @@ export function validateClose(draft: CloseDraft, pending: readonly PendingPoint[
 /** Whole-form updates cannot replace captured source proof or erase a concurrently adopted photo. */
 export function applyClosePatch(draft: CloseDraft, patch: ClosePatch): CloseDraft {
   if (!patch.supplies) return { ...draft, ...patch };
-  if (patch.supplies.length !== draft.supplies.length) throw new Error("Supply source set changed.");
+  if (patch.supplies.length !== draft.supplies.length)
+    throw new Error("Supply source set changed.");
   const supplies = draft.supplies.map((source) => {
     const edited = patch.supplies?.find((row) => row.eventId === source.eventId);
-    if (!edited || JSON.stringify(edited.source) !== JSON.stringify(source.source)) throw new Error("Original supply source changed.");
+    if (!edited || JSON.stringify(edited.source) !== JSON.stringify(source.source))
+      throw new Error("Original supply source changed.");
     return { ...edited, photos: source.photos };
   });
   return { ...draft, ...patch, supplies };

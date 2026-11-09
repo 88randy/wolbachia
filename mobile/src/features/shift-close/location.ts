@@ -21,7 +21,12 @@ export class ShiftLocationSource implements LocationSource {
     const cancel = await this.#source.start((fix) => {
       if (isActive && generation === this.#generation) publish(fix);
     });
-    const stop = () => { if (!isActive) return; isActive = false; cancel(); this.#stops.delete(stop); };
+    const stop = () => {
+      if (!isActive) return;
+      isActive = false;
+      cancel();
+      this.#stops.delete(stop);
+    };
     if (generation !== this.#generation) stop();
     else this.#stops.add(stop);
     return stop;

@@ -74,7 +74,10 @@ export function eventInsertStatement(event: FieldEventEnvelope, updatedAt: strin
     return { sql: COLUMNS_SQL, params };
   // The actual insertion arbitrates in-flight captures against local closure, including rejected closes.
   return {
-    sql: COLUMNS_SQL.replace("VALUES (?,", "VALUES ((SELECT ? WHERE NOT EXISTS (SELECT 1 FROM outbox_event WHERE type='shift.close' AND shift_id=?)),"),
+    sql: COLUMNS_SQL.replace(
+      "VALUES (?,",
+      "VALUES ((SELECT ? WHERE NOT EXISTS (SELECT 1 FROM outbox_event WHERE type='shift.close' AND shift_id=?)),",
+    ),
     params: [params[0] ?? null, event.shift_id, ...params.slice(1)],
   };
 }

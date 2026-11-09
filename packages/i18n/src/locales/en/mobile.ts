@@ -3,14 +3,16 @@ import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftClose.refreshSupplies": "Refresh downloaded receipts",
-  "mobile.shiftClose.sourceFrame": "Downloaded confirmed balance; additional declarations are shown below.",
+  "mobile.shiftClose.sourceFrame":
+    "Downloaded confirmed balance; additional declarations are shown below.",
 
   "mobile.shiftClose.title": "Close shift",
   "mobile.shiftClose.closedTitle": "Shift closed",
   "mobile.shiftClose.phoneClosed": "Closed on the phone",
   "mobile.shiftClose.serverReceived": "Server received the closing records",
   "mobile.shiftClose.inReview": "Server received a record for review",
-  "mobile.shiftClose.rejected": "A record was rejected. Check the inbox; the shift remains closed on the phone.",
+  "mobile.shiftClose.rejected":
+    "A record was rejected. Check the inbox; the shift remains closed on the phone.",
   "mobile.shiftClose.pending": "Pending points",
   "mobile.shiftClose.noPending": "No pending points in the downloaded copy.",
   "mobile.shiftClose.goNow": "Go to day view",
@@ -21,25 +23,31 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.shiftClose.difference": "Difference",
   "mobile.shiftClose.unknown": "No confirmed value",
   "mobile.shiftClose.supplies": "Supply reconciliation",
-  "mobile.shiftClose.differenceAllowed": "Differences remain for review and do not prevent closure. A return is a declaration; the warehouse confirms receipt.",
-  "mobile.shiftClose.suppliesUnavailable": "No downloaded receipt is linked to this shift. Balances and reconciliation remain unconfirmed; you can close.",
+  "mobile.shiftClose.differenceAllowed":
+    "Differences remain for review and do not prevent closure. A return is a declaration; the warehouse confirms receipt.",
+  "mobile.shiftClose.suppliesUnavailable":
+    "No downloaded receipt is linked to this shift. Balances and reconciliation remain unconfirmed; you can close.",
   "mobile.shiftClose.returnQuantity": "Additional return quantity",
   "mobile.shiftClose.returnDestination": "Return to the original warehouse",
   "mobile.shiftClose.odometer": "Closing odometer (km)",
   "mobile.shiftClose.note": "Closing note (optional)",
-  "mobile.shiftClose.lowOdometer": "Odometer is below the opening reading. It will be retained for review; you can close on the phone.",
+  "mobile.shiftClose.lowOdometer":
+    "Odometer is below the opening reading. It will be retained for review; you can close on the phone.",
   "mobile.shiftClose.confirmTitle": "Close this shift?",
-  "mobile.shiftClose.confirmHint": "This phone will save the closure and stop capture and location collection for this shift. Pending points will not be completed.",
+  "mobile.shiftClose.confirmHint":
+    "This phone will save the closure and stop capture and location collection for this shift. Pending points will not be completed.",
   "mobile.shiftClose.close": "Close shift on the phone",
   "mobile.shiftClose.continue": "Review and confirm closure",
-  "mobile.shiftClose.retryHint": "Pending records retry when the session and connection return. Keep the app installed. Check the inbox for pending attachments and rejections.",
+  "mobile.shiftClose.retryHint":
+    "Pending records retry when the session and connection return. Keep the app installed. Check the inbox for pending attachments and rejections.",
   "mobile.shiftClose.reviewHistory": "Review history",
   "mobile.shiftClose.notReviewed": "No downloaded supervisor decision.",
   "mobile.shiftClose.observed": "Observed by supervisor",
   "mobile.shiftClose.approved": "Current approval",
   "mobile.shiftClose.staleApproval": "Earlier approval; new review required",
   "mobile.shiftClose.noShift": "No local shift to close. Return home.",
-  "mobile.shiftClose.saveFailed": "The change was not saved. Your input is retained. Check pending points, quantities and reasons, then retry; if it continues, check storage with your supervisor.",
+  "mobile.shiftClose.saveFailed":
+    "The change was not saved. Your input is retained. Check pending points, quantities and reasons, then retry; if it continues, check storage with your supervisor.",
   "mobile.shiftClose.shrinkageQuantity": "Additional shrinkage quantity",
   "mobile.shiftClose.reason": "Shrinkage reason (10 to 1000 characters)",
   "mobile.shiftClose.photo": "Take shrinkage photo",

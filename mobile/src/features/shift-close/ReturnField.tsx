@@ -10,12 +10,35 @@ interface Props {
   readonly disabled: boolean;
   readonly onChange: (supply: ReconcileDraft) => void;
 }
-export function ReturnField({ supply, lineId, sourceId, disabled, onChange }: Props) {
+function updateReturn(props: Props, returned: string): void {
+  const { supply, lineId, sourceId, onChange } = props;
+  onChange({
+    ...supply,
+    returns: [
+      ...supply.returns.filter((line) => line.receiptLineId !== lineId),
+      { receiptLineId: lineId, receiptSourceEventId: sourceId, returned },
+    ],
+  });
+}
+export function ReturnField(props: Props) {
+  const { supply, lineId, disabled } = props;
   const t = useT();
   const returned = supply.returns.find((line) => line.receiptLineId === lineId)?.returned ?? "";
-  return <Card>
-    <AppText variant="mono">{lineId}</AppText>
-    <ShiftField label={t("mobile.shiftClose.returnQuantity")} value={returned} decimal disabled={disabled} onChange={(returned) => { onChange({ ...supply, returns: [...supply.returns.filter((line) => line.receiptLineId !== lineId), { receiptLineId: lineId, receiptSourceEventId: sourceId, returned }] }); }} />
-    <AppText>{t("mobile.shiftClose.returnDestination")}</AppText><AppText variant="mono">{supply.source.originId}</AppText>
-  </Card>;
+  const onChange = (returned: string) => {
+    updateReturn(props, returned);
+  };
+  return (
+    <Card>
+      <AppText variant="caption">{lineId}</AppText>
+      <ShiftField
+        label={t("mobile.shiftClose.returnQuantity")}
+        value={returned}
+        decimal
+        disabled={disabled}
+        onChange={onChange}
+      />
+      <AppText>{t("mobile.shiftClose.returnDestination")}</AppText>
+      <AppText variant="caption">{supply.source.originId}</AppText>
+    </Card>
+  );
 }

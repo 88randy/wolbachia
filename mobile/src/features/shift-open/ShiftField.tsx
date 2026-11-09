@@ -9,7 +9,14 @@ interface Props {
   readonly decimal?: boolean;
   readonly disabled?: boolean;
 }
-export function ShiftField({ label, value, onChange, numeric = false, decimal = false, disabled = false }: Props) {
+export function ShiftField({
+  label,
+  value,
+  onChange,
+  numeric = false,
+  decimal = false,
+  disabled = false,
+}: Props) {
   return (
     <View>
       <AppText>{label}</AppText>

@@ -19,7 +19,10 @@ const FACTS = [
   ["e.result_code", "opening_result_code"],
   ["c.value", "gate_catalog"],
   ["m.value", "gate_map"],
-  ["(SELECT device_time FROM outbox_event closing WHERE closing.type='shift.close' AND closing.shift_id=e.shift_id ORDER BY closing.seq LIMIT 1)", "locally_closed_at"],
+  [
+    "(SELECT device_time FROM outbox_event closing WHERE closing.type='shift.close' AND closing.shift_id=e.shift_id ORDER BY closing.seq LIMIT 1)",
+    "locally_closed_at",
+  ],
 ] as const;
 
 export interface ShiftGateFacts extends StoredShift {

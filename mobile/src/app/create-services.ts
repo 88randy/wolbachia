@@ -86,7 +86,7 @@ export async function createServices(): Promise<AppServices> {
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
   const captures = createCaptures(captureDeps, bundle, day);
-  const shiftClose = createShiftClose({ db, day, bundle, auth, tokens, deviceId, attachments, evidence, engine, shiftOpen });
+  const shiftClose = createShiftClose({ ...captureDeps, day, bundle, auth, deviceId });
   return { ...shared, ...captures, engine, shiftOpen, shiftClose, day };
 }
 function captureIdentity(

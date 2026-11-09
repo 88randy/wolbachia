@@ -906,4 +906,5 @@ existing transactions. This is partial preparation, not full138/native acceptanc
 See [shift-close/README.md](src/features/shift-close/README.md) for retained close drafts,
 receipt-backed return/shrinkage, local capture/location shutdown, truthful receipt/review
 states and the criterion-to-test map. P3 restores P26/P27. Missing reception/usage facts
-stay unavailable. Native/API/accessibility qualification and complete checks remain pending.
+stay unavailable. Supply bootstrap readiness also recovers older valid cursors/ETags before
+acknowledging the new supply projection. Native/API/accessibility qualification remains pending.
