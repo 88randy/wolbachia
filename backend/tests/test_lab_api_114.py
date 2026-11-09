@@ -73,6 +73,52 @@ def test_lab_structural_commands_preserve_integer_and_closed_replacement_contrac
     assert not naive.is_valid()
     assert naive.errors["washed_at"][0].code == "invalid"
 
+    from dataclasses import replace
+    from datetime import datetime, timedelta
+
+    from core.snapshots import snapshot_hash
+    from lab.access import LabTarget
+    from lab.commands import LabCommandInput, canonical_command_input, canonical_values
+
+    treatment = PaddleReuseSerializer(
+        data={
+            **naive.initial_data,
+            "washed_at": "2026-11-10T18:12:27.191489Z",
+            "dried_at": "2026-11-10T18:13:27.191489Z",
+        }
+    )
+    assert treatment.is_valid(), treatment.errors
+    values = dict(treatment.validated_data)
+    reuse = LabCommandInput(
+        "paddle_reuse", LabTarget("paddle", uuid4()), values.pop("command_id"), values
+    )
+    for microsecond in (191489, 191000, 0):
+        washed = values["washed_at"].replace(microsecond=microsecond)
+        dried = washed + timedelta(minutes=1)
+        request = replace(reuse, values={**values, "washed_at": washed, "dried_at": dried})
+        encoded = canonical_command_input(request)
+        assert encoded["washed_at"] == f"2026-11-10T18:12:27.{microsecond:06d}Z"
+        assert encoded["dried_at"] == f"2026-11-10T18:13:27.{microsecond:06d}Z"
+        assert datetime.fromisoformat(encoded["washed_at"]) == washed
+        assert datetime.fromisoformat(encoded["dried_at"]) == dried
+        assert canonical_command_input(request) == encoded
+        changed = replace(
+            request, values={**request.values, "washed_at": washed + timedelta(microseconds=1)}
+        )
+        assert snapshot_hash(canonical_command_input(changed)) != snapshot_hash(encoded)
+
+    legacy_count_values = dict(valid.validated_data)
+    legacy_count = LabCommandInput(
+        "count",
+        LabTarget("bag", uuid4()),
+        legacy_count_values.pop("command_id"),
+        legacy_count_values,
+    )
+    assert canonical_command_input(legacy_count) == canonical_values(legacy_count_values)
+    assert canonical_values({"instant": values["washed_at"]}) == {
+        "instant": "2026-11-10T18:12:27.191Z"
+    }
+
 
 def test_lab_public_schema_preserves_authentic_actions_and_single_history_owner(api_client):
     api_client.force_authenticate(User(pk=uuid4(), username="synthetic-lab-schema-reader"))

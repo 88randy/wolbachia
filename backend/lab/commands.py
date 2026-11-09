@@ -3,6 +3,7 @@
 import json
 import unicodedata
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -51,6 +52,20 @@ def canonical_values(values: dict[str, Any]) -> dict[str, Any]:
     return dict(_normalize(json.loads(encoded)))
 
 
+def canonical_command_input(request: LabCommandInput) -> dict[str, Any]:
+    """Pin exact treatment instants without changing released command/response encoding."""
+    if request.action != "paddle_reuse":
+        return canonical_values(request.values)
+    values = dict(request.values)
+    for key in ("washed_at", "dried_at"):
+        if isinstance(value := values.get(key), datetime):
+            instant = value.isoformat(timespec="microseconds")
+            values[key] = (
+                instant.removesuffix("+00:00") + "Z" if instant.endswith("+00:00") else instant
+            )
+    return canonical_values(values)
+
+
 def _normalize(value: Any) -> Any:  # noqa: ANN401 -- recursive validated JSON boundary
     if isinstance(value, str):
         return unicodedata.normalize("NFC", value.replace("\r\n", "\n")).strip()
@@ -91,7 +106,7 @@ def execute_prepared_command(
     from lab.transactions import require_lab_lock
 
     require_lab_lock(actor.organization.pk)
-    values = canonical_values(request.values)
+    values = canonical_command_input(request)
     digest = snapshot_hash(
         {"action": request.action, "target": str(request.target.identifier), "values": values}
     )
