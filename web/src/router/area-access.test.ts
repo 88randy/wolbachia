@@ -21,7 +21,7 @@ describe("canOpenArea", () => {
   });
 
   test("a pending area is visible to every member until its issue defines a code", () => {
-    expect(canOpenArea(makeMe({ permissions: [] }), area("lab"))).toBe(true);
+    expect(canOpenArea(makeMe({ permissions: [] }), area("operations"))).toBe(true);
   });
 });
 
@@ -33,7 +33,6 @@ describe("areas still waiting for a permission code", () => {
       "operations",
       "releases",
       "community",
-      "lab",
       "people",
       "dashboards",
       "regulatory",

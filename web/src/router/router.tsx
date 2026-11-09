@@ -1,3 +1,6 @@
+import { LabHome } from "../lab/LabHome";
+import { W35Page } from "../lab/W35Page";
+import { W35HistoryPage } from "../lab/W35HistoryPage";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { W8Page } from "../inventory/supplies/W8Page";
 import { W9Page } from "../inventory/lots/W9Page";
@@ -112,7 +115,9 @@ const areaRoutes = AREAS.map((area) =>
           ? FleetHome
           : area.id === "quadrants"
             ? W22Page
-            : area.id === "inventory"
+            : area.id === "lab"
+              ? LabHome
+              : area.id === "inventory"
               ? InventoryHome
               : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
@@ -263,6 +268,22 @@ const inventoryRoutes = [
   inventoryRoute("/inventory/lots/$code", { permission: "lot.read", component: W10Page }),
   inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
 ];
+const eggCountsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/egg-counts",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => { requirePermission("lab", context.me, "egg_count.create"); },
+  component: W35Page,
+  errorComponent: AreaErrorState,
+});
+const eggCountHistoryRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/count-history",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => { requirePermission("lab", context.me, "egg_count.read"); },
+  component: W35HistoryPage,
+  errorComponent: AreaErrorState,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
@@ -272,6 +293,8 @@ const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     ...areaRoutes,
     ...inventoryRoutes,
+    eggCountsRoute,
+    eggCountHistoryRoute,
     quadrantVersionsRoute,
     catalogsRoute,
     catalogRoute,
