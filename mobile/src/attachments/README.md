@@ -1,5 +1,11 @@
 # Private evidence transport (#246)
 
+M05 (#134) adopts real PNG signature rasters through the same EvidenceCapture.
+Save enrolls only its declared signature_upload_id. Claim/retry eligibility checks
+that exact verified signature binding before supplies.receive JSON selection.
+Damage photos remain private local-only facts because B10 does not declare them.
+No-file receipt drafts participate in the existing owner-activation arbiter.
+
 One immutable evidence UUID identifies original bytes, their SHA-256/type/size and
 their proven issuer/organization/user/device owner. This journal transports files;
 the existing event outbox remains the only event queue. Camera-only native
