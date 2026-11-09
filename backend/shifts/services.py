@@ -3,7 +3,8 @@ MotorcycleCheck and Motorcycle).
 
 They run inside the savepoint the sync pipeline opens per event, under the courier's batch lock
 (docs/sync.md): they validate their own rules and raise `EventRejected` (every write rolls back)
-or `EventNeedsReview` (after the writes to keep), never letting the database detect a violation
+or `EventNeedsReview` (an observation whose NEW operational writes the caller rolls back),
+never letting the database detect a violation
 (an `IntegrityError` would be a `500` for the whole batch). The partial unique index on open
 shifts is the backstop. They call no external service.
 
@@ -80,8 +81,10 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
 
     Rejected: `shift_already_open`, `motorcycle_unknown`, `motorcycle_blocked`,
     `motorcycle_in_use`, `odometer_out_of_range`, `invalid_payload` (unknown checklist item or
-    reused shift id). In review (writes kept): `severe_check`, `odometer_decreased`; when both
-    apply, `severe_check` wins (the decrease is not reported separately).
+    reused shift id). In review: `severe_check`, `odometer_decreased`; when both apply,
+    `severe_check` wins (the decrease is not reported separately). The caller rolls back NEW
+    reviewed operations while preserving original source facts and the derived severe hold.
+    Proven legacy effects are adopted separately, without replaying these writes.
     """
     shift_id = _require_shift_id(ctx)
     items = _resolve_check_items(ctx.organization, data["checks"])
@@ -89,7 +92,7 @@ def open_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     _ensure_odometer_in_range(data["odometer_km"])
     _ensure_no_open_shift(ctx)
     _ensure_shift_id_is_free(shift_id)
-    _ensure_motorcycle_is_usable(motorcycle)
+    _ensure_motorcycle_is_usable(motorcycle, ctx.envelope.id)
     previous_km = highest_recorded_km(motorcycle)
     shift = _insert_shift(ctx, NewShift(shift_id, motorcycle, data["odometer_km"], data["note"]))
     _insert_checks(shift, data["checks"], items)
@@ -107,7 +110,9 @@ def close_shift(ctx: EventContext, data: dict[str, Any]) -> None:
     Shift, once).
 
     Rejected: `shift_not_open` (missing, someone else's or already closed), `odometer_out_of_range`.
-    In review (the shift is closed anyway, a field typo must not lose data): `odometer_decreased`.
+    In review: `odometer_decreased`. The caller rolls back a NEW reviewed close, preserving
+    the original source without closing the shift. A proven legacy close is adopted separately;
+    its historical state is not rewritten or applied again.
     """
     shift_id = _require_shift_id(ctx)
     shift = (
@@ -139,6 +144,9 @@ def close_shift(ctx: EventContext, data: dict[str, Any]) -> None:
             ODOMETER_DECREASED,
             {"previous_km": shift.odometer_open_km, "odometer_km": odometer_km},
         )
+    from inventory.allocations.reconciliation import append_close_frames
+
+    append_close_frames(ctx, shift)
 
 
 def _require_shift_id(ctx: EventContext) -> uuid.UUID:
@@ -197,10 +205,13 @@ def _has_motorcycle_scope(ctx: EventContext, motorcycle: Motorcycle) -> bool:
     EventContext carries no captured scope. The shared single-statement capture avoids
     mixing configuration revisions, without configuration locks, including on a final upload.
     """
-    membership = membership_snapshots(ctx.organization).filter(user=ctx.user).first()
-    if membership is None:
-        return False
-    scope = captured_scope(membership)
+    if ctx.review_authorization is not None:
+        scope = ctx.review_authorization.historical_scope
+    else:
+        membership = membership_snapshots(ctx.organization).filter(user=ctx.user).first()
+        if membership is None:
+            return False
+        scope = captured_scope(membership)
     if motorcycle.center_id is None:
         return any(
             FIELD_EVENT_SYNC in codes and grant["centers"]["mode"] == "all"
@@ -226,11 +237,25 @@ def _ensure_shift_id_is_free(shift_id: uuid.UUID) -> None:
         raise EventRejected(INVALID_PAYLOAD, {"fields": {"shift_id": ["already_used"]}})
 
 
-def _ensure_motorcycle_is_usable(motorcycle: Motorcycle) -> None:
+def _ensure_motorcycle_is_usable(
+    motorcycle: Motorcycle, source_id: uuid.UUID | None = None
+) -> None:
     """Not blocked and in no open shift. The motorcycle row is locked by the caller, so two
     couriers cannot both pass this check for the same motorcycle."""
     if motorcycle.is_blocked:
         raise EventRejected(MOTORCYCLE_BLOCKED, {"reason": motorcycle.blocked_reason})
+    from fleet.selectors import active_blocks
+    from incidents.selectors import active_blockers
+    from reviews.safety import has_pending_severe
+
+    if (
+        has_pending_severe(motorcycle.pk, source_id)
+        or active_blocks(motorcycle)
+        or active_blockers(motorcycle.organization)
+        .filter(resource_kind="motorcycle", resource_id=motorcycle.pk, kind="dispatch")
+        .exists()
+    ):
+        raise EventRejected(MOTORCYCLE_BLOCKED, {"reason": "pending_severe_review"})
     if Shift.objects.filter(motorcycle=motorcycle, status=ShiftStatus.OPEN).exists():
         raise EventRejected(MOTORCYCLE_IN_USE)
 

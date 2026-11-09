@@ -56,7 +56,7 @@ Issue #5. The phone records events offline (decision 2) and uploads them in **sy
 - `results` has one entry per event, **in request order**. `code` is `accepted` for accepted events. The phone shows plain-language text from `packages/i18n` (keys `sync.result.<camelCase code>`); the API never returns user-facing text.
 - `changes.reviews` are the courier's own review items (rejected or in-review events) after `cursor`. Send the returned `cursor` in the next request. `has_more: true` means "pull again now" (a long backlog is paged, `API_CURSOR_PAGE_SIZE`, default 100). **Deviation from the issue contract:** `has_more` was added; without it the phone cannot tell a full page from the end.
 - `changes.catalog_version` and `changes.rules_version` are the `version` hashes of `/field/catalog/` and `/field/rules/`. When one differs from the phone's, it downloads that snapshot (`If-None-Match`).
-- `changes.assignments` does not exist yet (#8, #9); adding a field later is not a breaking change.
+- The nine domain arrays and root `changes.capture_context` are specified in [bootstrap and projection recovery](#bootstrap-and-projection-recovery-b-13-110) and [paired current capture context](#paired-current-capture-context-289); they do not change event verdicts.
 - The phone validates the 200 shape before applying it. A malformed response retries with backoff; missing per-event results become transient failures, while valid results and cursor bookkeeping commit atomically.
 - A **final upload** (below) answers with `X-Session-Revoked: true` and an empty `changes` (`cursor`, versions `null`).
 
@@ -109,9 +109,9 @@ A failed request leaves nothing behind (and gives a final upload back).
 | `rejected` | `shift_event_not_voidable` | `{}` | `record.void` of a `shift.open` or `shift.close` |
 | `in_review` | `void_reason_code_deactivated` | `{}` | Code exists in the organization but was deactivated after the phone snapshot; target stays intact for supervisor acceptance (#22) |
 | `in_review` | `clock_skew` | `{skew_seconds, threshold_seconds}` | The phone's clock is off (see below) |
-| `in_review` | `odometer_decreased` | `{previous_km, odometer_km}` | A close below the open reading, or an open below the highest reading ever recorded for the motorcycle (applied anyway) |
+| `in_review` | `odometer_decreased` | `{previous_km, odometer_km}` | A close below the open reading, or an open below the highest reading ever recorded; source values retained without changing Shift lifecycle |
 | `in_review` | `severe_check` | `{motorcycle_code}` | `shift.open` with a `severe` checklist result: the shift opens and the motorcycle is blocked |
-| `in_review` | `captured_after_shift_close` | `{shift_id}` | An event captured after its shift closed (applied anyway: the data is saved) |
+| `in_review` | `captured_after_shift_close` | `{shift_id}` | An event captured after its shift closed (original source is retained; operational effects roll back) |
 | `in_review` | `final_upload_after_revoke` | `{}` | The event came in the final upload of a revoked session |
 
 Handlers of each epic may add their own codes (`EventRejected(code, params)`, `EventNeedsReview(code, params)`); each new code needs its `packages/i18n` key and a row here.
@@ -123,7 +123,7 @@ Handlers of each epic may add their own codes (`EventRejected(code, params)`, `E
 - **Partial batches.** An invalid event never blocks the others: its domain writes roll back and, while its device has rejection quota available, the rejected `FieldEvent` is stored with its `ReviewItem`. With no slot left, only that event returns `rejection_quota_exceeded` and remains on the phone (see Rejection quota). Its payload is stored as received, except (decision 74) when it is too large, too deep or not storable (lone surrogate, non-finite number): then a marker `{"_not_stored": "<code>", "size_bytes": n}` is stored instead, so a hostile phone cannot fill the table with junk; a NUL character is replaced by U+FFFD.
 - **Precedence** when several statuses apply: `rejected` over `in_review` over `accepted`. Among in-review reasons: `final_upload_after_revoke`, then a handler's own, then the shift's (`captured_after_shift_close`), then `clock_skew`.
 - **Clock skew** (decision 62). `skew = sent_at - server_received_at`. If `|skew|` is over `clock_skew_review_seconds` (the value in force when the server received the batch, `rules.selectors.get_values_in_force`), every event of the batch is `in_review` with `clock_skew`; so is an event with `device_time > sent_at + threshold`. Never rejected for skew alone, and an old event sent late is not flagged for being old. With no value configured **[PENDING client]** nothing is flagged, `clock_skew_seconds` is stored on every event and a warning is logged.
-- **Doubtful events do not change records** (decision 73). When an event will land `in_review` anyway (`ctx.review_code` is set: final upload or clock skew), a `record.void` is validated but does **not** void its target: the void event is stored `in_review` and the target stays intact until a supervisor accepts it (#22 applies it). Handlers of other types decide for themselves with `ctx.review_code`.
+- **Doubtful events do not change records** (decision 73). When an event will land `in_review` anyway (`ctx.review_code` is set: final upload or clock skew), a `record.void` is validated but does **not** void its target: the void event is stored `in_review` and the target stays intact until a supervisor accepts it (#113 applies supported original effects once). All handler families use the same no-effect cutover; original plain observations survive separately from their rolled-back writes.
 - **Final upload.** A revoked session may upload once when an administrator revoked it with `allow_final_upload` (#4). The events are stored `in_review` with `final_upload_after_revoke`, the answer carries `X-Session-Revoked: true`, the second attempt is `401 session_revoked`. The request holds the user and session locks for its whole duration, so the batch is bounded and nothing in the pipeline or a handler calls an external service.
 - **Immutable.** `FieldEvent` and `ReviewItem` are insert-only (model, manager and a PostgreSQL trigger). Only the void fields of an event can change, once.
 - **Isolation.** Every row carries `organization_id`. The organization comes from the token, never from the body. A void of another organization's event looks like a missing one.
@@ -245,8 +245,8 @@ def ready(self) -> None:
 | Piece | Contract |
 |---|---|
 | `payload_serializer` | A DRF serializer for `payload`. It gets `context["request"].organization`, so `OrgScopedPrimaryKeyRelatedField` works. Failure is `invalid_payload`. |
-| `apply(ctx, data)` | Writes the domain records. Return normally for `accepted`; raise `EventRejected(code, params)` to roll **every** write back and store the event `rejected`; raise `EventNeedsReview(code, params)` **after** the writes you want to keep to store it `in_review`. |
-| `ctx` | `organization`, `user`, `device`, `envelope` (the validated event), `server_received_at`, `review_code` (set when the event will be reviewed anyway, so a handler can mark its records provisional) and `rules_at(at)` (lazy: the rule values in force at `at`, usually `device_time`). |
+| `apply(ctx, data)` | Writes the domain records. Return normally for `accepted`; raise `EventRejected(code, params)` to roll **every** write back and store the event `rejected`; raise `EventNeedsReview(code, params)` to roll back operational writes/callbacks and retain the immutable source `in_review`. |
+| `ctx` | `organization`, `user`, `device`, `envelope` (the validated event), `server_received_at`, `review_code` (set when the event will be reviewed anyway; its operational writes will roll back) and `rules_at(at)` (lazy: the rule values in force at `at`, usually `device_time`). |
 | `on_void(ctx, voided_event)` | Optional. Runs in the savepoint of a `record.void` that voids an event of this type; may raise `EventRejected` to refuse. |
 
 Rules for handlers: keep row locks short: the batch runs under `SET LOCAL lock_timeout` (`SYNC_LOCK_TIMEOUT_MS`, 3 s), which also bounds the `select_for_update` waits of handlers, and a longer wait turns the **whole batch** into `429 sync_in_progress` (it rolls back and the phone retries); validate your own unique constraints and raise `EventRejected`, never let the database detect them (an `IntegrityError` from a handler is a `500` for the whole batch, because it cannot be told from a corrupted state); declare every code you raise in `EventHandler.codes`; write only through the current transaction and only domain tables (no code outside the savepoint, or a rejection would leave debris); no external calls (HTTP, storage, email: the view may hold locks); no user-facing text; never trust `organization_id` from the payload. Registering a pair twice raises `ImproperlyConfigured`. `tests/test_sync_registry.py` checks the contract of every registered handler (shape, and that each declared `codes` entry has its `sync.result.*` key in both locales and a row in this document), so a new epic gets that check for free.
@@ -257,10 +257,49 @@ Rules for handlers: keep row locks short: the batch runs under `SET LOCAL lock_t
 |---|---|
 | `record.void` | #5 (this app) |
 | `shift.open`, `shift.close` | #68 (`shifts` app) |
-| `location.ping` (only while a shift is open), `supplies.receive`, `supplies.reconcile` | #8 |
 | `ovitrap.place`, `ovitrap.check`, `ovitrap.replace`, `ovitrap.relocate`, `ovitrap.remove` | #9 (`ovitrap.check` carries `paddle_present` and `has_eggs`, `null` without a paddle; feeds `/bags/receive/`, W34) |
-| `release.record`, `sample.collect` | #10 |
-| `fuel.load`, `incident.report`, `emergency.accident`, `community.activity` | #11 |
+| `fuel.load` | `fleet` app (#103) |
+| `incident.report`, `emergency.accident` | `incidents` app (#104) |
+
+Location, release/permit/training, count and supply families without a real
+registered handler remain unavailable. Their presence in the backlog or a
+generic schema is not an operational capability.
+
+### Append-only reviews (#113)
+
+A NEW `in_review` source has no operational effects. The pipeline retains its
+preparation locks, rolls back a separate inner operational savepoint (including
+its operational callbacks), then stores the immutable FieldEvent, ReviewItem,
+source observations, causal identity and original evidence links. Critical-review
+audit publication is recoverable after commit; outboxed never means delivered.
+
+`causal_parent_pending` retains an owned typed parent dependency without dispatching
+work or inventing a parent row/FK. A missing declared void target is preserved in
+the original envelope independently of its nullable relational FK. Later valid
+resolution appends a fact and never fills that old FK or retargets the source.
+Exact source replay still returns its original result. Accepting a parent does
+not automatically replay its children.
+
+`motorcycle_safety_hold` retains a capture for review while an actual or derived
+motorcycle safety hold blocks work. A pending severe review is not a fabricated
+MotorcycleBlockEvent. Accepting a severe source can create its real fault once;
+it cannot authorize departure or clear that fault. Closure-only work on an owned
+legacy frame preserves safety holds and does not accept its opening.
+
+Supervisor decisions append separately from ingest status. A valid acceptance
+applies the original registered operation once or adopts a complete proven legacy
+materialization; it writes a unique effect receipt in the same transaction.
+Unknown history, unavailable handlers, changed fuel comparison context and
+mandatory safety/evidence gaps remain explicit blockers. A new audit photo cannot
+replace the original declared mandatory upload UUID. Source timestamps, payload
+hash, rule/catalog references and original ReviewItem sequence never change.
+
+The single typed `history` producer publishes actual review/whole-shift decisions
+through CourierChange and a publication receipt. Current real source/whole-shift
+subjects are authorized before LIMIT, cursor and bootstrap, including every
+applicable center/quadrant pair. Captured subject vectors remain audit data and
+never become durable permission. Unknown-context audit is nonterminal/pending
+and is not broadcast without a safely proven subject vector.
 
 ### Shifts (#68)
 
@@ -282,25 +321,25 @@ authority. Scope changes committed before that snapshot apply to pending events.
 
 A shift is the courier's day. The phone generates the shift UUID and sends it as the envelope `shift_id` of `shift.open`; every later event of that day carries the same `shift_id`. `GET /shifts/` and `GET /shifts/{id}/` (permission `shift.read`: supervisor, admin) read the result; see `api-conventions.md`.
 
-**`shift.open`** (schema 1): `shift_id` required; payload `{motorcycle_code: str, odometer_km: int, checks: [{item: str, result: "ok"|"minor"|"severe", note?: str}], note?: str}`. `item` is the `code` of an active item of the closed catalog `motorcycle-check-item`, at most once each; the list may be empty (the checklist is configured per organization, so the server does not require every item). Rejections in this order: `invalid_payload` (shape, unknown or repeated checklist item, missing or reused `shift_id`), `motorcycle_unknown`, `odometer_out_of_range`, `shift_already_open`, `motorcycle_blocked`, `motorcycle_in_use`. The field codes inside `invalid_payload` `params.fields` are: `checks: ["unknown_item"]` (an item that is not an active item of `motorcycle-check-item`), `checks: ["duplicate_item"]` (the same item twice), `shift_id: ["required"]` (missing) and `shift_id: ["already_used"]` (the id belongs to a shift already, also one inserted by a concurrent batch of another courier, also of another organization: one answer for all). When a `severe` line and a decreased odometer coincide, `severe_check` wins and the decrease is not reported separately. A `severe` line opens the shift, blocks the motorcycle and lands `in_review` (`severe_check`); later opens with that motorcycle are `motorcycle_blocked`. An open below the highest odometer (open or close reading of any shift) ever recorded for the motorcycle in the organization opens the shift `in_review` (`odometer_decreased`). The reference is the maximum because an odometer only goes up: it needs no ordering of shifts (events of one batch share their receipt time and the phone's clock cannot be trusted).
+**`shift.open`** (schema 1): `shift_id` required; payload `{motorcycle_code: str, odometer_km: int, checks: [{item: str, result: "ok"|"minor"|"severe", note?: str}], note?: str}`. `item` is the `code` of an active item of the closed catalog `motorcycle-check-item`, at most once each; the list may be empty (the checklist is configured per organization, so the server does not require every item). Rejections in this order: `invalid_payload` (shape, unknown or repeated checklist item, missing or reused `shift_id`), `motorcycle_unknown`, `odometer_out_of_range`, `shift_already_open`, `motorcycle_blocked`, `motorcycle_in_use`. The field codes inside `invalid_payload` `params.fields` are: `checks: ["unknown_item"]` (an item that is not an active item of `motorcycle-check-item`), `checks: ["duplicate_item"]` (the same item twice), `shift_id: ["required"]` (missing) and `shift_id: ["already_used"]` (the id belongs to a shift already, also one inserted by a concurrent batch of another courier, also of another organization: one answer for all). When a `severe` line and a decreased odometer coincide, `severe_check` wins and the decrease is not reported separately. A `severe` line retains the source `in_review` (`severe_check`) without creating a Shift/check/block; it derives a pending safety hold until a valid acceptance or explicit safety disposition. An open below the highest odometer (open or close reading of any shift) ever recorded for the motorcycle in the organization retains the source `in_review` (`odometer_decreased`) without opening a Shift. The reference is the maximum because an odometer only goes up: it needs no ordering of shifts (events of one batch share their receipt time and the phone's clock cannot be trusted).
 
-**`shift.close`** (schema 1): `shift_id` required; payload `{odometer_km: int, note?: str}`. `shift_not_open` when the shift does not exist, is another courier's or another organization's (the same answer) or is already closed. An odometer below the open reading closes the shift and lands `in_review` (`odometer_decreased`): a typo in the field must not lose the data. The threshold is "any decrease" [ASSUMPTION; a rule parameter if the client wants a tolerance].
+**`shift.close`** (schema 1): `shift_id` required; payload `{odometer_km: int, note?: str}`. `shift_not_open` when the shift does not exist, is another courier's or another organization's (the same answer) or is already closed. An odometer below the open reading retains the source `in_review` (`odometer_decreased`) without closing the Shift; the immutable captured values are not lost. The threshold is "any decrease" [ASSUMPTION; a rule parameter if the client wants a tolerance].
 
-**Events that name a shift.** Every other event with a `shift_id` (except `record.void`, which may correct an event of any day) is checked first: a shift that does not exist, is another courier's or another organization's is `rejected` `shift_not_open`; a closed shift accepts events whose `device_time` is not after `closed_at_device` (offline work often reaches the server after the close) and stores later ones `in_review` `captured_after_shift_close` (applied anyway, `ctx.review_code` set). `shift_not_open` is only ever a rejection. The check is a registered envelope check (`field_sync.registry.register_envelope_check`, registered by `shifts` in `AppConfig.ready()`); with none registered the pipeline validates nothing. Handlers that must not run outside a shift (`location.ping`, #8) also require `shift_id`, which the pipeline cannot know.
+**Events that name a shift.** Every other event with a `shift_id` (except `record.void`, which may correct an event of any day) is checked first: a shift that does not exist, is another courier's or another organization's is `rejected` `shift_not_open`; a closed shift accepts events whose `device_time` is not after `closed_at_device` (offline work often reaches the server after the close) and stores later ones `in_review` `captured_after_shift_close` (no operational effects, `ctx.review_code` set). `shift_not_open` is only ever a rejection. The check is a registered envelope check (`field_sync.registry.register_envelope_check`, registered by `shifts` in `AppConfig.ready()`); with none registered the pipeline validates nothing. Handlers that must not run outside a shift (`location.ping`, #8) also require `shift_id`, which the pipeline cannot know.
 
-**Ordering.** Inside one batch events are processed by `(device_time, id)`, so an open and its close work in any array order. Across batches the phone sends its outbox in order. A `shift.close` that reaches the server before its `shift.open` is `rejected` `shift_not_open` and is not parked: the server never keeps events waiting. Two events with the same `device_time` are ordered by id, which is arbitrary: the app must not stamp an open and its close with the same instant.
+**Ordering.** Inside one batch events are processed by `(device_time, id)`, so an open and its close work in any array order. Across batches the phone sends its outbox in order. A close/child with a proven owned pending typed parent is retained `in_review` with `causal_parent_pending`; unknown/foreign/ambiguous parents keep the existing safe denial. No parent row/FK or automatic child replay is invented. Two events with the same `device_time` are ordered by id, which is arbitrary: the app must not stamp an open and its close with the same instant.
 
 **One open shift per courier and per motorcycle** are enforced by partial unique indexes (`shift_one_open_per_courier`, `shift_one_open_per_motorcycle`); the handler checks first (the motorcycle row is locked, so two couriers cannot both pass) and a reused shift id that loses a race on the primary key is caught in its own savepoint and answered `invalid_payload`, so none of them is an `IntegrityError` for the batch. Batches of one courier are already serialized (try lock), so two phones of the same courier opening together give one `accepted` and one `429 sync_in_progress` (or, when they run one after the other, `shift_already_open`). `Shift` and `MotorcycleCheck` also have database triggers: no deletes, a checklist line is never updated, a shift is only updated by closing it while open. A shift event cannot be voided by its author (`shift_event_not_voidable`): corrections are a supervisor's (#34).
 
 ### `record.void`
 
-Schema version stays **1**: **[ASSUMPTION]** no production phone uses the old reason-only payload yet. The payload is now `{reason_code: str, reason?: str}`; a missing/blank code is `invalid_payload` (`params.fields.reason_code: ["required"]`). The shared resolver looks up the code only in the target's organization and catalog. Unknown/foreign codes (or a missing catalog) are `rejected` with `void_reason_code_unknown`. `other` requires text: missing/blank is `invalid_payload` with `params.fields.reason: ["void_reason_required_for_other"]`; present text goes through all #32 validation, including the visible-character minimum. A regular choice accepts no note or a short note; notes still undergo normalization, character and maximum-length checks. Text failures use `invalid_payload` with the same `fields` and `field_params` mapping as #32. Validation of unknown codes and text precedes the inactive-choice decision. A known but inactive code becomes `in_review` with `void_reason_code_deactivated`; neither it nor a void already going to review changes the target. On supervisor acceptance (#22), revalidate the choice and run the target's `on_void` hook. Both `void_reason_code` and normalized `void_reason` are stored on an applied void; historical voids keep their text with code `other`.
+Schema version stays **1**: **[ASSUMPTION]** no production phone uses the old reason-only payload yet. The payload is now `{reason_code: str, reason?: str}`; a missing/blank code is `invalid_payload` (`params.fields.reason_code: ["required"]`). The shared resolver looks up the code only in the target's organization and catalog. Unknown/foreign codes (or a missing catalog) are `rejected` with `void_reason_code_unknown`. `other` requires text: missing/blank is `invalid_payload` with `params.fields.reason: ["void_reason_required_for_other"]`; present text goes through all #32 validation, including the visible-character minimum. A regular choice accepts no note or a short note; notes still undergo normalization, character and maximum-length checks. Text failures use `invalid_payload` with the same `fields` and `field_params` mapping as #32. Validation of unknown codes and text precedes the inactive-choice decision. A known but inactive code becomes `in_review` with `void_reason_code_deactivated`; neither it nor a void already going to review changes the target. On supported supervisor acceptance (#113), revalidate the choice and run the target's `on_void` hook. Both `void_reason_code` and normalized `void_reason` are stored on an applied void; historical voids keep their text with code `other`.
 
-`{type: "record.void", payload: {reason_code, reason?}, voids_event_id}`. The author of an event voids it (not when the void itself goes to review: see "Doubtful events" above). **Notes for #22 (accepting a void in review):** applying it must run the target type's `on_void` hook, exactly as an ordinary void does, and may be refused by it; and when two voids in review point at the same target, accepting the first one voids it and the second resolves as `already_voided`. Both can exist because a void in review leaves the target untouched: the target keeps its row and gets its void fields; the void event references it. Another user's event is `void_target_not_owned`; one of another organization or a missing one `void_target_not_found`; a second void `already_voided`. [ASSUMPTION] Rejected events and void events are not valid targets (`void_target_not_found`). Supervisor corrections from the web are #22.
+`{type: "record.void", payload: {reason_code, reason?}, voids_event_id}`. The author of an event voids it (not when the void itself goes to review: see "Doubtful events" above). **#113 accepting a void in review:** applying it must run the target type's `on_void` hook, exactly as an ordinary void does, and may be refused by it; and when two voids in review point at the same target, accepting the first one voids it and the second resolves as `already_voided`. Both can exist because a void in review leaves the target untouched: the target keeps its row and gets its void fields; the void event references it. Another user's event is `void_target_not_owned`; one of another organization or a missing one `void_target_not_found`; a second void `already_voided`. [ASSUMPTION] Rejected events and void events are not valid targets (`void_target_not_found`). #113 supervisor decisions append separately from the original capture.
 
 ## Review items
 
-`GET /api/v1/review-items/` (permission `review_item.read`: supervisor, admin). Cursor paging (newest first), filters `?kind=rejected|in_review` and `?code=`. Each item: `{id, event_id, event_type, kind, code, params, courier, device, created_at}`. A `ReviewItem` is created in the same savepoint as every rejected or in-review event. Decisions (accept, void, open an incident) are #22.
+`GET /api/v1/review-items/` requires current `review_item.read`, uses standard page-number paging, kind/code filters, search and explicit ordering. Detail exposes original source/provenance separately from current state/evaluation and ordered decision timeline. POST `{id}/accept/`, `void/`, `open-incident/` requires `review_item.decide`, expected_revision/reason and optional evidence_ids; void may additionally supply the narrowly bounded safety_disposition. #113 appends immutable decisions and actual receipts without rewriting the original ReviewItem or ingest result.
 
 ## Private evidence uploads (#102)
 
@@ -370,9 +409,10 @@ current litres; seeded 15/60 are inclusive, 14.99/60.01 request review, never
 blocking capture or close. Decreases retain the values in review.
 
 The pipeline's idempotency plus FuelLoad.event uniqueness apply once. Any new
-in_review fuel (including clock/final-upload review) stays provisional and is
-excluded from metrics and baselines. [ASSUMPTION] Acceptance is deferred to #22;
-no original event status/timestamps/snapshot provenance is rewritten. Opaque UUID
+in_review fuel (including clock/final-upload review) creates no FuelLoad. Original
+calculation facts survive rollback; #113 applies/adopts supported effects once via
+receipt. Effective legacy rows retain their provisional flags; no original event
+status/timestamps/snapshot provenance is rewritten. Opaque UUID
 receipt ids remain [ASSUMPTION] until uploads exist. Lock order stays unchanged;
 Motorcycle try-lock contention is retryable 429 sync_in_progress, with Retry-After.
 ## Ovitrap placement/check (#111, B-14)
@@ -396,7 +436,8 @@ omitted/null accuracy_m so evidence reaches the handler. Historical distance is
 max_distance_to_point_m (default 50 m, bounds 10..200). Speed compares with the
 previous accepted ovitrap capture, using historical speed_lock_kmh.
 All review outcomes create only FieldEvent/ReviewItem, no operational effects,
-including final upload, clock and shift review. Accepting review is #22.
+including final upload, clock and shift review. #113 acceptance uses original
+observations, actual historical authority and current mandatory guards.
 
 catalog_version resolves the exact archived delivered catalog. Missing archive
 reviews; unknown item within it rejects; a retained now-inactive choice reviews.
@@ -427,6 +468,8 @@ sample. Full decisions and assumptions: backend/ovitraps/README.md and ADR 99.
 | `ovitrap_point_version_unavailable` | in_review, no operational effects |
 | `ovitrap_too_far` | in_review, no operational effects |
 | `ovitrap_speed_anomaly` | in_review, no operational effects |
+| `late_work_after_quadrant_close` | in_review, no effects before original historical authority/inputs are proved and accepted once by the existing review owner. |
+| `captured_after_quadrant_close` | in_review, no effects; supervisor decisions cannot grant retroactive work authority in the closed captured epoch. |
 | `ovitrap_void_blocked` | rejected, no operational effects |
 
 Every code maps to sync.result.<camelCase> in es-MX/en. Lock contention retains
@@ -504,7 +547,7 @@ administrator's later revocation. Admin includes it for explicit delegation.
 
 Response fields are `bundle_version`, `schema_version`, `generated_at`,
 `scope_revision`, `cursor`, `catalog_version`, `rules_version`, `next_change_at`,
-`map_manifest_ready`, followed by these fixed sections in order: `assignments`,
+`map_manifest_ready`, `capture_context` (#289), followed by these fixed sections in order: `assignments`,
 `supplies`, `permits`, `eligibility`, `history`, `map_manifests`, `quadrants`,
 `sampling_points`, `ovitraps`. Every section is
 present as a list, even when its dependency has no producer. Catalog/rules versions,
@@ -534,9 +577,9 @@ tests the recovery contract, not actual phone storage.
 
 A revoked phone still has only its explicitly authorized one final sync upload:
 it gets empty reviews and all nine typed arrays, null cursor/configuration versions
-and next_change_at, and false has_more. Bootstrap never consumes or grants that
+and next_change_at/capture_context, and false has_more. Bootstrap never consumes or grants that
 upload. No new operational effects are applied to in_review events here;
-authorized acceptance and applying effects once remain #22.
+authorized acceptance and applying supported effects once are implemented by #113.
 
 ## Cursor v2 and compatibility
 
@@ -574,6 +617,86 @@ rows exposed only by a different action grant in sync. Both feeds independently 
 API_CURSOR_PAGE_SIZE, advancing s/c only to the last delivered row in that feed.
 has_more is true if either feed has another visible row. Replaying an older cursor
 may repeat entries: clients deduplicate by resource/version and review id.
+
+## Paired current capture context (#289)
+
+The optional, nullable root `capture_context` belongs to bootstrap and changes,
+not a new BundleProducer or event envelope. Every current bootstrap 200 and normal
+sync page emits an object; every field inside it is required:
+
+| Field | Source, from the same captured ctx |
+| --- | --- |
+| schema_version | Fixed capture-metadata schema 1. |
+| permission | Existing FIELD_EVENT_SYNC (`field_event.sync`) constant. |
+| user_id / organization_id | ctx.user.pk / ctx.organization.pk for this authenticated, pinned batch. No mutable identity reread. |
+| scope_revision | The exact computed revision used for bootstrap root/cursor or the returned changes cursor r. |
+| grants | Every complete WorkScope in ctx.scope.grants containing FIELD_EVENT_SYNC, after member/profile intersection and government clamp. Canonical JSON ordering; no axis union. |
+
+Each WorkScope has centers and quadrants with explicit mode none/selected/all and
+canonical UUID ids. Empty selected and none deny the applicable dimension. All
+requires an actual grant. The payload uses the existing MeScopeSerializer grammar
+for each whole pair; effective_scope already normalizes saved scopes. Me's
+independently folded display scope is never used. `grants: []`
+is a complete known absence of capture grants (e.g. bootstrap-only readers), not
+missing data. A sync-only caller still receives no domain rows without bootstrap
+scope. No new permission code/default, admin profile read, Me query, session
+secret, device token, assignment, GPS or original capture proof is emitted.
+
+The root BOOTSTRAP_SCHEMA_VERSION advances 1→2. Outer schema_version remains the
+opaque root/producers hash, with every individual producer schema/payload unchanged.
+Scope revision already includes that boundary and captured configuration generations,
+so old signed cursors fail before ingest and supported revoke→regrant does not
+revalidate an earlier cursor. Bootstrap hashes the new context in bundle_version;
+generated_at and cursor remain excluded, avoiding timestamp churn. A permission-only
+generation change changes ETag without a geometry change. Each normal page repeats
+its context, even when it has no rows; no feed row or timestamp watermark is added.
+
+Ordinary HTTP omitted/null cursor is decoded to ChangesCursor(0,0,None): ctx is
+captured and initial changes include metadata. A stream from zero is still not a
+complete bootstrap. The explicit internal None branch, used by final upload,
+does not capture ctx or pull and returns null. It grants no download/capture access.
+Do not recapture ctx after ingest: a concurrent configuration commit may make this
+response an earlier coherent observation, with its next pull detecting invalid_cursor.
+The projector does no SQL or I/O and acquires no new locks after the courier lock.
+
+### Consumer recovery and compatibility
+
+The new DTO is additive/optional so old consumers retain their known fields and
+opaque-schema handling. The intentional root boundary requires their existing
+invalid_cursor→bootstrap recovery. A new consumer with an old/missing/unsupported
+normal context must remain capture-unavailable. This does not certify every
+historical draft APK or database lineage.
+
+#138 owns strict decoding and local publication: only a validated full bootstrap
+can atomically commit context, actual downloaded foundations, owner/session binding
+and durable readiness through the existing DayStore writer. A delta or a context
+alone cannot clear absent/legacy readiness. A later page can refresh only a matching
+already hydrated revision, using equality rather than ordering hashes. Pending
+readiness omits If-None-Match and survives offline, write failure, unexpected 304 and
+restart; an ordinary 304 retains only its already proven same-owner cache. Known
+empty grants deny capture without forcing endless bootstrap recovery.
+
+On invalid_cursor/observed revoke, invalidate current authority before awaiting
+recovery, retaining drafts, original rule/catalog/authority facts and outbox/evidence
+UUIDs. Missing/null normal metadata where an observation is expected also makes
+old context audit-only. A same-session internal no-pull null supplies no new
+observation and cannot undo an invalidation. Final mode always blocks new capture;
+null does not renew permission. Keep event receipts before existing full cleanup
+and #222 retry. Projection publication remains separate from outbox settlement,
+with idempotent replay rather than network/file I/O inside one giant transaction.
+
+The local authority revision/CAS advances across absent/null and observed A→B→A
+or regrant. It is independent of the server hash. A new login/session/device/issuer/
+org or reinstall cannot reuse readiness or adopt old data from a username, same UUID,
+matching grant hash or fresh Me alone. No immediate remote erasure is promised for
+offline retained bytes; hide active cached access when revocation is observed.
+
+For M09, join an actual physical/fixed point UUID to its real quadrant and center,
+then require one complete matching grant at the capture/correction transaction
+boundary under the applicable current/original policy. Downloaded rows/tasks,
+retained GPS/Assignment, B17 history, B33 receipts and #287 advisory are not current
+capture authority. Do not fabricate M08 bags/reuse/stock or rewrite captured events.
+The backend addition implements none of those mobile/native integration gates.
 
 ## Bundle producer registry and EVERY change writer
 
@@ -892,3 +1015,172 @@ Recovery uses bounded (created_at,id) pages that advance even over pending cause
 No storage/network/mail under sync locks and no new sync projection is introduced.
 record.void retains linked incident/history; incident closure resolves owned holds
 only and does not compensate other domain facts. See ADR 133 and incidents/README.md.
+
+## Signed facility custody (#106 / B-09)
+
+`transfer.dispatch` schema1 carries transfer_id plus command_id, expected_revision
+and signature_upload_id. `transfer.receive` schema1 adds the closed scanned union,
+missing assertions/photo coverage and evidence_ids. Optional dispatch_source_event_id
+names the real same-transfer dispatch FieldEvent. These two families explicitly use
+checks_shift=False; facility custody has no Shift contract. They are distinct from
+future supplies.receive/B10. Current field_event.sync and the actual transfer action
+each need ONE binding over both endpoints/all line pairs. Global identity/device/
+session, clock and final-upload gates remain. No role/GPS/measurement grants custody.
+
+| Code | Verdict / client consequence |
+| --- | --- |
+| `transfer_inaccessible` | Rejected: unknown/foreign/unauthorized real transfer/source; no existence disclosure. |
+| `transfer_state_conflict` | In review: unavailable signed dispatch, stale command/state or conflicting receipt assertions. Keep original capture/signature. |
+| `transfer_evidence_required` | In review: unfinished/missing/reused/wrong-actor signature/photo. Keep pending files for independent upload. |
+| `transfer_safety_blocked` | In review: mandatory current expiry/type/protocol/storage/condition/hold policy prevents effects. |
+| `transfer_void_blocked` | Rejected correction: stock/dependents lack exact supported compensation; retain old signed effects/history. |
+
+NEW in_review sources retain original FieldEvent/ReviewItem, payload hash, both
+clocks/rules/catalog/evidence declarations and selected immutable capture facts
+with ZERO operational TransferEvent/StockOperation/hold/success receipts. Canonical113
+later applies once with genuine original authority, current reviewer action+decide
+and current mandatory safety. Different sender/receiver authors use transfer_source
+only for an exact real same-transfer effective dispatch/link/hash/typed child
+subject. No source is invented and no child is automatically replayed. Original
+ingest status/time/payload stay unchanged after the canonical effect receipt.
+
+Handler effects precede FieldEvent storage: declared UUID/hash is retained first,
+and append-only TransferSourceLink is completed after the REAL source and primary
+evidence exist. Reviewed linkage follows the canonical effect receipt. Signature
+and photo uploads keep actual FieldEvent primary parent plus secondary custody refs;
+byte finalization never accepts a source. HTTP invents no source/courier recipient.
+
+The ONE existing history producer advances schema2→3 for transfer_custody. Its id
+is immutable TransferEvent UUID, separate transfer_id names the parent, and phase
+dispatch|receive/revision/hash/source verdict/void flag/subjects are shared by
+changes/bootstrap after current complete-vector scope and before paging. Only
+real original source couriers receive records. Old review/shift/relocation shapes
+stay exact. Internal publication receipts dedupe persistence, not delivery.
+
+record.void invokes the actual custody owner and preserves old manifests/legs.
+No-effects cancellation or exact PRIOR supported return compensation is allowed;
+consumed/unsupported dependents stay blocked. ack_missing is not return proof.
+Canonical reason_code/Other and normalized10-visible/1000-max note apply to EVERY
+transfer void without changing other owners' resolver. No old leg leaves SUM.
+See backend/inventory/transfers/README.md for the HTTP contract and test ownership.
+
+## Laboratory result history (#114)
+
+Lab adds no courier event type or sync writer. Authenticated server commands retain
+real Bag/Reading/source identity and exact command results. Unknown codes create
+nothing. Recount requests are durable, but independent execution belongs to #115.
+
+The ONE history producer advances from 3 to 4. Its additive Lab variants are
+lab_receipt, lab_discrepancy, lab_count, lab_rejection and lab_void. id is the actual
+Lab fact UUID, with real bag_id/reading_id/source_event_id, original source clocks,
+author, result/QA/configuration state and current subject vector. System QA causes
+update the genuine human count's projection; they forge no human QA action or
+FieldEvent. The public publisher still owns CourierChange plus publication-receipt
+version deduplication, and recipients are authentic prepared original collectors.
+
+All four old review/shift/relocation/transfer mappings, refs, whole-transfer scope,
+root schema2/capture_context and other producer versions remain. The outer hash is
+opaque. Current source/recipient FIELD_BOOTSTRAP authority filters before cursor,
+LIMIT, bootstrap and changes. Persistence during download loss grants no access;
+a later regrant sees the updated retained projection. Nothing here proves courier
+delivery or implements a Lab screen, count on the phone, or independent QA execution.
+
+## Community activity schema1 (B34 / #127)
+
+`community.activity` uses the closed aggregate fields
+`{type_id,zone_id,attendance,agreements,other_text?,incident_id?}`; event UUID supplies
+command_id. Zone is a real Block; type is a community-activity-type CatalogItem
+from the exact delivered catalog snapshot. Other requires text and unsupported
+photo-required purposes remain configuration-unavailable/review with zero effects.
+No resident records, attendance lists or routine attachment purpose are accepted.
+
+Current field_event.sync AND community_activity.create must cover the complete
+actual pair before pending/dependency diversion, and are rechecked under the Org
+arbiter. Default shift checks, global clock/final-upload gates and rollback remain.
+An in_review source has no Activity/event/receipt/link/totals/history effect; B17
+acceptance uses the original historical domain+sync proof and captured facts once.
+The original ingest status/clocks are never rewritten. A real record.void requires
+community_activity.void; canceling an unapplied known source retains an exact source
+cancellation audit without inventing an Activity or zero attendance.
+
+B34 replay additionally requires its exact retained source frame/hash and current
+paired domain permission. Missing original proof fails closed, rather than the
+legacy warning-only body mismatch behavior. HTTP/source UUID reuse conflicts;
+an HTTP command never becomes a source or takes a different source parent.
+
+| Code | Meaning |
+| --- | --- |
+| `community_inaccessible` | Rejected: unknown, foreign or unauthorized actual Block/type/Incident reference. |
+| `community_command_conflict` | Rejected: immutable command identity/body/target/origin conflicts. |
+| `community_catalog_unavailable` | Review: original delivered catalog cannot be proved. |
+| `community_catalog_deactivated` | Review: retained selected type is inactive. |
+| `community_configuration_unavailable` | Review: required capture purpose has no supported routine-activity proof. |
+| `community_zone_unavailable` | Review: original BlockVersion cannot be proved. |
+| `community_state_conflict` | Rejected: unsafe lifecycle/void state; preserve original facts. |
+
+The existing single history producer advances4→5 and adds only
+`kind:community_activity`: actual activity/event/command/type/Block/version/date/
+attendance/revision/void fields, genuine original source clocks and subjects. It
+excludes agreements, Other wording and Incident identities. Source links are made
+after actual persistence, including review's same-transaction effect receipt. A
+later web void of a field-backed activity publishes the latest tombstone once under
+the preplanned original courier lock. HTTP-only activities have no invented recipient.
+Current community_activity.read plus the existing full subject permission filter
+precede LIMIT/cursor/bootstrap. The payload builder is shared by bootstrap/changes;
+persisting during revocation is not a read grant. Root bootstrap2, capture_context,
+other producer versions and the six current upload parents remain unchanged.
+
+## Signed courier supply sources (#107)
+
+The registered schema1 sources supplies.receive and supplies.reconcile use the
+same authenticated ingestion/review lifecycle and normal shift checks. Receipt
+payload: command_id, assignment_id, expected_revision (reconciliation),
+plan_revision, release_id, signature_upload_id, actual_lines of
+{id,release_line_id,quantity}, discrepancies[]. Actual zero is valid. A changed
+plan keeps the signed original observation in review with no operational effects.
+Acceptance needs original context, current actor/original-author/reviewer paired
+authority and genuine release/source proof; it cannot fabricate missing proof.
+
+Reconcile payload: command_id, assignment_id, expected_revision and used/returned/
+shrinkage deltas. Each row references receipt_line_id and receipt_source_event_id.
+Used rows carry quantity, work_kind field_event with real work_source_id OR manual
+with manual_reason, plus exact transit_policy_id and transit_evidence_ids. Both
+require the actual pinned active named procedure and review of original transit
+proof; no storage Location or on-hand safety reading is invented for courier use.
+Returns carry real destination_id and quantity, and give zero destination credit.
+Shrinkage carries reason_code, normalized reason and nonempty evidence_ids. Empty
+file-free returns do not require field.upload; real files require it independently.
+
+New result codes: supply_inaccessible (opaque rejection), supply_void_blocked
+(dependent/current-custodian rejection), supply_assignment_changed,
+supply_state_conflict, supply_evidence_required and supply_transit_unavailable
+(retained review with zero NEW effects). The registry keys are
+`supply_inaccessible`, `supply_void_blocked`, `supply_assignment_changed`,
+`supply_state_conflict`, `supply_evidence_required` and `supply_transit_unavailable`.
+An inactive selected canonical reason uses existing void_reason_code_deactivated;
+invalid reason input stays per-event invalid_payload. Every B10 void reason has
+the feature-specific10-visible/1000-stored limit, retaining global normalization.
+
+Actual command/event/line UUIDs, exact payload hashes, original ingest verdicts,
+device/server clocks and rule/catalog pins are retained. Duplicate source IDs
+recheck current action/self/full-vector authority before returning the saved
+verdict; changed content does not repost. Cross-source deltas use the genuine
+same-author supplies.receive dependency, without expanding other review families.
+Generic record.void calls the concrete current-custody compensation hook; consumed
+material or dependent declarations require their real correction first or safe409/
+supply_void_blocked. No DELETE, status rewrite or second history publisher exists.
+
+Supplies producer1 now projects actual own assignments/releases/receipts/frame and
+justification facts. History advances5→6 with eight typed supply kinds; root
+bootstrap remains2 and all old kinds stay intact. Current complete-vector/own-action
+filtering happens before serialization, count and cursor LIMIT. The new own codes
+participate in scope_revision; clients must use existing capture readiness and
+bootstrap invalidation on scope changes. Hiding a delta is not deletion or renewed
+authority for a cached assignment. Signed source/evidence audit remains retained;
+revoked release eligibility does not invent a restriction on factual return review.
+
+Preparation closes over all authentic actor/courier/historical authors and known
+source FEs BEFORE sorted Users→Device→Session→Pair→known FEs→Organization arbiter
+→planned courier TRY→domain→Uploads. Changed closure aborts for fresh preparation
+outside retained locks. Final upload uses the ONE existing lifecycle/savepoint and
+fresh eligibility precedence; no new device bridge or transport grant is implied.

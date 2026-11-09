@@ -5,6 +5,13 @@ Read the root backend README and `docs/api-conventions.md` before changing this 
 
 ## Scope and authorization
 
+#113 extracts only the pure active-profile paired-scope/government fold for reuse
+by historical review proof. The current wrapper retains User/Organization/member
+activity and same-tenant active-profile checks. FUTURE role revisions include slug;
+old active snapshots lacking identity fail historical proof closed. No snapshot
+backfill, current-profile inference, new grant/default or historical activity
+fabrication is introduced.
+
 `Membership.scope` and `Profile.scope` have exactly two dimensions:
 
 ```json
@@ -301,3 +308,36 @@ Existing Organization-serialized assign_profiles/update_profile/update_membershi
 also preserve current configured terminals and open cases' effective terminal
 paired scope. Historical versions alone do not prevent retiring a former owner.
 There is no new personnel/duty-roster CRUD or late User row lock.
+
+#126 uses the same once-only seed ledger: admin/supervisor receive relocation.decide,
+quadrant.close and intervention.read/create; entomologist receives intervention.read/create
+(documented W32 access). No other default profile receives these actions, including
+coordinator/government. Custom roles and previously revoked codes remain unchanged.
+Intervention metadata never grants company release or permit authority.
+
+#106 uses the same once-only seeded_permission_codes ledger. Admin gets
+transfer.read/create/dispatch/receive and discrepancy.read/close; warehouse gets
+the first five except close, plus field.upload once; supervisor gets transfer.read,
+transfer.receive and discrepancy.read/close. Courier, entomologist, coordinator and
+government get no new custody actions. No role-name authorization, new field.sync,
+bootstrap, incident or personnel grants. Custom roles, previously seeded revocations,
+membership/profile scopes and government portal boundary remain authoritative.
+
+## Laboratory defaults (#114)
+
+The same once-only permission ledger grants admin/entomologist bag.receive,
+egg_count.create/read, lab_rejection.create and lab_method.read. Admin also gets
+lab_method.manage/verify; admin/supervisor get egg_count.void. ENT gains the existing
+field.upload once for actual rejection evidence. There is no other new grant,
+role-name authorization or government exception. Custom profiles, explicit
+revocations and current paired scopes remain. SUP's exact void-context/evidence
+read grants no general Lab read/create/upload.
+
+## Once-only courier custody grants (#107)
+
+New inventory.allocate/reconcile/write_off default to admin and warehouse;
+inventory.reconcile also defaults to supervisor. Own supply_assignment.receive/
+reconcile default only to admin/courier; bag.dispose defaults to admin/entomologist.
+Existing seed-once receipts preserve custom profiles and explicit revocations,
+including field.upload; government remains portal.read only. No scientific mapping
+or transit procedure is seeded. Current paired actions still authorize every act.

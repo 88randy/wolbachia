@@ -13,11 +13,14 @@ from rest_framework.response import Response
 
 from catalogs.models import CatalogItem
 from core.filters import CodeLookupFilter
+from core.time import server_now
 from core.views import OrgScopedViewSetMixin
+from fleet.serializers import FleetIncidentFilterSerializer
 from fleet.serializers import IncidentSerializer as FleetIncidentSerializer
 from fleet.views import IncidentViewSet as FleetIncidentViewSet
 from incidents.configuration import write_type
 from incidents.models import Incident, IncidentTypeVersion
+from incidents.option_selectors import context_options, owner_options
 from incidents.payloads import IncidentReportPayload
 from incidents.permissions import (
     INCIDENT_CLOSE,
@@ -32,8 +35,13 @@ from incidents.serializers import (
     CommentSerializer,
     CreateIncidentTypeSerializer,
     IncidentConflictResponseSerializer,
+    IncidentContextOptionSerializer,
+    IncidentContextQuerySerializer,
     IncidentEventSerializer,
     IncidentFilterSerializer,
+    IncidentOptionQuerySerializer,
+    IncidentOwnerOptionSerializer,
+    IncidentTypeQuerySerializer,
     IncidentTypeSerializer,
     IncidentVoidSerializer,
     ReassignSerializer,
@@ -42,6 +50,7 @@ from incidents.serializers import (
     TypeConfigurationSerializer,
 )
 from incidents.services import Decision, decide, report
+from incidents.workspace_queries import IncidentOrderingFilter, reported_workspace
 from uploads.access import actor_from_request
 
 
@@ -55,7 +64,10 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
         "change_severity": INCIDENT_REASSIGN,
         "close": INCIDENT_CLOSE,
         "void": INCIDENT_CLOSE,
+        "context_options": INCIDENT_READ,
+        "owner_options": INCIDENT_READ,
     }
+    filter_backends = [CodeLookupFilter, IncidentOrderingFilter]
 
     def initial(self, request: Request, *args: object, **kwargs: object) -> None:
         self.required_permissions = {
@@ -64,6 +76,10 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
             if request.query_params.get("kind", "fleet") == "fleet"
             else INCIDENT_READ,
         }
+        if self.action == "context_options":
+            self.required_permissions["context_options"] = (
+                INCIDENT_CREATE if request.query_params.get("action") == "create" else INCIDENT_READ
+            )
         super().initial(request, *args, **kwargs)
 
     def _fleet_list(self) -> bool:
@@ -77,7 +93,16 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
             return Incident.objects.none()
         if self._fleet_list():
             return super().get_queryset()
-        # Query protocol fields are handled by DRF pagination/ordering, not payload strictness.
+        member = self.request.membership  # type: ignore[attr-defined]
+        if self.action != "list":
+            if self.action == "retrieve":
+                return reported_workspace(member, {}, server_now())
+            return (
+                scoped_incidents(member, self.required_permissions[self.action])
+                .select_related("type_version")
+                .prefetch_related("events")
+            )
+        # Reported collection predicates never alter detail or mutation visibility.
         query = IncidentFilterSerializer(
             data={
                 key: value
@@ -86,22 +111,7 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
             }
         )
         query.is_valid(raise_exception=True)
-        lookups = {
-            "state": "state",
-            "severity": "severity",
-            "owner": "owner_id",
-            "type_id": "type_version_id",
-            "center": "center_id",
-            "quadrant": "quadrant_id",
-            "code": "code",
-        }
-        member = self.request.membership  # type: ignore[attr-defined]
-        queryset = scoped_incidents(
-            member, self.required_permissions[self.action]
-        ).prefetch_related("events")  # type: ignore[attr-defined]
-        return queryset.filter(
-            **{lookups[key]: value for key, value in query.validated_data.items() if key in lookups}
-        )
+        return reported_workspace(member, query.validated_data, server_now())
 
     @extend_schema(
         parameters=[
@@ -112,6 +122,12 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
                 description="Explicit representation selector. Default fleet preserves the legacy Incident component.",
             ),
             IncidentFilterSerializer,
+            FleetIncidentFilterSerializer,
+            OpenApiParameter(
+                "ordering",
+                str,
+                description="Reported only: comma-separated code,created_at,deadline,severity with optional -. Critical rows always first; default deadline ascending/null last, created_at,id. Fleet preserves its existing created_at order.",
+            ),
         ],
         responses=PolymorphicProxySerializer(
             component_name="IncidentListItem",
@@ -135,9 +151,45 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
         incident = report(actor_from_request(request), payload.validated_data)
         return Response(
             ReportedIncidentSerializer(
-                projected_incidents(incident.organization).get(pk=incident.pk)
+                projected_incidents(incident.organization).get(pk=incident.pk),
+                context=self.get_serializer_context(),
             ).data,
             status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(
+        parameters=[IncidentContextQuerySerializer],
+        responses=IncidentContextOptionSerializer(many=True),
+        filters=False,
+    )
+    @action(detail=False, methods=["get"], url_path="context-options")
+    def context_options(self, request: Request) -> Response:
+        query = IncidentContextQuerySerializer(
+            data={key: value for key, value in request.query_params.items() if key != "format"}
+        )
+        query.is_valid(raise_exception=True)
+        rows = context_options(actor_from_request(request), query.validated_data)
+        return self.get_paginated_response(
+            IncidentContextOptionSerializer(self.paginate_queryset(rows), many=True).data
+        )
+
+    @extend_schema(
+        parameters=[IncidentOptionQuerySerializer],
+        responses=IncidentOwnerOptionSerializer(many=True),
+        filters=False,
+    )
+    @action(detail=True, methods=["get"], url_path="owner-options")
+    def owner_options(self, request: Request, pk: str) -> Response:
+        incident = self.get_object()
+        query = IncidentOptionQuerySerializer(
+            data={key: value for key, value in request.query_params.items() if key != "format"}
+        )
+        query.is_valid(raise_exception=True)
+        rows = owner_options(
+            actor_from_request(request), incident, query.validated_data.get("search", "")
+        )
+        return self.get_paginated_response(
+            IncidentOwnerOptionSerializer(self.paginate_queryset(rows), many=True).data
         )
 
     def _decide(
@@ -216,7 +268,23 @@ class IncidentTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets
     def get_queryset(self) -> QuerySet[IncidentTypeVersion]:
         if getattr(self, "swagger_fake_view", False):
             return self.queryset.none()
-        return latest_types(self.request.organization)  # type: ignore[attr-defined]
+        rows = latest_types(self.request.organization)  # type: ignore[attr-defined]
+        if self.action == "list":
+            query = IncidentTypeQuerySerializer(
+                data={
+                    key: value
+                    for key, value in self.request.query_params.items()
+                    if key in IncidentTypeQuerySerializer().fields
+                }
+            )
+            query.is_valid(raise_exception=True)
+            if query.validated_data.get("reportable") == "true":
+                rows = rows.filter(is_active=True, item__is_active=True)
+        return rows
+
+    @extend_schema(parameters=[IncidentTypeQuerySerializer])
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
         request=CreateIncidentTypeSerializer,

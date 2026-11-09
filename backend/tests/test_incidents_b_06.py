@@ -39,7 +39,7 @@ from incidents.permissions import MANAGEMENT_CODES
 from incidents.policy import next_stage, reminder_due
 from incidents.selectors import active_blockers, current_event
 from incidents.services import Decision, decide, escalate, report
-from organizations.models import Center, all_scope
+from organizations.models import Center, Membership, all_scope
 from organizations.services import (
     MembershipChange,
     ProfileChange,
@@ -100,6 +100,413 @@ def test_a_chain_without_an_eligible_terminal_is_unusable():
         next_stage(-1, (True, True, False))
 
 
+def test_reported_workspace_query_is_closed_and_uses_stable_type_identity():
+    from incidents.serializers import IncidentFilterSerializer
+
+    family = uuid4()
+    query = IncidentFilterSerializer(
+        data={
+            "kind": "reported",
+            "assigned_to_me": "false",
+            "overdue": "true",
+            "escalated": "false",
+            "type": str(family),
+            "origin": "lab_reception",
+        }
+    )
+    assert query.is_valid(), query.errors
+    assert query.validated_data["type"] == family
+    assert query.validated_data["assigned_to_me"] == "false"
+    for field in ("assigned_to_me", "overdue", "escalated"):
+        for malformed in ("True", "1", "", [], {}):
+            invalid = IncidentFilterSerializer(data={field: malformed})
+            assert not invalid.is_valid()
+            assert field in invalid.errors
+    invalid = IncidentFilterSerializer(data={"origin": "transfer"})
+    assert not invalid.is_valid()
+    assert "origin" in invalid.errors
+
+
+def test_review_reference_keeps_void_state_from_its_real_field_event(monkeypatch):
+    from incidents.workspace_projection import _reference, linked_record
+    from reviews.models import ReviewDecision, ReviewIncidentLink, ReviewItem
+
+    source_event = FieldEvent(pk=uuid4(), voided_at=AT)
+    item = ReviewItem(pk=uuid4(), field_event=source_event)
+    assert _reference("review_item", item) == {
+        "kind": "review_item",
+        "available": True,
+        "id": str(item.pk),
+        "code": None,
+        "is_voided": True,
+    }
+    source_event.voided_at = None
+    source_event.status = "in_review"
+    actor = SimpleNamespace(organization=object())
+    incident = Incident(pk=uuid4())
+    incident.creation_origin = "review_decision"
+    latest = [None]
+    monkeypatch.setattr(
+        ReviewIncidentLink.objects,
+        "filter",
+        lambda **_kwargs: SimpleNamespace(first=lambda: SimpleNamespace(review_item_id=item.pk)),
+    )
+    monkeypatch.setattr(
+        ReviewItem,
+        "decisions",
+        SimpleNamespace(order_by=lambda order: SimpleNamespace(first=lambda: latest[0])),
+    )
+
+    def visible(current_actor, identifier, code):
+        assert (current_actor, identifier, code) == (actor, item.pk, "review_item.read")
+        return item
+
+    monkeypatch.setattr("reviews.actions.visible_review", visible)
+    for decision, is_voided in (
+        (None, False),
+        (ReviewDecision(kind="void", is_terminal=False), False),
+        (ReviewDecision(kind="accept", is_terminal=True), False),
+        (ReviewDecision(kind="void", is_terminal=True), True),
+    ):
+        latest[0] = decision
+        assert linked_record(actor, incident)["is_voided"] is is_voided
+        assert source_event.status == "in_review"
+        assert source_event.voided_at is None
+
+
+def test_reported_workspace_uses_declared_nested_read_representations(monkeypatch):
+    from incidents.serializers import ReportedIncidentSerializer
+    from incidents.workspace_projection import unavailable_record
+
+    snapshot_id, blocker_id, parent_id, evidence_id = (uuid4() for _ in range(4))
+    reference = {
+        "kind": "review_item",
+        "available": True,
+        "id": parent_id,
+        "code": None,
+        "is_voided": True,
+    }
+    snapshot = {
+        "id": snapshot_id,
+        "code": "review",
+        "label": "Review",
+        "icon": "alert",
+        "is_other": False,
+        "report_evidence_min": 0,
+        "close_evidence_min": 1,
+    }
+    evidence = {
+        "id": evidence_id,
+        "is_readable": True,
+        "is_verified": True,
+        "verified_at": AT,
+        "content_type": "image/jpeg",
+        "size_bytes": 12,
+    }
+    redacted = {
+        "id": uuid4(),
+        "is_readable": False,
+        "is_verified": None,
+        "verified_at": None,
+        "content_type": None,
+        "size_bytes": None,
+    }
+    projection = {
+        "type_snapshot": snapshot,
+        "linked_record": reference,
+        "blockers": [
+            {"id": blocker_id, "kind": "motorcycle", "is_active": True, "resource": reference}
+        ],
+        "evidence": [evidence, redacted],
+        "action_permissions": {
+            key: False
+            for key in (
+                "comment",
+                "reassign",
+                "change_severity",
+                "close",
+                "void",
+            )
+        },
+        "action_prerequisites": {
+            "is_open": True,
+            "has_void_dependents": True,
+            "is_severity_protected": False,
+            "close_evidence_min": 1,
+            "can_upload_evidence": False,
+        },
+    }
+    incident = Incident(pk=uuid4())
+    calls = []
+
+    def project(actor, obj):
+        assert actor is None
+        calls.append(obj)
+        return projection
+
+    monkeypatch.setattr("incidents.workspace_projection.workspace_projection", project)
+
+    def represent():
+        serializer = ReportedIncidentSerializer(incident)
+        # This pure boundary owns only the nested DTOs, not timeline/ACL queries.
+        for field in set(serializer.fields) - projection.keys():
+            serializer.fields.pop(field)
+        return serializer.data
+
+    data = represent()
+    assert data["type_snapshot"] == {**snapshot, "id": str(snapshot_id)}
+    assert data["linked_record"] == {**reference, "id": str(parent_id)}
+    assert data["blockers"] == [
+        {
+            "id": str(blocker_id),
+            "kind": "motorcycle",
+            "is_active": True,
+            "resource": {**reference, "id": str(parent_id)},
+        }
+    ]
+    assert data["evidence"] == [
+        {**evidence, "id": str(evidence_id), "verified_at": AT.isoformat().replace("+00:00", "Z")},
+        {**redacted, "id": str(redacted["id"])},
+    ]
+    assert data["action_permissions"] == projection["action_permissions"]
+    assert data["action_prerequisites"] == projection["action_prerequisites"]
+    assert calls == [incident]
+    projection.update(
+        type_snapshot=None, action_prerequisites=None, linked_record=unavailable_record()
+    )
+    redacted_data = represent()
+    assert redacted_data["type_snapshot"] is None
+    assert redacted_data["action_prerequisites"] is None
+    assert redacted_data["linked_record"] == unavailable_record()
+    assert calls == [incident, incident]
+
+
+@pytest.mark.django_db
+def test_reported_origins_follow_real_creation_witnesses_and_retain_unknown(
+    case, make_member, monkeypatch
+):
+    from incidents.models import AutomaticIncidentOrigin
+    from incidents.origins import annotate_creation_origin
+    from inventory.conditions import record_condition
+    from reviews.actions import ReviewDecisionRequest, decide_review
+    from reviews.models import ReviewIncidentLink
+    from tests.factories import OrganizationFactory
+    from tests.inventory_support import AT as INVENTORY_AT
+    from tests.inventory_support import biological_context, capture
+    from tests.test_reviews_b_17 import _reviewed_incident
+
+    direct = report(case.actor, case.data)
+    assert (
+        annotate_creation_origin(Incident.objects.filter(pk=direct.pk)).get().creation_origin
+        == "direct_report"
+    )
+    _review_case, item, upload, reviewer_actor = _reviewed_incident(make_member, "incident.report")
+    decision = decide_review(
+        reviewer_actor,
+        item.pk,
+        ReviewDecisionRequest(
+            "open_incident",
+            0,
+            "Follow up the actual retained field observation",
+            [upload.public_id],
+        ),
+    )
+    followup = ReviewIncidentLink.objects.get(decision=decision).incident
+    assert (
+        annotate_creation_origin(Incident.objects.filter(pk=followup.pk)).get().creation_origin
+        == "review_decision"
+    )
+    client = APIClient()
+    client.force_authenticate(reviewer_actor.user)
+    endpoint = f"/api/v1/incidents/{followup.pk}/"
+    before = client.get(endpoint)
+    assert before.status_code == 200
+    assert before.data["linked_record"]["id"] == str(item.pk)
+    assert before.data["evidence"][0]["id"] == str(upload.public_id)
+    assert before.data["evidence"][0]["is_readable"] is True
+    decide_review(
+        reviewer_actor,
+        item.pk,
+        ReviewDecisionRequest(
+            "void", 1, "Cancel the original nonsevere observation without erasing its follow-up"
+        ),
+    )
+    voided = client.get(endpoint)
+    assert voided.status_code == 200
+    assert voided.data["linked_record"]["id"] == str(item.pk)
+    assert voided.data["linked_record"]["is_voided"] is True
+    assert voided.data["evidence"][0]["is_readable"] is True
+    reviewer_member = Membership.objects.get(
+        organization=reviewer_actor.organization, user=reviewer_actor.user
+    )
+    role = reviewer_member.profiles.get()
+    role.permission_codes.remove("review_item.read")
+    role.save(update_fields=["permission_codes"])
+    after = client.get(endpoint)
+    assert after.status_code == 200
+    assert after.data["linked_record"] == {
+        "kind": None,
+        "available": False,
+        "id": None,
+        "code": None,
+        "is_voided": None,
+    }
+    assert after.data["evidence"][0]["id"] == str(upload.public_id)
+    assert after.data["evidence"][0]["is_readable"] is False
+    assert after.data["evidence"][0]["verified_at"] is None
+    with pytest.raises(Http404):
+        download_attachment(reviewer_actor, upload.public_id)
+    # Deliberately inconsistent retained rows must not change the real void writer journey.
+    _assert_mismatched_source_context_is_unknown(_review_case, followup, item, reviewer_actor)
+    biological = biological_context(OrganizationFactory(), make_member, monkeypatch)
+    reading = record_condition(capture(biological, INVENTORY_AT, "30", "35"))
+    automatic = AutomaticIncidentOrigin.objects.get(source_id=reading.pk)
+    assert (
+        annotate_creation_origin(Incident.objects.filter(pk=automatic.incident_id))
+        .get()
+        .creation_origin
+        == "inventory_condition"
+    )
+    # A retained independent unsupported witness defeats the tempting human/direct inference.
+    AutomaticIncidentOrigin.objects.create(
+        organization=case.actor.organization,
+        created_by=None,
+        actor_kind="system",
+        policy_version="retained.unknown",
+        incident=direct,
+        source_kind="retained_unknown",
+        source_id=uuid4(),
+        content_hash="0" * 64,
+    )
+    client = APIClient()
+    client.force_authenticate(case.actor.user)
+    page = client.get("/api/v1/incidents/", {"kind": "reported", "origin": "unknown"})
+    assert page.status_code == 200
+    assert page.data["count"] == 1
+    assert page.data["results"][0]["id"] == str(direct.pk)
+    assert page.data["results"][0]["origin"] == "unknown"
+    _assert_independent_condition_link_vetoes_lab_origin(make_member, monkeypatch)
+
+
+def _assert_origin_page(actor, incident, origin):
+    client = APIClient()
+    client.force_authenticate(actor.user)
+    page = client.get("/api/v1/incidents/", {"kind": "reported", "origin": origin, "page_size": 1})
+    assert page.status_code == 200
+    assert page.data["count"] == 1
+    assert [row["id"] for row in page.data["results"]] == [str(incident.pk)]
+    assert page.data["results"][0]["origin"] == origin
+
+
+def _assert_mismatched_source_context_is_unknown(review_case, followup, item, actor):
+    from incidents.services import append_event
+    from reviews.models import ReviewSubjectScope
+
+    source_event = item.field_event
+    original = ReviewSubjectScope.objects.get(source_event=source_event, revision=1)
+    assert original.is_resolved
+    assert original.contexts == [
+        {
+            "center_id": str(review_case.field.point.center_id),
+            "quadrant_id": str(review_case.field.point.quadrant_id),
+        }
+    ]
+    center = Center.objects.create(
+        organization=actor.organization, code="SOURCE-OTHER", name="Other retained source context"
+    )
+    quadrant = Quadrant.objects.create(
+        organization=actor.organization, center=center, code="SOURCE-OTHER-Q"
+    )
+    mismatch = Incident.objects.create(
+        organization=actor.organization,
+        created_by=source_event.created_by,
+        sequence=followup.sequence + 1,
+        code=f"I-{followup.sequence + 1:06d}",
+        type_version=review_case.version,
+        center=center,
+        quadrant=quadrant,
+        source_event=source_event,
+        device_time=source_event.device_time,
+        server_received_at=source_event.server_received_at,
+        description=source_event.payload["description"],
+    )
+    append_event(
+        mismatch,
+        {
+            "revision": 1,
+            "action": "report",
+            "state": "open",
+            "owner": review_case.field.membership,
+            "stage": 2,
+            "severity": review_case.version.severity,
+            "stage_entered_at": source_event.server_received_at,
+            "deadline": None,
+            "last_reminder_at": source_event.server_received_at,
+            "evidence_ids": [],
+        },
+        UploadActor(source_event.created_by, actor.organization),
+    )
+    _assert_origin_page(actor, mismatch, "unknown")
+
+
+def _assert_independent_condition_link_vetoes_lab_origin(make_member, monkeypatch):
+    from incidents.models import AutomaticIncidentOrigin
+    from inventory.conditions import record_condition
+    from inventory.models import ConditionBreach, ConditionIncidentLink
+    from lab.access import LabTarget
+    from lab.incidents import write_reception_policy
+    from lab.models import ReceptionIncidentLink
+    from tests.inventory_support import AT as INVENTORY_AT
+    from tests.inventory_support import biological_context, capture
+    from tests.lab_support import capture_bag, command, lab_context
+
+    lab = lab_context(monkeypatch)
+    bag = capture_bag(lab)
+    kind = write_type(
+        lab.actor,
+        {
+            "code": "workspace-lab",
+            "label": "Synthetic workspace reception",
+            "severity": "high",
+            "terminal_id": lab.member.pk,
+            "supervisor_sla_seconds": 60,
+            "coordinator_sla_seconds": 60,
+            "report_evidence_min": 0,
+            "close_evidence_min": 1,
+            "blocker_kinds": [],
+        },
+    )
+    write_reception_policy(
+        lab.actor,
+        {
+            "expected_revision": 0,
+            "missing_type_version": kind.pk,
+            "no_reading_type_version": kind.pk,
+        },
+    )
+    result = command(
+        lab, "missing", LabTarget("bag", bag.pk), {"reason": "Retained real missing paddle"}
+    )
+    linked = ReceptionIncidentLink.objects.get(discrepancy_id=result.body["discrepancy_id"])
+    assert (
+        AutomaticIncidentOrigin.objects.get(incident=linked.incident).source_kind == "lab_reception"
+    )
+    _assert_origin_page(lab.actor, linked.incident, "lab_reception")
+    biological = biological_context(
+        lab.actor.organization, make_member, monkeypatch, configured=False
+    )
+    reading = record_condition(capture(biological, INVENTORY_AT, "30", "35"))
+    breach = ConditionBreach.objects.get(reading=reading)
+    assert not ConditionIncidentLink.objects.filter(breach=breach).exists()
+    ConditionIncidentLink.objects.create(
+        organization=lab.actor.organization,
+        created_by=None,
+        breach=breach,
+        incident=linked.incident,
+    )
+    _assert_origin_page(lab.actor, linked.incident, "unknown")
+
+
 def configured(field):
     field.profile.permission_codes += [
         *MANAGEMENT_CODES,
@@ -156,6 +563,9 @@ def source(case, event_type="incident.report", **changes):
 
 @pytest.mark.django_db
 def test_type_is_pinned_other_is_protected_and_terminal_revocation_rolls_back(case):
+    from catalogs.services import deactivate_catalog_item
+    from incidents.origins import annotate_creation_origin
+
     incident = report(case.actor, case.data)
     revised = write_type(
         case.actor, {"expected_revision": 1, "supervisor_sla_seconds": 600}, case.version.item_id
@@ -205,6 +615,31 @@ def test_type_is_pinned_other_is_protected_and_terminal_revocation_rolls_back(ca
     case.field.profile.refresh_from_db()
     assert "incident.close" in case.field.profile.permission_codes
     assert incident.events.count() == 1
+    client = APIClient()
+    client.force_authenticate(case.actor.user)
+    assert any(
+        row["id"] == str(case.version.item_id)
+        for row in client.get("/api/v1/incident-types/", {"reportable": "true"}).data["results"]
+    )
+    assert report(case.actor, case.data).type_version_id == case.version.pk
+    item = CatalogItem.objects.get(pk=case.version.item_id)
+    deactivate_catalog_item(item, case.actor.user)
+    revised.refresh_from_db()
+    assert revised.is_active
+    assert all(
+        row["id"] != str(item.pk)
+        for row in client.get("/api/v1/incident-types/", {"reportable": "true"}).data["results"]
+    )
+    with pytest.raises(IncidentConfigurationUnavailableError):
+        report(case.actor, case.data)
+    pinned = client.get(f"/api/v1/incidents/{incident.pk}/")
+    assert pinned.status_code == 200
+    assert pinned.data["type_snapshot"]["id"] == str(case.version.pk)
+    assert pinned.data["type_snapshot"]["close_evidence_min"] == case.version.close_evidence_min
+    assert (
+        annotate_creation_origin(Incident.objects.filter(pk=incident.pk)).get().creation_origin
+        == "direct_report"
+    )
 
 
 @pytest.mark.django_db(transaction=True)
@@ -260,6 +695,16 @@ def test_actual_private_finalize_unblocks_only_linked_incident_and_keeps_foreign
     downloaded, kind = download_attachment(case.actor, identifier)
     assert downloaded
     assert kind == "image/png"
+    client = APIClient()
+    client.force_authenticate(case.actor.user)
+    detail = client.get(f"/api/v1/incidents/{first.pk}/")
+    assert detail.status_code == 200
+    assert detail.data["type_snapshot"]["id"] == str(first.type_version_id)
+    assert detail.data["action_prerequisites"]["is_open"] is False
+    assert detail.data["action_prerequisites"]["has_void_dependents"] is True
+    assert all(not blocker["is_active"] for blocker in detail.data["blockers"])
+    assert detail.data["evidence"][0]["id"] == str(identifier)
+    assert detail.data["evidence"][0]["is_verified"] is True
     profile = case.field.profile
     profile.permission_codes.remove("incident.read")
     profile.save(update_fields=["permission_codes"])
@@ -326,6 +771,12 @@ def test_both_source_arrival_orders_link_same_uuid_without_accepting_review(case
             == "shift_not_open"
         )
     assert Incident.objects.count() == int(finalized_first)
+    if finalized_first:
+        from incidents.origins import annotate_creation_origin
+
+        assert (
+            annotate_creation_origin(Incident.objects.all()).get().creation_origin == "field_event"
+        )
 
 
 @pytest.mark.django_db(transaction=True)
@@ -523,7 +974,14 @@ def test_unique_facade_preserves_fleet_default_and_rich_scoped_contract(case, ma
     profile.save(update_fields=["permission_codes", "scope"])
     rich = client.get(url, {"kind": "reported"})
     assert rich.status_code == 200
-    assert [row["id"] for row in rich.data["results"]] == [str(center_only.pk), str(first.pk)]
+    assert [row["id"] for row in rich.data["results"]] == [str(first.pk), str(center_only.pk)]
+    assert rich.data["results"][0]["origin"] == "direct_report"
+    assert rich.data["results"][0]["type_snapshot"]["id"] == str(first.type_version_id)
+    foreign_motorcycle = MotorcycleFactory(organization=foreign_case.actor.organization)
+    for reference in ("", "not-a-uuid", str(foreign_motorcycle.pk)):
+        ignored = client.get(url, {"kind": "reported", "motorcycle": reference})
+        assert ignored.status_code == 200
+        assert ignored.data == rich.data
     assert client.get(url, {"kind": "reported", "code": first.code}).data["count"] == 1
     assert client.get(url, {"kind": "reported", "code": "\x00"}).status_code == 400
     for incident in (hidden_center, hidden_quadrant, foreign):
@@ -554,6 +1012,14 @@ def test_unique_facade_preserves_fleet_default_and_rich_scoped_contract(case, ma
     assert legacy.data == client.get(url, {"kind": "fleet"}).data
     assert [row["id"] for row in legacy.data["results"]] == [str(fault.pk)]
     assert "timeline" not in legacy.data["results"][0]
+    second_motorcycle = MotorcycleFactory(
+        organization=case.actor.organization, center_id=case.field.point.center_id
+    )
+    make_fault(second_motorcycle, case.actor.user)
+    fleet = client.get(url, {"kind": "fleet", "motorcycle": str(motorcycle.pk), "page_size": 1})
+    assert fleet.status_code == 200
+    assert fleet.data["count"] == 1
+    assert [row["id"] for row in fleet.data["results"]] == [str(fault.pk)]
     client.force_authenticate(case.actor.user)
     invalid = client.patch(
         f"/api/v1/incident-types/{case.version.item_id}/",
@@ -565,6 +1031,143 @@ def test_unique_facade_preserves_fleet_default_and_rich_scoped_contract(case, ma
     assert invalid.data["fields"] == {
         "blocker_kinds": [{"code": "duplicate_blocker_kind", "params": {}}]
     }
+    _workspace_filters_and_order(case, member)
+    _workspace_options(case, member, client)
+
+
+def _workspace_filters_and_order(case, member):
+    from incidents.workspace_queries import IncidentOrderingFilter, reported_workspace
+
+    version = write_type(
+        case.actor,
+        {
+            "expected_revision": 1,
+            "supervisor_id": case.field.membership.pk,
+            "coordinator_id": case.field.membership.pk,
+        },
+        case.version.item_id,
+    )
+    reports = [report(case.actor, {**case.data, "type_id": version.pk}) for _ in range(4)]
+    due, advanced, terminal, closed = reports
+    profile = member.profiles.get(permission_codes__contains=["incident.read"])
+    profile.permission_codes += ["incident.close", "incident.reassign", "incident.create"]
+    profile.save(update_fields=["permission_codes"])
+    decide(case.actor, due.pk, Decision("reassign", 1, owner_id=member.pk))
+    for incident in (advanced, terminal):
+        escalate(incident, CAPTURED + timedelta(seconds=60))
+        revision = current_event(incident).revision
+        decide(case.actor, incident.pk, Decision("change_severity", revision, severity="critical"))
+    decide(case.actor, advanced.pk, Decision("comment", 3, "Comment after real escalation"))
+    escalate(terminal, CAPTURED + timedelta(seconds=180))
+    upload = verified_upload(case.actor.organization, case.actor.user)
+    decide(
+        case.actor,
+        closed.pk,
+        Decision("close", 1, "Resolved original case with evidence", (upload.public_id,)),
+    )
+    identifiers = {item.pk for item in reports}
+    now = CAPTURED + timedelta(seconds=60)
+    expected = [
+        ({"assigned_to_me": "true"}, {due.pk}),
+        ({"assigned_to_me": "false"}, identifiers - {due.pk}),
+        ({"overdue": "true"}, {due.pk}),
+        ({"overdue": "false"}, identifiers - {due.pk}),
+        ({"escalated": "true"}, {advanced.pk, terminal.pk}),
+        ({"escalated": "false"}, {due.pk, closed.pk}),
+        ({"overdue": "true", "escalated": "true"}, set()),
+        ({"type": version.item_id, "origin": "direct_report"}, identifiers),
+        ({"type_id": case.version.pk}, set()),
+    ]
+    for filters, matching in expected:
+        query = reported_workspace(member, filters, now).filter(pk__in=identifiers)
+        assert query.count() == len(matching)
+        assert set(query.values_list("pk", flat=True)) == matching
+    request = SimpleNamespace(query_params={"kind": "reported", "ordering": "-code"})
+    rows = IncidentOrderingFilter().filter_queryset(
+        request,
+        reported_workspace(member, {}, now).filter(pk__in=identifiers),
+        SimpleNamespace(action="list"),
+    )
+    first_page, second_page = list(rows[:1]), list(rows[1:2])
+    assert {first_page[0].pk, second_page[0].pk} == {advanced.pk, terminal.pk}
+    assert first_page[0].code > second_page[0].code
+    assert rows.count() == 4
+
+
+def _workspace_options(case, member, client):
+    from incidents.configuration import eligible_owner
+    from incidents.option_selectors import eligible_owners
+    from incidents.selectors import ResourceContext, projected_incidents
+    from tests.factories import ProfileFactory
+    from uploads.access import current_scope
+
+    client.force_authenticate(member.user)
+    endpoints = "/api/v1/incidents/"
+    contexts = client.get(
+        endpoints + "context-options/",
+        {"action": "create", "center": str(case.field.point.center_id), "page_size": 1},
+    )
+    assert contexts.status_code == 200
+    assert contexts.data["count"] >= 2
+    assert contexts.data["results"][0]["center_id"] == str(case.field.point.center_id)
+    assert (
+        client.get(
+            endpoints + "context-options/", {"action": "read", "center": str(uuid4())}
+        ).status_code
+        == 404
+    )
+    assert (
+        client.get(endpoints + "context-options/", {"action": "read", "center": "bad"}).status_code
+        == 400
+    )
+    target = projected_incidents(case.actor.organization).filter(stage=0, state="open").first()
+    context = ResourceContext(target.center_id, target.quadrant_id)
+    # Valid read/close grants may be different profiles, but each keeps its complete pair.
+    profile = member.profiles.get(permission_codes__contains=["incident.read"])
+    profile.permission_codes.remove("incident.close")
+    profile.save(update_fields=["permission_codes"])
+    close_profile = ProfileFactory(
+        organization=case.actor.organization,
+        slug="workspace-close",
+        permission_codes=["incident.close"],
+        scope=all_scope(),
+    )
+    member.profiles.add(close_profile)
+    actor = UploadActor(member.user, case.actor.organization)
+    assert "role.read" not in current_scope(actor).permissions
+    assert "center.read" not in current_scope(actor).permissions
+    assert eligible_owner(member.pk, case.actor.organization, context) is not None
+    assert eligible_owners(actor, target).filter(pk=member.pk).exists()
+    label = member.user.get_full_name().strip() or member.user.username
+    page = client.get(f"{endpoints}{target.pk}/owner-options/", {"page_size": 1, "search": label})
+    assert page.status_code == 200
+    assert page.data["count"] == 1
+    assert page.data["results"][0] == {
+        "membership_id": str(member.pk),
+        "label": member.user.get_full_name().strip() or member.user.username,
+    }
+    terminal = projected_incidents(case.actor.organization).filter(stage=2).first()
+    assert not eligible_owners(actor, terminal).filter(pk=member.pk).exists()
+    assert eligible_owners(actor, terminal).filter(pk=case.field.membership.pk).exists()
+    close_profile.scope = {
+        "centers": {"mode": "none", "ids": []},
+        "quadrants": {"mode": "all", "ids": []},
+    }
+    close_profile.save(update_fields=["scope"])
+    assert eligible_owner(member.pk, case.actor.organization, context) is None
+    assert not eligible_owners(actor, target).filter(pk=member.pk).exists()
+    close_profile.scope = all_scope()
+    close_profile.save(update_fields=["scope"])
+    government = ProfileFactory(
+        organization=case.actor.organization,
+        slug="government",
+        permission_codes=["portal.read"],
+        scope=all_scope(),
+    )
+    member.profiles.add(government)
+    assert eligible_owner(member.pk, case.actor.organization, context) is None
+    # Another fully authorized caller can query eligibility after the candidate is clamped.
+    assert not eligible_owners(case.actor, target).filter(pk=member.pk).exists()
 
 
 @pytest.mark.django_db(transaction=True)
@@ -778,6 +1381,7 @@ def test_concurrent_escalation_and_lost_callback_retry_do_not_duplicate_receipt_
 
 @pytest.mark.django_db
 def test_explicit_marker_adoption_retains_removal_identity_and_refuses_second_case(case):
+    from incidents.origins import annotate_creation_origin
     from ovitraps.lifecycle.models import OvitrapIncidentLink
     from ovitraps.lifecycle.selectors import has_unresolved_removal
     from ovitraps.models import Ovitrap
@@ -793,6 +1397,10 @@ def test_explicit_marker_adoption_retains_removal_identity_and_refuses_second_ca
     incident = report(case.actor, data)
     assert incident.pk != marker.pk
     assert IncidentOrigin.objects.get(marker=marker).incident_id == incident.pk
+    assert (
+        annotate_creation_origin(Incident.objects.filter(pk=incident.pk)).get().creation_origin
+        == "direct_report"
+    )
     with pytest.raises(IncidentConflictError):
         report(case.actor, data)
     assert Incident.objects.count() == 1

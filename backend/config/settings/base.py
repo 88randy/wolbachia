@@ -36,6 +36,8 @@ INSTALLED_APPS = [
     "scheduling",
     "incidents.apps.IncidentsConfig",
     "inventory",
+    "lab.apps.LabConfig",
+    "community.apps.CommunityConfig",
 ]
 
 MIDDLEWARE = [
@@ -104,6 +106,14 @@ except ValueError as error:
     ) from error
 if not 30 <= AUTH_TOKEN_PAIR_RETENTION_DAYS <= 365:
     raise ImproperlyConfigured("AUTH_TOKEN_PAIR_RETENTION_DAYS must be between 30 and 365.")
+try:
+    AUTH_SESSION_AUDIT_RETENTION_DAYS = env.int("AUTH_SESSION_AUDIT_RETENTION_DAYS", default=365)
+except ValueError as error:
+    raise ImproperlyConfigured("AUTH_SESSION_AUDIT_RETENTION_DAYS must be an integer.") from error
+if max(180, AUTH_TOKEN_PAIR_RETENTION_DAYS) > AUTH_SESSION_AUDIT_RETENTION_DAYS:
+    raise ImproperlyConfigured(
+        "AUTH_SESSION_AUDIT_RETENTION_DAYS must be >=180 and >=AUTH_TOKEN_PAIR_RETENTION_DAYS."
+    )
 AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", default=60)
 AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
 AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)
@@ -224,6 +234,39 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "ModeEnum": ["none", "selected", "all"],
+        "OriginEnum": [
+            "field_event",
+            "direct_report",
+            "review_decision",
+            "inventory_condition",
+            "lab_reception",
+            "unknown",
+        ],
+        "ReviewDecisionActionEnum": ["accept", "void", "open_incident"],
+        "RelocationDecisionEnum": ["approved", "rejected"],
+        "DecisionEnum": ["keep", "move", "remove"],
+        "ReviewDecisionStateEnum": ["pending", "accepted", "voided"],
+        "ShiftValidationKindEnum": ["approve", "observe"],
+        "CourierHistoryKindEnum": ["review_decision", "shift_validation"],
+        "CourierHistoryDecisionKindEnum": ["accept", "void", "open_incident", "approve", "observe"],
+        "CourierHistoryDecisionStateEnum": [
+            "pending",
+            "accepted",
+            "voided",
+            "approved",
+            "observed",
+        ],
+        "CourierHistoryEffectStateEnum": [
+            "applied_review",
+            "adopted_legacy",
+            "discarded",
+            "incident_open",
+            "approved",
+            "observed",
+        ],
+        "ReviewEffectModeEnum": ["applied_review", "adopted_legacy"],
+        "LegacyEffectStateEnum": ["none", "complete_owned", "partial", "ambiguous", "unavailable"],
         "InventoryLocationKindEnum": ["biofactory", "warehouse", "center"],
         "InventoryLotStatusEnum": ["draft", "available", "blocked"],
         "IncidentStateEnum": ["open", "closed", "voided"],
@@ -251,6 +294,14 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "recover-lab-reception-incidents": {
+        "task": "lab.tasks.recover_reception_incidents",
+        "schedule": 60.0,
+    },
+    "close-lab-local-days": {
+        "task": "lab.tasks.close_due_lab_days",
+        "schedule": crontab(minute=10),
+    },
     "recover-condition-incidents": {
         "task": "inventory.tasks.recover_condition_incidents",
         "schedule": 60.0,

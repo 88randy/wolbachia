@@ -10,15 +10,18 @@ An epic registers one `EventHandler` per `(event_type, schema_version)` from its
 Registering the same pair twice raises `ImproperlyConfigured`. The pipeline (`services.py`)
 validates the payload with the handler's serializer, then calls `apply(ctx, data)` inside a
 savepoint: a normal return means accepted, `EventRejected` rolls every write back and stores the
-event `rejected`, `EventNeedsReview` keeps the writes and stores it `in_review`. A handler must
+event `rejected`, `EventNeedsReview` rolls operational writes back and stores the immutable
+source `in_review` with its original observations. A handler must
 write only through the connection of the current transaction and call no external service (the
 view holds row locks for the whole batch). See `docs/sync.md`.
 """
 
+from __future__ import annotations
+
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from django.core.exceptions import ImproperlyConfigured
 from rest_framework import serializers
@@ -31,11 +34,14 @@ from field_sync.models import FieldEvent
 from organizations.models import Organization
 from rules.selectors import get_values_in_force
 
+if TYPE_CHECKING:
+    from reviews.contracts import ReviewAdapter, ReviewAuthorization
+
 
 @dataclass(frozen=True)
 class EventContext:
     """What a handler may use. `review_code` is set when the event will land `in_review` anyway
-    (final upload, clock skew), so a handler can mark its own records as provisional."""
+    (final upload, clock skew). Operational writes roll back; copied original observations remain."""
 
     organization: Organization
     user: User
@@ -43,6 +49,13 @@ class EventContext:
     envelope: EventEnvelope
     server_received_at: datetime
     review_code: str | None = None
+    review_authorization: ReviewAuthorization | None = None
+    observed_facts: dict[str, Any] = field(default_factory=dict, compare=False)
+
+    def acknowledges(self, code: str) -> bool:
+        return self.review_authorization is not None and self.review_authorization.acknowledges(
+            self, code
+        )
 
     def rules_at(self, at: datetime) -> dict[str, int | float | None]:
         """The rule parameter values in force at `at` (usually the event's `device_time`).
@@ -75,7 +88,7 @@ class EventHandler:
     same savepoint; it may raise `EventRejected` to refuse the void. `checks_shift` (default
     True): the pipeline runs the registered envelope checks on the event (`shifts` registers one that
     validates its `shift_id`: the shift must exist, be the sender's and not be closed before the
-    event); only the shift events and `record.void` opt out.
+    event); only shift events, `record.void`, `transfer.dispatch` and `transfer.receive` opt out.
     """
 
     event_type: str
@@ -85,6 +98,7 @@ class EventHandler:
     on_void: VoidHook | None = None
     codes: tuple[str, ...] = ()
     checks_shift: bool = True
+    review_adapter: ReviewAdapter | None = None
 
 
 HANDLERS: dict[tuple[str, int], EventHandler] = {}
@@ -110,7 +124,7 @@ def register_envelope_check(check: EnvelopeCheck) -> None:
     """Register a check the pipeline runs on every event whose handler has `checks_shift=True`,
     after the payload is valid and before it is applied (writes the process-wide registry; call
     it from `AppConfig.ready()`). It reads (no writes), may raise `EventRejected` and may return an
-    `EventNeedsReview` that sends the event to review once it is applied. With none registered
+    `EventNeedsReview` that retains the source for review without operational effects. With none registered
     the pipeline checks nothing. `shifts` uses it for the `shift_id` of events, so `field_sync`
     does not import `shifts`."""
     if check in ENVELOPE_CHECKS:

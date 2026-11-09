@@ -9,6 +9,38 @@ from django.conf import settings
 from django.db import models
 
 from core.models import ImmutableMixin, OrgScopedModel
+from reviews.decision_models import (
+    HistoryPublicationReceipt,
+    ReviewDecision,
+    ReviewEffectReceipt,
+    ReviewIncidentLink,
+    ReviewSafetyDisposition,
+    ShiftDecision,
+)
+from reviews.source_models import (
+    ReviewDependency,
+    ReviewDependencyResolution,
+    ReviewParentClaim,
+    ReviewSourceSnapshot,
+    ReviewSubjectScope,
+)
+
+__all__ = [
+    "HistoryPublicationReceipt",
+    "ReviewDecision",
+    "ReviewEffectReceipt",
+    "ReviewIncidentLink",
+    "ReviewSafetyDisposition",
+    "ShiftDecision",
+    "ReviewDependency",
+    "ReviewDependencyResolution",
+    "ReviewParentClaim",
+    "ReviewSourceSnapshot",
+    "ReviewSubjectScope",
+    "ReviewItem",
+    "ReviewKind",
+    "CODE_MAX_LENGTH",
+]
 
 CODE_MAX_LENGTH = 64
 KIND_MAX_LENGTH = 20

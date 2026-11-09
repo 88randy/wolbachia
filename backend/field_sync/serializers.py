@@ -14,12 +14,16 @@ from field_sync.envelope import (
     describe_payload,
 )
 from field_sync.models import TYPE_MAX_LENGTH, VERSION_MAX_LENGTH, EventStatus
+from field_sync.permissions import FIELD_EVENT_SYNC
 from field_sync.producers import MapManifestSerializer
 from field_sync.projection_serializers import (
     OvitrapBundleSerializer,
     QuadrantReferenceSerializer,
     SamplingPointBundleSerializer,
 )
+from inventory.allocations.serializers import SupplyBundleSerializer
+from organizations.serializers import MeScopeSerializer
+from reviews.history_serializers import CourierHistoryEntrySerializer
 from reviews.models import ReviewKind
 
 MAX_LATITUDE = 90
@@ -166,6 +170,27 @@ class OvitrapChangeSerializer(ProducerChangeSerializer):
     data = OvitrapBundleSerializer()  # type: ignore[assignment]
 
 
+class HistoryChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = CourierHistoryEntrySerializer()  # type: ignore[assignment]
+
+
+class SupplyChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = SupplyBundleSerializer()  # type: ignore[assignment]  # Required wire name overlaps Serializer.data.
+
+
+class CaptureContextSerializer(serializers.Serializer[Any]):
+    """Self current SYNC observation; no session secret or immutable source authority."""
+
+    schema_version = serializers.IntegerField(min_value=1, max_value=1)
+    permission = serializers.ChoiceField(choices=[FIELD_EVENT_SYNC])
+    user_id = serializers.UUIDField()
+    organization_id = serializers.UUIDField()
+    scope_revision = serializers.RegexField(r"^[0-9a-f]{64}$")
+    grants = MeScopeSerializer(many=True)
+
+
 class ChangesSerializer(serializers.Serializer[Any]):
     cursor = serializers.CharField(allow_null=True)
     reviews = ReviewChangeSerializer(many=True)
@@ -173,11 +198,12 @@ class ChangesSerializer(serializers.Serializer[Any]):
     rules_version = serializers.CharField(allow_null=True)
     has_more = serializers.BooleanField()
     next_change_at = serializers.DateTimeField(allow_null=True)
+    capture_context = CaptureContextSerializer(required=False, allow_null=True)
     assignments = ProducerChangeSerializer(many=True)
-    supplies = ProducerChangeSerializer(many=True)
+    supplies = SupplyChangeSerializer(many=True)
     permits = ProducerChangeSerializer(many=True)
     eligibility = ProducerChangeSerializer(many=True)
-    history = ProducerChangeSerializer(many=True)
+    history = HistoryChangeSerializer(many=True)
     map_manifests = ProducerChangeSerializer(many=True)
     quadrants = QuadrantChangeSerializer(many=True)
     sampling_points = SamplingPointChangeSerializer(many=True)
@@ -195,16 +221,17 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     schema_version = serializers.CharField()
     generated_at = serializers.DateTimeField()
     scope_revision = serializers.CharField()
+    capture_context = CaptureContextSerializer(required=False, allow_null=True)
     cursor = serializers.CharField()
     catalog_version = serializers.CharField()
     rules_version = serializers.CharField()
     next_change_at = serializers.DateTimeField(allow_null=True)
     map_manifest_ready = serializers.BooleanField()
     assignments = serializers.ListField(child=serializers.DictField())
-    supplies = serializers.ListField(child=serializers.DictField())
+    supplies = SupplyBundleSerializer(many=True)
     permits = serializers.ListField(child=serializers.DictField())
     eligibility = serializers.ListField(child=serializers.DictField())
-    history = serializers.ListField(child=serializers.DictField())
+    history = CourierHistoryEntrySerializer(many=True)
     map_manifests = MapManifestSerializer(many=True)
     quadrants = QuadrantReferenceSerializer(many=True)
     sampling_points = SamplingPointBundleSerializer(many=True)

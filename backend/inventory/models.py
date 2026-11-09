@@ -172,17 +172,78 @@ class Piece(InventoryRecord):
 
 class StockOperation(InventoryRecord):
     admission = models.OneToOneField(
-        LotAdmission, on_delete=models.PROTECT, related_name="operation"
+        LotAdmission, null=True, on_delete=models.PROTECT, related_name="operation"
     )
-    source_kind = models.CharField(max_length=24, choices=[("lot_admission", "lot_admission")])
+    transfer_event = models.OneToOneField(
+        "inventory.TransferEvent",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="stock_operation",
+    )
+    supply_source = models.OneToOneField(
+        "inventory.SupplyLedgerSource",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="stock_operation",
+    )
+    source_kind = models.CharField(
+        max_length=24,
+        choices=[
+            (kind, kind)
+            for kind in (
+                "lot_admission",
+                "transfer_dispatch",
+                "transfer_receive",
+                "transfer_resolution",
+                "supply_receive",
+                "supply_reconcile",
+                "supply_return",
+                "lot_write_off",
+                "supply_compensation",
+            )
+        ],
+    )
     source_id = models.UUIDField()
     content_hash = models.CharField(max_length=64)
 
     class Meta(InventoryRecord.Meta):
         constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(
+                        source_kind="lot_admission",
+                        admission__isnull=False,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind__in=[
+                            "transfer_dispatch",
+                            "transfer_receive",
+                            "transfer_resolution",
+                        ],
+                        admission__isnull=True,
+                        transfer_event__isnull=False,
+                        supply_source__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind__in=[
+                            "supply_receive",
+                            "supply_reconcile",
+                            "supply_return",
+                            "lot_write_off",
+                            "supply_compensation",
+                        ],
+                        admission__isnull=True,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=False,
+                    )
+                ),
+                name="stock_exact_source_branch",
+            ),
             models.UniqueConstraint(
                 fields=["organization", "source_kind", "source_id"], name="stock_operation_source"
-            )
+            ),
         ]
 
 
@@ -194,13 +255,25 @@ class StockMovement(InventoryRecord):
     )
     line_number = models.PositiveIntegerField()
     lot = models.ForeignKey(Lot, on_delete=models.PROTECT, related_name="movements")
-    location = models.ForeignKey(Location, on_delete=models.PROTECT, related_name="movements")
+    location = models.ForeignKey(
+        Location, null=True, on_delete=models.PROTECT, related_name="movements"
+    )
+    assignment = models.ForeignKey(
+        "inventory.SupplyAssignment", null=True, on_delete=models.PROTECT, related_name="movements"
+    )
     piece = models.ForeignKey(Piece, null=True, on_delete=models.PROTECT, related_name="movements")
     quantity = models.DecimalField(max_digits=QUANTITY_DIGITS, decimal_places=QUANTITY_PLACES)
     unit_version = models.ForeignKey(SupplyTypeVersion, on_delete=models.PROTECT, related_name="+")
 
     class Meta(InventoryRecord.Meta):
         constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(location__isnull=False, assignment__isnull=True)
+                    | models.Q(location__isnull=True, assignment__isnull=False)
+                ),
+                name="stock_exact_custodian",
+            ),
             models.UniqueConstraint(
                 fields=["operation", "line_number"], name="stock_operation_leg"
             ),
@@ -229,11 +302,37 @@ class ConditionReading(InventoryRecord):
         choices=[("normal", "normal"), ("breach", "breach"), ("unassessed", "unassessed")],
     )
     content_hash = models.CharField(max_length=64)
+    capture_mode = models.CharField(
+        max_length=17,
+        default="legacy_initial",
+        choices=[("legacy_initial", "legacy_initial"), ("explicit_location", "explicit_location")],
+    )
+    capture_location = models.ForeignKey(
+        Location, null=True, on_delete=models.PROTECT, related_name="condition_readings"
+    )
 
     class Meta(InventoryRecord.Meta):
         constraints = [
             models.UniqueConstraint(
-                fields=["organization", "lot", "device_time"], name="condition_capture_identity"
+                fields=["organization", "lot", "device_time"],
+                condition=models.Q(capture_mode="legacy_initial"),
+                name="condition_capture_identity",
+            ),
+            models.UniqueConstraint(
+                fields=["organization", "lot", "capture_location", "device_time"],
+                condition=models.Q(capture_mode="explicit_location"),
+                name="condition_explicit_identity",
+            ),
+            models.CheckConstraint(
+                condition=(
+                    models.Q(capture_mode="legacy_initial", capture_location__isnull=True)
+                    | models.Q(
+                        capture_mode="explicit_location",
+                        capture_location__isnull=False,
+                        location_version__isnull=False,
+                    )
+                ),
+                name="condition_location_mode",
             ),
             models.CheckConstraint(
                 condition=models.Q(slot__isnull=True) | models.Q(slot__in=[0, 1]),
@@ -269,3 +368,8 @@ class ConditionIncidentLink(InventoryRecord):
                 name="condition_link_system_author",
             )
         ]
+
+
+# Register nested inventory models only after their shared immutable base is defined.
+from inventory.allocations import models as allocation_models  # noqa: E402,F401
+from inventory.transfers import models as transfer_models  # noqa: E402,F401

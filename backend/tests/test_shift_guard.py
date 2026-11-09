@@ -95,7 +95,7 @@ def test_an_event_captured_before_the_shift_closed_is_accepted_even_if_it_arrive
     assert result["status"] == "accepted"
 
 
-def test_an_event_captured_after_the_shift_closed_is_applied_but_goes_to_review(
+def test_an_event_captured_after_the_shift_closed_is_reviewed_without_effect(
     phone: Phone,
 ) -> None:
     closed_at = timezone.now() - timedelta(hours=2)
@@ -111,7 +111,7 @@ def test_an_event_captured_after_the_shift_closed_is_applied_but_goes_to_review(
 
     assert (result["status"], result["code"]) == ("in_review", "captured_after_shift_close")
     assert result["params"] == {"shift_id": str(shift.pk)}
-    assert Widget.objects.count() == 1
+    assert not Widget.objects.exists()
 
 
 def test_a_void_may_name_any_shift_because_it_corrects_an_old_event(phone: Phone) -> None:
@@ -131,12 +131,18 @@ def test_a_void_may_name_any_shift_because_it_corrects_an_old_event(phone: Phone
     assert FieldEvent.objects.get(pk=target["id"]).voided_at is not None
 
 
-def test_only_the_shift_events_and_the_void_opt_out_of_the_shift_check() -> None:
+def test_only_documented_shift_independent_events_opt_out_of_the_shift_check() -> None:
     from field_sync.registry import HANDLERS
 
     opted_out = {key[0] for key, handler in HANDLERS.items() if not handler.checks_shift}
 
-    assert opted_out == {"shift.open", "shift.close", "record.void"}
+    assert opted_out == {
+        "shift.open",
+        "shift.close",
+        "record.void",
+        "transfer.dispatch",
+        "transfer.receive",
+    }
 
 
 def test_without_a_registered_envelope_check_the_shift_id_is_not_validated(

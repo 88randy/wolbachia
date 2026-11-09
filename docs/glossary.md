@@ -10,7 +10,7 @@ One English name per domain term across backend, mobile and web. Spanish appears
 | autorización temporal de carga | upload lease | UploadLease, Upload-Lease | Append-only 15-minute authenticated PUT authorization. |
 | recibo de bytes originales | upload source | UploadSource, sha256 | Immutable private original object; never served. |
 | verificación de evidencia | upload verification | UploadVerification, verified_at | Sanitized image plus its separate SHA-256; no parent authority implied. |
-| vínculo de evidencia | attachment link | AttachmentLink, context | One immutable authorized source/fault binding per upload. |
+| vínculo de evidencia | attachment link | AttachmentLink, context | Exactly one immutable field_event, motorcycle_fault, incident, review_item or transfer_event parent per upload. Current parent authorization is rechecked; retained verification never grants permanent access or reparenting. |
 
 Rules:
 
@@ -39,6 +39,7 @@ Rules:
 | revisar | check | `check` (action) | Fixed action. |
 | reemplazar | replace | `replace` (action) | Fixed action. |
 | reubicar | relocate | `relocate` (action), `/relocations/` | Fixed action; also a proposal that the supervisor approves. |
+| sugerencia de reubicación | relocation advisory | `/field/ovitrap-advisories/{id}/`, `as_of` | Optional point-wide OP03 aggregate at an explicit source cutoff with observed rule provenance; neither original capture proof nor capture permission. |
 | retirar | remove | `remove` (action) | Fixed action. |
 | resolución de retiro no recuperado | removal resolution | `RemovalResolution`, `removal.resolve` | Supervisor's append-only recovered_later or written_off disposition for one removal; original recovery evidence remains unchanged. |
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
@@ -51,11 +52,13 @@ Rules:
 | --- | --- | --- | --- |
 | catálogo | catalog | `/catalogs/`, `Catalog`, `slug` | Per-organization option list (e.g. `removal-reason`). Created by the seed; `is_open` says it ends with "Other". |
 | opción de catálogo | catalog item | `/catalogs/{slug}/items/`, `CatalogItem`, `code` | One option; deactivated (`is_active`), never deleted. Labels `label_es` / `label_en` are data. |
+| revisión de catálogo | catalog revision | `Catalog.revision`, item `catalog_version`, request `version` | Integer counter for one Catalog, checked by reorder and conditional availability. Item responses retain that write's revision; field configuration snapshot versions are separate content hashes. |
 | Otro (especificar) | other item | `is_other`, code `other` | Fixed last item of an open catalog; cannot be deactivated; choosing it requires free text. |
 | parámetro de regla | rule parameter | `/rule-parameters/`, `RuleParameter`, `key` | A threshold (e.g. `max_distance_to_point_m`) with type, unit and optional bounds. |
 | versión de parámetro | rule parameter version | `/rule-parameters/{key}/versions/`, `RuleParameterVersion` | One value from `effective_from` on; insert-only; voided (not deleted) if wrong and still scheduled. |
 | modo de alcance | scope mode | `scope.centers.mode`, `scope.quadrants.mode` | Explicit none/selected/all; empty selected denies, all requires an explicit grant, selected never expands to new centers. |
 | alcance efectivo | effective scope | `effective_scope` | The action-granting profile scope intersects membership scope in both applicable dimensions; unrelated grants never combine into a new pair. |
+| contexto de captura | capture context | `capture_context` | Current self effective `field_event.sync` whole paired grants observed in bootstrap/changes; neither immutable original authority nor a permanent offline permission. |
 | revisión de configuración | configuration revision | `ConfigurationRevision`, `revision`, `expected_revision` | Immutable authored snapshot of organization settings, profile permissions or membership assignments. |
 | paquete de configuración | snapshot | `/field/catalog/`, `/field/rules/`, `version` | Compact copy of a configuration that the phone keeps offline; `version` is a content hash and the `ETag`. |
 
@@ -114,6 +117,12 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
+| actividad comunitaria | community activity | `CommunityActivity`, `/community-activities/` | One aggregate attendance observation, not a resident list or a unique-person metric. Public `zone_id` is the actual Block UUID and retains its BlockVersion. |
+| vínculo de queja | complaint incident link | `ComplaintIncidentLink` | Immutable link to a real reported Incident in the same pair; it never grants Incident/evidence read authority or closes independent holds. |
+| recibo de actividad | community command receipt | `CommunityCommandReceipt` | Exact original actor/body/target/origin identity; HTTP never fabricates a FieldEvent and cross-origin reuse conflicts. |
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
 | anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason`, `void_reason_code` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 
@@ -123,7 +132,7 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | --- | --- | --- | --- |
 | lote de sincronización | sync batch | `events` in `POST /field/sync/` | The events the phone uploads in one request. Never "batch" for supply lots (that is `lot`). |
 | evento de campo | field event | `FieldEvent`, `event`, `/field/sync/` | One immutable record sent by the phone; its id is a UUID generated on the phone. Status `accepted`, `rejected` or `in_review`. |
-| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | What a supervisor must look at: a rejected or in-review field event. Insert-only; decisions arrive with #22. |
+| elemento de revisión | review item | `ReviewItem`, `/review-items/` [ASSUMPTION: Spanish label] | A rejected or in-review field event for supervisor review. Insert-only ingest history; later ReviewDecision records remain separate. |
 
 ## Devices and sessions
 
@@ -131,6 +140,8 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | --- | --- | --- | --- |
 | teléfono / dispositivo (del repartidor) | device | `Device`, `/devices/`, `device_id` | The registered phone of the mobile app. Never `release_device` (that is release equipment) and never "terminal" or "handset". |
 | sesión del dispositivo | device session | `DeviceSession`, `revoke-device-sessions` | One login of a user on a device: an access + refresh token pair, revoked and never deleted. |
+| auditoría del fin de sesión | session-end audit | `ended_at`, `end_basis`, `retention_anchor`, `dissociated_at` | Truthful closed-session proof; legacy unknown end keeps a distinct cutover anchor. Direct session-person references are removed after configured retention; device/business/log correlation remains separate. |
+| retención por investigación de seguridad | session audit hold | `hold_until`, `hold_purpose`, `hold_reference` | Finite, session-specific operator action; blocks audit dissociation only, not TokenPair pruning. No permanent/public grant or implied legal certification. |
 | baja del dispositivo | device revocation | `POST /devices/{id}/revoke/`, `is_revoked` | Lost or retired phone: it cannot log in again. |
 | última carga | final upload | `final_upload_deadline`, `X-Session-Revoked`, `FinalUploadMixin` | The one upload a revoked phone may still make. |
 | — | token pair | `TokenPair`, `accounts/token_pairs.py` | Hashes of one access + refresh pair of a device session. A refresh consumes its pair and issues a child pair. Live families are kept in full for reuse detection. Ended families are pruned together by retention (#54); their device session audit row is kept. |
@@ -189,3 +200,71 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | acuse de escalamiento | escalation receipt | EscalationReceipt | Unique stage/deadline; final reminders also use rolling hours. |
 | intención de aviso | notice intent | IncidentNoticeIntent | Durable scoped B-07 producer fact, never delivery proof. |
 | origen de incidente | incident origin | IncidentOrigin | Explicit adoption of an opaque ovitrap marker; no historic ID rewrite. |
+
+## Append-only review decisions (#113)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| decisión de revisión | review decision | ReviewDecision | Separate immutable audit; original ingest never rewritten. |
+| recibo de efecto | effect receipt | ReviewEffectReceipt | Exactly-once applied operation or proven legacy adoption. |
+| disposición de seguridad | safety disposition | ReviewSafetyDisposition | Current administrative attestation with real inspection/proof; only its source hold. |
+| validación de jornada | shift validation | ShiftDecision | Approve/observe a CLOSED frame, independent from Shift lifecycle. |
+| historial del recolector | courier history | CourierHistoryEntry | One typed producer with actual CourierChange/publication receipt and current scope. |
+| resolución de dependencia | dependency resolution | ReviewDependencyResolution | Exact append-only parent proof; no automatic child replay. |
+| reserva de identidad padre | parent claim | ReviewParentClaim | Immutable typed identity reservation for one source; cancellation does not reassign it or authorize a child. |
+
+## Geography decisions (#126)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| decisión de reubicación | relocation decision | RelocationDecision | Terminal audit references the immutable proposal source. |
+| tarea del día siguiente | next-day task | NextDayTask | Unique proposal/decision provenance to a real ScheduledTask on the next org-local date. |
+| intervención de terceros | third-party intervention | ThirdPartyIntervention | Metadata across authorized real blocks; no company release authority. |
+| cierre de cuadrante | quadrant closure | QuadrantClosure | Immutable audit of one published QuadrantVersion; no implicit reopening. |
+
+## Signed facility custody (#106)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| transferencia | transfer | Transfer, `/transfers/` | Signed expected manifest between two real locations; preparation reserves no stock. |
+| evento de transferencia | transfer event | TransferEvent | Immutable prepared/dispatch/receive/resolution fact; event UUID differs from transfer and stock operation UUIDs. |
+| línea esperada | transfer line | TransferLine | Exact lot/optional piece/unit/quantity and both retained location versions. |
+| recepción real | transfer receipt line | TransferReceiptLine | Independently signed actual receipt, bounded by expected dispatch. |
+| mercancía en tránsito | outstanding custody | outstanding | Derived unreceived dispatch; never a spendable location or balance. |
+| resolución de discrepancia | discrepancy resolution | DiscrepancyResolution, ResolutionOutcome | Complete accountable partition; bounded recovery/return or reference to a real separate signed correction. |
+| sobrante sin identificar | unidentified extra | unidentified_extra | Literal observation under an authorized real transfer, no resource FK or stock credit. |
+| recibo de comando | transfer command receipt | TransferCommandReceipt | Immutable replay proof; internal persistence, not delivery or a new client command on close. |
+| padre de evidencia de transferencia | transfer event parent | transfer_event | Fifth closed upload parent for HTTP custody; source captures retain their actual FieldEvent primary parent. |
+
+## Laboratory first-pass results (#114)
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
+| recepción de laboratorio | bag receipt | BagReceipt, /bags/receive/ | A real authorized Reading; no-paddle has a null Bag and no count expectation. No courier delivery claim. |
+| discrepancia de recepción | reception discrepancy | ReceptionDiscrepancy | Real expected/missing or ineffective-source cause, distinct from facility-transfer discrepancies. |
+| política de incidencias de recepción | reception incident policy | ReceptionIncidentPolicyVersion | Public CAS mapping to exact real incident-type versions; configuration can remain pending. |
+| método de laboratorio | lab method | LabMethod, LabMethodVersion | Named immutable procedure/reference and retained verification; not a seeded scientific approval. |
+| primer conteo | first-pass egg count | EggCountAttempt | Authoritative nonnegative integer; zero is an observation, never missing data. |
+| huevos examinados | examined eggs | total_examined | Sample denominator retained with viable_eggs; no inferred relation to full paddle count. |
+| viabilidad | viability | viability_percent | Decimal6 ratio of viable/examined; null reason distinguishes zero_examined and not_requested. |
+| rechazo de laboratorio | lab rejection | LabRejection | Reasoned named-method result with exact verified private evidence, never value zero. |
+| anulación de resultado | lab result void | LabResultVoid, LabResultRevision | Immutable catalog reason/note and optional atomic same-Bag replacement. |
+| solicitud de reconteo independiente | recount request | RecountRequest | Durable first-counter/source/rule cause; #115 owns execution, adjudication and reuse. |
+| muestra diaria de control | daily recount sample | DailyRecountSample | Closed org-local-day population/selection proof; a request is not an executed recount. |
+
+## Courier custody additions (#107)
+
+SupplyAssignment: explicit courier custodian/dated immutable plan, not a Location.
+OriginReleaseProof: genuine origin eligibility and reservation manifest, not receipt.
+SupplyReceipt: signed actual credited custody; zero differs from missing receipt.
+SupplyUse / SupplyShrinkage: explicit source/line deltas in the original declared unit.
+ReturnDeclaration: uncredited courier statement. ReturnAcceptance: separately signed
+warehouse custody transfer to the real destination. ReconciliationVersion: immutable
+R-U-T-S frame, with separate Q-R delivery variance. SupplyDiscrepancy: one retained
+case per reconciliation; SupplyDiscrepancyDecision explains one exact frame without
+inventing stock. InventoryIntent: concrete immutable HTTP evidence declaration,
+before operational execution. LotWriteOff: numeric loss from available Location
+custody. BagDisposition: whole real Bag disposal preserving Lab/source/QA history.
+CourierTransitPolicyVersion: named authored evidence-review procedure, not a seeded
+scientific recipe or a storage certification. Material unavailable: actual disposed
+material cannot support another physical act even when its audit can be corrected.

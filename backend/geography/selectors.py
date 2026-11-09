@@ -9,6 +9,7 @@ from django.utils import timezone
 from rest_framework.exceptions import NotFound
 
 from core.exceptions import FieldValidationError
+from core.snapshots import snapshot_hash
 from field_sync.producers import ProducerContext, filter_producer_rows
 from geography.geometry import available_block_geometries, suggest_points
 from geography.models import (
@@ -121,7 +122,7 @@ def quadrant_reference(version: QuadrantVersion | BlockVersion) -> dict[str, Any
     is_block = isinstance(version, BlockVersion)
     identity = version.block if isinstance(version, BlockVersion) else version.quadrant
     quadrant = identity.quadrant if isinstance(identity, Block) else identity
-    return {
+    row: dict[str, Any] = {
         "organization_id": str(version.organization_id),
         "resource_type": "block" if is_block else "quadrant",
         "id": str(identity.pk),
@@ -130,6 +131,22 @@ def quadrant_reference(version: QuadrantVersion | BlockVersion) -> dict[str, Any
         "quadrant_id": str(quadrant.pk),
         "revision": version.revision,
     }
+    if not is_block:
+        from geography.decisions.models import QuadrantClosure
+
+        closure = QuadrantClosure.objects.filter(
+            organization_id=version.organization_id, quadrant_version_id=version.pk
+        ).first()
+        row.update(
+            is_closed=closure is not None, closure_id=None if closure is None else str(closure.pk)
+        )
+    return row
+
+
+def geography_reference_version(row: dict[str, Any]) -> str:
+    if row["resource_type"] == "block":
+        return str(row["revision"])
+    return snapshot_hash({key: value for key, value in row.items() if key != "organization_id"})
 
 
 def sampling_point_row(version: PointVersion) -> dict[str, Any]:

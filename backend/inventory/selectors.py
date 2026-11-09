@@ -5,6 +5,7 @@ from typing import Any, cast
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import (
+    BooleanField,
     Case,
     CharField,
     Exists,
@@ -56,7 +57,13 @@ def current_lot(lot: Lot) -> LotVersion:
     return cast(
         LotVersion,
         lot.versions.select_related(
-            "supply_version", "protocol", "initial_location", "lot__organization"
+            "supply_version__supply_type",
+            "supply_version__protocol__incident_type",
+            "protocol__incident_type",
+            "initial_location",
+            "location_version__location",
+            "lot__organization",
+            "lot__admission",
         ).order_by("-revision")[0],
     )
 
@@ -120,12 +127,15 @@ def unresolved_breaches(lot: Lot) -> QuerySet[ConditionBreach]:
     return query
 
 
-def lot_safety(version: LotVersion, at: datetime | None = None) -> LotSafety:
+def lot_safety(
+    version: LotVersion, at: datetime | None = None, location: Location | None = None
+) -> LotSafety:
     now = at or server_now()
     from zoneinfo import ZoneInfo
 
     organization = version.lot.organization
     local_date = now.astimezone(ZoneInfo(organization.timezone)).date()
+    requested_location = location or version.initial_location
     readings = ConditionReading.objects.filter(
         lot=version.lot,
         protocol=version.protocol,
@@ -133,7 +143,23 @@ def lot_safety(version: LotVersion, at: datetime | None = None) -> LotSafety:
         timezone=organization.timezone,
         slot__isnull=False,
     ).exclude(evaluation="unassessed")
-    location = current_location(version.initial_location) if version.initial_location else None
+    readings = (
+        readings.filter(
+            Q(capture_location=requested_location, capture_mode="explicit_location")
+            | Q(capture_mode="legacy_initial", location_version__location=requested_location)
+        )
+        if requested_location
+        else readings.none()
+    )
+    storage = current_location(requested_location) if requested_location else None
+    from inventory.transfers.models import TransferHold
+
+    holds = TransferHold.objects.filter(
+        organization=organization,
+        lot=version.lot,
+        location=requested_location,
+        resolution__isnull=True,
+    )
     snapshot = LotSafetySnapshot(
         version.supply_version.is_biological,
         current_supply(version.lot.supply).is_active,
@@ -141,19 +167,19 @@ def lot_safety(version: LotVersion, at: datetime | None = None) -> LotSafety:
         version.expires_at,
         protocol_ready(version.protocol),
         version.supply_version.requires_insecticide_free,
-        location.is_insecticide_free if location else None,
+        storage.is_insecticide_free if storage else None,
         frozenset(readings.values_list("slot", flat=True)),
         tuple(str(pk) for pk in unresolved_breaches(version.lot).values_list("pk", flat=True)),
+        tuple(str(pk) for pk in holds.values_list("pk", flat=True)),
     )
     return evaluate_lot(snapshot, now)
 
 
 def location_stock(actor: UploadActor, location: Location) -> QuerySet[Any]:
     require_scope(actor, "location.read", location)
-    visible = scoped_inventory(Lot.objects.all(), actor, "lot.read")
-    query = scoped_inventory(
-        StockMovement.objects.filter(location=location, lot__in=visible), actor, "location.read"
-    )
+    from inventory.transfers.custody import scoped_legs
+
+    query = scoped_legs(actor).filter(location=location)
     result: QuerySet[Any] = (
         query.values("lot_id", "lot__code", "lot__supply_id", "piece_id", "unit_version__unit")
         .annotate(
@@ -166,36 +192,95 @@ def location_stock(actor: UploadActor, location: Location) -> QuerySet[Any]:
     return result
 
 
-def lot_versions(actor: UploadActor, permission: str) -> QuerySet[Any]:
+def location_movements(actor: UploadActor, location: Location) -> QuerySet[StockMovement]:
+    require_scope(actor, "location.read", location)
+    from inventory.transfers.custody import scoped_legs
+
+    return (
+        scoped_legs(actor)
+        .filter(location=location)
+        .select_related(
+            "lot",
+            "location",
+            "operation",
+            "unit_version",
+            "operation__supply_source__event__assignment",
+            "operation__supply_source__compensation__event__assignment",
+            "operation__supply_source__execution__return_effect__declaration__event__assignment",
+            "operation__supply_source__execution__lot_effect__location",
+        )
+    )
+
+
+def lot_versions(
+    actor: UploadActor, permission: str, location: Location | None = None
+) -> QuerySet[Any]:
     """Safety annotation supports server status/expiry filters before page-number paging."""
     from zoneinfo import ZoneInfo
 
     now = server_now()
     today = now.astimezone(ZoneInfo(actor.organization.timezone)).date()
     query = scoped_inventory(latest_versions(LotVersion, "lot_id"), actor, permission)
+    if location is not None and permission == "lot.read":
+        from inventory.transfers.custody import custody_lots
+
+        query = latest_versions(LotVersion, "lot_id").filter(organization=actor.organization)
+        query = query.annotate(_custody=custody_lots(actor, "lot_id", location)).filter(
+            _custody=True
+        )
+    storage_id = location.pk if location else OuterRef("initial_location_id")
     active = (
         SupplyTypeVersion.objects.filter(supply_type_id=OuterRef("lot__supply_id"))
         .order_by("-revision")
         .values("is_active")[:1]
     )
     safety = (
-        LocationVersion.objects.filter(location_id=OuterRef("initial_location_id"))
+        LocationVersion.objects.filter(location_id=storage_id)
         .order_by("-revision")
         .values("is_insecticide_free")[:1]
     )
-    readings = ConditionReading.objects.filter(
-        lot_id=OuterRef("lot_id"),
-        protocol_id=OuterRef("protocol_id"),
-        local_date=today,
-        timezone=actor.organization.timezone,
-    ).exclude(evaluation="unassessed")
+    readings = (
+        ConditionReading.objects.filter(
+            lot_id=OuterRef("lot_id"),
+            protocol_id=OuterRef("protocol_id"),
+            local_date=today,
+            timezone=actor.organization.timezone,
+        )
+        .exclude(evaluation="unassessed")
+        .filter(
+            Q(capture_mode="explicit_location", capture_location_id=storage_id)
+            | Q(capture_mode="legacy_initial", location_version__location_id=storage_id)
+        )
+    )
     holds = _breach_query()
+    from inventory.transfers.models import TransferHold
+
+    transfer_holds = TransferHold.objects.filter(
+        organization=actor.organization,
+        lot_id=OuterRef("lot_id"),
+        location_id=storage_id,
+        resolution__isnull=True,
+    )
     query = query.annotate(
         _active=Subquery(active),
         _safe=Subquery(safety),
         _slot0=Exists(readings.filter(slot=0)),
         _slot1=Exists(readings.filter(slot=1)),
         _held=Exists(holds),
+        _transfer_held=Exists(transfer_holds),
+        _ready=Case(
+            When(_protocol_configured(), then=Value(True)),
+            default=Value(False),
+            output_field=BooleanField(),
+        ),
+    )
+    query = query.annotate(
+        **{
+            f"blocker_{name}": Case(
+                When(predicate, then=Value(True)), default=Value(False), output_field=BooleanField()
+            )
+            for name, predicate in blocker_predicates(now).items()
+        }
     )
     result: QuerySet[Any] = query.annotate(
         computed_status=Case(
@@ -209,8 +294,13 @@ def lot_versions(actor: UploadActor, permission: str) -> QuerySet[Any]:
         "lot__center",
         "lot__organization",
         "supply_version",
+        "supply_version__supply_type",
+        "supply_version__protocol__incident_type",
         "protocol",
+        "protocol__incident_type",
         "initial_location",
+        "location_version__location",
+        "lot__admission",
     )
     return result
 
@@ -247,8 +337,8 @@ def _metadata_complete() -> Q:
     return base & expiry & (Q(supply_version__is_biological=False) | biology)
 
 
-def _blocked(now: datetime) -> Q:
-    configured = Q(
+def _protocol_configured() -> Q:
+    return Q(
         protocol__name__gt="",
         protocol__shelf_life_seconds__gt=0,
         protocol__expiry_basis="laid_on",
@@ -258,11 +348,29 @@ def _blocked(now: datetime) -> Q:
         protocol__humidity_max__isnull=False,
         protocol__reading_windows__0__isnull=False,
         protocol__reading_windows__1__isnull=False,
+        protocol__reading_windows__2__isnull=True,
     )
-    safe = Q(supply_version__requires_insecticide_free=False) | Q(
-        supply_version__requires_insecticide_free=True, _safe=True
-    )
-    biology = Q(supply_version__is_biological=True) & (
-        ~configured | ~safe | Q(_slot0=False) | Q(_slot1=False)
-    )
-    return Q(_active=False) | Q(expires_at__lte=now) | Q(_held=True) | biology
+
+
+def blocker_predicates(now: datetime) -> dict[str, Q]:
+    biology = Q(supply_version__is_biological=True)
+    return {
+        "supply_type_inactive": Q(_active=False),
+        "lot_expired": Q(expires_at__lte=now),
+        "protocol_not_configured": biology & Q(_ready=False),
+        "storage_safety_not_configured": biology
+        & Q(supply_version__requires_insecticide_free__isnull=True),
+        "insecticide_free_required": biology
+        & Q(supply_version__requires_insecticide_free=True)
+        & (Q(_safe=False) | Q(_safe__isnull=True)),
+        "condition_slot_missing": biology & (Q(_slot0=False) | Q(_slot1=False)),
+        "condition_breach": Q(_held=True),
+        "transfer_discrepancy_hold": Q(_transfer_held=True),
+    }
+
+
+def _blocked(now: datetime) -> Q:
+    predicate = Q(pk__in=[])
+    for reason in blocker_predicates(now):
+        predicate |= Q(**{f"blocker_{reason}": True})
+    return predicate

@@ -31,7 +31,7 @@ Focused evidence: `tests/test_table_queries_224.py` parameter and rule-history c
 | `services.py` | `create_rule_version` (locks the parameter, validates value and date), `void_rule_version`, `resolve_effective_from` |
 | `permissions.py` | Permission codes of this app (`rule_parameter_version.read` is the history, admin only by default) |
 | `selectors.py` | `get_version_in_force`, `list_versions` (status `scheduled`/`in_force`/`superseded`/`voided`), `list_parameters_with_current` (one query), `get_next_change_at`, `build_rules_snapshot` |
-| `seeds.py` | `seed_default_rule_parameters`: the sixteen parameters and their accepted defaults |
+| `seeds.py` | `seed_default_rule_parameters`: the versioned parameters and their accepted defaults |
 | `views.py`, `serializers.py`, `urls.py` | Thin DRF layer; nested routes by regex prefix |
 
 ## Seed
@@ -112,3 +112,12 @@ New organizations receive the default immediately. Existing organizations use
 missing definition/default. Reruns preserve administrator versions and append no
 second default. There are now 16 definitions. The limit controls local PIN attempts,
 not the online login lockout or the mobile password-attempt policy. See ADR 125.
+
+## Laboratory parameters (#114)
+
+lab_count_plausibility_limit is integer/count, default 1000, bounds 100..10000.
+lab_recount_sample_per_100 is integer/count, default 5, bounds 1..20: selected
+counts per 100 first-pass counts, not a new Unit enum. Existing organization
+versions remain; unavailable values are not replaced silently. Count/day snapshots
+retain actual in-force version/value/effective instants. Above-OP06 observations
+require explicit confirmation AND a real independent request. No method is seeded.

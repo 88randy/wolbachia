@@ -12,6 +12,30 @@ class QuadrantReferenceSerializer(serializers.Serializer[Any]):
     center_id = serializers.UUIDField()
     quadrant_id = serializers.UUIDField()
     revision = serializers.IntegerField(min_value=1)
+    is_closed = serializers.BooleanField(required=False)
+    closure_id = serializers.UUIDField(allow_null=True, required=False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        present = {"is_closed", "closure_id"} & attrs.keys()
+        if attrs["resource_type"] == "block":
+            if present:
+                raise serializers.ValidationError("Block references do not carry quadrant closure.")
+        elif present and (
+            present != {"is_closed", "closure_id"}
+            or attrs["is_closed"] != (attrs["closure_id"] is not None)
+        ):
+            raise serializers.ValidationError(
+                "Quadrant references require coherent closure fields."
+            )
+        return attrs
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:  # noqa: ANN401 -- DRF representation protocol
+        row = super().to_representation(instance)
+        if row["resource_type"] == "block" or "is_closed" not in row:
+            return {
+                key: value for key, value in row.items() if key not in {"is_closed", "closure_id"}
+            }
+        return row
 
 
 class SamplingPointBundleSerializer(serializers.Serializer[Any]):

@@ -12,6 +12,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 - **Mandatory:** serializers of org-scoped models extend `core.serializers.OrgScopedModelSerializer`, whose relational fields are `OrgScopedPrimaryKeyRelatedField` (never a plain `PrimaryKeyRelatedField`), so an id from another organization fails like a nonexistent one. Expose `created_by` and other non-org-scoped relations as read-only.
 - A list endpoint that must resolve human codes sets `code_lookup_field = "code"` on its viewset: `?code=` then filters by exact match (`core/filters.py`, see `docs/api-conventions.md`). Two list endpoints of different paging style need different serializer classes (OpenAPI component names).
 - Configuration tables opt in to `core.table_filters`: validated DRF search, explicit strict ordering and stable id ties on lists only. Their [exact query contract](../docs/api-conventions.md#configuration-table-queries-224) preserves scoped parents, existing defaults, protected Other and field snapshots (#224).
+- Reported incidents have scoped workspace filters, protected critical-first order, archived policy/current parent hints and action-paired form options; see [incidents/README.md](incidents/README.md#reported-workspace-reads-304). The default fleet facade and all incident writers remain independent (#304).
 - Django admin is not mounted on purpose (it can delete).
 
 ## Layout
@@ -24,6 +25,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `catalogs/` | `Catalog`, `CatalogItem`; item services, catalog snapshot, `/catalogs/...` and `/field/catalog/` (see its README) |
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
+| `community/` | Aggregate community activities at real Block identities, immutable cross-transport command receipts, complaint links and void-aware scoped totals (B34; see its README) |
 | `reviews/` | `ReviewItem` (insert-only) and `GET /review-items/` (see its README) |
 | `shifts/` | `Shift`, `MotorcycleCheck`, voidable `Motorcycle` and insert-only `MotorcycleBlockEvent`; the `shift.open` / `shift.close` sync handlers, read-only shifts, fleet management and motorcycles in `/field/catalog/` (see its README) |
 | `geography/` | Scoped quadrants, blocks, fixed sampling point identities, append-only geometry/location versions and excluded-point decisions (#108; see its README) |
@@ -124,6 +126,17 @@ cd .. && npm run api:generate             # validate the schema, re-export opena
 
 Tests use `config.settings.test` (PostgreSQL via `DATABASE_URL`, in-memory cache); with no environment at all it falls back to local defaults, which is what lets the mypy plugin run in pre-commit. `pre-commit run --all-files` from the repo root runs ruff and mypy too (run `uv sync` in `backend/` once first: mypy needs Django installed).
 
+CI runs every test once across eleven internally serial PostgreSQL partitions:
+residual `regular`, one explicit `regular-integration` cohort containing the complete
+B10/B04 modules, and nine singleton complete migration-module cohorts. The
+original `checks` job validates all eleven
+current artifacts and applies the existing 85% gate to their combined statement
+coverage. A fragment is data only, not a whole-suite result. The 15-minute limits,
+original test assertions and coverage omit policy are unchanged; Community is added
+to the configured statement denominator (17 configured
+apps; `shifts` remains outside that historical list). See [`ci/README.md`](ci/README.md)
+for exact-attempt conservation, failure handling, timing evidence and compute costs.
+
 ## Settings and environment
 
 Deployment variables are documented in [`.env.example`](.env.example) and the tables below. Settings are chosen only by a real `DJANGO_SETTINGS_MODULE` environment variable or `--settings`, never by `.env`. Required everywhere: `DATABASE_URL`, `REDIS_URL`; `DJANGO_SECRET_KEY` in dev and prod (tests use a fixed key). Production also requires `DJANGO_ALLOWED_HOSTS` and `DJANGO_CSRF_TRUSTED_ORIGINS`; `manage.py check --deploy` is clean with `config.settings.prod`.
@@ -166,7 +179,7 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 - **Final upload**: only when an administrator revokes with `allow_final_upload: true`. A view that accepts it is declared like `class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, GenericViewSet)` (`field_sync/views.py`, #5) (`accounts/final_upload.py`): the mixin opts the view in for `final_upload_methods` (default `POST`; `OPTIONS`/`GET` never spend it), opens one transaction after authentication, spends the single final upload first (a failed request gives it back), adds `X-Session-Revoked: true` and sets `self.is_final_upload`, which the view must use to mark the events it records as `in_review`. Nothing else to remember. `tests/testapp/views.py::FinalUploadView` is the reference.
 - **Lock order**: User, Device, DeviceSession, TokenPair everywhere ([`accounts/README.md`](accounts/README.md)).
 - **Transactions**: revocation and rotation commit before they raise, so they must not run inside an outer `atomic()`; `ATOMIC_REQUESTS` stays off (a test checks it).
-- **Token rows (#54)**: every refresh adds a `TokenPair` (hashes only). Token pairs are security metadata: retention is an explicit exception to "nothing is deleted" for business records. Live sessions keep their full family for reuse detection. The retention service deletes a complete family only when its **effective end** is strictly earlier than `now - AUTH_TOKEN_PAIR_RETENTION_DAYS` (default 90, valid range 30..365; an invalid value fails startup). For revoked sessions, effective end is the later of `revoked_at` and `final_upload_deadline` (even when the upload was used). For unrevoked sessions it is the maximum of **both** access and refresh expiry over the entire family; every token must have expired. Empty families need no work. `DeviceSession` is never deleted or modified by retention: its revocation and reason remain as the audit trail. Business records are untouched; dissociating the audit after 365 days is a follow-up.
+- **Token rows (#54)**: every refresh adds a `TokenPair` (hashes only). Token pairs are security metadata: retention is an explicit exception to "nothing is deleted" for business records. Live sessions keep their full family for reuse detection. The retention service deletes a complete family only when its **effective end** is strictly earlier than `now - AUTH_TOKEN_PAIR_RETENTION_DAYS` (default 90, valid range 30..365; an invalid value fails startup). For revoked sessions, effective end is the later of `revoked_at + AUTH_REVOKED_FINAL_UPLOAD_HOURS` and `final_upload_deadline` (even when the upload was used). For unrevoked sessions it is the maximum of **both** access and refresh expiry over the entire family; every token must have expired. Empty families need no work. `DeviceSession` is never deleted: #181 preserves the end proof atomically before pruning removes expiry evidence, then separately unlinks direct session-person references strictly after its configured audit period (default365/min180 and at least the token period). Revocation time/reason and device/business/log correlations remain. Finite operator holds delay only that unlink, not #54. See accounts/README.md for the internal CLI and honest legacy cutover boundary.
 - **Nightly retention**: `accounts.tasks.prune_ended_token_pairs` runs at 03:30 UTC via `CELERY_BEAT_SCHEDULE` (built-in Celery beat, no new dependency). Run **exactly one beat instance per environment** alongside one or more workers: `docker compose -f backend/compose.yaml up --build api worker beat db redis`. The `beat` service writes its scheduler state to `/tmp/celerybeat-schedule`; outside Compose use `celery -A config beat --loglevel=INFO --schedule /tmp/celerybeat-schedule`. The service attempts at most 500 candidate sessions per run, one short transaction each; backlog continues on subsequent runs. It re-checks eligibility under the session lock before deleting all pairs in one parameterized statement (including parents and siblings), and logs one `token_pairs_pruned` event with only `sessions_pruned` and `pairs_deleted` counts. A repeated run is safe; pruned tokens answer `401 invalid_token`, just like unknown tokens.
 - **Production proxy**: `DRF_NUM_PROXIES` is required (the app fails at startup without it). The TLS proxy in front must overwrite `X-Forwarded-For` (never append to what the client sent) and the app servers must not be reachable except through it (#18). `WEB_BASE_URL` must be https.
 - A refresh response lost outside the 60 s grace window drops the session: the courier must log in again (needs signal and password).
@@ -175,6 +188,7 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | --- | --- | --- |
 | `AUTH_ACCESS_TOKEN_TTL_SECONDS` | `900` | Access token lifetime |
 | `AUTH_TOKEN_PAIR_RETENTION_DAYS` | `90` | Days after effective session end before pruning its whole token family; integer 30..365, invalid configuration fails startup |
+| `AUTH_SESSION_AUDIT_RETENTION_DAYS` | `365` | Days after truthful end/legacy cutover anchor before direct session-person unlinking; integer >=180 and >= the token-family period; invalid configuration fails startup |
 | `AUTH_REFRESH_TOKEN_TTL_DAYS` | `30` | Refresh token idle lifetime (slides on every refresh) [PENDING absolute maximum] |
 | `AUTH_REFRESH_REUSE_GRACE_SECONDS` | `60` | A consumed refresh token presented again inside this window (and before any later token was used) is accepted once more; otherwise the session is revoked |
 | `AUTH_REVOKED_FINAL_UPLOAD_HOURS` | `72` | Final upload window after an admin revoke that allows it; `0` disables it [PENDING client] |
@@ -273,8 +287,9 @@ the mobile transport/final-upload capability limits (#246).
 
 inventory/ provides versioned supply/location masters and lots, immutable opening
 stock/pieces, named biological protocols/readings and owned condition holds.
-Stock balances derive from signed movements. No transfer, assigned courier stock,
-dispatch or compensation workflow is claimed. See inventory/README.md for the
+Stock balances derive from signed movements. Signed facility transfers and bounded
+discrepancy compensation are implemented by inventory/transfers/ (#106); assigned
+courier stock remains separate. See inventory/README.md for the
 exact API, strict two-slot policy, initial-custody integration seams, authorization,
 automatic incident source and real PostgreSQL verification boundary.
 
@@ -285,3 +300,14 @@ escalation, plus an after-commit durable B-07 producer/recovery task. There rema
 one /incidents/ facade: GET defaults to the unchanged fleet contract; kind=reported
 selects rich incidents. See incidents/README.md for explicit roster/SLA requirements,
 lock order, private #102 evidence and external #49/#113/#246 boundaries.
+
+## Laboratory reception and counts (#114)
+
+lab/ implements real Bag/Reading reception, immutable first-pass observations and
+named-method viability/rejection, reasoned correction, durable independent-QA
+requests and closed-local-day sampling. It shares the existing private upload and
+typed history owners. Unknown scans create nothing; no method or delivery is
+invented. #115 owns independent execution/adjudication and paddle reuse. See
+lab/README.md for current paired authority, exact replay, configuration gates,
+lock/SQL boundaries and criterion owners. Lab is covered and strict; the existing
+combined statement-coverage gate stays 85%.

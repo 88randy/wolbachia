@@ -14,10 +14,10 @@ from drf_spectacular.generators import SchemaGenerator
 from drf_spectacular.validation import validate_schema
 from rest_framework import serializers
 
-from accounts.models import RevokeReason
+from accounts.models import RevokeReason, User
 from accounts.revocation import Revocation, revoke_session
 from core.exceptions import ImmutableRecordError, PhysicalDeleteForbiddenError
-from field_sync import producers, services
+from field_sync import producers, selectors, services
 from field_sync.cursor import decode_cursor
 from field_sync.envelope import BatchContext
 from field_sync.models import CourierChange, FieldEvent
@@ -32,6 +32,7 @@ from field_sync.selectors import producer_context
 from field_sync.services import ChangeInput, append_courier_change, lock_courier_batches
 from organizations.defaults import seed_default_permission_codes
 from organizations.models import Membership, Organization
+from organizations.scope import EffectiveScope
 from rules.selectors import get_values_in_force
 from tests.factories import ProfileFactory, RuleParameterFactory, RuleParameterVersionFactory
 from tests.sync_support import event, make_phone, second_device_of
@@ -95,6 +96,47 @@ def test_producer_contract_rejects_duplicate_and_unregistered_sections():
         register(BundleProducer("unknown", 1, lambda ctx: [], RowSerializer))
 
 
+def test_capture_context_keeps_complete_sync_grants():
+    center_a, center_b, quadrant_a, quadrant_b = [str(uuid.UUID(int=n)) for n in range(1, 5)]
+    pair_ab = {
+        "centers": {"mode": "selected", "ids": [center_a]},
+        "quadrants": {"mode": "selected", "ids": [quadrant_b]},
+    }
+    pair_ba = {
+        "centers": {"mode": "selected", "ids": [center_b]},
+        "quadrants": {"mode": "selected", "ids": [quadrant_a]},
+    }
+    denied = {
+        "centers": {"mode": "none", "ids": []},
+        "quadrants": {"mode": "selected", "ids": []},
+    }
+    ctx = producers.ProducerContext(
+        Organization(id=uuid.UUID(int=100)),
+        User(id=uuid.UUID(int=200)),
+        EffectiveScope(
+            (
+                (frozenset({FIELD_EVENT_SYNC}), pair_ba),
+                (frozenset({FIELD_BOOTSTRAP}), ALL),
+                (frozenset({FIELD_EVENT_SYNC}), denied),
+                (frozenset({FIELD_BOOTSTRAP, FIELD_EVENT_SYNC}), pair_ab),
+            )
+        ),
+        NOW,
+        FIELD_BOOTSTRAP,
+    )
+
+    capture = selectors.capture_context(ctx, revision="a" * 64)
+
+    assert capture == {
+        "schema_version": 1,
+        "permission": FIELD_EVENT_SYNC,
+        "user_id": str(uuid.UUID(int=200)),
+        "organization_id": str(uuid.UUID(int=100)),
+        "scope_revision": "a" * 64,
+        "grants": [pair_ab, pair_ba, denied],
+    }
+
+
 @pytest.mark.django_db(transaction=True)
 def test_producer_commit_cannot_fall_behind_a_pull_cursor(phone):
     register_rows()
@@ -135,9 +177,14 @@ def test_producer_commit_cannot_fall_behind_a_pull_cursor(phone):
 
 
 @pytest.mark.django_db
-@pytest.mark.parametrize("reason", ["expired", "scope", "v1"])
+@pytest.mark.parametrize("reason", ["expired", "scope", "v1", "root_schema"])
 def test_bootstrap_recovers_cursor_without_consuming_pending_evidence(phone, monkeypatch, reason):
-    issued = phone.sync([]).data["changes"]["cursor"]
+    if reason == "root_schema":
+        with monkeypatch.context() as previous_schema:
+            previous_schema.setattr(producers, "BOOTSTRAP_SCHEMA_VERSION", 1)
+            issued = phone.sync([]).data["changes"]["cursor"]
+    else:
+        issued = phone.sync([]).data["changes"]["cursor"]
     if reason == "expired":
         payload = signing.loads(issued, salt="field_sync.changes")
         with monkeypatch.context() as clock:
@@ -150,7 +197,7 @@ def test_bootstrap_recovers_cursor_without_consuming_pending_evidence(phone, mon
         profile = membership.profiles.get()
         profile.scope = ALL
         profile.save(update_fields=["scope"])
-    else:
+    elif reason == "v1":
         issued = signing.dumps(
             {"o": str(phone.organization.pk), "u": str(phone.user.pk), "s": 0},
             salt="field_sync.changes",
@@ -162,11 +209,18 @@ def test_bootstrap_recovers_cursor_without_consuming_pending_evidence(phone, mon
     bundle = phone.client.get(BOOTSTRAP)
     assert bundle.status_code == 200
     assert all(bundle.data[key] == [] for key in producers.SECTION_KEYS)
+    capture = bundle.data["capture_context"]
+    assert capture["scope_revision"] == bundle.data["scope_revision"]
+    assert (
+        capture["scope_revision"]
+        == decode_cursor(bundle.data["cursor"], phone.organization.pk, phone.user.pk).scope_revision
+    )
     recovered = phone.sync(outbox, cursor=bundle.data["cursor"])
     repeated = phone.sync(outbox, cursor=recovered.data["changes"]["cursor"])
     assert recovered.data["results"] == repeated.data["results"]
     assert FieldEvent.objects.filter(pk=outbox[0]["id"]).count() == 1
     assert outbox[0]["id"] == recovered.data["results"][0]["id"]
+    assert recovered.data["changes"]["capture_context"] == capture
 
 
 @pytest.mark.django_db
@@ -273,6 +327,17 @@ def test_bootstrap_permission_and_scope_isolation_are_wired_through_sync(phone, 
     assert bundle.data["map_manifest_ready"] is False
     changes = phone.sync([], cursor=before).data["changes"]
     assert {row["resource_id"] for row in changes["assignments"]} == {"local"}
+    assert bundle.data["capture_context"]["user_id"] == str(phone.user.pk)
+    assert bundle.data["capture_context"]["organization_id"] == str(phone.organization.pk)
+    # Even a legacy government profile containing field codes remains clamped.
+    government = ProfileFactory(
+        organization=phone.organization,
+        slug="government",
+        permission_codes=["portal.read", FIELD_BOOTSTRAP, FIELD_EVENT_SYNC],
+        scope=ALL,
+    )
+    membership.profiles.add(government)
+    assert phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=bundle["ETag"]).status_code == 403
 
 
 @pytest.mark.django_db
@@ -358,7 +423,28 @@ def test_bundle_schema_wires_bootstrap_and_typed_sync_sections():
         "bundle_version",
         "scope_revision",
         "map_manifest_ready",
+        "capture_context",
     } <= bootstrap.keys()
+    components = schema["components"]["schemas"]
+    for name in ("Bootstrap", "Changes"):
+        assert components[name]["properties"]["capture_context"]["nullable"] is True
+        assert "capture_context" not in components[name]["required"]
+    capture = components["CaptureContext"]
+    assert (
+        set(capture["properties"])
+        == set(capture["required"])
+        == {
+            "schema_version",
+            "permission",
+            "user_id",
+            "organization_id",
+            "scope_revision",
+            "grants",
+        }
+    )
+    assert capture["properties"]["schema_version"]["minimum"] == 1
+    assert capture["properties"]["schema_version"]["maximum"] == 1
+    assert capture["properties"]["grants"]["items"]["$ref"].endswith("/MeScope")
     # Exact generated-client currency is enforced by api-contract.yml:
     # npm run api:generate followed by git diff --exit-code on both artifacts.
 
@@ -392,7 +478,8 @@ def test_empty_bundle_schema_boundary_changes_when_a_producer_version_changes(mo
 def test_scope_change_during_ingest_is_not_silently_acknowledged_by_the_response(
     phone, monkeypatch
 ):
-    old = phone.sync([]).data["changes"]["cursor"]
+    initial = phone.sync([]).data["changes"]
+    old = initial["cursor"]
     started, release = threading.Event(), threading.Event()
     real_ingest = services.ingest_batch
     answers = []
@@ -431,6 +518,11 @@ def test_scope_change_during_ingest_is_not_silently_acknowledged_by_the_response
         decode_cursor(next_cursor, phone.organization.pk, phone.user.pk).scope_revision
         == decode_cursor(old, phone.organization.pk, phone.user.pk).scope_revision
     )
+    assert answers[0].data["changes"]["capture_context"] == initial["capture_context"]
+    assert (
+        initial["capture_context"]["scope_revision"]
+        == decode_cursor(next_cursor, phone.organization.pk, phone.user.pk).scope_revision
+    )
     refused = phone.sync([], cursor=next_cursor)
     assert (refused.status_code, refused.data["code"]) == (400, "invalid_cursor")
 
@@ -468,7 +560,10 @@ def test_snapshot_and_feed_share_projection_scope_with_disjoint_action_grants(ph
         for center in (center_a, center_b)
     ]
     register_rows(rows)
-    before = phone.sync([]).data["changes"]["cursor"]
+    initial = phone.sync([]).data["changes"]
+    before = initial["cursor"]
+    explicit_null = phone.sync([], cursor=None).data["changes"]
+    assert explicit_null["capture_context"] == initial["capture_context"]
     ctx = batch_context(phone)
     with transaction.atomic():
         lock_courier_batches(ctx)
@@ -484,10 +579,36 @@ def test_snapshot_and_feed_share_projection_scope_with_disjoint_action_grants(ph
     changes = phone.sync([], cursor=before).data["changes"]
     assert [row["id"] for row in bundle["assignments"]] == [center_a]
     assert [row["resource_id"] for row in changes["assignments"]] == [center_a]
-    assert phone.sync([], cursor=bundle["cursor"]).data["changes"]["assignments"] == []
+    capture = bundle["capture_context"]
+    assert capture == {
+        "schema_version": 1,
+        "permission": FIELD_EVENT_SYNC,
+        "user_id": str(phone.user.pk),
+        "organization_id": str(phone.organization.pk),
+        "scope_revision": bundle["scope_revision"],
+        "grants": [scope_b],
+    }
+    empty = phone.sync([], cursor=bundle["cursor"]).data["changes"]
+    assert empty["assignments"] == []
+    assert (
+        initial["capture_context"]
+        == changes["capture_context"]
+        == empty["capture_context"]
+        == capture
+    )
+    assert (
+        capture["scope_revision"]
+        == decode_cursor(changes["cursor"], phone.organization.pk, phone.user.pk).scope_revision
+    )
 
     membership.profiles.remove(bootstrap)
     assert phone.sync([]).data["changes"]["assignments"] == []
+    membership.profiles.set([bootstrap])
+    read_only = phone.client.get(BOOTSTRAP)
+    assert read_only.status_code == 200
+    assert read_only.data["capture_context"]["grants"] == []
+    assert read_only.data["assignments"] == bundle["assignments"]
+    assert phone.sync([]).status_code == 403
 
 
 @pytest.mark.django_db
@@ -562,9 +683,10 @@ def test_producer_scope_capture_never_mixes_membership_and_profile_revisions(pho
             }
         ]
     )
+    before = phone.client.get(BOOTSTRAP).data
     batch = batch_context(phone)
     read_finished, update_committed = threading.Event(), threading.Event()
-    captured, errors = [], []
+    captured, captured_contexts, errors = [], [], []
 
     def pause_after_membership_read(execute, sql, params, many, context):
         result = execute(sql, params, many, context)
@@ -582,6 +704,9 @@ def test_producer_scope_capture_never_mixes_membership_and_profile_revisions(pho
                 with connection.execute_wrapper(pause_after_membership_read):
                     ctx = producer_context(batch, FIELD_BOOTSTRAP)
                 captured.append(producers.build_sections(ctx)["assignments"])
+                captured_contexts.append(
+                    selectors.capture_context(ctx, revision=selectors.scope_revision(ctx))
+                )
         except Exception as error:  # noqa: BLE001 -- propagate worker failures to the test
             errors.append(error)
         finally:
@@ -596,18 +721,22 @@ def test_producer_scope_capture_never_mixes_membership_and_profile_revisions(pho
         with transaction.atomic():
             Organization.objects.select_for_update(no_key=True).get(pk=phone.organization.pk)
             membership.scope = scope_b
-            membership.save(update_fields=["scope"])
+            membership.revision += 1
+            membership.save(update_fields=["scope", "revision"])
             profile.scope = scope_a
-            profile.save(update_fields=["scope"])
+            profile.revision += 1
+            profile.save(update_fields=["scope", "revision"])
     finally:
         update_committed.set()
         thread.join(15)
     assert not thread.is_alive()
     assert not errors
     assert captured == [[]]
+    assert captured_contexts == [before["capture_context"]]
     # Both bootstrap and initial sync use this same capture; the new committed
     # configuration must still deny A on the next request.
     with transaction.atomic():
         lock_courier_batches(batch)
         current = producer_context(batch, FIELD_EVENT_SYNC)
     assert producers.build_sections(current)["assignments"] == []
+    assert selectors.scope_revision(current) != before["scope_revision"]

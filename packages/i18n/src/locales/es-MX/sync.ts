@@ -2,6 +2,10 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const sync = {
+  "sync.result.lateWorkAfterQuadrantClose":
+    "La captura es anterior al cierre del cuadrante. Un supervisor debe validar su autorización histórica antes de aplicarla.",
+  "sync.result.capturedAfterQuadrantClose":
+    "La captura se hizo después del cierre del cuadrante. No autoriza trabajo nuevo ahí. Contacta a tu supervisor.",
   // Result of sending a record to the server (phone inbox)
   "sync.inbox.acceptedTitle": "Enviado",
   "sync.inbox.acceptedHint": "El servidor ya recibió este registro. No tienes que hacer nada más.",
@@ -111,4 +115,44 @@ export const sync = {
     "La referencia del incidente no está disponible dentro de tu ámbito autorizado.",
   "sync.result.incidentEvidenceRequired":
     "Falta evidencia verificada del incidente. Conserva los archivos pendientes; la captura requiere revisión.",
+  "sync.result.causalParentPending":
+    "Falta validar un registro previo. Tu supervisor debe revisar la captura conservada.",
+  "sync.result.motorcycleSafetyHold":
+    "La motocicleta tiene una retención de seguridad. La captura se conservó para revisión.",
+  "sync.result.transferInaccessible":
+    "La transferencia no está disponible dentro de tu ámbito autorizado.",
+  "sync.result.transferStateConflict":
+    "La transferencia requiere revisar sus registros previos. Conserva la captura y la firma.",
+  "sync.result.transferEvidenceRequired":
+    "Falta evidencia verificada de la transferencia. Conserva la firma y los archivos pendientes.",
+  "sync.result.transferSafetyBlocked":
+    "Las condiciones actuales impiden aplicar la transferencia. La captura quedó para revisión.",
+  "sync.result.transferVoidBlocked":
+    "La transferencia tiene efectos o registros dependientes. Consulta a tu supervisor para corregirla.",
+  "sync.result.communityInaccessible":
+    "La referencia de la actividad no está disponible en tu alcance de trabajo autorizado.",
+  "sync.result.communityCommandConflict":
+    "Esta identidad de comando pertenece a otra captura conservada. Mantén el original y contacta a tu supervisor.",
+  "sync.result.communityCatalogUnavailable":
+    "La configuración original del tipo de actividad no está disponible. La captura quedó en revisión.",
+  "sync.result.communityCatalogDeactivated":
+    "Este tipo de actividad conservado está inactivo. Tu supervisor debe revisar la captura original.",
+  "sync.result.communityConfigurationUnavailable":
+    "El tipo de actividad requiere un propósito de captura no compatible. Conserva la captura para revisión.",
+  "sync.result.communityZoneUnavailable":
+    "La versión original de la manzana no está disponible. Conserva la captura para revisión.",
+  "sync.result.communityStateConflict":
+    "La actividad tiene hechos conservados en conflicto. Contacta a tu supervisor antes de corregirla.",
+  "sync.result.supplyInaccessible":
+    "El registro de materiales no está disponible en tu ámbito de trabajo autorizado.",
+  "sync.result.supplyVoidBlocked":
+    "El registro tiene efectos de custodia o registros dependientes. Consulta a tu supervisor para corregirlo.",
+  "sync.result.supplyAssignmentChanged":
+    "La asignación cambió después de la captura. Conserva el recibo real firmado para su revisión.",
+  "sync.result.supplyStateConflict":
+    "Es necesario revisar registros anteriores de materiales. Conserva la captura y la firma.",
+  "sync.result.supplyEvidenceRequired":
+    "Falta evidencia verificada de materiales. Conserva la firma y los archivos pendientes para su revisión.",
+  "sync.result.supplyTransitUnavailable":
+    "Es necesario revisar el procedimiento de traslado o su evidencia. No se aplicó el uso sin verificar.",
 } as const satisfies AreaCatalog<"sync">;

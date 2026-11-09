@@ -8,6 +8,7 @@ is overwritten. Expected revisions are compared only after serialization.
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
@@ -42,6 +43,7 @@ from geography.permissions import QUADRANT_PUBLISH, SAMPLING_POINT_CREATE
 from geography.selectors import (
     block_version_at,
     current_points,
+    geography_reference_version,
     get_quadrant,
     quadrant_reference,
     quadrant_version_at,
@@ -373,8 +375,8 @@ def publish_block(block: Block, change: BlockPublication) -> BlockVersion:
         return version
 
 
-def _check_point_location(block: Block, location: list[float]) -> None:
-    instant = timezone.now()
+def _check_point_location(block: Block, location: list[float], at: datetime | None = None) -> None:
+    instant = timezone.now() if at is None else at
     quadrant = quadrant_version_at(block.quadrant, instant)
     version = block_version_at(block, instant)
     if (
@@ -486,7 +488,7 @@ def emit_geography_reference(
             kind="quadrants",
             resource_type=row["resource_type"],
             resource_id=row["id"],
-            resource_version=str(row["revision"]),
+            resource_version=geography_reference_version(row),
             scope={"center_id": row["center_id"], "quadrant_id": row["quadrant_id"]},
             action="upsert",
             payload=row,

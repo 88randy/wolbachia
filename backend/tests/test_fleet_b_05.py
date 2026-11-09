@@ -90,16 +90,25 @@ def test_fuel_intervals_keep_capture_and_close(org_a, make_member, km, status):
     answer = phone.sync([capture])
     retry = phone.sync([capture])
     assert answer.data["results"] == retry.data["results"]
-    row = FuelLoad.objects.get(event_id=capture["id"])
-    assert FuelLoad.objects.filter(event_id=capture["id"]).count() == 1
-    assert row.efficiency_status == status
-    assert row.provisional == (status == "review")
-    assert row.efficiency_km_l == Decimal(km - 12000) / 100
-    assert row.receipt_pending
-    assert row.rule_provenance
-    assert row.threshold_min == 15
-    assert row.threshold_max == 60
-    assert row.event.status == ("in_review" if status == "review" else "accepted")
+    if status == "ok":
+        row = FuelLoad.objects.get(event_id=capture["id"])
+        assert FuelLoad.objects.filter(event_id=capture["id"]).count() == 1
+        assert row.efficiency_status == status
+        assert not row.provisional
+        assert row.efficiency_km_l == Decimal(km - 12000) / 100
+        assert row.receipt_pending
+        assert row.rule_provenance
+        assert row.threshold_min == 15
+        assert row.threshold_max == 60
+        assert row.event.status == "accepted"
+    else:
+        from reviews.models import ReviewSourceSnapshot
+
+        assert not FuelLoad.objects.filter(event_id=capture["id"]).exists()
+        facts = ReviewSourceSnapshot.objects.get(source_event_id=capture["id"]).facts["owner"]
+        assert facts["fuel_assessment"]["efficiency_status"] == "review"
+        assert Decimal(facts["fuel_assessment"]["efficiency_km_l"]) == Decimal(km - 12000) / 100
+        assert facts["fuel"]["thresholds"]["rule_provenance"]
     if status == "review":
         probe = fuel(shift_id, motorcycle.code, 12030)
         assert phone.sync([probe]).data["results"][0]["status"] == "accepted"
@@ -137,15 +146,13 @@ def test_decreased_or_pre_reviewed_fuel_never_enters_metrics(org_a, make_member,
         overrides["sent_at"] = (timezone.now() + timedelta(days=1)).isoformat()
     result = phone.sync([capture], **overrides).data["results"][0]
     assert result["code"] == review_code
-    row = FuelLoad.objects.get(event_id=capture["id"])
-    assert row.odometer_km == km
-    assert row.provisional
+    assert not FuelLoad.objects.filter(event_id=capture["id"]).exists()
     assert motorcycle_metrics(motorcycle)["latest_efficiency"] is None
     assert motorcycle_metrics(motorcycle)["latest_odometer"] == 12000
     foreign_moto = MotorcycleFactory(organization=org_a)
     mismatch = phone.sync([fuel(shift_id, foreign_moto.code, 12001)]).data["results"][0]
     assert mismatch["code"] == "fuel_motorcycle_mismatch"
-    assert FuelLoad.objects.count() == 1
+    assert FuelLoad.objects.count() == 0
 
 
 def make_fault(motorcycle, user):
@@ -164,10 +171,20 @@ def make_fault(motorcycle, user):
 
 def test_clearance_requires_grant_evidence_and_revision(org_a, make_member):
     from django.http import Http404
+    from django.utils.dateparse import parse_datetime
 
     user, _ = make_member(org_a, ["motorcycle.read"])
     motorcycle = MotorcycleFactory(organization=org_a)
     fault = make_fault(motorcycle, user)
+    reader = APIClient()
+    reader.force_authenticate(user)
+    query = {"motorcycle": str(motorcycle.pk)}
+    before = reader.get("/api/v1/incidents/", query)
+    assert before.status_code == 200
+    uncleared = before.json()["results"][0]
+    assert uncleared["clearance"] is None
+    assert uncleared["is_cleared"] is False
+    assert uncleared["cleared_at"] is None
     evidence = verified_upload(org_a, user, fault=fault)
     request = ClearanceRequest(fault.pk, [evidence.public_id], "Inspection completed", 0)
     with pytest.raises(Http404):
@@ -178,6 +195,21 @@ def test_clearance_requires_grant_evidence_and_revision(org_a, make_member):
     assert getattr(missing.value, "fields", {}).get("evidence_ids")
     clear_fault(motorcycle, admin, request)
     assert InspectionClearance.objects.filter(fault=fault, reviewer=admin).count() == 1
+    stored = InspectionClearance.objects.get(fault=fault)
+    response = reader.get("/api/v1/incidents/", query)
+    assert response.status_code == 200
+    cleared = response.json()["results"][0]
+    proof = cleared["clearance"]
+    assert set(proof) == {"id", "created_at", "reviewer", "reason", "evidence_ids"}
+    assert {key: value for key, value in proof.items() if key != "created_at"} == {
+        "id": str(stored.pk),
+        "reviewer": str(admin.pk),
+        "reason": stored.reason,
+        "evidence_ids": [str(evidence.public_id)],
+    }
+    assert parse_datetime(proof["created_at"]) == stored.created_at
+    assert cleared["is_cleared"] is True
+    assert parse_datetime(cleared["cleared_at"]) == stored.created_at
     with pytest.raises(FleetConflictError) as stale:
         clear_fault(motorcycle, admin, request)
     assert stale.value.code == "motorcycle_revision_conflict"
@@ -344,6 +376,8 @@ def test_fleet_endpoints_deny_foreign_and_unscoped_relations(org_a, org_b, make_
         "/api/v1/incidents/",
     ]:
         assert client.get(path).status_code == 403
+    for reference in ("not-a-uuid", str(foreign.pk)):
+        assert client.get("/api/v1/incidents/", {"motorcycle": reference}).status_code == 403
     assert (
         client.post(f"/api/v1/motorcycles/{visible.pk}/clear-fault/", {}, format="json").status_code
         == 403
@@ -393,6 +427,28 @@ def test_fleet_endpoints_deny_foreign_and_unscoped_relations(org_a, org_b, make_
         assert response.status_code == 200
         assert [str(row["motorcycle"]) for row in response.data["results"]] == [str(visible.pk)]
 
+    second_visible = MotorcycleFactory(organization=org_a, center=center)
+    empty = MotorcycleFactory(organization=org_a, center=center)
+    make_fault(second_visible, user)
+    fault = MotorcycleBlockEvent.objects.get(motorcycle=visible, action="block")
+    incident_url = "/api/v1/incidents/"
+    filtered = client.get(incident_url, {"motorcycle": str(visible.pk), "page_size": 1})
+    assert filtered.status_code == 200
+    assert filtered.data["count"] == 1
+    assert [row["id"] for row in filtered.data["results"]] == [str(fault.pk)]
+    assert filtered.data["next"] is None
+    assert client.get(incident_url, {"motorcycle": str(empty.pk)}).data["count"] == 0
+    for reference in (str(uuid.uuid4()), str(hidden.pk), str(foreign.pk), str(unassigned.pk)):
+        assert client.get(incident_url, {"motorcycle": reference}).status_code == 404
+    for reference in ("", "not-a-uuid"):
+        malformed = client.get(incident_url, {"motorcycle": reference})
+        assert malformed.status_code == 400
+        assert set(malformed.data["fields"]) == {"motorcycle"}
+    repeated = client.get(f"{incident_url}?motorcycle=invalid&motorcycle={visible.pk}")
+    assert repeated.status_code == 200
+    assert repeated.data["count"] == 1
+    assert client.get(f"{incident_url}?motorcycle={visible.pk}&motorcycle=").status_code == 400
+
     for motorcycle in [hidden, foreign, unassigned]:
         assert client.get(f"/api/v1/motorcycles/{motorcycle.pk}/services/").status_code == 404
     created = client.post(
@@ -422,3 +478,13 @@ def test_fleet_endpoints_deny_foreign_and_unscoped_relations(org_a, org_b, make_
     membership.scope["centers"] = {"mode": "selected", "ids": []}
     membership.save()
     assert client.get("/api/v1/motorcycles/").data["results"] == []
+    assert client.get(incident_url, {"motorcycle": str(visible.pk)}).status_code == 404
+    membership.scope["centers"] = {"mode": "all", "ids": []}
+    membership.save(update_fields=["scope"])
+    assert client.get(incident_url, {"motorcycle": str(unassigned.pk)}).data["count"] == 1
+    membership.scope["centers"] = {"mode": "none", "ids": []}
+    membership.save(update_fields=["scope"])
+    assert client.get(incident_url, {"motorcycle": str(visible.pk)}).status_code == 404
+    profile.permission_codes = []
+    profile.save(update_fields=["permission_codes"])
+    assert client.get(incident_url, {"motorcycle": str(visible.pk)}).status_code == 403

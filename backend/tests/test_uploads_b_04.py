@@ -24,6 +24,7 @@ from tests.factories import MotorcycleFactory
 from tests.fleet_support import grant_fleet_scope
 from tests.ovitrap_support import CAPTURED, envelope, ingest, setup_field
 from tests.test_fleet_b_05 import make_fault
+from tests.test_inventory_allocations_b_10 import allocation as allocation
 from uploads.access import UploadActor
 from uploads.exceptions import UploadConflictError, UploadInProgressError, UploadStorageError
 from uploads.images import sanitize_image
@@ -332,6 +333,154 @@ def test_clear_fault_consumes_only_its_bound_verified_evidence_and_private_downl
     profile = private.member.profiles.get()
     profile.permission_codes.remove("motorcycle.read")
     profile.save(update_fields=["permission_codes"])
+    with pytest.raises(Http404):
+        download_attachment(private.actor, identifier)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_lab_rejection_consumes_real_verified_bytes_and_exact_void_only_parent_access(
+    monkeypatch, make_member, tmp_path, settings
+):
+    from lab.access import LabTarget
+    from organizations.models import all_scope
+    from tests.lab_support import capture_bag, command, lab_context, receive, synthetic_method
+
+    context = lab_context(monkeypatch)
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "lab-private"
+    private = SimpleNamespace(actor=context.actor, member=context.member, content=image_bytes())
+    method = synthetic_method(context)
+    bag = capture_bag(context)
+    receive(context, bag)
+    identifier, lease = authorize(private)
+    put(private, identifier, lease)
+    finalize_upload(private.actor, identifier)
+    result = command(
+        context,
+        "reject",
+        LabTarget("bag", bag.pk),
+        {
+            "expected_revision": 0,
+            "method_version": method.pk,
+            "reason": "Synthetic physical sample integrity rejection",
+            "evidence_ids": [identifier],
+        },
+    )
+    rejection_id = UUID(result.body["rejection"]["id"])
+    assert AttachmentLink.objects.get(upload__public_id=identifier).lab_rejection_id == rejection_id
+    assert (
+        finalize_upload(private.actor, identifier, AttachmentTarget("lab_rejection", rejection_id))[
+            "state"
+        ]
+        == "verified"
+    )
+    user, member = make_member(context.actor.organization, ["egg_count.void"])
+    member.scope = all_scope()
+    member.save(update_fields=["scope"])
+    profile = member.profiles.get()
+    profile.scope = all_scope()
+    profile.save(update_fields=["scope"])
+    reader = UploadActor(user, context.actor.organization)
+    content, mime = download_attachment(reader, identifier)
+    assert mime == "image/png"
+    assert Image.open(BytesIO(content)).size == (5, 3)
+    profile.permission_codes = []
+    profile.save(update_fields=["permission_codes"])
+    with pytest.raises(Http404):
+        download_attachment(reader, identifier)
+
+
+@pytest.mark.django_db(transaction=True)
+def test_inventory_intent_binds_real_signature_once_and_download_uses_current_action(
+    allocation, tmp_path, settings
+):
+    from inventory.allocations.commands import IntentExecution
+    from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent
+    from inventory.allocations.models import (
+        InventoryIntentExecution,
+        ReturnAcceptance,
+        ReturnDeclaration,
+    )
+    from inventory.exceptions import InventoryConflictError
+    from inventory.models import StockOperation
+    from tests.sync_support import event
+    from tests.test_inventory_allocations_b_10 import receive_capture
+
+    context = allocation.context
+    source, line_id = receive_capture(allocation)
+    assert allocation.phone.sync([source]).data["results"][0]["status"] == "accepted"
+    returned = event(
+        type="supplies.reconcile",
+        shift_id=str(allocation.shift_id),
+        payload={
+            "command_id": str(uuid4()),
+            "assignment_id": str(allocation.assignment_id),
+            "expected_revision": 1,
+            "used": [],
+            "shrinkage": [],
+            "returned": [
+                {
+                    "receipt_line_id": str(line_id),
+                    "receipt_source_event_id": source["id"],
+                    "destination_id": str(context.location.pk),
+                    "quantity": "2",
+                }
+            ],
+        },
+    )
+    assert allocation.phone.sync([returned]).data["results"][0]["status"] == "accepted"
+    declaration = ReturnDeclaration.objects.get()
+    identifier = uuid4()
+    prepared = prepare_inventory_intent(
+        context.actor,
+        {
+            "command_id": uuid4(),
+            "kind": "return_accept",
+            "declaration_id": declaration.pk,
+            "expected_revision": 2,
+            "quantity": "2",
+            "evidence": [{"upload_id": identifier, "role": "signature"}],
+        },
+    )
+    intent_id = UUID(prepared.body["intent"]["id"])
+    settings.UPLOADS_PRIVATE_ROOT = tmp_path / "inventory-private"
+    private = SimpleNamespace(actor=context.actor, member=context.member, content=image_bytes())
+    target = AttachmentTarget("inventory_intent", intent_id)
+    identifier, lease = authorize(private, identifier=identifier, context=target)
+    link = AttachmentLink.objects.get(upload__public_id=identifier)
+    assert link.inventory_intent_id == intent_id
+    assert not UploadVerification.objects.filter(upload=link.upload).exists()
+    command = IntentExecution(
+        intent_id, "return_accept", declaration.event.assignment.reconciliation.pk
+    )
+    operations_before = StockOperation.objects.count()
+    with pytest.raises(InventoryConflictError) as pending:
+        execute_inventory_intent(private.actor, command)
+    assert pending.value.blocked_by[0]["reason"] == "supply_evidence_required"
+    assert not InventoryIntentExecution.objects.filter(intent_id=intent_id).exists()
+    assert not ReturnAcceptance.objects.filter(declaration=declaration).exists()
+    assert StockOperation.objects.count() == operations_before
+    with pytest.raises(Http404):
+        download_attachment(private.actor, identifier)
+    put(private, identifier, lease)
+    assert finalize_upload(private.actor, identifier, target)["state"] == "verified"
+    assert finalize_upload(private.actor, identifier, target)["state"] == "verified"
+    link = AttachmentLink.objects.get(upload__public_id=identifier)
+    assert link.inventory_intent_id == intent_id
+    assert AttachmentLink.objects.filter(upload=link.upload).count() == 1
+    accepted = execute_inventory_intent(private.actor, command)
+    assert execute_inventory_intent(private.actor, command).body == accepted.body
+    content, mime = download_attachment(private.actor, identifier)
+    assert mime == "image/png"
+    assert Image.open(BytesIO(content)).size == (5, 3)
+    context.profile.permission_codes.remove("field.upload")
+    context.profile.save(update_fields=["permission_codes"])
+    assert download_attachment(private.actor, identifier) == (content, mime)
+    context.profile.permission_codes = [
+        code
+        for code in context.profile.permission_codes
+        if code not in ("inventory.reconcile", "supply_assignment.reconcile")
+    ]
+    context.profile.save(update_fields=["permission_codes"])
     with pytest.raises(Http404):
         download_attachment(private.actor, identifier)
 

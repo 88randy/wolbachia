@@ -18,6 +18,7 @@ def test_fuel_thresholds_use_the_value_of_the_recorded_version(monkeypatch, curr
     maximum_version = uuid.uuid4()
     # A separate values read would see 15 before publication; the annotated rows see 20.
     context = SimpleNamespace(
+        review_authorization=None,
         organization=object(),
         envelope=SimpleNamespace(device_time=effective_from),
         rules_at=Mock(return_value={MIN_KEY: 15, MAX_KEY: 60}),

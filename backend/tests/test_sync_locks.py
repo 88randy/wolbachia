@@ -158,6 +158,138 @@ def test_a_final_upload_refused_with_sync_in_progress_is_not_spent(
     assert (retried.status_code, retried.headers["X-Session-Revoked"]) == (200, "true")
 
 
+def test_mixed_supply_final_upload_prepares_real_author_and_fresh_denial_beats_busy_user(
+    org_a: Organization, make_member: MemberFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    from dataclasses import replace
+    from decimal import Decimal
+
+    from accounts.models import User
+    from accounts.revocation import cancel_final_uploads
+    from field_sync.views import FieldSyncViewSet
+    from inventory.allocations.commands import AssignmentWrite, IntentExecution
+    from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent
+    from inventory.allocations.models import OriginReleaseLine, SupplyReceipt
+    from inventory.allocations.services import write_assignment
+    from organizations.models import Membership
+    from tests.factories import MotorcycleFactory
+    from tests.inventory_support import AT, allow_all, inventory_context
+    from tests.shift_support import make_check_items, open_event
+    from tests.test_inventory_transfers_106 import verified_upload
+
+    warehouse = inventory_context(org_a, make_member)
+    warehouse.profile.permission_codes = [*warehouse.profile.permission_codes, "inventory.allocate"]
+    warehouse.profile.save(update_fields=["permission_codes"])
+    phone = make_phone(
+        make_member, org_a, codes=("field_event.sync", "supply_assignment.receive", "field.upload")
+    )
+    allow_all(Membership.objects.get(organization=org_a, user=phone.user))
+    make_check_items(org_a)
+    motorcycle = MotorcycleFactory(organization=org_a, center=warehouse.center)
+    opened = open_event(motorcycle.code)
+    assert phone.sync([opened]).data["results"][0]["status"] == "accepted"
+    written = write_assignment(
+        AssignmentWrite(
+            warehouse.actor,
+            {
+                "command_id": uuid.uuid4(),
+                "courier_id": phone.user.pk,
+                "origin_id": warehouse.location.pk,
+                "date": AT.date(),
+                "shift_id": uuid.UUID(opened["shift_id"]),
+                "lines": [
+                    {
+                        "id": uuid.uuid4(),
+                        "lot_id": warehouse.lot.pk,
+                        "piece_id": None,
+                        "unit_version_id": warehouse.supply_version.pk,
+                        "quantity": Decimal(1),
+                    }
+                ],
+            },
+        )
+    )
+    assignment_id = uuid.UUID(written.body["assignment"]["id"])
+    prepared = prepare_inventory_intent(
+        warehouse.actor,
+        {
+            "command_id": uuid.uuid4(),
+            "kind": "assignment_release",
+            "assignment_id": assignment_id,
+            "expected_revision": 1,
+            "evidence": [],
+        },
+    )
+    execute_inventory_intent(
+        warehouse.actor,
+        IntentExecution(
+            uuid.UUID(prepared.body["intent"]["id"]), "assignment_release", assignment_id
+        ),
+    )
+    actor = replace(warehouse.actor, user=phone.user, device_id=phone.device_id)
+    release_line = OriginReleaseLine.objects.get()
+    capture = event(
+        type="supplies.receive",
+        shift_id=opened["shift_id"],
+        payload={
+            "command_id": str(uuid.uuid4()),
+            "assignment_id": str(assignment_id),
+            "expected_revision": 0,
+            "plan_revision": 1,
+            "release_id": str(release_line.release_id),
+            "signature_upload_id": str(verified_upload(actor)),
+            "actual_lines": [
+                {"id": str(uuid.uuid4()), "release_line_id": str(release_line.pk), "quantity": "1"}
+            ],
+            "discrepancies": [],
+        },
+    )
+    revoke_session(
+        phone.issued.session, Revocation(RevokeReason.ADMIN_REVOKE, allow_final_upload=True)
+    )
+    real_prepare = FieldSyncViewSet.prepare_final_upload_participants
+    withdrawn = False
+
+    def prepare(view, request):
+        participants = real_prepare(view, request)
+        if withdrawn:
+            cancel_final_uploads(request.user)
+        return participants
+
+    monkeypatch.setattr(FieldSyncViewSet, "prepare_final_upload_participants", prepare)
+    ready, release = threading.Event(), threading.Event()
+
+    def hold_author():
+        try:
+            with transaction.atomic():
+                User.objects.select_for_update(no_key=True).get(pk=warehouse.actor.user.pk)
+                ready.set()
+                assert release.wait(10)
+        finally:
+            connection.close()
+
+    thread = threading.Thread(target=hold_author)
+    thread.start()
+    try:
+        assert ready.wait(10)
+        note = event()
+        busy = phone.sync([note, capture])
+        assert (busy.status_code, busy.data["code"]) == (429, "sync_in_progress")
+        phone.issued.session.refresh_from_db()
+        assert phone.issued.session.final_upload_used_at is None
+        withdrawn = True
+        denied = phone.sync([note, capture])
+        assert (denied.status_code, denied.data["code"]) == (401, "session_revoked")
+        phone.issued.session.refresh_from_db()
+        assert phone.issued.session.final_upload_used_at is None
+        assert not FieldEvent.objects.filter(pk__in=(note["id"], capture["id"])).exists()
+        assert not SupplyReceipt.objects.exists()
+    finally:
+        release.set()
+        thread.join(20)
+    assert not thread.is_alive()
+
+
 def test_a_primary_key_insert_blocked_beyond_the_timeout_is_told_to_retry(
     org_a: Organization, org_b: Organization, make_member: MemberFactory, settings: Any
 ) -> None:

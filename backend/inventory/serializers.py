@@ -1,14 +1,16 @@
 """Explicit mutation contracts and read-only immutable inventory projections."""
 
-from datetime import datetime
+from datetime import datetime, time
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
+from zoneinfo import ZoneInfo
 
 from django.utils.functional import cached_property
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.filters import CodeQuerySerializer
 from core.serializers import OrgScopedModelSerializer
 from field_sync.envelope import MAX_PLAUSIBLE_TIME, MIN_PLAUSIBLE_TIME
 from geography.geometry import validate_location
@@ -18,6 +20,7 @@ from inventory.models import (
     ConditionReading,
     LocationVersion,
     LotVersion,
+    StockMovement,
     SupplyTypeVersion,
 )
 from inventory.policy import BIOLOGICAL_FIELDS, LotSafety
@@ -202,7 +205,35 @@ class ConditionWriteSerializer(StrictPayloadSerializer):
     )
 
 
+class ExplicitConditionWriteSerializer(ConditionWriteSerializer):
+    location_id = serializers.UUIDField()
+
+
 class ProtocolSerializer(OrgScopedModelSerializer):
+    incident_type = serializers.SerializerMethodField()
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "required": ["incident_type_version_id", "code", "label"],
+            "properties": {
+                "incident_type_version_id": {"type": "string", "format": "uuid"},
+                "code": {"type": "string"},
+                "label": {"type": "string"},
+            },
+        }
+    )
+    def get_incident_type(self, protocol: BiologicalProtocolVersion) -> dict[str, Any] | None:
+        incident_type = protocol.incident_type
+        if incident_type is None:
+            return None
+        return {
+            "incident_type_version_id": incident_type.pk,
+            "code": incident_type.code,
+            "label": incident_type.label,
+        }
+
     class Meta:
         model = BiologicalProtocolVersion
         fields = [
@@ -217,6 +248,7 @@ class ProtocolSerializer(OrgScopedModelSerializer):
             "reading_windows",
             "required_fields",
             "incident_type_id",
+            "incident_type",
             "created_by",
             "created_at",
         ]
@@ -259,6 +291,10 @@ class LocationSerializer(OrgScopedModelSerializer):
     center = serializers.UUIDField(source="location.center_id", read_only=True)
     quadrant = serializers.UUIDField(source="location.quadrant_id", read_only=True, allow_null=True)
     geometry = PointField(read_only=True)
+    owner_label = serializers.SerializerMethodField()
+
+    def get_owner_label(self, version: LocationVersion) -> str:
+        return version.owner.user.get_full_name().strip() or version.owner.user.username
 
     class Meta:
         model = LocationVersion
@@ -273,6 +309,7 @@ class LocationSerializer(OrgScopedModelSerializer):
             "kind",
             "geometry",
             "owner_id",
+            "owner_label",
             "is_insecticide_free",
             "created_by",
             "created_at",
@@ -287,6 +324,15 @@ class InventoryBlockerSerializer(serializers.Serializer[Any]):
     current_revision = serializers.IntegerField(required=False)
 
 
+class RetainedLocationSerializer(OrgScopedModelSerializer):
+    code = serializers.CharField(source="location.code", read_only=True)
+
+    class Meta:
+        model = LocationVersion
+        fields = ["id", "location_id", "code", "name"]
+        read_only_fields = fields
+
+
 class LotSerializer(OrgScopedModelSerializer):
     id = serializers.UUIDField(source="lot_id", read_only=True)
     code = serializers.CharField(source="lot.code", read_only=True)
@@ -299,6 +345,11 @@ class LotSerializer(OrgScopedModelSerializer):
     blocked_by = serializers.SerializerMethodField()
     expiry = serializers.DateTimeField(source="expires_at", read_only=True, allow_null=True)
     stock_url = serializers.SerializerMethodField()
+    supply_version = SupplySerializer(read_only=True)
+    location_version = RetainedLocationSerializer(read_only=True, allow_null=True)
+    admission_id = serializers.UUIDField(source="lot.admission.pk", read_only=True, allow_null=True)
+    safety_location_id = serializers.SerializerMethodField()
+    created_by = serializers.SerializerMethodField()
 
     class Meta:
         model = LotVersion
@@ -309,11 +360,14 @@ class LotSerializer(OrgScopedModelSerializer):
             "revision",
             "supply",
             "supply_version_id",
+            "supply_version",
+            "admission_id",
             "center",
             "quadrant",
             "protocol_id",
             "initial_location_id",
             "location_version_id",
+            "location_version",
             "quantity",
             "provenance",
             "species",
@@ -326,6 +380,7 @@ class LotSerializer(OrgScopedModelSerializer):
             "expiry_date",
             "timezone",
             "status",
+            "safety_location_id",
             "missing_fields",
             "blocked_by",
             "stock_url",
@@ -337,8 +392,26 @@ class LotSerializer(OrgScopedModelSerializer):
     def _safety(self, version: LotVersion) -> LotSafety:
         cache = self.safety_cache
         if version.pk not in cache:
-            cache[version.pk] = lot_safety(version)
+            cache[version.pk] = lot_safety(version, location=self.context.get("custody_location"))
         return cache[version.pk]
+
+    @extend_schema_field(serializers.UUIDField(allow_null=True))
+    def get_safety_location_id(self, version: LotVersion) -> str | None:
+        location = self.context.get("custody_location")
+        identifier = location.pk if location is not None else version.initial_location_id
+        return str(identifier) if identifier else None
+
+    @extend_schema_field(serializers.UUIDField(allow_null=True))
+    def get_created_by(self, version: LotVersion) -> str | None:
+        if "request" not in self.context:
+            return None
+        actor = actor_from_request(self.context["request"])
+        original = current_scope(actor).allows(
+            "lot.read",
+            str(version.lot.center_id),
+            str(version.lot.quadrant_id) if version.lot.quadrant_id else None,
+        )
+        return str(version.created_by_id) if original and version.created_by_id else None
 
     @cached_property
     def safety_cache(self) -> dict[UUID, LotSafety]:
@@ -359,9 +432,11 @@ class LotSerializer(OrgScopedModelSerializer):
         ]
 
     def get_stock_url(self, version: LotVersion) -> str | None:
-        if version.initial_location_id is None:
+        location = self.context.get("custody_location")
+        identifier = location.pk if location is not None else version.initial_location_id
+        if identifier is None:
             return None
-        return f"/api/v1/locations/{version.initial_location_id}/stock/?lot={version.lot_id}"
+        return f"/api/v1/locations/{identifier}/stock/?lot={version.lot_id}"
 
 
 class ConditionSerializer(OrgScopedModelSerializer):
@@ -376,6 +451,8 @@ class ConditionSerializer(OrgScopedModelSerializer):
             "lot_id",
             "lot_version_id",
             "location_version_id",
+            "capture_mode",
+            "capture_location_id",
             "device_time",
             "server_received_at",
             "temperature_c",
@@ -394,10 +471,13 @@ class ConditionSerializer(OrgScopedModelSerializer):
 
     def _can_read_incident(self, reading: ConditionReading) -> bool:
         actor = actor_from_request(self.context["request"])
+        from inventory.conditions import reading_context
+
+        context = reading_context(reading)
         return current_scope(actor).allows(
             "incident.read",
-            str(reading.lot.center_id),
-            str(reading.lot.quadrant_id) if reading.lot.quadrant_id else None,
+            str(context.center_id),
+            str(context.quadrant_id) if context.quadrant_id else None,
         )
 
     def get_incident(self, reading: ConditionReading) -> str | None:
@@ -425,10 +505,26 @@ class StockSerializer(serializers.Serializer[Any]):
     source_ids = serializers.ListField(child=serializers.UUIDField())
 
 
+@extend_schema_field(
+    {"oneOf": [{"type": "string", "format": "uuid"}, {"type": "string", "enum": ["none"]}]}
+)
+class OptionalReferenceField(serializers.Field[UUID | str, Any, str, Any]):
+    """Explicit `none` is a missing applicable reference, never an inferred scope."""
+
+    def to_internal_value(self, value: Any) -> UUID | str:  # noqa: ANN401
+        return "none" if value == "none" else serializers.UUIDField().to_internal_value(value)
+
+    def to_representation(self, value: UUID | str) -> str:
+        return str(value)
+
+
 class InventoryQuerySerializer(serializers.Serializer[Any]):
     supply = serializers.UUIDField(required=False)
     location = serializers.UUIDField(required=False)
+    custody_location = serializers.UUIDField(required=False)
+    location_id = serializers.UUIDField(required=False)
     lot = serializers.UUIDField(required=False)
+    lot_code = serializers.CharField(required=False, allow_blank=True, trim_whitespace=False)
     center = serializers.UUIDField(required=False)
     status = serializers.ChoiceField(choices=["draft", "available", "blocked"], required=False)
     is_active = serializers.ChoiceField(choices=["true", "false"], required=False)
@@ -438,14 +534,263 @@ class InventoryQuerySerializer(serializers.Serializer[Any]):
     kind = serializers.ChoiceField(choices=["biofactory", "warehouse", "center"], required=False)
     expiry_from = serializers.DateTimeField(required=False)
     expiry_before = serializers.DateTimeField(required=False)
+    expiry_from_date = serializers.DateField(required=False)
+    expiry_before_date = serializers.DateField(required=False)
+    blocked_by = serializers.ChoiceField(
+        choices=[
+            "supply_type_inactive",
+            "lot_expired",
+            "protocol_not_configured",
+            "storage_safety_not_configured",
+            "insecticide_free_required",
+            "condition_slot_missing",
+            "condition_breach",
+            "transfer_discrepancy_hold",
+        ],
+        required=False,
+    )
+    operation = serializers.UUIDField(required=False)
+    piece = OptionalReferenceField(required=False)
+    unit = serializers.CharField(required=False, trim_whitespace=False)
+    created_at_from = serializers.DateTimeField(required=False)
+    created_at_before = serializers.DateTimeField(required=False)
     device_time_from = serializers.DateTimeField(required=False)
     device_time_before = serializers.DateTimeField(required=False)
     local_date = serializers.DateField(required=False)
     evaluation = serializers.ChoiceField(choices=["normal", "breach", "unassessed"], required=False)
 
+    def validate_lot_code(self, value: str) -> str:
+        """Reuse the public code grammar while retaining this query field's error path."""
+        query = CodeQuerySerializer(data={"code": value})
+        if not query.is_valid():
+            raise serializers.ValidationError(query.errors["code"])
+        return str(query.validated_data["code"])
+
     def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
-        for prefix in ("expiry", "device_time"):
+        attrs = self._expiry_bounds(attrs)
+        for prefix in ("expiry", "device_time", "created_at"):
             start, end = attrs.get(f"{prefix}_from"), attrs.get(f"{prefix}_before")
             if start is not None and end is not None and end <= start:
                 raise serializers.ValidationError({f"{prefix}_before": "Invalid range."})
         return attrs
+
+    def _expiry_bounds(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        for bound in ("from", "before"):
+            name = f"expiry_{bound}"
+            date_name = f"{name}_date"
+            if date_name not in attrs:
+                continue
+            if name in attrs:
+                raise serializers.ValidationError(
+                    {date_name: "Use a date or an instant, not both."}
+                )
+            local = ZoneInfo(self.context["timezone"])
+            attrs[name] = datetime.combine(attrs.pop(date_name), time.min, tzinfo=local)
+        return attrs
+
+
+class MovementSerializer(OrgScopedModelSerializer):
+    # This DTO is emitted only by current Location queries, which exclude Assignment legs.
+    location_id = serializers.UUIDField(read_only=True)
+    lot_code = serializers.CharField(source="lot.code", read_only=True)
+    supply_id = serializers.UUIDField(source="lot.supply_id", read_only=True)
+    location_code = serializers.CharField(source="location.code", read_only=True)
+    unit = serializers.CharField(source="unit_version.unit", read_only=True)
+    source_kind = serializers.ChoiceField(
+        source="operation.source_kind",
+        choices=[
+            "lot_admission",
+            "transfer_dispatch",
+            "transfer_receive",
+            "transfer_resolution",
+            "supply_receive",
+            "supply_reconcile",
+            "supply_return",
+            "lot_write_off",
+            "supply_compensation",
+        ],
+        read_only=True,
+    )
+    source_id = serializers.UUIDField(source="operation.source_id", read_only=True)
+    source_transfer = serializers.SerializerMethodField()
+    source_supply = serializers.SerializerMethodField()
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "enum": [
+                        "supply_receive",
+                        "supply_reconcile",
+                        "supply_return",
+                        "lot_write_off",
+                        "supply_compensation",
+                    ],
+                },
+                "id": {"type": "string", "format": "uuid"},
+                "assignment_id": {"type": "string", "format": "uuid", "nullable": True},
+                "source_event_id": {"type": "string", "format": "uuid", "nullable": True},
+            },
+            "required": ["kind", "id", "assignment_id", "source_event_id"],
+        }
+    )
+    def get_source_supply(self, movement: StockMovement) -> dict[str, str | None] | None:
+        from inventory.allocations.selectors import (
+            movement_supply_source,
+            movement_supply_visibility,
+        )
+
+        request = self.context.get("supply_request")
+        if request is None or movement.operation.supply_source_id is None:
+            return None
+        context = cast(dict[str, Any], self.context)
+        cache = "_supply_movement_visibility"
+        if cache not in context:
+            rows = self.root.instance
+            if rows is None or isinstance(rows, StockMovement):
+                rows = [movement]
+            context[cache] = movement_supply_visibility(actor_from_request(request), rows)
+        return movement_supply_source(movement, context[cache])
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "id": {"type": "string", "format": "uuid"},
+                "code": {"type": "string"},
+                "event_id": {"type": "string", "format": "uuid"},
+            },
+            "required": ["id", "code", "event_id"],
+        }
+    )
+    def get_source_transfer(self, movement: StockMovement) -> dict[str, str] | None:
+        from inventory.transfers.scope import allows_transfer_vector, transfer_contexts
+
+        event = movement.operation.transfer_event
+        if event is None or "request" not in self.context:
+            return None
+        actor = actor_from_request(self.context["request"])
+        if not allows_transfer_vector(
+            current_scope(actor), "transfer.read", transfer_contexts(event.transfer)
+        ):
+            return None
+        return {
+            "id": str(event.transfer_id),
+            "code": event.transfer.code,
+            "event_id": str(event.pk),
+        }
+
+    class Meta:
+        model = StockMovement
+        fields = [
+            "id",
+            "operation_id",
+            "line_number",
+            "lot_id",
+            "lot_code",
+            "supply_id",
+            "location_id",
+            "location_code",
+            "piece_id",
+            "quantity",
+            "unit",
+            "unit_version_id",
+            "source_kind",
+            "source_id",
+            "source_transfer",
+            "source_supply",
+            "created_at",
+            "created_by",
+        ]
+        read_only_fields = fields
+
+
+class OwnerOptionSerializer(serializers.Serializer[Any]):
+    membership_id = serializers.UUIDField(source="pk")
+    label = serializers.CharField()  # type: ignore[assignment]  # resource field shadows DRF label
+
+
+class PlacementOptionSerializer(serializers.Serializer[Any]):
+    kind = serializers.ChoiceField(
+        choices=["quadrant", "center_only", "location", "center_only_draft"]
+    )
+    quadrant_id = serializers.UUIDField(allow_null=True)
+    code = serializers.CharField(source="choice_code", allow_null=True)
+    location_id = serializers.UUIDField(allow_null=True)
+    is_read_only = serializers.BooleanField()
+
+    def to_representation(self, instance: Any) -> dict[str, Any]:  # noqa: ANN401
+        result = dict(super().to_representation(instance))
+        if result["kind"] in ("quadrant", "center_only"):
+            result.pop("location_id")
+            result.pop("is_read_only")
+        return result
+
+
+class QuadrantPlacementOptionSerializer(serializers.Serializer[Any]):
+    kind = serializers.ChoiceField(choices=["quadrant", "center_only"])
+    quadrant_id = serializers.UUIDField(allow_null=True)
+    code = serializers.CharField(allow_null=True)
+
+
+class LotPlacementOptionSerializer(QuadrantPlacementOptionSerializer):
+    kind = serializers.ChoiceField(choices=["location", "center_only_draft"])
+    location_id = serializers.UUIDField(allow_null=True)
+    is_read_only = serializers.BooleanField()
+
+
+class ProtocolTypeOptionSerializer(serializers.Serializer[Any]):
+    incident_type_version_id = serializers.UUIDField(source="pk")
+    code = serializers.CharField()
+    label = serializers.CharField()  # type: ignore[assignment]  # resource field shadows DRF label
+
+
+class OptionQuerySerializer(StrictPayloadSerializer):
+    search = serializers.CharField(required=False, allow_blank=True)
+    page = serializers.IntegerField(required=False, min_value=1)
+    page_size = serializers.IntegerField(required=False, min_value=1)
+
+
+class OwnerOptionQuerySerializer(OptionQuerySerializer):
+    center = serializers.UUIDField(required=False)
+    quadrant = OptionalReferenceField(required=False)
+    location = serializers.UUIDField(required=False)
+    ordering = serializers.ChoiceField(choices=["label", "-label"], required=False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if "location" in attrs:
+            if "center" in attrs or "quadrant" in attrs:
+                raise serializers.ValidationError(
+                    {"location": "Use only the location reference for update."}
+                )
+        elif "center" not in attrs or "quadrant" not in attrs:
+            raise serializers.ValidationError(
+                {"center": "Both center and quadrant are required for create."}
+            )
+        if "quadrant" in attrs:
+            attrs["quadrant"] = None if attrs["quadrant"] == "none" else attrs["quadrant"]
+        return attrs
+
+
+class PlacementOptionQuerySerializer(OptionQuerySerializer):
+    action = serializers.ChoiceField(choices=["location.create", "lot.create"], required=False)
+    center = serializers.UUIDField(required=False)
+    lot = serializers.UUIDField(required=False)
+
+    def validate(self, attrs: dict[str, Any]) -> dict[str, Any]:
+        if "lot" in attrs:
+            if "action" in attrs or "center" in attrs:
+                raise serializers.ValidationError({"lot": "Use only the lot reference for update."})
+        elif "action" not in attrs or "center" not in attrs:
+            raise serializers.ValidationError(
+                {"action": "Action and center are required for create."}
+            )
+        return attrs
+
+
+class ProtocolTypeOptionQuerySerializer(OptionQuerySerializer):
+    supply = serializers.UUIDField(required=False)

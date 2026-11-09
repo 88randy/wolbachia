@@ -157,6 +157,17 @@ def void_history(
     choice = resolve_void_reason(record.organization_id, values["reason"], values["reason_code"])
     with lock_motorcycle(record.motorcycle) as motorcycle:
         authorize_motorcycle(motorcycle, actor, MOTORCYCLE_MANAGE)
+        if isinstance(record, ServiceRecord):
+            # Same Motorcycle -> ServiceRecord order as the source-bound safety
+            # attestation. Never void the proof of a committed disposition (OP16).
+            service = ServiceRecord.objects.select_for_update(nowait=True, no_key=True).get(
+                pk=record.pk
+            )
+            from reviews.models import ReviewSafetyDisposition
+
+            if ReviewSafetyDisposition.objects.filter(inspection=service).exists():
+                raise FleetConflictError("service_has_safety_disposition")
+            record = service
         return cast(
             ServiceRecord | ResponsibilityLetter, void_validated_record(record, actor, choice)
         )

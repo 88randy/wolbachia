@@ -4,6 +4,7 @@ from field_sync.registry import EventContext, EventHandler, register
 from fleet.codes import FUEL_EFFICIENCY_REVIEW, FUEL_EVENT_NOT_VOIDABLE, FUEL_MOTORCYCLE_MISMATCH
 from fleet.fuel_services import apply_fuel_load
 from fleet.payloads import FuelLoadPayloadSerializer
+from fleet.review import FuelReviewAdapter
 from fleet.selectors import highest_fleet_km, motorcycle_metrics
 from fleet.services import require_inspection_for_severe
 from shifts.codes import MOTORCYCLE_UNKNOWN, ODOMETER_DECREASED, SHIFT_NOT_OPEN
@@ -31,6 +32,7 @@ def register_fleet_handlers() -> None:
                 SHIFT_NOT_OPEN,
                 ODOMETER_DECREASED,
             ),
+            review_adapter=FuelReviewAdapter(),
         )
     )
     ODOMETER_READERS.append(highest_fleet_km)

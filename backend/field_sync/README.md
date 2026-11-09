@@ -1,5 +1,61 @@
 # field_sync
 
+## Paired current capture context (#289)
+
+Bootstrap and every normal changes page expose optional/nullable root
+capture_context: schema_version 1, permission field_event.sync, self user/org UUIDs,
+scope_revision and complete effective WorkScope pairs. The pure selector projects
+only the SAME captured ctx.scope grants containing FIELD_EVENT_SYNC; member/profile
+intersection and government restrictions are already applied. It performs no Me,
+permission/profile read, SQL, new lock or I/O. MeScopeSerializer supplies the existing
+canonical grammar per whole pair, without using display-only get_scope. Never union
+axes. Empty grants is known denial; absence/null is not an implicit grant.
+
+The root bundle contract advances from 1 to 2; registered producer versions, SECTION_KEYS,
+payloads and feed writers stay unchanged. Metadata/root/cursor share one computed
+scope revision. ETag includes metadata and generation but excludes generated_at/
+cursor, so a scope-only or revoke/regrant generation changes the body even with
+unchanged geometry. Existing live bearer/route checks still run before 304. This is
+a current observation, not original authority, a capability or offline permanence.
+
+Normal omitted/null HTTP cursor decodes to ChangesCursor() and publishes initial
+metadata. It is not a complete bootstrap. Explicit internal None/final upload emits
+null context and pulls nothing. Concurrent admin changes after ctx capture remain
+detectable on next pull; do not recompute ctx/revision after ingest or add a late
+Organization/User/source lock.
+
+#138 owns actual decode/materialize/provider/SQL readiness and owner/session/ABA
+fences. Full bootstrap alone hydrates missing foundations; old body/delta/304 cannot
+prove readiness. Preserve immutable drafts/outbox/evidence and final receipts before
+cleanup. Same-user new sessions/reinstalls cannot adopt unproved legacy ownership.
+Offline revocation has its observation limit. This does not supply fake M08 bag/
+reuse/inventory assignments or implement GPS, camera #253, B33 history, #287 advisory
+consumption or native qualification. See docs/sync.md#paired-current-capture-context-289.
+
+Criterion map: test_field_sync_b_13 covers pure pairs/schema, public disjoint scope,
+old-root-cursor replay and both existing captured-configuration barriers;
+test_bundle_producers_196 extends real assign_profiles revoke/regrant plus semantic
+ETag; test_sync_api retains exact final no-pull shape with null context. SQL/HTTP/
+barrier tests require PostgreSQL; collection/DB-free passes are not execution proof.
+
+## Review integration (#113)
+
+Every NEW in_review result rolls back its inner operational savepoint and callbacks.
+Preparation source/Org/domain locks survive until source/item/snapshot/dependencies
+and exact evidence bindings persist. Optional concrete ReviewAdapter prepares locks,
+copies original JSON observations, inspects exact legacy rows and returns actual
+materialization IDs when executing. No generic replay/acceptance framework exists.
+reviews registers the single typed history producer; current actual subject scope
+filters before LIMIT/cursor/bootstrap. Critical-review causes recover through actual
+#104/B-07 after commit; an intent is not delivery. See ../reviews/README.md.
+
+Handlers without ReviewAdapter keep normal envelope checks and no-effect review
+rollback, without acquiring invented tenant/domain locks. Known own nonsevere
+reviewed targets may be corrected through canonical record.void and their real
+on_void hook without first accepting them. Generic void rechecks the exact pending
+severe source hold before mutating the target; missing targets remain causal and
+the correcting event's own clock/final-upload signal still prevents effects.
+
 The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md`](../../docs/sync.md) first (contract, codes, guarantees, how to register a handler) and [`../accounts/README.md`](../accounts/README.md) for the lock order.
 
 | Module | What lives there |
@@ -16,7 +72,9 @@ The phone's sync API (issue #5): `POST /api/v1/field/sync/`. Read [`docs/sync.md
 | (`shifts/`) | `shift.open` and `shift.close` are registered by the `shifts` app (#68); `shifts` also registers `shifts.guard.check_event_shift` with `registry.register_envelope_check`, which the pipeline runs for every event whose handler keeps `checks_shift=True` (the default); `field_sync` never imports `shifts` |
 | `serializers.py`, `views.py`, `throttling.py`, `urls.py` | The endpoint: `FieldSyncViewSet` (with `FinalUploadMixin`), per-device throttle |
 
-Dependency: `field_sync` creates `reviews.ReviewItem` rows (`reviews.services`) and reads them for `changes`; `reviews` only points at `FieldEvent` by a string foreign key and never imports `field_sync` code except constants and the event model type. Keep it one-way.
+Dependency: field_sync creates immutable review sources/items; review actions use the
+registered concrete owner adapter. Imports across services stay local to avoid
+cycles; models never import services. There is one typed history producer.
 
 Rules for code in this app and in handlers: nothing is deleted; a handler writes only inside the savepoint the pipeline opens and calls no external service; no user-facing text (codes and params only); a new final result code needs a row in `docs/sync.md` and `sync.result.*` keys in both languages of `packages/i18n` (a test checks it). The retry-only quota code is documented here; its mobile handling/localization is outside #56's backend scope. Tests: `backend/tests/test_sync_*.py`; test-only event types live in `tests/testapp/handlers.py`.
 
@@ -24,7 +82,8 @@ Rules for code in this app and in handlers: nothing is deleted; a handler writes
 resolver rejects unknown/foreign codes and invalid text before checking deactivation. A known
 inactive choice raises `EventNeedsReview("void_reason_code_deactivated")` and leaves every
 target void field intact, including when the batch is already under review. Applied voids store
-both code and note. Supervisor acceptance and the target's `on_void` hook remain #22.
+both code and note. #113 acceptance revalidates mandatory checks and calls the
+target's real on_void once; original source status is unchanged.
 
 ## Rejection quota (#56)
 
@@ -73,7 +132,8 @@ Native storage integration belongs to M-01. Bundle schema_version hashes the
 registered producer schemas, including empty ones; bundle_version/ETag hashes
 content except generated_at and cursor. Existing rules/catalog snapshots provide
 next_change_at refresh while capture-time evaluation retains historical versions.
-No operational in_review effects or acceptance handler are added (#22).
+NEW in_review effects roll back; #113 review decisions apply supported effects
+through their concrete owners and append immutable receipts.
 
 Acceptance tests: tests/test_field_sync_b_13.py. No new event result codes/locales.
 
@@ -174,7 +234,9 @@ added because parent identities are immutable (D7b).
 Courier ovitrap schema 1 adds optional is_retired, default false when absent.
 Existing fields retain their meanings. Resource hashes include outgoing live
 lineage/removal UUIDs; replacement/removal use the same atomic fan-out boundary,
-while relocation proposals emit no geometry or courier changes. See
+while relocation proposals emit no geometry or physical projection changes.
+B33 publishes their typed history through the existing113 producer after the real
+source exists, with its internal publication receipt. See
 ../ovitraps/lifecycle/README.md and ../../docs/sync.md for locks and acceptance map.
 
 ## Independent evidence references (#102)
@@ -193,3 +255,34 @@ after actual FieldEvent/ReviewItem/evidence linkage; a review callback produces 
 a scoped audit intent, never an Incident/owner/blocker. Immutable committed causes
 support keyset recovery after callback/broker loss. No delivery or #113 acceptance
 is asserted; current final-upload entitlement/session ordering remains unchanged.
+
+#106 registers only transfer.dispatch/transfer.receive schema1. They do not require
+a Shift, so checks_shift=False is explicit for these two families; global actor,
+clock/final-upload and source digest gates remain. They are not supplies.receive.
+NEW review retains source facts/evidence with0 operational custody/stock effects.
+_store links the actual accepted source after its snapshot and primary evidence
+exist. Reviewed application waits for canonical113's exact effect receipt. The ONE
+history producer is schema3 with an additive transfer_custody branch; old review,
+shift and relocation shapes remain. No fake HTTP courier or delivery receipt.
+
+## Laboratory projections (#114)
+
+The ONE history producer advances from 3 to 4, adding authentic Lab receipt,
+discrepancy, count, rejection and void payloads. The four old kind mappings and
+whole-transfer scope remain. BOOTSTRAP_SCHEMA_VERSION stays 2 and the outer hash
+stays opaque. Lab commands are server operations, not courier event types. Current
+source/recipient subjects filter history before download; storing an updated QA
+projection grants no FIELD_BOOTSTRAP and proves no delivery. Independent requests
+are real; execution belongs to #115.
+
+## Courier supplies (#107)
+
+Two schema1 shift-checked sources use existing preparation/review/on_void and real
+post-store source identities. Complete historical User/source preparation precedes
+account locks even in final upload; no new sync endpoint or session writer exists.
+Supplies producer1 owns current self Assignment facts. History6 retains the canonical
+Community5 branch and all earlier kinds while adding eight supply kinds;
+root bootstrap2 is unchanged. Supply changes filter exact current full-vector and
+own action BEFORE count/order/LIMIT. Scope-revision changes require existing
+readiness/retention invalidation; cached hidden rows never authorize a capture.
+See docs/sync.md for typed source payloads, review codes and fresh replay authority.

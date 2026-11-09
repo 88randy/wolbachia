@@ -86,14 +86,86 @@ class AttachmentLink(EvidenceRecord):
     incident = models.ForeignKey(
         "incidents.Incident", null=True, on_delete=models.PROTECT, related_name="attachments"
     )
+    review_item = models.ForeignKey(
+        "reviews.ReviewItem", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
+    transfer_event = models.ForeignKey(
+        "inventory.TransferEvent", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
+    lab_rejection = models.ForeignKey(
+        "lab.LabRejection", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
+    inventory_intent = models.ForeignKey(
+        "inventory.InventoryIntent", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
 
     class Meta(EvidenceRecord.Meta):
         constraints = [
             models.CheckConstraint(
                 condition=(
-                    models.Q(field_event__isnull=False, fault__isnull=True, incident__isnull=True)
-                    | models.Q(field_event__isnull=True, fault__isnull=False, incident__isnull=True)
-                    | models.Q(field_event__isnull=True, fault__isnull=True, incident__isnull=False)
+                    models.Q(
+                        field_event__isnull=False,
+                        inventory_intent__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=False,
+                        inventory_intent__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=False,
+                        inventory_intent__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=False,
+                        inventory_intent__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=False,
+                        inventory_intent__isnull=True,
+                        lab_rejection__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=False,
+                        inventory_intent__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                        inventory_intent__isnull=False,
+                    )
                 ),
                 name="attachment_exactly_one_parent",
             )

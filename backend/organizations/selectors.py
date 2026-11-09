@@ -7,6 +7,7 @@ from accounts.models import User
 from core.void_reason import VOID_REASON_MAX_LENGTH, void_reason_min_length
 from organizations.exceptions import NoActiveMembershipError, OrganizationHeaderRequiredError
 from organizations.models import Membership, Organization, Profile, default_scope
+from organizations.scope import EffectiveScope
 
 
 def default_limits() -> dict[str, int]:
@@ -133,11 +134,19 @@ def filter_by_effective_scope(
     queryset: QuerySet[Any], membership: Membership, permission: str
 ) -> QuerySet[Any]:
     """Filter applicable dimensions with paired per-profile grants; foreign rows stay 404."""
-    from django.db.models import Q
 
     from organizations.services import effective_scope
 
     effective = effective_scope(membership)
+    return filter_by_scope(queryset, effective, permission)
+
+
+def filter_by_scope(
+    queryset: QuerySet[Any], effective: EffectiveScope, permission: str
+) -> QuerySet[Any]:
+    """Use the same paired predicate with an explicit already-proved scope."""
+    from django.db.models import Q
+
     fields = {field.name for field in queryset.model._meta.get_fields()}
     center_field = (
         "pk"

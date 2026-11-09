@@ -77,6 +77,7 @@ Only shared, cross-screen text. Screen copy lands with each screen.
 - `auth.*` (web, #28): sign-in (`auth.login.*`), lockout (`auth.lockout.*`), password reset request and confirm (`auth.forgot.*`, `auth.reset.*`, including the four password-validator codes), organization choice (`auth.organization.*`) and the re-authentication dialog (`auth.session.*`). `shell.userMenu.*` is the user menu of the top bar; `states.noPermission.*` the "no permission" state.
 - `table.*` (web, #29): the shared `DataTable` and `FilterBar`: sort announcements (`{column}` is the translated header), result range and count, pager, filters and chips, the notice for ignored URL parameters, empty states, row selection, voided rows and export. No plurals: counts are written as "Showing {from} to {to} of {total}" and "Selected: {count}".
 - `phones.*` (web, #29): the phones list of W67 (title, column headers, status, filter label, empty cells).
+- `inventory.*` (web, #151): W8–W11 supply/protocol configuration, draft/admission status, real owner/placement choices, scoped stock/movement provenance and map fallback. Both locales preserve unconfigured/null states and explain server blockers without inventing scientific defaults or dispatch actions.
 - `rules.*` (web, #36): the W62 screens: list columns and statuses, the names of the seeded parameters (`rules.param.*`, one per API key, camelCase) and units (`rules.unit.*`, written out so no number needs plural agreement), the summary, the new-version form, its field errors (`rules.error.*`; `{min}` and `{max}` are the formatted limits) and the history. Placeholders: `{date}` (formatted), `{min}`, `{max}` and `{id}` (short user reference).
 - `voiding.*` (web, #32): the void dialog (`voiding.dialog.*`, placeholders `{record}`, `{count}`, `{min}`, `{max}`), its errors (`voiding.error.*`, `{min}`). The area is named `voiding` because `void` is a reserved word in TypeScript imports.
 - `sync.inbox.*`: title and hint for each sync result status (accepted, rejected, inReview) in the phone inbox.
@@ -100,3 +101,15 @@ rules.param.maxGpsAccuracyM labels the new versioned accuracy threshold.
 Issue #202 adds ui (shared controls and feedback), analytics (KPIs/charts and
 relative-time labels) and refresh (shell commands/table presentation and the
 dev-only style preview) in both locales.
+
+#114 adds rules.param.labCountPlausibilityLimit and rules.param.labRecountSamplePer100
+in es-MX/en. The sampling label explicitly says per 100 first counts. These are
+labels for existing configuration controls, not a laboratory client screen or
+scientific method default.
+
+## Supply source verdicts (#107)
+
+Both sync catalogs include six actual B10 result keys for inaccessible, blocked
+void, changed assignment, state conflict, missing evidence and unavailable transit.
+Existing inactive-reason/clock/final-upload codes are reused. Review messages retain
+the capture/signature; no text claims physical use or warehouse credit was applied.

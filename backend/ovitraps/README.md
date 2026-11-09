@@ -1,5 +1,18 @@
 # ovitraps
 
+## Review integration (#113)
+
+NEW in_review captures have no operational effects. capture.py selects rule values
+AND IDs in ONE statement and uses the SAME PointVersion/rules for copied ovitrap v1
+facts and calculation, before gates/rollback. Original inputs are never replaced
+by current configuration. Only this child's persisted exact direct same-courier,
+still-effective parent resolution can change its speed prior; original speed/GPS/
+time gates still run. Other priors/context changes block; no automatic child replay.
+review_inspection proves complete exact original owner/catalog/rule/point facts.
+Adoption appends a receipt without replay or changing old flags/values. Physical
+parents may be shared only with real historical/current scope; shift/void retain
+owner rules. Original mandatory evidence UUID/binding cannot be substituted.
+
 B-14 / #111. Read ../field_sync/README.md, ../../docs/sync.md, ../accounts/README.md
 and ../../docs/engineering-rules.md before changing these handlers.
 
@@ -14,8 +27,8 @@ and ../../docs/engineering-rules.md before changing these handlers.
    AND center AND quadrant covered by one effective profile/membership grant (SA02
    none/selected/all). Unknown/foreign/ungranted points share the same rejection.
    Voids revalidate current scope before effects or dependent IDs are exposed.
-3. Historical rules use EventContext.rules_at(device_time); exact applied rule ids
-   are retained separately from the phone's rules_version. max_distance_to_point_m
+3. Historical rules select values and exact version IDs together at device_time;
+   both are retained separately from the phone's rules_version. max_distance_to_point_m
    keeps OP03 default 50 m, bounds 10..200. New versioned max_gps_accuracy_m has
    **[ASSUMPTION]** default 50 m and bounds 1..200 until pilot confirmation.
    Missing/nonpositive/unusable accuracy, missing/nonfinite/out-of-bound required
@@ -24,7 +37,7 @@ and ../../docs/engineering-rules.md before changing these handlers.
    previous accepted nonvoided ovitrap capture at/before this courier's device_time.
    **[ASSUMPTION]** there is no tracking app; no previous capture means no comparison.
    All review signals (including final upload/clock/shift) precede operational writes.
-   Accepting review is #22, outside scope.
+   #113 acceptance uses original observations plus current mandatory gates.
 4. Ovitrap, PlacementAttempt and OvitrapReading reference their FieldEvent uniquely.
    Bag shares the reading event and has organization-unique code. Savepoints and
    constraints prevent replay duplication; codes remain reserved after void.
@@ -252,3 +265,15 @@ is available for B-06. The future closure gate reads has_unresolved_removal; #21
 adds explicit append-only recovery resolution (see lifecycle/README.md). Courier schema 1 gains optional is_retired
 and revision hashes include lineage/removal event UUIDs; replace/remove fan out,
 relocate does not. No original FieldEvent ingest status or geometry is rewritten.
+
+## Laboratory facade (#114)
+
+Bag/Reading GET fields, status/code/point/week filters and reading.read remain.
+Lab adds action-scoped projections and Bag receive/mark-missing/count/rejection
+actions plus Reading-only no-paddle receive. A Bag still requires its authentic
+Reading/collector/source; unknown/foreign codes create nothing. The new queue uses
+canonical effective-source proof, not the legacy is_countable hint. Lagged/index-
+excluded effective paddles remain eligible. The original void hook checks actual
+Lab dependents under the retained lock order; SQL also closes a raw source-void
+bypass at deferred completion. Existing relocation/removal/closure dependencies
+retain their owners. See ../lab/README.md.

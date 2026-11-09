@@ -67,7 +67,7 @@ ignore = [
 
 [tool.ruff.lint.isort]
 # Explicit so import order is the same whether ruff runs from backend/ (CI) or the repo root (pre-commit).
-known-first-party = ["accounts", "catalogs", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "ovitraps", "organizations", "reviews", "rules", "scheduling", "shifts", "tests", "uploads"]
+known-first-party = ["accounts", "catalogs", "ci", "community", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "lab", "ovitraps", "organizations", "reviews", "rules", "scheduling", "shifts", "tests", "uploads"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
@@ -104,7 +104,7 @@ ignore_missing_imports = true
 
 # `strict = true` cannot be set per module, so the strict flags are listed one by one.
 [[tool.mypy.overrides]]
-module = ["services", "*.services", "selectors", "*.selectors", "accounts.token_retention", "fleet.fuel_services", "shifts.access", "inventory.access", "inventory.conditions", "inventory.masters", "inventory.transactions", "incidents.automatic"]
+module = ["services", "*.services", "selectors", "*.selectors", "accounts.token_retention", "accounts.session_audit_retention", "fleet.fuel_services", "shifts.access", "inventory.access", "inventory.conditions", "inventory.masters", "inventory.transactions", "inventory.option_selectors", "inventory.transfers.*", "inventory.allocations.*", "lab.*", "community.*", "incidents.automatic", "incidents.origins", "incidents.workspace_queries", "incidents.workspace_projection", "incidents.option_selectors", "ovitraps.lifecycle.advisory", "ovitraps.lifecycle.advisory_selectors"]
 disallow_any_generics = true
 disallow_subclassing_any = true
 disallow_untyped_calls = true
@@ -126,7 +126,7 @@ python_files = ["test_*.py"]
 addopts = "--strict-markers"
 
 [tool.coverage.run]
-source = ["accounts", "catalogs", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "ovitraps", "organizations", "reviews", "rules", "scheduling", "uploads"]
+source = ["accounts", "catalogs", "community", "config", "core", "field_sync", "fleet", "geography", "incidents", "inventory", "lab", "ovitraps", "organizations", "reviews", "rules", "scheduling", "uploads"]
 omit = ["*/migrations/*", "config/wsgi.py", "config/asgi.py"]
 
 [tool.coverage.report]

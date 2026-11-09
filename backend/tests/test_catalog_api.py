@@ -191,20 +191,52 @@ def test_delete_on_an_item_is_405(admin, catalog) -> None:
     assert CatalogItem.objects.filter(pk=item.pk).exists()
 
 
-def test_deactivate_an_item(admin, catalog) -> None:
+@pytest.mark.parametrize("is_conditional", [False, True])
+def test_deactivate_an_item(admin, catalog, is_conditional) -> None:
     item = CatalogItemFactory(catalog=catalog)
 
-    response = admin.post(items_url("removal-reason", f"{item.id}/deactivate/"))
+    url = items_url("removal-reason", f"{item.id}/deactivate/")
+    response = admin.post(url, {"version": 0}, format="json") if is_conditional else admin.post(url)
 
     assert (response.status_code, response.data["is_active"]) == (200, False)
+    assert response.data["catalog_version"] == 1
 
 
-def test_activate_an_item(admin, catalog) -> None:
+@pytest.mark.parametrize("is_conditional", [False, True])
+def test_activate_an_item(admin, catalog, is_conditional) -> None:
     item = CatalogItemFactory(catalog=catalog, is_active=False)
 
-    response = admin.post(items_url("removal-reason", f"{item.id}/activate/"))
+    url = items_url("removal-reason", f"{item.id}/activate/")
+    response = admin.post(url, {"version": 0}, format="json") if is_conditional else admin.post(url)
 
     assert (response.status_code, response.data["is_active"]) == (200, True)
+    assert response.data["catalog_version"] == 1
+
+
+@pytest.mark.parametrize("action", ["activate", "deactivate"])
+def test_availability_action_wires_the_stale_version_conflict(admin, catalog, action):
+    item = CatalogItemFactory(catalog=catalog, is_active=action == "deactivate")
+
+    response = admin.post(
+        items_url(catalog.slug, f"{item.pk}/{action}/"), {"version": 1}, format="json"
+    )
+
+    assert (response.status_code, response.data["code"]) == (409, "catalog_version_conflict")
+
+
+@pytest.mark.parametrize("action", ["activate", "deactivate"])
+@pytest.mark.parametrize(("version", "code"), [(-1, "min_value"), ("later", "invalid")])
+def test_availability_action_returns_coded_version_field_errors(
+    admin, catalog, action, version, code
+):
+    item = CatalogItemFactory(catalog=catalog)
+
+    response = admin.post(
+        items_url(catalog.slug, f"{item.pk}/{action}/"), {"version": version}, format="json"
+    )
+
+    assert (response.status_code, response.data["code"]) == (400, "validation_error")
+    assert response.data["fields"]["version"] == [{"code": code, "params": {}}]
 
 
 def test_deactivate_other_returns_409_other_item_cannot_be_deactivated(admin, catalog) -> None:
@@ -268,8 +300,9 @@ def test_each_action_needs_its_own_permission_code(
     granted = [code for code in ADMIN_CODES if code != missing_code]
     client = as_member(api_client, org_a, make_member, *granted)
 
+    payload = {"version": -1} if suffix in {"ITEM/activate/", "ITEM/deactivate/"} else {}
     response = getattr(client, method)(
-        items_url("removal-reason", suffix.replace("ITEM", str(item.id))), {}, format="json"
+        items_url("removal-reason", suffix.replace("ITEM", str(item.id))), payload, format="json"
     )
 
     assert response.status_code == 403
@@ -359,8 +392,8 @@ def test_patch_activate_and_deactivate_of_another_organizations_item_are_404(
     base = items_url("removal-reason", f"{foreign.id}/")
 
     assert admin.patch(base, {"label_es": "Hacked"}, format="json").status_code == 404
-    assert admin.post(f"{base}activate/").status_code == 404
-    assert admin.post(f"{base}deactivate/").status_code == 404
+    assert admin.post(f"{base}activate/", {"version": -1}, format="json").status_code == 404
+    assert admin.post(f"{base}deactivate/", {"version": -1}, format="json").status_code == 404
     foreign.refresh_from_db()
     assert foreign.label_es != "Hacked"
     assert foreign.is_active is True

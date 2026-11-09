@@ -25,7 +25,7 @@ SECTION_KEYS = (
     "sampling_points",
     "ovitraps",
 )
-BOOTSTRAP_SCHEMA_VERSION = 1
+BOOTSTRAP_SCHEMA_VERSION = 2
 
 
 @dataclass(frozen=True)

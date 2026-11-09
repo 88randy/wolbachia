@@ -23,9 +23,85 @@ permissions:
 
 env:
   RUFF_VERSION: "0.17.3"
+  CI_SOURCE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
+  tests:
+    name: PostgreSQL (${{ matrix.shard }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard:
+          - regular
+          - migrations-foundation
+          - migrations-field
+          - migrations-material
+          - migrations-void-reason
+          - migrations-review
+          - migrations-lab
+          - migrations-community
+          - migrations-supplies
+          - migrations-session-audit
+          - regular-integration
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      postgres:
+        image: postgis/postgis:18-3.6-alpine
+        env:
+          POSTGRES_USER: wolbachia
+          POSTGRES_PASSWORD: wolbachia
+          POSTGRES_DB: wolbachia
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U wolbachia -d wolbachia"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      DJANGO_SECRET_KEY: ci-only-not-a-secret
+      DATABASE_URL: postgres://wolbachia:wolbachia@127.0.0.1:5432/wolbachia
+      REDIS_URL: redis://127.0.0.1:6379/0
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.3.3
+      - name: Install dependencies
+        run: uv sync --frozen
+      - name: Run one complete serial partition (coverage data only)
+        run: uv run python -m ci.runner ${{ matrix.shard }}
+      - name: Preserve current partition evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-${{ matrix.shard }}
+          path: |
+            backend/.pytest_cache/ci/${{ matrix.shard }}/manifest.json
+            backend/.pytest_cache/ci/${{ matrix.shard }}/coverage.data
+            backend/.pytest_cache/ci/${{ matrix.shard }}/session.json
+            backend/.pytest_cache/ci/${{ matrix.shard }}/exit.json
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
+  # Keep the old context as an honest gate, without another test run or fragment.
+  # A successful matrix result requires every current PostgreSQL partition.
+  migration_status:
+    name: PostgreSQL (migrations)
+    needs: [tests]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Require every PostgreSQL partition to succeed
+        env:
+          PARTITIONS_RESULT: ${{ needs.tests.result }}
+        run: test "$PARTITIONS_RESULT" = success
   checks:
+    needs: [tests, migration_status]
+    if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     defaults:
@@ -52,6 +128,12 @@ jobs:
       DATABASE_URL: postgres://wolbachia:wolbachia@127.0.0.1:5432/wolbachia
       REDIS_URL: redis://127.0.0.1:6379/0
     steps:
+      - name: Require every PostgreSQL partition and the compatibility gate to succeed
+        working-directory: .
+        env:
+          PARTITIONS_RESULT: ${{ needs.tests.result }}
+          MIGRATIONS_RESULT: ${{ needs.migration_status.result }}
+        run: test "$PARTITIONS_RESULT" = success && test "$MIGRATIONS_RESULT" = success
       - uses: actions/checkout@v7
       - uses: astral-sh/setup-uv@v10.3.3
       - name: Install dependencies
@@ -69,6 +151,69 @@ jobs:
         run: uv run python manage.py makemigrations --check --dry-run
         env:
           DJANGO_SETTINGS_MODULE: config.settings.test
-      - name: Tests and coverage (gate in pyproject.toml)
-        run: uv run pytest --cov
+      - name: Download current regular evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-regular
+          path: backend/.pytest_cache/ci-downloads/regular
+      - name: Download current foundation migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-foundation
+          path: backend/.pytest_cache/ci-downloads/migrations-foundation
+      - name: Download current field migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-field
+          path: backend/.pytest_cache/ci-downloads/migrations-field
+      - name: Download current material migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-material
+          path: backend/.pytest_cache/ci-downloads/migrations-material
+      - name: Download current void-reason migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-void-reason
+          path: backend/.pytest_cache/ci-downloads/migrations-void-reason
+      - name: Download current review migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-review
+          path: backend/.pytest_cache/ci-downloads/migrations-review
+      - name: Download current Lab migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-lab
+          path: backend/.pytest_cache/ci-downloads/migrations-lab
+      - name: Download current Community migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-community
+          path: backend/.pytest_cache/ci-downloads/migrations-community
+      - name: Download current supplies migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-supplies
+          path: backend/.pytest_cache/ci-downloads/migrations-supplies
+      - name: Download current session-audit migration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-migrations-session-audit
+          path: backend/.pytest_cache/ci-downloads/migrations-session-audit
+      - name: Download current regular integration evidence
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-regular-integration
+          path: backend/.pytest_cache/ci-downloads/regular-integration
+      - name: Complete inventory and combined coverage (existing 85 percent gate)
+        run: uv run python -m ci.aggregate
+      - name: Preserve the complete coverage result
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: backend-${{ github.repository_id }}-${{ github.run_id }}-${{ github.run_attempt }}-${{ github.sha }}-combined
+          path: backend/.pytest_cache/ci-combined/
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 3
       # The OpenAPI schema is validated (and the client regenerated) by api-contract.yml.

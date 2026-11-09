@@ -105,6 +105,89 @@ def test_list_filters_by_user(
     assert [row["id"] for row in rows] == [str(ana_phone.pk)]
 
 
+def test_internal_audit_hold_query_and_current_device_user_keep_separate_purposes(
+    api_client, org_a, org_b, make_member, monkeypatch
+):
+    import json
+    from datetime import UTC, datetime, timedelta
+    from io import StringIO
+
+    from accounts.models import DeviceSession
+    from accounts.session_audit_retention import dissociate_ended_sessions
+    from accounts.token_retention import prune_ended_token_pairs
+
+    now = datetime(2026, 11, 4, 12, tzinfo=UTC)
+    clock = {"now": now - timedelta(days=500)}
+    monkeypatch.setattr("django.utils.timezone.now", lambda: clock["now"])
+    ana, luis = UserFactory(), UserFactory()
+    old = phone_session(ana, org_a).session
+    clock["now"] = now
+    current = phone_session(luis, org_a, old.device_id).session
+    prune_ended_token_pairs()
+    reference = uuid.uuid4()
+    args = ["--organization", str(org_a.pk), "--session", str(old.pk)]
+    hold_args = [*args, "--purpose", "security_investigation", "--reference", str(reference)]
+    out = StringIO()
+    call_command(
+        "session_audit_hold",
+        *hold_args,
+        "--until",
+        (now + timedelta(days=1)).isoformat(),
+        stdout=out,
+    )
+    assert json.loads(out.getvalue())["applied"] is False
+    assert DeviceSession.objects.get(pk=old.pk).hold_until is None
+    call_command(
+        "session_audit_hold",
+        *hold_args,
+        "--until",
+        (now + timedelta(days=1)).isoformat(),
+        "--apply",
+        stdout=StringIO(),
+    )
+    assert dissociate_ended_sessions().sessions_dissociated == 0
+    call_command("session_audit_hold", *hold_args, "--release", "--apply", stdout=StringIO())
+    assert dissociate_ended_sessions().sessions_dissociated == 1
+    out = StringIO()
+    call_command("session_audit", *args, "--state", "dissociated", stdout=out)
+    audit = json.loads(out.getvalue())
+    assert set(audit) == {
+        "state",
+        "organization_id",
+        "session_id",
+        "device_id",
+        "end_basis",
+        "end_reason",
+        "ended_at",
+        "retention_anchor",
+        "dissociated_at",
+    }
+    assert audit["state"] == "dissociated"
+    assert audit["session_id"] == str(old.pk)
+    for query in (
+        ["--organization", str(org_b.pk), "--session", str(old.pk)],
+        ["--organization", str(org_a.pk), "--session", str(uuid.uuid4())],
+    ):
+        with pytest.raises(CommandError, match="Unknown organization/session pair"):
+            call_command("session_audit", *query, stdout=StringIO())
+    with pytest.raises(CommandError, match="dissociated"):
+        call_command(
+            "session_audit_hold",
+            *hold_args,
+            "--until",
+            (now + timedelta(days=1)).isoformat(),
+            "--apply",
+            stdout=StringIO(),
+        )
+    client = admin_client(api_client, org_a, make_member)
+    assert client.get(DEVICES, {"user": str(ana.pk)}).data["results"] == []
+    row = client.get(f"{DEVICES}{old.device_id}/").json()
+    assert row["last_user"] == str(luis.pk)
+    current.refresh_from_db()
+    assert current.user_id == luis.pk
+    assert current.dissociated_at is None
+
+
 @pytest.mark.parametrize("query", [{"user": "nope"}, {"is_revoked": "maybe"}])
 def test_list_rejects_malformed_filters(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory, query: dict[str, str]
