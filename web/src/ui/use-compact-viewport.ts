@@ -17,9 +17,9 @@ function getSnapshot(): boolean {
 }
 
 /**
- * True below `web.layout.compactBreakpoint`. The sidebar then stays at 64 px so the page keeps
- * room to reflow at 320 CSS px (WCAG 1.4.10). The breakpoint is read from the tokens in
- * TypeScript because a CSS media query cannot use a custom property.
+ * True below `web.layout.compactBreakpoint`, shared by the shell, breadcrumbs and dialog actions.
+ * Reading the token in TypeScript avoids a second hard-coded CSS breakpoint and preserves
+ * consistent reflow at 320 CSS px (WCAG 1.4.10).
  */
 export function useCompactViewport(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot);

@@ -37,8 +37,8 @@
   gap: var(--space-1);
   align-items: center;
 }
-.page button,
-.dialog button {
+.page button:where(:not(.createPrimary, .createSecondary)),
+.dialog button:where(:not(.createPrimary, .createSecondary)) {
   min-height: var(--web-control-lg);
   height: auto;
   white-space: normal;
@@ -51,11 +51,17 @@
   cursor: pointer;
   overflow-wrap: anywhere;
 }
-.page button:disabled,
-.dialog button:disabled {
+.page button:where(:not(.createPrimary, .createSecondary)):disabled,
+.dialog button:where(:not(.createPrimary, .createSecondary)):disabled {
   cursor: not-allowed;
   background: var(--color-disabled-background);
   color: var(--color-text-secondary);
+}
+.createPrimary {
+  composes: button primary md from "../../styles/button.module.css";
+}
+.createSecondary {
+  composes: button secondary md from "../../styles/button.module.css";
 }
 .page select,
 .dialog select,

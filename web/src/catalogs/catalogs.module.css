@@ -53,16 +53,6 @@
 .timestamp {
   white-space: nowrap;
 }
-.toggle {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-height: var(--web-control-sm);
-}
-.toggle input {
-  min-width: var(--web-control-sm);
-  min-height: var(--web-control-sm);
-}
 .announcement {
   margin: 0;
 }
@@ -84,15 +74,4 @@
   font-size: var(--web-type-title-font-size);
   line-height: var(--web-type-title-line-height);
   overflow-wrap: anywhere;
-}
-.blockedAction {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--space-0-5);
-}
-.blockedReason {
-  color: var(--color-text-secondary);
-  font-size: var(--web-type-label-small-font-size);
-  max-width: min(100%, calc(var(--space-6) * 7));
 }

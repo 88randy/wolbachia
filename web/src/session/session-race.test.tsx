@@ -1,5 +1,5 @@
 import { ApiError } from "@wolbachia/api-client";
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { apiError, createFakeApi, makeMe, makeOrganization, noContent } from "../test/fake-api";
@@ -312,10 +312,12 @@ describe("leaving a pending re-authentication", () => {
   test("Back to /login, a new sign-in, then sign-out still sends its request", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     let logins = 0;
+    let abandoned: AbortSignal | undefined;
     const { api, app } = await openExpired({
       [LOGIN]: (request) => {
         logins += 1;
         if (logins > 1) return Response.json({ me: makeMe(), server_time: "2026-11-04T12:00:00Z" });
+        abandoned = request.signal;
         return new Promise<Response>((_, reject) => {
           request.signal.addEventListener("abort", () => {
             reject(new DOMException("Aborted", "AbortError"));
@@ -323,13 +325,20 @@ describe("leaving a pending re-authentication", () => {
         });
       },
     });
-    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    // Keystroke behavior has its own form tests; this test owns request ordering and abandonment.
+    fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: PASSWORD } });
     await userEvent.click(screen.getByRole("button", { name: "Continuar" }));
+    await waitFor(() => {
+      expect(logins).toBe(1);
+    });
 
     app.router.history.push("/login");
+    await waitFor(() => {
+      expect(abandoned?.aborted).toBe(true);
+    });
     await screen.findByRole("heading", { level: 1, name: "Inicia sesión" });
-    await userEvent.type(screen.getByLabelText("Usuario"), "ana.supervisora");
-    await userEvent.type(screen.getByLabelText("Contraseña"), PASSWORD);
+    fireEvent.change(screen.getByLabelText("Usuario"), { target: { value: "ana.supervisora" } });
+    fireEvent.change(screen.getByLabelText("Contraseña"), { target: { value: PASSWORD } });
     await userEvent.click(screen.getByRole("button", { name: "Entrar" }));
     await screen.findByRole("heading", { level: 1, name: "Inicio" });
     await userEvent.click(screen.getByRole("button", { name: /Menú de usuario/ }));
@@ -338,6 +347,10 @@ describe("leaving a pending re-authentication", () => {
     await vi.waitFor(() => {
       expect(logoutRequests(api)).toHaveLength(1);
     });
+    const loginRequests = api.requests.filter((request) => request.path === "/api/v1/auth/login/");
+    expect(loginRequests).toHaveLength(2);
+    for (const request of loginRequests)
+      expect(request.body).toEqual({ username: "ana.supervisora", password: PASSWORD });
   });
 });
 

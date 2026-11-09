@@ -42,11 +42,17 @@ describe("W20 fleet list", () => {
       "Centro (ID)",
       "Fecha de alta",
     ]);
+    expect(
+      screen
+        .getAllByRole("columnheader")
+        .filter((header) => within(header).queryByRole("button"))
+        .map((header) => header.textContent),
+    ).toEqual(["Código", "Placa", "Centro (ID)", "Fecha de alta"]);
     await userEvent.click(
       within(screen.getByRole("table")).getByRole("button", { name: "Código" }),
     );
     await waitFor(() => {
-      expect(api.requests.some((request) => request.path.includes("ordering=code"))).toBe(true);
+      expect(api.requests.some((request) => request.path.includes("ordering=-code"))).toBe(true);
     });
     expect(
       screen.getByText(/indicadores de kilometraje.*no están disponibles para toda la lista/i),
@@ -73,7 +79,7 @@ describe("W20 fleet list", () => {
     await screen.findByRole("link", { name: "M-02" });
     const readBoundary = reads.length;
     await user.selectOptions(screen.getByRole("combobox", { name: "Estado" }), "true");
-    await user.click(screen.getByRole("checkbox", { name: "Incluir anulados" }));
+    await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
     await waitFor(() => {
       expect(app.router.state.location.search).toEqual({
         is_blocked: "true",
@@ -174,5 +180,27 @@ describe("W20 fleet list", () => {
       );
       expect(await axe(app.container)).toHaveNoViolations();
     },
+  );
+});
+
+test("fleet exact-code search and column sorting are URL-owned and sent to the server", async () => {
+  const { api, app } = await openFleet();
+  await screen.findByRole("link", { name: "M-03" });
+  const user = userEvent.setup();
+  await user.type(screen.getByRole("textbox", { name: "Código exacto" }), "M-03");
+  await user.keyboard("[Enter]");
+  await user.click(within(screen.getByRole("columnheader", { name: /Placa/ })).getByRole("button"));
+  await waitFor(() => {
+    expect(app.router.state.location.search).toMatchObject({ code: "M-03", ordering: "plate" });
+  });
+  await waitFor(() => {
+    expect(
+      api.requests.some(
+        ({ path }) => path.includes("code=M-03") && path.includes("ordering=plate"),
+      ),
+    ).toBe(true);
+  });
+  expect(screen.getByRole("columnheader", { name: /Placa/ }).getAttribute("aria-sort")).toBe(
+    "ascending",
   );
 });

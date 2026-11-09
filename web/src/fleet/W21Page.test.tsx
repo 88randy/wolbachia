@@ -375,7 +375,7 @@ describe("W21 motorcycle record", () => {
       if (tab === "services" || tab === "responsibility")
         expect(query.get("include_voided")).toBe("true");
       if (tab === "services" || tab === "responsibility") {
-        const toggle = screen.getByRole<HTMLInputElement>("checkbox", { name: "Incluir anulados" });
+        const toggle = screen.getByRole<HTMLInputElement>("switch", { name: "Incluir anulados" });
         expect(toggle.checked).toBe(true);
         await userEvent.click(toggle);
         await screen.findByText("Aquí todavía no hay registros");

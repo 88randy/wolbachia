@@ -7,7 +7,7 @@ public route or generated API changes belong to this feature.
 ## Reads and URL ownership
 
 - W20 uses the shared table, controls, chips, sorting, pagination and void detail.
-  Only actual server facets (`center`, `is_blocked`, `include_voided`, `ordering`,
+  Only actual server facets (`code`, `center`, `is_blocked`, `include_voided`, `ordering`,
   `page`) are sent. The URL center takes precedence over the shell center. Real
   center references can filter the list without a directory lookup or new grant;
   courier references remain deep-link chips rather than an invented selector.
@@ -104,3 +104,8 @@ canonical #186 behavior are unchanged.
 Unit fixtures use synthetic attested responses, not backend qualification. Browser
 contrast/native focus/reflow, actual PostgreSQL contracts and physical inspection
 are separate verification boundaries; none is established by component tests.
+
+Issue #218 connects the server exact-code filter and public ordering keys (code, plate,
+created_at, center). All four rendered supported columns expose sort controls; status
+remains unsortable. Code is the default order, and explicit filters/sorting/paging remain
+URL-owned. No free-text search or derived fleet metrics are fabricated.

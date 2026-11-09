@@ -80,16 +80,27 @@ describe("rule parameters list (W62)", () => {
     ]);
   });
 
-  test("asks for the organization's parameters in one page and draws no empty filters region", async () => {
-    const { api } = await open();
+  test("forwards key search, unit/type facets and the visible effective-date ordering to the server", async () => {
+    const { api } = await open(
+      `${LIST_PATH}?search=distance&unit=m&value_type=integer&ordering=-effective_from`,
+    );
     await screen.findByRole("row", { name: /Distancia máxima al punto/ });
 
     const query = new URL(
       requestsTo(api, "GET", "/api/v1/rule-parameters/")[0]?.path ?? "",
       "http://x",
     );
-    expect(Object.fromEntries(query.searchParams)).toEqual({ page: "1", page_size: "200" });
-    expect(screen.queryByRole("region", { name: "Filtros" })).toBeNull();
+    expect(Object.fromEntries(query.searchParams)).toEqual({
+      page: "1",
+      page_size: "200",
+      search: "distance",
+      unit: "m",
+      value_type: "integer",
+      ordering: "-effective_from",
+    });
+    expect(
+      screen.getByRole("columnheader", { name: /Vigente desde/ }).getAttribute("aria-sort"),
+    ).toBe("descending");
   });
 
   test("a user without rule_parameter.read gets the no-permission state and no request", async () => {

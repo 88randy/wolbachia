@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { ReorderColumnHead } from "./ReorderColumnHead";
 import { RowCheckbox } from "./RowCheckbox";
 import { DataTableColumnHead } from "./DataTableColumnHead";
 import styles from "./data-table.module.css";
@@ -25,6 +26,7 @@ export function DataTableHead<Row>({
   return (
     <thead>
       <tr>
+        <ReorderColumnHead />
         {selectAll && (
           <th scope="col" className={styles.head}>
             <RowCheckbox {...selectAll} />

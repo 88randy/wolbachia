@@ -7,8 +7,8 @@ import type { BlocksTableOptions } from "./use-blocks-table";
 export function BlocksTable(options: BlocksTableOptions) {
   const { t } = useTranslation();
   const list = useBlocksTable(options);
-  const { scope, controller } = options;
-  const history = { scope, controller, onClose: list.closeHistory };
+  const { scope } = options;
+  const history = { scope, onClose: list.closeHistory };
   return (
     <>
       <DataTable caption={t("geography.blocks.title")} {...list.table} />

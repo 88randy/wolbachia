@@ -1,6 +1,5 @@
 import type { Locale } from "@wolbachia/i18n";
 import type { CatalogItem } from "./catalogs-query";
-export type Direction = "up" | "down";
 export const ACTIVE_LIMIT = 200;
 const SORT_STEP = 10;
 const MAX_SORT = 10000;
@@ -12,20 +11,6 @@ export function displayLabel(row: { label_es: string; label_en: string }, langua
     label: language === "en" && !isMissingEnglish ? row.label_en : row.label_es,
     isMissingEnglish,
   };
-}
-
-/** No write for ends, inactive items or the fixed Other item. */
-export function moveOrderedIds(items: readonly CatalogItem[], id: string, direction: Direction) {
-  const active = items.filter((item) => item.is_active && !item.is_other);
-  const index = active.findIndex((item) => item.id === id);
-  const neighborIndex = index + (direction === "up" ? -1 : 1);
-  const current = active[index];
-  const neighbor = active[neighborIndex];
-  if (current === undefined || neighbor === undefined) return [];
-  const swapped = [...active];
-  swapped[index] = neighbor;
-  swapped[neighborIndex] = current;
-  return swapped.map((item) => item.id);
 }
 
 /** Append after active regular items, preserving the editor's ten-step spacing. */

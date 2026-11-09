@@ -5,9 +5,11 @@ export const FLEET_TABLE: TableQueryConfig = {
   paging: "page",
   pageSize: FLEET_PAGE_SIZE,
   sortableIds: ["code", "plate", "created_at", "center"],
+  defaultOrdering: "code",
   supportsVoided: true,
   filters: [
     CENTER_FILTER,
+    { kind: "text", key: "code", labelKey: "refresh.table.exactCode", maxLength: 64 },
     {
       kind: "select",
       key: "is_blocked",

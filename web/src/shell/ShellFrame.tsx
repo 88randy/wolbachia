@@ -11,8 +11,9 @@ import { MAIN_ID } from "./ids";
 import { OfflineBanner } from "./OfflineBanner";
 import { ShellSidebar } from "./ShellSidebar";
 import { SkipLink } from "./SkipLink";
+import { Breadcrumbs } from "./Breadcrumbs";
 import { TopBar } from "./TopBar";
-import { useCompactViewport } from "./use-compact-viewport";
+import { useCompactViewport } from "../ui/use-compact-viewport";
 import { useFocusMainOnNavigation } from "./use-focus-main-on-navigation";
 import { useResizableSidebar } from "./use-resizable-sidebar";
 
@@ -32,6 +33,7 @@ export function ShellFrame({ children }: { children?: ReactNode }) {
         <div className={styles.column}>
           <TopBar />
           <main id={MAIN_ID} className={styles.main} tabIndex={-1} inert={state !== "known"}>
+            <Breadcrumbs />
             {children ?? <Outlet />}
           </main>
           {state !== "known" && !isExpired && <SessionBlocker key={state} state={state} />}

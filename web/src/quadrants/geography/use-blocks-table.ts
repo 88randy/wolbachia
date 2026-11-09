@@ -14,7 +14,7 @@ export interface BlocksTableOptions {
 export function useBlocksTable({ scope, quadrant, controller }: BlocksTableOptions) {
   const [block, setBlock] = useState<Schemas["Block"] | null>(null);
   const [history, setHistory] = useState<Schemas["Block"] | null>(null);
-  const query = useQuery(blocksOptions(scope, quadrant, controller.state.page));
+  const query = useQuery(blocksOptions(scope, quadrant, controller.state));
   const columns = useBlockColumns({
     canCreatePoint: scope.canCreatePoint,
     onCreate: setBlock,

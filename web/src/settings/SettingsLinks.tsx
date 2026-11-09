@@ -1,7 +1,17 @@
+import { Smartphone, SlidersHorizontal, ListChecks, Building2, Users } from "lucide-react";
+import styles from "./settings.module.css";
 import { Link } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
 import { useTranslation } from "react-i18next";
 import { useCan } from "../session/use-can";
+const ICONS = [Smartphone, SlidersHorizontal, ListChecks, Building2, Users];
+const DESCRIPTIONS = [
+  "refresh.settings.phones",
+  "refresh.settings.rules",
+  "refresh.settings.catalogs",
+  "refresh.settings.organization",
+  "refresh.settings.roles",
+] as const;
 const LINKS = [
   { to: "/settings/phones", permission: "device.read", key: "phones.page.title" },
   { to: "/settings/rule-parameters", permission: "rule_parameter.read", key: "rules.page.title" },
@@ -17,12 +27,29 @@ export function SettingsLinks() {
   const { t } = useTranslation();
   const can = useCan();
   return (
-    <ul>
-      {LINKS.filter((link) => can(link.permission)).map((link) => (
-        <li key={link.to}>
-          <Link to={link.to}>{t(link.key)}</Link>
-        </li>
-      ))}
+    <ul className={styles.grid}>
+      {LINKS.map((link, index) => {
+        const Icon = ICONS[index] ?? ListChecks;
+        if (!can(link.permission)) return null;
+        return (
+          <li key={link.to}>
+            <Link
+              to={link.to}
+              className={styles.link}
+              aria-label={t(link.key)}
+              aria-describedby={`settings-description-${String(index)}`}
+            >
+              <Icon aria-hidden="true" className={styles.icon} />
+              <span className={styles.text}>
+                <strong>{t(link.key)}</strong>
+                <span id={`settings-description-${String(index)}`} className={styles.description}>
+                  {t(DESCRIPTIONS[index] ?? "refresh.settings.description")}
+                </span>
+              </span>
+            </Link>
+          </li>
+        );
+      })}
     </ul>
   );
 }
