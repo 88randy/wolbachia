@@ -1,3 +1,4 @@
+import { CloseShiftScreen } from "../features/shift-close/CloseShiftScreen.tsx";
 import { LifecycleRoute } from "../features/ovitrap-lifecycle/LifecycleRoute.tsx";
 import { P9Screen } from "../features/day/P9Screen.tsx";
 import { P10Screen } from "../features/day/P10Screen.tsx";
@@ -31,6 +32,8 @@ function mainScreenFor(route: Exclude<Route, { readonly ovitrapId: string }>): R
       return <ScannerScreen target={route.target} />;
     case "invalidOvitrapCode":
       return <P21Screen target={route.target} />;
+    case "closeShift":
+      return <CloseShiftScreen />;
     case "openShift":
       return <OpenShiftScreen />;
     case "home":

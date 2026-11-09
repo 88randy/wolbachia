@@ -13,7 +13,7 @@ export function HomeShiftAction({ model }: { readonly model: M04Model }) {
         if (ok) push({ name: "openShift" });
       });
   };
-  if (model.state?.opening && !isRejected) return null;
+  if (model.state?.opening && !isRejected) return <ShiftAction label={t(model.state.locallyClosedAt ? "mobile.shiftClose.closedTitle" : "mobile.shiftClose.title")} onPress={() => { push({ name: "closeShift" }); }} />;
   return (
     <ShiftAction
       label={t(

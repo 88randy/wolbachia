@@ -899,3 +899,11 @@ Attachments instance serves the canonical composition; lifecycle adoption/native
 camera253 and126 feedback are still missing. Current completion/point/bootstrap,
 attachment invalidation and M09 assignment/physical receipt authority share their
 existing transactions. This is partial preparation, not full138/native acceptance.
+
+
+## P26/P27 close shift (#143)
+
+See [shift-close/README.md](src/features/shift-close/README.md) for retained close drafts,
+receipt-backed return/shrinkage, local capture/location shutdown, truthful receipt/review
+states and the criterion-to-test map. P3 restores P26/P27. Missing reception/usage facts
+stay unavailable. Native/API/accessibility qualification and complete checks remain pending.

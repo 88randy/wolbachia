@@ -19,12 +19,14 @@ const FACTS = [
   ["e.result_code", "opening_result_code"],
   ["c.value", "gate_catalog"],
   ["m.value", "gate_map"],
+  ["(SELECT device_time FROM outbox_event closing WHERE closing.type='shift.close' AND closing.shift_id=e.shift_id ORDER BY closing.seq LIMIT 1)", "locally_closed_at"],
 ] as const;
 
 export interface ShiftGateFacts extends StoredShift {
   readonly catalog: ChecklistCatalog | null;
   readonly map: MapPreparation | null;
   readonly guard: SqlStatement;
+  readonly locallyClosedAt: string | null;
 }
 /** One durable read supplies both the existing gate's inputs and their original CAS guard. */
 export async function readShiftGateFacts(db: SqlExecutor): Promise<ShiftGateFacts> {
@@ -37,6 +39,7 @@ export async function readShiftGateFacts(db: SqlExecutor): Promise<ShiftGateFact
     catalog: parseSaved(readOptionalText(row, "gate_catalog")) as ChecklistCatalog | null,
     map: parseSaved(readOptionalText(row, "gate_map")) as MapPreparation | null,
     guard: originalGuard(row),
+    locallyClosedAt: readOptionalText(row, "locally_closed_at"),
   };
 }
 function parseSaved(value: string | null): unknown {

@@ -97,6 +97,7 @@ export function isMapReady(map: MapPreparation | null): boolean {
   );
 }
 export type Gate =
+  | "closed"
   | "motorcycle"
   | "unconfigured"
   | "checklist"

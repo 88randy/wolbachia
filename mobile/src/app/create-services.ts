@@ -1,3 +1,5 @@
+import { createShiftClose } from "../features/shift-close/create-shift-close.ts";
+import type { ShiftCloseService } from "../features/shift-close/service.ts";
 import { createOvitrapLifecycle } from "../features/ovitrap-lifecycle/create-ovitrap-lifecycle.ts";
 import type { LifecycleService } from "../features/ovitrap-lifecycle/service.ts";
 import type { SqlExecutor } from "../db/sql.ts";
@@ -41,6 +43,7 @@ export interface AppServices {
   readonly ovitrapCheck: OvitrapService;
   readonly ovitrapLifecycle: LifecycleService;
   readonly shiftOpen: ShiftOpenService;
+  readonly shiftClose: ShiftCloseService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -83,7 +86,8 @@ export async function createServices(): Promise<AppServices> {
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
   const captures = createCaptures(captureDeps, bundle, day);
-  return { ...shared, ...captures, engine, shiftOpen, day };
+  const shiftClose = createShiftClose({ db, day, bundle, auth, tokens, deviceId, attachments, evidence, engine, shiftOpen });
+  return { ...shared, ...captures, engine, shiftOpen, shiftClose, day };
 }
 function captureIdentity(
   auth: AuthController | null,
