@@ -17,6 +17,8 @@ export const rules = {
   "rules.status.notConfigured": "Sin configurar",
 
   // Names of the parameters the seed creates. A key the web does not know shows its own code.
+  "rules.param.labCountPlausibilityLimit": "Umbral de plausibilidad del conteo de huevos",
+  "rules.param.labRecountSamplePer100": "Conteos seleccionados por cada 100 primeros conteos",
   "rules.param.maxDistanceToPoint": "Distancia máxima al punto",
   "rules.param.minDistanceSameBlock": "Distancia mínima entre ovitrampas de una manzana",
   "rules.param.speedLock": "Velocidad que bloquea la captura",

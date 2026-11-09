@@ -34,7 +34,7 @@ def vector_allows(  # noqa: PLR0913 -- permission with the complete resolved sub
 
 def subject_allows(scope: EffectiveScope, permission: str, subjects: SubjectFacts) -> bool:
     """Transfer policy owns its stronger one-binding vector; old owner semantics remain exact."""
-    if subjects.resource_kind == "transfer":
+    if subjects.resource_kind in {"transfer", "supply_assignment"}:
         from inventory.transfers.scope import allows_transfer_vector
 
         return subjects.resolved and allows_transfer_vector(scope, permission, subjects.contexts)
@@ -78,6 +78,8 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
     if data is None:
         return SubjectFacts()
     try:
+        if envelope.type in {"supplies.receive", "supplies.reconcile"}:
+            return _supply_subject(organization, envelope, data)
         if envelope.type in {"transfer.dispatch", "transfer.receive"}:
             from inventory.transfers.models import Transfer
             from inventory.transfers.scope import transfer_contexts
@@ -98,6 +100,20 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
                     {"transfer_action": envelope.type},
                 )
             )
+        if envelope.type == "community.activity":
+            from community.permissions import block_context
+            from geography.models import Block
+
+            block = (
+                Block.objects.filter(organization=organization, pk=data["zone_id"])
+                .select_related("quadrant")
+                .first()
+            )
+            return (
+                SubjectFacts()
+                if block is None
+                else SubjectFacts(True, (block_context(block),), "block", block.pk)
+            )
         if envelope.type.startswith("ovitrap."):
             return _point_subject(organization, data)
         if envelope.type == "record.void":
@@ -109,6 +125,70 @@ def subject_facts(organization: Organization, envelope: EventEnvelope) -> Subjec
     except (Http404, ValidationError, ValueError, TypeError):
         return SubjectFacts()
     return SubjectFacts()
+
+
+def _supply_subject(
+    organization: Organization, envelope: EventEnvelope, data: dict[str, Any]
+) -> SubjectFacts:
+    from inventory.allocations.models import SupplyAssignment
+    from inventory.allocations.scope import assignment_contexts, location_context
+    from inventory.models import Location
+
+    assignment = (
+        SupplyAssignment.objects.filter(organization=organization, pk=data["assignment_id"])
+        .select_related("origin")
+        .first()
+    )
+    if assignment is None:
+        return SubjectFacts()
+    contexts = assignment_contexts(assignment)
+    for row in data.get("returned", []):
+        location = Location.objects.filter(
+            organization=organization, pk=row["destination_id"]
+        ).first()
+        if location is None:
+            return SubjectFacts()
+        contexts.append(location_context(location))
+    for row in data.get("used", []):
+        if row.get("work_kind") == "field_event":
+            point = _supply_work_point(assignment, row["work_source_id"])
+            if point is None:
+                return SubjectFacts()
+            contexts.append(
+                {
+                    "center_id": str(point.block.quadrant.center_id),
+                    "quadrant_id": str(point.block.quadrant_id),
+                }
+            )
+    return SubjectFacts(
+        True, tuple(contexts), "supply_assignment", assignment.pk, {"supply_action": envelope.type}
+    )
+
+
+def _supply_work_point(assignment: Any, identifier: UUID) -> Any:  # noqa: ANN401 -- concrete real Assignment and SamplingPoint
+    from ovitraps.models import Ovitrap, OvitrapReading
+
+    placed = (
+        Ovitrap.objects.filter(
+            organization=assignment.organization,
+            event_id=identifier,
+            event__created_by_id=assignment.courier_id,
+        )
+        .select_related("sampling_point__block__quadrant")
+        .first()
+    )
+    if placed is not None:
+        return placed.sampling_point
+    reading = (
+        OvitrapReading.objects.filter(
+            organization=assignment.organization,
+            event_id=identifier,
+            event__created_by_id=assignment.courier_id,
+        )
+        .select_related("ovitrap__sampling_point__block__quadrant")
+        .first()
+    )
+    return None if reading is None else reading.ovitrap.sampling_point
 
 
 def _point_subject(organization: Organization, data: dict[str, Any]) -> SubjectFacts:

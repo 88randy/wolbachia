@@ -78,6 +78,8 @@ class DeviceBearerAuthentication(BaseAuthentication):
         if pair is None:
             fail(InvalidTokenError)
         session = pair.session
+        if session.user is None or session.end_basis or session.dissociated_at is not None:
+            fail(InvalidTokenError)
         if _view_attribute(request, "accepts_ended_sessions", False):
             self._check_current(pair, server_now())
             return session.user, session
@@ -116,7 +118,7 @@ class DeviceBearerAuthentication(BaseAuthentication):
                 self._check_current(pair, now)
                 return
             fail(SessionRevokedError)
-        if session.device.is_revoked or not session.user.is_active:
+        if session.user is None or session.device.is_revoked or not session.user.is_active:
             fail(SessionRevokedError)
         if pair.access_expires_at <= now:
             fail(TokenExpiredError)
@@ -132,6 +134,7 @@ class DeviceBearerAuthentication(BaseAuthentication):
         return (
             bool(_view_attribute(request, "allows_revoked_final_upload", False))
             and request.method in methods  # type: ignore[operator]
+            and session.user is not None
             and session.user.is_active
             and is_final_upload_available(session, now)
         )

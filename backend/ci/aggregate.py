@@ -1,4 +1,4 @@
-"""Accept exactly two current fragments before reporting whole-backend coverage."""
+"""Accept every current fragment before reporting whole-backend coverage."""
 
 import re
 import sys
@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from ci.contract import require, validate_pair
+from ci.contract import PARTITION_NAMES, require, validate_fragments
 from ci.coverage_data import read_coverage
 from ci.evidence import BACKEND, coverage_sources, current_identity, digest, read_json, write_json
 from ci.runner import run_child
@@ -19,10 +19,18 @@ class GateInputs:
 
 
 def verify_inputs(inputs: GateInputs, expected: dict[str, Any]) -> list[Path]:
-    directories = [inputs.directory / shard for shard in ("regular", "migrations")]
+    require(
+        inputs.directory.is_dir() and not inputs.directory.is_symlink(),
+        "missing artifact directory",
+    )
+    require(
+        {path.name for path in inputs.directory.iterdir()} == set(PARTITION_NAMES),
+        "missing or unconsumed artifact directory",
+    )
+    directories = [inputs.directory / shard for shard in PARTITION_NAMES]
     require(not any(path.is_symlink() for path in directories), "linked artifact directory")
     bundles = [read_json(path / "manifest.json") for path in directories]
-    validate_pair(bundles, expected)
+    validate_fragments(bundles, expected)
     paths = []
     for directory, bundle in zip(directories, bundles, strict=True):
         require(bundle["shard"] == directory.name, "artifact name differs from shard")
@@ -59,7 +67,7 @@ def combine_coverage(paths: list[Path], output: Path) -> None:
     combined, duplicate = (int(value or 0) for value in consumed.groups())
     require(
         combined == len({digest(path) for path in paths}) and combined + duplicate == len(paths),
-        "coverage did not consume both inputs",
+        "coverage did not consume every input",
     )
 
 
@@ -97,7 +105,7 @@ def main() -> int:
         output / "manifest.json",
         {
             "identity": identity,
-            "shards": ["regular", "migrations"],
+            "shards": list(PARTITION_NAMES),
             "coverage_sha256": digest(output / "coverage.data"),
         },
     )

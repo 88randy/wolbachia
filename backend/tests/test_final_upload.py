@@ -218,3 +218,46 @@ def test_the_final_upload_is_enforced_by_the_mixin_not_by_the_view(
 
     session = DeviceSession.objects.get()
     assert session.final_upload_used_at is not None
+
+
+@pytest.mark.parametrize("error_kind", ["parse", "device_mismatch", "payload_too_large"])
+def test_preparation_error_cannot_override_fresh_final_upload_withdrawal(
+    org_a: Organization,
+    make_member: MemberFactory,
+    monkeypatch: pytest.MonkeyPatch,
+    error_kind: str,
+) -> None:
+    from rest_framework.exceptions import ParseError
+
+    from core.exceptions import PayloadTooLargeError
+    from field_sync.exceptions import DeviceMismatchError
+    from tests.testapp.views import FinalUploadView
+
+    issued = revoked_session(make_member, org_a, RevokeReason.ADMIN_REVOKE)
+    error, expected_status, expected_code = {
+        "parse": (ParseError(), 400, "parse_error"),
+        "device_mismatch": (DeviceMismatchError(), 403, "device_mismatch"),
+        "payload_too_large": (PayloadTooLargeError(), 413, "payload_too_large"),
+    }[error_kind]
+    withdrawn = False
+
+    def prepare(_view, request):
+        if withdrawn:
+            cancel_final_uploads(request.user)
+        raise error
+
+    monkeypatch.setattr(FinalUploadView, "prepare_final_upload_participants", prepare)
+    eligible = phone(issued).post(FINAL_UPLOAD, {"malformed": True}, format="json")
+    assert (eligible.status_code, eligible.data["code"]) == (expected_status, expected_code)
+    issued.session.refresh_from_db()
+    assert issued.session.final_upload_used_at is None
+    assert "X-Session-Revoked" not in eligible
+    assert not Widget.objects.filter(name="final-upload").exists()
+
+    withdrawn = True
+    response = phone(issued).post(FINAL_UPLOAD, {"malformed": True}, format="json")
+
+    assert (response.status_code, response.data["code"]) == (401, "session_revoked")
+    issued.session.refresh_from_db()
+    assert issued.session.final_upload_used_at is None
+    assert not Widget.objects.filter(name="final-upload").exists()

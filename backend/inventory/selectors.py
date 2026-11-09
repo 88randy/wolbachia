@@ -199,7 +199,16 @@ def location_movements(actor: UploadActor, location: Location) -> QuerySet[Stock
     return (
         scoped_legs(actor)
         .filter(location=location)
-        .select_related("lot", "location", "operation", "unit_version")
+        .select_related(
+            "lot",
+            "location",
+            "operation",
+            "unit_version",
+            "operation__supply_source__event__assignment",
+            "operation__supply_source__compensation__event__assignment",
+            "operation__supply_source__execution__return_effect__declaration__event__assignment",
+            "operation__supply_source__execution__lot_effect__location",
+        )
     )
 
 

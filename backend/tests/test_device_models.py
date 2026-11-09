@@ -98,3 +98,57 @@ def test_device_revocation_fields_are_consistent(org_a: Organization) -> None:
         DeviceFactory(organization=org_a, is_revoked=True)
     with pytest.raises(IntegrityError), transaction.atomic():
         DeviceFactory(organization=org_a, is_revoked=False, revoked_at=timezone.now())
+
+
+def test_dissociated_session_cannot_regain_people_credentials_or_final_upload(monkeypatch):
+    from datetime import UTC, datetime, timedelta
+    from types import SimpleNamespace
+
+    from django.db import DatabaseError, connection
+
+    from accounts import session_audit_retention as audit
+    from accounts.exceptions import InvalidTokenError, SessionRevokedError
+    from accounts.final_upload import FinalUploadMixin
+    from accounts.revocation import consume_final_upload, is_final_upload_available
+    from accounts.token_pairs import issue_pair
+
+    now = datetime(2026, 11, 4, 12, tzinfo=UTC)
+    monkeypatch.setattr(audit, "server_now", lambda: now)
+    session = DeviceSessionFactory()
+    stale = DeviceSession.objects.get(pk=session.pk)
+    audit.remember_end(session, None, now - timedelta(days=400))
+    assert audit.dissociate_ended_sessions().sessions_dissociated == 1
+    session.refresh_from_db()
+    with pytest.raises(InvalidTokenError):
+        issue_pair(stale)
+    assert not is_final_upload_available(session, now)
+    with pytest.raises(SessionRevokedError):
+        consume_final_upload(session)
+
+    class InitialBoundary:
+        def initial(self, _request):
+            pass
+
+    class GuardedFinalUpload(FinalUploadMixin, InitialBoundary):
+        pass
+
+    view = GuardedFinalUpload()
+    with pytest.raises(SessionRevokedError):
+        view.initial(SimpleNamespace(auth=session, method="POST"))
+    with pytest.raises(SessionRevokedError):
+        view._acquire_final_upload_participants(session, ())
+    assert view._final_upload_transaction is None
+    for changes in (
+        {"user_id": stale.user_id},
+        {"created_by_id": stale.user_id},
+        {"revoked_by_id": stale.user_id},
+        {"last_used_at": now},
+        {"final_upload_deadline": now + timedelta(days=1)},
+    ):
+        with pytest.raises(DatabaseError), transaction.atomic():
+            DeviceSession.objects.filter(pk=session.pk).update(**changes)
+    with pytest.raises(DatabaseError), transaction.atomic():
+        TokenPairFactory(session=session)
+    with pytest.raises(DatabaseError), transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute("DELETE FROM accounts_devicesession WHERE id=%s", [session.pk])
+    assert DeviceSession.objects.filter(pk=session.pk, user__isnull=True).exists()

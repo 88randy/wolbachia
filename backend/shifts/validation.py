@@ -55,6 +55,13 @@ def shift_subjects(shift: Shift) -> tuple[list[dict[str, str | None]], bool]:
         for context in facts.contexts:
             if context not in contexts:
                 contexts.append(context)
+    from inventory.allocations.reconciliation import shift_assignment_rows
+    from inventory.allocations.scope import assignment_contexts
+
+    for assignment in shift_assignment_rows(shift):
+        for context in assignment_contexts(assignment):
+            if context not in contexts:
+                contexts.append(context)
     return contexts, resolved
 
 
@@ -97,11 +104,14 @@ def shift_blockers(shift: Shift) -> tuple[str, ...]:
 def validation_fingerprint(shift: Shift) -> str:
     from fleet.selectors import active_blocks
     from incidents.selectors import active_blockers
+    from inventory.allocations.reconciliation import shift_supply_fingerprint
 
     source_ids = shift_sources(shift).values_list("pk", flat=True)
+    supply_facts = shift_supply_fingerprint(shift)
     return snapshot_hash(
         {
             "shift": str(shift.pk),
+            **({"supplies": supply_facts} if any(supply_facts.values()) else {}),
             "closed_event": str(shift.closed_event_id),
             "sources": [
                 (
@@ -140,6 +150,13 @@ def validation_fingerprint(shift: Shift) -> str:
 def require_shift_scope(actor: UploadActor, shift: Shift, permission: str) -> None:
     contexts, resolved = shift_subjects(shift)
     if not vector_allows(current_scope(actor), permission, contexts, resolved):
+        raise Http404
+    from inventory.allocations.reconciliation import shift_assignment_rows
+    from inventory.allocations.scope import allows_supply_vector
+
+    if shift_assignment_rows(shift).exists() and not allows_supply_vector(
+        current_scope(actor), permission, contexts
+    ):
         raise Http404
 
 

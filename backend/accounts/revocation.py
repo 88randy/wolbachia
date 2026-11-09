@@ -53,7 +53,9 @@ def revoke_active(sessions: QuerySet[DeviceSession], revocation: Revocation) -> 
     """
     now = server_now()
     with transaction.atomic():
-        locked = sessions.filter(revoked_at__isnull=True).select_for_update()
+        locked = sessions.filter(
+            revoked_at__isnull=True, end_basis="", dissociated_at__isnull=True
+        ).select_for_update()
         ids = list(locked.values_list("pk", flat=True))
         DeviceSession.objects.filter(pk__in=ids).update(
             revoked_at=now,
@@ -122,7 +124,10 @@ def cancel_final_uploads(user: User) -> int:
 def is_final_upload_available(session: DeviceSession, now: datetime) -> bool:
     """A revoked session may still make one upload before its deadline (opt-in views only)."""
     return (
-        session.revoked_at is not None
+        session.user_id is not None
+        and not session.end_basis
+        and session.dissociated_at is None
+        and session.revoked_at is not None
         and session.revoke_reason in FINAL_UPLOAD_REASONS
         and session.final_upload_deadline is not None
         and now <= session.final_upload_deadline
@@ -138,6 +143,8 @@ def consume_final_upload(session: DeviceSession) -> None:
     transaction, so a view cannot forget it.
     """
     now = server_now()
+    if session.user_id is None or session.end_basis or session.dissociated_at is not None:
+        raise SessionRevokedError
     with transaction.atomic():
         # Global lock order: user, then session. Holding the user also keeps a password reset
         # (which takes the user lock first) from interleaving with the upload's own writes.

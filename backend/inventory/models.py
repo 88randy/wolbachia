@@ -180,6 +180,12 @@ class StockOperation(InventoryRecord):
         on_delete=models.PROTECT,
         related_name="stock_operation",
     )
+    supply_source = models.OneToOneField(
+        "inventory.SupplyLedgerSource",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="stock_operation",
+    )
     source_kind = models.CharField(
         max_length=24,
         choices=[
@@ -189,6 +195,11 @@ class StockOperation(InventoryRecord):
                 "transfer_dispatch",
                 "transfer_receive",
                 "transfer_resolution",
+                "supply_receive",
+                "supply_reconcile",
+                "supply_return",
+                "lot_write_off",
+                "supply_compensation",
             )
         ],
     )
@@ -203,6 +214,7 @@ class StockOperation(InventoryRecord):
                         source_kind="lot_admission",
                         admission__isnull=False,
                         transfer_event__isnull=True,
+                        supply_source__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -212,6 +224,19 @@ class StockOperation(InventoryRecord):
                         ],
                         admission__isnull=True,
                         transfer_event__isnull=False,
+                        supply_source__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind__in=[
+                            "supply_receive",
+                            "supply_reconcile",
+                            "supply_return",
+                            "lot_write_off",
+                            "supply_compensation",
+                        ],
+                        admission__isnull=True,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=False,
                     )
                 ),
                 name="stock_exact_source_branch",
@@ -230,13 +255,25 @@ class StockMovement(InventoryRecord):
     )
     line_number = models.PositiveIntegerField()
     lot = models.ForeignKey(Lot, on_delete=models.PROTECT, related_name="movements")
-    location = models.ForeignKey(Location, on_delete=models.PROTECT, related_name="movements")
+    location = models.ForeignKey(
+        Location, null=True, on_delete=models.PROTECT, related_name="movements"
+    )
+    assignment = models.ForeignKey(
+        "inventory.SupplyAssignment", null=True, on_delete=models.PROTECT, related_name="movements"
+    )
     piece = models.ForeignKey(Piece, null=True, on_delete=models.PROTECT, related_name="movements")
     quantity = models.DecimalField(max_digits=QUANTITY_DIGITS, decimal_places=QUANTITY_PLACES)
     unit_version = models.ForeignKey(SupplyTypeVersion, on_delete=models.PROTECT, related_name="+")
 
     class Meta(InventoryRecord.Meta):
         constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(location__isnull=False, assignment__isnull=True)
+                    | models.Q(location__isnull=True, assignment__isnull=False)
+                ),
+                name="stock_exact_custodian",
+            ),
             models.UniqueConstraint(
                 fields=["operation", "line_number"], name="stock_operation_leg"
             ),
@@ -334,4 +371,5 @@ class ConditionIncidentLink(InventoryRecord):
 
 
 # Register nested inventory models only after their shared immutable base is defined.
+from inventory.allocations import models as allocation_models  # noqa: E402,F401
 from inventory.transfers import models as transfer_models  # noqa: E402,F401
