@@ -1,5 +1,10 @@
 import type { MessageKey } from "@wolbachia/i18n";
-import type { FilterDefinition, TableQueryConfig, TableState } from "../data-table/table-types";
+import type {
+  FilterDefinition,
+  SelectFilter,
+  TableQueryConfig,
+  TableState,
+} from "../data-table/table-types";
 import type { InventoryKind } from "./inventory-links";
 import { blockerKeys } from "./inventory-fields";
 export const INVENTORY_PAGE_SIZE = 25;
@@ -13,7 +18,7 @@ const select = (
   key: string,
   labelKey: MessageKey,
   values: readonly (readonly [string, MessageKey])[],
-): FilterDefinition => ({
+): SelectFilter => ({
   key,
   labelKey,
   kind: "select",
@@ -29,13 +34,23 @@ const base = {
   defaultOrdering: "code",
   sortableIds: ["code", "created_at"],
   supportsVoided: false,
+  sortOptions: [
+    { value: "code", labelKey: "inventory.field.code" },
+    { value: "created_at", labelKey: "inventory.field.createdAt" },
+  ],
 } as const;
 export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
   supplies: {
     ...base,
     filters: [
       text("search", "inventory.field.search"),
-      select("is_active", "inventory.field.status", yesNo),
+      {
+        ...select("is_active", "inventory.field.status", [
+          ["true", "inventory.status.active"],
+          ["false", "inventory.status.inactive"],
+        ]),
+        presentation: "segmented",
+      },
       select("is_biological", "inventory.field.isBiological", yesNo),
       select("identity_kind", "inventory.field.identityKind", [
         ["piece", "inventory.option.piece"],
@@ -46,6 +61,7 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
   lots: {
     ...base,
     sortableIds: ["code", "created_at", "expiry"],
+    sortOptions: [...base.sortOptions, { value: "expiry", labelKey: "inventory.field.expiry" }],
     filters: [
       text("search", "inventory.field.search"),
       text("supply", "inventory.field.supply"),
@@ -81,12 +97,21 @@ export const STOCK_TABLE: TableQueryConfig = {
   ...base,
   defaultOrdering: "lot__code",
   sortableIds: ["lot__code", "piece_id"],
+  sortOptions: [
+    { value: "lot__code", labelKey: "inventory.field.code" },
+    { value: "piece_id", labelKey: "inventory.field.piece" },
+  ],
   filters: [text("lot", "inventory.field.code"), text("supply", "inventory.field.supply")],
 };
 export const MOVEMENT_TABLE: TableQueryConfig = {
   ...base,
   defaultOrdering: "-created_at",
   sortableIds: ["created_at", "lot_code", "quantity"],
+  sortOptions: [
+    { value: "created_at", labelKey: "inventory.field.createdAt" },
+    { value: "lot_code", labelKey: "inventory.field.code" },
+    { value: "quantity", labelKey: "inventory.field.movementQuantity" },
+  ],
   filters: [
     ...STOCK_TABLE.filters,
     text("operation", "inventory.field.operation"),

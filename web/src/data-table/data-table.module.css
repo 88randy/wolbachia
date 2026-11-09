@@ -95,10 +95,11 @@
   background: var(--color-tint);
 }
 
-.link {
-  color: var(--color-action-strong);
+.link,
+.cell a {
+  color: inherit;
   font-weight: 600;
-  text-decoration: underline;
+  text-decoration: none;
   text-underline-offset: var(--space-0-5);
 }
 
@@ -382,4 +383,44 @@
   border: 0;
   border-radius: 0;
   box-shadow: none;
+}
+
+.link:hover,
+.link:focus-visible,
+.cell a:hover,
+.cell a:focus-visible {
+  color: var(--color-action-strong);
+  text-decoration: underline;
+}
+
+.grip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: var(--web-control-sm);
+  min-height: var(--web-control-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-xs);
+  color: var(--color-text-secondary);
+  background: transparent;
+  cursor: grab;
+  touch-action: none;
+}
+.grip svg {
+  width: var(--web-icon-md);
+  height: var(--web-icon-md);
+}
+.grip:hover {
+  background: var(--color-surface-muted);
+  color: var(--color-text-primary);
+}
+.table tr[data-row-dragging] > .cell {
+  background: var(--color-tint);
+}
+@media (prefers-reduced-motion: reduce) {
+  .table tr {
+    transition: none !important;
+    animation: none !important;
+  }
 }

@@ -3,8 +3,9 @@ import { unwrap } from "@wolbachia/api-client";
 import type { Schemas } from "@wolbachia/api-client";
 import { orgScopedQueryOptions } from "../../session/org-scoped-query";
 import type { TableState } from "../../data-table/table-types";
-import { listParams, PAGE_SIZE } from "./geography-table";
+import { listParams, resourceParams, PAGE_SIZE } from "./geography-table";
 import { coversRecord } from "./permissions";
+import { revisionHistoryParams, pointHistoryParams } from "./history-query-params";
 import type { GeographyScope } from "./use-w-15";
 export const GEOGRAPHY = "geography";
 export function quadrantListOptions(scope: GeographyScope, state: TableState) {
@@ -72,37 +73,49 @@ export function allPointsOptions(scope: GeographyScope, quadrant: string) {
     queryFn: ({ signal }) => loadAllPoints(scope, quadrant, signal),
   });
 }
-export function historyOptions(scope: GeographyScope, quadrant: string, page: number) {
+export function historyOptions(
+  scope: GeographyScope,
+  quadrant: string,
+  pageOrState: number | TableState,
+) {
   return orgScopedQueryOptions(scope.identity, {
-    key: [GEOGRAPHY, scope.context, "history", quadrant, page],
+    key: [GEOGRAPHY, scope.context, "history", quadrant, pageOrState],
     queryFn: async ({ signal }) =>
       unwrap(
         await scope.client.GET("/api/v1/quadrants/{id}/versions/", {
-          params: { path: { id: quadrant }, query: { page, page_size: PAGE_SIZE } },
+          params: { path: { id: quadrant }, query: revisionHistoryParams(pageOrState) },
           signal,
         }),
       ),
   });
 }
-export function blocksOptions(scope: GeographyScope, quadrant: string, page: number) {
+export function blocksOptions(
+  scope: GeographyScope,
+  quadrant: string,
+  pageOrState: number | TableState,
+) {
   return orgScopedQueryOptions(scope.identity, {
-    key: [GEOGRAPHY, scope.context, "blocks", quadrant, page],
+    key: [GEOGRAPHY, scope.context, "blocks", quadrant, pageOrState],
     queryFn: async ({ signal }) =>
       unwrap(
         await scope.client.GET("/api/v1/blocks/", {
-          params: { query: { quadrant, page, page_size: PAGE_SIZE } },
+          params: { query: { quadrant, ...resourceParams(pageOrState) } },
           signal,
         }),
       ),
   });
 }
-export function pointsOptions(scope: GeographyScope, quadrant: string, page: number) {
+export function pointsOptions(
+  scope: GeographyScope,
+  quadrant: string,
+  pageOrState: number | TableState,
+) {
   return orgScopedQueryOptions(scope.identity, {
-    key: [GEOGRAPHY, scope.context, "points", quadrant, page],
+    key: [GEOGRAPHY, scope.context, "points", quadrant, pageOrState],
     queryFn: async ({ signal }) =>
       unwrap(
         await scope.client.GET("/api/v1/sampling-points/", {
-          params: { query: { quadrant, page, page_size: PAGE_SIZE } },
+          params: { query: { quadrant, ...resourceParams(pageOrState) } },
           signal,
         }),
       ),
@@ -120,25 +133,33 @@ export function suggestionOptions(scope: GeographyScope, quadrant: string) {
       ),
   });
 }
-export function pointHistoryOptions(scope: GeographyScope, point: string, page: number) {
+export function pointHistoryOptions(
+  scope: GeographyScope,
+  point: string,
+  pageOrState: number | TableState,
+) {
   return orgScopedQueryOptions(scope.identity, {
-    key: [GEOGRAPHY, scope.context, "point-history", point, page],
+    key: [GEOGRAPHY, scope.context, "point-history", point, pageOrState],
     queryFn: async ({ signal }) =>
       unwrap(
         await scope.client.GET("/api/v1/sampling-points/{id}/versions/", {
-          params: { path: { id: point }, query: { page, page_size: PAGE_SIZE } },
+          params: { path: { id: point }, query: pointHistoryParams(pageOrState) },
           signal,
         }),
       ),
   });
 }
-export function blockHistoryOptions(scope: GeographyScope, block: string, page: number) {
+export function blockHistoryOptions(
+  scope: GeographyScope,
+  block: string,
+  pageOrState: number | TableState,
+) {
   return orgScopedQueryOptions(scope.identity, {
-    key: [GEOGRAPHY, scope.context, "block-history", block, page],
+    key: [GEOGRAPHY, scope.context, "block-history", block, pageOrState],
     queryFn: async ({ signal }) =>
       unwrap(
         await scope.client.GET("/api/v1/blocks/{id}/versions/", {
-          params: { path: { id: block }, query: { page, page_size: PAGE_SIZE } },
+          params: { path: { id: block }, query: revisionHistoryParams(pageOrState) },
           signal,
         }),
       ),

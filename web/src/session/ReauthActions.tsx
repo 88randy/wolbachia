@@ -1,7 +1,8 @@
 import { useTranslation } from "react-i18next";
 import { ServiceFailureAlert } from "../forms/ServiceFailureAlert";
 import { SubmitButton } from "../forms/SubmitButton";
-import styles from "./SessionExpiredDialog.module.css";
+import { DialogFooter } from "../ui/DialogFooter";
+import { Button } from "../ui/Button";
 import { useSignOut } from "./use-sign-out";
 
 /**
@@ -14,23 +15,23 @@ export function ReauthActions({ isSubmitting }: { isSubmitting: boolean }) {
   return (
     <>
       <ServiceFailureAlert id="reauth-sign-out-alert" failure={failure} />
-      <div className={styles.actions}>
-        <button
+      <DialogFooter>
+        <Button
+          variant="secondary"
           type="button"
-          className={styles.signOut}
           aria-disabled={isBusy}
           onClick={() => {
             if (!isBusy) void signOut();
           }}
         >
           {t("auth.session.signOut")}
-        </button>
+        </Button>
         <SubmitButton
           label={t("auth.session.submit")}
           busyLabel={t("auth.login.submitting")}
           isBusy={isSubmitting}
         />
-      </div>
+      </DialogFooter>
     </>
   );
 }

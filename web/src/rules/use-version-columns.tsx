@@ -23,7 +23,7 @@ function detailColumns(write: Writers): Column[] {
   return [
     { id: "value", headerKey: "rules.history.value", align: "end", cell: write.value },
     {
-      id: "effective",
+      id: "effective_from",
       headerKey: "rules.history.effective",
       cell: (version) => write.day(version.effective_date),
     },
@@ -43,7 +43,7 @@ function detailColumns(write: Writers): Column[] {
       cell: (version) => write.author(version.created_by_username),
     },
     {
-      id: "created",
+      id: "created_at",
       headerKey: "rules.history.created",
       cell: (version) => write.moment(version.created_at),
     },
