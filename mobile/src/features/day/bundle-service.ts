@@ -3,18 +3,31 @@ import type { SyncPassDeps } from "../../sync/sync-pass.ts";
 import { SerialQueue } from "./serial-queue.ts";
 import type { DayStore } from "./store.ts";
 import type { DayCache } from "./types.ts";
+import type { TaskOwner } from "./current-task.ts";
+import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
+import { ownerKey } from "../../attachments/types.ts";
+import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
+import type { LifecycleSourceReader } from "../ovitrap-lifecycle/source-context.ts";
+import type { LifecycleSourceRequest, LifecycleAdmission } from "../ovitrap-lifecycle/types.ts";
+import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 
 export type BundleResult =
   | { readonly kind: "bundle"; readonly body: unknown }
   | { readonly kind: "unchanged" }
   | { readonly kind: "revoked" };
 export type ProjectionWriter = <Result>(write: () => Promise<Result>) => Promise<Result>;
+interface ProjectionTurn {
+  readonly write: ProjectionWriter;
+  readonly handle: CaptureTransportHandle | null;
+}
 export type BundleTransport = (etag: string | null) => Promise<BundleResult>;
 interface Dependencies {
   readonly store: DayStore;
   readonly transport: BundleTransport;
   readonly now: () => Date;
   readonly getScopeKey?: () => string | null;
+  readonly getTransportKey?: () => string | null;
+  readonly getCaptureIdentity?: () => EvidenceIdentity | null;
 }
 type SyncHooks = Pick<
   SyncPassDeps,
@@ -36,7 +49,7 @@ export class DayBundleService {
   async read(): Promise<DayCache> {
     const empty: DayCache = { tasks: [], manifests: [], meta: null };
     const revocation = this.#revocation;
-    if (this.#isRevoked) return empty;
+    if (this.#isRevoked || this.#deps.getScopeKey?.() === null) return empty;
     if (await this.#deps.store.needsCleanup()) {
       this.#invalidate();
       return empty;
@@ -74,41 +87,122 @@ export class DayBundleService {
         return write();
       });
   }
+  async #captureTurn(): Promise<ProjectionTurn> {
+    const assertCurrent = this.#captureGuard();
+    const original = this.#deps.getCaptureIdentity?.() ?? null;
+    const identity =
+      original === null ? null : { owner: { ...original.owner }, sessionId: original.sessionId };
+    const current = () => {
+      assertCurrent();
+      const next = this.#deps.getCaptureIdentity?.() ?? null;
+      return identity === null
+        ? next === null
+        : next !== null &&
+            identity.sessionId === next.sessionId &&
+            ownerKey(identity.owner) === ownerKey(next.owner);
+    };
+    const write = this.captureProjectionWriter();
+    const handle = await write(() => this.#deps.store.captureTransport(identity, current));
+    if (!current()) throw new RemoteSessionEnded();
+    return { write, handle };
+  }
+  /** Neither the network queue nor the short SQL writer owns the consumer's factory/native work. */
+  captureLifecycleSource(): LifecycleSourceReader {
+    const original = this.#captureTurn();
+    void original.catch(() => undefined); // Abandoned requests still own their read error.
+    return async (request, use) => {
+      const turn = await original;
+      if (turn.handle === null) throw new LifecycleGateError("scope");
+      const handle = turn.handle;
+      const source = await turn.write(() => this.#deps.store.lifecycleSource(handle, request));
+      if (!handle.isCurrent()) throw new LifecycleGateError("scope");
+      return use({ ...source, write: turn.write, ...this.#lifecycleContinuations(turn, source) });
+    };
+  }
+  async #readLifecycleCurrent(
+    turn: ProjectionTurn,
+    source: Awaited<ReturnType<DayStore["lifecycleSource"]>>,
+    next: LifecycleSourceRequest | null,
+  ) {
+    const current = await turn.write(() => this.#deps.store.lifecycleSource(source.handle, next));
+    if (
+      current.ownerFence.ownerKey !== source.ownerFence.ownerKey ||
+      current.ownerFence.sessionId !== source.ownerFence.sessionId ||
+      current.ownerFence.generation !== source.ownerFence.generation ||
+      !source.handle.isCurrent()
+    )
+      throw new LifecycleGateError("scope");
+    return current;
+  }
+  #lifecycleContinuations(
+    turn: ProjectionTurn,
+    source: Awaited<ReturnType<DayStore["lifecycleSource"]>>,
+  ) {
+    return {
+      resolve: async (next: LifecycleSourceRequest) => {
+        const current = await this.#readLifecycleCurrent(turn, source, next);
+        if (current.source === null) throw new LifecycleGateError("scope");
+        return current.source;
+      },
+      assertCurrent: async () => {
+        await this.#readLifecycleCurrent(turn, source, null);
+      },
+    };
+  }
   refresh(force = false): Promise<void> {
     return this.#network.run(async () => {
       await this.retryCleanup();
       await this.#refresh(force);
     });
   }
-  async #refresh(force: boolean): Promise<void> {
-    const write = this.captureProjectionWriter();
+  async #refresh(force: boolean, original?: ProjectionTurn): Promise<ProjectionTurn | null> {
+    const turn = original ?? (await this.#captureTurn());
+    const { write, handle } = turn;
+    if (handle !== null && !handle.isCurrent()) throw new RemoteSessionEnded();
     const cached = await this.read();
-    const requiresBody = force || (await this.#deps.store.needsBootstrap());
+    const requiresBody = await this.#requiresBody(force, handle);
     const answer = await this.#deps.transport(
       requiresBody ? null : (cached.meta?.bundle_version ?? null),
     );
-    if (answer.kind === "revoked") return this.clearSessionData();
+    if (answer.kind === "revoked") {
+      await this.clearSessionData();
+      return null;
+    }
     if (answer.kind === "unchanged") {
       return write(() => {
         if (requiresBody || cached.meta === null)
           throw new Error("Bootstrap recovery requires a body.");
-        return Promise.resolve();
+        return Promise.resolve(turn);
       });
     }
-    await write(async () => {
-      await this.#deps.store.replace(answer.body, this.#deps.now());
+    return this.#replace(answer.body, turn);
+  }
+  async #requiresBody(force: boolean, handle: CaptureTransportHandle | null): Promise<boolean> {
+    const consumesLifecycle = this.#deps.getCaptureIdentity !== undefined;
+    if (consumesLifecycle && (handle === null || handle.scopeRevision === null)) return true;
+    return force || (await this.#deps.store.needsBootstrap(consumesLifecycle));
+  }
+  #replace(body: unknown, turn: ProjectionTurn): Promise<ProjectionTurn> {
+    return turn.write(async () => {
+      await this.#deps.store.replace(body, this.#deps.now(), turn.handle);
+      const handle = await this.#deps.store.advanceCaptureTransport(turn.handle);
       this.#isRevoked = false;
       this.#publish();
+      return { write: turn.write, handle };
     });
   }
-  #apply(changes: unknown, write: ProjectionWriter): Promise<void> {
-    return write(async () => {
-      await this.#deps.store.applyChanges(changes);
+  #apply(changes: unknown, turn: ProjectionTurn): Promise<ProjectionTurn> {
+    return turn.write(async () => {
+      await this.#deps.store.applyChanges(changes, turn.handle);
+      const handle = await this.#deps.store.advanceCaptureTransport(turn.handle);
       this.#publish();
+      return { write: turn.write, handle };
     });
   }
   applyProjectionChanges = (changes: unknown): Promise<void> =>
-    this.#network.run(() => this.#apply(changes, this.captureProjectionWriter()));
+    this.#network.run(async () => {
+      await this.#apply(changes, await this.#captureTurn());
+    });
   #invalidate(): void {
     this.#revocation += 1;
     this.#isRevoked = true;
@@ -117,7 +211,7 @@ export class DayBundleService {
   /** The durable auth-ended journal covers a final receipt until sync persists its results. */
   deferCleanup = (): Promise<void> => {
     this.#invalidate();
-    return Promise.resolve();
+    return this.#projections.run(() => this.#deps.store.markCleanupPending());
   };
   clearForAuth = (hasFinalReceipt = false): Promise<void> =>
     hasFinalReceipt ? this.deferCleanup() : this.clearSessionData();
@@ -135,21 +229,78 @@ export class DayBundleService {
     if (await this.#deps.store.needsCleanup()) await this.clearSessionData();
   };
   revoke = (): Promise<void> => this.#network.run(this.clearSessionData);
+  #captureTransportGuard(): () => void {
+    const read = this.#deps.getTransportKey ?? this.#deps.getScopeKey;
+    const original = read?.();
+    return () => {
+      if (read !== undefined && (original === null || read() !== original))
+        throw new RemoteSessionEnded();
+    };
+  }
+  #clearTransportProjections(assertSession: () => void): Promise<void> {
+    return this.#projections.run(async () => {
+      assertSession();
+      this.#invalidate();
+      await this.#deps.store.markCleanupPending();
+      assertSession();
+      await this.#deps.store.revoke();
+      this.#publish();
+    });
+  }
+  #suspendCaptureForRecovery(turn: ProjectionTurn): Promise<ProjectionTurn> {
+    return turn.write(async () => {
+      await this.#deps.store.suspendCaptureForRecovery(turn.handle);
+      const handle = await this.#deps.store.advanceCaptureTransport(turn.handle);
+      this.#publish();
+      return { ...turn, handle };
+    });
+  }
   syncHooks(): SyncHooks {
-    let write = this.captureProjectionWriter();
+    let assertSession = this.#captureTransportGuard();
+    let turn: ProjectionTurn = {
+      write: this.captureProjectionWriter(),
+      handle: null,
+    };
     return {
       serializeProjectionPass: (pass) =>
         this.#network.run(async () => {
           await this.retryCleanup();
-          write = this.captureProjectionWriter();
+          assertSession = this.#captureTransportGuard();
+          assertSession();
+          turn =
+            this.#deps.getScopeKey?.() === null
+              ? { handle: null, write: () => Promise.reject(new RemoteSessionEnded()) }
+              : await this.#captureTurn();
           return pass();
         }),
-      applyProjectionChanges: (changes) => this.#apply(changes, write),
-      recoverProjections: () => this.#refresh(true),
-      revokeProjections: this.clearSessionData,
+      applyProjectionChanges: async (changes) => {
+        turn = await this.#apply(changes, turn);
+      },
+      recoverProjections: async () => {
+        turn = await this.#suspendCaptureForRecovery(turn);
+        const recovered = await this.#refresh(true, turn);
+        if (recovered === null) throw new RemoteSessionEnded();
+        turn = recovered;
+      },
+      revokeProjections: () => this.#clearTransportProjections(assertSession),
     };
   }
   /** Local routing never waits for HTTP or adopts a previous session's selection. */
+  withCurrentTask<T>(
+    id: string,
+    expected: TaskOwner,
+    action: { readonly admission: LifecycleAdmission; readonly sqlOnly: () => Promise<T> },
+  ): Promise<T> {
+    const assertCurrent = this.#captureGuard();
+    return action.admission.commit(async () => {
+      assertCurrent();
+      const task = await this.#deps.store.currentTask(id, expected);
+      assertCurrent();
+      action.admission.assertCurrent();
+      if (!task) throw new LifecycleGateError("scope");
+      return action.sqlOnly();
+    });
+  }
   withAssignments<T>(action: (cache: DayCache) => Promise<T>): Promise<T> {
     const assertCurrent = this.#captureGuard();
     return this.#projections.run(async () => {

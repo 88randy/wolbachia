@@ -3,6 +3,11 @@
  * without a phone. Later epics add their routes here (one union member each).
  */
 export type Route =
+  | {
+      readonly name: "ovitrapReplace" | "ovitrapRelocate" | "ovitrapRemove";
+      readonly ovitrapId: string;
+      readonly manualCapture: boolean;
+    }
   | { readonly name: "day" }
   | { readonly name: "map" }
   | { readonly name: "ovitrapCapture" }
@@ -27,7 +32,7 @@ export function navigationReducer(stack: Stack, action: NavigationAction): Stack
   if (action.type === "push") {
     const top = stack[stack.length - 1];
     // Pressing the chip twice must not stack the same screen twice.
-    return top?.name === action.route.name ? stack : [...stack, action.route];
+    return isSameRoute(top, action.route) ? stack : [...stack, action.route];
   }
   const [first, ...rest] = stack;
   return rest.length === 0 ? stack : [first, ...rest.slice(0, -1)];
@@ -35,4 +40,14 @@ export function navigationReducer(stack: Stack, action: NavigationAction): Stack
 
 export function currentRoute(stack: Stack): Route {
   return stack[stack.length - 1] ?? INITIAL_STACK[0];
+}
+
+function isSameRoute(left: Route | undefined, right: Route): boolean {
+  if (!left || left.name !== right.name) return false;
+  if (!("ovitrapId" in right)) return true;
+  return (
+    "ovitrapId" in left &&
+    left.ovitrapId === right.ovitrapId &&
+    left.manualCapture === right.manualCapture
+  );
 }
