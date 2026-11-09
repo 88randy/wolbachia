@@ -9,8 +9,12 @@ function useStockNavigation() {
   const navigate = useNavigate();
   const value = search["view"] === "movements" ? "movements" : "stock";
   const center = typeof search["center"] === "string" ? { center: search["center"] } : {};
+  const custody =
+    typeof search["custody_location"] === "string"
+      ? { custody_location: search["custody_location"] }
+      : {};
   const onValueChange = (view: string) => {
-    void navigate({ to: ".", search: () => ({ view, ...center }) });
+    void navigate({ to: ".", search: () => ({ view, ...center, ...custody }) });
   };
   return { value, onValueChange };
 }

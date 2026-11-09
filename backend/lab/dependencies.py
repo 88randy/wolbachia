@@ -14,8 +14,12 @@ from ovitraps.models import Bag
 def require_physical_material(bag: Bag) -> None:
     from inventory.allocations.bag_dependencies import material_availability
     from lab.exceptions import LabConflictError
+    from lab.models import PaddleReuse
 
-    if not material_availability(bag)["available"]:
+    if (
+        not material_availability(bag)["available"]
+        or PaddleReuse.objects.filter(binding__bag=bag).exists()
+    ):
         raise LabConflictError("bag_material_unavailable")
 
 
@@ -24,6 +28,10 @@ def require_historical_correction(
 ) -> dict[str, Any]:
     from inventory.allocations.bag_dependencies import material_availability
     from lab.exceptions import LabConflictError
+    from lab.models import PaddleReuse
+
+    if PaddleReuse.objects.filter(binding__bag=bag).exists():
+        raise LabConflictError("lab_material_dependency")
 
     if values.get("measurement_kind") != "data_correction":
         require_physical_material(bag)
@@ -47,6 +55,7 @@ def require_historical_correction(
 
 def source_lab_blockers(source: FieldEvent) -> list[dict[str, Any]]:
     from inventory.allocations.models import BagDisposition, SupplyUse
+    from lab.models import PaddleBagBinding
     from ovitraps.models import Bag
 
     latest = LabResultRevision.objects.filter(bag=OuterRef("pk")).order_by("-revision")
@@ -54,6 +63,7 @@ def source_lab_blockers(source: FieldEvent) -> list[dict[str, Any]]:
         current_count=Subquery(latest.values("count_id")[:1]),
         current_rejection=Subquery(latest.values("rejection_id")[:1]),
         physically_disposed=Exists(BagDisposition.objects.filter(bag_id=OuterRef("pk"))),
+        paddle_bound=Exists(PaddleBagBinding.objects.filter(bag_id=OuterRef("pk"))),
     )
     blockers = [
         {"reason": "lab_result_active", "unblocked_by_role": "supervisor", "link": ""}
@@ -61,6 +71,7 @@ def source_lab_blockers(source: FieldEvent) -> list[dict[str, Any]]:
         if bag.current_count is not None
         or bag.current_rejection is not None
         or bag.physically_disposed
+        or bag.paddle_bound
     ]
     if SupplyUse.objects.filter(work_source=source, event__void_audit__isnull=True).exists():
         blockers.append(

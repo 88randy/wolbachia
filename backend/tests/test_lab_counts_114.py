@@ -222,7 +222,7 @@ def test_reasoned_rejection_binds_verified_evidence_and_void_replacement_retains
 def test_rejection_is_distinct_from_zero_and_exact_parent_survives_void(monkeypatch, make_member):
     from field_sync.models import CourierChange
     from lab.evidence import authorize_rejection_download
-    from lab.models import LabRejection
+    from lab.models import LabBlindObservation, LabRejection
     from lab.permissions import ADMIN_CODES
     from tests.lab_support import actor_with_codes
     from uploads.models import AttachmentLink
@@ -266,6 +266,7 @@ def test_rejection_is_distinct_from_zero_and_exact_parent_survives_void(monkeypa
         },
     )
     assert corrected.status == 200
+    assert not LabBlindObservation.objects.filter(count__bag=bag).exists()
     assert LabRejection.objects.get(pk=target.pk).reason == target.reason
     assert AttachmentLink.objects.get(upload=upload).lab_rejection_id == target.pk
     history = (

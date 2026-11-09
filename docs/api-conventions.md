@@ -1313,3 +1313,94 @@ nullable source_supply adds only real typed kind/id/assignment/source-event UUID
 under current complete supply authority; null without private supply read context.
 It grants no actor PII and leaves source_transfer unchanged. Page-level relation
 lookup/prefetch avoids one metadata query per movement or Assignment.
+
+## Independent laboratory observations and physical paddles (#115)
+
+The existing first-count, immutable CommandResult, source and daily sampling
+contracts remain. Independent attempts are separate facts, never additional
+first-pass population. All commands use the existing org/command UUID and exact
+structural hash/CAS kernel. Current actor and EVERY saved response subject are
+reauthorized before replay; replay retains its original body/next snapshot before
+current method/material/CAS checks. A changed intent uses a fresh UUID.
+
+| Route | Current authority and closed contract |
+| --- | --- |
+| GET /lab-qa-policy/ | lab_method.read; singleton revision, nullable exact policy and explicit QA/reuse configuration availability. |
+| POST /lab-qa-policy/versions/ | lab_method.manage; expected_revision, absolute_tolerance (0..2**53-1, default10), relative_per_100 (0..100, default10), qa_method_version and reuse_method_version UUID or null. New capabilities default false; no procedure/verification seed. |
+| GET /recounts/ | recount.create or recount.adjudicate on the actual pair. Optional center, quadrant, exact Bag code, state; ordering=created_at or -created_at, id tie, page/page_size. Return only request/Bag/Reading identity, nonnumeric state and expected_revision/expected_result_revision. |
+| POST /recounts/{id}/claim/ | recount.create; command_id, expected_revision, role=second or third. Claims the authenticated actor only. Third additionally requires current recount.adjudicate and a real above-tolerance second observation. |
+| POST /bags/{id}/recount/ | recount.create; command_id, request_id, expected_revision, expected_result_revision, strict integer value, confirmed_implausible(default false), required method_version. Optional viable_eggs/total_examined are a complete measured tuple with a real viability-capable verified method. |
+| POST /recounts/{id}/adjudicate/ | command_id, both expected revisions, final_attempt_id of the actual first/second/third candidate, reason_code and reason. Below tolerance the completing second uses create or another current adjudicator uses adjudicate. Above tolerance the distinct actual third needs create+adjudicate and its committed observation. |
+| POST /recounts/{id}/independence-attestations/ | Current adjudicate+egg_count.read, attester distinct from first author and target; command_id, both expected revisions, counter_id, role, external_reference UUID, reason_code, reason. Only a legacy-unproven exact frame may be assessed. Target second needs create; third needs create+adjudicate. No directory grant or claim on somebody else's behalf. |
+| GET /egg-paddles/ | egg_paddle.reuse on one complete actual physical vector. Optional exact code, ordering=created_at or -created_at, stable id, page/page_size. |
+| POST /egg-paddles/ | egg_paddle.reuse and independent field.upload; command_id, code, piece_id, source_movement_id, location_id, nonempty evidence_ids. Source must prove actual positive same-Piece custody and a forward physical observation. |
+| POST /egg-paddles/{id}/bindings/ | Same physical/evidence actions; command_id, expected_revision, bag_id, issue_movement_id, evidence_ids. Actual issued receipt/debit for this check or its genuine historical placement, after registration; no inferred current/latest placement or paddle-type adoption. |
+| GET /egg-paddles/{id}/reuses/ | Current whole physical-vector reuse authority, ordering/page/page_size; retained real stock receipt IDs. |
+| POST /egg-paddles/{id}/reuses/ | Reuse+field.upload+inventory.reconcile each on its whole real vector; command_id, expected_revision, binding_id, expected_result_revision, expected_qa_revision, destination_location_id, source_movement_id, washed_at, dried_at, method_version, evidence_ids. No client quantity, clearance flag or stock-authority Boolean. |
+
+The exact strict comparison is abs(first-second) > max(absolute tolerance,
+relative_per_100 * first /100), without rounding. A mandatory third is a distinct
+human with a genuine observation; final selection cannot invent or average a value.
+All reasoned selections/assessments retain canonical reasons and normalized notes
+of at least10 visible and at most1000 stored characters for EVERY code.
+
+The existing COUNT_READ `GET /recount-requests/` DTO adds nullable independent_qa:
+current first/result and QA revisions, at most three real typed candidates
+(candidate_kind=first/second/third, id, observation/measured facts and exact method
+pin), plus the genuine current-frame resolution. It uses the SAME blind filter
+and publication receipt before count/page; no candidates or derived identifiers
+are available to a blind reader. Prefetch is bounded to those actual candidates
+and one current resolution, not an unlimited revision archive. This lets an
+authorized completing reader select a public genuine candidate without a new
+directory, endpoint or grant. UUIDs are not assumed unique across tables;
+ambiguous selection conflicts rather than guessing the candidate type.
+
+Blindness is central across result/detail, void-context, cause/read projections,
+Bag.lab, lab_status facets, history bootstrap/changes and saved response delivery.
+Potential independent actors cannot read the first number or its inferred state
+until their own independent observation commits. Hidden numeric rows are removed
+before filters/count/order/page/LIMIT. A hidden Bag.lab is null, and that Bag is
+excluded before a lab_status facet, including empty-page inference. Field/receipt
+facts retain their original authorization. Legitimate numeric or derived-state
+delivery records a minimal immutable actual actor/count/surface receipt even
+without a current recount grant. Later grants do not erase exposure or authorship.
+
+A forward boundary is written only at completion of a genuinely new first count.
+Replay, replacement, correction, dates and empty tables cannot certify legacy
+blindness. A legacy assessment is an external operational declaration, not proof
+of knowledge outside the system. It pins exact first/result/request/target/role/
+context/cause/actor authority; supersession, frame change, completion or actual
+disclosure invalidates it. It never overrides a disclosure or grants authority.
+
+Reuse needs a genuinely negative current selected result, real current closed-day
+sample/member/population/rules/timezone and every active QA obligation resolved.
+No obligation or missing frame is not clearance. Named current verified QA and
+treatment procedures, actual verified evidence, aware wash<=dry<=server_now and
+the configured max_paddle_reuses0..2 are required. No biological recipe is supplied.
+Consumed material yields one PaddleStockReturn and exactly one same-Piece/lot/unit
+credit for its exact debit/cycle. Positive custody instead retains the real
+return_accept credit and creates zero new operations. Movement source_kind adds
+paddle_return with the actual return UUID; source_supply/source_transfer remain null.
+No SupplyUse is reversed and no fake return/reconciliation/source is manufactured.
+
+Late real selection/correction after treatment remains awaiting_material and
+blocks further physical cycles; it cannot fabricate a post-wash observation,
+erase QA, restore material or rewrite the earlier stock receipt. Dependency voids
+preserve authentic downstream facts or return a safe409. All identity/source/actor
+preparation precedes sorted Users, existing account locks and the Org arbiter;
+changed closure returns retryable429 rather than discovering late identities.
+
+Paddle evidence uses the eighth typed B04 parent lab_paddle_command. Prepare with
+context=null, PUT and finalize(null) verify unbound bytes outside retained locks.
+Execute creates the genuine physical fact, LabCommand and exact AttachmentLink in
+one atomic transaction; the final deferred boundary requires its completed result.
+Only those three paddle actions are operational contexts. Subsequent contextual
+finalize/download checks current actor/org/declared evidence and physical scope.
+The seven old parent branches and their byte/verification policies remain intact.
+
+No new courier event or sync result code is introduced. History7 adds lab_recount,
+lab_adjudication and lab_paddle_reuse to the same publisher; root2/supplies1 and
+the18 older kinds remain. Persistence is not a claim of courier delivery or
+operational biological certification. Structural validation remains400 fields,
+absent actions403, unknown/foreign/hidden subjects404, typed state/configuration/
+independence/material conflicts409, real NOWAIT contention429 with Retry-After.

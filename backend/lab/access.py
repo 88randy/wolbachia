@@ -44,6 +44,15 @@ def subject_authors(bag: Bag | None, action: tuple[LabTarget, str]) -> tuple[UUI
         .exclude(created_by__isnull=True)
         .values_list("created_by_id", flat=True)
     )
+    from lab.independent_qa.commands import qa_subject_authors
+    from lab.models import RecountRequest
+
+    identifiers.update(
+        EggCountAttempt.objects.filter(organization=bag.organization, bag=bag)
+        .exclude(created_by__isnull=True)
+        .values_list("created_by_id", flat=True)
+    )
+    identifiers.update(qa_subject_authors(RecountRequest.objects.filter(count__bag=bag)))
     if permission == BAG_RECEIVE:
         rows = ReceptionDiscrepancy.objects.filter(organization=bag.organization, bag=bag)
     elif target.kind in {"count", "rejection"}:

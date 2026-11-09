@@ -1,5 +1,28 @@
 import type { inventory as Spanish } from "../es-MX/inventory.ts";
 export const inventory = {
+  "inventory.context.invalidTitle": "Invalid custody context",
+  "inventory.context.invalid":
+    "Check the location link or return to the previous page. The admission location will not be used.",
+  "inventory.context.unavailableTitle": "Custody unavailable",
+  "inventory.context.unavailable":
+    "The lot could not be confirmed at this location. Authorized history may remain available even when stock is zero.",
+  "inventory.context.readonlyTitle": "Custody view",
+  "inventory.context.readonly": "Custody view · read only",
+  "inventory.context.safety": "Status and requirements apply to the selected custody location.",
+  "inventory.context.admissionPins": "Original admission facts",
+  "inventory.context.balance":
+    "The initial quantity and original versions are not this location's current stock. Consult its authorized stock records.",
+  "inventory.source.dispatch": "Transfer dispatch",
+  "inventory.source.receive": "Transfer receipt",
+  "inventory.source.resolution": "Transfer resolution",
+  "inventory.source.unknown": "Unrecognized source",
+  "inventory.source.transfer": "Transfer",
+  "inventory.source.transferId": "Transfer ID",
+  "inventory.source.transferEvent": "Transfer event",
+  "inventory.field.movementId": "Movement",
+  "inventory.field.linkedLot": "Selected lot (reference)",
+  "inventory.blocker.transferDiscrepancyHold":
+    "A transfer discrepancy hold remains. Authorized staff must review its resolution.",
   "inventory.action.discardProtocol": "Discard only protocol changes",
   "inventory.section.selected": "Configuration selected for the next save",
   "inventory.section.currentRecord": "Current server record",
@@ -85,6 +108,7 @@ export const inventory = {
   "inventory.field.supply": "Supply",
   "inventory.field.location": "Initial location",
   "inventory.field.quantity": "Initial quantity",
+  "inventory.field.admissionQuantity": "Original admission quantity",
   "inventory.field.provenance": "Provenance",
   "inventory.field.species": "Species",
   "inventory.field.strain": "Strain",

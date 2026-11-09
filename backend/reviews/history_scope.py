@@ -1,6 +1,9 @@
 """Current real subjects authorize history before LIMIT; captured metadata is not a grant."""
 
+from typing import Any
 from uuid import UUID
+
+from django.db.models import QuerySet
 
 from field_sync.models import CourierChange
 from field_sync.producers import ProducerContext
@@ -9,9 +12,13 @@ from reviews.scope import SubjectFacts, subject_allows, subject_facts
 
 
 def visible_history_contexts(ctx: ProducerContext) -> dict[UUID, tuple[dict[str, str | None], ...]]:
-    rows = CourierChange.objects.filter(
+    from lab.independent_qa.selectors import filter_history_numbers
+    from uploads.access import UploadActor
+
+    rows: QuerySet[Any] = CourierChange.objects.filter(
         organization=ctx.organization, courier=ctx.user, kind="history"
     ).only("id", "resource_type", "resource_id", "courier_id", "organization_id", "payload")
+    rows = filter_history_numbers(UploadActor(ctx.user, ctx.organization), rows)
     current: dict[tuple[str, str], SubjectFacts] = {}
     visible = {}
     for row in rows.iterator():
@@ -19,6 +26,13 @@ def visible_history_contexts(ctx: ProducerContext) -> dict[UUID, tuple[dict[str,
         if key not in current:
             current[key] = _current_subjects(row)
         facts = current[key]
+        if row.resource_type.startswith("history.lab_") and facts.resource_kind == "lab_paddle":
+            from inventory.allocations.scope import allows_supply_vector
+
+            if not allows_supply_vector(
+                ctx.scope, facts.facts["own_permission"], list(facts.contexts)
+            ):
+                continue
         if facts.resource_kind == "community_activity" and not subject_allows(
             ctx.scope, "community_activity.read", facts
         ):

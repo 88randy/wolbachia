@@ -186,6 +186,12 @@ class StockOperation(InventoryRecord):
         on_delete=models.PROTECT,
         related_name="stock_operation",
     )
+    paddle_return = models.OneToOneField(
+        "inventory.PaddleStockReturn",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="stock_operation",
+    )
     source_kind = models.CharField(
         max_length=24,
         choices=[
@@ -200,6 +206,7 @@ class StockOperation(InventoryRecord):
                 "supply_return",
                 "lot_write_off",
                 "supply_compensation",
+                "paddle_return",
             )
         ],
     )
@@ -215,6 +222,7 @@ class StockOperation(InventoryRecord):
                         admission__isnull=False,
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
+                        paddle_return__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -225,6 +233,7 @@ class StockOperation(InventoryRecord):
                         admission__isnull=True,
                         transfer_event__isnull=False,
                         supply_source__isnull=True,
+                        paddle_return__isnull=True,
                     )
                     | models.Q(
                         source_kind__in=[
@@ -237,6 +246,14 @@ class StockOperation(InventoryRecord):
                         admission__isnull=True,
                         transfer_event__isnull=True,
                         supply_source__isnull=False,
+                        paddle_return__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind="paddle_return",
+                        admission__isnull=True,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=True,
+                        paddle_return__isnull=False,
                     )
                 ),
                 name="stock_exact_source_branch",
@@ -367,6 +384,53 @@ class ConditionIncidentLink(InventoryRecord):
                 condition=models.Q(actor_kind="system", created_by__isnull=True),
                 name="condition_link_system_author",
             )
+        ]
+
+
+class PaddleStockReturn(InventoryRecord):
+    reuse = models.OneToOneField(
+        "lab.PaddleReuse", on_delete=models.PROTECT, related_name="stock_return"
+    )
+    source_movement = models.ForeignKey(
+        StockMovement, on_delete=models.PROTECT, related_name="paddle_returns"
+    )
+    consumed_debit = models.OneToOneField(
+        StockMovement, null=True, on_delete=models.PROTECT, related_name="paddle_recovery"
+    )
+    piece = models.ForeignKey(Piece, on_delete=models.PROTECT, related_name="paddle_returns")
+    lot = models.ForeignKey(Lot, on_delete=models.PROTECT, related_name="paddle_returns")
+    unit_version = models.ForeignKey(SupplyTypeVersion, on_delete=models.PROTECT, related_name="+")
+    source_location = models.ForeignKey(
+        Location, null=True, on_delete=models.PROTECT, related_name="paddle_returns_out"
+    )
+    destination = models.ForeignKey(
+        Location, on_delete=models.PROTECT, related_name="paddle_returns_in"
+    )
+    kind = models.CharField(
+        max_length=9, choices=[("custody", "custody"), ("consumed", "consumed")]
+    )
+    content_hash = models.CharField(max_length=64)
+    source_proof = models.JSONField()
+
+    class Meta(InventoryRecord.Meta):
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(created_by__isnull=False), name="paddle_return_author"
+            ),
+            models.UniqueConstraint(
+                fields=["source_movement"],
+                condition=models.Q(kind="custody"),
+                name="paddle_custody_receipt_once",
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    kind="custody", source_location__isnull=False, consumed_debit__isnull=True
+                )
+                | models.Q(
+                    kind="consumed", source_location__isnull=True, consumed_debit__isnull=False
+                ),
+                name="paddle_return_exact_source",
+            ),
         ]
 
 
