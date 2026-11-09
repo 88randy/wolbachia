@@ -63,7 +63,7 @@ def inspect_review(source: FieldEvent) -> ReviewEvaluation:
     source_facts = {} if snapshot is None else snapshot.facts
     observed = frozenset([source.status_code, *source_facts.get("observed_codes", [])]) & codes
     prohibited = tuple(code for code in source_facts.get("observed_codes", []) if code not in codes)
-    required = [FIELD_EVENT_SYNC]
+    required = _community_permissions(source, envelope)
     if source.type in {"incident.report", "emergency.accident"}:
         required.append("incident.create")
     if subjects.resource_kind == "transfer":
@@ -120,6 +120,26 @@ def inspect_review(source: FieldEvent) -> ReviewEvaluation:
     if not subjects.resolved:
         blockers = tuple(dict.fromkeys((*blockers, "source_scope_unavailable")))
     return ReviewEvaluation(subjects, context, legacy, blockers, authority.proof_ids)
+
+
+def _community_permissions(source: FieldEvent, envelope: Any) -> list[str]:  # noqa: ANN401 -- canonical validated envelope
+    required = [FIELD_EVENT_SYNC]
+    if source.type == "community.activity":
+        required.append("community_activity.create")
+        if envelope.payload.get("incident_id") is not None:
+            required.append("incident.read")
+    if (
+        source.type == "record.void"
+        and envelope.voids_event_id is not None
+        and FieldEvent.objects.filter(
+            organization=source.organization,
+            pk=envelope.voids_event_id,
+            type="community.activity",
+            created_by=source.created_by,
+        ).exists()
+    ):
+        required.append("community_activity.void")
+    return required
 
 
 def evaluation_payload(evaluation: ReviewEvaluation) -> dict[str, Any]:

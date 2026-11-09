@@ -21,6 +21,7 @@ from field_sync.projection_serializers import (
     QuadrantReferenceSerializer,
     SamplingPointBundleSerializer,
 )
+from inventory.allocations.serializers import SupplyBundleSerializer
 from organizations.serializers import MeScopeSerializer
 from reviews.history_serializers import CourierHistoryEntrySerializer
 from reviews.models import ReviewKind
@@ -174,6 +175,11 @@ class HistoryChangeSerializer(ProducerChangeSerializer):
     data = CourierHistoryEntrySerializer()  # type: ignore[assignment]
 
 
+class SupplyChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = SupplyBundleSerializer()  # type: ignore[assignment]  # Required wire name overlaps Serializer.data.
+
+
 class CaptureContextSerializer(serializers.Serializer[Any]):
     """Self current SYNC observation; no session secret or immutable source authority."""
 
@@ -194,7 +200,7 @@ class ChangesSerializer(serializers.Serializer[Any]):
     next_change_at = serializers.DateTimeField(allow_null=True)
     capture_context = CaptureContextSerializer(required=False, allow_null=True)
     assignments = ProducerChangeSerializer(many=True)
-    supplies = ProducerChangeSerializer(many=True)
+    supplies = SupplyChangeSerializer(many=True)
     permits = ProducerChangeSerializer(many=True)
     eligibility = ProducerChangeSerializer(many=True)
     history = HistoryChangeSerializer(many=True)
@@ -222,7 +228,7 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     next_change_at = serializers.DateTimeField(allow_null=True)
     map_manifest_ready = serializers.BooleanField()
     assignments = serializers.ListField(child=serializers.DictField())
-    supplies = serializers.ListField(child=serializers.DictField())
+    supplies = SupplyBundleSerializer(many=True)
     permits = serializers.ListField(child=serializers.DictField())
     eligibility = serializers.ListField(child=serializers.DictField())
     history = CourierHistoryEntrySerializer(many=True)

@@ -2,7 +2,7 @@
 
 from datetime import datetime, time
 from decimal import Decimal
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -590,17 +590,70 @@ class InventoryQuerySerializer(serializers.Serializer[Any]):
 
 
 class MovementSerializer(OrgScopedModelSerializer):
+    # This DTO is emitted only by current Location queries, which exclude Assignment legs.
+    location_id = serializers.UUIDField(read_only=True)
     lot_code = serializers.CharField(source="lot.code", read_only=True)
     supply_id = serializers.UUIDField(source="lot.supply_id", read_only=True)
     location_code = serializers.CharField(source="location.code", read_only=True)
     unit = serializers.CharField(source="unit_version.unit", read_only=True)
     source_kind = serializers.ChoiceField(
         source="operation.source_kind",
-        choices=["lot_admission", "transfer_dispatch", "transfer_receive", "transfer_resolution"],
+        choices=[
+            "lot_admission",
+            "transfer_dispatch",
+            "transfer_receive",
+            "transfer_resolution",
+            "supply_receive",
+            "supply_reconcile",
+            "supply_return",
+            "lot_write_off",
+            "supply_compensation",
+        ],
         read_only=True,
     )
     source_id = serializers.UUIDField(source="operation.source_id", read_only=True)
     source_transfer = serializers.SerializerMethodField()
+    source_supply = serializers.SerializerMethodField()
+
+    @extend_schema_field(
+        {
+            "type": "object",
+            "nullable": True,
+            "properties": {
+                "kind": {
+                    "type": "string",
+                    "enum": [
+                        "supply_receive",
+                        "supply_reconcile",
+                        "supply_return",
+                        "lot_write_off",
+                        "supply_compensation",
+                    ],
+                },
+                "id": {"type": "string", "format": "uuid"},
+                "assignment_id": {"type": "string", "format": "uuid", "nullable": True},
+                "source_event_id": {"type": "string", "format": "uuid", "nullable": True},
+            },
+            "required": ["kind", "id", "assignment_id", "source_event_id"],
+        }
+    )
+    def get_source_supply(self, movement: StockMovement) -> dict[str, str | None] | None:
+        from inventory.allocations.selectors import (
+            movement_supply_source,
+            movement_supply_visibility,
+        )
+
+        request = self.context.get("supply_request")
+        if request is None or movement.operation.supply_source_id is None:
+            return None
+        context = cast(dict[str, Any], self.context)
+        cache = "_supply_movement_visibility"
+        if cache not in context:
+            rows = self.root.instance
+            if rows is None or isinstance(rows, StockMovement):
+                rows = [movement]
+            context[cache] = movement_supply_visibility(actor_from_request(request), rows)
+        return movement_supply_source(movement, context[cache])
 
     @extend_schema_field(
         {
@@ -649,6 +702,7 @@ class MovementSerializer(OrgScopedModelSerializer):
             "source_kind",
             "source_id",
             "source_transfer",
+            "source_supply",
             "created_at",
             "created_by",
         ]

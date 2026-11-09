@@ -136,3 +136,12 @@ Real PostgreSQL CI remains required. No new dependency is introduced.
 References: [Django transactions](https://docs.djangoproject.com/en/5.2/topics/db/transactions/),
 [row locking](https://docs.djangoproject.com/en/5.2/ref/models/querysets/#select-for-update),
 [conditional constraints](https://docs.djangoproject.com/en/5.2/ref/models/constraints/).
+
+## Shared uncredited reservations (#107)
+
+Dispatch availability now uses the SAME Organization-serialized physical balance
+minus active uncredited courier release reservations. Old signed balance, safety,
+both-endpoint whole-vector scope, source proof, manifests, replay and compensation
+remain unchanged. Courier receipt consumes the reservation while moving the exact
+origin debit to its explicit Assignment custodian; no parallel ledger is created.
+The B10 owner runs real release-versus-dispatch barrier winner orders in PostgreSQL.

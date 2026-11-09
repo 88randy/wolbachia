@@ -1,5 +1,73 @@
 # Scoped incidents (B-06)
 
+## Reported workspace reads (#304)
+
+`GET /incidents/?kind=reported` adds `assigned_to_me`, `overdue`, `escalated`
+(strict lowercase true/false), `type` (stable CatalogItem UUID) and `origin`.
+The actual current Membership, not User UUID, defines assigned_to_me. Overdue
+means open with a nonnull deadline <= this query's server time; escalated means
+open stage > 0 even after a comment and at terminal/null deadline. False is each
+predicate's complement. Existing facets intersect, including exact pinned type_id.
+Counts and page_size=1 use that same scoped queryset, with no separate summary or
+atomic cross-request counter promise. Reported collection-only ordering permits
+code/created_at/deadline/severity and optional minus/comma terms, always critical
+first and id-stable; default deadline asc/null last, created_at,id. Fleet retains
+its original representation, permission, filtering and ordering, including296.
+
+One correlated persisted-proof annotation supplies origin to projection, filter
+and count before paging: field_event, direct_report, review_decision,
+inventory_condition, lab_reception or unknown. Independent unsupported or
+conflicting proof defeats a tempting known cause; a later adopted IncidentOrigin
+marker is provenance rather than a new creation cause. Review uses its exact
+decision/item/case/author/subjects; inventory uses the retained breached reading
+placement; Lab uses its real discrepancy/link/pinned policy/type and system event.
+No current policy hash, browser channel, generic transfer or Lab count/rejection
+producer is inferred. GET cannot create, recover, resolve or publish a case.
+
+Reported reads add current stage/owner display, archived type_snapshot, origin,
+linked_record, owned blockers, evidence and action_permissions/action_prerequisites.
+Human labels are minimal real names/username or null. Related identity/code/void
+metadata is explicitly unavailable when the real current parent read vector is
+not authorized. Existing case/timeline evidence UUIDs remain audit facts; current
+byte metadata/readability follows the actual immutable AttachmentLink via the
+existing six-parent authorize_download policy, without blob/storage/network I/O.
+No keys, leases or permanent download capability are exposed. Lab rejection
+egg_count.read OR egg_count.void remains separate from queue/upload/close admission.
+New private fields deny/redact without current exact-pair incident.read, including
+create-only responses; no new permission is required to perform an existing write.
+
+An authorized ReviewItem reference combines the real source void stamp with its
+latest canonical decision_state. A terminal void is effective; audit-only void
+remains pending, while FieldEvent retains its original ingestion status. Nested
+read structures use their declared serializers once the shared projection is
+cached, preserving null/redacted fields and consistent UUID/datetime representations.
+
+Action booleans use each existing command's current whole paired scope. Separate
+prerequisites describe open state, void dependents, protected severity, pinned
+close minimum and field.upload; they do not certify selected/unbound evidence or
+replace transactional CAS/bind_evidence. Type deactivation does not prevent an
+otherwise authorized close against its archived policy.
+
+`GET /incidents/context-options/?action=read|create` returns paged named real
+center/quadrant pairs (including center-only) within that action's paired scope.
+Optional center UUID, search, page and page_size never confer center.read.
+`GET /incidents/{id}/owner-options/` requires current case read and exact-pair
+incident.reassign; it returns Membership id + minimal label, never a global roster.
+Read and close may come from separate valid profiles, each with the whole pair;
+terminal candidates additionally retain the writer's administrative codes. Raw
+distinct scopes are validated with safe_scope; actual final active relationships
+and government clamp are applied before count/search/page, not after LIMIT.
+Options are current hints and every command revalidates. New raw scopes during
+discovery may be safely absent until refresh; revoked scopes cannot qualify.
+
+`GET /incident-types/?reportable=true` narrows latest family versions to both
+active version and active parent item. False/omission preserves existing visibility;
+is_active remains the immutable version flag. An older submitted active pin remains
+valid under the existing full capture_version predicate; it need not be latest.
+
+This is the W6/W7 read prerequisite only. W4/full33/30/123/176 acceptance, jobs,
+writers, defaults, permissions, models and the history4/root2 contract are unchanged.
+
 ## Review integration (#113)
 
 Review follow-up creates a CURRENT reviewer Incident at server_now/source_event=None
@@ -100,3 +168,15 @@ admission. The original inventory.v1 source/hash and legacy adapter are preserve
 A condition at B requires its own current paired condition.create, even at0 stock;
 it proves no custody. Global owned biological holds still apply at every transfer
 phase, with no clearing callback from a transfer resolution to another incident.
+
+## Laboratory reception sources (#114)
+
+`lab_sources.py` consumes a persisted, already authorized reception discrepancy
+under Lab's retained Organization arbiter. The exact CAS-configured incident type
+must have a current real owner chain, zero report photos and no invented blockers.
+An unavailable type leaves the original discrepancy explicitly configuration
+pending; bounded recovery creates its system origin and incident once. It creates
+no surrogate Bag, Reading, FieldEvent, upload or human report. The original source
+collector and discrepancy author are prepared before Organization, even when they
+are different people. This adapter preserves the existing incident publication,
+scope, evidence, escalation and independent resolution owners.

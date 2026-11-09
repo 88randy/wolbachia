@@ -6,6 +6,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 from core.serializers import OrgScopedModelSerializer
+from lab.serializers import LabBagSummarySerializer, LabReceiptSerializer
 from ovitraps.lifecycle.models import PhysicalOvitrapLineage
 from ovitraps.models import Bag, Ovitrap, OvitrapReading, PlacementAttempt
 
@@ -128,6 +129,7 @@ class OvitrapSerializer(ProvenanceSerializer):
 
 
 class ReadingSerializer(ProvenanceSerializer):
+    lab_receipt = serializers.SerializerMethodField()
     incident_link = serializers.SerializerMethodField()
 
     @extend_schema_field(serializers.UUIDField(allow_null=True))
@@ -145,6 +147,24 @@ class ReadingSerializer(ProvenanceSerializer):
 
     def get_is_countable(self, instance: OvitrapReading) -> bool:
         return instance.paddle_present and instance.event.voided_at is None
+
+    @extend_schema_field(LabReceiptSerializer(allow_null=True))
+    def get_lab_receipt(self, instance: OvitrapReading) -> dict[str, Any] | None:
+        from lab.access import scoped_readings
+        from lab.permissions import BAG_RECEIVE
+        from lab.reception import receipt_projection
+        from uploads.access import actor_from_request
+
+        request = self.context.get("request")
+        if (
+            request is None
+            or not scoped_readings(actor_from_request(request), BAG_RECEIVE)
+            .filter(pk=instance.pk)
+            .exists()
+        ):
+            return None
+        receipt = getattr(instance, "lab_receipt", None)
+        return None if receipt is None else receipt_projection(receipt)
 
     class Meta:
         model = OvitrapReading
@@ -167,6 +187,7 @@ class ReadingSerializer(ProvenanceSerializer):
             "is_index_excluded",
             "index_exclusion_reason",
             "is_countable",
+            "lab_receipt",
             "epi_week",
             "bag_id",
             "bag_code",
@@ -180,6 +201,25 @@ class ReadingSerializer(ProvenanceSerializer):
 class BagSerializer(ProvenanceSerializer):
     evaluated_rules = serializers.JSONField(source="reading.evaluated_rules", read_only=True)
     rule_version_ids = serializers.JSONField(source="reading.rule_version_ids", read_only=True)
+    lab = serializers.SerializerMethodField()
+
+    @extend_schema_field(LabBagSummarySerializer(allow_null=True))
+    def get_lab(self, instance: Bag) -> dict[str, Any] | None:
+        from lab.access import scoped_bags
+        from lab.permissions import BAG_RECEIVE, COUNT_READ
+        from lab.selectors import bag_lab_projection
+        from uploads.access import actor_from_request
+
+        request = self.context.get("request")
+        if request is None:
+            return None
+        actor = actor_from_request(request)
+        if not any(
+            scoped_bags(actor, code).filter(pk=instance.pk).exists()
+            for code in (BAG_RECEIVE, COUNT_READ)
+        ):
+            return None
+        return bag_lab_projection(instance)
 
     class Meta:
         model = Bag
@@ -189,6 +229,7 @@ class BagSerializer(ProvenanceSerializer):
             "reading",
             "collector",
             "field_flags",
+            "lab",
             "evaluated_rules",
             "rule_version_ids",
             *PROVENANCE_FIELDS,
@@ -201,6 +242,22 @@ class RecordQuerySerializer(serializers.Serializer[Any]):
     point = serializers.UUIDField(required=False)
     week = serializers.RegexField(r"^[0-9]{4}-W(0[1-9]|[1-4][0-9]|5[0-3])$", required=False)
     code = serializers.CharField(max_length=50, required=False)
+
+
+class BagQuerySerializer(RecordQuerySerializer):
+    lab_status = serializers.ChoiceField(
+        choices=[
+            "expected",
+            "missing",
+            "no_effective_reading",
+            "pending_count",
+            "counted",
+            "awaiting_independent_qa",
+            "rejected",
+            "voided",
+        ],
+        required=False,
+    )
 
 
 class IdentityQuerySerializer(RecordQuerySerializer):

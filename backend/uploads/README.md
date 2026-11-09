@@ -188,3 +188,27 @@ historic leg's scope. Sync signatures/photos retain FieldEvent primary parent an
 secondary transfer references; in_review downloads additionally need review.read.
 _resolve_link_target still rejects zero/multiple parents and preserves all four
 legacy parent policies. No new storage/sanitizer or callback to accept a source.
+
+## Laboratory rejection parent (#114)
+
+lab_rejection is the sixth closed parent in the SAME _resolve_link_target, binding
+comparison and download dispatcher. A rejection consumes exact owned verified
+unbound bytes under sorted Upload locks and current paired lab_rejection.create
+plus field.upload. No storage I/O occurs beneath Lab locks. Current egg_count.read
+OR the exact minimal egg_count.void context can download that rejection's retained
+evidence; this grants no general Lab list/create/upload or other-parent access.
+All five old ACLs, rechecks and immutable bindings remain. Populated Lab downgrade
+refuses before removing audit, evidence, origins or history receipts. The existing
+private-byte owner adds one Lab consumer case, not another sanitizer/storage matrix.
+
+## Seventh concrete parent: inventory_intent (#107)
+
+InventoryIntent declares exact file UUIDs and signature/rpbi/photo roles before
+bytes. The existing authorize/put/finalize pipeline resolves this real seventh
+parent, checks current independent field.upload plus the intent's whole-vector
+domain action, exact uploader/device/organization and immutable XOR binding.
+Operational execution accepts only verified bytes bound to that exact declaration.
+Retained download uses current necessary supply/disposal action, independently of
+field.upload; identity alone grants no bytes. Source-bound supply files use the
+same original author/device and complete-vector source resolver. All six existing
+parent branches, sanitization/storage and reparent refusal remain unchanged.

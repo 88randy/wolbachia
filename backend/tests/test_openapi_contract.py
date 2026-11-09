@@ -72,6 +72,54 @@ def test_page_number_lists_expose_count_and_page_links(schema: dict[str, Any]) -
         "page",
         "page_size",
     }
+    # Lab's manual read projections must still expose their real StandardPagination contract.
+    for path in (
+        "egg-counts",
+        "lab-rejections",
+        "lab-receptions",
+        "lab-reception-discrepancies",
+        "recount-requests",
+    ):
+        operation = schema["paths"][f"/api/v1/{path}/"]["get"]
+        reference = operation["responses"]["200"]["content"]["application/json"]["schema"][
+            "$ref"
+        ].split("/")[-1]
+        assert set(schema["components"]["schemas"][reference]["properties"]) == {
+            "count",
+            "next",
+            "previous",
+            "results",
+        }
+        assert {"page", "page_size"} <= set(query_parameters(operation))
+    for path in ("/api/v1/incidents/context-options/", "/api/v1/incidents/{id}/owner-options/"):
+        operation = schema["paths"][path]["get"]
+        reference = operation["responses"]["200"]["content"]["application/json"]["schema"][
+            "$ref"
+        ].split("/")[-1]
+        assert set(schema["components"]["schemas"][reference]["properties"]) == {
+            "count",
+            "next",
+            "previous",
+            "results",
+        }
+        assert {"page", "page_size", "search"} <= set(query_parameters(operation))
+    collection = query_parameters(schema["paths"]["/api/v1/incidents/"]["get"])
+    assert {"assigned_to_me", "overdue", "escalated", "type", "origin", "motorcycle"} <= set(
+        collection
+    )
+    assert "reportable" in query_parameters(schema["paths"]["/api/v1/incident-types/"]["get"])
+    assert not {"assigned_to_me", "overdue", "escalated", "reportable"} & set(
+        query_parameters(schema["paths"]["/api/v1/incidents/{id}/close/"]["post"])
+    )
+    reported = schema["components"]["schemas"]["ReportedIncident"]["properties"]
+    assert {
+        "stage",
+        "origin",
+        "type_snapshot",
+        "action_permissions",
+        "evidence",
+        "linked_record",
+    } <= set(reported)
 
 
 def test_cursor_lists_expose_next_and_previous_without_count(schema: dict[str, Any]) -> None:
@@ -192,3 +240,60 @@ def test_void_contract_requires_code_and_exposes_stored_code_read_only(schema):
     assert body["properties"]["reason"]["maxLength"] == 1000
     for component in ("Widget", "RuleParameterVersion"):
         assert components[component]["properties"]["void_reason_code"]["readOnly"] is True
+
+
+def test_community_closed_commands_and_paged_totals_are_the_public_contract(schema):
+    paths = schema["paths"]
+    components = schema["components"]["schemas"]
+    collection = paths["/api/v1/community-activities/"]
+    create = collection["post"]
+    assert create["requestBody"]["required"] is True
+    body = components[
+        create["requestBody"]["content"]["application/json"]["schema"]["$ref"].rsplit("/", 1)[-1]
+    ]
+    assert set(body["properties"]) == {
+        "command_id",
+        "type_id",
+        "zone_id",
+        "attendance",
+        "agreements",
+        "other_text",
+        "incident_id",
+    }
+    assert body["properties"]["attendance"]["maximum"] == 2**53 - 1
+    result = collection["get"]["responses"]["200"]["content"]["application/json"]["schema"]
+    page = components[result["$ref"].rsplit("/", 1)[-1]]
+    assert set(page["properties"]) == {"count", "next", "previous", "results", "totals"}
+    assert set(query_parameters(collection["get"])) >= {
+        "code",
+        "zone_id",
+        "center",
+        "quadrant",
+        "type_id",
+        "date_from",
+        "date_before",
+        "include_voided",
+        "ordering",
+        "page",
+        "page_size",
+    }
+    detail = paths["/api/v1/community-activities/{id}/"]["get"]
+    assert not set(query_parameters(detail)) & {
+        "include_voided",
+        "date_from",
+        "date_before",
+        "type_id",
+        "ordering",
+    }
+    options = paths["/api/v1/community-activities/zone-options/"]["get"]
+    assert set(query_parameters(options)) == {
+        "action",
+        "center",
+        "quadrant",
+        "search",
+        "page",
+        "page_size",
+    }
+    assert query_parameters(options)["action"]["required"] is True
+    correction = paths["/api/v1/community-activities/{id}/void/"]["post"]
+    assert not query_parameters(correction)

@@ -112,7 +112,11 @@ class AutomaticIncidentOrigin(SystemRecord):
         Incident, on_delete=models.PROTECT, related_name="automatic_origin"
     )
     source_kind = models.CharField(
-        max_length=24, choices=[("inventory_condition", "inventory_condition")]
+        max_length=24,
+        choices=[
+            ("inventory_condition", "inventory_condition"),
+            ("lab_reception", "lab_reception"),
+        ],
     )
     source_id = models.UUIDField()
     content_hash = models.CharField(max_length=64)

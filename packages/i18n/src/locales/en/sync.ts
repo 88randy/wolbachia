@@ -127,4 +127,30 @@ export const sync: Record<keyof typeof source, string> = {
     "Current conditions prevent applying the transfer. The capture was kept for review.",
   "sync.result.transferVoidBlocked":
     "The transfer has effects or dependent records. Contact your supervisor to correct it.",
+  "sync.result.communityInaccessible":
+    "The activity reference is unavailable in your authorized work scope.",
+  "sync.result.communityCommandConflict":
+    "This command identity belongs to a different retained capture. Keep the original and contact your supervisor.",
+  "sync.result.communityCatalogUnavailable":
+    "The original activity type configuration is unavailable. The capture was kept for review.",
+  "sync.result.communityCatalogDeactivated":
+    "This retained activity type is inactive. Your supervisor must review the original capture.",
+  "sync.result.communityConfigurationUnavailable":
+    "The activity type requires an unsupported capture purpose. Keep this capture for review.",
+  "sync.result.communityZoneUnavailable":
+    "The original block version is unavailable. Keep this capture for review.",
+  "sync.result.communityStateConflict":
+    "The activity has conflicting retained facts. Contact your supervisor before correcting it.",
+  "sync.result.supplyInaccessible":
+    "The supply record is unavailable in your authorized work scope.",
+  "sync.result.supplyVoidBlocked":
+    "The supply record has custody effects or dependent records. Contact your supervisor to correct it.",
+  "sync.result.supplyAssignmentChanged":
+    "The assignment changed after capture. Keep the signed actual receipt for review.",
+  "sync.result.supplyStateConflict":
+    "The supply record needs its earlier records reviewed. Keep the capture and signature.",
+  "sync.result.supplyEvidenceRequired":
+    "Verified supply evidence is missing. Keep the signature and pending files for review.",
+  "sync.result.supplyTransitUnavailable":
+    "The transit procedure or its evidence needs review. No unverified use was applied.",
 };

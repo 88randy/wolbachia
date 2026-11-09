@@ -207,3 +207,28 @@ Its real original source courier is the recipient; HTTP creates no courier recor
 VoidReviewAdapter delegates actual transfer audit inspection to its domain owner;
 old manifests/legs remain immutable, consumed/uncompensated effects block void.
 See ../inventory/transfers/README.md for SQL and test ownership.
+
+## Laboratory history (#114)
+
+Lab appends to this SAME typed history owner. Producer 4 preserves all original
+review/shift/relocation/transfer fields and refs; root bootstrap stays 2. Lab
+receipt/discrepancy/count/rejection/void facts resolve their current authentic
+Reading and original collector before scope/cursor/limit. System request causes
+update the real human count's QA projection; no fake ReviewItem, decision,
+recipient or independent-counter action is produced. Stored projections survive
+temporary download loss; regrant still reads through current FIELD_BOOTSTRAP.
+publish_history remains the sole receipt/change writer.
+
+## Concrete courier supply adapter (#107)
+
+supplies.receive/reconcile use the SAME kernel, retained original proof, typed
+same-author supply_source dependency and once-only effect receipt. NEW in_review
+has zero operational effects; acceptance rechecks original/current/reviewer whole
+physical vector without weakening other adapters. Actual supply authors/sources
+are prepared before all User/account/domain locks; changed closure re-prepares.
+One post-store hook binds real FieldEvents, publishes eight typed supply history
+kinds through publish_history and supplies upserts. The same history producer6
+preserves Community5 and every earlier shape; root bootstrap2 is unchanged.
+HTTP return acceptance and
+justification invalidate the existing Shift decision fingerprint/history using
+their real execution cause, without synthetic FEs or a second history publisher.

@@ -7,7 +7,6 @@ from inventory.exceptions import InventoryConflictError
 from inventory.models import Location, StockMovement, StockOperation
 from inventory.selectors import current_location, current_lot, lot_safety
 from inventory.transactions import require_inventory_lock
-from inventory.transfers.custody import balance
 from inventory.transfers.models import TransferEvent, TransferLine, TransferStockEffect
 
 
@@ -20,8 +19,10 @@ class StockLeg:
 
 
 def require_available(line: TransferLine, origin: Location) -> None:
+    from inventory.allocations.stock import spendable_balance
+
     require_inventory_lock(line.organization_id)
-    if balance(line, origin) < line.quantity:
+    if spendable_balance(line, origin) < line.quantity:
         raise InventoryConflictError("transfer_insufficient_stock")
 
 

@@ -17,6 +17,8 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.status.notConfigured": "Not configured",
 
   // Names of the parameters the seed creates. A key the web does not know shows its own code.
+  "rules.param.labCountPlausibilityLimit": "Egg-count plausibility threshold",
+  "rules.param.labRecountSamplePer100": "Selected counts per 100 first counts",
   "rules.param.maxDistanceToPoint": "Maximum distance to the point",
   "rules.param.minDistanceSameBlock": "Minimum distance between ovitraps in a block",
   "rules.param.speedLock": "Speed that locks capture",

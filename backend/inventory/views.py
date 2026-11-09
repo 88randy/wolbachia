@@ -279,7 +279,9 @@ class LocationViewSet(InventoryVersionViewSet):
             location_movements(actor_from_request(request), current.location), request
         )
         return self.get_paginated_response(
-            MovementSerializer(self.paginate_queryset(query), many=True).data
+            MovementSerializer(
+                self.paginate_queryset(query), many=True, context={"supply_request": request}
+            ).data
         )
 
     @extend_schema(request=LocationWriteSerializer, responses={201: LocationSerializer})

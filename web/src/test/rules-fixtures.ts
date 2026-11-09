@@ -78,7 +78,7 @@ interface OpenOptions {
 export async function openParameterPage(options: OpenOptions = {}) {
   const { me = ADMIN, parameter = makeParameter(), versions = [makeVersion()] } = options;
   const api: FakeApi = createFakeApi({
-    [ME]: Response.json(me),
+    [ME]: () => Response.json(me),
     "GET /api/v1/catalogs/void-reason/items/": () => pageOf(makeVoidReasonItems()),
     [PARAMETER_ROUTE]: () => Response.json(parameter),
     [VERSIONS_ROUTE]: ({ path }) => {
