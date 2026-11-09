@@ -20,6 +20,39 @@ import {
 import type { Page } from "@playwright/test";
 import { writeFile } from "node:fs/promises";
 const small = { width: 320, height: 700 };
+async function selectInventorySort(page: Page, path: string, ordering: string) {
+  const read = page.waitForRequest((request) => {
+    const url = new URL(request.url());
+    return (
+      request.method() === "GET" &&
+      url.pathname === path &&
+      url.searchParams.get("ordering") === ordering
+    );
+  });
+  await page.getByRole("combobox", { name: "Ordenar por", exact: true }).selectOption(ordering);
+  await read;
+  await expect(page).toHaveURL(new RegExp("ordering=" + ordering));
+}
+async function expectInventoryFooter(page: Page, language: string, kind: string) {
+  const dialog = page.getByRole("dialog");
+  const cancel = dialog.getByRole("button", {
+    name: language === "en" ? "Cancel" : "Cancelar",
+    exact: true,
+  });
+  const submit = dialog.getByRole("button", {
+    name: language === "en" ? "Create record" : "Crear registro",
+    exact: true,
+  });
+  await expect(cancel).toBeEnabled();
+  const boxes = await Promise.all([cancel.boundingBox(), submit.boundingBox()]);
+  if (!boxes[0] || !boxes[1]) throw new Error("Inventory footer controls must be visible");
+  expect(Math.abs(boxes[0].width - boxes[1].width)).toBeLessThanOrEqual(1);
+  expect(Math.abs(boxes[0].height - boxes[1].height)).toBeLessThanOrEqual(1);
+  await cancel.scrollIntoViewIfNeeded();
+  await attachInventoryScreenshot(page, "218-inventory-footer-" + kind + "-" + language);
+  await cancel.click();
+  await expect(dialog).toHaveCount(0);
+}
 async function attachInventoryScreenshot(page: Page, name: string, fullPage = false) {
   const path = test.info().outputPath(name + ".png");
   await page.screenshot({ path, fullPage });
@@ -159,12 +192,33 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   await observeMapWorkers(page);
   await page.goto("/inventory");
   await page.getByRole("link", { name: "Catálogo de insumos", exact: true }).click();
+  await selectInventorySort(page, "/api/v1/supply-types/", "-created_at");
+  const availability = page.getByRole("group", { name: "Estado", exact: true });
+  await availability.getByRole("button", { name: "Desactivado", exact: true }).click();
+  await expect
+    .poll(() => server.reads.some((url) => new URL(url).searchParams.get("is_active") === "false"))
+    .toBe(true);
+  await availability.getByRole("button", { name: "Todos", exact: true }).click();
+  await expect
+    .poll(() =>
+      new URL(
+        server.reads.filter((url) => new URL(url).pathname === "/api/v1/supply-types/").at(-1) ??
+          "http://127.0.0.1/?is_active=not-read",
+      ).searchParams.has("is_active"),
+    )
+    .toBe(false);
   await page.getByRole("link", { name: "SUP-01", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Nombre del protocolo" })).toHaveValue(
     "Synthetic protocol",
   );
   await page.goto("/inventory/lots");
+  await selectInventorySort(page, "/api/v1/lots/", "-expiry");
   await page.getByRole("button", { name: "Nuevo lote" }).click();
+  await expect(
+    page
+      .getByRole("navigation", { name: "Ruta de navegación" })
+      .getByText("Nuevo lote", { exact: true }),
+  ).toHaveAttribute("aria-current", "page");
   await page.getByRole("textbox", { name: "Código", exact: true }).fill("LOT-NEW");
   await page
     .getByRole("combobox", { name: "Insumo", exact: true })
@@ -184,8 +238,23 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   await expect(page.getByRole("textbox", { name: "Cantidad inicial", exact: true })).toBeDisabled();
   await page.getByRole("link", { name: "Volver a la lista", exact: true }).click();
   await page.getByRole("link", { name: "2", exact: true }).click();
-  await expect(page.getByText(INVENTORY_ADMISSION, { exact: true })).toBeVisible();
+  await expect(page).toHaveURL(
+    (url) =>
+      url.pathname === `/inventory/locations/${inventoryLocation().code}` &&
+      url.searchParams.get("view") === "movements" &&
+      url.searchParams.get("lot") === server.lot.id,
+  );
+  const stockTab = page.getByRole("tab", { name: "Existencias", exact: true });
+  await stockTab.click();
+  await expect(stockTab).toHaveAttribute("aria-selected", "true");
+  await selectInventorySort(page, `/api/v1/locations/${INVENTORY_LOCATION}/stock/`, "-piece_id");
   await page.getByRole("link", { name: INVENTORY_OPERATION, exact: true }).click();
+  await expect(page.getByText(INVENTORY_ADMISSION, { exact: true })).toBeVisible();
+  await selectInventorySort(
+    page,
+    `/api/v1/locations/${INVENTORY_LOCATION}/movements/`,
+    "-quantity",
+  );
   await expect
     .poll(() =>
       server.reads.some(
@@ -268,6 +337,8 @@ test("W8–W11 router, incomplete draft, completion, ledger links and real MapLi
   await expect(historyCode).toHaveValue("LOT-NEW");
   expect(server.writes).toHaveLength(2);
   await page.goto("/inventory/locations");
+  await selectInventorySort(page, "/api/v1/locations/", "-created_at");
+  await expect(page.getByRole("group", { name: "Estado", exact: true })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Synthetic store", exact: false })).toBeVisible();
   await expect.poll(async () => (await readMapWorkers(page)).messages).toBeGreaterThan(0);
   expect((await readMapWorkers(page)).errors).toEqual([]);
@@ -343,6 +414,9 @@ for (const language of LANGUAGES) {
       await page.keyboard.press("Escape");
       await expect(dialog).toHaveCount(0);
       await expect(create).toBeFocused();
+      await create.click();
+      await expectInventoryFooter(page, language, "supply");
+      await expect(create).toBeFocused();
       for (const path of [
         "/inventory/lots",
         "/inventory/lots/LOT-01",
@@ -358,7 +432,7 @@ for (const language of LANGUAGES) {
         await expectNoHorizontalScroll(page);
         await expectContainedControls(page);
         await expectNoAxeViolations(page);
-        await expectPageKeyboard(page, { path, language });
+        await expectInventoryPageActions(page, { path, language });
       }
       await attachInventoryScreenshot(page, `151-${language}-${theme}-320`, true);
       for (const width of [1280, 1440]) {
@@ -386,4 +460,19 @@ for (const language of LANGUAGES) {
       }
     });
   }
+}
+
+async function expectInventoryPageActions(
+  page: Page,
+  { path, language }: { path: string; language: string },
+) {
+  await expectPageKeyboard(page, { path, language });
+  if (path !== "/inventory/locations") return;
+  const trigger = page.getByRole("button", {
+    name: language === "en" ? "New location" : "Nueva ubicación",
+    exact: true,
+  });
+  await trigger.click();
+  await expectInventoryFooter(page, language, "location");
+  await expect(trigger).toBeFocused();
 }

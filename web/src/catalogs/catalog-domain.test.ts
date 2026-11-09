@@ -1,5 +1,6 @@
+import { dragOrderedIds, orderedRows } from "./catalog-reorder";
 import { describe, expect, test } from "vitest";
-import { displayLabel, moveOrderedIds, nextItemSort } from "./catalog-domain";
+import { displayLabel, nextItemSort } from "./catalog-domain";
 import type { CatalogItem } from "./catalogs-query";
 
 const item = (id: string, sort: number, overrides: Partial<CatalogItem> = {}): CatalogItem => ({
@@ -26,17 +27,23 @@ const item = (id: string, sort: number, overrides: Partial<CatalogItem> = {}): C
   ...overrides,
 });
 describe("catalog ordering invariants", () => {
-  test("swaps neighboring active items, excluding inactive and Other; blocks ends", () => {
+  test("moves active items, excluding inactive and Other; optimistic rows retain fixed slots", () => {
     const rows = [
       item("a", 10),
       item("inactive", 15, { is_active: false }),
       item("b", 20),
       item("other", 0, { is_other: true, protected: true }),
     ];
-    expect(moveOrderedIds(rows, "b", "up")).toEqual(["b", "a"]);
-    expect(moveOrderedIds(rows, "a", "up")).toEqual([]);
-    expect(moveOrderedIds(rows, "b", "down")).toEqual([]);
-    expect(moveOrderedIds(rows, "other", "up")).toEqual([]);
+    expect(dragOrderedIds(rows, "b", "a")).toEqual(["b", "a"]);
+    expect(orderedRows(rows, ["b", "a"]).map((row) => row.id)).toEqual([
+      "b",
+      "inactive",
+      "a",
+      "other",
+    ]);
+    expect(dragOrderedIds(rows, "a", "a")).toEqual([]);
+    expect(dragOrderedIds(rows, "b", "missing")).toEqual([]);
+    expect(dragOrderedIds(rows, "other", "a")).toEqual([]);
   });
   test("English falls back to Spanish API data with a warning", () => {
     expect(displayLabel(item("Rociado", 10), "en")).toEqual({

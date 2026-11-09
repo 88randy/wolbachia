@@ -51,3 +51,9 @@ its first error. Existing `TextField` remains presentational and compatible with
 React Hook Form. Submission progress uses the shared `Button`.
 
 Compact card period selectors may use Select hideLabel; their accessible label remains present. DataTable embedded removes its outer frame when a parent Card already supplies the surface; it does not change table behavior.
+
+
+Issue #218 adds `Switch` (native keyboard behavior, visible label and announced checked state)
+and `DialogFooter` (equal-width Cancel/Save tracks, right aligned; stacked only at the shared compact breakpoint).
+Use the footer in create, scope, reauthentication, void and irreversible confirmation dialogs.
+The shell now mounts the existing ToastProvider so reversible actions can expose guarded Undo.

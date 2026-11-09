@@ -1,38 +1,24 @@
-import { useId } from "react";
 import { Button } from "../ui/Button";
 import type { ButtonProps } from "../ui/Button";
-import styles from "./catalogs.module.css";
+import { Tooltip } from "../ui/Tooltip";
 interface Props extends ButtonProps {
   reason: string | undefined;
-  isFocusableWhenBlocked?: boolean;
+  label?: string;
 }
-/** State blockers remain visible and associated with the same keyboard/touch control. */
-export function CatalogActionButton(props: Props) {
-  const { reason, isFocusableWhenBlocked = false, ...button } = props;
-  const reasonId = useId();
-  const isBlocked = reason !== undefined;
-  const blocked = {
-    disabled: isBlocked && !isFocusableWhenBlocked,
-    "aria-disabled": isBlocked,
-    "aria-describedby": isBlocked ? reasonId : undefined,
-    title: reason,
-  };
+/** Blocked icon controls remain focusable so keyboard users can read the explanation. */
+export function CatalogActionButton({ reason, label, ...button }: Props) {
   return (
-    <span className={styles.blockedAction}>
+    <Tooltip content={reason ?? label ?? button.children}>
       <Button
         {...button}
-        {...blocked}
-        variant={props.variant ?? "ghost"}
-        size={props.size ?? "sm"}
+        variant={button.variant ?? "ghost"}
+        size={button.size ?? "sm"}
+        aria-label={label}
+        aria-disabled={reason !== undefined}
         onClick={(event) => {
-          if (!isBlocked) props.onClick?.(event);
+          if (reason === undefined) button.onClick?.(event);
         }}
-      >
-        {props.children}
-      </Button>
-      <span id={reasonId} hidden={!isBlocked} className={styles.blockedReason}>
-        {reason}
-      </span>
-    </span>
+      />
+    </Tooltip>
   );
 }

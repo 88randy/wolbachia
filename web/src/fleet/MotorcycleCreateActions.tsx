@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { SubmitButton } from "../forms/SubmitButton";
 import { Button } from "../ui/Button";
-import styles from "./fleet.module.css";
+import { DialogFooter } from "../ui/DialogFooter";
 export function MotorcycleCreateActions({
   isBusy,
   onClose,
@@ -11,7 +11,7 @@ export function MotorcycleCreateActions({
 }) {
   const { t } = useTranslation();
   return (
-    <div className={styles.actions}>
+    <DialogFooter>
       <Button
         variant="secondary"
         aria-disabled={isBusy}
@@ -26,6 +26,6 @@ export function MotorcycleCreateActions({
         busyLabel={t("fleet.create.busy")}
         isBusy={isBusy}
       />
-    </div>
+    </DialogFooter>
   );
 }

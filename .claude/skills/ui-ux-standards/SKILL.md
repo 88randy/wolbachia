@@ -42,7 +42,7 @@ These are the project's interaction and visual rules. They apply to every screen
   - Optional right rail of compact widget cards (title, period selector, key numbers, mini chart). Under `web.layout` breakpoints the rail moves below the main column.
 - **Sidebar:**
   - Logo on top. Navigation shows icon plus label, and the active item is a pill. Nested groups use tree lines.
-  - The footer holds the light/dark toggle and the user menu.
+  - The footer holds the sidebar collapse control. Keep one user menu in the top-right bar, next to theme and notifications; it remains available when the sidebar is collapsed (#218).
   - **Collapsible** to an icon rail (tooltips on the icons).
   - **Resizable:** dragging the edge changes its width, like the Claude app, between a min and a max width (`web.layout`).
     - Width and collapsed state persist per browser (localStorage, try/catch).

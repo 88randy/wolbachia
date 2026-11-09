@@ -5,6 +5,7 @@ import type { TableState } from "../data-table/table-types";
 import { invalidateOrgScoped, orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { SessionIdentity } from "../session/org-scoped-query";
 import { PARAMETERS_PAGE_SIZE, VERSIONS_PAGE_SIZE } from "./rules-table";
+import { toFilterParams } from "../data-table/table-state";
 
 export type RuleParameter = Schemas["RuleParameter"];
 export type RuleParameterVersion = Schemas["RuleParameterVersion"];
@@ -29,11 +30,13 @@ export function parametersQueryOptions(
   state: TableState,
 ) {
   return orgScopedQueryOptions(identity, {
-    key: [ROOT, "list", state.page],
+    key: [ROOT, "list", state],
     queryFn: async ({ signal }) =>
       unwrap(
         await client.GET("/api/v1/rule-parameters/", {
-          params: { query: { page: state.page, page_size: PARAMETERS_PAGE_SIZE } },
+          params: {
+            query: { page: state.page, page_size: PARAMETERS_PAGE_SIZE, ...toFilterParams(state) },
+          },
           signal,
         }),
       ),
@@ -58,7 +61,7 @@ export function versionsQueryOptions(
   state: TableState,
 ) {
   return orgScopedQueryOptions(identity, {
-    key: [ROOT, "versions", key, state.page, state.includeVoided],
+    key: [ROOT, "versions", key, state],
     queryFn: async ({ signal }) =>
       unwrap(
         await client.GET("/api/v1/rule-parameters/{parameter_key}/versions/", {
@@ -68,6 +71,7 @@ export function versionsQueryOptions(
               page: state.page,
               page_size: VERSIONS_PAGE_SIZE,
               include_voided: state.includeVoided ? "true" : "false",
+              ...toFilterParams(state),
             },
           },
           signal,

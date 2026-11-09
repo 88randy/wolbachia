@@ -309,15 +309,15 @@ describe("voided records", () => {
     const user = userEvent.setup();
     const app = await renderTable(propsOf());
 
-    await user.click(screen.getByRole("checkbox", { name: "Incluir anulados" }));
+    await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
     await waitFor(() => {
       expect(search(app)).toEqual({ include_voided: "true" });
     });
-    expect(
-      screen.getByRole<HTMLInputElement>("checkbox", { name: "Incluir anulados" }).checked,
-    ).toBe(true);
+    expect(screen.getByRole<HTMLInputElement>("switch", { name: "Incluir anulados" }).checked).toBe(
+      true,
+    );
 
-    await user.click(screen.getByRole("checkbox", { name: "Incluir anulados" }));
+    await user.click(screen.getByRole("switch", { name: "Incluir anulados" }));
     await waitFor(() => {
       expect(search(app)).toEqual({});
     });
@@ -326,7 +326,7 @@ describe("voided records", () => {
   test("there is no toggle when the endpoint has no voided records", async () => {
     await renderTable(propsOf({ config: { ...CONFIG, supportsVoided: false } }));
 
-    expect(screen.queryByRole("checkbox", { name: "Incluir anulados" })).toBeNull();
+    expect(screen.queryByRole("switch", { name: "Incluir anulados" })).toBeNull();
   });
 
   test("a voided row is struck through and shows badge, reason and author", async () => {
@@ -603,4 +603,15 @@ test("expanding a grouped row exposes its controlled detail and collapses it aga
   await userEvent.click(button);
   expect(button.getAttribute("aria-expanded")).toBe("false");
   expect(detail?.hidden).toBe(true);
+});
+
+test("a failed background refresh retains rows and exposes retry inside the table", async () => {
+  const refetch = vi.fn();
+  await renderTable(
+    propsOf({ data: dataOf({ error: new Error("synthetic refresh failure"), refetch }) }),
+  );
+  expect(screen.getByRole("table", { name: "Registros de prueba" })).toBeDefined();
+  expect(screen.getByRole("cell", { name: "Alfa" })).toBeDefined();
+  await userEvent.setup().click(screen.getByRole("button", { name: "Reintentar" }));
+  expect(refetch).toHaveBeenCalledOnce();
 });

@@ -93,7 +93,7 @@ describe("web/src style literals", () => {
     }
     for (const [file, selector, role, background, foreground] of [
       ["ui/ui.module.css", ".destructive", "destructive-tint", "bg", "status-critical-fg"],
-      ["void/void-dialog.module.css", ".actions .danger", "danger-solid", "fg", "on-action"],
+      ["void/void-dialog.module.css", ".danger", "danger-solid", "fg", "on-action"],
     ] as const) {
       const css = readFileSync(join(SRC_DIR, file), "utf8").replace(BLOCK_COMMENT, "");
       const rule = [...css.matchAll(/([^{}]+)\{([^{}]*)\}/g)].find(

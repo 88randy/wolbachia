@@ -1,3 +1,4 @@
+import { ToastProvider } from "../ui/ToastProvider";
 import type { ReactNode } from "react";
 import { ShellFrame } from "./ShellFrame";
 import { CommandProvider } from "./CommandProvider";
@@ -7,8 +8,10 @@ export function AppShell({
   actions,
 }: { children?: ReactNode; actions?: readonly CommandAction[] } = {}) {
   return (
-    <CommandProvider actions={actions}>
-      <ShellFrame>{children}</ShellFrame>
-    </CommandProvider>
+    <ToastProvider>
+      <CommandProvider actions={actions}>
+        <ShellFrame>{children}</ShellFrame>
+      </CommandProvider>
+    </ToastProvider>
   );
 }

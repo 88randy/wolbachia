@@ -194,3 +194,23 @@ test("W8 saves named configuration without inventing biological or nullable safe
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
   await screen.findByRole("link", { name: "SUP-NEW" });
 });
+
+test("modal Cancel preserves the private supply draft without submitting", async () => {
+  const user = userEvent.setup();
+  const { api } = await openInventory({ path: "/inventory/supplies" });
+  await user.click(await screen.findByRole("button", { name: "Nuevo insumo" }));
+  const dialog = screen.getByRole("dialog");
+  await user.type(
+    within(dialog).getByRole("textbox", { name: "Nombre del insumo" }),
+    "Retained modal input",
+  );
+  await user.click(within(dialog).getByRole("button", { name: "Cancelar" }));
+  expect(screen.queryByRole("dialog")).toBeNull();
+  await user.click(screen.getByRole("button", { name: "Nuevo insumo" }));
+  expect(
+    within(screen.getByRole("dialog")).getByRole<HTMLInputElement>("textbox", {
+      name: "Nombre del insumo",
+    }).value,
+  ).toBe("Retained modal input");
+  expect(api.requests.filter((r) => r.method === "POST")).toHaveLength(0);
+});

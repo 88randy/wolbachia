@@ -20,10 +20,10 @@ export function usePhoneColumns(): readonly DataTableColumn<Phone>[] {
         headerKey: "phones.column.person",
         cell: (phone) => phone.last_user_username ?? t("phones.cell.noPerson"),
       },
-      { id: "phone", headerKey: "phones.column.phone", cell: (phone) => phone.label },
-      { id: "version", headerKey: "phones.column.version", cell: (phone) => phone.app_version },
+      { id: "label", headerKey: "phones.column.phone", cell: (phone) => phone.label },
+      { id: "app_version", headerKey: "phones.column.version", cell: (phone) => phone.app_version },
       {
-        id: "lastSeen",
+        id: "last_seen_at",
         headerKey: "phones.column.lastSeen",
         cell: (phone) =>
           phone.last_seen_at === null

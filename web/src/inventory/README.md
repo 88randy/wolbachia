@@ -20,6 +20,12 @@ a Membership or asks the operator to type an owner UUID. `inventory-query.ts`
 owns the scoped data adapters, `inventory-options.ts` the closed action modes,
 and `inventory-write.ts` the generated write calls.
 
+All five tables expose the public server ordering in both directions: supplies and
+locations code/created_at; lots code/created_at/expiry; stock lot__code/piece_id;
+movements created_at/lot_code/quantity. Only Supply has an activity segment, with
+All omitting is_active and retaining the existing API default. Location has no activity
+facet; no lot, stock or ledger activity/void filter is invented.
+
 All list ordering, filtering, counts and pagination belong to the server. URL
 filters include organization-local expiry calendar boundaries and explicit
 zone-bearing instants as separate controls. A record/back link retains its list
@@ -88,6 +94,12 @@ The MapLibre renderer receives exactly the table's accepted page and uses the
 existing v6 worker and map-source policy. No map-wide fetch or client-side safety
 filter is added. Invalid geometry, WebGL absence, renderer failure or an invalid
 source leaves the table, coordinates and attribution available.
+
+Supply and Location creation modals use the shared secondary Cancel/primary submit
+footer. Cancel closes without writing and preserves the existing private draft memory.
+Busy/current-read/unknown-delivery gates remain owned by the form; inline editors and
+the full-page lot draft retain their existing submit layout. Inventory breadcrumbs
+translate real route ancestors and new-lot while preserving literal record codes.
 
 List actions sit below headings and the feature's filter/grid wrappers allow
 controls to wrap at 320 px and increased text size. Shared widgets and tokens are

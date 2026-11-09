@@ -14,12 +14,12 @@ export function useBlockHistoryColumns(): DataTableColumn<Schemas["BlockVersion"
       align: "end",
     },
     {
-      id: "effective",
+      id: "effective_from",
       headerKey: "geography.field.effective",
       cell: (row) => format(row.effective_from),
     },
     {
-      id: "author",
+      id: "created_by",
       headerKey: "geography.field.author",
       cell: (row) => row.created_by ?? t("geography.status.unknown"),
     },
