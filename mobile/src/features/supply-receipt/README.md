@@ -29,6 +29,12 @@ outcomes join the exact original source UUID and highest authored decision revis
 they never rewrite the original ingest receipt. An offline assignment change leaves
 the captured original intact for the server's explicit review path.
 
+The #143 closing consumer shares this canonical projection boundary with its own
+reconciliation permission. Receipt capture still requires receive/upload; file-free
+reconciliation requires neither. Both consumers validate readiness, original
+owner/session and paired scope, then consume the raw projection guard in the same
+local write. Retained closing source frames remain unchanged after plan updates.
+
 ## Contract boundaries and design differences
 
 - Actual supply projection has no human lot codes, unit labels or packaging/kind.

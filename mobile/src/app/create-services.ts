@@ -1,3 +1,5 @@
+import { createShiftClose } from "../features/shift-close/create-shift-close.ts";
+import type { ShiftCloseService } from "../features/shift-close/service.ts";
 import { createOvitrapLifecycle } from "../features/ovitrap-lifecycle/create-ovitrap-lifecycle.ts";
 import type { LifecycleService } from "../features/ovitrap-lifecycle/service.ts";
 import type { SqlExecutor } from "../db/sql.ts";
@@ -47,6 +49,7 @@ export interface AppServices {
   readonly ovitrapCheck: OvitrapService;
   readonly ovitrapLifecycle: LifecycleService;
   readonly shiftOpen: ShiftOpenService;
+  readonly shiftClose: ShiftCloseService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -75,11 +78,8 @@ export async function createServices(): Promise<AppServices> {
     requests: () => requests,
     getCaptureIdentity: () => captureIdentity(acceptedAuth, credentials, deviceId),
   });
-  const {
-    auth,
-    credentials: tokens,
-    requests,
-  } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  const runtime = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  const { auth, credentials: tokens, requests } = runtime;
   acceptedAuth = auth;
   const attachments = createAttachments({ db, auth, tokens, deviceId, requests });
   const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
@@ -89,7 +89,7 @@ export async function createServices(): Promise<AppServices> {
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
-  const forms = createLocalForms({ ...captureDeps, bundle });
+  const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId });
   return { ...shared, ...captures, engine, shiftOpen, day, ...forms };
 }
 function captureIdentity(
@@ -120,8 +120,12 @@ function createCaptures(
   };
 }
 
-function createLocalForms(input: Parameters<typeof createFuel>[0]) {
-  return { supplyReceipt: createSupplyReceipt(input), fuel: createFuel(input) };
+function createLocalForms(input: Parameters<typeof createShiftClose>[0]) {
+  return {
+    shiftClose: createShiftClose(input),
+    supplyReceipt: createSupplyReceipt(input),
+    fuel: createFuel(input),
+  };
 }
 
 function createRuntimeAuth(

@@ -119,6 +119,18 @@ envelope rejects the existing sync transaction and does not advance its cursor.
 
 ## Upgrade readiness
 
+M14's supply consumer uses a positive `day_supplies_bootstrap_ready` KV marker;
+absence means pending, including previously hydrated installations with valid
+ETags/cursors. Production's existing private-identity consumer therefore requests
+a full body without ETag until a validated `supplies` array (including an empty
+one), its projections, readiness and cursor commit in the same DayStore transaction.
+Missing/malformed sections, unexpected304, offline errors, failed writes, deltas
+and restart cannot establish readiness. Revoke removes the marker with downloaded
+supplies, preserving authored closing drafts and outbox/evidence. Legacy day-only
+callers keep their prior readiness policy. No migration, released SQL1–16 change,
+historical adoption or second writer is introduced. The single file-backed
+`shift-close-bootstrap.test.ts` upgrade journey owns this regression.
+
 An old database may retain a valid bundle ETag and sync cursor while migration 9
 creates an empty point cache. Neither a conditional 304 nor valid-cursor delta
 sync can establish that the complete point projection was downloaded. Migration

@@ -2,6 +2,59 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.shiftClose.refreshSupplies": "Actualizar recepciones descargadas",
+  "mobile.shiftClose.sourceFrame":
+    "Saldo confirmado descargado; las declaraciones adicionales se muestran debajo.",
+
+  "mobile.shiftClose.title": "Cerrar jornada",
+  "mobile.shiftClose.closedTitle": "Jornada cerrada",
+  "mobile.shiftClose.phoneClosed": "Cerrada en el tel?fono",
+  "mobile.shiftClose.serverReceived": "El servidor recibi? los registros de cierre",
+  "mobile.shiftClose.inReview": "El servidor recibi? un registro para revisi?n",
+  "mobile.shiftClose.rejected":
+    "Un registro fue rechazado. Revisa la bandeja; la jornada sigue cerrada en el tel?fono.",
+  "mobile.shiftClose.pending": "Puntos pendientes",
+  "mobile.shiftClose.noPending": "No hay puntos pendientes en la copia descargada.",
+  "mobile.shiftClose.goNow": "Ir al d?a",
+  "mobile.shiftClose.leavePending": "Cerrar sin completar este punto",
+  "mobile.shiftClose.leftPending": "Confirmado: el punto queda pendiente",
+  "mobile.shiftClose.planned": "Asignado por almac?n",
+  "mobile.shiftClose.equation": "Recibido ? usado ? devuelto ? merma",
+  "mobile.shiftClose.difference": "Diferencia",
+  "mobile.shiftClose.unknown": "Sin dato confirmado",
+  "mobile.shiftClose.supplies": "Conciliaci?n de insumos",
+  "mobile.shiftClose.differenceAllowed":
+    "Las diferencias quedan para revisi?n y no impiden cerrar. La devoluci?n es una declaraci?n; almac?n confirma su recepci?n.",
+  "mobile.shiftClose.suppliesUnavailable":
+    "No hay una recepci?n descargada vinculada a esta jornada. Los saldos y la conciliaci?n quedan sin confirmar; puedes cerrar.",
+  "mobile.shiftClose.returnQuantity": "Cantidad adicional que devuelves",
+  "mobile.shiftClose.returnDestination": "Devoluci?n al almac?n de origen",
+  "mobile.shiftClose.odometer": "Od?metro al cerrar (km)",
+  "mobile.shiftClose.note": "Nota de cierre (opcional)",
+  "mobile.shiftClose.lowOdometer":
+    "El od?metro es menor que al abrir. Se conservar? para revisi?n; puedes cerrar en el tel?fono.",
+  "mobile.shiftClose.confirmTitle": "?Cerrar la jornada?",
+  "mobile.shiftClose.confirmHint":
+    "Se guardar? en este tel?fono y dejar?s de capturar y recopilar ubicaci?n en esta jornada. Los puntos pendientes no se completar?n.",
+  "mobile.shiftClose.close": "Cerrar jornada en el tel?fono",
+  "mobile.shiftClose.continue": "Revisar y confirmar cierre",
+  "mobile.shiftClose.retryHint":
+    "Lo pendiente se reintentar? al recuperar la sesi?n y la conexi?n. No desinstales la app. Los adjuntos pendientes y los rechazos se consultan en la bandeja.",
+  "mobile.shiftClose.reviewHistory": "Historial de revisi?n",
+  "mobile.shiftClose.notReviewed": "Sin decisi?n de supervisor descargada.",
+  "mobile.shiftClose.observed": "Observada por supervisor",
+  "mobile.shiftClose.approved": "Aprobaci?n vigente",
+  "mobile.shiftClose.staleApproval": "Aprobaci?n anterior; requiere nueva revisi?n",
+  "mobile.shiftClose.noShift": "No hay una jornada local para cerrar. Vuelve al inicio.",
+  "mobile.shiftClose.saveFailed":
+    "No se guard? el cambio. Conservamos tus entradas. Revisa los pendientes, cantidades y motivos, y vuelve a intentar; si contin?a, revisa el almacenamiento con tu supervisor.",
+  "mobile.shiftClose.shrinkageQuantity": "Cantidad adicional de merma",
+  "mobile.shiftClose.reason": "Motivo de merma (10 a 1000 caracteres)",
+  "mobile.shiftClose.photo": "Tomar foto de merma",
+  "mobile.shiftClose.photoRequired": "La merma requiere una foto y un motivo de cat?logo.",
+  "mobile.shiftClose.photoSaved": "Foto guardada en el tel?fono; pendiente de entrega",
+  "mobile.shiftOpen.closed": "La jornada est? cerrada en este tel?fono. Consulta su resumen.",
+
   "mobile.unlock.greetingNeutral": "Hola",
   "mobile.shiftOpen.severeSaved":
     "No puedes salir con esta moto por una falla grave. Avisa a tu supervisor para que gestione la liberación de flota.",

@@ -13,6 +13,7 @@ export type Route =
   | { readonly name: "ovitrapCapture" }
   | { readonly name: "ovitrapScanner"; readonly target: "ovitrap" | "bag" }
   | { readonly name: "invalidOvitrapCode"; readonly target: "ovitrap" | "bag" }
+  | { readonly name: "closeShift" }
   | { readonly name: "openShift" }
   | { readonly name: "supplyReceipt" }
   | { readonly name: "fuel" }

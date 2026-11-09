@@ -315,6 +315,10 @@ test("reassigns only to an eligible membership and changes severity with the cur
     [`POST /api/v1/incidents/${ID}/change-severity/`]: Response.json(event),
   });
   await screen.findByRole("option", { name: "Eligible owner" });
+  api.setRoute(
+    DETAIL,
+    Response.json(incident({ revision: 3, owner_id: owner, owner_display: "Reassigned owner" })),
+  );
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Responsable" }), owner);
   await userEvent.click(screen.getByRole("button", { name: "Reasignar" }));
   await waitFor(() => {
@@ -323,22 +327,26 @@ test("reassigns only to an eligible membership and changes severity with the cur
         ?.body,
     ).toEqual({ expected_revision: 2, owner_id: owner });
   });
+  await screen.findByText(/Reassigned owner/);
   await waitFor(() => {
-    expect(
-      screen
-        .getByRole("combobox", { name: "Severidad" })
-        .closest("fieldset")
-        ?.getAttribute("disabled"),
-    ).toBeNull();
+    const reassign = screen.getByRole("button", { name: "Reasignar" });
+    expect(reassign.closest("fieldset")?.getAttribute("disabled")).toBeNull();
+    expect(reassign.getAttribute("aria-disabled")).toBe("false");
   });
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Severidad" }), "high");
+  await waitFor(() => {
+    const severity = screen.getByRole("button", { name: "Cambiar severidad" });
+    expect(screen.getByRole("combobox", { name: "Severidad" })).toHaveProperty("value", "high");
+    expect(severity.closest("fieldset")?.getAttribute("disabled")).toBeNull();
+    expect(severity.getAttribute("aria-disabled")).toBe("false");
+  });
   await userEvent.click(screen.getByRole("button", { name: "Cambiar severidad" }));
   await waitFor(() => {
     expect(
       api.requests.find(
         ({ path, method }) => method === "POST" && path.endsWith("/change-severity/"),
       )?.body,
-    ).toEqual({ expected_revision: 2, severity: "high" });
+    ).toEqual({ expected_revision: 3, severity: "high" });
   });
 });
 

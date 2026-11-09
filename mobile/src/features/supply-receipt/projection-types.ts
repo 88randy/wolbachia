@@ -3,6 +3,7 @@ import type { SqlStatement } from "../../db/sql.ts";
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
 
 export type SupplyAssignment = Schemas["SupplyBundle"];
+export type SupplyProjectionAccess = "receive" | "reconcile";
 export class SupplyProjectionUnavailable extends Error {
   readonly code = "scope";
 }

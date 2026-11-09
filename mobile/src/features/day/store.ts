@@ -146,6 +146,9 @@ export class DayStore {
       ...courierBundleStatements(body),
       ...supplyBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
+      isRecord(body) && Array.isArray(body.supplies)
+        ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
+        : removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       removeStatement(KV_KEYS.daySamplingPointsBootstrapPending),
       removeStatement(KV_KEYS.dayCompletionBootstrapPending),
       setStatement(KV_KEYS.syncCursor, bundle.cursor),
@@ -190,16 +193,18 @@ export class DayStore {
       INVALIDATE_ATTACHMENTS,
     ]);
   }
-  /** Older parsers may have discarded fields even while their ETag/cursor remain valid. */
+  /** Missing supply readiness also covers upgrades without changing released migrations. */
   async needsBootstrap(includeLifecycle = true): Promise<boolean> {
     const rows = await this.#db.query(
       `SELECT 1 FROM kv WHERE key IN (?,?,?) AND value='true'
-        UNION ALL SELECT 1 WHERE ? AND NOT EXISTS(${CURRENT_CAPTURE_CONTEXT}) LIMIT 1`,
+        UNION ALL SELECT 1 WHERE ? AND (NOT EXISTS(${CURRENT_CAPTURE_CONTEXT})
+          OR NOT EXISTS(SELECT 1 FROM kv WHERE key=? AND value='true')) LIMIT 1`,
       [
         KV_KEYS.daySamplingPointsBootstrapPending,
         KV_KEYS.dayCompletionBootstrapPending,
         includeLifecycle ? LIFECYCLE_BOOTSTRAP_PENDING : KV_KEYS.dayCompletionBootstrapPending,
         includeLifecycle ? 1 : 0,
+        KV_KEYS.daySuppliesBootstrapReady,
       ],
     );
     return rows.length > 0;
@@ -215,6 +220,7 @@ export class DayStore {
       { sql: "DELETE FROM day_map_manifest" },
       { sql: "DELETE FROM day_bundle_meta" },
       ...clearDownloadedProjections,
+      removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       ...clearSupplyProjection,
       ...invalidateCaptureContext,
       revokeCaptureScope(),
