@@ -102,6 +102,18 @@ def test_expected_missing_retains_pending_cause_and_real_policy_recovers_one_cas
     assert link.created_by_id is None
     assert link.incident.source_event_id is None
     assert AutomaticIncidentOrigin.objects.get(incident=link.incident).source_id == discrepancy.pk
+    reported = api_client.get(
+        "/api/v1/incidents/", {"kind": "reported", "origin": "lab_reception", "page_size": 1}
+    )
+    assert reported.status_code == 200
+    assert reported.data["count"] == 1
+    assert reported.data["results"][0]["id"] == str(link.incident_id)
+    assert reported.data["results"][0]["origin"] == "lab_reception"
+    assert reported.data["results"][0]["type_snapshot"]["id"] == str(kind.pk)
+    detail = api_client.get(f"/api/v1/incidents/{link.incident_id}/")
+    assert detail.status_code == 200
+    assert detail.data["linked_record"]["id"] == str(bag.pk)
+    assert detail.data["linked_record"]["code"] == bag.code
     repeated = command(
         context, "missing", LabTarget("bag", bag.pk), {"reason": "Same unchanged missing cause"}
     )

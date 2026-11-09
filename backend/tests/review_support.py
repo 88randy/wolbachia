@@ -26,21 +26,21 @@ def audit_current_membership(member):
         )
         assert proof.snapshot == snapshot
         proofs.append(proof)
-    proofs.append(
-        ConfigurationRevision.objects.create(
-            organization=member.organization,
-            created_by=member.user,
-            kind="membership",
-            target_id=member.pk,
-            revision=member.revision,
-            snapshot={
-                "user": str(member.user_id),
-                "profiles": [str(profile.pk) for profile in member.profiles.all()],
-                "scope": member.scope,
-                "is_active": member.is_active,
-            },
-        )
+    snapshot = {
+        "user": str(member.user_id),
+        "profiles": [str(profile.pk) for profile in member.profiles.all()],
+        "scope": member.scope,
+        "is_active": member.is_active,
+    }
+    proof, _created = ConfigurationRevision.objects.get_or_create(
+        organization=member.organization,
+        kind="membership",
+        target_id=member.pk,
+        revision=member.revision,
+        defaults={"created_by": member.user, "snapshot": snapshot},
     )
+    assert proof.snapshot == snapshot
+    proofs.append(proof)
     return proofs
 
 

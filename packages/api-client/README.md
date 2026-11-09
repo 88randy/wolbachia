@@ -4,6 +4,25 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#304 adds reported incident workspace reads: assigned_to_me/overdue/escalated,
+stable type family and persisted origin filters, reported critical-first order,
+archived type/current authorized parent/evidence/action projections, and paged
+context-options/owner-options. Context action is read or create; owners are actual
+Membership UUIDs, not Me.user IDs. reportable=true on incident-types requires both
+current version and CatalogItem activity, without changing old submitted pins.
+The default fleet mode, six attachment parents, download authorization and all
+write/CAS bodies remain unchanged. Availability is not evidence admissibility or
+a durable permission. Full W6/W7 and W4 consumers remain separate issues.
+
+B34 adds `/community-activities/` list/detail/create/void and action-scoped
+`zone-options`. `zone_id` is a real Block UUID. List totals cover all authorized
+filtered active rows, while `count` describes the selected display rows including
+voids when requested. Summed attendance is an exact digit string, not unique people.
+Writes return immutable minimal receipts; current detail reads own independently
+redacted Incident references. The existing single history union adds one aggregate
+branch without private wording or Incident identity; only real-source captures are
+courier-delivered. Root bootstrap2 and six upload parents remain unchanged.
+
 #289 adds optional/nullable root capture_context to Bootstrap and Changes. Its
 required object fields are capture schema 1, field_event.sync permission, self
 user/org UUIDs, scope_revision and complete effective paired grants. Known empty
@@ -230,3 +249,15 @@ closed count/rejection union with no Bag override. The sixth private parent is
 lab_rejection. The ONE history producer becomes 4 while root bundle 2, capture
 context and all four old kind mappings remain. Generated types supply no lab
 screen, independent execution or operational biological method approval.
+
+## Courier supplies and whole-Bag disposal (#107)
+
+Official schema/client include closed preparation and execution commands, current
+paired assignment/reconciliation/write-off reads, supplies1 and additive typed
+history6, preserving the canonical Community5 branch and all earlier shapes.
+InventoryIntent is the seventh concrete B04 parent, not a second uploader.
+Quantity strings and unknown-versus-zero receipts are preserved. Count replacement
+adds optional measurement_kind only for proved historical data correction after
+disposal; omitted/physical behavior and old command replay stay compatible.
+Generation must run twice from backend source and preserve all unrelated prior
+paths/components; never hand-edit the generated files. Client screens are outside107.

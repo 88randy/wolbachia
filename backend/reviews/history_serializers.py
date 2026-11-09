@@ -3,6 +3,7 @@
 from typing import Any
 
 from drf_spectacular.extensions import OpenApiSerializerExtension
+from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
 
@@ -120,6 +121,78 @@ class LabHistoryEntrySerializer(serializers.Serializer[Any]):
     reason = serializers.CharField(allow_null=True, allow_blank=True)
 
 
+class CommunityHistoryEntrySerializer(serializers.Serializer[Any]):
+    from community.serializers import CommunityTypeSnapshotSerializer
+
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(choices=["community_activity"])
+    activity_id = serializers.UUIDField()
+    event_id = serializers.UUIDField()
+    command_id = serializers.UUIDField()
+    code = serializers.CharField()
+    revision = serializers.IntegerField(min_value=1, max_value=2)
+    type_id = serializers.UUIDField()
+    type_snapshot = CommunityTypeSnapshotSerializer()
+    zone_id = serializers.UUIDField()
+    zone_version_id = serializers.UUIDField()
+    activity_date = serializers.DateField()
+    attendance = serializers.IntegerField(min_value=0, max_value=2**53 - 1)
+    is_voided = serializers.BooleanField()
+    source_event_id = serializers.UUIDField()
+    source_device_time = serializers.DateTimeField()
+    source_server_received_at = serializers.DateTimeField()
+    subjects = HistorySubjectSerializer(many=True, allow_empty=False)
+
+
+SUPPLY_HISTORY_SOURCES = (
+    "plan",
+    "release",
+    "cancel",
+    "receipt",
+    "reconcile",
+    "return",
+    "justify",
+    "bag_disposal",
+)
+
+
+@extend_schema_field(
+    {"type": "string", "enum": list(SUPPLY_HISTORY_SOURCES)},
+    component_name="SupplyHistorySourceKindEnum",
+)
+class SupplyHistorySourceKindField(serializers.ChoiceField):
+    def __init__(self, **kwargs: Any) -> None:  # noqa: ANN401 -- DRF field options
+        super().__init__(choices=SUPPLY_HISTORY_SOURCES, **kwargs)
+
+
+class SupplyHistoryEntrySerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    kind = serializers.ChoiceField(
+        choices=[
+            "supply_plan",
+            "supply_release",
+            "supply_cancel",
+            "supply_receipt",
+            "supply_reconcile",
+            "supply_return",
+            "supply_justify",
+            "supply_bag_disposal",
+        ]
+    )
+    source_kind = SupplyHistorySourceKindField()
+    assignment_id = serializers.UUIDField(allow_null=True)
+    bag_id = serializers.UUIDField(allow_null=True)
+    actor_id = serializers.UUIDField()
+    at = serializers.DateTimeField()
+    subjects = HistorySubjectSerializer(many=True, allow_empty=False)
+    source_event_id = serializers.UUIDField(allow_null=True)
+    source_status = serializers.ChoiceField(
+        choices=["accepted", "in_review", "rejected"], allow_null=True
+    )
+    source_code = serializers.CharField(allow_null=True)
+    voided_at = serializers.DateTimeField(allow_null=True)
+
+
 class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
     """The single history producer validates and renders its two actual domain shapes."""
 
@@ -133,6 +206,8 @@ class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
 
     @staticmethod
     def _serializer(kind: str) -> type[serializers.Serializer[Any]]:
+        if kind == "community_activity":
+            return CommunityHistoryEntrySerializer
         if isinstance(kind, str) and kind in {
             "lab_receipt",
             "lab_discrepancy",
@@ -141,6 +216,17 @@ class CourierHistoryEntrySerializer(serializers.Serializer[Any]):
             "lab_rejection",
         }:
             return LabHistoryEntrySerializer
+        if kind in {
+            "supply_plan",
+            "supply_release",
+            "supply_cancel",
+            "supply_receipt",
+            "supply_reconcile",
+            "supply_return",
+            "supply_justify",
+            "supply_bag_disposal",
+        }:
+            return SupplyHistoryEntrySerializer
         if kind == "transfer_custody":
             return TransferHistoryEntrySerializer
         if kind == "relocation_proposal":
@@ -160,15 +246,31 @@ class CourierHistorySchema(OpenApiSerializerExtension):
         ).ref
         transfer = auto_schema.resolve_serializer(TransferHistoryEntrySerializer(), direction).ref
         lab = auto_schema.resolve_serializer(LabHistoryEntrySerializer(), direction).ref
+        community = auto_schema.resolve_serializer(CommunityHistoryEntrySerializer(), direction).ref
+        supply = auto_schema.resolve_serializer(SupplyHistoryEntrySerializer(), direction).ref
         return {
-            "oneOf": [review, relocation, transfer, lab],
+            "oneOf": [review, relocation, transfer, lab, community, supply],
             "discriminator": {
                 "propertyName": "kind",
                 "mapping": {
+                    "community_activity": community["$ref"],
                     "review_decision": review["$ref"],
                     "shift_validation": review["$ref"],
                     "relocation_proposal": relocation["$ref"],
                     "transfer_custody": transfer["$ref"],
+                    **{
+                        kind: supply["$ref"]
+                        for kind in (
+                            "supply_plan",
+                            "supply_release",
+                            "supply_cancel",
+                            "supply_receipt",
+                            "supply_reconcile",
+                            "supply_return",
+                            "supply_justify",
+                            "supply_bag_disposal",
+                        )
+                    },
                     **{
                         kind: lab["$ref"]
                         for kind in (

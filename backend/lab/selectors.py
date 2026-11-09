@@ -208,6 +208,8 @@ def annotate_lab_bags(rows: QuerySet[Bag]) -> QuerySet[Bag]:
 
 
 def bag_lab_projection(bag: Bag) -> dict[str, Any]:
+    from inventory.allocations.bag_dependencies import material_availability
+
     receipt = getattr(bag, "lab_receipt", None)
     latest = LabResultRevision.objects.filter(bag=bag).first()
     if not effective_effects(Bag.objects.filter(pk=bag.pk), "reading__event").exists():
@@ -223,6 +225,7 @@ def bag_lab_projection(bag: Bag) -> dict[str, Any]:
     else:
         status = "missing" if bag.lab_discrepancies.filter(kind="missing").exists() else "expected"
     return {
+        "material": material_availability(bag),
         "status": status,
         "revision": 0 if latest is None else latest.revision,
         "receipt_id": None if receipt is None else str(receipt.pk),
@@ -234,6 +237,8 @@ def bag_lab_projection(bag: Bag) -> dict[str, Any]:
 
 
 def result_projection(result: EggCountAttempt | LabRejection) -> dict[str, Any]:
+    from inventory.allocations.bag_dependencies import material_availability
+
     projection = (
         count_projection(result)
         if isinstance(result, EggCountAttempt)
@@ -242,6 +247,7 @@ def result_projection(result: EggCountAttempt | LabRejection) -> dict[str, Any]:
     latest = LabResultRevision.objects.filter(bag=result.bag).first()
     return {
         **projection,
+        "material": material_availability(result.bag),
         "current_revision": 0 if latest is None else latest.revision,
         "is_current": latest is not None and result.pk in {latest.count_id, latest.rejection_id},
     }

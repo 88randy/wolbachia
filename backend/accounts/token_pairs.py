@@ -66,18 +66,22 @@ def _adopted() -> Q:
 
 def issue_pair(session: DeviceSession, parent: TokenPair | None = None) -> IssuedTokens:
     """Create a new token pair for the session (writes TokenPair)."""
-    now = server_now()
-    access, refresh = generate_token(), generate_token()
-    pair = TokenPair.objects.create(
-        organization_id=session.organization_id,
-        created_by_id=session.user_id,
-        session=session,
-        parent=parent,
-        access_hash=hash_token(access),
-        access_expires_at=now + timedelta(seconds=settings.AUTH_ACCESS_TOKEN_TTL_SECONDS),
-        refresh_hash=hash_token(refresh),
-        refresh_expires_at=now + timedelta(days=settings.AUTH_REFRESH_TOKEN_TTL_DAYS),
-    )
+    with transaction.atomic():
+        session = DeviceSession.objects.select_for_update().get(pk=session.pk)
+        if session.user_id is None or session.end_basis or session.dissociated_at is not None:
+            raise InvalidTokenError
+        now = server_now()
+        access, refresh = generate_token(), generate_token()
+        pair = TokenPair.objects.create(
+            organization_id=session.organization_id,
+            created_by_id=session.user_id,
+            session=session,
+            parent=parent,
+            access_hash=hash_token(access),
+            access_expires_at=now + timedelta(seconds=settings.AUTH_ACCESS_TOKEN_TTL_SECONDS),
+            refresh_hash=hash_token(refresh),
+            refresh_expires_at=now + timedelta(days=settings.AUTH_REFRESH_TOKEN_TTL_DAYS),
+        )
     return IssuedTokens(access=access, refresh=refresh, session=session, pair=pair)
 
 
@@ -129,6 +133,8 @@ def claim_access_use(pair: TokenPair) -> DomainError | None:
     at any moment. If another sibling was used first, this is a copy and the session is revoked.
     Raise the result only after this function returned, so the revocation is committed.
     """
+    if pair.session.user_id is None or pair.session.end_basis or pair.session.dissociated_at:
+        return InvalidTokenError()
     if pair.access_used_at is not None:
         return None
     if pair.parent_id is None:  # the pair of a login has no siblings
@@ -153,6 +159,8 @@ def claim_access_use(pair: TokenPair) -> DomainError | None:
 
 
 def _has_active_membership(session: DeviceSession) -> bool:
+    if session.user_id is None:
+        return False
     return Membership.objects.filter(
         user_id=session.user_id,
         organization_id=session.organization_id,
@@ -168,6 +176,8 @@ def _revoked_failure(session: DeviceSession, reason: RevokeReason) -> DomainErro
 
 def _session_failure(session: DeviceSession) -> DomainError | None:
     """Why the session itself cannot refresh, or None. May revoke it (writes DeviceSession)."""
+    if session.user is None or session.end_basis or session.dissociated_at is not None:
+        return InvalidTokenError()
     if session.revoked_at is not None or session.device.is_revoked:
         return SessionRevokedError()
     if not session.user.is_active:
@@ -220,6 +230,8 @@ def _lock_pair(digest: str) -> TokenPair | None:
     if found is None:
         return None
     pair_pk, session_pk, user_pk, parent_pk = found
+    if user_pk is None:
+        return None
     User.objects.select_for_update(no_key=True).get(pk=user_pk)
     DeviceSession.objects.select_for_update().get(pk=session_pk)
     pair = (

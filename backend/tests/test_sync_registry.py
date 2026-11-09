@@ -65,7 +65,33 @@ def test_an_unknown_type_and_an_unknown_version_have_different_codes() -> None:
 
 
 def test_record_void_is_registered_by_the_app_itself() -> None:
+    from field_sync.producers import BOOTSTRAP_SCHEMA_VERSION, get_producer
+
     assert find_handler("record.void", 1).on_void is None
+    for event_type in ("supplies.receive", "supplies.reconcile"):
+        handler = find_handler(event_type, 1)
+        assert handler.checks_shift is True
+        assert handler.on_void is not None
+        assert handler.review_adapter is not None
+    assert BOOTSTRAP_SCHEMA_VERSION == 2
+    assert {
+        key: get_producer(key).schema_version
+        for key in (
+            "history",
+            "supplies",
+            "assignments",
+            "quadrants",
+            "sampling_points",
+            "ovitraps",
+        )
+    } == {
+        "history": 6,
+        "supplies": 1,
+        "assignments": 3,
+        "quadrants": 2,
+        "sampling_points": 1,
+        "ovitraps": 1,
+    }
 
 
 def test_every_registered_handler_keeps_the_registry_contract() -> None:

@@ -37,6 +37,7 @@ INSTALLED_APPS = [
     "incidents.apps.IncidentsConfig",
     "inventory",
     "lab.apps.LabConfig",
+    "community.apps.CommunityConfig",
 ]
 
 MIDDLEWARE = [
@@ -105,6 +106,14 @@ except ValueError as error:
     ) from error
 if not 30 <= AUTH_TOKEN_PAIR_RETENTION_DAYS <= 365:
     raise ImproperlyConfigured("AUTH_TOKEN_PAIR_RETENTION_DAYS must be between 30 and 365.")
+try:
+    AUTH_SESSION_AUDIT_RETENTION_DAYS = env.int("AUTH_SESSION_AUDIT_RETENTION_DAYS", default=365)
+except ValueError as error:
+    raise ImproperlyConfigured("AUTH_SESSION_AUDIT_RETENTION_DAYS must be an integer.") from error
+if max(180, AUTH_TOKEN_PAIR_RETENTION_DAYS) > AUTH_SESSION_AUDIT_RETENTION_DAYS:
+    raise ImproperlyConfigured(
+        "AUTH_SESSION_AUDIT_RETENTION_DAYS must be >=180 and >=AUTH_TOKEN_PAIR_RETENTION_DAYS."
+    )
 AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", default=60)
 AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
 AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)
@@ -226,6 +235,14 @@ SPECTACULAR_SETTINGS = {
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
         "ModeEnum": ["none", "selected", "all"],
+        "OriginEnum": [
+            "field_event",
+            "direct_report",
+            "review_decision",
+            "inventory_condition",
+            "lab_reception",
+            "unknown",
+        ],
         "ReviewDecisionActionEnum": ["accept", "void", "open_incident"],
         "RelocationDecisionEnum": ["approved", "rejected"],
         "DecisionEnum": ["keep", "move", "remove"],

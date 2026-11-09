@@ -3,6 +3,7 @@
 from celery import shared_task
 
 from accounts.reset_emails import send_password_reset_emails
+from accounts.session_audit_retention import dissociate_ended_sessions
 from accounts.token_retention import prune_ended_token_pairs as prune_token_pairs
 
 
@@ -20,3 +21,4 @@ def send_password_reset_email(email: str) -> None:
 def prune_ended_token_pairs() -> None:
     """Run the bounded token-family retention service (nightly, #54)."""
     prune_token_pairs()
+    dissociate_ended_sessions()

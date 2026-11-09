@@ -274,3 +274,17 @@ signed decimal quantities, unit pins and existing transfer metadata redaction.
 Zero stock does not erase history or grant current custody/whole-transfer access.
 Owning tests extend existing read-contract and B-to-C custody groups; generic code
 grammar stays owned by tests/test_code_filter.py. SQL execution requires PostgreSQL.
+
+## Courier supplies (#107)
+
+allocations/ owns complete courier custody, reconciliation and biological disposal
+through this app's SAME signed ledger. Location and SupplyAssignment custodians
+are mutually exclusive, never dummy storage. Plan0effects; release reserves;
+signed actual receipt moves stock once; use/loss and signed warehouse return debit
+real custody. The canonical transfer require_available also subtracts current B10
+reservations; balance still means signed physical legs. See allocations/README.md
+and docs/api-conventions.md for paired whole-vector actions, source proof, concrete
+HTTP evidence parent, disposal/Lab data-only correction and exact replay.
+Location read filters/order/balances remain unchanged. Only necessary real-source
+select_related paths and one private supply_request context support additive
+nullable source_supply metadata. Legacy source_transfer behavior is retained.
