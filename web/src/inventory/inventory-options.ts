@@ -1,5 +1,5 @@
 import { unwrap } from "@wolbachia/api-client";
-import { orgScopedQueryOptions } from "../session/org-scoped-query";
+import { assertInventoryAction, inventoryScopedOptions } from "./inventory-read-context";
 import type { InventoryScope } from "./inventory-query";
 export interface OptionRequest {
   kind: "centers" | "supplies" | "owners" | "placements" | "protocols";
@@ -52,12 +52,19 @@ export function inventoryOptionOptions(
   const allowed = scope.identity.permissions?.includes(optionPermission(request)) ?? false;
   const identity = {
     ...scope.identity,
-    isSettled: scope.identity.isSettled && optionReady(request) && allowed,
+    isSettled:
+      scope.identity.isSettled &&
+      optionReady(request) &&
+      allowed &&
+      scope.readContext?.mode !== "custody",
   };
-  return orgScopedQueryOptions(identity, {
-    key: ["inventory", "options", request, paging],
-    queryFn: ({ signal }) => readInventoryOptionPage(scope, { request, paging }, signal),
-  });
+  return inventoryScopedOptions(
+    { ...scope, identity },
+    {
+      key: ["inventory", "options", request, paging],
+      queryFn: ({ signal }) => readInventoryOptionPage(scope, { request, paging }, signal),
+    },
+  );
 }
 export async function readInventoryOptionPage(
   scope: InventoryScope,
@@ -65,6 +72,7 @@ export async function readInventoryOptionPage(
   signal: AbortSignal,
 ) {
   const { request, paging } = target;
+  assertInventoryAction(scope, signal);
   const query = { ...paging, page_size: 25, ...targetOf(request) };
   return unwrap(await scope.client.GET(paths[request.kind], { params: { query }, signal }));
 }

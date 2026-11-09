@@ -3,13 +3,12 @@ import {
   inventoryLocation,
   inventoryLot,
   inventoryPage,
+  inventoryMovement,
   INVENTORY_CENTER,
   INVENTORY_LOCATION,
   INVENTORY_SUPPLY,
   INVENTORY_OWNER,
   INVENTORY_OPERATION,
-  INVENTORY_ADMISSION,
-  INVENTORY_TIME,
 } from "./inventory-fixtures";
 export const inventoryPreviewPermissions = [
   "supply_type.read",
@@ -28,39 +27,44 @@ export const inventoryPreviewPermissions = [
 export interface InventoryReadState {
   lot: ReturnType<typeof inventoryLot>;
   locationRows: ReturnType<typeof inventoryLocation>[];
+  readonly emptyStockLocations?: ReadonlySet<string>;
 }
-function stock(state: InventoryReadState) {
-  return inventoryPage([
-    {
-      lot: state.lot.id,
-      lot_code: state.lot.code,
-      supply: state.lot.supply,
-      piece_id: null,
-      quantity: "2",
-      unit: "piece",
-      source_ids: [INVENTORY_OPERATION],
-    },
-  ]);
+function stock(state: InventoryReadState, location = inventoryLocation()) {
+  return inventoryPage(
+    state.emptyStockLocations?.has(location.id)
+      ? []
+      : [
+          {
+            lot: state.lot.id,
+            lot_code: state.lot.code,
+            supply: state.lot.supply,
+            piece_id: null,
+            quantity: "2",
+            unit: "piece",
+            source_ids: [INVENTORY_OPERATION],
+          },
+        ],
+  );
 }
-function movement(state: InventoryReadState) {
-  return {
-    id: "00000000-0000-4000-8000-000000000012",
-    operation_id: INVENTORY_OPERATION,
-    line_number: 1,
+function movement(state: InventoryReadState, location = inventoryLocation()) {
+  return inventoryMovement({
     lot_id: state.lot.id,
     lot_code: state.lot.code,
     supply_id: state.lot.supply,
-    location_id: inventoryLocation().id,
-    location_code: "LOC-01",
-    piece_id: null,
-    quantity: "2",
-    unit: "piece",
-    unit_version_id: inventorySupply().version,
-    source_kind: "lot_admission",
-    source_id: INVENTORY_ADMISSION,
-    created_at: INVENTORY_TIME,
-    created_by: null,
-  };
+    location_id: location.id,
+    location_code: location.code,
+    ...(location.id !== INVENTORY_LOCATION
+      ? {
+          source_kind: "transfer_receive",
+          source_id: "cd000000-0000-0000-0000-000000000099",
+          source_transfer: null,
+        }
+      : {}),
+  });
+}
+function lot(state: InventoryReadState, query: URLSearchParams) {
+  const site = query.get("custody_location");
+  return { ...state.lot, ...(site ? { safety_location_id: site } : {}) };
 }
 function placement(state: InventoryReadState, query: URLSearchParams) {
   const option =
@@ -84,14 +88,14 @@ const readers = new Map<string, Reader>([
   ["/api/v1/supply-types/", () => inventoryPage([inventorySupply()])],
   [`/api/v1/supply-types/${INVENTORY_SUPPLY}/`, () => inventorySupply()],
   ["/api/v1/supply-types/protocol-incident-type-options/", () => inventoryPage([])],
-  ["/api/v1/lots/", (state) => inventoryPage([state.lot])],
+  ["/api/v1/lots/", (state, query) => inventoryPage([lot(state, query)])],
   ["/api/v1/locations/", (state) => inventoryPage(state.locationRows)],
   [
     "/api/v1/locations/owner-options/",
     () => inventoryPage([{ membership_id: INVENTORY_OWNER, label: "Synthetic owner" }]),
   ],
   ["/api/v1/locations/placement-options/", placement],
-  [`/api/v1/locations/${INVENTORY_LOCATION}/stock/`, stock],
+  [`/api/v1/locations/${INVENTORY_LOCATION}/stock/`, (state) => stock(state)],
   [
     `/api/v1/locations/${INVENTORY_LOCATION}/movements/`,
     (state) => inventoryPage([movement(state)]),
@@ -101,6 +105,16 @@ export const inventoryPreviewReadPaths = [...readers.keys()];
 /** Shared151 read payloads only: no SQL filtering, policy, write engine or real transport. */
 export function inventoryReadFixture(state: InventoryReadState, path: string) {
   const url = new URL(path, "http://127.0.0.1");
+  if (url.pathname === `/api/v1/lots/${state.lot.id}/`) return lot(state, url.searchParams);
+  const location = state.locationRows.find((row) =>
+    [`/api/v1/locations/${row.id}/stock/`, `/api/v1/locations/${row.id}/movements/`].includes(
+      url.pathname,
+    ),
+  );
+  if (location)
+    return url.pathname.endsWith("/stock/")
+      ? stock(state, location)
+      : inventoryPage([movement(state, location)]);
   const reader = readers.get(url.pathname);
   if (!reader) throw new Error("Unsupported inventory fixture GET " + url.pathname);
   return reader(state, url.searchParams);
