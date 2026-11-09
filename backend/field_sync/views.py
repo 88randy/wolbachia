@@ -1,5 +1,6 @@
 """`POST /api/v1/field/sync/`: the phone's one endpoint for uploading events and pulling changes."""
 
+from dataclasses import dataclass
 from typing import Any
 from uuid import UUID
 
@@ -14,7 +15,7 @@ from rest_framework.response import Response
 from accounts.authentication import DeviceBearerAuthentication
 from accounts.final_upload import FinalUploadMixin
 from accounts.models import DeviceSession, User
-from core.exceptions import PayloadTooLargeError
+from core.exceptions import DomainError, PayloadTooLargeError
 from core.permissions import HasPermissionCode
 from core.snapshots import IF_NONE_MATCH_PARAMETER, SNAPSHOT_CACHE_CONTROL, etag_matches
 from core.time import server_now
@@ -22,7 +23,7 @@ from core.views import OrgScopedViewSetMixin
 from field_sync.codes import REJECTION_QUOTA_EXCEEDED
 from field_sync.cursor import decode_cursor
 from field_sync.envelope import BatchContext, EventEnvelope
-from field_sync.exceptions import DeviceMismatchError
+from field_sync.exceptions import DeviceMismatchError, SyncInProgressError
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC, BodySizeWithinLimit
 from field_sync.serializers import (
     BootstrapSerializer,
@@ -30,8 +31,14 @@ from field_sync.serializers import (
     SyncResponseSerializer,
     build_envelopes,
 )
-from field_sync.services import bootstrap_bundle, sync_batch
+from field_sync.services import (
+    bootstrap_bundle,
+    lock_sync_users,
+    set_batch_lock_timeout,
+    sync_batch,
+)
 from field_sync.throttling import FieldSyncDeviceThrottle
+from reviews.boundaries import BatchPreparation, prepare_batch_participants, prepared_batch_boundary
 
 
 def ensure_batch_size_within_limit(data: object) -> None:
@@ -39,6 +46,14 @@ def ensure_batch_size_within_limit(data: object) -> None:
     events = data.get("events") if isinstance(data, dict) else None
     if isinstance(events, list) and len(events) > settings.SYNC_MAX_EVENTS:
         raise PayloadTooLargeError
+
+
+@dataclass(frozen=True)
+class PreparedSyncRequest:
+    data: dict[str, Any]
+    batch: BatchContext
+    envelopes: list[EventEnvelope]
+    participants: BatchPreparation
 
 
 class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.GenericViewSet):
@@ -52,12 +67,48 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
     """
 
     authentication_classes = [DeviceBearerAuthentication]
+    final_upload_contention_errors: tuple[type[DomainError], ...] = (SyncInProgressError,)
     throttle_classes = [FieldSyncDeviceThrottle]
     serializer_class = SyncBatchSerializer
     pagination_class = None
     http_method_names = ["post", "options"]
     permission_classes = [IsAuthenticated, HasPermissionCode, BodySizeWithinLimit]
     required_permissions = {"create": FIELD_EVENT_SYNC}
+    _prepared_sync: PreparedSyncRequest | None = None
+
+    def prepare_final_upload_participants(self, request: Request) -> tuple[UUID, ...]:
+        return self._prepare_request(request, final=True).participants.users
+
+    def lock_final_upload_participants(self, identifiers: tuple[UUID, ...]) -> None:
+        set_batch_lock_timeout()
+        lock_sync_users(identifiers)
+
+    def _prepare_request(self, request: Request, *, final: bool) -> PreparedSyncRequest:
+        if self._prepared_sync is not None:
+            return self._prepared_sync
+        session, user = request.auth, request.user
+        if not isinstance(session, DeviceSession) or not isinstance(user, User):
+            raise NotAuthenticated
+        received_at = server_now()
+        data = self._validated_batch(request)
+        if data["device_id"] != session.device_id:
+            raise DeviceMismatchError
+        organization = request.organization  # type: ignore[attr-defined]
+        batch = BatchContext(
+            organization=organization,
+            user=user,
+            device=session.device,
+            sent_at=data["sent_at"],
+            received_at=received_at,
+            is_final_upload=final,
+            observed_session_id=session.pk,
+            observed_pair_id=self._observed_pair(request),
+        )
+        envelopes = self._envelopes(data)
+        self._prepared_sync = PreparedSyncRequest(
+            data, batch, envelopes, prepare_batch_participants(batch, envelopes)
+        )
+        return self._prepared_sync
 
     @extend_schema(
         request=SyncBatchSerializer,
@@ -77,27 +128,16 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
         session, user = request.auth, request.user
         if not isinstance(session, DeviceSession) or not isinstance(user, User):
             raise NotAuthenticated  # unreachable with the bearer authenticator: defense in depth
-        received_at = server_now()
-        data = self._validated_batch(request)
-        if data["device_id"] != session.device_id:
-            raise DeviceMismatchError
+        prepared = self._prepare_request(request, final=self.is_final_upload)
+        data, batch = prepared.data, prepared.batch
         organization = request.organization  # type: ignore[attr-defined]
         cursor = (
             None
             if self.is_final_upload
             else decode_cursor(data.get("cursor"), organization.pk, user.pk)
         )
-        batch = BatchContext(
-            organization=organization,
-            user=user,
-            device=session.device,
-            sent_at=data["sent_at"],
-            received_at=received_at,
-            is_final_upload=self.is_final_upload,
-            observed_session_id=session.pk,
-            observed_pair_id=self._observed_pair(request),
-        )
-        outcome = sync_batch(batch, self._envelopes(data), cursor)
+        with prepared_batch_boundary(prepared.participants):
+            outcome = sync_batch(batch, prepared.envelopes, cursor)
         body = {"server_time": server_now(), "results": outcome.results, "changes": outcome.changes}
         response = Response(SyncResponseSerializer(body).data)
         retry_after = [

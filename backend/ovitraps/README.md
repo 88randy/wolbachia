@@ -265,3 +265,15 @@ is available for B-06. The future closure gate reads has_unresolved_removal; #21
 adds explicit append-only recovery resolution (see lifecycle/README.md). Courier schema 1 gains optional is_retired
 and revision hashes include lineage/removal event UUIDs; replace/remove fan out,
 relocate does not. No original FieldEvent ingest status or geometry is rewritten.
+
+## Laboratory facade (#114)
+
+Bag/Reading GET fields, status/code/point/week filters and reading.read remain.
+Lab adds action-scoped projections and Bag receive/mark-missing/count/rejection
+actions plus Reading-only no-paddle receive. A Bag still requires its authentic
+Reading/collector/source; unknown/foreign codes create nothing. The new queue uses
+canonical effective-source proof, not the legacy is_countable hint. Lagged/index-
+excluded effective paddles remain eligible. The original void hook checks actual
+Lab dependents under the retained lock order; SQL also closes a raw source-void
+bypass at deferred completion. Existing relocation/removal/closure dependencies
+retain their owners. See ../lab/README.md.

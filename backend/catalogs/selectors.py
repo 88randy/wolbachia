@@ -65,6 +65,15 @@ def with_item_usage(queryset: QuerySet[CatalogItem], catalog: Catalog) -> QueryS
         ),
         "item_id",
     )
+    if catalog.slug == "community-activity-type":
+        from community.models import CommunityActivity
+
+        usage = usage + _reference_count(
+            CommunityActivity.objects.filter(
+                organization=catalog.organization, type_id=OuterRef("pk")
+            ),
+            "type_id",
+        )
     ovitrap_reference = {"ovitrap-finding": "finding_id", "paddle-type": "paddle_type_id"}.get(
         catalog.slug
     )

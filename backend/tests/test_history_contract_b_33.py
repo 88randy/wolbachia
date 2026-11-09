@@ -71,3 +71,39 @@ def test_transfer_history_uses_event_identity_without_invented_review_or_shift_f
     assert payload["id"] != payload["transfer_id"]
     assert "review_item_id" not in serializer.data
     assert "shift_id" not in serializer.data
+
+
+def test_supply_history_preserves_real_fact_identity_and_closed_discriminators():
+    for source_kind in (
+        "plan",
+        "release",
+        "cancel",
+        "receipt",
+        "reconcile",
+        "return",
+        "justify",
+        "bag_disposal",
+    ):
+        payload = {
+            "id": str(uuid4()),
+            "kind": f"supply_{source_kind}",
+            "source_kind": source_kind,
+            "assignment_id": None if source_kind == "bag_disposal" else str(uuid4()),
+            "bag_id": str(uuid4()) if source_kind == "bag_disposal" else None,
+            "actor_id": str(uuid4()),
+            "at": "2026-01-02T00:00:00Z",
+            "subjects": [{"center_id": str(uuid4()), "quadrant_id": None}],
+            "source_event_id": None,
+            "source_status": None,
+            "source_code": None,
+            "voided_at": None,
+        }
+        wire = CourierHistoryEntrySerializer(payload).data
+        valid = CourierHistoryEntrySerializer(data=wire)
+        assert valid.is_valid(), valid.errors
+        assert valid.data == wire
+        assert valid.data["id"] == payload["id"]
+        assert "review_item_id" not in wire
+        assert "shift_id" not in wire
+        invalid = CourierHistoryEntrySerializer(data=wire | {"source_kind": "made_up"})
+        assert not invalid.is_valid()

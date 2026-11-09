@@ -135,6 +135,7 @@ export function inventoryMovement(
     source_kind: "lot_admission",
     source_id: INVENTORY_ADMISSION,
     source_transfer: null,
+    source_supply: null,
     created_at: INVENTORY_TIME,
     created_by: null,
     ...overrides,

@@ -90,11 +90,7 @@ def visible_review(actor: UploadActor, item_id: UUID, permission: str) -> Review
 def reference_sources(source: FieldEvent) -> set[UUID]:
     from shifts.models import Shift
 
-    identifiers: set[UUID] = set()
-    if source.type in {"transfer.dispatch", "transfer.receive"}:
-        from inventory.transfers.dependencies import source_references
-
-        identifiers.update(source_references(source.organization, source.payload))
+    identifiers = _inventory_references(source)
     try:
         envelope = original_source_envelope(source)
     except ValueError:
@@ -131,6 +127,24 @@ def reference_sources(source: FieldEvent) -> set[UUID]:
     return identifiers
 
 
+def _inventory_references(source: FieldEvent) -> set[UUID]:
+    identifiers: set[UUID] = set()
+    if source.type in {"transfer.dispatch", "transfer.receive"}:
+        from inventory.transfers.dependencies import source_references
+
+        identifiers.update(source_references(source.organization, source.payload))
+    if source.type in {"supplies.receive", "supplies.reconcile"}:
+        from inventory.allocations.review import declared_sources
+
+        identifiers.update(declared_sources(source.payload))
+        identifiers.update(
+            UUID(str(row["work_source_id"]))
+            for row in source.payload.get("used", [])
+            if "work_source_id" in row
+        )
+    return identifiers
+
+
 def decide_review(
     actor: UploadActor, item_id: UUID, request: ReviewDecisionRequest
 ) -> ReviewDecision:
@@ -144,7 +158,13 @@ def decide_review(
 
         require_review_incident_scope(actor, item)
     references = reference_sources(item.field_event)
-    with review_transaction(actor, item.field_event, references) as source:
+    from reviews.boundaries import prepare_review_users, require_same_review_sources
+
+    with (
+        prepare_review_users(actor, item.field_event, references) as prepared_users,
+        review_transaction(actor, item.field_event, references) as source,
+    ):
+        require_same_review_sources(actor, prepared_users, references | {source.pk})
         if not reference_sources(source).issubset(references):
             raise ReviewConflictError
         visible_review(actor, item_id, REVIEW_ITEM_DECIDE)
@@ -188,6 +208,12 @@ def decide_review(
             from inventory.transfers.history import stored_source as stored_transfer_source
 
             stored_transfer_source(source, cause=decision)
+            from community.history import stored_source as stored_community_source
+
+            stored_community_source(source, cause=decision)
+            from inventory.allocations.history import stored_source as stored_supply_source
+
+            stored_supply_source(source, cause=decision)
     return decision
 
 
@@ -289,7 +315,10 @@ def _prepare_accept(
         raise ReviewBlockedError(("handler_unavailable",))
     from reviews.boundaries import retain_domain_boundary
 
-    if evaluation.subjects.resource_kind == "transfer":
+    if (
+        evaluation.subjects.resource_kind in {"transfer", "supply_assignment"}
+        or source.type == "shift.close"
+    ):
         from inventory.transactions import inventory_transaction
 
         stack.enter_context(inventory_transaction(organization=source.organization))
@@ -345,7 +374,7 @@ def _resolve_dependencies(source: FieldEvent, actor: UploadActor) -> None:
         if (
             parent is None
             or (
-                dependency.kind not in {"ovitrap", "transfer_source"}
+                dependency.kind not in {"ovitrap", "transfer_source", "supply_source"}
                 and parent.created_by_id != source.created_by_id
             )
             or not is_effective(parent)
@@ -379,6 +408,10 @@ def _resolve_dependencies(source: FieldEvent, actor: UploadActor) -> None:
 
 
 def _dependency_parent(source: FieldEvent, dependency: ReviewDependency) -> FieldEvent | None:
+    if dependency.kind == "supply_source":
+        from inventory.allocations.review import dependency_parent
+
+        return dependency_parent(source, dependency)
     if dependency.kind == "transfer_source":
         from inventory.transfers.dependencies import dependency_parent
 

@@ -264,3 +264,25 @@ _store links the actual accepted source after its snapshot and primary evidence
 exist. Reviewed application waits for canonical113's exact effect receipt. The ONE
 history producer is schema3 with an additive transfer_custody branch; old review,
 shift and relocation shapes remain. No fake HTTP courier or delivery receipt.
+
+## Laboratory projections (#114)
+
+The ONE history producer advances from 3 to 4, adding authentic Lab receipt,
+discrepancy, count, rejection and void payloads. The four old kind mappings and
+whole-transfer scope remain. BOOTSTRAP_SCHEMA_VERSION stays 2 and the outer hash
+stays opaque. Lab commands are server operations, not courier event types. Current
+source/recipient subjects filter history before download; storing an updated QA
+projection grants no FIELD_BOOTSTRAP and proves no delivery. Independent requests
+are real; execution belongs to #115.
+
+## Courier supplies (#107)
+
+Two schema1 shift-checked sources use existing preparation/review/on_void and real
+post-store source identities. Complete historical User/source preparation precedes
+account locks even in final upload; no new sync endpoint or session writer exists.
+Supplies producer1 owns current self Assignment facts. History6 retains the canonical
+Community5 branch and all earlier kinds while adding eight supply kinds;
+root bootstrap2 is unchanged. Supply changes filter exact current full-vector and
+own action BEFORE count/order/LIMIT. Scope-revision changes require existing
+readiness/retention invalidation; cached hidden rows never authorize a capture.
+See docs/sync.md for typed source payloads, review codes and fresh replay authority.

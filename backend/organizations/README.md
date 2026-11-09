@@ -322,3 +322,22 @@ transfer.receive and discrepancy.read/close. Courier, entomologist, coordinator 
 government get no new custody actions. No role-name authorization, new field.sync,
 bootstrap, incident or personnel grants. Custom roles, previously seeded revocations,
 membership/profile scopes and government portal boundary remain authoritative.
+
+## Laboratory defaults (#114)
+
+The same once-only permission ledger grants admin/entomologist bag.receive,
+egg_count.create/read, lab_rejection.create and lab_method.read. Admin also gets
+lab_method.manage/verify; admin/supervisor get egg_count.void. ENT gains the existing
+field.upload once for actual rejection evidence. There is no other new grant,
+role-name authorization or government exception. Custom profiles, explicit
+revocations and current paired scopes remain. SUP's exact void-context/evidence
+read grants no general Lab read/create/upload.
+
+## Once-only courier custody grants (#107)
+
+New inventory.allocate/reconcile/write_off default to admin and warehouse;
+inventory.reconcile also defaults to supervisor. Own supply_assignment.receive/
+reconcile default only to admin/courier; bag.dispose defaults to admin/entomologist.
+Existing seed-once receipts preserve custom profiles and explicit revocations,
+including field.upload; government remains portal.read only. No scientific mapping
+or transit procedure is seeded. Current paired actions still authorize every act.
