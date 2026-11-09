@@ -146,6 +146,8 @@ test.describe("keyboard", () => {
 
     await page.keyboard.press("Tab"); // skip link
     await page.keyboard.press("Tab"); // Inicio
+    await page.keyboard.press("Tab"); // Operation group disclosure
+    await expect(page.getByRole("button", { name: "Operación", exact: true })).toBeFocused();
     await page.keyboard.press("Tab"); // Supervision
     await expect(page.getByRole("link", { name: "Supervisión" })).toBeFocused();
     await page.keyboard.press("Enter");

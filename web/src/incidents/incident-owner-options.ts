@@ -20,7 +20,6 @@ export function incidentOwnerOptions(
           }),
         ),
     }),
-    placeholderData: undefined,
     enabled: scope.identity.isSettled && target.isOpen,
   };
 }

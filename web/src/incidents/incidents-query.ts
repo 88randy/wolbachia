@@ -48,6 +48,5 @@ export function incidentDetailOptions(scope: IncidentScope, code: string) {
         return record.code === code && record.id === match.id ? record : null;
       },
     }),
-    placeholderData: undefined,
   };
 }

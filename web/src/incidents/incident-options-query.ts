@@ -13,7 +13,6 @@ export function incidentTypeOptions(scope: IncidentScope, page: number) {
           }),
         ),
     }),
-    placeholderData: undefined,
   };
 }
 export function incidentContextOptions(
@@ -31,6 +30,5 @@ export function incidentContextOptions(
           }),
         ),
     }),
-    placeholderData: undefined,
   };
 }

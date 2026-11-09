@@ -257,6 +257,8 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 SupplyAssignment: explicit courier custodian/dated immutable plan, not a Location.
 OriginReleaseProof: genuine origin eligibility and reservation manifest, not receipt.
 SupplyReceipt: signed actual credited custody; zero differs from missing receipt.
+ReceiptDraft: retained owner-bound phone observation of original release lines;
+local signing and server credit/review are distinct facts.
 SupplyUse / SupplyShrinkage: explicit source/line deltas in the original declared unit.
 ReturnDeclaration: uncredited courier statement. ReturnAcceptance: separately signed
 warehouse custody transfer to the real destination. ReconciliationVersion: immutable

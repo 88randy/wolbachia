@@ -341,6 +341,48 @@ test("reassigns only to an eligible membership and changes severity with the cur
     ).toEqual({ expected_revision: 2, severity: "high" });
   });
 });
+
+test("keeps previous owner options read-only while the next search is pending", async () => {
+  const owner = "00000000-0000-4000-8000-000000000050";
+  const route = `GET /api/v1/incidents/${ID}/owner-options/`;
+  let release: (reply: Response) => void = () => undefined;
+  const held = new Promise<Response>((resolve) => {
+    release = resolve;
+  });
+  const { api } = await open("/incidents/I-0033", {
+    [route]: Response.json({
+      count: 1,
+      next: null,
+      previous: null,
+      results: [{ membership_id: owner, label: "Eligible owner" }],
+    }),
+  });
+  await screen.findByRole("option", { name: "Eligible owner" });
+  api.setRoute(route, () => held);
+  await userEvent.click(screen.getByRole("textbox", { name: "Buscar responsable" }));
+  await userEvent.paste("different");
+  await waitFor(() => {
+    expect(
+      api.requests.some(
+        (request) =>
+          request.path.includes("owner-options/") && request.path.includes("search=different"),
+      ),
+    ).toBe(true);
+  });
+  const select = screen.getByRole("combobox", { name: "Responsable" });
+  expect(screen.getByRole("option", { name: "Eligible owner" })).toBeDefined();
+  expect(select).toHaveProperty("disabled", true);
+  expect(screen.getByRole("button", { name: "Reasignar" }).getAttribute("aria-disabled")).toBe(
+    "true",
+  );
+  await userEvent.click(screen.getByRole("button", { name: "Reasignar" }));
+  expect(api.requests.some((request) => request.method === "POST")).toBe(false);
+  release(Response.json({ count: 0, next: null, previous: null, results: [] }));
+  await waitFor(() => {
+    expect(screen.queryByRole("option", { name: "Eligible owner" })).toBeNull();
+  });
+  expect(select).toHaveProperty("disabled", false);
+});
 test("refuses duplicate comments while the first write is pending", async () => {
   let release: (reply: Response) => void = () => undefined;
   const held = new Promise<Response>((resolve) => {

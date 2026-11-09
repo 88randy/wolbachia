@@ -28,24 +28,18 @@ export class AttachmentStore {
     input: { owner: EvidenceOwner; sessionId: string } | null,
     isLogin = false,
   ): Promise<EvidenceFence | null> {
-    const key = input === null ? null : ownerKey(input.owner);
-    const session = input?.sessionId ?? null;
-    const isActive = input === null ? 0 : 1;
-    const [row] = await this.db.query(
-      `UPDATE attachment_context SET owner_key=?,session_id=?,is_active=?,
+    const [row] = await guardOwnerActivation(() =>
+      this.db.query(
+        `UPDATE attachment_context SET owner_key=?,session_id=?,is_active=?,
       generation=generation+CASE WHEN owner_key IS ? AND session_id IS ? AND is_active=? THEN 0 ELSE 1 END
       WHERE slot=1 AND (?=0 OR (NOT EXISTS(SELECT 1 FROM attachment_file WHERE owner_key IS NOT ?)
         AND NOT EXISTS(SELECT 1 FROM lifecycle_courier_projection WHERE kind IN (${RETAINED_PROJECTION_KINDS})
           AND json_extract(body,'$.ownerKey') IS NOT ?))) RETURNING generation`,
-      [key, session, isActive, key, session, isActive, isLogin || input !== null ? 1 : 0, key, key],
+        bindingValues(input, isLogin),
+      ),
     );
     if (!row) throw new EvidenceError("owner_conflict");
-    if (input === null) return null;
-    return {
-      ownerKey: ownerKey(input.owner),
-      sessionId: input.sessionId,
-      generation: readInteger(row, "generation"),
-    };
+    return input === null ? null : boundFence(input, readInteger(row, "generation"));
   }
 
   async reserve(input: { id: string; draftId: string; fence: EvidenceFence }): Promise<void> {
@@ -241,5 +235,30 @@ export class AttachmentStore {
       AND ${CURRENT_FENCE}`,
       [fence.ownerKey, ...fenceParams(fence)],
     );
+  }
+}
+function boundFence(
+  input: { owner: EvidenceOwner; sessionId: string },
+  generation: number,
+): EvidenceFence {
+  return { ownerKey: ownerKey(input.owner), sessionId: input.sessionId, generation };
+}
+function bindingValues(
+  input: { owner: EvidenceOwner; sessionId: string } | null,
+  isLogin: boolean,
+) {
+  const key = input === null ? null : ownerKey(input.owner);
+  const session = input?.sessionId ?? null;
+  const active = input === null ? 0 : 1;
+  return [key, session, active, key, session, active, isLogin || input !== null ? 1 : 0, key, key];
+}
+/** Schema17 arbitrates receipt ownership; older released prefixes keep their original SQL path. */
+async function guardOwnerActivation<Result>(write: () => Promise<Result>): Promise<Result> {
+  try {
+    return await write();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("supply receipt owner conflict"))
+      throw new EvidenceError("owner_conflict");
+    throw error;
   }
 }

@@ -10,6 +10,9 @@ consumers retain the facade's original default behavior.
 - Every read uses `orgScopedQueryOptions` and `useSessionIdentity`; the session
   controller remains the only writer of session identity. URL center filters
   override the shell filter and participate in placeholder isolation.
+- Only the shared query policy controls placeholder data. Previous owner options
+  remain read-only while a new search is pending; unverified option reads cannot
+  authorize reassignment.
 - The tray uses server filtering, ordering and pagination. Critical priority
   comes from the backend. Open is the visible default; All explicitly removes
   the state predicate. Voided incidents have their own explicit state selection.
@@ -77,6 +80,7 @@ preserved as returned; this workspace does not add an incident-report composer.
 | Known and unknown blocker kinds remain readable in the interface language | `incidents.test.tsx`: translates blocker kinds |
 | Voided rows retain correction reason and author | `incidents.test.tsx`: marks voided rows |
 | Scoped permissions, filters/sort/All, missing code, independent retry, reassign/severity and duplicate comments | `incidents.test.tsx` |
+| Previous owner choices cannot authorize reassignment during a pending search | `incidents.test.tsx`: keeps previous owner options read-only |
 | Original evidence bytes, exact parent and stable-ID renewal | `incident-evidence.test.ts` |
 | A retired upload releases busy state and drops its late result | `incident-session.test.tsx` |
 | W6/W7 navigation, close-dialog keyboard focus, axe and 320 px in both themes/locales; synthetic 30% DOM text expansion | `../../e2e/incidents.spec.ts` |

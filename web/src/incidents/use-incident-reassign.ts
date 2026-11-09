@@ -53,6 +53,9 @@ export function useIncidentReassign(props: ReassignProps) {
     },
     isBlocked:
       props.isBlocked ||
+      query.isFetching ||
+      query.isPlaceholderData ||
+      query.isError ||
       !capture.owner ||
       !query.data?.results.some((item) => item.membership_id === capture.owner),
   };

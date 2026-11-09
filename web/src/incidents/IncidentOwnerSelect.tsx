@@ -16,6 +16,11 @@ export function IncidentOwnerSelect({ controller }: { controller: IncidentReassi
       id="incident-owner"
       label={t("incidents.workspace.owner")}
       value={controller.capture.owner}
+      disabled={
+        controller.query.isFetching ||
+        controller.query.isPlaceholderData ||
+        controller.query.isError
+      }
       onChange={(event) => {
         controller.selectOwner(event.target.value);
       }}
