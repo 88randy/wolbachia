@@ -29,9 +29,18 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { DayStore } from "../src/features/day/store.ts";
 import { DayBundleService } from "../src/features/day/bundle-service.ts";
+import { createDayBundle } from "../src/features/day/create-day-bundle.ts";
+import { CredentialStore } from "../src/auth/credential-store.ts";
+import { openTestDatabase } from "./support/sqlite-executor.ts";
+import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
+import { KvStore } from "../src/db/kv-store.ts";
+import { mkdtemp, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { buildDay, findAssignedTaskByPointCode, mapTasks } from "../src/features/day/domain.ts";
 import { NavigationService } from "../src/navigation/navigation-service.ts";
 import { createStores, makeEnvelope, FIXED_NOW } from "./support/factories.ts";
+import { LAB_HISTORY } from "./support/lifecycle-contract-fixtures.ts";
 
 const task = (overrides: Record<string, unknown> = {}) => ({
   kind: "task",
@@ -996,23 +1005,16 @@ function sessionScope(
     ? JSON.stringify([current.sessionId, current.origin])
     : null;
 }
-async function authDayFixture() {
+async function authDayFixture(history: unknown[] = []) {
   const fixture = await dayFixture();
   const { credentials, secrets } = await makeCredentials();
   // eslint-disable-next-line prefer-const -- the transport closure needs it before the wrapper is built
   let requests!: SessionRequests;
-  const service = new DayBundleService({
-    store: fixture.store,
-    now: () => FIXED_NOW,
-    getScopeKey: () => sessionScope(credentials),
-    transport: (etag) =>
-      createBootstrapTransport(
-        createScopedApiClient({
-          tokens: credentials,
-          fetch: () => Promise.resolve(jsonResponse(bundle())),
-        }),
-        requests,
-      )(etag),
+  const service = createDayBundle({
+    db: fixture.db,
+    tokens: credentials,
+    requests: () => requests,
+    fetch: () => Promise.resolve(jsonResponse({ ...bundle(), history })),
   });
   const auth = new AuthController({
     ...fixture,
@@ -1109,7 +1111,15 @@ void test("Merge session: logout during a pending bootstrap clears downloads wit
   assert.equal((await fixture.outbox.countByStatus()).pending, 1);
 });
 void test("Merge session: ordinary local lock retains downloads while boot reconciles ended-session cleanup", async () => {
-  const fixture = await authDayFixture();
+  const fixture = await authDayFixture(LAB_HISTORY);
+  await fixture.service.refresh();
+  assert.deepEqual(
+    await fixture.db.query(
+      "SELECT kind FROM lifecycle_courier_projection WHERE kind LIKE 'history.lab_%'",
+    ),
+    [],
+  );
+  assert.equal(await fixture.store.needsBootstrap(), true, "Lab is not current capture authority");
   await fixture.auth.lock();
   assert.equal((await fixture.service.read()).tasks.length, 1);
   await fixture.auth.endSession();
@@ -1142,7 +1152,144 @@ void test("Merge session: final upload completes credential erasure only after r
   assert.equal((await fixture.outbox.countByStatus()).sent, 1);
   assert.equal((await fixture.service.read()).tasks.length, 0);
   assert.equal(fixture.credentials.getSnapshot().pair, null);
+  await retainedFinalFactoryRetry();
 });
+
+async function retainedFinalFactoryRetry() {
+  const directory = await mkdtemp(join(tmpdir(), "m09-final-factory-"));
+  const path = join(directory, "synthetic.sqlite");
+  let local = await openTestDatabase(path);
+  try {
+    const identity = await makeCredentials();
+    let credentials = identity.credentials;
+    let fail = true;
+    let posts = 0;
+    let event = makeEnvelope();
+    let afterReceipt: () => Promise<void> = () => Promise.resolve();
+    await new OutboxRepository(local.executor, () => FIXED_NOW).enqueue(event);
+    await credentials.markEnded(credentials.getSnapshot().sessionId);
+    let reply = answer([accepted(event.id)]);
+    assert.ok(reply.ok);
+    const build = () => {
+      const requests = new SessionRequests({
+        credentials,
+        isOnline: () => true,
+        refresh: () => Promise.reject(new Error("No refresh for final capability")),
+        endSession: (receipt) => service.clearForAuth(receipt),
+      });
+      const service = createDayBundle({
+        db: local.executor,
+        tokens: credentials,
+        requests: () => requests,
+        getCaptureIdentity: () => null,
+        fetch: () => Promise.reject(new Error("No ended-session bootstrap HTTP")),
+      });
+      const transport = createScopedSyncTransport({
+        tokens: credentials,
+        requests,
+        fetch: () => {
+          posts++;
+          if (fail) return Promise.reject(new Error("Interrupted final POST"));
+          assert.ok(reply.ok);
+          return Promise.resolve(jsonResponse(reply.response, { isFinal: true }));
+        },
+      });
+      const outbox = new OutboxRepository(local.executor, () => FIXED_NOW);
+      const settle = outbox.settle.bind(outbox);
+      outbox.settle = async (transitions, extra) => {
+        await settle(transitions, extra);
+        if (transitions.some((item) => item.action === "accept")) await afterReceipt();
+      };
+      return {
+        service,
+        run: () =>
+          runSyncPass(
+            {
+              outbox,
+              kv: new KvStore(local.executor),
+              ...service.syncHooks(),
+              transport,
+              deviceId: FIXED_DEVICE_ID,
+              now: () => FIXED_NOW,
+            },
+            { batchSize: 50 },
+          ),
+      };
+    };
+    let runtime = build();
+    assert.equal((await runtime.run()).kind, "retry");
+    assert.equal(posts, 1, "real factory permits only the retained final POST");
+    assert.equal(credentials.isUnlocked(), false);
+    await assert.rejects(runtime.service.refresh());
+    await assert.rejects(
+      runtime.service.captureLifecycleSource()(null, () => Promise.resolve(true)),
+    );
+    assert.equal(posts, 1);
+    local.close();
+    local = await openTestDatabase(path);
+    credentials = new CredentialStore(identity.secrets);
+    await credentials.load();
+    assert.equal(credentials.getSnapshot().status, "ended");
+    fail = false;
+    runtime = build();
+    assert.equal((await runtime.run()).kind, "blocked");
+    assert.equal(posts, 2);
+    assert.deepEqual(
+      (await local.executor.query("SELECT id,local_status FROM outbox_event")).map((row) => [
+        row.id,
+        row.local_status,
+      ]),
+      [[event.id, "sent"]],
+    );
+    assert.equal(credentials.getSnapshot().pair, null);
+    event = makeEnvelope();
+    reply = answer([accepted(event.id)]);
+    await new OutboxRepository(local.executor, () => FIXED_NOW).enqueue(event);
+    await credentials.update((current) => ({
+      ...current,
+      origin: "https://example.invalid",
+      sessionId: "old-final-owner",
+      status: "active",
+      pair: { access: "old-final", refresh: "old-final-refresh" },
+    }));
+    await credentials.markEnded("old-final-owner");
+    const settled = deferred<undefined>(),
+      release = deferred<undefined>();
+    afterReceipt = async () => {
+      settled.resolve(undefined);
+      await release.promise;
+    };
+    runtime = build();
+    const lateCleanup = runtime.run();
+    await settled.promise;
+    assert.equal(
+      (
+        await local.executor.query("SELECT local_status FROM outbox_event WHERE id=?", [event.id])
+      )[0]?.local_status,
+      "sent",
+      "Receipt is durable before cleanup admission",
+    );
+    await credentials.finishEndedSession("old-final-owner");
+    await credentials.update((current) => ({
+      ...current,
+      sessionId: "new-current-session",
+      status: "active",
+      pair: { access: "new-access", refresh: "new-refresh" },
+    }));
+    await new DayStore(local.executor).replace(bundle(), FIXED_NOW);
+    release.resolve(undefined);
+    await assert.rejects(lateCleanup);
+    assert.equal(credentials.getSnapshot().sessionId, "new-current-session");
+    assert.equal(
+      (await new DayStore(local.executor).read()).tasks.length,
+      1,
+      "Old final completion cannot clear a replacement session's projections",
+    );
+  } finally {
+    local.close();
+    await rm(directory, { recursive: true, force: true });
+  }
+}
 void test("UI state: local loading is distinct from empty, refresh retains data and a failed refresh can retry", async () => {
   const fixture = await dayFixture();
   const network = deferred<import("../src/features/day/bundle-service.ts").BundleResult>();
