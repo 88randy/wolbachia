@@ -1,3 +1,5 @@
+import { W6Page } from "../incidents/W6Page";
+import { W7Page } from "../incidents/W7Page";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
@@ -102,21 +104,34 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
   createRoute({
     getParentRoute: () => authenticatedRoute,
     path: area.path,
-    ...(area.id === "quadrants" ? { validateSearch: tableSearchSchema } : {}),
+    ...(["quadrants", "incidents"].includes(area.id) ? { validateSearch: tableSearchSchema } : {}),
     beforeLoad: ({ context }) => {
       requireAreaAccess(area, context.me);
     },
     component:
-      area.id === "settings"
-        ? SettingsPage
-        : area.id === "fleet"
-          ? FleetHome
-          : area.id === "quadrants"
-            ? W22Page
-            : () => <AreaPlaceholder areaId={area.id} />,
+      area.id === "incidents"
+        ? W6Page
+        : area.id === "settings"
+          ? SettingsPage
+          : area.id === "fleet"
+            ? FleetHome
+            : area.id === "quadrants"
+              ? W22Page
+              : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
+
+const incidentRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/incidents/$code",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("incidents", context.me, "incident.read");
+  },
+  component: W7Page,
+  errorComponent: AreaErrorState,
+});
 
 const quadrantVersionsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -288,6 +303,7 @@ const routeTree = rootRoute.addChildren([
     ...areaRoutes,
     inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
     quadrantVersionsRoute,
+    incidentRoute,
     catalogsRoute,
     catalogRoute,
     motorcyclesRoute,

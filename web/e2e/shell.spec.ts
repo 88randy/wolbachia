@@ -41,7 +41,7 @@ test.describe("shell layout", () => {
 
     await page.reload();
     expect(await sidebarWidth(page)).toBe(COLLAPSED_WIDTH);
-    await expect(page.getByRole("link", { name: "Incidentes" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Supervisión" })).toBeVisible();
   });
 
   test("the top bar reserves its token height for accessible controls", async ({ page }) => {
@@ -146,11 +146,11 @@ test.describe("keyboard", () => {
 
     await page.keyboard.press("Tab"); // skip link
     await page.keyboard.press("Tab"); // Inicio
-    await page.keyboard.press("Tab"); // Incidentes
-    await expect(page.getByRole("link", { name: "Incidentes" })).toBeFocused();
+    await page.keyboard.press("Tab"); // Supervision
+    await expect(page.getByRole("link", { name: "Supervisión" })).toBeFocused();
     await page.keyboard.press("Enter");
 
-    await expect(page.getByRole("heading", { level: 1, name: "Incidentes" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Supervisión" })).toBeVisible();
   });
 
   test("the focus ring is visible on a sidebar link", async ({ page }) => {
@@ -189,7 +189,7 @@ test.describe("states and language", () => {
 
     await page.getByRole("button", { name: "ES: cambiar idioma a inglés" }).click();
 
-    await expect(page.getByRole("link", { name: "Incidents" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Supervision" })).toBeVisible();
     await expect(page.locator("html")).toHaveAttribute("lang", "en");
   });
 });
