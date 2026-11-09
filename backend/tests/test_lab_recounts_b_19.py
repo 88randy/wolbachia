@@ -659,7 +659,7 @@ def test_forward_paddle_three_real_consumed_cycles_credit_only_first_two_and_pre
                 assert page.status_code == 200
                 leg = next(
                     row
-                    for row in page.data["results"]
+                    for row in page.json()["results"]
                     if row["operation_id"] == str(returned.stock_operation.pk)
                 )
                 assert (leg["source_kind"], leg["source_id"]) == ("paddle_return", str(returned.pk))
