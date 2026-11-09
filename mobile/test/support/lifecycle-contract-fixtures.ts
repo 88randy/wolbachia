@@ -140,6 +140,59 @@ export const LAB_HISTORY = [
   LAB_REJECTION,
   LAB_VOID,
 ] satisfies Schemas["LabHistoryEntry"][];
+export const COMMUNITY_HISTORY = {
+  id: CONTRACT_IDS.history,
+  kind: "community_activity",
+  activity_id: CONTRACT_IDS.history,
+  event_id: CONTRACT_IDS.point,
+  command_id: CONTRACT_IDS.history,
+  code: "ACT-138",
+  revision: 1,
+  type_id: CONTRACT_IDS.actor,
+  type_snapshot: {
+    code: "aggregate",
+    label_es: "Actividad sintética",
+    label_en: "",
+    is_other: false,
+    requires_photo: false,
+  },
+  zone_id: CONTRACT_IDS.point,
+  zone_version_id: CONTRACT_IDS.source,
+  activity_date: "2026-11-06",
+  attendance: 0,
+  is_voided: false,
+  source_event_id: CONTRACT_IDS.history,
+  source_device_time: "2026-11-06T19:00:00Z",
+  source_server_received_at: "2026-11-06T20:00:00Z",
+  subjects: [{ center_id: CONTRACT_IDS.center, quadrant_id: CONTRACT_IDS.quadrant }],
+} satisfies Schemas["CommunityHistoryEntry"];
+export const SUPPLY_HISTORY = (
+  [
+    "plan",
+    "release",
+    "cancel",
+    "receipt",
+    "reconcile",
+    "return",
+    "justify",
+    "bag_disposal",
+  ] as const
+).map((source_kind): Schemas["SupplyHistoryEntry"] => ({
+  id: CONTRACT_IDS.history,
+  kind: `supply_${source_kind}`,
+  source_kind,
+  assignment_id: source_kind === "bag_disposal" ? null : CONTRACT_IDS.point,
+  bag_id: source_kind === "bag_disposal" ? CONTRACT_IDS.point : null,
+  actor_id: CONTRACT_IDS.actor,
+  at: "2026-11-06T20:00:00Z",
+  subjects: [{ center_id: CONTRACT_IDS.center, quadrant_id: CONTRACT_IDS.quadrant }],
+  source_event_id: ["receipt", "reconcile", "bag_disposal"].includes(source_kind)
+    ? CONTRACT_IDS.source
+    : null,
+  source_status: ["receipt", "reconcile", "bag_disposal"].includes(source_kind) ? "accepted" : null,
+  source_code: ["receipt", "reconcile", "bag_disposal"].includes(source_kind) ? "accepted" : null,
+  voided_at: null,
+}));
 export const QUADRANT_REFERENCE = {
   resource_type: "quadrant",
   id: CONTRACT_IDS.quadrant,

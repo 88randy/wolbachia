@@ -802,7 +802,11 @@ Assignment/bags/stock/task authority or original ownership is reconstructed.
 Replacement keeps the point code, relocation stays Proposed, and removal records
 recovered/unrecovered/unconfirmed. Draft/outbox/evidence commit before Saved.
 
-Current history3/B33 feedback preserves original ingest receipts and distinguishes
+Current history6/B33 validates all 18 known kinds before cursor/readiness settlement.
+Four lifecycle branches materialize; five Lab, eight Supply and aggregate Community
+branches are validated before deliberate exclusion, without stock/community rows
+or capture authority. Malformed/unknown history rejects the whole atomic page.
+Feedback preserves original ingest receipts and distinguishes
 review effect, approval currency, nullable audit and actual next-day task reference.
 Task action requires its current UUID + point + courier + explicit v3 false state.
 Actual #287 advisory uses exact original cutoff/rule provenance and a private,

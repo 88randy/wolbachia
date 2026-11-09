@@ -9,7 +9,7 @@ from functools import partial
 import pytest
 from django.db import connection, transaction
 
-from field_sync import registry, services
+from field_sync import registry
 from field_sync.models import FieldEvent, RejectionQuotaCounter
 from field_sync.registry import EventHandler
 from reviews.models import ReviewItem
@@ -44,6 +44,48 @@ def quota_for(phone, count):
     )
 
 
+def sync_contending_shared_device(phones, captures, monkeypatch, winner):
+    """Meet at the actual Device arbiter, then retry the exact unspent losing batch."""
+    from uploads import access
+
+    held, release = threading.Event(), threading.Event()
+    original = access.lock_actor
+
+    def take_actor_lock(actor):
+        if actor.user.pk == phones[winner].user.pk:
+            original(actor)
+            held.set()
+            assert release.wait(10), "The losing request did not release the Device holder"
+        else:
+            assert held.wait(10), "The expected request did not retain its Device lock"
+            try:
+                original(actor)
+            finally:
+                release.set()
+
+    with monkeypatch.context() as race:
+        race.setattr(access, "lock_actor", take_actor_lock)
+        try:
+            outcomes = run_in_threads(
+                *(
+                    partial(phone.sync, capture)
+                    for phone, capture in zip(phones, captures, strict=True)
+                )
+            )
+        finally:
+            release.set()
+    loser = 1 - winner
+    assert all(not isinstance(outcome, Exception) for outcome in outcomes), outcomes
+    assert outcomes[winner].status_code == 200, outcomes[winner].data
+    assert (outcomes[loser].status_code, outcomes[loser].data["code"]) == (429, "sync_in_progress")
+    assert int(outcomes[loser].headers["Retry-After"]) > 0
+    assert not FieldEvent.objects.filter(
+        created_by=phones[loser].user, pk__in=[capture["id"] for capture in captures[loser]]
+    ).exists()
+    outcomes[loser] = phones[loser].sync(captures[loser])
+    return outcomes
+
+
 @pytest.mark.parametrize("initial_count", [None, 3])
 def test_shared_device_concurrent_batches_never_exceed_remaining_slots(
     phones, monkeypatch, initial_count
@@ -51,20 +93,9 @@ def test_shared_device_concurrent_batches_never_exceed_remaining_slots(
     first, second = phones
     if initial_count is not None:
         quota_for(first, initial_count)
-    barrier = threading.Barrier(2, timeout=10)
-    local = threading.local()
-    claim = services.claim_rejection_slot
-
-    def meet_before_first_claim(batch, local_date):
-        if not getattr(local, "has_met", False):
-            local.has_met = True
-            barrier.wait()
-        return claim(batch, local_date)
-
-    monkeypatch.setattr(services, "claim_rejection_slot", meet_before_first_claim)
-    outcomes = run_in_threads(
-        partial(first.sync, [rejection() for _ in range(3)]),
-        partial(second.sync, [rejection() for _ in range(3)]),
+    captures = [[rejection() for _ in range(3)] for _phone in phones]
+    outcomes = sync_contending_shared_device(
+        phones, captures, monkeypatch, 0 if initial_count is None else 1
     )
 
     assert all(not isinstance(outcome, Exception) for outcome in outcomes), outcomes
@@ -84,21 +115,10 @@ def test_shared_id_race_rolls_back_losing_claim_or_rechecks_replay_at_full_quota
     first, second = phones
     quota = quota_for(first, initial_count)
     shared = rejection()
-    barrier = threading.Barrier(2, timeout=10)
-    local = threading.local()
-    lookup = services.find_stored_event
-
-    def meet_after_missing_lookup(event_id):
-        stored = lookup(event_id)
-        if str(event_id) == shared["id"] and not getattr(local, "has_met", False):
-            assert stored is None
-            local.has_met = True
-            barrier.wait()
-        return stored
-
-    monkeypatch.setattr(services, "find_stored_event", meet_after_missing_lookup)
     with caplog.at_level(logging.WARNING, logger="field_sync.services"):
-        outcomes = run_in_threads(partial(first.sync, [shared]), partial(second.sync, [shared]))
+        outcomes = sync_contending_shared_device(
+            phones, [[shared], [shared]], monkeypatch, 0 if initial_count == 3 else 1
+        )
 
     assert all(not isinstance(outcome, Exception) for outcome in outcomes), outcomes
     assert [outcome.status_code for outcome in outcomes] == [200, 200]

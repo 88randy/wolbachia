@@ -8,6 +8,7 @@ from reviews.models import HistoryPublicationReceipt, ShiftDecision
 from shifts.validation import ShiftDecisionRequest, decide_shift
 from tests.factories import ShiftFactory
 from tests.review_support import reviewer
+from tests.test_inventory_allocations_b_10 import allocation as allocation
 
 
 @pytest.mark.django_db
@@ -18,6 +19,139 @@ def test_open_shift_cannot_be_approved_or_observed(org_a, make_member):
         with pytest.raises(ReviewBlockedError):
             decide_shift(actor, shift.pk, ShiftDecisionRequest(kind, 0, "The frame is still open"))
     assert not ShiftDecision.objects.filter(shift=shift).exists()
+
+
+@pytest.mark.django_db
+def test_real_late_warehouse_acceptance_invalidates_closed_supply_frame_once(
+    allocation, make_member, void_catalog
+):
+    from uuid import UUID, uuid4
+
+    from field_sync.models import FieldEvent
+    from inventory.allocations.commands import IntentExecution
+    from inventory.allocations.intents import execute_inventory_intent, prepare_inventory_intent
+    from inventory.allocations.models import ReconciliationVersion, ReturnDeclaration, SupplyEvent
+    from shifts.models import Shift
+    from shifts.validation import validation_projection
+    from tests.shift_support import close_event
+    from tests.sync_support import event
+    from tests.test_inventory_allocations_b_10 import receive_capture
+    from tests.test_inventory_transfers_106 import verified_upload
+    from uploads.models import AttachmentLink, Upload
+
+    source, line_id = receive_capture(allocation)
+    assert allocation.phone.sync([source]).data["results"][0]["status"] == "accepted"
+    declared = event(
+        type="supplies.reconcile",
+        shift_id=str(allocation.shift_id),
+        payload={
+            "command_id": str(uuid4()),
+            "assignment_id": str(allocation.assignment_id),
+            "expected_revision": 1,
+            "used": [],
+            "shrinkage": [],
+            "returned": [
+                {
+                    "receipt_line_id": str(line_id),
+                    "receipt_source_event_id": source["id"],
+                    "quantity": "2",
+                    "destination_id": str(allocation.context.location.pk),
+                }
+            ],
+        },
+    )
+    assert allocation.phone.sync([declared]).data["results"][0]["status"] == "accepted"
+    close = close_event(allocation.shift_id)
+    assert allocation.phone.sync([close]).data["results"][0]["status"] == "accepted"
+    shift = Shift.objects.get(pk=allocation.shift_id)
+    actor = reviewer(shift.organization, make_member)
+    approval = decide_shift(
+        actor, shift.pk, ShiftDecisionRequest("approve", 0, "Verified genuine closed custody")
+    )
+    assert validation_projection(shift)["approval_current"] is True
+    old_history = CourierChange.objects.get(history_receipt__cause_id=approval.pk)
+    old_payload = old_history.payload.copy()
+    closed_frame = ReconciliationVersion.objects.filter(
+        reconciliation__assignment_id=allocation.assignment_id
+    ).latest("revision")
+    late = event(
+        type="supplies.reconcile",
+        shift_id=None,
+        payload={
+            **declared["payload"],
+            "command_id": str(uuid4()),
+            "expected_revision": closed_frame.revision,
+            "returned": [{**declared["payload"]["returned"][0], "quantity": "1"}],
+        },
+    )
+    late_result = allocation.phone.sync([late]).data["results"][0]
+    assert late_result["status"] == "accepted"
+    assert allocation.phone.sync([late]).data["results"][0] == late_result
+    assert FieldEvent.objects.get(pk=late["id"]).shift_id is None
+    assert SupplyEvent.objects.filter(declared_source_uuid=late["id"]).count() == 1
+    assert validation_projection(shift)["approval_current"] is False
+    invalidations = CourierChange.objects.filter(
+        resource_type="history.shift_validation", resource_id=str(approval.pk)
+    ).order_by("sequence")
+    assert [row.payload["approval_current"] for row in invalidations] == [True, False]
+    invalidated = invalidations.last()
+    assert invalidated is not None
+    assert invalidated.history_receipt.cause_id == FieldEvent.objects.get(pk=late["id"]).pk
+    old_history.refresh_from_db()
+    assert old_history.payload == old_payload
+    shift.refresh_from_db()
+    assert shift.status == "closed"
+    correction = event(
+        type="record.void",
+        shift_id=None,
+        voids_event_id=late["id"],
+        payload={"reason_code": "other", "reason": "Correct genuine unbound return declaration"},
+    )
+    corrected = allocation.phone.sync([correction]).data["results"][0]
+    assert corrected["status"] == "accepted"
+    assert allocation.phone.sync([correction]).data["results"][0] == corrected
+    assert FieldEvent.objects.get(pk=late["id"]).voided_at is not None
+    assert [row.payload["approval_current"] for row in invalidations] == [True, False]
+    context = allocation.context
+    declaration = ReturnDeclaration.objects.get(event__declared_source_uuid=declared["id"])
+    frame = ReconciliationVersion.objects.filter(
+        reconciliation=declaration.event.assignment.reconciliation
+    ).first()
+    signature_id = verified_upload(context.actor)
+    prepared = prepare_inventory_intent(
+        context.actor,
+        {
+            "command_id": uuid4(),
+            "kind": "return_accept",
+            "declaration_id": declaration.pk,
+            "expected_revision": frame.revision,
+            "quantity": "2",
+            "evidence": [{"upload_id": signature_id, "role": "signature"}],
+        },
+    )
+    intent_id = UUID(prepared.body["intent"]["id"])
+    AttachmentLink.objects.create(
+        organization=shift.organization,
+        created_by=context.actor.user,
+        upload=Upload.objects.get(public_id=signature_id),
+        inventory_intent_id=intent_id,
+    )
+    command = IntentExecution(
+        intent_id, "return_accept", declaration.event.assignment.reconciliation.pk
+    )
+    accepted = execute_inventory_intent(context.actor, command)
+    assert execute_inventory_intent(context.actor, command).body == accepted.body
+    assert validation_projection(shift)["approval_current"] is False
+    invalidations = CourierChange.objects.filter(
+        resource_type="history.shift_validation",
+        resource_id=str(approval.pk),
+    ).order_by("sequence")
+    assert [row.payload["approval_current"] for row in invalidations] == [True, False]
+    old_history.refresh_from_db()
+    assert old_history.payload == old_payload
+    assert ShiftDecision.objects.filter(shift=shift).count() == 1
+    shift.refresh_from_db()
+    assert shift.status == "closed"
 
 
 @pytest.mark.django_db

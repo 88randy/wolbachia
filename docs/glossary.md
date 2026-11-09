@@ -117,6 +117,12 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
+| actividad comunitaria | community activity | `CommunityActivity`, `/community-activities/` | One aggregate attendance observation, not a resident list or a unique-person metric. Public `zone_id` is the actual Block UUID and retains its BlockVersion. |
+| vínculo de queja | complaint incident link | `ComplaintIncidentLink` | Immutable link to a real reported Incident in the same pair; it never grants Incident/evidence read authority or closes independent holds. |
+| recibo de actividad | community command receipt | `CommunityCommandReceipt` | Exact original actor/body/target/origin identity; HTTP never fabricates a FieldEvent and cross-origin reuse conflicts. |
+
+| Spanish | English name in code | API / field form | Notes |
+| --- | --- | --- | --- |
 | anulación | void | `POST .../void/`, `voided_at`, `voided_by`, `void_reason`, `void_reason_code` | Nothing is deleted; a void references the original (decision 3). |
 | incidencia | incident | `/incidents/`, `incident` | |
 
@@ -134,6 +140,8 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | --- | --- | --- | --- |
 | teléfono / dispositivo (del repartidor) | device | `Device`, `/devices/`, `device_id` | The registered phone of the mobile app. Never `release_device` (that is release equipment) and never "terminal" or "handset". |
 | sesión del dispositivo | device session | `DeviceSession`, `revoke-device-sessions` | One login of a user on a device: an access + refresh token pair, revoked and never deleted. |
+| auditoría del fin de sesión | session-end audit | `ended_at`, `end_basis`, `retention_anchor`, `dissociated_at` | Truthful closed-session proof; legacy unknown end keeps a distinct cutover anchor. Direct session-person references are removed after configured retention; device/business/log correlation remains separate. |
+| retención por investigación de seguridad | session audit hold | `hold_until`, `hold_purpose`, `hold_reference` | Finite, session-specific operator action; blocks audit dissociation only, not TokenPair pruning. No permanent/public grant or implied legal certification. |
 | baja del dispositivo | device revocation | `POST /devices/{id}/revoke/`, `is_revoked` | Lost or retired phone: it cannot log in again. |
 | última carga | final upload | `final_upload_deadline`, `X-Session-Revoked`, `FinalUploadMixin` | The one upload a revoked phone may still make. |
 | — | token pair | `TokenPair`, `accounts/token_pairs.py` | Hashes of one access + refresh pair of a device session. A refresh consumes its pair and issues a child pair. Live families are kept in full for reuse detection. Ended families are pruned together by retention (#54); their device session audit row is kept. |
@@ -243,3 +251,20 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 | anulación de resultado | lab result void | LabResultVoid, LabResultRevision | Immutable catalog reason/note and optional atomic same-Bag replacement. |
 | solicitud de reconteo independiente | recount request | RecountRequest | Durable first-counter/source/rule cause; #115 owns execution, adjudication and reuse. |
 | muestra diaria de control | daily recount sample | DailyRecountSample | Closed org-local-day population/selection proof; a request is not an executed recount. |
+
+## Courier custody additions (#107)
+
+SupplyAssignment: explicit courier custodian/dated immutable plan, not a Location.
+OriginReleaseProof: genuine origin eligibility and reservation manifest, not receipt.
+SupplyReceipt: signed actual credited custody; zero differs from missing receipt.
+SupplyUse / SupplyShrinkage: explicit source/line deltas in the original declared unit.
+ReturnDeclaration: uncredited courier statement. ReturnAcceptance: separately signed
+warehouse custody transfer to the real destination. ReconciliationVersion: immutable
+R-U-T-S frame, with separate Q-R delivery variance. SupplyDiscrepancy: one retained
+case per reconciliation; SupplyDiscrepancyDecision explains one exact frame without
+inventing stock. InventoryIntent: concrete immutable HTTP evidence declaration,
+before operational execution. LotWriteOff: numeric loss from available Location
+custody. BagDisposition: whole real Bag disposal preserving Lab/source/QA history.
+CourierTransitPolicyVersion: named authored evidence-review procedure, not a seeded
+scientific recipe or a storage certification. Material unavailable: actual disposed
+material cannot support another physical act even when its audit can be corrected.

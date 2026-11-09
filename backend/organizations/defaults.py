@@ -34,6 +34,9 @@ from incidents.permissions import (
     INCIDENT_REASSIGN,
     MANAGEMENT_CODES,
 )
+from inventory.allocations.permissions import ADMIN_CODES as SUPPLY_ADMIN_CODES
+from inventory.allocations.permissions import ALLOCATE, BAG_DISPOSE, RECONCILE, WRITE_OFF
+from inventory.allocations.permissions import COURIER_CODES as SUPPLY_COURIER_CODES
 from inventory.permissions import ADMIN_CODES as INVENTORY_ADMIN_CODES
 from inventory.permissions import ENTOMOLOGIST_CODES as INVENTORY_ENTOMOLOGIST_CODES
 from inventory.permissions import SUPERVISOR_CODES as INVENTORY_SUPERVISOR_CODES
@@ -73,6 +76,10 @@ from uploads.limits import FIELD_UPLOAD
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    "community_activity.read",
+    "community_activity.create",
+    "community_activity.void",
+    *SUPPLY_ADMIN_CODES,
     *LAB_ADMIN_CODES,
     *TRANSFER_ADMIN_CODES,
     RELOCATION_DECIDE,
@@ -116,6 +123,9 @@ ADMIN_CODES = (
     MOTORCYCLE_SERVICE_CLEAR,
 )
 COURIER_CODES = (
+    "community_activity.read",
+    "community_activity.create",
+    *SUPPLY_COURIER_CODES,
     INCIDENT_READ,
     INCIDENT_CREATE,
     FIELD_UPLOAD,
@@ -126,6 +136,9 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    "community_activity.read",
+    "community_activity.void",
+    RECONCILE,
     COUNT_VOID,
     *TRANSFER_SUPERVISOR_CODES,
     RELOCATION_DECIDE,
@@ -157,6 +170,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     "courier": COURIER_CODES,
     "supervisor": SUPERVISOR_CODES,
     "entomologist": (
+        BAG_DISPOSE,
         *LAB_ENTOMOLOGIST_CODES,
         FIELD_UPLOAD,
         INTERVENTION_READ,
@@ -167,9 +181,15 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         SCHEDULE_READ,
         RISK_IMPORT_APPLY,
     ),
-    "community_promoter": READ_ONLY_CODES,
+    "community_promoter": (
+        *READ_ONLY_CODES,
+        "community_activity.read",
+        "community_activity.create",
+    ),
     "admin": ADMIN_CODES,
     "coordinator": (
+        "community_activity.read",
+        "community_activity.void",
         *READ_ONLY_CODES,
         *GEOGRAPHY_WRITE_CODES,
         *READ_CODES,
@@ -180,6 +200,9 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         INCIDENT_REASSIGN,
     ),
     "warehouse": (
+        ALLOCATE,
+        RECONCILE,
+        WRITE_OFF,
         *READ_ONLY_CODES,
         *INVENTORY_WAREHOUSE_CODES,
         *TRANSFER_WAREHOUSE_CODES,

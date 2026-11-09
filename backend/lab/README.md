@@ -123,3 +123,17 @@ Read ../README.md, ../../docs/api-conventions.md and ../../docs/glossary.md befo
 changing the domain. Local pure/schema/collection checks do not execute PostgreSQL
 guards, barriers or migrations. Fresh full CI owns that qualification. A technical
 test fixture is never an approved operational biological method.
+
+## Whole-material disposal integration (#107)
+
+Only an actual BagDisposition with current receipt/result and closed-day unselected
+assessment removes physical availability. Open/missing/stale draw and unresolved
+independent recount are blockers, never implicit clearance. Disposal retains Bag,
+Reading/source, count/method/rule proof and every QA obligation. Later #115 work
+must report material_unavailable, not infer completion or reuse.
+New first counts, physical replacements and rejections are blocked after disposal
+in the shared writer and additive SQL guard. Optional count-replacement
+measurement_kind=data_correction requires its real same-Bag/source/predecessor/
+command proof and preserves scientific pins. Omitted or physical_measurement keeps
+the old canonical command shape/hash and exact saved replay before material gates.
+No new Lab model, science default, ledger or history publisher is introduced.

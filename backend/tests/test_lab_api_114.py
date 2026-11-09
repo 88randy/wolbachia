@@ -50,11 +50,20 @@ def test_lab_public_schema_preserves_authentic_actions_and_single_history_owner(
         "shift_validation",
         "relocation_proposal",
         "transfer_custody",
+        "supply_plan",
+        "supply_release",
+        "supply_cancel",
+        "supply_receipt",
+        "supply_reconcile",
+        "supply_return",
+        "supply_justify",
+        "supply_bag_disposal",
         "lab_receipt",
         "lab_count",
         "lab_discrepancy",
         "lab_rejection",
         "lab_void",
+        "community_activity",
     } == mapping.keys()
     history = schema["components"]["schemas"]["LabHistoryEntry"]["properties"]
     for field in ("count_id", "rejection_id"):

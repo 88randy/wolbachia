@@ -1,5 +1,7 @@
 import type { Schemas } from "@wolbachia/api-client";
 import { LAB_HISTORY_KINDS, readLabHistoryEntry } from "./lab-history-contract.ts";
+import { SUPPLY_HISTORY_KINDS, readSupplyHistoryEntry } from "./supply-history-contract.ts";
+import { readCommunityHistoryEntry } from "./community-history-contract.ts";
 import {
   CourierContractError,
   choice,
@@ -25,7 +27,12 @@ export const LIFECYCLE_HISTORY_KINDS = [
   "relocation_proposal",
   "transfer_custody",
 ] as const;
-const HISTORY_KINDS = [...LIFECYCLE_HISTORY_KINDS, ...LAB_HISTORY_KINDS] as const;
+const HISTORY_KINDS = [
+  ...LIFECYCLE_HISTORY_KINDS,
+  ...LAB_HISTORY_KINDS,
+  ...SUPPLY_HISTORY_KINDS,
+  "community_activity",
+] as const;
 const REVIEW_FIELDS = {
   id: readUuid,
   review_item_id: nullable(readUuid),
@@ -100,11 +107,14 @@ function readTransfer(row: Record<string, unknown>): Schemas["TransferHistoryEnt
   });
   return { ...row, subjects: readSubjects(row.subjects) } as Schemas["TransferHistoryEntry"];
 }
-/** History4 validates all nine domain kinds without inventing review or capture authority. */
+/** Current history6 validates all 18 kinds without inventing review or capture authority. */
 export function readHistoryEntry(value: unknown): Schemas["CourierHistoryEntry"] {
   const row = readRecord(value);
   const kind = choice(HISTORY_KINDS)(row.kind);
   if (LAB_HISTORY_KINDS.some((candidate) => candidate === kind)) return readLabHistoryEntry(row);
+  if (SUPPLY_HISTORY_KINDS.some((candidate) => candidate === kind))
+    return readSupplyHistoryEntry(row);
+  if (kind === "community_activity") return readCommunityHistoryEntry(row);
   if (kind === "relocation_proposal") return readRelocation(row);
   if (kind === "transfer_custody") return readTransfer(row);
   requireFields(row, REVIEW_FIELDS);

@@ -20,6 +20,8 @@ import {
   LAB_REJECTION,
   LAB_VOID,
   LAB_HISTORY,
+  COMMUNITY_HISTORY,
+  SUPPLY_HISTORY,
   RELOCATION_HISTORY,
   REVIEW_HISTORY,
   SHIFT_HISTORY,
@@ -59,6 +61,77 @@ function assertCanonicalLabHistory() {
   }
   assertLabAlternatives();
   assertMalformedLabHistory();
+}
+function assertCanonicalHistory6() {
+  const entries = [COMMUNITY_HISTORY, ...SUPPLY_HISTORY];
+  const observed = entries.map((entry) => {
+    try {
+      return readHistoryEntry(entry).kind;
+    } catch (error) {
+      if (!(error instanceof CourierContractError)) throw error;
+      return `rejected:${entry.kind}:${error.boundary}`;
+    }
+  });
+  assert.deepEqual(
+    observed,
+    entries.map((entry) => entry.kind),
+  );
+  for (const entry of entries) {
+    const change = readHistoryChange(historyChange(entry));
+    assert.equal(change.resource_type, `history.${entry.kind}`);
+    assert.equal(change.resource_id, entry.id);
+    assert.equal(change.data.kind, entry.kind);
+  }
+  assertNewHistoryBoundaries();
+}
+function assertNewHistoryBoundaries() {
+  const plan = SUPPLY_HISTORY[0];
+  assert.ok(plan);
+  for (const entry of [COMMUNITY_HISTORY, plan]) {
+    for (const field of Object.keys(entry)) {
+      const missing = Object.fromEntries(Object.entries(entry).filter(([key]) => key !== field));
+      assert.throws(() => readHistoryEntry(missing), `missing required ${entry.kind}.${field}`);
+    }
+  }
+  assert.doesNotThrow(() =>
+    readHistoryEntry({
+      ...COMMUNITY_HISTORY,
+      revision: 2,
+      is_voided: true,
+      command_id: ID.source,
+      attendance: Number.MAX_SAFE_INTEGER,
+    }),
+  );
+  assert.doesNotThrow(() =>
+    readHistoryEntry({
+      ...COMMUNITY_HISTORY,
+      type_snapshot: { ...COMMUNITY_HISTORY.type_snapshot, id: COMMUNITY_HISTORY.type_id },
+    }),
+  );
+  for (const mutation of [
+    { attendance: -1 },
+    { attendance: true },
+    { attendance: Number.MAX_SAFE_INTEGER + 1 },
+    { activity_id: ID.actor },
+    { source_event_id: ID.source },
+    { command_id: ID.source },
+    { revision: 3 },
+    { is_voided: true },
+    { type_snapshot: null },
+  ])
+    assert.throws(() => readHistoryEntry({ ...COMMUNITY_HISTORY, ...mutation }));
+  for (const mutation of [
+    { source_kind: "receipt" },
+    { assignment_id: null },
+    { source_status: "accepted" },
+    { source_event_id: ID.source },
+    { source_kind: "future" },
+  ])
+    assert.throws(() => readHistoryEntry({ ...SUPPLY_HISTORY[0], ...mutation }));
+  assert.throws(
+    () => readHistoryChange({ ...historyChange(COMMUNITY_HISTORY), resource_id: ID.actor }),
+    (error: unknown) => error instanceof CourierContractError && error.boundary === "envelope",
+  );
 }
 function assertLabAlternatives() {
   const alternatives = [
@@ -155,8 +228,9 @@ function assertMalformedLabHistory() {
   );
 }
 
-void test("C1: canonical history3 preserves signed transfer event/source facts without inventing review, shift or lifecycle state", () => {
+void test("C1: canonical history6 preserves signed transfer event/source facts without inventing review, shift or lifecycle state", () => {
   assertCanonicalLabHistory();
+  assertCanonicalHistory6();
   for (const phase of ["dispatch", "receive"] as const) {
     const body = {
       ...TRANSFER_HISTORY,

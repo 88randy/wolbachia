@@ -209,8 +209,11 @@ def touch_session(session: DeviceSession) -> None:
     last = session.last_used_at
     if last is not None and (now - last).total_seconds() < LAST_USED_UPDATE_INTERVAL_SECONDS:
         return
-    DeviceSession.objects.filter(pk=session.pk).update(last_used_at=now)
-    Device.objects.filter(pk=session.device_id).update(last_seen_at=now)
+    changed = DeviceSession.objects.filter(
+        pk=session.pk, end_basis="", dissociated_at__isnull=True
+    ).update(last_used_at=now)
+    if changed:
+        Device.objects.filter(pk=session.device_id).update(last_seen_at=now)
 
 
 # --- Password reset ----------------------------------------------------------------------------

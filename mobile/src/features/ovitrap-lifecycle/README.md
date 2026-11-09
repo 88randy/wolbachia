@@ -2,9 +2,13 @@
 
 ## Current M5 composition (local, not device qualification)
 
-The actual history4/B33 producer is fully decoded by the existing DayStore writer.
-The four lifecycle branches materialize; all five canonical Lab kinds are validated
-before deliberate exclusion. Malformed Lab rejects the whole page and cannot become
+The actual history6/B33 producer is fully decoded by the existing DayStore writer.
+The four lifecycle branches materialize; all five canonical Lab kinds, eight Supply
+kinds and aggregate Community history are validated before deliberate exclusion.
+Supply source-kind/material/provenance and Community archived type/revision/count
+fields retain the actual canonical producer contract; optional archived type IDs
+remain optional. No stock/community projection, capture authority or implicit grant
+is created. Malformed or unknown history rejects the whole page and cannot become
 a known lifecycle invalidation or acknowledge readiness. Lab never grants capture
 authority. Feedback joins the exact original source UUID and point UUID.
 Ingest receipt/status stays immutable and separate from review effect, terminal

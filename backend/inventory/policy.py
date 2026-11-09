@@ -55,19 +55,40 @@ class LotSafety:
 
 def evaluate_lot(snapshot: LotSafetySnapshot, at: datetime) -> LotSafety:
     """Evaluate current facts; a missing future slot is deliberately incomplete too."""
+    blockers = _global_start(snapshot, at)
+    if snapshot.is_biological:
+        blockers.extend(_biological_blockers(snapshot))
+    blockers.extend(_global_holds(snapshot))
+    status = "draft" if snapshot.missing_fields else ("blocked" if blockers else "available")
+    return LotSafety(status, snapshot.missing_fields, tuple(blockers))
+
+
+def evaluate_transit_lot(snapshot: LotSafetySnapshot, at: datetime) -> LotSafety:
+    """Same global G; actual transit evidence owns the separate non-Location boundary."""
+    blockers = _global_start(snapshot, at)
+    if snapshot.is_biological and not snapshot.protocol_ready:
+        blockers.append("protocol_not_configured")
+    blockers.extend(_global_holds(snapshot))
+    status = "draft" if snapshot.missing_fields else ("blocked" if blockers else "available")
+    return LotSafety(status, snapshot.missing_fields, tuple(blockers))
+
+
+def _global_start(snapshot: LotSafetySnapshot, at: datetime) -> list[str]:
     blockers: list[str] = []
     if not snapshot.is_active:
         blockers.append("supply_type_inactive")
     if snapshot.expires_at is not None and at >= snapshot.expires_at:
         blockers.append("lot_expired")
-    if snapshot.is_biological:
-        blockers.extend(_biological_blockers(snapshot))
+    return blockers
+
+
+def _global_holds(snapshot: LotSafetySnapshot) -> list[str]:
+    blockers: list[str] = []
     if snapshot.unresolved_breaches:
         blockers.append("condition_breach")
     if snapshot.transfer_holds:
         blockers.append("transfer_discrepancy_hold")
-    status = "draft" if snapshot.missing_fields else ("blocked" if blockers else "available")
-    return LotSafety(status, snapshot.missing_fields, tuple(blockers))
+    return blockers
 
 
 def _biological_blockers(snapshot: LotSafetySnapshot) -> list[str]:

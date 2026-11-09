@@ -66,6 +66,57 @@ def test_authenticated_schema_metadata_does_not_require_inventory_option_targets
         "/api/v1/supply-types/protocol-incident-type-options/",
     } <= response.json()["paths"].keys()
     schema = response.json()
+    assert {
+        "/api/v1/courier-assignments/",
+        "/api/v1/courier-assignments/suggestion/",
+        "/api/v1/courier-assignments/{id}/release/",
+        "/api/v1/reconciliations/{id}/returns/accept/",
+        "/api/v1/reconciliations/{id}/justify/",
+        "/api/v1/inventory-intents/",
+        "/api/v1/write-offs/",
+    } <= schema["paths"].keys()
+    prepare = schema["paths"]["/api/v1/inventory-intents/"]["post"]["requestBody"]
+    assert prepare["required"] is True
+    prepare_name = prepare["content"]["application/json"]["schema"]["$ref"].split("/")[-1]
+    assert len(schema["components"]["schemas"][prepare_name]["oneOf"]) == 6
+    assert (
+        schema["paths"]["/api/v1/courier-assignments/{id}/release/"]["post"]["requestBody"][
+            "required"
+        ]
+        is True
+    )
+    suggestion = schema["paths"]["/api/v1/courier-assignments/suggestion/"]["get"]
+    suggestion_query = {
+        parameter["name"]: parameter.get("required", False)
+        for parameter in suggestion["parameters"]
+        if parameter["in"] == "query"
+    }
+    assert suggestion_query == {"date": True, "courier": False}
+    list_query = {
+        "date",
+        "center",
+        "created_at_from",
+        "created_at_before",
+        "ordering",
+        "page",
+        "page_size",
+    }
+    for path, extra in (
+        ("/api/v1/courier-assignments/", {"courier", "assignment"}),
+        ("/api/v1/reconciliations/", {"courier", "assignment"}),
+        ("/api/v1/write-offs/", {"kind"}),
+    ):
+        assert {
+            parameter["name"]
+            for parameter in schema["paths"][path]["get"]["parameters"]
+            if parameter["in"] == "query"
+        } == list_query | extra
+    assert set(schema["components"]["schemas"]["SupplySuggestionLine"]["properties"]) == {
+        "supply_version_id",
+        "mapping_id",
+        "quantity",
+    }
+    assert "SupplySuggestionTask" not in schema["components"]["schemas"]
     lot_detail = schema["paths"]["/api/v1/lots/{id}/"]
     detail_query = {
         parameter["name"]: {**parameter, "required": parameter.get("required", False)}

@@ -15,6 +15,91 @@ from tests.test_geography_decisions_b_33 import field as geography_field_fixture
 
 field = geography_field_fixture  # Reuse the canonical authored fixture without another setup.
 
+# Approved #107 additions, independent of the restored database or migration implementation.
+SUPPLY_ADDITIVE_TABLES = (
+    "bagdisposition",
+    "couriertransitpolicyversion",
+    "inventoryintent",
+    "inventoryintentexecution",
+    "lotwriteoff",
+    "originreleaseline",
+    "originreleaseproof",
+    "reconciliation",
+    "reconciliationline",
+    "reconciliationversion",
+    "releasecancellation",
+    "releasecancellationline",
+    "returnacceptance",
+    "returndeclaration",
+    "supplyassignment",
+    "supplyassignmentcommandreceipt",
+    "supplyassignmentline",
+    "supplyassignmentversion",
+    "supplydiscrepancy",
+    "supplydiscrepancydecision",
+    "supplyevent",
+    "supplyledgersource",
+    "supplymaterialmappingversion",
+    "supplyreceipt",
+    "supplyreceiptline",
+    "supplyshrinkage",
+    "supplystockeffect",
+    "supplysourcelink",
+    "supplysourceresult",
+    "supplyuse",
+    "supplyvoidaudit",
+    "supplyvoidsourcelink",
+)
+SUPPLY_ADDITIVE_TRIGGERS = (
+    {
+        (f"inventory_{name}", f"inventory_{name}_{suffix}")
+        for name in SUPPLY_ADDITIVE_TABLES
+        for suffix in ("guard", "supply_complete")
+    }
+    | {
+        (f"inventory_{name}", f"inventory_{name}_reservation_complete")
+        for name in ("originreleaseline", "releasecancellationline", "supplyreceiptline")
+    }
+    | {
+        (f"inventory_{name}", f"inventory_{name}_source_complete")
+        for name in (
+            "supplyevent",
+            "supplyreceipt",
+            "supplyuse",
+            "supplyshrinkage",
+            "returndeclaration",
+        )
+    }
+    | {
+        ("inventory_stockmovement", "inventory_supply_stock_lock"),
+        ("inventory_stockmovement", "inventory_supply_movement_complete"),
+        ("inventory_inventoryintentexecution", "inventory_supply_execution_complete"),
+        ("inventory_supplyassignment", "inventory_assignment_plan_complete"),
+        ("inventory_supplyassignmentversion", "inventory_assignment_version_complete"),
+        ("inventory_reconciliationversion", "inventory_supply_frame_complete"),
+        ("inventory_supplyvoidaudit", "inventory_supply_void_complete"),
+        ("uploads_attachmentlink", "uploads_inventory_intent_parent_guard"),
+    }
+)
+
+
+# Canonical #127 additions; keep exact identities independent of the restored DB.
+COMMUNITY_ADDITIVE_TRIGGERS = {
+    (table, f"{table}_{suffix}")
+    for table in (
+        "community_communityactivity",
+        "community_communityactivityevent",
+        "community_communitycommandreceipt",
+        "community_communitysourcelink",
+        "community_complaintincidentlink",
+        "community_communitysourcecancellation",
+    )
+    for suffix in ("guard", "complete")
+} | {
+    ("field_sync_fieldevent", "community_source_complete"),
+    ("reviews_revieweffectreceipt", "community_review_complete"),
+}
+
 
 def assert_lab_sql_dependencies_precede_empty_plan_guard(loader):
     plan = loader.graph.forwards_plan(("lab", "0002_append_only_guards"))
@@ -93,7 +178,15 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         executor.migrate(old)
         triggers = old_trigger_definitions()
         MigrationExecutor(connection).migrate(leaves)
-        assert old_trigger_definitions() == triggers
+        retained = {(table, name): definition for table, name, definition in triggers}
+        restored = {
+            (table, name): definition for table, name, definition in old_trigger_definitions()
+        }
+        assert {key: restored[key] for key in retained} == retained
+        assert (
+            restored.keys() - retained.keys()
+            == SUPPLY_ADDITIVE_TRIGGERS | COMMUNITY_ADDITIVE_TRIGGERS
+        )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
         ]

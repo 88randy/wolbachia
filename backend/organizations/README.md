@@ -332,3 +332,12 @@ field.upload once for actual rejection evidence. There is no other new grant,
 role-name authorization or government exception. Custom profiles, explicit
 revocations and current paired scopes remain. SUP's exact void-context/evidence
 read grants no general Lab read/create/upload.
+
+## Once-only courier custody grants (#107)
+
+New inventory.allocate/reconcile/write_off default to admin and warehouse;
+inventory.reconcile also defaults to supervisor. Own supply_assignment.receive/
+reconcile default only to admin/courier; bag.dispose defaults to admin/entomologist.
+Existing seed-once receipts preserve custom profiles and explicit revocations,
+including field.upload; government remains portal.read only. No scientific mapping
+or transit procedure is seeded. Current paired actions still authorize every act.

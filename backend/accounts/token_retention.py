@@ -15,6 +15,7 @@ from django.db.models import Max, Q, QuerySet
 
 from accounts.audit import AuditContext, AuthEvent, log_auth_event
 from accounts.models import DeviceSession, TokenPair
+from accounts.session_audit_retention import remember_end
 from core.time import server_now
 
 MAX_SESSIONS_PER_RUN = 500
@@ -50,6 +51,11 @@ def _prune_session(session_id: UUID, cutoff: datetime) -> int:
         session = DeviceSession.objects.select_for_update().get(pk=session_id)
         if not _eligible_sessions(cutoff).filter(pk=session.pk).exists():
             return 0
+        expiries = session.token_pairs.aggregate(
+            access=Max("access_expires_at"), refresh=Max("refresh_expires_at")
+        )
+        observed_at = cutoff + timedelta(days=settings.AUTH_TOKEN_PAIR_RETENTION_DAYS)
+        remember_end(session, max(expiries["access"], expiries["refresh"]), observed_at)
         # The normal manager forbids deletes; Django's collector also refuses PROTECT
         # parent/child families. One parameterized statement removes all siblings and
         # descendants together, satisfying their deferred self-FK without recursion.

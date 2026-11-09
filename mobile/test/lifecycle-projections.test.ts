@@ -39,6 +39,8 @@ import {
   RELOCATION_HISTORY,
   LAB_HISTORY,
   LAB_COUNT,
+  COMMUNITY_HISTORY,
+  SUPPLY_HISTORY,
 } from "./support/lifecycle-contract-fixtures.ts";
 import {
   PROJECTION_IDENTITY,
@@ -497,6 +499,8 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
             RELOCATION_HISTORY,
             TRANSFER_HISTORY,
             ...LAB_HISTORY,
+            COMMUNITY_HISTORY,
+            ...SUPPLY_HISTORY,
           ],
         },
       }),
@@ -511,6 +515,8 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
         historyChange(TRANSFER_HISTORY),
         historyChange(RELOCATION_HISTORY),
         ...LAB_HISTORY.map(historyChange),
+        historyChange(COMMUNITY_HISTORY),
+        ...SUPPLY_HISTORY.map(historyChange),
       ],
     }),
   );
@@ -537,6 +543,8 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
     cursor: "lab-only-current-cursor",
     history: [
       ...LAB_HISTORY.map(historyChange),
+      historyChange(COMMUNITY_HISTORY),
+      ...SUPPLY_HISTORY.map(historyChange),
       {
         ...historyChange({ ...LAB_COUNT, qa_state: "superseded" }),
         sequence: 9,
@@ -590,6 +598,18 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
         history: [
           { ...historyChange({ ...REVIEW_HISTORY, reason: "Must roll back" }), sequence: 11 },
           historyChange({ ...LAB_COUNT, value: -1 }),
+        ],
+      }),
+    ),
+  );
+  assert.deepEqual(await readProjectionState(local.executor), beforeBadPage);
+  await assert.rejects(
+    bundle.applyProjectionChanges(
+      projectionChanges({
+        cursor: "unaccepted-malformed-supply-cursor",
+        history: [
+          { ...historyChange({ ...REVIEW_HISTORY, reason: "Must still roll back" }), sequence: 12 },
+          historyChange({ ...SUPPLY_HISTORY[3], source_kind: "plan" }),
         ],
       }),
     ),
