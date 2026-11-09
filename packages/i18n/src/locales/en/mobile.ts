@@ -111,6 +111,26 @@ export const mobile: Record<keyof typeof source, string> = {
     "Reuse requires downloaded eligibility. A third reuse is never offered.",
   "mobile.ovitrap.supplies": "Supply UUID references, separated by commas",
   "mobile.ovitrap.photo": "Add photo evidence",
+  "mobile.camera.undo": "Remove this photo from the draft",
+  "mobile.ovitrap.concurrentEdit":
+    "The draft changed while saving. Your edits are still pending; try saving them again.",
+  "mobile.camera.ownerRequired":
+    "Sign in again to confirm the account before taking a photo. Your draft is still on this phone.",
+  "mobile.camera.fileType":
+    "The photo format is unsupported. Take another photo in JPEG or PNG; your draft is still on this phone.",
+  "mobile.camera.fileSize":
+    "The photo has an invalid size. Adjust the camera resolution and take it again; your draft is still on this phone.",
+  "mobile.camera.permissionDenied":
+    "No photo was added. Allow camera access and try again; your draft is still on this phone.",
+  "mobile.camera.permissionBlocked":
+    "Camera access is blocked. Enable it in the app settings or ask for help; your draft is still on this phone.",
+  "mobile.camera.resultInvalid":
+    "The camera did not return a valid photo. Try again; your draft is still on this phone.",
+  "mobile.camera.busy": "A capture is in progress. Return from the camera and try again.",
+  "mobile.camera.unlockRequired":
+    "Unlock the app and take the photo again. Your draft is still on this phone.",
+  "mobile.camera.fileFailed":
+    "The photo could not be saved on this phone. Check available storage and take it again; your draft is still on this phone.",
   "mobile.ovitrap.photoUnavailable":
     "The evidence camera is unavailable in this build. Keep the draft and ask for help if the catalog requires a photo.",
   "mobile.ovitrap.refresh": "Download catalogs and rules",

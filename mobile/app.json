@@ -28,6 +28,7 @@
       "./plugins/with-debug-lan-cleartext",
       "@maplibre/maplibre-react-native",
       "expo-location",
+      ["expo-image-picker", { "microphonePermission": false, "photosPermission": false }],
       [
         "./plugins/with-package-queries",
         {

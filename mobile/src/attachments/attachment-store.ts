@@ -60,6 +60,23 @@ export class AttachmentStore {
     if (!rows.length) throw new EvidenceError("stale_context");
   }
 
+  async reserveCapture(input: {
+    id: string;
+    fence: EvidenceFence;
+    draftId: string;
+    guard: SqlStatement;
+  }): Promise<void> {
+    const { id, fence, draftId, guard } = input;
+    const rows = await this.db.query(
+      `INSERT INTO attachment_file(id,owner_key,draft_id)
+      SELECT ?,?,? WHERE ${CURRENT_FENCE} AND EXISTS(${guard.sql})
+      AND NOT EXISTS(SELECT 1 FROM ovitrap_evidence WHERE lower(evidence_id)=lower(?))
+      AND NOT EXISTS(SELECT 1 FROM lifecycle_evidence WHERE lower(evidence_id)=lower(?)) RETURNING id`,
+      [id, fence.ownerKey, draftId, ...fenceParams(fence), ...(guard.params ?? []), id, id],
+    );
+    if (!rows.length) throw new EvidenceError("stale_context");
+  }
+
   async saveOwned(file: OwnedEvidence, fence: EvidenceFence): Promise<void> {
     const rows = await this.db.query(
       `UPDATE attachment_file SET metadata=?,state='ready'
@@ -67,6 +84,24 @@ export class AttachmentStore {
       [JSON.stringify(file), file.id, fence.ownerKey, ...fenceParams(fence)],
     );
     if (!rows.length) throw new EvidenceError("stale_context");
+  }
+  captureAuthority(input: {
+    id: string;
+    fileRef: string;
+    draftId: string;
+    fence: EvidenceFence;
+  }): SqlStatement {
+    return {
+      sql: `SELECT 1 FROM attachment_file WHERE id=? AND owner_key=? AND draft_id=?
+        AND metadata IS NOT NULL AND json_extract(metadata,'$.fileRef')=? AND ${CURRENT_FENCE}`,
+      params: [
+        input.id,
+        input.fence.ownerKey,
+        input.draftId,
+        input.fileRef,
+        ...fenceParams(input.fence),
+      ],
+    };
   }
 
   bindingStatements(input: {

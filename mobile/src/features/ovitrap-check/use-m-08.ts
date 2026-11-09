@@ -31,14 +31,17 @@ function useCaptureState(buffer: OvitrapDraftBuffer, setError: (key: MessageKey 
   const invalidate = useCallback(() => {
     sequence.current++;
   }, []);
-  const refresh = useCallback(async () => {
-    const request = ++sequence.current;
-    const revision = buffer.revision;
-    const saved = await ovitrapCheck.read();
-    if (request !== sequence.current || revision !== buffer.revision) return;
-    setState(buffer.merge(saved));
-    if (buffer.takeDiscardedEditNotice()) setError("mobile.ovitrap.immutableEdit");
-  }, [buffer, ovitrapCheck, setError]);
+  const refresh = useCallback(
+    async (signal?: AbortSignal) => {
+      const request = ++sequence.current;
+      const revision = buffer.revision;
+      const saved = await ovitrapCheck.read();
+      if (signal?.aborted || request !== sequence.current || revision !== buffer.revision) return;
+      setState(buffer.merge(saved));
+      if (buffer.takeDiscardedEditNotice()) setError("mobile.ovitrap.immutableEdit");
+    },
+    [buffer, ovitrapCheck, setError],
+  );
   useCaptureUpdates(refresh, invalidate, setError);
   return { state, setState, refresh };
 }
@@ -61,7 +64,7 @@ export function useM08() {
     setState((current) => (current ? buffer.merge(current) : current));
     void buffer
       .persist(ovitrapCheck)
-      .then(refresh)
+      .then(() => refresh())
       .catch((error: unknown) => {
         return reportCaptureError(input, error);
       });

@@ -1,5 +1,6 @@
 import { ApiError } from "@wolbachia/api-client";
-import { EvidenceUnavailableError, LifecycleGateError } from "./action-error-key.ts";
+import { LifecycleGateError } from "./action-error-key.ts";
+import { requireCaptureSignal } from "../../attachments/capture-signal.ts";
 import { ShiftBlockedError } from "../ovitrap-check/shift-authorization.ts";
 import { RemoteSessionEnded } from "../../auth/session-requests.ts";
 import { normalizeGps, CatalogChangedError } from "../ovitrap-check/ports.ts";
@@ -47,7 +48,10 @@ export interface Snapshot extends StoredLifecycle {
   readonly frameState?: "open" | "closed" | "unknown";
   readonly correctionReasons?: readonly import("../shift-open/domain.ts").ChecklistItem[];
 }
-type AdmittedTurn = LifecycleSourceTurn & { readonly admission: LifecycleAdmission };
+type AdmittedTurn = LifecycleSourceTurn & {
+  readonly admission: LifecycleAdmission;
+  readonly draftVersion: string | null | undefined;
+};
 type Action<T extends Snapshot> = (
   state: StoredLifecycle,
   turn: AdmittedTurn,
@@ -74,11 +78,14 @@ export class LifecycleService {
   readonly #deps: Dependencies;
   #tail: Promise<unknown> = Promise.resolve();
   #interaction = 0;
+  #capture = new AbortController();
   constructor(deps: Dependencies) {
     this.#deps = deps;
   }
   cancelInteraction(): void {
     this.#interaction++;
+    this.#capture.abort();
+    this.#capture = new AbortController();
     this.#deps.cancelNative?.();
   }
   #write<T extends Snapshot>(
@@ -119,7 +126,12 @@ export class LifecycleService {
     assertIdentity(await this.#deps.store.read(), eventId);
     const admission = this.#admission(turn, operation);
     admission.assertCurrent();
-    return this.#perform(action, state, { ...turn, admission, operation });
+    return this.#perform(action, state, {
+      ...turn,
+      admission,
+      operation,
+      draftVersion: state.draftVersion,
+    });
   }
   async #perform<T extends Snapshot>(
     action: Action<T>,
@@ -303,12 +315,12 @@ export class LifecycleService {
   }
   async #persist(
     draft: LifecycleDraft,
-    turn: LifecycleSourceTurn,
+    turn: AdmittedTurn,
     operation: LifecycleSourceOperation,
   ): Promise<void> {
     await this.#authorize(draft);
     assertIdentity(await this.#deps.store.read(), draft.eventId);
-    await operation.admit(turn, () => this.#deps.store.update(draft, turn));
+    await operation.admit(turn, () => this.#deps.store.update(draft, turn.draftVersion, turn));
   }
   update(
     patch: DraftPatch,
@@ -337,20 +349,30 @@ export class LifecycleService {
     });
   }
   captureEvidence(eventId: string | null): Promise<Snapshot> {
+    const signal = this.#capture.signal;
     return this.#write(eventId, async (state, turn, operation) => {
       const draft = editable(state);
       if (draft.evidence.length >= MAX_EVIDENCE) throw new Error("Evidence limit reached.");
-      const evidence = await (this.#deps.captureEvidence
-        ? this.#deps.captureEvidence(draft.eventId, turn.admission)
-        : this.#deps.evidence.capture());
-      if (!evidence) throw new EvidenceUnavailableError();
-      await this.#persist(
-        {
-          ...draft,
-          evidence: [...draft.evidence.filter((item) => item.id !== evidence.id), evidence],
-        },
-        turn,
-        operation,
+      const guard = this.#deps.store.evidencePublicationGuard(draft, turn);
+      const assertCurrent = async () => {
+        requireCaptureSignal(signal);
+        turn.admission.assertCurrent();
+        await turn.assertCurrent();
+        await this.#authorize(draft);
+        const [current] = await this.#deps.store.db.query(guard.sql, guard.params);
+        requireCaptureSignal(signal);
+        turn.admission.assertCurrent();
+        if (!current) throw new StaleCaptureError();
+      };
+      const evidence = await this.#deps.evidence.capture({
+        draftId: draft.eventId,
+        signal,
+        assertCurrent,
+      });
+      if (!evidence) return this.#snapshot(turn);
+      await assertCurrent();
+      await operation.admit(turn, () =>
+        this.#deps.store.publishEvidence({ captured: evidence, guard, limit: MAX_EVIDENCE }),
       );
       return this.#snapshot(turn);
     });
@@ -446,7 +468,7 @@ export class LifecycleService {
       await operation.admit(turn, () =>
         this.#deps.engine.enqueue(lifecycleEvent(draft), [
           ...lifecycleCommitGuards(turn.handle, turn.ownerFence),
-          ...this.#deps.store.commitStatements(draft),
+          ...this.#deps.store.commitStatements(draft, state.draftVersion),
           ...bindings,
         ]),
       );

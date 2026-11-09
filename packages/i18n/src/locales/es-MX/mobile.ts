@@ -114,6 +114,26 @@ export const mobile = {
     "Solo se ofrece reutilización con elegibilidad descargada. Nunca una tercera reutilización.",
   "mobile.ovitrap.supplies": "Referencias UUID de insumos, separadas por coma",
   "mobile.ovitrap.photo": "Agregar evidencia fotográfica",
+  "mobile.camera.undo": "Quitar esta foto del borrador",
+  "mobile.ovitrap.concurrentEdit":
+    "El borrador cambió mientras se guardaba. Tus cambios siguen pendientes; vuelve a intentar guardarlos.",
+  "mobile.camera.ownerRequired":
+    "Vuelve a iniciar sesión para confirmar la cuenta antes de tomar la foto. Tu borrador sigue en el teléfono.",
+  "mobile.camera.fileType":
+    "La foto tiene un formato no compatible. Vuelve a tomarla en JPEG o PNG; tu borrador sigue en el teléfono.",
+  "mobile.camera.fileSize":
+    "La foto no tiene un tamaño válido. Ajusta la resolución de la cámara y vuelve a tomarla; tu borrador sigue en el teléfono.",
+  "mobile.camera.permissionDenied":
+    "No se agregó una foto. Permite usar la cámara e inténtalo de nuevo; tu borrador sigue en el teléfono.",
+  "mobile.camera.permissionBlocked":
+    "La cámara está bloqueada. Habilítala en los ajustes de la aplicación o pide ayuda; tu borrador sigue en el teléfono.",
+  "mobile.camera.resultInvalid":
+    "La cámara no entregó una foto válida. Inténtalo de nuevo; tu borrador sigue en el teléfono.",
+  "mobile.camera.busy": "Hay una captura en curso. Regresa de la cámara y vuelve a intentarlo.",
+  "mobile.camera.unlockRequired":
+    "Desbloquea la aplicación y vuelve a tomar la foto. Tu borrador sigue en el teléfono.",
+  "mobile.camera.fileFailed":
+    "No se pudo guardar la foto en el teléfono. Revisa el espacio disponible e intenta tomarla de nuevo; tu borrador sigue en el teléfono.",
   "mobile.ovitrap.photoUnavailable":
     "La cámara de evidencia no está disponible en esta compilación. Conserva el borrador y pide ayuda si el catálogo requiere foto.",
   "mobile.ovitrap.refresh": "Descargar catálogos y reglas",

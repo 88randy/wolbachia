@@ -123,7 +123,10 @@ async function saveCapture(
   await store.begin(draft);
   const event = captureEvent(draft);
   assert.equal(Object.hasOwn(event.payload, "task_id"), false);
-  await local.outbox.enqueue(event, store.commitStatements(draft));
+  await local.outbox.enqueue(
+    event,
+    store.commitStatements(draft, (await store.read()).draftVersion),
+  );
   return event;
 }
 /** Current producer-shaped capture scope augments the owning v3 fixture; no completion/receipt assertion changes. */

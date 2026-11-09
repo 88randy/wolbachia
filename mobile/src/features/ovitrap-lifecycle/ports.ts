@@ -1,7 +1,6 @@
 import type { SyncEngine } from "../../sync/sync-engine.ts";
-import type { EvidencePort, GpsPort } from "../ovitrap-check/types.ts";
+import type { CapturedEvidencePort, GpsPort } from "../ovitrap-check/types.ts";
 import type { LifecycleStore } from "./store.ts";
-import type { Evidence } from "../ovitrap-check/types.ts";
 import type { SqlStatement } from "../../db/sql.ts";
 import type { LifecycleDraft } from "./types.ts";
 import type {
@@ -16,11 +15,7 @@ export interface Dependencies {
   readonly now: () => Date;
   readonly uuid: () => string;
   readonly gps: GpsPort;
-  readonly evidence: EvidencePort;
-  readonly captureEvidence?: (
-    draftId: string,
-    admission: LifecycleAdmission,
-  ) => Promise<Evidence | null>;
+  readonly evidence: CapturedEvidencePort;
   readonly evidenceBindings?: (
     draft: LifecycleDraft,
     turn: LifecycleSourceTurn,

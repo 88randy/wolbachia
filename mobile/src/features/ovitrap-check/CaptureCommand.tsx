@@ -5,7 +5,6 @@ const LABELS = {
   startPlace: "mobile.ovitrap.place",
   refresh: "mobile.ovitrap.refresh",
   adoptSnapshots: "mobile.ovitrap.adopt",
-  captureEvidence: "mobile.ovitrap.photo",
   refreshGps: "mobile.ovitrap.retryGps",
   save: "mobile.ovitrap.save",
   correct: "mobile.ovitrap.correct",
@@ -29,9 +28,7 @@ export function CaptureCommand({ model, command, eventId, disabled = false }: Pr
       onPress={() => {
         void model.run(
           async () => {
-            const result = await model.service[command](eventId);
-            if (command === "captureEvidence" && result === false)
-              model.setError("mobile.ovitrap.photoUnavailable");
+            await model.service[command](eventId);
           },
           { eventId: eventId, startsCapture: command === "startPlace" },
         );

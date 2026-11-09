@@ -6,6 +6,7 @@ import { createStores, FIXED_NOW, FIXED_DEVICE_ID } from "./factories.ts";
 import type { TestStores } from "./factories.ts";
 import { scriptedTransport, answer } from "./scripted-transport.ts";
 import { CATALOG, RULES, ASSIGNMENT } from "./m-08-fixtures.ts";
+import type { EvidenceCaptureContext } from "../../src/features/ovitrap-check/types.ts";
 import { hydrateLifecycleCaptureFixture } from "./lifecycle-capture-fixture.ts";
 import { PROJECTION_IDENTITY } from "./lifecycle-projection-fixtures.ts";
 import type { SqlExecutor } from "../../src/db/sql.ts";
@@ -41,10 +42,14 @@ const PORTS = {
       }),
   },
   evidence: {
-    capture: () =>
+    capture: (context: EvidenceCaptureContext) =>
       Promise.resolve({
         id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
         fileRef: "file:///evidence/test.jpg",
+        authority: {
+          sql: "SELECT 1 FROM ovitrap_draft WHERE slot=1 AND event_id IS NULL AND json_extract(draft,'$.eventId')=?",
+          params: [context.draftId],
+        },
       }),
   },
 } as const;
@@ -54,13 +59,25 @@ function serviceFor(
   overrides: Partial<ConstructorParameters<typeof OvitrapService>[0]>,
 ) {
   const { store, engine } = deps;
+  const shiftId =
+    overrides.shiftId ?? (() => Promise.resolve("55555555-5555-4555-8555-555555555555"));
   return new OvitrapService({
     store,
     engine,
     now: () => FIXED_NOW,
     uuid: () => `aaaaaaaa-aaaa-4aaa-8aaa-${String(++sequence).padStart(12, "0")}`,
     ...PORTS,
-    shiftId: () => Promise.resolve("55555555-5555-4555-8555-555555555555"),
+    shiftId,
+    evidenceShift: async () => {
+      const id = await shiftId();
+      return {
+        id,
+        guard: {
+          sql: "SELECT 1 FROM ovitrap_draft WHERE slot=1 AND event_id IS NULL AND json_extract(draft,'$.shiftId')=?",
+          params: [id],
+        },
+      };
+    },
     ...overrides,
   });
 }
