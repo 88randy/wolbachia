@@ -29,6 +29,9 @@ and1000 stored maximum. Server completion sequence, not observed_at, orders resu
 Incomplete neither increments nor resets; completed pass resets; low/critical_failure
 is adverse. The2->3 transition retains one episode cause without fourth-result
 duplication or fictional delivered recall.
+Unknown critical response keys return 400 validation_error with
+fields.critical_responses code unknown_check. Invalid calendar instants return
+the field's invalid code; valid instants without a zone return naive_datetime.
 Revision/void reconciles the resulting effective episode: removing an intervening
 pass can discover the actual third adverse completion, with its original author
 and a truthful current cause/publication time.

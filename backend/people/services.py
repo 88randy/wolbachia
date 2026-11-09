@@ -482,6 +482,8 @@ def _rubric_version(command: PeopleWrite) -> dict[str, Any]:
 
 
 def _observations(command: PeopleWrite, version: EvaluationRubricVersion) -> Any:  # noqa: ANN401 -- immutable score dataclass
+    if set(command.values["critical_responses"]) - set(version.critical_checks):
+        raise FieldValidationError("critical_responses", "unknown_check")
     policy = RubricPolicy(version.weights, version.pass_threshold, tuple(version.critical_checks))
     return score_evaluation(
         policy, command.values["section_scores"], command.values["critical_responses"]

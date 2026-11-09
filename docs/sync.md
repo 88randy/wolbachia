@@ -10,7 +10,7 @@ validity/next_change_at and an opaque genuine assessment receipt, without scores
 evaluation reasons, HR or evidence. Both field.bootstrap and field_event.sync
 cover the same context before feed LIMIT/count/hash. This is qualification, not
 release permission, scientific certification or proof that physical work occurred.
-Root2/history6/supplies1 and every old history branch remain unchanged.
+Root2/history7/supplies1 and every old history branch remain unchanged.
 
 Only genuine DeviceBearer views propagate server-owned publication context and
 observed session/pair into the prepared writer. Current account authority precedes

@@ -10,7 +10,7 @@ qualification reads. Commands use immutable UUID receipts plus CAS; private
 history is paginated and currently scoped. `training.read` summaries omit issuer
 proof and evaluations. The existing eligibility section becomes typed own
 qualification with genuine capture receipts and semantic expiry, preserving
-root2/history6/supplies1. A real Certification private-image parent reuses B04;
+root2/history7/supplies1. A real Certification private-image parent reuses B04;
 qualification is not release permission, software certification or notification
 delivery. See [people](../../backend/people/README.md).
 

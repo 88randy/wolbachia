@@ -38,10 +38,11 @@ class PeopleIntegerField(serializers.IntegerField):
 
 class AwareInstantField(serializers.DateTimeField):
     def to_internal_value(self, value: Any) -> datetime:  # noqa: ANN401 -- DRF field protocol
+        instant = super().to_internal_value(value)
         parsed = parse_datetime(value) if isinstance(value, str) else value
         if isinstance(parsed, datetime) and parsed.tzinfo is None:
             raise serializers.ValidationError("Use an aware instant.", code="naive_datetime")
-        return super().to_internal_value(value)
+        return instant
 
 
 class PeopleWriteSerializer(StrictPayloadSerializer):

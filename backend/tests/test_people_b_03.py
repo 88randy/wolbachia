@@ -71,6 +71,27 @@ def test_missing_or_incoherent_rubric_configuration_is_not_a_default_pass(weight
         RubricPolicy(weights, Decimal("80"), ("safe",))
 
 
+@pytest.mark.parametrize(
+    ("instant", "code"),
+    [("2026-02-30T12:00:00Z", "invalid"), ("2026-02-28T12:00:00", "naive_datetime")],
+)
+def test_people_instants_reject_invalid_calendar_and_naive_input_with_field_codes(instant, code):
+    from people.serializers import TrainingVersionWriteSerializer
+
+    serializer = TrainingVersionWriteSerializer(
+        data={
+            "command_id": str(uuid4()),
+            "expected_revision": 0,
+            "validity_seconds": 86400,
+            "enabled_actions": ["release.record"],
+            "effective_from": instant,
+            "is_active": True,
+        }
+    )
+    assert not serializer.is_valid()
+    assert serializer.errors["effective_from"][0].code == code
+
+
 def test_qualification_interval_is_aware_half_open_and_bounded_by_configured_duration():
     start = datetime(2026, 1, 1, tzinfo=UTC)
     end = start + timedelta(days=1)
@@ -121,6 +142,12 @@ def test_certificate_uses_actual_effective_version_and_retains_backdated_revoked
     from people.projections import original_assessment
 
     now = people.clock["now"]
+    query = AssessmentQuery(
+        people.organization, people.phone.user.pk, "release.record", people.context, now, now
+    )
+    unavailable = assess_training_eligibility(query)
+    assert not unavailable["training_eligible"]
+    assert unavailable["blockers"] == ["training_requirements_unavailable"]
     first = training_version(people)
     future = training_version(
         people, parent=first.training_id, revision=1, effective=now + timedelta(days=1)
@@ -128,9 +155,6 @@ def test_certificate_uses_actual_effective_version_and_retains_backdated_revoked
     require_training(people, future)
     certificate = certify(
         people, future, start=now - timedelta(hours=1), end=now + timedelta(days=2)
-    )
-    query = AssessmentQuery(
-        people.organization, people.phone.user.pk, "release.record", people.context, now, now
     )
     before = assess_training_eligibility(query)
     assert not before["training_eligible"]
@@ -431,6 +455,23 @@ def test_people_http_keeps_csrf_private_reads_and_complete_context_scope(people,
     conflict = client.post("/api/v1/trainings/", {**body, "name": "Different body"}, format="json")
     assert conflict.status_code == 409
     rubric = rubric_version(people)
+    invalid_observation = client.post(
+        "/api/v1/evaluations/",
+        {
+            "command_id": str(uuid4()),
+            "expected_revision": 0,
+            "subject": str(people.phone.user.pk),
+            "center": str(people.center.pk),
+            "quadrant": str(people.quadrant.pk),
+            "rubric_version": str(rubric.pk),
+            "section_scores": {"presentation": "80", "execution": "80", "coverage": "80"},
+            "critical_responses": {"safe": True, "unknown": True},
+            "observed_at": people.clock["now"].isoformat(),
+        },
+        format="json",
+    )
+    assert invalid_observation.status_code == 400, invalid_observation.data
+    assert invalid_observation.data["fields"]["critical_responses"][0]["code"] == "unknown_check"
     evaluation = write_person(people, "evaluation.create", evaluation_values(people, rubric))
     filtered = client.get(f"/api/v1/evaluations/?subject={people.phone.user.pk}")
     assert filtered.status_code == 200, filtered.data

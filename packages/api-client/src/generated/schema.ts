@@ -1181,6 +1181,244 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/evaluation-notice-policy/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["evaluation_notice_policy_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluation-notice-policy/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["evaluation_notice_policy_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluation-rubrics/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["evaluation_rubrics_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["evaluation_rubrics_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluation-rubrics/{id}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["evaluation_rubrics_versions_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["evaluation_rubrics_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["evaluations_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["evaluations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluations/{id}/attempts/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["evaluations_attempts_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluations/{id}/revisions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["evaluations_revisions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/evaluations/{id}/void/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["evaluations_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/bootstrap/": {
         parameters: {
             query?: never;
@@ -4425,6 +4663,130 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/training-requirements/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["training_requirements_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/training-requirements/{action_key}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["training_requirements_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trainings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["trainings_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["trainings_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/trainings/{id}/versions/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["trainings_versions_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["trainings_versions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/transfers/": {
         parameters: {
             query?: never;
@@ -4554,6 +4916,120 @@ export interface paths {
          *     `allow_final_upload: true` leaves each phone one last upload (default: none).
          */
         post: operations["users_revoke_device_sessions_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{subject_id}/eligibility/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["users_eligibility_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{subject_id}/trainings/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["users_trainings_list"];
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["users_trainings_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{subject_id}/trainings/{certification_id}/revocations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["users_trainings_revocations_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/users/{subject_id}/trainings/{certification_id}/revoke/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["users_trainings_revoke_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -4780,10 +5256,11 @@ export interface components {
          *     * `transfer_event` - transfer_event
          *     * `lab_rejection` - lab_rejection
          *     * `inventory_intent` - inventory_intent
+         *     * `certification` - certification
          *     * `lab_paddle_command` - lab_paddle_command
          * @enum {string}
          */
-        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection" | "inventory_intent" | "lab_paddle_command";
+        AttachmentTargetKindEnum: "field_event" | "motorcycle_fault" | "incident" | "review_item" | "transfer_event" | "lab_rejection" | "inventory_intent" | "certification" | "lab_paddle_command";
         AttachmentTargetRequest: {
             kind: components["schemas"]["AttachmentTargetKindEnum"];
             /** Format: uuid */
@@ -5014,9 +5491,7 @@ export interface components {
             permits: {
                 [key: string]: unknown;
             }[];
-            eligibility: {
-                [key: string]: unknown;
-            }[];
+            eligibility: components["schemas"]["EligibilityBundle"][];
             history: components["schemas"]["CourierHistoryEntry"][];
             map_manifests: components["schemas"]["MapManifest"][];
             quadrants: components["schemas"]["QuadrantReference"][];
@@ -5157,6 +5632,87 @@ export interface components {
             readonly code: string;
             readonly name: string;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        CertificationRevocationRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly certification_id: string;
+            revision: number;
+            /** Format: date-time */
+            effective_from: string;
+            reason_code: string;
+            reason: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string;
+        };
+        /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
+        CertificationRevokeRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            reason_code: string;
+            /** @default  */
+            reason: string;
+            /** Format: date-time */
+            effective_from: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        CertificationSummary: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly subject_id: string;
+            /** Format: uuid */
+            readonly training_version_id: string;
+            /** Format: uuid */
+            readonly center_id: string;
+            /** Format: uuid */
+            readonly quadrant_id: string | null;
+            /** Format: date-time */
+            valid_from: string;
+            /** Format: date-time */
+            valid_to: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly revision: number;
+            /** Format: date-time */
+            readonly revoked_from: string | null;
+        };
+        CertificationWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            /** Format: uuid */
+            center: string;
+            /** Format: uuid */
+            quadrant?: string | null;
+            /** Format: uuid */
+            training_version: string;
+            /** Format: date-time */
+            valid_from: string;
+            /** Format: date-time */
+            valid_to: string;
+            evidence_ids: string[];
+            issuer_reference: string;
+            attestation: string;
+        };
         Changes: {
             cursor: string | null;
             reviews: components["schemas"]["ReviewChange"][];
@@ -5169,7 +5725,7 @@ export interface components {
             assignments: components["schemas"]["ProducerChange"][];
             supplies: components["schemas"]["SupplyChange"][];
             permits: components["schemas"]["ProducerChange"][];
-            eligibility: components["schemas"]["ProducerChange"][];
+            eligibility: components["schemas"]["EligibilityChange"][];
             history: components["schemas"]["HistoryChange"][];
             map_manifests: components["schemas"]["ProducerChange"][];
             quadrants: components["schemas"]["QuadrantChange"][];
@@ -5706,6 +6262,72 @@ export interface components {
          * @enum {string}
          */
         EfficiencyStatusEnum: "unavailable" | "ok" | "review";
+        EligibilityBundle: {
+            /** Format: uuid */
+            subject_id: string;
+            action: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id: string | null;
+            training_eligible: boolean;
+            /** Format: uuid */
+            requirement_version_id: string | null;
+            certification_ids: string[];
+            training_version_ids: string[];
+            revocation_ids: string[];
+            /** Format: date-time */
+            valid_from: string | null;
+            /** Format: date-time */
+            valid_until: string | null;
+            /** Format: date-time */
+            next_change_at: string | null;
+            blockers: string[];
+            /** Format: uuid */
+            organization_id: string;
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            assessment_receipt: string | null;
+            version: string;
+        };
+        EligibilityChange: {
+            sequence: number;
+            action: components["schemas"]["CourierChangeActionEnum"];
+            resource_type: components["schemas"]["EligibilityResourceTypeEnum"];
+            /** Format: uuid */
+            resource_id: string;
+            resource_version: string;
+            data: components["schemas"]["EligibilityBundle"];
+        };
+        EligibilityRead: {
+            /** Format: uuid */
+            subject_id: string;
+            action: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id: string | null;
+            training_eligible: boolean;
+            /** Format: uuid */
+            requirement_version_id: string | null;
+            certification_ids: string[];
+            training_version_ids: string[];
+            revocation_ids: string[];
+            /** Format: date-time */
+            valid_from: string | null;
+            /** Format: date-time */
+            valid_until: string | null;
+            /** Format: date-time */
+            next_change_at: string | null;
+            blockers: string[];
+            query_kind: components["schemas"]["QueryKindEnum"];
+        };
+        /**
+         * @description * `training_eligibility` - training_eligibility
+         * @enum {string}
+         */
+        EligibilityResourceTypeEnum: "training_eligibility";
         /**
          * @description * `iso` - iso
          *     * `mmwr` - mmwr
@@ -5713,12 +6335,159 @@ export interface components {
          */
         EpiWeekEnum: "iso" | "mmwr";
         /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        EvaluationAttemptRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly evaluation_id: string;
+            /** Format: uuid */
+            readonly predecessor_id: string | null;
+            revision: number;
+            /** Format: date-time */
+            observed_at: string;
+            section_scores: unknown;
+            critical_responses: unknown;
+            /** Format: decimal */
+            score?: string | null;
+            outcome: components["schemas"]["EvaluationOutcomeEnum"];
+            reason_code?: string;
+            reason?: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string;
+            readonly completion_sequence: number | null;
+        };
+        EvaluationCreateRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            /** Format: uuid */
+            center: string;
+            /** Format: uuid */
+            quadrant?: string | null;
+            section_scores: {
+                [key: string]: string | null;
+            };
+            critical_responses: {
+                [key: string]: boolean | null;
+            };
+            /** Format: date-time */
+            observed_at: string;
+            /** Format: uuid */
+            subject: string;
+            /** Format: uuid */
+            rubric_version: string;
+        };
+        /**
          * @description * `normal` - normal
          *     * `breach` - breach
          *     * `unassessed` - unassessed
          * @enum {string}
          */
         EvaluationEnum: "normal" | "breach" | "unassessed";
+        /**
+         * @description * `incomplete` - incomplete
+         *     * `pass` - pass
+         *     * `low` - low
+         *     * `critical_failure` - critical_failure
+         * @enum {string}
+         */
+        EvaluationOutcomeEnum: "incomplete" | "pass" | "low" | "critical_failure";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        EvaluationRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly subject_id: string;
+            /** Format: uuid */
+            readonly rubric_version_id: string;
+            /** Format: uuid */
+            readonly center_id: string;
+            /** Format: uuid */
+            readonly quadrant_id: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly revision: number;
+            readonly is_voided: boolean;
+            readonly current: components["schemas"]["EvaluationAttemptRead"] | null;
+            readonly void: components["schemas"]["EvaluationVoidRead"] | null;
+        };
+        EvaluationResult: {
+            /** Format: uuid */
+            attempt_id: string;
+            /** Format: uuid */
+            rubric_version_id: string;
+            outcome: components["schemas"]["EvaluationOutcomeEnum"];
+            /** Format: decimal */
+            score: string | null;
+            completion_sequence: number | null;
+        };
+        /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
+        EvaluationRevisionRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            reason_code: string;
+            /** @default  */
+            reason: string;
+            expected_completion_sequence: number;
+            section_scores: {
+                [key: string]: string | null;
+            };
+            critical_responses: {
+                [key: string]: boolean | null;
+            };
+            /** Format: date-time */
+            observed_at: string;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        EvaluationVoidRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly evaluation_id: string;
+            /** Format: uuid */
+            readonly attempt_id: string;
+            revision: number;
+            reason_code: string;
+            reason: string;
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: uuid */
+            readonly created_by: string;
+        };
+        /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
+        EvaluationVoidRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            reason_code: string;
+            /** @default  */
+            reason: string;
+            expected_completion_sequence: number;
+        };
         /**
          * @description One ingestion verdict. rejection_quota_exceeded is not stored: retain and retry the event
          *     after params.retry_after_seconds (also the 200 response's Retry-After header).
@@ -6014,6 +6783,13 @@ export interface components {
          * @enum {string}
          */
         IdentityKindEnum: "piece" | "lot";
+        IdentityWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            code: string;
+            name: string;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -7515,6 +8291,39 @@ export interface components {
             /** Format: date */
             due_date: string;
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        NoticePolicyRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly center_id: string;
+            /** Format: uuid */
+            readonly quadrant_id: string | null;
+            /** Format: uuid */
+            readonly recipient_membership_id: string;
+            revision: number;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        NoticePolicyWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            /** Format: uuid */
+            center: string;
+            /** Format: uuid */
+            quadrant?: string | null;
+            /** Format: uuid */
+            recipient_membership_id: string;
+            reroute_cause_ids?: string[];
+        };
         /** @enum {unknown} */
         NullEnum: null;
         /**
@@ -7920,6 +8729,36 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Center"][];
         };
+        PaginatedCertificationRevocationReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CertificationRevocationRead"][];
+        };
+        PaginatedCertificationSummaryList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["CertificationSummary"][];
+        };
         PaginatedConditionList: {
             /** @example 123 */
             count: number;
@@ -7964,6 +8803,36 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Discrepancy"][];
+        };
+        PaginatedEvaluationAttemptReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["EvaluationAttemptRead"][];
+        };
+        PaginatedEvaluationReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["EvaluationRead"][];
         };
         PaginatedFuelLoadList: {
             /** @example 123 */
@@ -8235,6 +9104,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Movement"][];
         };
+        PaginatedNoticePolicyReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["NoticePolicyRead"][];
+        };
         PaginatedOvitrapList: {
             /** @example 123 */
             count: number;
@@ -8460,6 +9344,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Relocation"][];
         };
+        PaginatedRequirementReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RequirementRead"][];
+        };
         PaginatedResponsibilityLetterList: {
             /** @example 123 */
             count: number;
@@ -8504,6 +9403,36 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Risk"][];
+        };
+        PaginatedRubricReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RubricRead"][];
+        };
+        PaginatedRubricVersionReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["RubricVersionRead"][];
         };
         PaginatedRuleParameterList: {
             /** @example 123 */
@@ -8654,6 +9583,36 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["SupplyReconciliation"][];
+        };
+        PaginatedTrainingReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["TrainingRead"][];
+        };
+        PaginatedTrainingVersionReadList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["TrainingVersionRead"][];
         };
         PaginatedTransferList: {
             /** @example 123 */
@@ -8806,6 +9765,17 @@ export interface components {
             /** @description Kinds must be unique; duplicates return 400 validation_error. */
             blocker_kinds?: components["schemas"]["BlockerKindsEnum"][];
             is_active?: boolean;
+        };
+        PeopleReceipt: {
+            /** Format: uuid */
+            command_id: string;
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            /** Format: date-time */
+            recorded_at: string;
+            evaluation: components["schemas"]["EvaluationResult"] | null;
+            rerouted_cause_ids?: string[];
         };
         /**
          * @description * `field_event.sync` - field_event.sync
@@ -9143,6 +10113,13 @@ export interface components {
             version: components["schemas"]["QuadrantVersion"];
             spacing_warnings: components["schemas"]["SpacingWarning"][];
         };
+        /**
+         * @description * `current` - current
+         *     * `retrospective` - retrospective
+         *     * `future` - future
+         * @enum {string}
+         */
+        QueryKindEnum: "current" | "retrospective" | "future";
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -9741,6 +10718,43 @@ export interface components {
          * @enum {string}
          */
         RequiredFieldsEnum: "species" | "strain" | "generation" | "laid_on" | "estimated_organism_count";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        RequirementRead: {
+            /** Format: uuid */
+            readonly id: string;
+            action: string;
+            /** Format: uuid */
+            readonly center_id: string;
+            /** Format: uuid */
+            readonly quadrant_id: string | null;
+            revision: number;
+            /** Format: date-time */
+            effective_from: string;
+            acceptable_versions: unknown;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        RequirementWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            /** Format: uuid */
+            center: string;
+            /** Format: uuid */
+            quadrant?: string | null;
+            /** Format: date-time */
+            effective_from: string;
+            acceptable_versions: {
+                [key: string]: string[];
+            };
+        };
         ResolutionBodyRequest: {
             outcomes: components["schemas"]["ClosedOutcomeRequest"][];
         };
@@ -10109,6 +11123,62 @@ export interface components {
          * @enum {string}
          */
         RoleEnum: "signature" | "photo";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        RubricRead: {
+            /** Format: uuid */
+            readonly id: string;
+            code: string;
+            name: string;
+            readonly revision: number;
+            /** Format: uuid */
+            readonly current_version_id: string | null;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        RubricVersionRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly rubric_id: string;
+            version: number;
+            weights: unknown;
+            /** Format: decimal */
+            pass_threshold: string;
+            critical_checks: unknown;
+            /** Format: date-time */
+            effective_from: string;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        RubricVersionWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            weights?: {
+                [key: string]: number;
+            };
+            /**
+             * Format: decimal
+             * @default 80.0000
+             */
+            pass_threshold: string;
+            critical_checks: string[];
+            /** Format: date-time */
+            effective_from: string;
+        };
         /**
          * @description A parameter with the value in force now. Values are JSON numbers; null means no version yet.
          *
@@ -10923,6 +11993,57 @@ export interface components {
          * @enum {string}
          */
         TaskActionEnum: "place" | "check";
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        TrainingRead: {
+            /** Format: uuid */
+            readonly id: string;
+            code: string;
+            name: string;
+            readonly revision: number;
+            /** Format: uuid */
+            readonly current_version_id: string | null;
+        };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        TrainingVersionRead: {
+            /** Format: uuid */
+            readonly id: string;
+            /** Format: uuid */
+            readonly training_id: string;
+            version: number;
+            /** Format: int64 */
+            validity_seconds: number;
+            enabled_actions: unknown;
+            /** Format: date-time */
+            effective_from: string;
+            is_active: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        TrainingVersionWriteRequest: {
+            /** Format: uuid */
+            command_id: string;
+            expected_revision: number;
+            /** Format: int64 */
+            validity_seconds: number;
+            enabled_actions: string[];
+            /** Format: date-time */
+            effective_from: string;
+            is_active: boolean;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -13527,6 +14648,426 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaddleReuseOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluation_notice_policy_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                /** @description Comma-separated fields: created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                quadrant?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedNoticePolicyReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluation_notice_policy_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NoticePolicyWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluation_rubrics_list: {
+        parameters: {
+            query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                /** @description Comma-separated fields: code, name, created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRubricReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluation_rubrics_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentityWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluation_rubrics_versions_list: {
+        parameters: {
+            query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRubricVersionReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluation_rubrics_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RubricVersionWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluations_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                include_voided?: "true" | "false";
+                /** @description Comma-separated fields: created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                quadrant?: string;
+                subject?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEvaluationReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluations_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluationCreateRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluations_attempts_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedEvaluationAttemptReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluations_revisions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluationRevisionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    evaluations_void_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EvaluationVoidRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -19541,6 +21082,235 @@ export interface operations {
             };
         };
     };
+    training_requirements_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                /** @description Comma-separated fields: created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                quadrant?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedRequirementReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    training_requirements_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                action_key: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RequirementWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    trainings_list: {
+        parameters: {
+            query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                /** @description Comma-separated fields: code, name, created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTrainingReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    trainings_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IdentityWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    trainings_versions_list: {
+        parameters: {
+            query?: {
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedTrainingVersionReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    trainings_versions_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TrainingVersionWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     transfers_list: {
         parameters: {
             query?: {
@@ -19783,6 +21553,206 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RevokedSessions"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    users_eligibility_retrieve: {
+        parameters: {
+            query: {
+                action: string;
+                at?: string;
+                center: string;
+                quadrant?: string | null;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EligibilityRead"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    users_trainings_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                /** @description Comma-separated fields: created_at, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                proof?: "true" | "false";
+                quadrant?: string;
+                training_version?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCertificationSummaryList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    users_trainings_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CertificationWriteRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    users_trainings_revocations_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                certification_id: string;
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedCertificationRevocationReadList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    users_trainings_revoke_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                certification_id: string;
+                subject_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CertificationRevokeRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PeopleReceipt"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

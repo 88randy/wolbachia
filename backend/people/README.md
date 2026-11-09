@@ -21,7 +21,7 @@ runs under these locks. SQL/race tests require real PostgreSQL CI.
 The one existing eligibility slot publishes only current self action/pair
 qualification and genuine semantic publication receipts. Pair UUIDs are historical
 scalars, allowing canonical token-family pruning; subject identity is retained
-independently of a subsequently dissociated Session.user. Root2/history6/supplies1
+independently of a subsequently dissociated Session.user. Root2/history7/supplies1
 and every old history variant remain unchanged. No release handler is introduced.
 
 Training notice causes/intents/publication attempts are durable and explicitly
@@ -39,6 +39,9 @@ retained subjects and replay the original receipt before mutable CAS/state;
 changed target/body conflicts. Revision/void also compare the current person's
 expected_completion_sequence and preserve the original rubric/context/observations.
 `release.record` is an action key, not a qualification or permission default.
+Public input failures use field-coded 400 responses before facts commit: instant
+fields validate calendar values before checking awareness, and both evaluation
+creation and revision reject critical keys absent from the retained rubric.
 
 `GET /evaluations/{id}/attempts/` pages original and successor attempts under
 current evaluation.read for the original whole context, including voided cases.

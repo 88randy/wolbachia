@@ -7,7 +7,7 @@ only the authenticated subject's actual action/context qualification, exact
 minimal version pins, coded blockers/validity boundaries and opaque genuine
 assessment receipt. Both field.bootstrap and field_event.sync must cover the
 same real context; scope applies before feed LIMIT/count and bootstrap hashing.
-Root2/history6/supplies1 and every old history branch remain unchanged.
+Root2/history7/supplies1 and every old history branch remain unchanged.
 
 Genuine DeviceBearer views pass server-owned publication context and observed
 session/pair to the prepared writer. Cookie/forced/unbound contexts cannot mint
