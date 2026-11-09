@@ -13,11 +13,12 @@ import { STATUS_PRESENTATION } from "../../ui/status-presentation.ts";
 const styles = StyleSheet.create({
   row: {
     flexDirection: "row",
+    flexWrap: "wrap",
     justifyContent: "space-between",
     alignItems: "center",
     gap: spacing[1],
   },
-  title: { flex: 1 },
+  title: { flexGrow: 1, flexBasis: spacing[6] * 3 },
 });
 
 /** Events of one type and status: "10 · Ovitrampas revisadas", the span of their times and a status badge. */
@@ -37,7 +38,7 @@ export function GroupCard({ group }: { readonly group: TypeGroup }) {
               label: t(eventTypeKey(group.type)),
             })}
           </AppText>
-          <AppText variant="caption" tone="secondary">
+          <AppText variant="caption" tone="secondary" isMonospace>
             {first === last ? first : t("mobile.inbox.timeRange", { from: first, to: last })}
           </AppText>
         </View>

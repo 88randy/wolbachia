@@ -1,4 +1,4 @@
-import { ScrollView } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { createShiftStyles } from "../shift-open/styles.ts";
 import { CloseSkeleton } from "./CloseSkeleton.tsx";
@@ -11,8 +11,8 @@ export function CloseContent({ model }: { readonly model: M14Model }) {
   if (model.state === null) return <CloseSkeleton />;
   if (!model.state.draft?.locallyClosedAt) return <P26Screen model={model} />;
   return (
-    <ScrollView contentContainerStyle={styles.content}>
+    <AppScrollView contentContainerStyle={styles.content}>
       <P27Screen state={model.state} />
-    </ScrollView>
+    </AppScrollView>
   );
 }

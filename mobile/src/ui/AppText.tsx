@@ -11,17 +11,30 @@ type TextTone = "primary" | "secondary" | "tertiary" | "onChrome";
 interface AppTextProps extends TextProps {
   readonly variant?: TextVariant;
   readonly tone?: TextTone;
+  /** Codes, dates, times and quantities keep their size but use the bundled mono family. */
+  readonly isMonospace?: boolean;
 }
 
-// Digits keep a fixed width (Inter's `tnum`) so counts and times line up.
+// Both bundled families expose tabular figures so counts and times line up.
 const styles = StyleSheet.create({ tabular: { fontVariant: ["tabular-nums"] } });
 
 /**
- * The only text component of the app: Inter, Codequim sizes, tabular figures, theme colors.
+ * Shared text: Inter for prose, JetBrains Mono for data, shared sizes and theme colors.
  * It never sets `numberOfLines`: at 130 % text nothing may be cut off.
  */
-export function AppText({ variant = "body", tone = "primary", style, ...rest }: AppTextProps) {
+export function AppText({
+  variant = "body",
+  tone = "primary",
+  isMonospace = false,
+  style,
+  ...rest
+}: AppTextProps) {
   const { theme } = useTheme();
   const color = tone === "onChrome" ? ON_CHROME_COLOR : theme.color.text[tone];
-  return <Text {...rest} style={[styles.tabular, textStyleFor(variant), { color }, style]} />;
+  return (
+    <Text
+      {...rest}
+      style={[styles.tabular, textStyleFor(variant, isMonospace), { color }, style]}
+    />
+  );
 }

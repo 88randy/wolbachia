@@ -388,6 +388,60 @@ def test_lab_rejection_consumes_real_verified_bytes_and_exact_void_only_parent_a
     with pytest.raises(Http404):
         download_attachment(reader, identifier)
 
+    # The new typed paddle purpose uses exactly the same real unbound-byte path.
+    from inventory.models import Piece, StockMovement
+    from lab.commands import LabCommandInput, execute_lab_command
+    from lab.models import EggPaddle, LabCommand
+    from tests.inventory_support import inventory_context
+
+    stock = inventory_context(
+        context.actor.organization, make_member, quantity="1", identity_kind="piece"
+    )
+    piece = Piece.objects.get(lot=stock.lot)
+    source = StockMovement.objects.get(piece=piece, quantity=1)
+    paddle_upload, paddle_lease = authorize(private)
+    put(private, paddle_upload, paddle_lease)
+    values = {
+        "code": "B04-REAL-PADDLE",
+        "piece_id": piece.pk,
+        "source_movement_id": source.pk,
+        "location_id": stock.location.pk,
+        "evidence_ids": [paddle_upload],
+    }
+    unverified = execute_lab_command(
+        context.actor,
+        LabCommandInput("paddle_register", LabTarget("paddle", piece.pk), uuid4(), values),
+    )
+    assert (unverified.status, unverified.body["code"]) == (409, "lab_evidence_required")
+    assert not EggPaddle.objects.exists()
+    assert not AttachmentLink.objects.filter(upload__public_id=paddle_upload).exists()
+    assert StockMovement.objects.filter(piece=piece).count() == 1
+    assert finalize_upload(private.actor, paddle_upload)["state"] == "verified"
+    operation = LabCommandInput("paddle_register", LabTarget("paddle", piece.pk), uuid4(), values)
+    registered = execute_lab_command(context.actor, operation)
+    assert registered.status == 201
+    assert execute_lab_command(context.actor, operation).body == registered.body
+    real_command = LabCommand.objects.get(command_id=operation.command_id)
+    link = AttachmentLink.objects.get(upload__public_id=paddle_upload)
+    assert link.lab_paddle_command_id == real_command.pk
+    assert not any((link.lab_rejection_id, link.inventory_intent_id, link.field_event_id))
+    assert (
+        finalize_upload(
+            private.actor, paddle_upload, AttachmentTarget("lab_paddle_command", real_command.pk)
+        )["state"]
+        == "verified"
+    )
+    profile.permission_codes = ["egg_paddle.reuse"]
+    profile.save(update_fields=["permission_codes"])
+    paddle_bytes, paddle_mime = download_attachment(reader, paddle_upload)
+    assert paddle_mime == "image/png"
+    assert Image.open(BytesIO(paddle_bytes)).size == (5, 3)
+    profile.permission_codes = []
+    profile.save(update_fields=["permission_codes"])
+    with pytest.raises(Http404):
+        download_attachment(reader, paddle_upload)
+    assert StockMovement.objects.filter(piece=piece).count() == 1
+
 
 @pytest.mark.django_db(transaction=True)
 def test_inventory_intent_binds_real_signature_once_and_download_uses_current_action(

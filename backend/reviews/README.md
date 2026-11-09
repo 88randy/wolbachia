@@ -232,3 +232,12 @@ preserves Community5 and every earlier shape; root bootstrap2 is unchanged.
 HTTP return acceptance and
 justification invalidate the existing Shift decision fingerprint/history using
 their real execution cause, without synthetic FEs or a second history publisher.
+
+## Independent Lab history (#115)
+
+History7 adds three genuine typed QA/physical facts to the same publisher while
+retaining every prior kind and root2. Current paired numeric authority and the
+central blind predicate apply before history LIMIT and both delivery surfaces.
+Only selected/delivered numeric facts record an immutable actual actor/count
+disclosure receipt. Original history payloads and CommandResult bodies remain
+unchanged; field.bootstrap alone never grants Lab numbers or physical authority.

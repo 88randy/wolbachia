@@ -147,7 +147,9 @@ export function departureGate(input: GateInput): Gate | null {
 }
 /** Receipt and review are different facts; pending, sending and local errors only prove phone storage. */
 export function deliveryKey(opening: OutboxEvent): MessageKey {
-  const received = ["sent", "in_review", "rejected"].includes(opening.status);
+  if (opening.status === "in_review") return "mobile.shiftOpen.receivedInReview";
+  if (opening.status === "rejected") return "mobile.shiftOpen.receivedRejected";
+  const received = opening.status === "sent";
   return received ? "mobile.shiftOpen.serverReceived" : "mobile.shiftOpen.phoneSaved";
 }
 

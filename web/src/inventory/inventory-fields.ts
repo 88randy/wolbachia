@@ -42,6 +42,7 @@ export const fieldKeys: Record<string, MessageKey> = {
   expiry_basis: "inventory.field.expiryBasis",
 };
 export const blockerKeys: Record<string, MessageKey> = {
+  transfer_discrepancy_hold: "inventory.blocker.transferDiscrepancyHold",
   supply_type_inactive: "inventory.blocker.supplyTypeInactive",
   lot_expired: "inventory.blocker.lotExpired",
   protocol_not_configured: "inventory.blocker.protocolNotConfigured",

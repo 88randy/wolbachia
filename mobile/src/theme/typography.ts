@@ -11,6 +11,11 @@ export const FONT_FAMILY = {
   extrabold: "Inter_800ExtraBold",
 } as const;
 
+export const MONO_FONT_FAMILY = {
+  regular: "JetBrainsMono_400Regular",
+  semibold: "JetBrainsMono_600SemiBold",
+} as const;
+
 export type TextVariant =
   | "h1"
   | "h2"
@@ -21,6 +26,8 @@ export type TextVariant =
   | "caption"
   | "captionStrong"
   | "overline"
+  | "code"
+  | "status"
   | "number";
 
 export interface TextStyleSpec {
@@ -37,6 +44,7 @@ interface VariantSpec {
   /** Line height as a multiple of the size (`codequim.css`). */
   readonly lineHeight: number;
   readonly uppercase?: boolean;
+  readonly mono?: keyof typeof MONO_FONT_FAMILY;
 }
 
 const OVERLINE_TRACKING_EM = 0.04;
@@ -50,8 +58,22 @@ const VARIANTS: Readonly<Record<TextVariant, VariantSpec>> = {
   label: { size: "label", weight: "regular", lineHeight: 1.43 },
   caption: { size: "caption", weight: "regular", lineHeight: 1.4 },
   captionStrong: { size: "caption", weight: "bold", lineHeight: 1.4 },
-  overline: { size: "caption", weight: "bold", lineHeight: 1.4, uppercase: true },
-  number: { size: "number", weight: "bold", lineHeight: 1.15 },
+  overline: {
+    size: "caption",
+    weight: "semibold",
+    mono: "semibold",
+    lineHeight: 1.4,
+    uppercase: true,
+  },
+  code: { size: "body", weight: "regular", mono: "regular", lineHeight: 1.5 },
+  status: {
+    size: "caption",
+    weight: "semibold",
+    mono: "semibold",
+    lineHeight: 1.4,
+    uppercase: true,
+  },
+  number: { size: "number", weight: "bold", mono: "semibold", lineHeight: 1.3 },
 };
 
 /**
@@ -59,13 +81,16 @@ const VARIANTS: Readonly<Record<TextVariant, VariantSpec>> = {
  * the phone's text-size setting (React Native does it), which is how 130 % text works: the design's
  * "130 %" board is the scale of a phone set to a larger text size.
  */
-export function textStyleFor(variant: TextVariant): TextStyleSpec {
+export function textStyleFor(variant: TextVariant, isMonospace = false): TextStyleSpec {
   const spec = VARIANTS[variant];
   const fontSize = mobileTypeScale[spec.size];
   return {
     fontSize,
     lineHeight: Math.round(fontSize * spec.lineHeight),
-    fontFamily: FONT_FAMILY[spec.weight],
+    fontFamily:
+      spec.mono === undefined && !isMonospace
+        ? FONT_FAMILY[spec.weight]
+        : MONO_FONT_FAMILY[spec.mono ?? "regular"],
     ...(spec.uppercase === true
       ? { letterSpacing: fontSize * OVERLINE_TRACKING_EM, textTransform: "uppercase" as const }
       : {}),

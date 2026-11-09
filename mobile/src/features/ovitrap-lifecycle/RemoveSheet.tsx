@@ -1,4 +1,5 @@
-import { Modal, ScrollView, View } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
+import { Modal, View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
@@ -21,7 +22,7 @@ export function RemoveSheet({ isOpen, close, save, isBusy, draft }: Props) {
       <View style={styles.root}>
         <View style={styles.scrim} />
         <View style={styles.sheet} accessibilityViewIsModal>
-          <ScrollView contentContainerStyle={styles.content}>
+          <AppScrollView contentContainerStyle={styles.content}>
             <AppText variant="h2" accessibilityRole="header">
               {t("mobile.lifecycle.confirmRemove")}
             </AppText>
@@ -33,7 +34,7 @@ export function RemoveSheet({ isOpen, close, save, isBusy, draft }: Props) {
             </AppText>
             <AppText>{t("mobile.lifecycle.removeConsequence")}</AppText>
             <ShiftAction label={t("mobile.lifecycle.remove")} disabled={isBusy} onPress={save} />
-          </ScrollView>
+          </AppScrollView>
         </View>
       </View>
     </Modal>

@@ -121,7 +121,7 @@ def authorize_target(
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
     scope = current_scope(actor)
-    if target.kind in {"inventory_intent", "lab_rejection", "transfer_event"}:
+    if target.kind in {"inventory_intent", "lab_rejection", "transfer_event", "lab_paddle_command"}:
         return _domain_attachment_target(actor, target, upload)
     if target.kind == "review_item":
         return _review_attachment_target(actor, target, scope)
@@ -182,6 +182,10 @@ def _domain_attachment_target(
         from lab.evidence import authorize_rejection_attachment
 
         return authorize_rejection_attachment(actor, target.identifier, upload)
+    if target.kind == "lab_paddle_command":
+        from lab.independent_qa.evidence import authorize_paddle_attachment
+
+        return authorize_paddle_attachment(actor, target.identifier, upload)
     if target.kind == "transfer_event":
         return _transfer_attachment_target(actor, target, upload)
     raise Http404
@@ -248,6 +252,11 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
         from lab.evidence import authorize_rejection_download
 
         authorize_rejection_download(actor, parent.identifier)
+        return
+    if parent.kind == "lab_paddle_command":
+        from lab.independent_qa.evidence import authorize_paddle_download
+
+        authorize_paddle_download(actor, parent.identifier)
         return
     _authorize_other_download(actor, link, parent)
 

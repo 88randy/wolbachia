@@ -1,4 +1,5 @@
 import { InventoryHome } from "../inventory/InventoryHome";
+import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
 import { W9Page } from "../inventory/lots/W9Page";
 import { W10Page } from "../inventory/lots/W10Page";
@@ -97,7 +98,7 @@ const authenticatedRoute = createRoute({
   component: AppShell,
 });
 
-const areaRoutes = AREAS.map((area) =>
+const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
   createRoute({
     getParentRoute: () => authenticatedRoute,
     path: area.path,
@@ -112,9 +113,7 @@ const areaRoutes = AREAS.map((area) =>
           ? FleetHome
           : area.id === "quadrants"
             ? W22Page
-            : area.id === "inventory"
-              ? InventoryHome
-              : () => <AreaPlaceholder areaId={area.id} />,
+            : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
@@ -236,12 +235,28 @@ const catalogRoute = createRoute({
   component: CatalogsPage,
   errorComponent: AreaErrorState,
 });
+const inventoryLayout = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  id: "inventory-context",
+  component: InventoryScreen,
+});
+const inventoryHomeRoute = createRoute({
+  getParentRoute: () => inventoryLayout,
+  path: "/inventory",
+  beforeLoad: ({ context }) => {
+    const area = AREAS.find((entry) => entry.id === "inventory");
+    if (!area) throw new Error("Inventory area configuration unavailable");
+    requireAreaAccess(area, context.me);
+  },
+  component: InventoryHome,
+  errorComponent: AreaErrorState,
+});
 function inventoryRoute<const Path extends string>(
   path: Path,
   options: { permission: string; component: () => ReactElement },
 ) {
   return createRoute({
-    getParentRoute: () => authenticatedRoute,
+    getParentRoute: () => inventoryLayout,
     path,
     validateSearch: tableSearchSchema,
     beforeLoad: ({ context }) => {
@@ -271,7 +286,7 @@ const routeTree = rootRoute.addChildren([
   selectOrganizationRoute,
   authenticatedRoute.addChildren([
     ...areaRoutes,
-    ...inventoryRoutes,
+    inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
     quadrantVersionsRoute,
     catalogsRoute,
     catalogRoute,

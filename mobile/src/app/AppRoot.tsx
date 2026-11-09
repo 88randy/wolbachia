@@ -3,6 +3,8 @@ import { Inter_400Regular } from "@expo-google-fonts/inter/400Regular";
 import { Inter_600SemiBold } from "@expo-google-fonts/inter/600SemiBold";
 import { Inter_700Bold } from "@expo-google-fonts/inter/700Bold";
 import { Inter_800ExtraBold } from "@expo-google-fonts/inter/800ExtraBold";
+import { JetBrainsMono_400Regular } from "@expo-google-fonts/jetbrains-mono/400Regular";
+import { JetBrainsMono_600SemiBold } from "@expo-google-fonts/jetbrains-mono/600SemiBold";
 import { useFonts } from "expo-font";
 
 import { AppShell } from "./AppShell.tsx";
@@ -11,10 +13,17 @@ import { PreferencesProvider } from "./PreferencesProvider.tsx";
 import { ServicesContext } from "./services-context.ts";
 import { useAppBoot } from "./use-app-boot.ts";
 
-const FONTS = { Inter_400Regular, Inter_600SemiBold, Inter_700Bold, Inter_800ExtraBold };
+const FONTS = {
+  Inter_400Regular,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+  JetBrainsMono_400Regular,
+  JetBrainsMono_600SemiBold,
+};
 
 /**
- * Loads Inter and opens the phone's database, then shows the app. Nothing here waits for the
+ * Loads bundled Inter/JetBrains Mono and opens the phone's database, then shows the app. Nothing here waits for the
  * network: the first screen appears as soon as local storage is ready.
  */
 export function AppRoot() {

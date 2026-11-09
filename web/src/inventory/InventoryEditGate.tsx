@@ -8,6 +8,7 @@ import { useInventoryContext } from "./use-inventory-context";
 import { InventoryDraftMemory } from "./use-inventory-draft";
 import { InventoryForm } from "./InventoryForm";
 import type { InventoryKind, InventoryRecord } from "./inventory-links";
+import { inventoryRouteScope } from "./inventory-query";
 interface Props {
   kind: InventoryKind;
   record: InventoryRecord;
@@ -18,15 +19,22 @@ export function InventoryEditGate(props: Props) {
   if (props.kind === "supplies") return <InventoryForm {...props} />;
   return <ScopedEditor {...props} />;
 }
-/** The action-specific read validates the exact saved pair before private draft rehydration. */
-function ScopedEditor(props: Props) {
+function useEditorOptions(props: Props) {
   const request =
     props.kind === "lots"
       ? { kind: "placements" as const, lot: props.record.id }
       : { kind: "owners" as const, location: props.record.id };
-  const query = useQuery(
-    inventoryOptionOptions(useInventoryContext(), request, { page: 1, search: "" }),
+  return useQuery(
+    inventoryOptionOptions(
+      inventoryRouteScope(useInventoryContext(), props.kind, props.record.code),
+      request,
+      { page: 1, search: "" },
+    ),
   );
+}
+/** The action-specific read validates the exact saved pair before private draft rehydration. */
+function ScopedEditor(props: Props) {
+  const query = useEditorOptions(props);
   const memory = useContext(InventoryDraftMemory);
   useEffect(() => {
     if (query.error instanceof ApiError && [403, 404].includes(query.error.status))

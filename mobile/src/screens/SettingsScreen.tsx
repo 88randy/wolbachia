@@ -1,6 +1,7 @@
+import { AppScrollView } from "../ui/AppScrollView.tsx";
 import { spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
-import { ScrollView, StyleSheet, View } from "react-native";
+import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DEV_TOOLS_ENABLED } from "../config/build-config.ts";
@@ -26,14 +27,14 @@ export function SettingsScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader title={t("mobile.settings.title")} />
-      <ScrollView
+      <AppScrollView
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[2] }]}
       >
         <LanguageRow />
         <DarkModeRow />
         <ServerSection />
         {DEV_TOOLS_ENABLED ? <DevToolsSection /> : null}
-      </ScrollView>
+      </AppScrollView>
     </View>
   );
 }

@@ -1,9 +1,20 @@
 """Current action scope precedes state filters, count, order and page."""
 
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
-from django.db.models import Case, CharField, Exists, OuterRef, QuerySet, Subquery, Value, When
+from django.db.models import (
+    Case,
+    CharField,
+    Exists,
+    OuterRef,
+    Prefetch,
+    QuerySet,
+    Subquery,
+    Value,
+    When,
+)
+from django.db.models.functions import Coalesce
 from django.http import Http404
 
 from lab.access import scoped_bags, scoped_readings
@@ -46,9 +57,13 @@ def filter_bags(rows: QuerySet[Bag], values: dict[str, Any]) -> QuerySet[Bag]:
 def result_rows(
     actor: UploadActor, model: type[EggCountAttempt] | type[LabRejection], values: dict[str, Any]
 ) -> QuerySet[Any]:
-    rows = model.objects.filter(
+    rows: QuerySet[Any] = model.objects.filter(
         organization=actor.organization, bag__in=filter_bags(scoped_bags(actor, COUNT_READ), values)
     )
+    if model is EggCountAttempt:
+        from lab.independent_qa.selectors import blind_visible_counts
+
+        rows = blind_visible_counts(actor, rows)
     if not values.get("include_voided", False):
         rows = rows.filter(void_fact__isnull=True)
     rows = rows.filter(
@@ -138,6 +153,10 @@ def void_context(actor: UploadActor, identity: tuple[str, UUID]) -> dict[str, An
     ).first()
     if target is None:
         raise Http404
+    if isinstance(target, EggCountAttempt):
+        from lab.independent_qa.services import NumericPublication, publish_numeric_access
+
+        publish_numeric_access(actor, target, NumericPublication(COUNT_VOID, "void_context"))
     latest = LabResultRevision.objects.filter(bag=target.bag).first()
     current = latest is not None and identifier in {latest.count_id, latest.rejection_id}
     proof = target.source_proof
@@ -165,16 +184,141 @@ def void_context(actor: UploadActor, identity: tuple[str, UUID]) -> dict[str, An
 
 
 def recount_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[RecountRequest]:
+    from lab.independent_qa.selectors import matching_cause_rows
+    from lab.models import RecountAttempt, RecountResolution, RecountRevision
+
     rows = RecountRequest.objects.filter(
         organization=actor.organization,
         count__in=result_rows(actor, EggCountAttempt, {**values, "include_voided": True}),
     )
     if "superseded" in values:
         rows = rows.filter(supersession__isnull=not values["superseded"])
-    return rows.order_by(values.get("ordering", "-created_at"), "id")
+    current = LabResultRevision.objects.filter(bag_id=OuterRef("count__bag_id")).order_by(
+        "-revision"
+    )
+    revisions = RecountRevision.objects.filter(request_id=OuterRef("pk"))
+    latest_resolution = RecountResolution.objects.filter(
+        request_id=OuterRef("request_id")
+    ).order_by("-qa_revision__revision")
+    resolutions = matching_cause_rows(
+        RecountResolution.objects.filter(pk=Subquery(latest_resolution.values("pk")[:1])),
+        "comparison_proof",
+    )
+    return cast(
+        QuerySet[RecountRequest],
+        rows.annotate(
+            _current_count=Subquery(current.values("count_id")[:1]),
+            _qa_revision=Coalesce(Subquery(revisions.values("revision")[:1]), Value(0)),
+        )
+        .select_related(
+            "count__method_version",
+            "count__receipt__reading",
+            "count__result_revision",
+            "supersession",
+        )
+        .prefetch_related(
+            "causes",
+            Prefetch(
+                "attempts",
+                queryset=RecountAttempt.objects.select_related("method_version", "claim").order_by(
+                    "role"
+                ),
+                to_attr="read_attempts",
+            ),
+            Prefetch(
+                "resolutions",
+                queryset=resolutions.select_related("qa_revision"),
+                to_attr="read_resolutions",
+            ),
+        )
+        .order_by(values.get("ordering", "-created_at"), "id"),
+    )
+
+
+def independent_request_projection(request: Any) -> dict[str, Any] | None:  # noqa: ANN401 -- actual annotated/prefetched RecountRequest, bounded real candidates.
+    """Called only after COUNT_READ plus central numeric publication authorization."""
+    from lab.methods import method_pin
+
+    if hasattr(request, "supersession") or request._current_count != request.count_id:
+        return None
+    first_result = request.count.result_revision
+    attempts = [
+        attempt
+        for attempt in request.read_attempts
+        if attempt.claim.first_result_id == first_result.pk
+    ]
+    candidates = []
+    for candidate in (request.count, *attempts):
+        candidates.append(
+            {
+                "candidate_kind": "first"
+                if isinstance(candidate, EggCountAttempt)
+                else candidate.role,
+                "id": str(candidate.pk),
+                "value": candidate.value,
+                "viable_eggs": candidate.viable_eggs,
+                "total_examined": candidate.total_examined,
+                "viability_percent": None
+                if candidate.viability_percent is None
+                else str(candidate.viability_percent),
+                "viability_reason": candidate.viability_reason,
+                "method_version": None
+                if candidate.method_version_id is None
+                else str(candidate.method_version_id),
+                "method": method_pin(candidate.method_version),
+                "verification_id": None
+                if candidate.verification_id is None
+                else str(candidate.verification_id),
+                "created_at": candidate.created_at.isoformat(),
+                "created_by": str(candidate.created_by_id),
+            }
+        )
+    causes = sorted(str(cause.pk) for cause in request.causes.all())
+    resolution = next(
+        (
+            row
+            for row in request.read_resolutions
+            if row.first_result_id == first_result.pk
+            and row.comparison_proof.get("cause_ids") == causes
+        ),
+        None,
+    )
+    chosen_kind = (
+        None
+        if resolution is None
+        else "first"
+        if resolution.selected_count_id is not None
+        else next(
+            candidate["candidate_kind"]
+            for candidate in candidates
+            if candidate["id"] == str(resolution.selected_attempt_id)
+            and candidate["candidate_kind"] != "first"
+        )
+    )
+    return {
+        "first_result_id": str(first_result.pk),
+        "expected_result_revision": first_result.revision,
+        "expected_revision": request._qa_revision,
+        "candidates": candidates,
+        "resolution": None
+        if resolution is None
+        else {
+            "id": str(resolution.pk),
+            "candidate_kind": chosen_kind,
+            "final_attempt_id": str(resolution.selected_count_id or resolution.selected_attempt_id),
+            "revision": resolution.qa_revision.revision,
+            "reason_code": resolution.reason_code,
+            "reason": resolution.reason,
+            "created_at": resolution.created_at.isoformat(),
+            "created_by": str(resolution.created_by_id),
+        },
+    }
 
 
 def annotate_lab_bags(rows: QuerySet[Bag]) -> QuerySet[Bag]:
+    from lab.independent_qa.selectors import matching_cause_rows
+    from lab.models import RecountResolution
+
     latest = LabResultRevision.objects.filter(bag=OuterRef("pk")).order_by("-revision")
     effective = effective_effects(Bag.objects.filter(pk=OuterRef("pk")), "reading__event")
     rows = rows.annotate(
@@ -184,7 +328,15 @@ def annotate_lab_bags(rows: QuerySet[Bag]) -> QuerySet[Bag]:
         lab_revision=Subquery(latest.values("revision")[:1]),
     )
     return rows.annotate(
-        lab_has_qa=Exists(RecountRequest.objects.filter(count_id=OuterRef("lab_current_count"))),
+        lab_has_qa=Exists(
+            RecountRequest.objects.filter(
+                count_id=OuterRef("lab_current_count"), supersession__isnull=True
+            ).exclude(
+                pk__in=matching_cause_rows(
+                    RecountResolution.objects.all(), "comparison_proof"
+                ).values("request_id")
+            )
+        ),
         lab_missing=Exists(
             ReceptionDiscrepancy.objects.filter(bag_id=OuterRef("pk"), kind="missing")
         ),
@@ -215,8 +367,13 @@ def bag_lab_projection(bag: Bag) -> dict[str, Any]:
     if not effective_effects(Bag.objects.filter(pk=bag.pk), "reading__event").exists():
         status = "no_effective_reading"
     elif latest is not None and latest.count is not None:
+        from lab.independent_qa.selectors import obligation_resolution
+
+        request = getattr(latest.count, "recount_request", None)
         status = (
-            "awaiting_independent_qa" if hasattr(latest.count, "recount_request") else "counted"
+            "awaiting_independent_qa"
+            if request is not None and obligation_resolution(request, latest) is None
+            else "counted"
         )
     elif latest is not None and latest.rejection_id is not None:
         status = "rejected"
@@ -236,6 +393,25 @@ def bag_lab_projection(bag: Bag) -> dict[str, Any]:
     }
 
 
+def published_bag_lab_projection(
+    actor: UploadActor, bag: Bag, permission: str
+) -> dict[str, Any] | None:
+    from lab.independent_qa.selectors import can_read_numeric
+    from lab.independent_qa.services import (
+        NumericPublication,
+        numeric_read_transaction,
+        publish_numeric_access,
+    )
+
+    with numeric_read_transaction(actor):
+        current = LabResultRevision.objects.filter(bag=bag).first()
+        if current is not None and current.count is not None:
+            if not can_read_numeric(actor, current.count):
+                return None
+            publish_numeric_access(actor, current.count, NumericPublication(permission, "result"))
+        return bag_lab_projection(bag)
+
+
 def result_projection(result: EggCountAttempt | LabRejection) -> dict[str, Any]:
     from inventory.allocations.bag_dependencies import material_availability
 
@@ -251,3 +427,13 @@ def result_projection(result: EggCountAttempt | LabRejection) -> dict[str, Any]:
         "current_revision": 0 if latest is None else latest.revision,
         "is_current": latest is not None and result.pk in {latest.count_id, latest.rejection_id},
     }
+
+
+def published_result_projection(
+    actor: UploadActor, result: EggCountAttempt | LabRejection
+) -> dict[str, Any]:
+    if isinstance(result, EggCountAttempt):
+        from lab.independent_qa.services import NumericPublication, publish_numeric_access
+
+        publish_numeric_access(actor, result, NumericPublication(COUNT_READ, "result"))
+    return result_projection(result)

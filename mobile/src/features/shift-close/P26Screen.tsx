@@ -1,4 +1,5 @@
-import { ScrollView, View } from "react-native";
+import { View } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { createShiftStyles } from "../shift-open/styles.ts";
 import { useT } from "../../i18n/I18nProvider.tsx";
@@ -15,11 +16,11 @@ export function P26Screen({ model }: { readonly model: M14Model }) {
   if (!model.state?.draft) return <AppText>{t("mobile.shiftClose.noShift")}</AppText>;
   return (
     <View style={styles.root}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <PendingPoints model={model} />
         <SuppliesForm model={model} />
         <CloseOdometerForm model={model} />
-      </ScrollView>
+      </AppScrollView>
       <CloseFooter model={model} />
     </View>
   );

@@ -24,6 +24,7 @@ export class InventoryMock {
   readonly reads: string[] = [];
   lot = inventoryLot();
   locationRows = [inventoryLocation()];
+  readonly emptyStockLocations = new Set<string>();
   private record(route: Route) {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -48,6 +49,12 @@ export class InventoryMock {
     if (method === "POST") return this.createLot(route);
     if (method === "PATCH") return this.completeLot(route);
     if (method !== "GET") throw new Error("Unsupported inventory fixture " + method);
+    const site = new URL(route.request().url()).searchParams.get("custody_location");
+    if (site && this.emptyStockLocations.has(site))
+      return route.fulfill({
+        status: 404,
+        json: { code: "not_found", detail: "Synthetic custody unavailable" },
+      });
     return route.fulfill({ json: inventoryReadFixture(this, route.request().url()) });
   };
   private createLot(route: Route) {
