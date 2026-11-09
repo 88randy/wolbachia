@@ -14,6 +14,19 @@ accepted actor/session, live assignment and shift. A conditional SQLite INSERT
 arbitrates owner/session and the exact unsaved draft before private file creation.
 File I/O stays outside locks. Ambiguous private bytes are retained, not deleted.
 
+The serial #138 composition now supplies that SAME native port to M09 through its
+real factory. M09 preserves its stricter original interactive unlock/context fence;
+it never replaces that admission with a fresh actor after a permission or camera
+await. Native cancel leaves the displayed draft unchanged. Its final partial SQL
+publication consumes the captured file authority plus the original M09 target,
+owner/session/context and scope guard, persisting only `{id,fileRef}`. Whole-draft
+edits and Save compare their exact raw read to avoid erasing a concurrently adopted
+photo. Stale edits retain recoverable buffered input; stale Save atomically rolls
+back outbox, lifecycle projection/references and attachment enrollment. No automatic
+retry or envelope repair occurs. Existing M09 AC3 owns both editor/photo orders,
+quiet native cancel and stale Save rollback/explicit retry with real private files
+and ordinary temporary SQLite. This adds no schema or device acceptance claim.
+
 MO03 background/idle locking is unchanged. A permission prompt that locks the app
 requires unlock and retry before camera launch. An already launched camera may
 finish private same-context adoption under the opaque AuthGate. Unmount/draft
@@ -85,6 +98,7 @@ Primary sources: [SDK58 ImagePicker](https://docs.expo.dev/versions/v58.0.0/sdk/
 | Displayed draft cannot be replaced during acquisition or just before reservation | Same suite: `native capture cannot adopt into a draft replaced while the camera is open`; `the exact unsaved draft is checked inside the reservation INSERT, before file I/O` |
 | Actor/session/live shift/scope/saved continuation and file cancellation | Same suite: `a native continuation retains its original actor, session, live shift, scope and unsaved state`; `retiring a capture during a real file read stops publication and writes while retaining ambiguous bytes` |
 | Final SQL publication and competing public draft writers in both orders | Same suite: `photo publication and public draft writers preserve both winner orders and original authority`: target-first, temperature-first, actual DayStore revoke/generation loss, assignment-first, photo-first with recoverable buffered edit/retry, stale Save rollback/retry with surviving UUID enrollment, and actual ShiftOpen claim→severe_check review at final SQL while generation/assignment remain unchanged |
+| M09 actual adapter/adoption, original admission, partial publication and all-writer CAS | `m-09.test.ts`, existing `AC3: failed lifecycle transaction retains draft, references and truthfully pending state`: original generated-client upload journey, both photo/editor orders, quiet cancel, stale Save rollback and explicit retry enrolling surviving UUIDs |
 | Permission allow/deny/permanent deny, pre-launch local lock, cold orphan, native failure, quiet cancel, invalid/type/size metadata, single flight through abort | `photo-acquisition.test.ts`: adapter-boundary cases with deferred native promises; no hardware/Expo framework behavior is claimed |
 | UI retirement and quiet cancellation | Same suite: action-runner case proves late UI callbacks are suppressed after retirement; real screen/device navigation remains unrun |
 | Existing file validation and upload invariants | Existing `attachments.test.ts` and `attachment-transport.test.ts` remain; their low-level capture fixture supplies a real current unsaved draft instead of an unconditional reservation guard |

@@ -2,6 +2,74 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  "mobile.lifecycle.replace": "Replace ovitrap",
+  "mobile.lifecycle.relocate": "Propose relocation",
+  "mobile.lifecycle.remove": "Remove ovitrap",
+  "mobile.lifecycle.fixedCode":
+    "The point code stays fixed. Replacement uses a new physical identity.",
+  "mobile.lifecycle.source": "Source ovitrap",
+  "mobile.lifecycle.replacement": "New physical identity",
+  "mobile.lifecycle.proposalOnly":
+    "This saves a proposal. The authorized point location stays unchanged until a synced decision.",
+  "mobile.lifecycle.proposedLocation": "Proposed location (longitude, latitude)",
+  "mobile.lifecycle.closedWeeks": "Consecutive closed-house weeks (downloaded rule):",
+  "mobile.lifecycle.confirmedCount": "Known incidents (downloaded rule):",
+  "mobile.lifecycle.noIncidentHistory":
+    "No local incident history; that suggestion is unavailable.",
+  "mobile.lifecycle.inspectHistory":
+    "Review the history before proposing. The suggestion is advisory.",
+  "mobile.lifecycle.gpsRequired": "GPS is missing. Try again; a location is required to save.",
+  "mobile.lifecycle.gpsCaptured": "GPS captured on the phone",
+  "mobile.lifecycle.captureGps": "Capture GPS location",
+  "mobile.lifecycle.recovery": "Did you recover the ovitrap? Choose an option.",
+  "mobile.lifecycle.recovered": "Recovered: bringing it back",
+  "mobile.lifecycle.unrecovered": "Unrecovered: could not find it",
+  "mobile.lifecycle.unconfirmed": "Recovery unconfirmed",
+  "mobile.lifecycle.recoveryNotice":
+    "Recovery remains unresolved. Unconfirmed is retained on the phone and reported as unrecovered to the server.",
+  "mobile.lifecycle.reason": "Reason from the downloaded catalog",
+  "mobile.lifecycle.chooseReason": "Choose reason",
+  "mobile.lifecycle.other": "Other: describe the reason (1000 characters maximum)",
+  "mobile.lifecycle.incidentNotice":
+    "The server links the finding to an incident when it applies the capture. The phone does not create an incident.",
+  "mobile.lifecycle.photoRequired": "Add at least one photo for this capture before saving.",
+  "mobile.lifecycle.capturePhoto": "Add evidence photo",
+  "mobile.lifecycle.discardPhoto": "Remove draft photo",
+  "mobile.lifecycle.photoDiscarded": "Photo removed from the draft. You can undo this.",
+  "mobile.lifecycle.undo": "Undo",
+  "mobile.lifecycle.reviewAcknowledge":
+    "I understand that GPS, distance or outdated rules require server review.",
+  "mobile.lifecycle.download": "Download lifecycle catalogs and rules",
+  "mobile.lifecycle.adopt": "Review and use downloaded catalogs and rules",
+  "mobile.lifecycle.begin": "Start capture for this point",
+  "mobile.lifecycle.loading": "Loading local draft?",
+  "mobile.lifecycle.empty":
+    "Start a capture for the selected ovitrap. Download missing configuration first.",
+  "mobile.lifecycle.confirmRemove": "Review and confirm removal",
+  "mobile.lifecycle.removeConsequence":
+    "The point will no longer have this ovitrap. Corrections append a reasoned void; evidence is retained.",
+  "mobile.lifecycle.save": "Save on the phone",
+  "mobile.lifecycle.incomplete":
+    "Capture incomplete: check reason, Other, GPS, photo and recovery. The draft is retained.",
+  "mobile.lifecycle.proposed": "Proposed",
+  "mobile.lifecycle.approved": "Approved",
+  "mobile.lifecycle.rejected": "Rejected",
+  "mobile.lifecycle.reviewAccepted": "Server result: accepted. Supervisor review: unconfirmed.",
+  "mobile.lifecycle.reviewRejected":
+    "Server result: rejected. Keep the evidence and contact your supervisor.",
+  "mobile.lifecycle.decisionPending": "Supervisor decision: awaiting sync",
+  "mobile.lifecycle.nextTask": "Task received through sync",
+  "mobile.lifecycle.noTask": "No synced task; no early local assignment.",
+  "mobile.lifecycle.history": "Lifecycle and correction history",
+  "mobile.lifecycle.voided": "Void recorded; original retained",
+  "mobile.lifecycle.correctionReason":
+    "Correction reason (10 visible characters to 1000 characters)",
+  "mobile.lifecycle.correct": "Void with reason and retain evidence",
+  "mobile.lifecycle.scopeBlocked":
+    "This point is outside your downloaded scope. The draft is retained; contact your supervisor.",
+  "mobile.lifecycle.noCamera": "Camera unavailable. Keep the draft and retry on an enabled device.",
+  "mobile.lifecycle.noReasons": "The reason catalog is missing. Download it before continuing.",
+
   "mobile.ovitrap.pendingDraft":
     "Another capture draft is pending. Resume it before switching ovitraps.",
   // M-08: P13, P14 and P21
@@ -451,4 +519,51 @@ export const mobile: Record<keyof typeof source, string> = {
   "mobile.unlock.keepWorking": "Keep working",
   "mobile.unlock.resumeSetup": "Enter your password to finish creating your PIN.",
   "mobile.unlock.wrongPinLast": "Incorrect PIN. You have 1 attempt left.",
+  "mobile.lifecycle.advisoryUnavailable":
+    "Advisory unavailable for this instant and these rules. Capture can continue.",
+  "mobile.lifecycle.advisoryFuture":
+    "The capture instant is still in the server’s future. Retry later.",
+  "mobile.lifecycle.advisoryAt":
+    "Facts observed through {at}. Late facts or voids can change this observation.",
+  "mobile.lifecycle.advisoryCounts": "Closed-house weeks: {weeks}. Point incidents: {incidents}.",
+  "mobile.lifecycle.advisorySuggested":
+    "Rules suggest considering relocation. Saving only creates a proposal.",
+  "mobile.lifecycle.advisoryNotSuggested":
+    "The available observation does not reach the advisory thresholds.",
+  "mobile.lifecycle.legacyAdvisory":
+    "Only partial local history is available; it does not establish the point incident total.",
+  "mobile.lifecycle.decisionReasonUnknown": "Historical reason unavailable.",
+  "mobile.lifecycle.decisionTimeUnknown": "Historical decision time unavailable.",
+  "mobile.lifecycle.sourceVoided":
+    "The source was voided: {at}. Proposal and evidence are retained.",
+  "mobile.lifecycle.legacyDecision":
+    "Earlier local record retained for audit; it does not prove server review.",
+  "mobile.lifecycle.taskReferenceOnly":
+    "Scheduled reference; it is not yet a current task assigned to you.",
+  "mobile.lifecycle.taskAssigned": "Current task assigned to you and not completed.",
+  "mobile.lifecycle.openTask": "View assigned task",
+  "mobile.lifecycle.ingestAccepted": "Original ingestion result: accepted.",
+  "mobile.lifecycle.ingestRejected": "Original ingestion result: rejected.",
+  "mobile.lifecycle.ingestReview": "Original ingestion result: in review.",
+  "mobile.lifecycle.reviewedTitle": "Later server decision",
+  "mobile.lifecycle.effectApplied": "Effect applied after review.",
+  "mobile.lifecycle.effectAdopted": "Earlier effect acknowledged; original provenance retained.",
+  "mobile.lifecycle.effectDiscarded": "Work discarded by decision; its history is retained.",
+  "mobile.lifecycle.effectIncident": "Incident opened; this does not accept the original capture.",
+  "mobile.lifecycle.effectApproved": "Shift reviewed; it grants no new capture permission.",
+  "mobile.lifecycle.effectObserved": "Shift observation recorded.",
+  "mobile.lifecycle.approvalNotCurrent": "This validation is no longer the current approval.",
+  "mobile.lifecycle.nonterminalDecision": "Informational decision; review can continue.",
+  "mobile.lifecycle.limitsUnavailable":
+    "Choose a downloaded reason with known limits before correcting.",
+  "mobile.lifecycle.reasonLimits":
+    "Minimum visible characters for this option: {min}. Note limit: {max} characters.",
+  "mobile.lifecycle.epochClosed":
+    "The quadrant is closed. New captures cannot be saved in this frame.",
+  "mobile.lifecycle.epochUnknown":
+    "A verifiable current frame is unavailable. Refresh; the draft is retained.",
+  "mobile.lifecycle.recoveryBlocked":
+    "The draft is retained, but ownership is unproven for this session. Sign in with the original account or contact support.",
+  "mobile.lifecycle.remoteProposal":
+    "Downloaded server proposal; it is not an editable local capture.",
 };

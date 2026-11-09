@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import type { TestContext } from "node:test";
 import type { SqlExecutor } from "../../src/db/sql.ts";
 import { openTestDatabase } from "./sqlite-executor.ts";
-import { KV_KEYS, KvStore } from "../../src/db/kv-store.ts";
+import { KvStore } from "../../src/db/kv-store.ts";
 import { OutboxRepository } from "../../src/outbox/outbox-repository.ts";
 import { AttachmentStore } from "../../src/attachments/attachment-store.ts";
 import { EvidenceSession } from "../../src/attachments/evidence-session.ts";
@@ -50,12 +50,12 @@ export function nodePrivateFiles(root: string): PrivateFiles {
     },
   };
 }
-export async function attachmentHarness(test: TestContext) {
+export async function attachmentHarness(test: TestContext, throughSchema?: number) {
   const root = await mkdtemp(join(tmpdir(), "wolbachia-246-"));
   const owned = join(root, "owned");
   await mkdir(owned);
   const path = join(root, "journal.sqlite");
-  let database = await openTestDatabase(path);
+  let database = await openTestDatabase(path, throughSchema);
   test.after(async () => {
     database.close();
     await removeFixture(root);
@@ -92,19 +92,4 @@ function localStores(db: SqlExecutor, current: () => EvidenceIdentity | null) {
   const store = new AttachmentStore(db);
   const session = new EvidenceSession({ store, current, isFinal: () => current() === null });
   return { db, store, session, kv: new KvStore(db), outbox: new OutboxRepository(db, () => NOW) };
-}
-
-/** Current helpers open latest; remove only post-9 objects to construct the released schema. */
-export function restoreCanonicalNineFixture(db: SqlExecutor): Promise<void> {
-  return db.runAtomically(
-    [
-      "DROP TABLE attachment_event",
-      "DROP TABLE attachment_file",
-      "DROP TABLE attachment_context",
-      "DROP INDEX outbox_pending_physical",
-      "DROP INDEX ovitrap_evidence_uuid",
-      `DELETE FROM kv WHERE key='${KV_KEYS.dayCompletionBootstrapPending}'`,
-      "PRAGMA user_version=9",
-    ].map((sql) => ({ sql })),
-  );
 }

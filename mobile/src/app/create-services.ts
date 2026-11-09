@@ -1,3 +1,5 @@
+import { createOvitrapLifecycle } from "../features/ovitrap-lifecycle/create-ovitrap-lifecycle.ts";
+import type { LifecycleService } from "../features/ovitrap-lifecycle/service.ts";
 import type { SqlExecutor } from "../db/sql.ts";
 import { createDay, createDayBundle } from "../features/day/create-day.ts";
 import type { DayService } from "../features/day/service.ts";
@@ -29,6 +31,7 @@ import { createAttachments } from "../attachments/create-attachments.ts";
 import { attachmentSyncHooks } from "../attachments/sync-hooks.ts";
 import type { Attachments } from "../attachments/create-attachments.ts";
 import { createNativePhotoAcquisition } from "../attachments/native-photo-acquisition.ts";
+import { acceptedEvidenceOwner } from "../attachments/accepted-owner.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
@@ -36,6 +39,7 @@ export interface AppServices {
   readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
+  readonly ovitrapLifecycle: LifecycleService;
   readonly shiftOpen: ShiftOpenService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
@@ -58,28 +62,55 @@ export async function createServices(): Promise<AppServices> {
   const { server, credentials } = await loadIdentity(kv, outbox);
   const deviceId = await getOrCreateDeviceId(kv, randomUUID);
   // Bootstrap cannot run until composition finishes; auth cleanup can use the short projection gate during load.
-  const bundle = createDayBundle({ db, tokens: credentials, requests: () => requests });
+  let acceptedAuth: AuthController | null = null;
+  const bundle = createDayBundle({
+    db,
+    tokens: credentials,
+    requests: () => requests,
+    getCaptureIdentity: () => captureIdentity(acceptedAuth, credentials, deviceId),
+  });
   const {
     auth,
     credentials: tokens,
     requests,
   } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  acceptedAuth = auth;
   const attachments = createAttachments({ db, auth, tokens, deviceId, requests });
   const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
   const engine = createEngine(shared, bundle);
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
-  const ovitrapCheck = createOvitrapCheck({
-    db,
-    engine,
-    requests,
-    tokens,
-    shiftOpen,
-    attachments,
-    evidence,
+  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
+  const captures = createCaptures(captureDeps, bundle, day);
+  return { ...shared, ...captures, engine, shiftOpen, day };
+}
+function captureIdentity(
+  auth: AuthController | null,
+  credentials: CredentialStore,
+  deviceId: string,
+) {
+  return acceptedEvidenceOwner({
+    profile: auth?.getSnapshot().profile ?? null,
+    credentials: credentials.getSnapshot(),
+    deviceId,
   });
-  return { ...shared, ovitrapCheck, engine, shiftOpen, day };
+}
+
+function createCaptures(
+  deps: Parameters<typeof createOvitrapCheck>[0] & { tokens: CredentialStore },
+  bundle: DayBundleService,
+  day: DayService,
+) {
+  return {
+    ovitrapCheck: createOvitrapCheck(deps),
+    ovitrapLifecycle: createOvitrapLifecycle({
+      ...deps,
+      bundle,
+      location: day.location,
+      selectTask: (id, expected, admission) => day.select(id, expected, admission),
+    }),
+  };
 }
 
 function createRuntimeAuth(
@@ -110,12 +141,13 @@ async function loadIdentity(kv: KvStore, outbox: OutboxRepository) {
   return { credentials, server };
 }
 
-function createEngine(
-  deps: Omit<AppServices, "engine" | "shiftOpen" | "ovitrapCheck" | "day"> & {
-    requests: SessionRequests;
-  },
-  bundle: DayBundleService,
-): SyncEngine {
+type EngineDependencies = Pick<
+  AppServices,
+  "kv" | "outbox" | "server" | "deviceId" | "tokens" | "auth" | "attachments"
+> & {
+  readonly requests: SessionRequests;
+};
+function createEngine(deps: EngineDependencies, bundle: DayBundleService): SyncEngine {
   const { kv, outbox, server, deviceId, tokens, requests, auth } = deps;
   return new SyncEngine({
     pass: {

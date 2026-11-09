@@ -83,8 +83,8 @@ Migration 10 is additive after canonical 1–9 on the integrated #102 base; it a
 the file/context/binding journal, immutable identity/metadata/retention guards and
 indexes for pending physical dependencies and legacy UUID lookup. It does not
 support automatic conversion/reset of databases from older unmerged draft APKs.
-The #138 production bridge remains pending serial integration: do not copy its
-physical projection, authority CAS, migrations or receipt SQL into this feature.
+The serial #138 merge retains its physical projection, authority CAS, migrations
+and receipt SQL; acquisition consumes those original guards without copying them.
 
 Official APIs: [FileSystem 58](https://docs.expo.dev/versions/v58.0.0/sdk/filesystem/),
 [Expo fetch 58.0.23](https://github.com/expo/expo/blob/expo%4058.0.23/packages/expo/src/winter/fetch/fetch.ts),
@@ -92,3 +92,41 @@ Official APIs: [FileSystem 58](https://docs.expo.dev/versions/v58.0.0/sdk/filesy
 File/hash tests use actual temporary files and Node SQLite; transport fixtures use
 the actual generated client with scripted responses, not a running #102 backend.
 Android persistence/network/TalkBack qualification is not established by these tests.
+
+## No-file lifecycle origin arbitration (#138 M3)
+
+Every nonnull bindSession, preserving its existing isLogin-or-nonnull policy, also
+checks the three immutable lifecycle owned fact kinds. A conflicting or missing
+owner refuses activation even before a photo was adopted. Explicit new lifecycle
+origin checks the ORIGINAL owner/session/generation/is_active binding inside its
+same SQL transaction; it cannot late-bind to a replacement actor after an await.
+Origin-first blocks another owner; login-first and A→B→A defeat stale origin.
+Null/end deactivation remains safe and retains all facts. The real CredentialStore
+failure/retry journey also retains no-file origin audit without exposing a new owner.
+No new identity store, queue, migration or changes to captured files/envelopes exist.
+
+## M09 Save/Undo enrollment and legacy UUID protection (#138 M5)
+
+The lifecycle bridge passes its displayed UUID into the SAME EvidenceCapture and
+accepted session. Adoption durably owns the file before the draft reports success.
+Only Save enrolls confirmed IDs with lifecycle/outbox/references atomically; Undo
+and unsaved adopted files are never selected by AttachmentSync. Failed writes keep
+recoverable journal/files, without delivery or review claims. Camera acquisition
+remains #253; native file/network qualification remains unrun.
+
+Runtime reserve excludes case-insensitive lifecycle_evidence as well as ovitrap_evidence.
+Local suffix16 adds an index and fresh-reservation trigger to cover direct SQL too.
+An already owned/verified row keeps its idempotent no-op and bindings; this never
+permits a new draft to adopt a legacy reference or reuse another draft's evidence.
+Protected ATTACHMENT_SCHEMA10 and expanded SQL1–15 remain exact.
+
+With #253 composed, the same native port and EvidenceCapture serve M08 and M09;
+the camera lease is shared rather than recreated by feature. M09 carries its
+original capture context through adoption, and consumes file authority in the
+same partial-publication UPDATE as its original draft/owner/scope guard. Only
+`id` and `fileRef` enter draft JSON. Every whole-draft writer and Save compares
+its raw read version so concurrent photo adoption cannot be overwritten. The
+existing M09 AC3 owner verifies both editor orders, quiet cancel and stale Save
+rollback/retry using actual temporary private files and ordinary SQLite. Both
+legacy evidence reservations and SQL1–16 remain intact; physical acceptance is
+still pending.

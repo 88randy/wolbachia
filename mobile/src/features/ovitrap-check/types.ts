@@ -37,7 +37,7 @@ export interface Assignment {
   readonly epiWeek: string;
   readonly organization?: Pick<Schemas["MeOrganization"], "timezone" | "epi_week">;
   readonly points: readonly Point[];
-  readonly ovitraps: readonly { id: string; point: Point }[];
+  readonly ovitraps: readonly { id: string; point: Point; isRetired?: boolean }[];
   readonly bags: readonly { id: string; code: string }[];
   readonly reuse: readonly Reuse[];
 }
