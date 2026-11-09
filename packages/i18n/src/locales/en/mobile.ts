@@ -599,4 +599,94 @@ export const mobile: Record<keyof typeof source, string> = {
     "The draft is retained, but ownership is unproven for this session. Sign in with the original account or contact support.",
   "mobile.lifecycle.remoteProposal":
     "Downloaded server proposal; it is not an editable local capture.",
+  "mobile.supplyReceipt.title": "Receive supplies",
+  "mobile.supplyReceipt.subtitle": "Sign only for what you physically received",
+  "mobile.supplyReceipt.start": "Review this delivery",
+  "mobile.supplyReceipt.resume": "Open saved receipt",
+  "mobile.supplyReceipt.assignment": "Assignment",
+  "mobile.supplyReceipt.release": "Warehouse release",
+  "mobile.supplyReceipt.lot": "Lot",
+  "mobile.supplyReceipt.piece": "Piece",
+  "mobile.supplyReceipt.unit": "Declared unit",
+  "mobile.supplyReceipt.expected": "Expected quantity",
+  "mobile.supplyReceipt.actual": "Received quantity",
+  "mobile.supplyReceipt.declaredUnits":
+    "Use the unit declared in this delivery. Do not convert boxes to pieces. Codes and unit names are not available yet; check the identifiers with the warehouse.",
+  "mobile.supplyReceipt.noAssignments":
+    "No assigned deliveries are available in the downloaded copy. Refresh or return to your shift.",
+  "mobile.supplyReceipt.unavailable":
+    "A current authorized copy of your deliveries is unavailable. Refresh online or contact your supervisor. Your receipts are retained.",
+  "mobile.supplyReceipt.refresh": "Refresh deliveries",
+  "mobile.supplyReceipt.working": "Saving on the phone…",
+  "mobile.supplyReceipt.save": "Save signed receipt on the phone",
+  "mobile.supplyReceipt.saved":
+    "Signed receipt saved on the phone. This does not yet confirm server receipt.",
+  "mobile.supplyReceipt.serverReceived":
+    "Initial acknowledgement: the server received the receipt. Check any supervisor review separately.",
+  "mobile.supplyReceipt.review":
+    "Initial acknowledgement: the server received the receipt for review. What you signed is retained; this acknowledgement alone does not confirm credited inventory.",
+  "mobile.supplyReceipt.rejected":
+    "The server did not apply the receipt. Your capture and signature are retained; check the inbox or contact your supervisor.",
+  "mobile.supplyReceipt.pendingSignature":
+    "The signature is saved on the phone and its file is still waiting to upload. Check or retry in the inbox.",
+  "mobile.supplyReceipt.inbox": "Open sync inbox",
+  "mobile.supplyReceipt.scanLabel": "Lot QR code",
+  "mobile.supplyReceipt.scanHint":
+    "You can also paste the complete QR content or enter the lot UUID. A label code without confirmed identification is not added.",
+  "mobile.supplyReceipt.scan": "Validate lot QR",
+  "mobile.supplyReceipt.manual": "Validate lot UUID manually",
+  "mobile.supplyReceipt.duplicate": "This code is already recorded. Another piece was not added.",
+  "mobile.supplyReceipt.added":
+    "Code recognized. Review the quantity in its declared unit before signing.",
+  "mobile.supplyReceipt.invalid":
+    "We could not validate this code for your delivery. Nothing was added. Check the identifier with the warehouse or your supervisor.",
+  "mobile.supplyReceipt.discrepancy": "Explain any difference",
+  "mobile.supplyReceipt.missing": "Missing material",
+  "mobile.supplyReceipt.damaged": "Arrived damaged",
+  "mobile.supplyReceipt.other": "Other (specify)",
+  "mobile.supplyReceipt.discrepancyText": "Explanation of the difference",
+  "mobile.supplyReceipt.discrepancyHint":
+    "Sign the actual quantities. The server retains the difference for review; do not change quantities to make them match.",
+  "mobile.supplyReceipt.photo": "Photograph the damage",
+  "mobile.supplyReceipt.photoSaved":
+    "Damage photo retained only on the phone. It cannot be submitted with this receipt yet; contact your supervisor.",
+  "mobile.supplyReceipt.signatureTitle": "Receipt signature",
+  "mobile.supplyReceipt.signatureHint":
+    "Sign here with your finger or photograph your handwritten signature. The signature covers the quantities and differences shown above.",
+  "mobile.supplyReceipt.signatureCapture": "Keep this signature",
+  "mobile.supplyReceipt.signaturePhoto": "Photograph my handwritten signature",
+  "mobile.supplyReceipt.signatureSaved": "Signature retained on the phone",
+  "mobile.supplyReceipt.undo": "Undo last stroke",
+  "mobile.supplyReceipt.clear": "Start signature again",
+  "mobile.supplyReceipt.signatureRequired":
+    "Your signature is missing. Sign with your finger or photograph your handwritten signature before saving.",
+  "mobile.supplyReceipt.quantityInvalid":
+    "Check quantities in their declared unit. A piece accepts only zero or one; other quantities accept up to six decimals within the delivery.",
+  "mobile.supplyReceipt.discrepancyRequired":
+    "Declare the reason for the difference before signing the receipt.",
+  "mobile.supplyReceipt.otherRequired": "Write an explanation for Other before saving.",
+  "mobile.supplyReceipt.evidenceRequired":
+    "A damage photo is missing. Take it before signing; the rest of your capture is retained.",
+  "mobile.supplyReceipt.staleDraft":
+    "The capture changed while you were working. Review the retained receipt and try again.",
+  "mobile.supplyReceipt.shiftRequired":
+    "Open an authorized shift before receiving supplies. Your draft is retained.",
+  "mobile.supplyReceipt.configurationRequired":
+    "Downloaded catalogs or rules are missing. Refresh online before signing.",
+  "mobile.supplyReceipt.startScanner": "Scan QR with camera",
+  "mobile.supplyReceipt.scannerTitle": "Scan a lot in this delivery",
+  "mobile.supplyReceipt.scannerHint":
+    "Point at the lot QR code. The reader closes after each read; check the quantity before signing.",
+  "mobile.supplyReceipt.stopScanner": "Close reader and return to receipt",
+  "mobile.supplyReceipt.scannerPermission":
+    "Camera permission is unavailable. Enable it in Settings or enter the identifier manually.",
+  "mobile.supplyReceipt.scannerRetry":
+    "Unlock the phone and reopen the reader from this receipt. Manual identifier entry remains available.",
+  "mobile.supplyReceipt.scannerUnavailable":
+    "We could not open the camera. Retry or enter the identifier manually.",
+  "mobile.supplyReceipt.reviewedAccepted": "Later review: receipt accepted by the supervisor.",
+  "mobile.supplyReceipt.reviewedVoided":
+    "Later review: receipt voided by the supervisor. The signed capture is retained.",
+  "mobile.supplyReceipt.incidentOpen":
+    "Later review: an incident was opened. This does not accept or void the receipt.",
 };

@@ -19,11 +19,15 @@ const DEPENDENCIES = `edges(parent,child) AS (
    AND json_extract(previous.payload,'$.ovitrap_id')=json_extract(c.payload,'$.ovitrap_id'))
 )`;
 
-const UNVERIFIED_EVIDENCE = `json_type(payload,'$.evidence_ids') IS NOT NULL AND
+const UNVERIFIED_EVIDENCE = `(json_type(payload,'$.evidence_ids') IS NOT NULL AND
     (json_type(payload,'$.evidence_ids')<>'array' OR EXISTS(SELECT 1 FROM json_each(payload,'$.evidence_ids') ref
       WHERE ref.type<>'text' OR NOT EXISTS(SELECT 1 FROM attachment_file f WHERE f.id=ref.value
         AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?
-        AND EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=f.id AND b.event_id=waiting.id))))`;
+        AND EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=f.id AND b.event_id=waiting.id)))))
+    OR (type='supplies.receive' AND NOT EXISTS(SELECT 1 FROM attachment_file f
+      JOIN attachment_event b ON b.evidence_id=f.id AND b.event_id=waiting.id
+      WHERE f.id=json_extract(waiting.payload,'$.signature_upload_id')
+        AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?))`;
 
 /** Claim and timer share evidence/dependency/owner/final eligibility, before due/LIMIT/MIN. */
 function eligibleRows({ fence, isFinal }: EvidenceSelection): SqlStatement {
@@ -34,7 +38,7 @@ function eligibleRows({ fence, isFinal }: EvidenceSelection): SqlStatement {
       eligible AS (SELECT * FROM waiting WHERE id NOT IN (SELECT id FROM blocked)
         AND ${fence === null ? "1" : CURRENT_FENCE})`,
     params: [
-      ...(isFinal ? [] : [fence?.ownerKey ?? ""]),
+      ...(isFinal ? [] : [fence?.ownerKey ?? "", fence?.ownerKey ?? ""]),
       ...(fence === null ? [] : fenceParams(fence)),
     ],
   };

@@ -5,6 +5,7 @@ import { OvitrapScreen } from "../features/ovitrap-check/OvitrapScreen.tsx";
 import { ScannerScreen } from "../features/ovitrap-check/ScannerScreen.tsx";
 import { P21Screen } from "../features/ovitrap-check/P21Screen.tsx";
 import { OpenShiftScreen } from "../features/shift-open/OpenShiftScreen.tsx";
+import { P8Screen } from "../features/supply-receipt/P8Screen.tsx";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 
@@ -22,6 +23,7 @@ const SCREENS = {
   map: P10Screen,
   ovitrapCapture: OvitrapScreen,
   openShift: OpenShiftScreen,
+  supplyReceipt: P8Screen,
   home: HomeScreen,
   inbox: InboxScreen,
   settings: SettingsScreen,

@@ -32,10 +32,13 @@ import { attachmentSyncHooks } from "../attachments/sync-hooks.ts";
 import type { Attachments } from "../attachments/create-attachments.ts";
 import { createNativePhotoAcquisition } from "../attachments/native-photo-acquisition.ts";
 import { acceptedEvidenceOwner } from "../attachments/accepted-owner.ts";
+import { createSupplyReceipt } from "../features/supply-receipt/create-supply-receipt.ts";
+import type { SupplyReceiptService } from "../features/supply-receipt/service.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly attachments: Attachments;
+  readonly supplyReceipt: SupplyReceiptService;
   readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
@@ -83,7 +86,8 @@ export async function createServices(): Promise<AppServices> {
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
   const captures = createCaptures(captureDeps, bundle, day);
-  return { ...shared, ...captures, engine, shiftOpen, day };
+  const supplyReceipt = createSupplyReceipt({ ...captureDeps, auth, bundle });
+  return { ...shared, ...captures, engine, shiftOpen, day, supplyReceipt };
 }
 function captureIdentity(
   auth: AuthController | null,
