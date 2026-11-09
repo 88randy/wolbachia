@@ -1,4 +1,5 @@
 import { currentPointScopeSql } from "../features/ovitrap-lifecycle/current-scope.ts";
+import { INCIDENT_SCHEMA } from "../features/incidents/schema.ts";
 import {
   IDENTITY_EFFECTS,
   RECEIPT_EFFECTS,
@@ -300,6 +301,7 @@ const MIGRATIONS: readonly (readonly string[])[] = [
   LIFECYCLE_EVIDENCE_SCHEMA,
   SUPPLY_RECEIPT_SCHEMA,
   FUEL_SCHEMA,
+  INCIDENT_SCHEMA,
 ];
 
 /** Highest schema version this build knows. */
