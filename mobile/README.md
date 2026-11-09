@@ -766,7 +766,7 @@ No npm ci/install, Docker, Playwright or Expo build was run for this review.
 
 ## Shared mobile visual refresh (#203)
 
-Decision 158 records this refresh. Home shows one delivery-status line and one
+Decision 159 records this refresh. Home shows one delivery-status line and one
 actionable blocker, without repeating a pending-receipt warning after server
 receipt. PIN unlock uses the profile first name or a neutral greeting when empty.
 `test/visual-refresh.test.ts` covers both phone-review regressions.
