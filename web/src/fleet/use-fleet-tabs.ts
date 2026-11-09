@@ -1,5 +1,7 @@
 import { useNavigate, useSearch } from "@tanstack/react-router";
 import type { MessageKey } from "@wolbachia/i18n";
+import { HISTORY_PREFIX } from "./fleet-history-table";
+import { applyPatch } from "../data-table/table-state";
 export const FLEET_TABS = ["summary", "services", "responsibility", "fuel", "incidents"] as const;
 export type FleetTab = (typeof FLEET_TABS)[number];
 export const TAB_KEYS: Record<FleetTab, MessageKey> = {
@@ -20,11 +22,14 @@ export function useFleetTabs() {
   const tab = isTab(raw) ? raw : "summary";
   const listSearch: Record<string, string> = Object.fromEntries(
     Object.entries(search).filter(
-      (entry): entry is [string, string] => entry[0] !== "tab" && entry[1] !== undefined,
+      (entry): entry is [string, string] =>
+        entry[0] !== "tab" &&
+        typeof entry[1] === "string" &&
+        !Object.values(HISTORY_PREFIX).some((prefix) => entry[0].startsWith(prefix)),
     ),
   );
   const dropUnknown = () => {
-    void navigate({ to: ".", search: listSearch });
+    void navigate({ to: ".", search: (previous) => applyPatch(previous, { tab: undefined }) });
   };
   return {
     tab,
