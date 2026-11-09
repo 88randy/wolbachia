@@ -223,3 +223,17 @@ Retained download uses current necessary supply/disposal action, independently o
 field.upload; identity alone grants no bytes. Source-bound supply files use the
 same original author/device and complete-vector source resolver. All six existing
 parent branches, sanitization/storage and reparent refusal remain unchanged.
+
+## Eighth concrete parent: lab_paddle_command (#115)
+
+The SAME closed resolver accepts an actual successful paddle_register,
+paddle_bind or paddle_reuse LabCommand with its genuine typed physical fact,
+exact same-org actor and declared evidence UUID. The command is not a generic
+upload context and an unrelated/failed command is never an operational parent.
+Prepare(context=None), PUT and finalize(None) verify unbound bytes outside locks.
+The actual command/fact/AttachmentLink bind atomically after verified consumption;
+the final deferred boundary requires its real CommandResult. No future result or
+verification is prematurely required at internal binding. Afterwards contextual
+finalize and downloads reauthorize the actual eighth parent and current complete
+physical scope; verification/link alone is not durable read authority. All seven
+older parents, storage, sanitization and no-I/O-under-lock behavior remain intact.

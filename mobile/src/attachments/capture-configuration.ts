@@ -1,22 +1,26 @@
 import type { Attachments } from "./create-attachments.ts";
 import { EvidenceError } from "./types.ts";
-import type { Draft, EvidencePort } from "../features/ovitrap-check/types.ts";
+import type {
+  Draft,
+  EvidencePort,
+  EvidenceCaptureContext,
+} from "../features/ovitrap-check/types.ts";
 import type { OvitrapStore } from "../features/ovitrap-check/store.ts";
 
 /** Shared production wiring: capture owns bytes; the existing enqueue transaction binds them. */
 export function captureConfiguration(input: {
-  port: EvidencePort | undefined;
+  port: EvidencePort;
   store: OvitrapStore;
   attachments: Pick<Attachments, "capture" | "store" | "session"> | undefined;
 }) {
   return {
     evidence: {
-      capture: async () => {
-        if (input.port === undefined) return null; // Native acquisition is #253, not an upload adapter.
-        const { draft } = await input.store.read();
-        if (!draft) return null;
+      capture: async (context: EvidenceCaptureContext) => {
         if (!input.attachments) throw new EvidenceError("owner_unproven");
-        return input.attachments.capture.capture(input.port, draft.eventId);
+        return input.attachments.capture.capture(input.port, {
+          ...context,
+          guard: input.store.evidenceCaptureGuard(context.draftId),
+        });
       },
     },
     evidenceBindings: async (draft: Draft) => {

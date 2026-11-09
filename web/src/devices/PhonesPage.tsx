@@ -10,7 +10,8 @@ import { useDocumentTitle } from "../shell/use-document-title";
 import page from "../styles/page.module.css";
 import { phonesQueryOptions } from "./phones-query";
 import type { Phone } from "./phones-query";
-import { PHONES_PAGE_SIZE, PHONES_TABLE } from "./phones-table";
+import { PHONES_PAGE_SIZE, phonesTableFor } from "./phones-table";
+import { useMe } from "../session/use-me";
 import styles from "./phones.module.css";
 import { usePhoneColumns } from "./use-phone-columns";
 
@@ -25,7 +26,7 @@ export function PhonesPage() {
   const { t } = useTranslation();
   useDocumentTitle(t("phones.page.title"));
   const client = useApiClient();
-  const controller = useTableUrlState(PHONES_TABLE);
+  const controller = useTableUrlState(phonesTableFor(useMe().user.id));
   const columns = usePhoneColumns();
   const identity = useSessionIdentity();
   const query = useQuery(phonesQueryOptions(client, identity, controller.state));

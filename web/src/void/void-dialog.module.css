@@ -80,23 +80,16 @@
   text-align: end;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  gap: var(--space-1);
-}
-
 /* Critical foreground as the fill and `on-action` as the text: both flip with the theme, so the
    contrast holds in light (white on red) and in dark (navy on light red). */
-.actions .danger {
+.danger {
   --button-background: var(--color-status-critical-fg);
   --button-foreground: var(--color-on-action);
   --button-hover-background: var(--web-button-danger-solid-hover);
   --button-pressed-background: var(--web-button-danger-solid-pressed);
 }
 
-.actions .danger[aria-disabled="true"] {
+.danger[aria-disabled="true"] {
   cursor: progress;
 }
 

@@ -277,3 +277,13 @@ excluded effective paddles remain eligible. The original void hook checks actual
 Lab dependents under the retained lock order; SQL also closes a raw source-void
 bypass at deferred completion. Existing relocation/removal/closure dependencies
 retain their owners. See ../lab/README.md.
+
+## Blind independent QA (#115)
+
+POST bags/{id}/recount/ delegates to the SAME LabCommand owner with recount.create.
+For a potential blind counter, Bag.lab is null and the Bag cannot participate in
+a lab_status facet before count/order/page. Field/receipt data remains available
+under its original authority. Legitimate numeric/derived Lab state delivery records
+the actual actor/count exposure even if the actor has no current recount grant;
+granting it later cannot certify blindness. All result/cause/history/void-context
+surfaces use this same policy. No field capture quantity or new FieldEvent is added.

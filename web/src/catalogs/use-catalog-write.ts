@@ -13,7 +13,7 @@ async function runGuarded(
   refresh: () => Promise<void>,
 ): Promise<CatalogOutcome> {
   const outcome = await call(guard);
-  if (guard.isStale()) return { kind: "stale" };
+  if (outcome.kind === "stale" || guard.isStale()) return { kind: "stale" };
   await refresh();
   return guard.isStale() ? { kind: "stale" } : outcome;
 }
@@ -38,5 +38,5 @@ export function useCatalogWrite() {
       if (!guard.signal.aborted) setBusy(false);
     }
   };
-  return { run, send, isBusy };
+  return { run, send, isBusy, isLocked: () => lock.current };
 }

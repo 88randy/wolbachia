@@ -104,6 +104,7 @@ def _resolve_link_target(link: AttachmentLink) -> AttachmentTarget:
         ("lab_rejection", getattr(link, "lab_rejection_id", None)),
         ("inventory_intent", getattr(link, "inventory_intent_id", None)),
         ("certification", getattr(link, "certification_id", None)),
+        ("lab_paddle_command", link.lab_paddle_command_id),
     )
     targets = [
         AttachmentTarget(kind, identifier)

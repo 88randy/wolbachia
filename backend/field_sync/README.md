@@ -305,3 +305,15 @@ root bootstrap2 is unchanged. Supply changes filter exact current full-vector an
 own action BEFORE count/order/LIMIT. Scope-revision changes require existing
 readiness/retention invalidation; cached hidden rows never authorize a capture.
 See docs/sync.md for typed source payloads, review codes and fresh replay authority.
+
+## Independent QA delivery (#115)
+
+The ONE history producer becomes7 with lab_recount, lab_adjudication and
+lab_paddle_reuse, retaining all18 older kinds, root2 and supplies1. Current Lab
+numeric authority plus the same blindness predicate filters before history LIMIT
+and bootstrap/change serialization. Actual selected publications retain immutable
+actor/count disclosure receipts without rewriting stored CourierChange payloads.
+The existing private scope/readiness revision includes observation eligibility;
+an actual own independent commit invalidates cached hidden rows through the
+existing rebootstrap boundary. No cursor version, phantom remove, sync result
+code, new event handler or authentication/session lifecycle is introduced.

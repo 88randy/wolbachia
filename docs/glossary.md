@@ -282,3 +282,20 @@ material cannot support another physical act even when its audit can be correcte
 | causa de aviso de capacitación | TrainingNoticeCause | Unique actual third-adverse episode or certificate-expiry cause, distinct from delivery. |
 | intención de aviso | TrainingNoticeIntent, TrainingNoticeRoute, TrainingNoticePublication | Current authorized retained routing and truthful unpublished/unavailable observations. |
 | comando de capacitación | PeopleCommand | Immutable exact UUID/body/subject response receipt, independently reauthorized on replay. |
+
+## Independent observations and physical paddle reuse (#115)
+
+RecountClaim: an authenticated counter's append-only second/third role claim for
+one actual RecountRequest and first-result frame. RecountAttempt: a genuine new
+independent observation, separate from the immutable first-pass population.
+RecountResolution: a reasoned selection of an exact first/second/third candidate,
+never an averaged or edited first value. LabQAPolicyVersion: the single authored
+tolerance/method configuration, with no inferred scientific verification.
+Numeric disclosure: a minimal actor/first-attempt publication receipt; no copied
+value and no certification of knowledge outside the system.
+EggPaddle: a forward proven physical identity for one actual inventory Piece.
+PaddleBagBinding: immutable Bag/Reading/source and issued-unit proof for one
+physical cycle. PaddleReuse: an authored verified-treatment fact retaining its
+current negative QA/material/rule frame. PaddleStockReturn: a concrete exactly-once
+same-Piece/lot/unit recovery backed by a genuine consumed debit and cycle; it never
+reverses SupplyUse or invents a facility transfer.

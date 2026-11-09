@@ -633,7 +633,7 @@ def protect_reverse(apps: Apps, schema_editor: BaseDatabaseSchemaEditor) -> None
 class Migration(migrations.Migration):
     dependencies = [
         ("people", "0001_people_certification_parent"),
-        ("uploads", "0007_people_certification_parent"),
+        ("uploads", "0009_people_certification_parent"),
         ("field_sync", "0006_bundle_producer_kinds"),
     ]
     operations = [

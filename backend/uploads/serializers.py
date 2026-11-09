@@ -19,6 +19,7 @@ class AttachmentTargetSerializer(StrictPayloadSerializer):
             "lab_rejection",
             "inventory_intent",
             "certification",
+            "lab_paddle_command",
         ]
     )
     id = serializers.UUIDField()

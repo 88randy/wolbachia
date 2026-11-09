@@ -1,6 +1,6 @@
 """Current authorization is applied before count/order/page, independently of qualification."""
 
-from typing import TypeVar, cast
+from typing import cast
 from uuid import UUID
 
 from django.db.models import Exists, IntegerField, Model, OuterRef, Q, QuerySet, Subquery, Value
@@ -25,10 +25,10 @@ from people.models import (
 from people.permissions import PeopleContext
 from uploads.access import UploadActor, current_scope
 
-Fact = TypeVar("Fact", bound=Model)
 
-
-def scoped_facts(rows: QuerySet[Fact], scope: EffectiveScope, permission: str) -> QuerySet[Fact]:
+def scoped_facts[Fact: Model](
+    rows: QuerySet[Fact], scope: EffectiveScope, permission: str
+) -> QuerySet[Fact]:
     allowed = Q(pk__in=[])
     for codes, bound in scope.grants:
         if permission not in codes:

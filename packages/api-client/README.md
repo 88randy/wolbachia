@@ -266,6 +266,20 @@ Official schema/client include closed preparation and execution commands, curren
 paired assignment/reconciliation/write-off reads, supplies1 and additive typed
 history6, preserving the canonical Community5 branch and all earlier shapes.
 InventoryIntent is the seventh concrete B04 parent, not a second uploader.
+
+## Independent Lab observations and paddles (#115)
+
+The official schema adds closed independent claim/count/selection/legacy assessment,
+QA policy and physical paddle binding/reuse requests. Original first-count commands
+and saved replies retain their wire. Hidden Bag.lab is null and numeric/inferred
+reads share the server's blind-publication policy before filtering/paging. A legacy
+assessment is an external declaration, not biological or offline-knowledge proof.
+History7 adds three real typed facts, retaining old18 kinds and root2/supplies1.
+The eighth attachment parent is the actual successful lab_paddle_command with its
+real physical fact/evidence; no generic command upload or new prepare endpoint.
+Movement source_kind=paddle_return names a genuine same-ledger typed stock return;
+source_supply/source_transfer keep their old nullable semantics. All generated
+changes come from the two official generations, never manual schema/type edits.
 Quantity strings and unknown-versus-zero receipts are preserved. Count replacement
 adds optional measurement_kind only for proved historical data correction after
 disposal; omitted/physical behavior and old command replay stay compatible.

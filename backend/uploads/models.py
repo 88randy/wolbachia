@@ -101,6 +101,9 @@ class AttachmentLink(EvidenceRecord):
     certification = models.ForeignKey(
         "people.Certification", null=True, on_delete=models.PROTECT, related_name="attachments"
     )
+    lab_paddle_command = models.ForeignKey(
+        "lab.LabCommand", null=True, on_delete=models.PROTECT, related_name="paddle_attachments"
+    )
 
     class Meta(EvidenceRecord.Meta):
         constraints = [
@@ -114,6 +117,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
@@ -124,6 +128,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
@@ -134,6 +139,7 @@ class AttachmentLink(EvidenceRecord):
                         inventory_intent__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
@@ -144,6 +150,7 @@ class AttachmentLink(EvidenceRecord):
                         certification__isnull=True,
                         inventory_intent__isnull=True,
                         transfer_event__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
@@ -154,6 +161,7 @@ class AttachmentLink(EvidenceRecord):
                         transfer_event__isnull=False,
                         certification__isnull=True,
                         inventory_intent__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=True,
                     )
                     | models.Q(
@@ -162,6 +170,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=False,
                         certification__isnull=True,
                         inventory_intent__isnull=True,
@@ -172,6 +181,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=True,
                         inventory_intent__isnull=False,
                         certification__isnull=True,
@@ -182,9 +192,21 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
+                        lab_paddle_command__isnull=True,
                         lab_rejection__isnull=True,
                         inventory_intent__isnull=True,
                         certification__isnull=False,
+                    )
+                    | models.Q(
+                        lab_paddle_command__isnull=False,
+                        certification__isnull=True,
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                        inventory_intent__isnull=True,
                     )
                 ),
                 name="attachment_exactly_one_parent",

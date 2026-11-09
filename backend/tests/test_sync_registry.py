@@ -86,7 +86,7 @@ def test_record_void_is_registered_by_the_app_itself() -> None:
             "eligibility",
         )
     } == {
-        "history": 6,
+        "history": 7,
         "supplies": 1,
         "assignments": 3,
         "quadrants": 2,

@@ -13,6 +13,7 @@ import type {
   SearchPatch,
   TableController,
   TableQueryConfig,
+  TableState,
 } from "./table-types";
 
 type Go = (patch: SearchPatch) => void;
@@ -29,6 +30,17 @@ function pagingActions(go: Go): PagingActions {
   };
 }
 
+function orderingActions(go: Go, state: TableState, defaultOrdering: string | undefined) {
+  return {
+    toggleSort: (columnId: string) => {
+      go(patchForSort(nextOrdering(state.sort, columnId, defaultOrdering)));
+    },
+    setOrdering: (ordering: string | undefined) => {
+      go(patchForSort(ordering));
+    },
+  };
+}
+
 /**
  * The state read from the URL plus one action per thing the user can change. Every action is a
  * patch of the address (`go`), so what the table shows is always what the URL says.
@@ -40,13 +52,11 @@ export function buildTableController(
 ): TableController {
   return {
     ...pagingActions(go),
+    ...orderingActions(go, state, config.defaultOrdering),
     config,
     state,
     ignored,
     hasActiveFilters: Object.keys(state.filters).length > 0,
-    toggleSort: (columnId) => {
-      go(patchForSort(nextOrdering(state.sort, columnId, config.defaultOrdering)));
-    },
     setFilter: (key, value) => {
       go(patchForFilter(key, value));
     },

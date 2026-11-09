@@ -200,6 +200,9 @@ def test_supply_upgrade_keeps_actual_legacy_admission_and_reading_audit(
         assert SupplyAssignment.objects.filter(pk=assignment_id).exists()
         with pytest.raises(IrreversibleError):
             MigrationExecutor(connection).migrate(previous)
+        # Dependent schema may reverse before the populated B10 guard refuses.
+        # Restore the actual leaves before comparing complete runtime-model rows.
+        MigrationExecutor(connection).migrate(leaves)
         assert SupplyAssignmentVersion.objects.filter(pk=version.pk).values().get() == immutable
         assert rows_before == [
             (model, identity, model.objects.filter(pk=identity).values().get())

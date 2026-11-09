@@ -13,6 +13,9 @@ import { createStores, FIXED_NOW, makeEnvelope } from "./support/factories.ts";
 import type { TestStores } from "./support/factories.ts";
 import { hasLocalRecords } from "../src/db/owner-data.ts";
 import { migrate, SCHEMA_VERSION } from "../src/db/migrations.ts";
+import { parseBundle } from "../src/features/day/bundle-parser.ts";
+import { upsertTask } from "../src/features/day/projection-statements.ts";
+import { setStatement } from "../src/db/kv-store.ts";
 const TASK_ID = "11111111-1111-4111-8111-111111111111";
 const POINT_ID = "22222222-2222-4222-8222-222222222222";
 const QUADRANT_ID = "33333333-3333-4333-8333-333333333333";
@@ -205,10 +208,10 @@ void test("task locations: current point deltas survive reopen and scope replace
     rmSync(directory, { recursive: true });
   }
 });
-void test("task locations: point-only downloads bind ownership and a failed replacement cannot partially change GPS or cursor", async () => {
+void test("task locations: point-only downloads remain cache and a failed replacement cannot partially change GPS or cursor", async () => {
   const h = await locationFixture();
   await h.store.replace(bundle([point()], []), FIXED_NOW);
-  assert.equal(await hasLocalRecords(h.db), true);
+  assert.equal(await hasLocalRecords(h.db), false); // M3: downloaded point cache is not authored owner work.
   await h.store.replace(bundle([point()]), FIXED_NOW);
   await h.db.query(
     "CREATE TRIGGER fail_point_write BEFORE INSERT ON day_sampling_point BEGIN SELECT RAISE(ABORT,'storage unavailable'); END",
@@ -232,7 +235,7 @@ void test("task locations: schema 8 upgrade keeps normal refresh unconditional t
   const root = realpathSync(output);
   const directory = mkdtempSync(join(root, "task-location-upgrade-"));
   const path = join(directory, "phone.db");
-  let phone = await openTestDatabase(path);
+  let phone = await openTestDatabase(path, 8);
   const etags: (string | null)[] = [];
   let answer: BundleResult | Error = { kind: "unchanged" };
   const recoveryService = (store: DayStore) =>
@@ -246,24 +249,22 @@ void test("task locations: schema 8 upgrade keeps normal refresh unconditional t
     });
   try {
     let h = await locationFixture(storesFor(phone.executor));
-    await h.store.replace(
+    const legacy = parseBundle(
       { ...bundle([]), bundle_version: "unchanged-server-etag", cursor: "valid-existing-cursor" },
       FIXED_NOW,
     );
+    const legacyTask = legacy.tasks[0];
+    assert.ok(legacyTask);
+    await h.db.runAtomically([
+      upsertTask(legacyTask),
+      {
+        sql: "INSERT INTO day_bundle_meta(slot,payload) VALUES(1,?)",
+        params: [JSON.stringify(legacy.meta)],
+      },
+      setStatement("sync_cursor", legacy.cursor),
+    ]);
     const evidence = makeEnvelope({ payload: { task_id: TASK_ID } });
     await h.outbox.enqueue(evidence);
-    await h.db.query("DROP TABLE day_sampling_point");
-    // The helper opens the current schema; remove post-8 additions to model an actual old DB.
-    await h.db.runAtomically(
-      [
-        "DROP TABLE attachment_event",
-        "DROP TABLE attachment_file",
-        "DROP TABLE attachment_context",
-        "DROP INDEX outbox_pending_physical",
-        "DROP INDEX ovitrap_evidence_uuid",
-      ].map((sql) => ({ sql })),
-    );
-    await h.db.query("PRAGMA user_version=8");
     await migrate(h.db);
     assert.equal((await h.db.query("PRAGMA user_version"))[0]?.user_version, SCHEMA_VERSION);
     assert.equal((await h.store.read()).tasks[0]?.task.id, TASK_ID);

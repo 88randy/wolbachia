@@ -1,6 +1,7 @@
 import type { Draft } from "./types.ts";
+type ReviewCapture = Pick<Draft, "point" | "gps" | "rules" | "mode">;
 /** Metres use the same mean-earth-radius Haversine approximation as B-14. */
-function distance(draft: Draft): number | null {
+function distance(draft: ReviewCapture): number | null {
   if (!draft.point || !draft.gps) return null;
   const radians = Math.PI / 180;
   const lat = draft.gps.lat * radians;
@@ -15,16 +16,16 @@ function distance(draft: Draft): number | null {
     )
   );
 }
-function isGpsUsable(draft: Draft): boolean {
+function isGpsUsable(draft: ReviewCapture): boolean {
   const accuracy = draft.gps?.accuracy_m;
   if (!draft.gps || typeof accuracy !== "number" || !Number.isFinite(accuracy)) return false;
   return accuracy > 0 && accuracy <= (draft.rules?.maxAccuracyM ?? 50);
 }
-function isStale(draft: Draft, now: Date): boolean {
+function isStale(draft: ReviewCapture, now: Date): boolean {
   if (!draft.rules) return true;
   return draft.rules.nextChangeAt !== null && Date.parse(draft.rules.nextChangeAt) <= now.getTime();
 }
-export function reviewReasons(draft: Draft, now: Date): readonly string[] {
+export function reviewReasons(draft: ReviewCapture, now: Date): readonly string[] {
   const reasons: string[] = [];
   if (!isGpsUsable(draft)) reasons.push("gps");
   if (isStale(draft, now)) reasons.push("stale");

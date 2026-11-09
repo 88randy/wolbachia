@@ -4,8 +4,9 @@ import { useSearch } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import type { Motorcycle } from "./fleet-query";
 import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
+import { useFormatDateTime } from "../format/use-format-date-time";
 /** Carry the list address so returning from any tab restores the view. */
-export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
+function useIdentityColumns(): DataTableColumn<Motorcycle>[] {
   const { t } = useTranslation();
   const search = useSearch({ strict: false });
   return [
@@ -22,10 +23,39 @@ export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
         <span className={styles.code}>{item.plate || t("fleet.summary.unknown")}</span>
       ),
     },
+  ];
+}
+function createdAtColumn(format: (date: string) => string): DataTableColumn<Motorcycle> {
+  return {
+    id: "created_at",
+    headerKey: "fleet.summary.createdAt",
+    cell: (item) => format(item.created_at),
+  };
+}
+export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
+  const { t } = useTranslation();
+  const search = useSearch({ strict: false });
+  const format = useFormatDateTime();
+  const identity = useIdentityColumns();
+  return [
+    ...identity,
     {
       id: "status",
       headerKey: "fleet.column.status",
       cell: (item) => <MotorcycleStatusBadge motorcycle={item} />,
     },
+    {
+      id: "center",
+      headerKey: "geography.field.center",
+      cell: (item) => item.center ?? t("fleet.summary.unknown"),
+      link: (item) =>
+        item.center
+          ? {
+              to: "/fleet/motorcycles",
+              search: { ...search, center: item.center, page: undefined },
+            }
+          : undefined,
+    },
+    createdAtColumn(format),
   ];
 }

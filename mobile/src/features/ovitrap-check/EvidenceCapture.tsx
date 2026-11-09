@@ -1,14 +1,14 @@
 import { View } from "react-native";
-import { AppText } from "../../ui/AppText.tsx";
-import { CaptureCommand } from "./CaptureCommand.tsx";
+import { PhotoCaptureCommand } from "./PhotoCaptureCommand.tsx";
+import { PendingPhoto } from "./PendingPhoto.tsx";
 import type { CaptureProps } from "./model.ts";
 export function EvidenceCapture({ model, draft }: CaptureProps) {
   return (
     <View>
       {draft.evidence.map((item) => (
-        <AppText key={item.id}>{item.id}</AppText>
+        <PendingPhoto key={item.id} model={model} eventId={draft.eventId} photo={item} />
       ))}
-      <CaptureCommand eventId={draft.eventId} model={model} command="captureEvidence" />
+      <PhotoCaptureCommand eventId={draft.eventId} model={model} />
     </View>
   );
 }
