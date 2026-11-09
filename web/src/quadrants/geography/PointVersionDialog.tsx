@@ -1,9 +1,9 @@
+import { FilterBar } from "../../data-table/FilterBar";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { DataTable } from "../../data-table/DataTable";
 import { pageTableData } from "../../data-table/table-data";
-import type { TableController } from "../../data-table/table-types";
 import { pointHistoryOptions } from "./geography-query";
 import { PAGE_SIZE } from "./geography-table";
 import { PointRelocationForm } from "./PointRelocationForm";
@@ -16,13 +16,12 @@ interface Props {
   scope: GeographyScope;
   point: Schemas["SamplingPoint"];
   quadrant: string;
-  controller: TableController;
   onClose: () => void;
 }
-export function PointVersionDialog({ scope, point, quadrant, controller, onClose }: Props) {
+export function PointVersionDialog({ scope, point, quadrant, onClose }: Props) {
   const { t } = useTranslation();
-  const history = useHistoryController(controller, onClose);
-  const query = useQuery(pointHistoryOptions(scope, point.id, history.controller.state.page));
+  const history = useHistoryController({ isPoint: true, userId: scope.me.user.id, onClose });
+  const query = useQuery(pointHistoryOptions(scope, point.id, history.controller.state));
   const columns = usePointHistoryColumns();
   const retired = usePointRetirement(scope, quadrant);
   const table = {
@@ -38,6 +37,7 @@ export function PointVersionDialog({ scope, point, quadrant, controller, onClose
       <button type="button" onClick={history.close}>
         {t("common.actions.close")}
       </button>
+      <FilterBar controller={history.controller} labelKey="refresh.filters.history" />
       <DataTable caption={t("geography.history.point")} {...table} />
       {scope.canCreatePoint && (
         <PointRelocationForm key={point.id} {...{ scope, point, quadrant }} />

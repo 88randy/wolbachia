@@ -13,7 +13,6 @@ import { markerState } from "../src/features/day/presentation.ts";
 import { OutboxWorkOverlay } from "../src/features/day/local-work.ts";
 import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { captureEvent } from "../src/features/ovitrap-check/events.ts";
-import type { Draft } from "../src/features/ovitrap-check/types.ts";
 import { KvStore } from "../src/db/kv-store.ts";
 import { migrate } from "../src/db/migrations.ts";
 import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
@@ -23,6 +22,14 @@ import { openTestDatabase } from "./support/sqlite-executor.ts";
 import { createStores, FIXED_NOW, FIXED_DEVICE_ID, makeEnvelope } from "./support/factories.ts";
 import type { TestStores } from "./support/factories.ts";
 import { makeDraft, POINT } from "./support/m-08-fixtures.ts";
+import { publishSnapshots } from "./support/m-08-harness.ts";
+import { fixtureBundle } from "./support/lifecycle-capture-fixture.ts";
+import { PROJECTION_IDENTITY } from "./support/lifecycle-projection-fixtures.ts";
+import { CONTRACT_IDS } from "./support/lifecycle-contract-fixtures.ts";
+import { parseBundle } from "../src/features/day/bundle-parser.ts";
+import { upsertTask } from "../src/features/day/projection-statements.ts";
+import { replaceSamplingPoints } from "../src/features/day/sampling-point-statements.ts";
+import { retainedCapture } from "./support/legacy-capture.ts";
 import {
   accepted,
   answer,
@@ -101,11 +108,60 @@ async function saveCapture(
   draft = makeDraft({ deviceTime: "2026-01-16T01:00:00.000Z" }),
 ) {
   const store = new OvitrapStore(local.db);
+  await publishSnapshots(store, {
+    catalog: draft.catalog,
+    rules: draft.rules,
+    assignment: draft.assignment,
+  });
+  const captureBundle = currentCaptureBundle(draft);
+  await new DayBundleService({
+    store: new DayStore(local.db),
+    now: () => FIXED_NOW,
+    getCaptureIdentity: () => PROJECTION_IDENTITY,
+    transport: () => Promise.resolve({ kind: "bundle", body: captureBundle }),
+  }).refresh();
   await store.begin(draft);
   const event = captureEvent(draft);
   assert.equal(Object.hasOwn(event.payload, "task_id"), false);
-  await local.outbox.enqueue(event, store.commitStatements(draft));
+  await local.outbox.enqueue(
+    event,
+    store.commitStatements(draft, (await store.read()).draftVersion),
+  );
   return event;
+}
+/** Current producer-shaped capture scope augments the owning v3 fixture; no completion/receipt assertion changes. */
+function currentCaptureBundle(draft: ReturnType<typeof makeDraft>) {
+  const capture = fixtureBundle(draft.assignment);
+  const current = bundle();
+  const point = current.sampling_points[0];
+  assert.ok(point);
+  const quadrant = {
+    resource_type: "quadrant",
+    id: point.quadrant_id,
+    quadrant_id: point.quadrant_id,
+    center_id: CONTRACT_IDS.center,
+    code: "Q-COMPLETION",
+    revision: 1,
+    is_closed: false,
+    closure_id: null,
+  };
+  return {
+    ...capture,
+    ...current,
+    scope_revision: capture.scope_revision,
+    capture_context: capture.capture_context,
+    quadrants: [
+      quadrant,
+      {
+        resource_type: "block",
+        id: point.block_id,
+        quadrant_id: point.quadrant_id,
+        center_id: CONTRACT_IDS.center,
+        code: "B-COMPLETION",
+        revision: 1,
+      },
+    ],
+  };
 }
 async function accept(local: TestStores, id: string) {
   await local.outbox.claimPending(50);
@@ -245,21 +301,19 @@ void test("real M08 delivery joins only unique captured point action and local d
   assert.equal((await day(local)).tasks[0]?.delivery.hasServerReceipt, true);
 });
 
-/** Model immutable legacy history that predates complete captured organization provenance. */
-async function legacyCapture(local: TestStores, draft: Draft) {
-  const store = new OvitrapStore(local.db);
-  await store.begin(draft);
-  await local.outbox.enqueue(captureEvent(draft), [
-    {
-      sql: "INSERT INTO ovitrap_capture(event_id,ovitrap_id,mode,epi_week,draft) VALUES(?,?,?,?,?)",
-      params: [draft.eventId, draft.ovitrapId, draft.mode, "2026-W03", JSON.stringify(draft)],
-    },
-  ]);
-}
-void test("missing captured timezone stays recoverable and never supplies delivery to another task", async () => {
-  const local = await createStores();
+void test("missing captured timezone stays recoverable and never supplies delivery to another task", async (test) => {
+  const phone = await openTestDatabase(":memory:", 11);
+  test.after(() => {
+    phone.close();
+  });
+  const local = {
+    db: phone.executor,
+    kv: new KvStore(phone.executor),
+    outbox: new OutboxRepository(phone.executor, () => FIXED_NOW),
+  };
   const draft = makeDraft({ deviceTime: "2026-01-15T10:00:00.000Z", assignment: null });
-  await legacyCapture(local, draft);
+  await retainedCapture(local.db, { draft, envelope: captureEvent(draft), epiWeek: "2026-W03" });
+  await migrate(local.db);
   await new DayStore(local.db).replace(bundle(), FIXED_NOW);
   const model = await day(local);
   assert.equal(model.completed, 0);
@@ -348,7 +402,7 @@ void test("upload receipts and interrupted assignment pages never decide complet
 void test("an upgraded stripped cache requires a committed full bootstrap across restart and preserves evidence", async () => {
   const root = realpathSync(tmpdir());
   const directory = mkdtempSync(join(root, "wolbachia-229-"));
-  let phone = await openTestDatabase(join(directory, "completion.sqlite"));
+  let phone = await openTestDatabase(join(directory, "completion.sqlite"), 10);
   const stores = (): TestStores => ({
     db: phone.executor,
     kv: new KvStore(phone.executor),
@@ -358,17 +412,30 @@ void test("an upgraded stripped cache requires a committed full bootstrap across
   try {
     const legacy = task();
     Reflect.deleteProperty(legacy, "is_completed");
-    await new DayStore(local.db).replace(bundle([legacy]), FIXED_NOW);
+    const parsed = parseBundle(bundle([legacy]), FIXED_NOW);
+    const legacyTask = parsed.tasks[0];
+    assert.ok(legacyTask);
+    await local.db.runAtomically([
+      upsertTask(legacyTask),
+      ...replaceSamplingPoints(parsed.samplingPoints),
+      {
+        sql: "INSERT INTO day_bundle_meta(slot,payload) VALUES(1,?)",
+        params: [JSON.stringify(parsed.meta)],
+      },
+      { sql: "INSERT INTO kv(key,value) VALUES('sync_cursor',?)", params: [parsed.cursor] },
+    ]);
     const originalPath = join(directory, "original-photo.jpg");
     const originalBytes = Buffer.from("immutable synthetic photo bytes");
     writeFileSync(originalPath, originalBytes);
-    const captured = await saveCapture(
-      local,
-      makeDraft({
-        deviceTime: "2026-01-16T01:00:00.000Z",
-        evidence: [{ id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", fileRef: originalPath }],
-      }),
-    );
+    const draft = makeDraft({
+      deviceTime: "2026-01-16T01:00:00.000Z",
+      evidence: [{ id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", fileRef: originalPath }],
+    });
+    const captured = await retainedCapture(local.db, {
+      draft,
+      envelope: captureEvent(draft),
+      epiWeek: "2026-W03",
+    });
     await local.db.runAtomically([
       {
         sql: "INSERT INTO attachment_file(id,owner_key,draft_id) VALUES(?,?,?)",
@@ -379,10 +446,7 @@ void test("an upgraded stripped cache requires a committed full bootstrap across
         params: ["eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee", captured.id],
       },
     ]);
-    await local.db.runAtomically([
-      { sql: "DELETE FROM kv WHERE key='day_completion_bootstrap_pending'" },
-      { sql: "PRAGMA user_version=10" },
-    ]);
+    assert.equal(await local.kv.get("day_completion_bootstrap_pending"), null);
     await migrate(local.db);
     assert.equal(await local.kv.get("day_completion_bootstrap_pending"), "true");
     const original = await local.db.query("SELECT * FROM ovitrap_capture");

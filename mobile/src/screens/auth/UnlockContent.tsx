@@ -5,6 +5,7 @@ import type { useUnlockForm } from "../../auth/use-unlock-form.ts";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
+import { unlockTitle } from "./unlock-presentation.ts";
 import { AuthNotice } from "./AuthNotice.tsx";
 import { PasswordUnlock } from "./PasswordUnlock.tsx";
 import { PinUnlock } from "./PinUnlock.tsx";
@@ -20,15 +21,11 @@ export function UnlockContent({
   const t = useT();
   const styles = useStyles(createAuthStyles);
   const isPasswordRequired = snapshot.isPasswordRequired && snapshot.phase !== "createPin";
-  const title = isPasswordRequired
-    ? "mobile.unlock.passwordTitle"
-    : snapshot.phase === "createPin"
-      ? "mobile.unlock.createTitle"
-      : "mobile.unlock.greeting";
+  const title = unlockTitle(snapshot);
   return (
     <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <AppText variant="h1" style={styles.centered}>
-        {t(title, { name: snapshot.profile?.firstName ?? "" })}
+        {t(title, { name: snapshot.profile?.firstName.trim() ?? "" })}
       </AppText>
       <AuthNotice notice={form.error} />
       {isPasswordRequired ? (

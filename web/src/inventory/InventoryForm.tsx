@@ -1,4 +1,5 @@
 import { useTranslation } from "react-i18next";
+import { DialogFooter } from "../ui/DialogFooter";
 import { Button } from "../ui/Button";
 import { SupplyIdentityFields } from "./supplies/SupplyIdentityFields";
 import { SupplyProtocolFields } from "./supplies/SupplyProtocolFields";
@@ -16,6 +17,7 @@ import { Card } from "../ui/Card";
 import { InventoryFacts } from "./InventoryFacts";
 interface Props {
   kind: InventoryKind;
+  onCancel?: () => void;
   record?: InventoryRecord;
   isVerifying?: boolean;
   onSaved: (record: InventoryRecord) => void;
@@ -104,6 +106,7 @@ function SubmitAction({
   busy,
   record,
   kind,
+  onCancel,
 }: Props & { form: ReturnType<typeof useInventoryForm>; busy: boolean }) {
   const { t } = useTranslation();
   const key = record
@@ -112,9 +115,18 @@ function SubmitAction({
       ? "inventory.action.draft"
       : "inventory.action.create";
   const disabled = busy || form.cooling || form.failure?.conflict || form.failure?.uncertain;
-  return (
+  const submit = (
     <Button type="submit" loading={form.isBusy} aria-disabled={disabled}>
       {t(key)}
     </Button>
+  );
+  if (!onCancel) return submit;
+  return (
+    <DialogFooter>
+      <Button type="button" variant="secondary" disabled={busy} onClick={onCancel}>
+        {t("common.actions.cancel")}
+      </Button>
+      {submit}
+    </DialogFooter>
   );
 }

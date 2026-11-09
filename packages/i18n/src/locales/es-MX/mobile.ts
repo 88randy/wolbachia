@@ -2,6 +2,11 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.unlock.greetingNeutral": "Hola",
+  "mobile.shiftOpen.severeSaved":
+    "No puedes salir con esta moto por una falla grave. Avisa a tu supervisor para que gestione la liberación de flota.",
+  "mobile.shiftOpen.receivedRejected": "Recibido por el servidor · Apertura rechazada",
+  "mobile.shiftOpen.receivedInReview": "Recibido por el servidor · En revisión",
   "mobile.preview.title": "Vista de estilos",
   "mobile.preview.sample": "Ejemplo",
   "mobile.preview.intro":
@@ -32,6 +37,77 @@ export const mobile = {
   "mobile.preview.error":
     "No se pudo actualizar este ejemplo. Reintenta; lo que capturaste sigue aquí.",
   "mobile.preview.retryResult": "Reintento de ejemplo completado. No se contactó al servidor.",
+  "mobile.lifecycle.replace": "Sustituir ovitrampa",
+  "mobile.lifecycle.relocate": "Proponer reubicaci?n",
+  "mobile.lifecycle.remove": "Retirar ovitrampa",
+  "mobile.lifecycle.fixedCode":
+    "El folio del punto se conserva. La sustituci?n usa una nueva identidad f?sica.",
+  "mobile.lifecycle.source": "Ovitrampa de origen",
+  "mobile.lifecycle.replacement": "Nueva identidad f?sica",
+  "mobile.lifecycle.proposalOnly":
+    "Se guardar? como propuesta. La ubicaci?n autorizada del punto permanece igual hasta una decisi?n sincronizada.",
+  "mobile.lifecycle.proposedLocation": "Ubicaci?n propuesta (longitud, latitud)",
+  "mobile.lifecycle.closedWeeks": "Semanas consecutivas con casa cerrada (regla descargada):",
+  "mobile.lifecycle.confirmedCount": "Incidencias conocidas (regla descargada):",
+  "mobile.lifecycle.noIncidentHistory":
+    "Sin historial local de incidencias; no se calcula esa sugerencia.",
+  "mobile.lifecycle.inspectHistory":
+    "Revisa el historial antes de proponer. La sugerencia es orientativa.",
+  "mobile.lifecycle.gpsRequired":
+    "Falta GPS. Int?ntalo de nuevo; no se puede guardar sin ubicaci?n.",
+  "mobile.lifecycle.gpsCaptured": "GPS capturado en el tel?fono",
+  "mobile.lifecycle.captureGps": "Capturar ubicaci?n GPS",
+  "mobile.lifecycle.recovery": "?Recuperaste la ovitrampa? Elige una opci?n.",
+  "mobile.lifecycle.recovered": "Recuperada: la llevo de regreso",
+  "mobile.lifecycle.unrecovered": "No recuperada: no la encontr?",
+  "mobile.lifecycle.unconfirmed": "Recuperaci?n sin confirmar",
+  "mobile.lifecycle.recoveryNotice":
+    "La recuperaci?n queda pendiente. Sin confirmar se conserva en el tel?fono y se reporta como no recuperada al servidor.",
+  "mobile.lifecycle.reason": "Motivo del cat?logo descargado",
+  "mobile.lifecycle.chooseReason": "Elegir motivo",
+  "mobile.lifecycle.other": "Otro: describe el motivo (m?ximo 1000 caracteres)",
+  "mobile.lifecycle.incidentNotice":
+    "El servidor vincular? el hallazgo con una incidencia cuando aplique la captura. El tel?fono no crea una incidencia.",
+  "mobile.lifecycle.photoRequired": "Agrega al menos una foto de esta captura antes de guardar.",
+  "mobile.lifecycle.capturePhoto": "Agregar foto de evidencia",
+  "mobile.lifecycle.discardPhoto": "Quitar foto del borrador",
+  "mobile.lifecycle.photoDiscarded": "Foto retirada del borrador. Puedes deshacerlo.",
+  "mobile.lifecycle.undo": "Deshacer",
+  "mobile.lifecycle.reviewAcknowledge":
+    "Entiendo que el GPS, distancia o reglas desactualizadas requieren revisi?n del servidor.",
+  "mobile.lifecycle.download": "Descargar cat?logos y reglas de ciclo de vida",
+  "mobile.lifecycle.adopt": "Revisar y usar cat?logos y reglas descargados",
+  "mobile.lifecycle.begin": "Iniciar captura para este punto",
+  "mobile.lifecycle.loading": "Cargando borrador local?",
+  "mobile.lifecycle.empty":
+    "Inicia la captura desde la ovitrampa seleccionada. Si falta configuraci?n, desc?rgala primero.",
+  "mobile.lifecycle.confirmRemove": "Revisar y confirmar retiro",
+  "mobile.lifecycle.removeConsequence":
+    "El punto quedar? sin esta ovitrampa. Para corregir se agrega una anulaci?n con motivo; la evidencia se conserva.",
+  "mobile.lifecycle.save": "Guardar en el tel?fono",
+  "mobile.lifecycle.incomplete":
+    "Captura incompleta: revisa motivo, Otro, GPS, foto y recuperaci?n. El borrador se conserva.",
+  "mobile.lifecycle.proposed": "Propuesta",
+  "mobile.lifecycle.approved": "Aprobada",
+  "mobile.lifecycle.rejected": "Rechazada",
+  "mobile.lifecycle.reviewAccepted":
+    "Resultado del servidor: aceptado. Revisi?n del supervisor: sin confirmaci?n.",
+  "mobile.lifecycle.reviewRejected":
+    "Resultado del servidor: rechazado. Conserva la evidencia y consulta al supervisor.",
+  "mobile.lifecycle.decisionPending": "Decisi?n del supervisor: pendiente de sincronizar",
+  "mobile.lifecycle.nextTask": "Tarea recibida al sincronizar",
+  "mobile.lifecycle.noTask": "Sin tarea sincronizada; no hay asignaci?n local anticipada.",
+  "mobile.lifecycle.history": "Historial de ciclo de vida y correcciones",
+  "mobile.lifecycle.voided": "Anulaci?n registrada; se conserva el original",
+  "mobile.lifecycle.correctionReason":
+    "Motivo de correcci?n (de 10 caracteres visibles a 1000 caracteres)",
+  "mobile.lifecycle.correct": "Anular con motivo conservando evidencia",
+  "mobile.lifecycle.scopeBlocked":
+    "Este punto ya no est? en tu alcance descargado. El borrador se conserva; consulta al supervisor.",
+  "mobile.lifecycle.noCamera":
+    "La c?mara no est? disponible. Conserva el borrador e intenta de nuevo en un equipo habilitado.",
+  "mobile.lifecycle.noReasons": "Falta el cat?logo de motivos. Desc?rgalo antes de continuar.",
+
   "mobile.ovitrap.pendingDraft":
     "Ya tienes un borrador de otra captura. Continúa ese borrador antes de cambiar de ovitrampa.",
   // M-08: P13, P14 and P21
@@ -73,6 +149,26 @@ export const mobile = {
     "Solo se ofrece reutilización con elegibilidad descargada. Nunca una tercera reutilización.",
   "mobile.ovitrap.supplies": "Referencias UUID de insumos, separadas por coma",
   "mobile.ovitrap.photo": "Agregar evidencia fotográfica",
+  "mobile.camera.undo": "Quitar esta foto del borrador",
+  "mobile.ovitrap.concurrentEdit":
+    "El borrador cambió mientras se guardaba. Tus cambios siguen pendientes; vuelve a intentar guardarlos.",
+  "mobile.camera.ownerRequired":
+    "Vuelve a iniciar sesión para confirmar la cuenta antes de tomar la foto. Tu borrador sigue en el teléfono.",
+  "mobile.camera.fileType":
+    "La foto tiene un formato no compatible. Vuelve a tomarla en JPEG o PNG; tu borrador sigue en el teléfono.",
+  "mobile.camera.fileSize":
+    "La foto no tiene un tamaño válido. Ajusta la resolución de la cámara y vuelve a tomarla; tu borrador sigue en el teléfono.",
+  "mobile.camera.permissionDenied":
+    "No se agregó una foto. Permite usar la cámara e inténtalo de nuevo; tu borrador sigue en el teléfono.",
+  "mobile.camera.permissionBlocked":
+    "La cámara está bloqueada. Habilítala en los ajustes de la aplicación o pide ayuda; tu borrador sigue en el teléfono.",
+  "mobile.camera.resultInvalid":
+    "La cámara no entregó una foto válida. Inténtalo de nuevo; tu borrador sigue en el teléfono.",
+  "mobile.camera.busy": "Hay una captura en curso. Regresa de la cámara y vuelve a intentarlo.",
+  "mobile.camera.unlockRequired":
+    "Desbloquea la aplicación y vuelve a tomar la foto. Tu borrador sigue en el teléfono.",
+  "mobile.camera.fileFailed":
+    "No se pudo guardar la foto en el teléfono. Revisa el espacio disponible e intenta tomarla de nuevo; tu borrador sigue en el teléfono.",
   "mobile.ovitrap.photoUnavailable":
     "La cámara de evidencia no está disponible en esta compilación. Conserva el borrador y pide ayuda si el catálogo requiere foto.",
   "mobile.ovitrap.refresh": "Descargar catálogos y reglas",
@@ -478,4 +574,52 @@ export const mobile = {
   "mobile.unlock.keepWorking": "Seguir trabajando",
   "mobile.unlock.resumeSetup": "Para terminar de crear tu PIN, escribe tu contraseña.",
   "mobile.unlock.wrongPinLast": "PIN incorrecto. Te queda 1 intento.",
+  "mobile.lifecycle.advisoryUnavailable":
+    "Recomendación no disponible para este instante y estas reglas. Puedes continuar la captura.",
+  "mobile.lifecycle.advisoryFuture":
+    "El instante de captura aún es futuro para el servidor. Reintenta después.",
+  "mobile.lifecycle.advisoryAt":
+    "Hechos observados hasta {at}. Una llegada tardía o anulación puede cambiar esta consulta.",
+  "mobile.lifecycle.advisoryCounts":
+    "Semanas de casa cerrada: {weeks}. Incidentes del punto: {incidents}.",
+  "mobile.lifecycle.advisorySuggested":
+    "Las reglas sugieren revisar una reubicación. Guardarla sólo crea una propuesta.",
+  "mobile.lifecycle.advisoryNotSuggested":
+    "La observación disponible no alcanza los umbrales de sugerencia.",
+  "mobile.lifecycle.legacyAdvisory":
+    "Sólo hay historia local parcial; no confirma el total de incidentes del punto.",
+  "mobile.lifecycle.decisionReasonUnknown": "Motivo histórico no disponible.",
+  "mobile.lifecycle.decisionTimeUnknown": "Fecha histórica de decisión no disponible.",
+  "mobile.lifecycle.sourceVoided":
+    "La fuente fue anulada: {at}. La propuesta y su evidencia se conservan.",
+  "mobile.lifecycle.legacyDecision":
+    "Registro local anterior conservado como auditoría; no confirma una revisión del servidor.",
+  "mobile.lifecycle.taskReferenceOnly":
+    "Referencia programada; todavía no es una tarea vigente asignada a ti.",
+  "mobile.lifecycle.taskAssigned": "Tarea vigente asignada a ti y pendiente de completar.",
+  "mobile.lifecycle.openTask": "Ver tarea asignada",
+  "mobile.lifecycle.ingestAccepted": "Resultado original de recepción: aceptado.",
+  "mobile.lifecycle.ingestRejected": "Resultado original de recepción: rechazado.",
+  "mobile.lifecycle.ingestReview": "Resultado original de recepción: en revisión.",
+  "mobile.lifecycle.reviewedTitle": "Decisión posterior del servidor",
+  "mobile.lifecycle.effectApplied": "Efecto aplicado tras revisión.",
+  "mobile.lifecycle.effectAdopted": "Efecto anterior reconocido; conserva su procedencia original.",
+  "mobile.lifecycle.effectDiscarded": "Trabajo descartado por decisión; conserva su historia.",
+  "mobile.lifecycle.effectIncident": "Incidente abierto; esto no acepta la captura original.",
+  "mobile.lifecycle.effectApproved": "Jornada revisada; no concede permiso nuevo de captura.",
+  "mobile.lifecycle.effectObserved": "Observación de jornada registrada.",
+  "mobile.lifecycle.approvalNotCurrent": "Esta validación ya no es la aprobación vigente.",
+  "mobile.lifecycle.nonterminalDecision": "Decisión informativa; la revisión puede continuar.",
+  "mobile.lifecycle.limitsUnavailable":
+    "Selecciona un motivo del catálogo descargado con límites conocidos antes de corregir.",
+  "mobile.lifecycle.reasonLimits":
+    "Caracteres visibles mínimos para esta opción: {min}. Límite de la nota: {max} caracteres.",
+  "mobile.lifecycle.epochClosed":
+    "El cuadrante está cerrado. No se pueden guardar nuevas capturas en este marco.",
+  "mobile.lifecycle.epochUnknown":
+    "Falta un marco actual verificable. Actualiza; el borrador se conserva.",
+  "mobile.lifecycle.recoveryBlocked":
+    "El borrador se conserva, pero su propiedad no está probada para esta sesión. Entra con la cuenta original o pide ayuda a soporte.",
+  "mobile.lifecycle.remoteProposal":
+    "Propuesta descargada del servidor; no es una captura local editable.",
 } as const satisfies AreaCatalog<"mobile">;

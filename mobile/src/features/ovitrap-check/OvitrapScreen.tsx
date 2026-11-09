@@ -1,4 +1,5 @@
 import { AppScrollView } from "../../ui/AppScrollView.tsx";
+import { PointLifecycleEntry } from "../ovitrap-lifecycle/PointLifecycleEntry.tsx";
 import { SnapshotNotices } from "./SnapshotNotices.tsx";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
@@ -24,6 +25,7 @@ export function OvitrapScreen() {
         ) : null}
         <CaptureActions model={model} />
         <SnapshotNotices model={model} />
+        <PointLifecycleEntry model={model} />
         {model.state?.event ? (
           <CaptureOutcome event={model.state.event} />
         ) : draft && !model.state?.isShiftBlocked ? (

@@ -285,6 +285,12 @@ availability is invented when B-05/bootstrap data is absent.
   the outbox immutability triggers remain in force. A guarded update compares the
   original rejected event id, preventing competing corrections from replacing a
   newer attempt. Ordinary start/resume never resets a rejected attempt.
+- The existing departure gate reads its draft, opening decision and current
+  catalog/map coherently. M08 camera acquisition retains a guard for those exact
+  validated facts through final reference publication (#253); a late severe review
+  cannot be hidden by an unchanged shift UUID. The gate policy is unchanged and
+  catalog/map remain available before a shift draft exists. Benign fact changes
+  conservatively require a retake; physical qualification remains pending.
 - Snapshot refreshes publish only the latest requested read at the same edit
   revision. Unmount invalidates in-flight reads, so a delayed pending snapshot
   cannot hide a newer rejection or overwrite courier input.
@@ -348,9 +354,10 @@ There is no egg-count input, draft field or event payload field.
   bag, release-device and sample. Wrong-kind/failed scans always open P21; only an
   explicit manual action sets `manual_capture=true`. A pending draft for a different
   target blocks switching with a resume message instead of silently editing it.
-- **[ASSUMPTION]** Native scanner/camera/GPS integration is unavailable in this build.
-  Production `ScannerPort`, `GpsPort` and `EvidencePort` return unavailable/null;
-  manual ovitrap UUID and human bag entry work without camera dependencies. A typed
+- Native scanner/GPS integration remains unavailable in this build. Production
+  `ScannerPort` and `GpsPort` return unavailable/null; #253 supplies the shared M08/M09 camera
+  `EvidencePort`, with physical qualification still pending. Manual ovitrap UUID
+  and human bag entry remain available. A typed
   bag QR preserves its UUID; a scanned bag UUID resolves its human code from cached
   bootstrap context, otherwise the courier must type the printed human code. The
   UUID history stays local even when manual editing removes the active association.
@@ -360,7 +367,13 @@ There is no egg-count input, draft field or event payload field.
   location/scope review notice. P13 only offers downloaded assignment points.
   Missing assignment/version/epi week blocks saving; an explicitly lost or narrowed
   downloaded assignment blocks new capture while retaining drafts/outbox.
-- Catalog/rules download uses `packages/api-client` and saves snapshots atomically.
+- Catalog/rules download uses `packages/api-client` and saves configuration
+  atomically without rewriting the current assignment. A genuinely authoritative
+  assignment provider captures a durable authority token before network awaits
+  and publishes through a conditional SQL CAS plus the existing session fence.
+  Bootstrap narrowing, point invalidation, revoke and publication advance that
+  revision in the same transaction, including absent/null authority. Stale writes
+  retain drafts/outbox and fail explicitly; no previous assignment copy is replayed.
   Drafts pin catalog labels, hashes, assignment version/week configuration, GPS including
   accuracy, shift and capture time. New catalogs warn without clearing old answers.
   Explicit adoption refuses to discard a retired captured choice's historical label.
@@ -753,6 +766,11 @@ No npm ci/install, Docker, Playwright or Expo build was run for this review.
 
 ## Shared mobile visual refresh (#203)
 
+Decision 158 records this refresh. Home shows one delivery-status line and one
+actionable blocker, without repeating a pending-receipt warning after server
+receipt. PIN unlock uses the profile first name or a neutral greeting when empty.
+`test/visual-refresh.test.ts` covers both phone-review regressions.
+
 The shared UI follows #202 / decision 123: cool canvas, surface headers, 20 dp
 cards with soft token borders and cheap Android elevation, tinted icon/text pills,
 Inter prose and JetBrains Mono data. The old navy header and flatter board styling
@@ -867,12 +885,54 @@ Android force-stop, SQLCipher/SecureStore disk behavior, native P1 layout, TalkB
 and 130% text still require the qualified build/device workflow. No native build,
 phone, API, Docker or database service is required for this fix.
 
+## M-09: replace, relocate, remove (#138)
+
+P15–P17 use the real point/physical/quadrant provider and whole paired capture
+context, explicit owned v2 new start, current owner/session/revision admission and
+shared file-owner arbiter. Legacy captures remain recoverable and private; no
+Assignment/bags/stock/task authority or original ownership is reconstructed.
+Replacement keeps the point code, relocation stays Proposed, and removal records
+recovered/unrecovered/unconfirmed. Draft/outbox/evidence commit before Saved.
+
+Current history6/B33 validates all 18 known kinds before cursor/readiness settlement.
+Four lifecycle branches materialize; five Lab, eight Supply and aggregate Community
+branches are validated before deliberate exclusion, without stock/community rows
+or capture authority. Malformed/unknown history rejects the whole atomic page.
+Feedback preserves original ingest receipts and distinguishes
+review effect, approval currency, nullable audit and actual next-day task reference.
+Task action requires its current UUID + point + courier + explicit v3 false state.
+Actual #287 advisory uses exact original cutoff/rule provenance and a private,
+current owner/session/revision-bound ETag cache; unknown/offline data is unavailable,
+never zero. Real Me.limits and delivered void reasons govern corrections. Native
+foreground GPS uses day.location; canonical246 adopts and enrolls only confirmed
+Save evidence in the same transaction. Undo leaves unconfirmed files local.
+
+The real createDayBundle factory separates retained-final transport from active
+capture/read authority: cold-restart final JSON retry works without unlocking or
+bootstrap, receipts precede cleanup, and a replacement session fences old cleanup.
+Schema16 adds only legacy lifecycle evidence reservation protection after unchanged
+evaluated SQL1–15; #266 profiles are source-derived, no reset/adoption is performed.
+See [feature README](src/features/ovitrap-lifecycle/README.md) for ownership, ordering,
+M1–M5 history, criterion→test evidence and truthful delivery/review states.
+
+Design PNG/source S09/S15/S16 and project UI standards were applied. Issue decisions
+win: GPS creates a proposal, never automatic movement/task assignment; replacement
+creates a physical UUID without invented stock; P17 has unconfirmed recovery. Forms
+wrap and use tokens, localized labels and persistent photo Undo. Host props cover
+es-MX/en, light/dark and scale1/1.3, not native assistive technology or layout.
+
+Actual camera acquisition uses the shared [#253](https://github.com/88randy/wolbachia/issues/253) port.
+Android force-stop/cold-start/SQLCipher, real GPS/file/network/API/B33 decision/task,
+TalkBack, 130% native layout and both MO01 profiles remain UNRUN owner/device gates.
+No local Android/e2e/Playwright build or real-API phone certification was performed.
+Draft219 remains Refs138; full acceptance is not established by Node/APK results.
+
 ## Private evidence transport (#246)
 
 M-08 now copies a port-supplied capture URI into exclusive private document storage,
 checks bounded original JPEG/PNG bytes and SHA-256, and retains a proven issuer /
 organization UUID / User UUID / device owner in an additive file journal. Migration
-10 is provisional after canonical 1–9 on the #102 base; released SQL is unchanged.
+10 is released after canonical1–9 on the #102 base; its SQL is unchanged.
 The original evidence UUID and event envelope never change after capture. Legacy
 references without original ownership provenance are retained locally, not assigned
 by username or a fresh Me response. A pre-login SQL CAS arbitrates owner activation
@@ -895,13 +955,32 @@ with scripted HTTP responses. They prove file bytes/hash, immutable ownership,
 restart/replay/linking, selection fairness, unrelated receipts and stale-context
 refusal. They do not execute a live #102 backend or certify native storage/network.
 
-The native capture port still returns unavailable: [#253](https://github.com/88randy/wolbachia/issues/253)
-is an implementation dependency, not merely device qualification. The productive
-#138 bridge remains pending explicit serial integration, including migration
-lineage and its current physical/scope authority; no lifecycle module is copied
-here. Generic lifecycle payload/dependency shapes are covered separately. Actual
-B-33 decisions/tasks remain [#126](https://github.com/88randy/wolbachia/issues/126).
+M08 now receives camera-only ImagePicker58.0.10 acquisition through
+[#253](https://github.com/88randy/wolbachia/issues/253), with exact unsaved-draft,
+owner/session, live shift/assignment and cancellation guards before adoption.
+Permission-induced local lock requires unlock/retry before launch; an already
+launched same-context camera can finish privately beneath AuthGate. Cold orphan
+results are ignored. Pending-photo Undo removes only the draft reference, never
+private bytes, journal rows or history. No gallery/microphone permission is used.
+Physical acquisition/lifecycle/API/accessibility acceptance remains
+[UNRUN](../docs/qa/native-photo-253.md); code/CI is a partial draft delivery. The productive
+#138 bridge now preserves its original interactive context and current
+physical/scope authority, with partial photo publication and all-writer raw-read
+CAS. Migration/profile lineage1–16 and both legacy UUID reservations remain intact.
+Generic lifecycle payload/dependency shapes are covered separately. Actual
+B-33 decisions/tasks use the actual merged #126/history3 producer; the real device
+journey remains unverified.
 Owner-authorized Android force-stop, SQLCipher/private-file persistence, camera,
 GPS, real uploads/API, TalkBack/130%/light-dark/es-MX-en and both device profiles
 remain UNVERIFIED under #138/#130. A Node test or debug-apk does not substitute for
-those journeys. See src/attachments/README.md and ADR 132 (provisional).
+those journeys. See src/attachments/README.md and canonical ADR132.
+
+### Limited #138 preparation after266
+
+This DRAFT integrates the released1–11 prefix, bounded view signatures and exact
+M09 suffixes12–14. The canonical266 guard remains before OUR WAL/FULL/migrations;
+all seven old unmerged schemas remain unsupported without reset/conversion. One
+Attachments instance serves the canonical composition; lifecycle adoption/native
+camera253 and126 feedback are still missing. Current completion/point/bootstrap,
+attachment invalidation and M09 assignment/physical receipt authority share their
+existing transactions. This is partial preparation, not full138/native acceptance.

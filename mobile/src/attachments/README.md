@@ -2,9 +2,10 @@
 
 One immutable evidence UUID identifies original bytes, their SHA-256/type/size and
 their proven issuer/organization/user/device owner. This journal transports files;
-the existing event outbox remains the only event queue. Native acquisition is
-[a separate implementation gap (#253)](https://github.com/88randy/wolbachia/issues/253),
-not a camera implemented by this transport.
+the existing event outbox remains the only event queue. Camera-only native
+acquisition is supplied by [#253](https://github.com/88randy/wolbachia/issues/253);
+its adapter delegates durable ownership to this transport. Physical qualification
+remains pending.
 
 Capture adopts an exclusive bounded app-owned file and durable journal before
 returning a reference. The existing capture transaction binds that reference to
@@ -50,6 +51,30 @@ SQL CAS arbitrates progress and claims with invalidation. Network/file I/O runs
 outside credential, projection and SQLite locks. Verified bytes are not current
 scope authorization or a review acceptance. #102 checks current server authority.
 
+M08 acquisition also retains the displayed unsaved draft UUID and originating
+live assignment/shift. Native permission/camera and file continuations check those
+facts and cancellation; reservation checks the same unsaved draft in the owner CAS
+INSERT before any private file creation. Cancelled native work keeps its single-flight
+lease until settlement. Local MO03 locking still applies: a permission-induced lock
+requires unlock/retry before launch; an already launched same-context camera can
+finish privately beneath the opaque AuthGate. Cold uncorrelated pending results
+are read and ignored. No gallery, microphone or second durable queue is used.
+
+ImagePicker58.0.10 (MIT, SDK58 bundled range) uses the system camera UI. The config
+plugin disables microphone and photo-library permissions; existing Android storage
+blocks remain. Asset metadata is advisory; bounded signature/hash verification
+still belongs to this journal. `exif:false` omits JS metadata, not metadata in the
+original bytes; server #102 sanitation remains required. See
+[qualification status](../../../docs/qa/native-photo-253.md).
+
+The adopted result retains an internal SQL authority guard built from the original
+capture fence and immutable owned file. M08 consumes it in its final partial
+reference UPDATE; a fresh session fence cannot bless an older result. Concurrent
+target/assignment/authority changes reject publication while retaining the file
+and journal. Whole-draft editors use raw read-version CAS, including Save's atomic
+outbox transaction, so neither writer order can overwrite concurrent evidence or
+unrelated input. These internal guards are stripped from persisted references.
+
 New capture UUIDs use canonical lowercase before becoming immutable. The legacy
 reference guard compares UUIDs case-insensitively; a spelling change cannot adopt
 historical evidence. No existing envelope or historical reference is rewritten.
@@ -58,8 +83,8 @@ Migration 10 is additive after canonical 1–9 on the integrated #102 base; it a
 the file/context/binding journal, immutable identity/metadata/retention guards and
 indexes for pending physical dependencies and legacy UUID lookup. It does not
 support automatic conversion/reset of databases from older unmerged draft APKs.
-The #138 production bridge remains pending serial integration: do not copy its
-physical projection, authority CAS, migrations or receipt SQL into this feature.
+The serial #138 merge retains its physical projection, authority CAS, migrations
+and receipt SQL; acquisition consumes those original guards without copying them.
 
 Official APIs: [FileSystem 58](https://docs.expo.dev/versions/v58.0.0/sdk/filesystem/),
 [Expo fetch 58.0.23](https://github.com/expo/expo/blob/expo%4058.0.23/packages/expo/src/winter/fetch/fetch.ts),
@@ -67,3 +92,41 @@ Official APIs: [FileSystem 58](https://docs.expo.dev/versions/v58.0.0/sdk/filesy
 File/hash tests use actual temporary files and Node SQLite; transport fixtures use
 the actual generated client with scripted responses, not a running #102 backend.
 Android persistence/network/TalkBack qualification is not established by these tests.
+
+## No-file lifecycle origin arbitration (#138 M3)
+
+Every nonnull bindSession, preserving its existing isLogin-or-nonnull policy, also
+checks the three immutable lifecycle owned fact kinds. A conflicting or missing
+owner refuses activation even before a photo was adopted. Explicit new lifecycle
+origin checks the ORIGINAL owner/session/generation/is_active binding inside its
+same SQL transaction; it cannot late-bind to a replacement actor after an await.
+Origin-first blocks another owner; login-first and A→B→A defeat stale origin.
+Null/end deactivation remains safe and retains all facts. The real CredentialStore
+failure/retry journey also retains no-file origin audit without exposing a new owner.
+No new identity store, queue, migration or changes to captured files/envelopes exist.
+
+## M09 Save/Undo enrollment and legacy UUID protection (#138 M5)
+
+The lifecycle bridge passes its displayed UUID into the SAME EvidenceCapture and
+accepted session. Adoption durably owns the file before the draft reports success.
+Only Save enrolls confirmed IDs with lifecycle/outbox/references atomically; Undo
+and unsaved adopted files are never selected by AttachmentSync. Failed writes keep
+recoverable journal/files, without delivery or review claims. Camera acquisition
+remains #253; native file/network qualification remains unrun.
+
+Runtime reserve excludes case-insensitive lifecycle_evidence as well as ovitrap_evidence.
+Local suffix16 adds an index and fresh-reservation trigger to cover direct SQL too.
+An already owned/verified row keeps its idempotent no-op and bindings; this never
+permits a new draft to adopt a legacy reference or reuse another draft's evidence.
+Protected ATTACHMENT_SCHEMA10 and expanded SQL1–15 remain exact.
+
+With #253 composed, the same native port and EvidenceCapture serve M08 and M09;
+the camera lease is shared rather than recreated by feature. M09 carries its
+original capture context through adoption, and consumes file authority in the
+same partial-publication UPDATE as its original draft/owner/scope guard. Only
+`id` and `fileRef` enter draft JSON. Every whole-draft writer and Save compares
+its raw read version so concurrent photo adoption cannot be overwritten. The
+existing M09 AC3 owner verifies both editor orders, quiet cancel and stale Save
+rollback/retry using actual temporary private files and ordinary SQLite. Both
+legacy evidence reservations and SQL1–16 remain intact; physical acceptance is
+still pending.

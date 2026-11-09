@@ -69,6 +69,34 @@ cleanup, never an unbound UI command; historical events remain immutable.
 
 No new dependencies, sync envelope changes or native layout changes.
 
+## Current assignment ownership (#138, unmerged decision draft)
+
+`snapshot-authority.ts` owns every current-assignment write. `saveSnapshots`
+updates catalog/rules only, preserving the assignment and its private revision
+from the row that exists when SQLite executes the statement. An incoming
+`Snapshots.assignment`, including one read before a network wait, cannot restore
+authorization. Runtime configuration refresh does not copy a previous assignment.
+
+A genuinely authoritative assignment provider uses `assignmentAuthority` before
+its network awaits and `publishSnapshots` afterwards, under the existing pinned
+session/origin fence. One conditional `UPSERT ... RETURNING` checks that revision,
+publishes the context and advances the revision atomically. It also refuses to
+grant points currently marked unavailable by the canonical point cache. A failed
+CAS throws `StaleAssignmentAuthorityError` without changing authority, drafts or
+outbox. No success is reported for a stale publication.
+
+Bootstrap narrowing, canonical point invalidation and revocation use the same
+revision protocol in their projection transaction. They advance even from an
+absent/null assignment, preventing an old provider result from exploiting a
+null-to-null change. An absent configuration is represented with valid null
+catalog/rules/assignment fields. `snapshots()` hides the private revision metadata;
+no API, schema migration, queue or native UI flow is added.
+
+The existing M-09 capture/void barrier regression now includes late configuration
+and authoritative publication for all three projection changes. The storage ABA
+group covers absent/null configuration, and fixture setup publishes explicit
+downloaded context through the real CAS instead of a raw snapshot overwrite.
+
 ## Private evidence transport (#246)
 
 The production composition adopts a port-supplied capture URI into an exclusive
@@ -82,6 +110,34 @@ session provenance remain local and recoverable, even after a fresh matching log
 The shared engine gates normal events on verified files, while final JSON retains
 its explicit in-review exception. P28 shows file pending/error separately from
 event receipt; its existing Try now action retries the same engine. The default
-native capture port remains unavailable: acquisition is [#253](https://github.com/88randy/wolbachia/issues/253).
+camera acquisition port is supplied explicitly by [#253](https://github.com/88randy/wolbachia/issues/253).
 See [attachment transport](../../attachments/README.md) and `mobile/README.md` for transport,
 integration and native evidence limits.
+
+Camera continuations retain the displayed draft UUID, original accepted actor/session,
+live assignment and shift. Exact-current-unsaved-draft reservation is atomic with
+the owner fence; no file work occurs under a database/credential lock. Quiet camera
+cancellation adds no error. Retired views abort callbacks without pretending to cancel
+the OS camera; its single-flight lease lasts until settlement. Pending-photo Undo
+removes only a reference from the unsaved current draft, never bytes/history or a
+saved envelope. Existing Save enrolls only the retained current IDs in the same outbox.
+No shift-open/M09 producer is fabricated: #260 and the #138 production bridge remain
+separate. Device/API/accessibility qualification remains [unrun](../../../../docs/qa/native-photo-253.md).
+
+Across service instances, every whole-draft edit compares the exact raw JSON
+version returned by its read. A losing same-UUID edit reports a retryable concurrent
+edit and retains buffered input; it never overwrites a photo or reports application.
+Save checks that version inside the existing outbox transaction using an existing
+NOT NULL constraint, so stale capture/history/enrollment inserts roll back together.
+Final photo publication mutates only the current evidence array in one UPDATE,
+checking the adopter's original owner/session/generation/file authority and the
+original target/point/shift/pinned/live assignment in that same SQL statement.
+Internal read versions/authority guards never enter serialized Draft or envelopes.
+
+The camera-origin operational shift proof comes from one coherent ShiftOpen read:
+the same raw draft/link, opening identity/status/result_code and current catalog/map
+both feed the existing gate/captureShiftId and guard the final SQL. No fresh proof
+replaces it after acquisition. A severe server review at that last boundary cannot
+publish even when the attachment generation and M08 assignment are unchanged.
+Benign changes to compared shift facts also reject conservatively and require
+retake; private bytes/journal remain. MO01 qualification of this tradeoff is pending.

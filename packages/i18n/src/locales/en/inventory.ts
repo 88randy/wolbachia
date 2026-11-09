@@ -114,7 +114,7 @@ export const inventory = {
   "inventory.field.piece": "Piece",
   "inventory.field.operation": "Operation",
   "inventory.field.source": "Source",
-  "inventory.field.createdAt": "Movement time",
+  "inventory.field.createdAt": "Created at",
   "inventory.field.author": "Author",
   "inventory.field.availableQuantity": "Physical quantity",
   "inventory.option.choose": "Choose an option",

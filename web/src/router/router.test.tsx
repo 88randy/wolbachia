@@ -38,7 +38,7 @@ const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
 };
 
 describe("area routes", () => {
-  test.each(AREAS.filter((area) => area.id !== "quadrants" && area.id !== "inventory"))(
+  test.each(AREAS.filter(({ id }) => !["quadrants", "settings", "inventory"].includes(id)))(
     "$path opens the placeholder of $id",
     async ({ path, id }) => {
       await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });

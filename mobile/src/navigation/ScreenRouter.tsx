@@ -1,3 +1,4 @@
+import { LifecycleRoute } from "../features/ovitrap-lifecycle/LifecycleRoute.tsx";
 import { P9Screen } from "../features/day/P9Screen.tsx";
 import { P10Screen } from "../features/day/P10Screen.tsx";
 import { OvitrapScreen } from "../features/ovitrap-check/OvitrapScreen.tsx";
@@ -28,6 +29,7 @@ const SCREENS = {
 };
 
 function screenFor(route: Route): ReactNode {
+  if ("ovitrapId" in route) return <LifecycleRoute route={route} />;
   if (route.name === "ovitrapScanner") return <ScannerScreen target={route.target} />;
   if (route.name === "invalidOvitrapCode") return <P21Screen target={route.target} />;
   const Screen = SCREENS[route.name];

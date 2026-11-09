@@ -4,6 +4,7 @@ import type { TableState } from "../data-table/table-types";
 import { orgScopedQueryOptions } from "../session/org-scoped-query";
 import type { SessionIdentity } from "../session/org-scoped-query";
 import { IS_REVOKED_PARAM, PHONES_PAGE_SIZE } from "./phones-table";
+import { toFilterParams } from "../data-table/table-state";
 
 export type Phone = Schemas["Device"];
 
@@ -15,7 +16,7 @@ export function phonesQueryOptions(
 ) {
   const isRevoked = state.filters[IS_REVOKED_PARAM];
   return orgScopedQueryOptions(identity, {
-    key: ["devices", "list", state.page, isRevoked ?? null],
+    key: ["devices", "list", state],
     queryFn: async ({ signal }) =>
       unwrap(
         await client.GET("/api/v1/devices/", {
@@ -23,6 +24,7 @@ export function phonesQueryOptions(
             query: {
               page: state.page,
               page_size: PHONES_PAGE_SIZE,
+              ...toFilterParams(state),
               ...(isRevoked === undefined ? {} : { is_revoked: isRevoked === "true" }),
             },
           },

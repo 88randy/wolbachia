@@ -1,3 +1,4 @@
+import type { LifecycleAdmission } from "../ovitrap-lifecycle/types.ts";
 import type { KvStore } from "../../db/kv-store.ts";
 import type { NavigationService } from "../../navigation/navigation-service.ts";
 import type { ShiftOpenStore } from "../shift-open/store.ts";
@@ -6,6 +7,7 @@ import type { DayBundleService, ProjectionWriter } from "./bundle-service.ts";
 import type { LocalWorkOverlay } from "./types.ts";
 import { maxGpsAccuracy } from "./location.ts";
 import type { LocationSource } from "./location.ts";
+import type { TaskOwner } from "./current-task.ts";
 import { verifyMap } from "./map-coverage.ts";
 import type { MapState, MapFileInspector } from "./map-coverage.ts";
 interface Dependencies {
@@ -30,7 +32,17 @@ export class DayService {
   get bundle() {
     return this.#deps.bundle;
   }
-  select(pointId: string): Promise<string> {
+  select(pointId: string, expected?: TaskOwner, admission?: LifecycleAdmission): Promise<string> {
+    if (expected) {
+      if (!admission)
+        return Promise.reject(
+          new Error("Current task selection requires its original interactive admission."),
+        );
+      return this.#deps.bundle.withCurrentTask(pointId, expected, {
+        admission,
+        sqlOnly: () => this.#deps.navigation.select(pointId),
+      });
+    }
     return this.#deps.bundle.withAssignments((cache) => {
       if (!cache.tasks.some((row) => row.task.id === pointId))
         throw new Error("Point is no longer assigned.");
