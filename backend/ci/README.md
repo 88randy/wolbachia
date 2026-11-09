@@ -147,3 +147,11 @@ threshold. Exact inventories/phases/provenance/coverage union, 900-second budget
 and the measured 180-second headroom target remain. One additional standard
 runner/service/setup increases runner-minutes; no paid runner, test cut, retry,
 timeout growth or repository-setting change is introduced.
+
+The first full #101 qualification exposed a 900-second review-owner timeout
+(run 42716557497). Its single complete test keeps the real legacy rollback,
+upgrade, raw guards and rejected populated reverse. It now reuses Django's
+returned ProjectState and wraps only the expected failing reverse in a PostgreSQL
+transaction, verifying that its applied-migration recorder is unchanged. This
+avoids rebuilding partially unapplied dependencies after the rejection; no
+case, assertion, whole-module boundary, durability setting or budget is removed.
