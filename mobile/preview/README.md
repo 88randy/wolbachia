@@ -17,6 +17,14 @@ scaling. The adapter scales only Text/TextInput font sizes and line heights,
 leaving target sizes and the 360 × 800 frame unchanged. It does not qualify native
 font scaling, glyph rasterization, keyboard avoidance, safe areas or TalkBack.
 
+For the actual P22 fuel form, open
+`http://127.0.0.1:4203/?screen=fuel&theme=light` and repeat with `theme=dark`,
+`lang=en` and `scale=130`. The fixture starts at 4.5 L / 108 MXN / 12512 km with
+no receipt photo. Fields and the full-refill choice change preview memory only;
+Save runs the production validator without durable writes or server receipt.
+The explicit synthetic camera port returns cancellation, preserving all values
+without creating evidence. This preview is never an Android/device or API claim.
+
 The browser adapters select the libraries' real web SVG/safe-area implementations
 and refuse native
 module calls (the SVG library statically imports an Android-only touch-sound module).

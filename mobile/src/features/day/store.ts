@@ -20,6 +20,7 @@ import { retainedHistoryStatements } from "../ovitrap-lifecycle/history-projecti
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
 import { readLifecycleSource } from "../ovitrap-lifecycle/source-context.ts";
 import { readCurrentTask } from "./current-task.ts";
+import { readFuelCaptureContext } from "../fuel/capture-context.ts";
 import type { TaskOwner } from "./current-task.ts";
 import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
@@ -113,6 +114,9 @@ export class DayStore {
   }
   supplyAssignments(handle: CaptureTransportHandle) {
     return readSupplyAssignments(this.#db, handle);
+  }
+  fuelCaptureContext(handle: CaptureTransportHandle) {
+    return readFuelCaptureContext(this.#db, handle);
   }
   needsSupplyBootstrap(): Promise<boolean> {
     return needsSupplyBootstrap(this.#db);

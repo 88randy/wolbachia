@@ -10,6 +10,7 @@ export async function hasLocalRecords(db: SqlExecutor): Promise<boolean> {
     UNION ALL SELECT 1 FROM lifecycle_draft
     UNION ALL SELECT 1 FROM ovitrap_draft
     UNION ALL SELECT 1 FROM supply_receipt_draft
+    UNION ALL SELECT 1 FROM fuel_draft
     UNION ALL SELECT 1 FROM attachment_file LIMIT 1`);
   return rows.length > 0;
 }

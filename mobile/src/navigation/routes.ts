@@ -15,6 +15,7 @@ export type Route =
   | { readonly name: "invalidOvitrapCode"; readonly target: "ovitrap" | "bag" }
   | { readonly name: "openShift" }
   | { readonly name: "supplyReceipt" }
+  | { readonly name: "fuel" }
   | { readonly name: "home" }
   | { readonly name: "inbox" }
   | { readonly name: "settings" }

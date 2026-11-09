@@ -12,6 +12,8 @@ import type { LifecycleSourceRequest, LifecycleAdmission } from "../ovitrap-life
 import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 import type { SupplyProjectionSource } from "../supply-receipt/projection-types.ts";
 import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
+import type { FuelCaptureSource } from "../fuel/capture-context.ts";
+import { FuelError } from "../fuel/domain.ts";
 
 export type BundleResult =
   | { readonly kind: "bundle"; readonly body: unknown }
@@ -328,6 +330,17 @@ export class DayBundleService {
       const source = await this.#deps.store.supplyAssignments(handle);
       if (!handle.isCurrent())
         throw new SupplyProjectionUnavailable("Supply capture context unavailable.");
+      return action(source);
+    });
+  }
+  /** Fuel capture shares the current downloaded context and the same short SQL writer. */
+  async withFuelContext<T>(action: (source: FuelCaptureSource) => Promise<T>): Promise<T> {
+    const turn = await this.#captureTurn();
+    if (turn.handle === null) throw new FuelError("scope");
+    const handle = turn.handle;
+    return turn.write(async () => {
+      const source = await this.#deps.store.fuelCaptureContext(handle);
+      if (!handle.isCurrent()) throw new FuelError("scope");
       return action(source);
     });
   }
