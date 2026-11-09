@@ -83,7 +83,7 @@ BEGIN
  END IF;
  RETURN NEW;
 END; $$ LANGUAGE plpgsql;
-CREATE TRIGGER inventory_paddle_return_guard BEFORE INSERT OR UPDATE OR DELETE ON inventory_paddlestockreturn
+CREATE TRIGGER inventory_paddlestockreturn_guard BEFORE INSERT OR UPDATE OR DELETE ON inventory_paddlestockreturn
 FOR EACH ROW EXECUTE FUNCTION inventory_paddle_return_guard();
 
 CREATE FUNCTION inventory_paddle_operation_guard() RETURNS trigger AS $$
@@ -142,7 +142,7 @@ DROP TRIGGER inventory_paddle_movement_complete ON inventory_stockmovement;
 DROP TRIGGER inventory_paddle_operation_complete ON inventory_stockoperation;
 DROP TRIGGER inventory_paddle_return_complete ON inventory_paddlestockreturn;
 DROP TRIGGER inventory_paddle_operation_guard ON inventory_stockoperation;
-DROP TRIGGER inventory_paddle_return_guard ON inventory_paddlestockreturn;
+DROP TRIGGER inventory_paddlestockreturn_guard ON inventory_paddlestockreturn;
 DROP FUNCTION inventory_paddle_return_complete(); DROP FUNCTION inventory_paddle_operation_guard(); DROP FUNCTION inventory_paddle_return_guard();
 """
 # Restore the exact prior function body, including its unchanged exception semantics.

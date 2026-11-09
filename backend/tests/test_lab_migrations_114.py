@@ -103,7 +103,7 @@ COMMUNITY_ADDITIVE_TRIGGERS = {
 
 # Independent #115 additions, explicit identities rather than a discovered allowlist.
 QA_ADDITIVE_TRIGGERS = {
-    ("inventory_paddlestockreturn", "inventory_paddle_return_guard"),
+    ("inventory_paddlestockreturn", "inventory_paddlestockreturn_guard"),
     ("inventory_paddlestockreturn", "inventory_paddle_return_complete"),
     ("inventory_stockoperation", "inventory_paddle_operation_guard"),
     ("inventory_stockoperation", "inventory_paddle_operation_complete"),
@@ -114,10 +114,12 @@ QA_ADDITIVE_TRIGGERS = {
 
 
 def insert_genuine_legacy_lab_observation(apps, context, bag):
-    """Historical constructors at released114, with real source/pins/command chain.
+    """Construct a real source/pins/command chain in the supplied model state.
 
     No new115 writer runs against the old schema and no source/actor is fabricated.
     Commit before upgrading, so the new forward-only boundary cannot certify it.
+    The current-state raw-bypass case reuses these constructors without forward
+    proof; its deferred guard must reject the same chain after upgrading.
     """
     from core.snapshots import snapshot_hash
     from lab.access import reading_source_proof
@@ -333,7 +335,9 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
             not LabBlindObservation.objects.exists()
         )  # A legacy cached reply creates no forward proof.
         qa_method = configure_qa(context)
-        monkeypatch.setattr("lab.recounts.server_now", lambda: AT + timedelta(days=1))
+        closed_at = AT + timedelta(days=1)
+        monkeypatch.setattr("lab.recounts.server_now", lambda: closed_at)
+        monkeypatch.setattr("django.utils.timezone.now", lambda: closed_at)
         close_lab_day(
             ClosedDayInput(
                 context.actor.organization,
@@ -406,11 +410,29 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
 def test_raw_lab_bypasses_cannot_mutate_fork_cross_tenant_or_commit_incomplete(
     monkeypatch, org_b, make_member, allocation
 ):
+    from django.apps import apps
+
+    from lab.models import BagReceipt, LabBlindObservation, LabCommandResult
+
     context = lab_context(monkeypatch)
     bag = capture_bag(context)
     receive(context, bag)
     execute_lab_command(context.actor, count_input(context, bag, 0))
     count = EggCountAttempt.objects.get()
+    unproven_bag = capture_bag(context, "RAW-BLIND-115", new_source=True)
+    with pytest.raises(DatabaseError, match="forward policy boundary"), transaction.atomic():  # noqa: PT012 -- isolate genuine first-count proof at its actual deferred boundary.
+        insert_genuine_legacy_lab_observation(apps, context, unproven_bag)
+        with connection.cursor() as cursor:
+            cursor.execute("SET CONSTRAINTS lab_eggcountattempt_qa_complete IMMEDIATE")
+    assert not LabCommand.objects.filter(source_id=unproven_bag.event_id).exists()
+    assert not BagReceipt.objects.filter(bag=unproven_bag).exists()
+    assert not EggCountAttempt.objects.filter(bag=unproven_bag).exists()
+    assert not LabCommandResult.objects.filter(command__source_id=unproven_bag.event_id).exists()
+    assert not LabBlindObservation.objects.filter(count__bag=unproven_bag).exists()
+    receive(context, unproven_bag)
+    accepted = execute_lab_command(context.actor, count_input(context, unproven_bag, 0))
+    assert accepted.status == 201
+    assert LabBlindObservation.objects.filter(count_id=accepted.body["count"]["id"]).exists()
     for sql in (
         "UPDATE lab_eggcountattempt SET value=99 WHERE id=%s",
         "DELETE FROM lab_eggcountattempt WHERE id=%s",

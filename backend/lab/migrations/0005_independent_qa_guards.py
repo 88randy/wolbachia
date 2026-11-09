@@ -231,8 +231,8 @@ BEGIN
          WHERE c.request_id=request.id AND c.role=NEW.role ORDER BY v.revision DESC LIMIT 1)
        OR input->'value' IS DISTINCT FROM to_jsonb(NEW.value) OR input->>'method_version' IS DISTINCT FROM NEW.method_version_id::text
        OR NOT COALESCE(lab_qa_method_valid(NEW.organization_id,NEW.method_version_id,NEW.verification_id,'independent_qa',NEW.created_at),false)
-       OR NOT EXISTS(SELECT 1 FROM lab_labqapolicyversion policy WHERE policy.id=claim.policy_id AND policy.qa_method_version_id=NEW.method_version_id
-         AND policy.id=(SELECT id FROM lab_labqapolicyversion WHERE organization_id=NEW.organization_id ORDER BY revision DESC LIMIT 1))
+       OR NOT EXISTS(SELECT 1 FROM lab_labqapolicyversion claim_policy WHERE claim_policy.id=claim.policy_id AND claim_policy.qa_method_version_id=NEW.method_version_id
+         AND claim_policy.id=(SELECT id FROM lab_labqapolicyversion WHERE organization_id=NEW.organization_id ORDER BY revision DESC LIMIT 1))
        OR NOT COALESCE(lab_rules_are_pinned(NEW.organization_id,NEW.rules),false)
        OR NEW.source_proof->'first_source' IS DISTINCT FROM first_count.source_proof
        OR NEW.source_proof->'independence' IS DISTINCT FROM claim.independence_proof
@@ -269,9 +269,9 @@ BEGIN
                AND attestation.first_result_id=NEW.first_result_id AND attestation.counter_id=NEW.counter_id AND attestation.role=NEW.role
                AND attestation.authority_proof->'cause_ids'=lab_qa_cause_ids(request.id)
                AND NEW.independence_proof->>'attestation_id'=attestation.id::text))
-         OR (NEW.role='third' AND NOT EXISTS(SELECT 1 FROM lab_recountattempt second_count JOIN lab_recountclaim second_claim ON second_claim.id=second_count.claim_id
-           JOIN lab_labqapolicyversion second_policy ON second_policy.id=second_claim.policy_id WHERE second_count.request_id=request.id AND second_count.role='second'
-           AND abs(first_count.value-second_count.value)*100>greatest(second_policy.absolute_tolerance*100,second_policy.relative_per_100*first_count.value)))
+         OR (NEW.role='third' AND NOT EXISTS(SELECT 1 FROM lab_recountattempt second_observation JOIN lab_recountclaim second_claim ON second_claim.id=second_observation.claim_id
+           JOIN lab_labqapolicyversion second_policy ON second_policy.id=second_claim.policy_id WHERE second_observation.request_id=request.id AND second_observation.role='second'
+           AND abs(first_count.value-second_observation.value)*100>greatest(second_policy.absolute_tolerance*100,second_policy.relative_per_100*first_count.value)))
          OR policy.id IS DISTINCT FROM (SELECT id FROM lab_labqapolicyversion WHERE organization_id=NEW.organization_id ORDER BY revision DESC LIMIT 1)
          OR NOT EXISTS(SELECT 1 FROM lab_labmethodverification verified WHERE verified.method_version_id=policy.qa_method_version_id
            AND lab_qa_method_valid(NEW.organization_id,policy.qa_method_version_id,verified.id,'independent_qa',NEW.created_at))
@@ -430,7 +430,7 @@ BEGIN
      OR NOT COALESCE(lab_qa_method_valid(NEW.organization_id,NEW.method_version_id,NEW.verification_id,'paddle_reuse',NEW.created_at),false)
      OR NOT EXISTS(SELECT 1 FROM lab_labmethodverification verified WHERE verified.method_version_id=policy.qa_method_version_id
        AND lab_qa_method_valid(NEW.organization_id,policy.qa_method_version_id,verified.id,'independent_qa',NEW.created_at))
-     OR NEW.reuse_number<>1+(SELECT count(*) FROM lab_paddlereuse reused JOIN lab_paddlebagbinding prior ON prior.id=reused.binding_id WHERE prior.paddle_id=registered.id)
+     OR NEW.reuse_number<>1+(SELECT count(*) FROM lab_paddlereuse reused JOIN lab_paddlebagbinding prior_binding ON prior_binding.id=reused.binding_id WHERE prior_binding.paddle_id=registered.id)
      OR NOT EXISTS(SELECT 1 FROM rules_ruleparameterversion version JOIN rules_ruleparameter parameter ON parameter.id=version.parameter_id
        WHERE version.id=(NEW.frame_proof->'reuse_rule'->>'version_id')::uuid AND parameter.organization_id=NEW.organization_id
        AND parameter.key='max_paddle_reuses' AND parameter.value_type='integer' AND parameter.unit='count'
@@ -469,10 +469,10 @@ BEGIN
    selected_uuid=COALESCE(resolution.selected_count_id,resolution.selected_attempt_id,current_result.count_id);
    SELECT COALESCE(selected_first.value,selected_independent.value,first_count.value) INTO final_value
      FROM lab_eggcountattempt first_count LEFT JOIN lab_recountrequest request ON request.count_id=first_count.id
-     LEFT JOIN LATERAL(SELECT resolution.* FROM lab_recountresolution resolution JOIN lab_recountrevision revision ON revision.resolution_id=resolution.id
-       WHERE resolution.request_id=request.id ORDER BY revision.revision DESC LIMIT 1) resolution ON true
-     LEFT JOIN lab_eggcountattempt selected_first ON selected_first.id=resolution.selected_count_id
-     LEFT JOIN lab_recountattempt selected_independent ON selected_independent.id=resolution.selected_attempt_id
+     LEFT JOIN LATERAL(SELECT candidate_resolution.* FROM lab_recountresolution candidate_resolution JOIN lab_recountrevision revision ON revision.resolution_id=candidate_resolution.id
+       WHERE candidate_resolution.request_id=request.id ORDER BY revision.revision DESC LIMIT 1) latest_resolution ON true
+     LEFT JOIN lab_eggcountattempt selected_first ON selected_first.id=latest_resolution.selected_count_id
+     LEFT JOIN lab_recountattempt selected_independent ON selected_independent.id=latest_resolution.selected_attempt_id
      WHERE first_count.id=current_result.count_id;
    IF current_result.count_id IS NULL OR current_result.id IS DISTINCT FROM NEW.first_result_id OR final_value IS DISTINCT FROM 0
      OR NOT COALESCE(lab_paddle_draw_current(NEW.sample_member_id,NEW.created_at),false)
@@ -533,7 +533,9 @@ BEGIN
      OR NOT EXISTS(SELECT 1 FROM lab_labcommandresult WHERE command_id=NEW.command_id AND status=201)
      THEN RAISE EXCEPTION 'Independent fact requires completed command/revision'; END IF;
  ELSIF TG_TABLE_NAME='lab_eggcountattempt' THEN
-   IF NEW.ordinal=1 AND NEW.replacement_of_id IS NULL AND NOT EXISTS(SELECT 1 FROM lab_labblindobservation WHERE count_id=NEW.id)
+   IF NEW.ordinal=1 AND NEW.replacement_of_id IS NULL
+      AND EXISTS(SELECT 1 FROM lab_labcommand WHERE id=NEW.command_id AND action='count')
+      AND NOT EXISTS(SELECT 1 FROM lab_labblindobservation WHERE count_id=NEW.id)
      THEN RAISE EXCEPTION 'New first observation requires its forward policy boundary'; END IF;
  END IF;
  RETURN NEW;

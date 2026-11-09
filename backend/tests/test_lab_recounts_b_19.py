@@ -138,7 +138,9 @@ def captured_physical_bag(allocation, clock, cycle, *, consume=True, collected_a
         new_physical_assignment(allocation, clock[0])
     clock[0] += timedelta(seconds=1)
     received, receipt_line = receive_capture(allocation, "1")
-    assert allocation.phone.sync([received]).data["results"][0]["status"] == "accepted"
+    response = allocation.phone.sync([received])
+    assert response.status_code == 200, response.data
+    assert response.data["results"][0]["status"] == "accepted", response.data
     quadrant = Quadrant.objects.create(
         organization=context.actor.organization, center=context.center, code=f"B19-Q-{cycle}"
     )
@@ -152,7 +154,7 @@ def captured_physical_bag(allocation, clock, cycle, *, consume=True, collected_a
     field = SimpleNamespace(point=point, identity=uuid4(), catalog_version=catalog.version)
     source_values = {
         "shift_id": str(allocation.shift_id),
-        "gps": {"lat": 20.005, "lon": -99.99, "accuracy_m": 5},
+        "gps": {"lat": 20.005, "lng": -99.99, "accuracy_m": 5},
         "catalog_version": catalog.version,
     }
     if collected_at is not None:
@@ -163,7 +165,9 @@ def captured_physical_bag(allocation, clock, cycle, *, consume=True, collected_a
         **source_values,
     )
     clock[0] += timedelta(seconds=1)
-    assert allocation.phone.sync([place]).data["results"][0]["status"] == "accepted"
+    response = allocation.phone.sync([place])
+    assert response.status_code == 200, response.data
+    assert response.data["results"][0]["status"] == "accepted", response.data
     check = event(
         type="ovitrap.check",
         payload=envelope(
@@ -171,7 +175,9 @@ def captured_physical_bag(allocation, clock, cycle, *, consume=True, collected_a
         ).payload,
         **source_values,
     )
-    assert allocation.phone.sync([check]).data["results"][0]["status"] == "accepted"
+    response = allocation.phone.sync([check])
+    assert response.status_code == 200, response.data
+    assert response.data["results"][0]["status"] == "accepted", response.data
     bag = Bag.objects.get(event_id=check["id"])
     if not consume:
         from inventory.allocations.models import SupplyStockEffect
@@ -202,7 +208,9 @@ def captured_physical_bag(allocation, clock, cycle, *, consume=True, collected_a
             "shrinkage": [],
         },
     )
-    result = allocation.phone.sync([consumed]).data["results"][0]
+    response = allocation.phone.sync([consumed])
+    assert response.status_code == 200, response.data
+    result = response.data["results"][0]
     assert result["status"] == "in_review", result
     decide_review(
         context.actor,

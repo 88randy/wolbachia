@@ -44,29 +44,32 @@ from lab.permissions import (
     RECOUNT_CREATE,
 )
 from lab.views import LabReadViewSet
-from uploads.access import actor_from_request, current_scope
-
-
-class RecountActionPermission(HasPermissionCode):
-    """The canonical action guard, with the one adopted create-or-adjudicate alternative."""
-
-    def has_permission(self, request: Request, view: Any) -> bool:  # noqa: ANN401 -- DRF view protocol
-        if view.action in {"list", "adjudicate"}:
-            scope = current_scope(actor_from_request(request))
-            return scope.allows(RECOUNT_CREATE) or scope.allows(RECOUNT_ADJUDICATE)
-        return super().has_permission(request, view)
+from organizations.services import effective_scope
+from uploads.access import actor_from_request
 
 
 class RecountViewSet(LabReadViewSet):
     serializer_class = RecountQueueSerializer
     query_serializer_class = RecountQuerySerializer
-    permission_classes = [IsAuthenticated, RecountActionPermission]
-    required_permissions = {
-        "list": RECOUNT_CREATE,
-        "claim": RECOUNT_CREATE,
-        "adjudicate": RECOUNT_ADJUDICATE,
-        "independence_attestations": RECOUNT_ADJUDICATE,
+    permission_classes = [IsAuthenticated, HasPermissionCode]
+    recount_actions = {
+        "list": (RECOUNT_CREATE, RECOUNT_ADJUDICATE),
+        "claim": action_alternatives("recount_claim"),
+        "adjudicate": action_alternatives("recount_adjudicate"),
+        "independence_attestations": action_alternatives("recount_attest"),
     }
+
+    @property
+    def required_permissions(self) -> dict[str, str]:
+        """Choose a declared alternative; concrete owners still require its full scope."""
+        membership = getattr(getattr(self, "request", None), "membership", None)
+        if membership is None:
+            return {}
+        scope = effective_scope(membership)
+        for code in self.recount_actions.get(self.action, ()):
+            if scope.allows(code):
+                return {self.action: code}
+        return {}
 
     @extend_schema(parameters=[RecountQuerySerializer])
     def list(self, request: Request) -> Response:
