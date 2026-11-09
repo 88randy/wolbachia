@@ -11,7 +11,8 @@ export const incidents = {
   "incidents.workspace.draftRestored": "Borrador restaurado.",
   "incidents.workspace.discardDraft": "Descartar borrador",
   "incidents.evidence.download": "Descargar evidencia {id}",
-  "incidents.evidence.downloadFailed": "No se pudo descargar. Reintenta para verificar tu permiso actual.",
+  "incidents.evidence.downloadFailed":
+    "No se pudo descargar. Reintenta para verificar tu permiso actual.",
   "incidents.workspace.title": "Incidentes",
   "incidents.workspace.views": "Vistas de incidentes",
   "incidents.workspace.mine": "Míos",
@@ -45,12 +46,15 @@ export const incidents = {
   "incidents.workspace.escalated": "Escalado",
   "incidents.workspace.unavailable": "No disponible",
   "incidents.workspace.noDeadline": "Sin plazo configurado",
-  "incidents.workspace.defaultView": "Vista inicial: abiertos de tu zona. Puedes cambiar el estado en los filtros.",
-  "incidents.workspace.orderHint": "Los críticos aparecen primero; después se aplica el orden del servidor.",
+  "incidents.workspace.defaultView":
+    "Vista inicial: abiertos de tu zona. Puedes cambiar el estado en los filtros.",
+  "incidents.workspace.orderHint":
+    "Los críticos aparecen primero; después se aplica el orden del servidor.",
   "incidents.workspace.thread": "Comentarios y eventos",
   "incidents.workspace.noEvents": "Aún no hay eventos.",
   "incidents.workspace.system": "Sistema",
-  "incidents.workspace.eventState": "Revisión {revision} · {state} · {severity} · responsable (ID): {owner}",
+  "incidents.workspace.eventState":
+    "Revisión {revision} · {state} · {severity} · responsable (ID): {owner}",
   "incidents.event.report": "Reportado",
   "incidents.event.comment": "Comentario",
   "incidents.event.reassign": "Reasignado",
@@ -61,12 +65,17 @@ export const incidents = {
   "incidents.event.reminder": "Recordatorio",
   "incidents.workspace.linked": "Objeto ligado",
   "incidents.workspace.blocks": "Qué bloquea",
+  "incidents.blocker.dispatch": "Salida de insumos",
+  "incidents.blocker.quadrantClosure": "Cierre de cuadrante",
+  "incidents.blocker.lotDispatch": "Salida de lote",
+  "incidents.blocker.unknown": "Operación bloqueada",
   "incidents.workspace.noBlocks": "Sin bloqueos registrados.",
   "incidents.workspace.blockActive": "Bloqueo activo",
   "incidents.workspace.blockCleared": "Bloqueo resuelto",
   "incidents.workspace.report": "Reporte",
   "incidents.workspace.actions": "Atender incidente",
-  "incidents.workspace.actionsBlocked": "Acciones bloqueadas. Revisa el estado actual; el supervisor o coordinador autorizado puede atenderlo.",
+  "incidents.workspace.actionsBlocked":
+    "Acciones bloqueadas. Revisa el estado actual; el supervisor o coordinador autorizado puede atenderlo.",
   "incidents.workspace.comment": "Comentario",
   "incidents.workspace.sendComment": "Enviar comentario",
   "incidents.workspace.ownerSearch": "Buscar responsable",
@@ -75,27 +84,37 @@ export const incidents = {
   "incidents.workspace.next": "Siguiente",
   "incidents.workspace.reassign": "Reasignar",
   "incidents.workspace.changeSeverity": "Cambiar severidad",
-  "incidents.workspace.protected": "Severidad protegida por el tipo. El administrador puede revisar la configuración.",
+  "incidents.workspace.protected":
+    "Severidad protegida por el tipo. El administrador puede revisar la configuración.",
   "incidents.workspace.close": "Cerrar incidente",
   "incidents.workspace.closeReason": "Motivo de cierre",
   "incidents.workspace.requiredEvidence": "Evidencias verificadas requeridas: {count}.",
-  "incidents.workspace.closeBlocked": "Agrega un motivo y la evidencia verificada requerida. Un responsable con permiso de carga puede adjuntarla.",
-  "incidents.workspace.closeConsequence": "Se registrará el cierre y se resolverán únicamente los bloqueos que autorice el servidor.",
+  "incidents.workspace.closeBlocked":
+    "Agrega un motivo y la evidencia verificada requerida. Un responsable con permiso de carga puede adjuntarla.",
+  "incidents.workspace.closeConsequence":
+    "Se registrará el cierre y se resolverán únicamente los bloqueos que autorice el servidor.",
   "incidents.workspace.void": "Anular incidente",
   "incidents.workspace.voidReason": "Motivo de anulación",
-  "incidents.workspace.voidConsequence": "La anulación quedará en el historial y el incidente seguirá visible como anulado.",
-  "incidents.workspace.voidBlocked": "Hay dependencias o eventos posteriores. El coordinador debe revisar el historial; este incidente no se puede anular.",
+  "incidents.workspace.voidConsequence":
+    "La anulación quedará en el historial y el incidente seguirá visible como anulado.",
+  "incidents.workspace.voidBlocked":
+    "Hay dependencias o eventos posteriores. El coordinador debe revisar el historial; este incidente no se puede anular.",
   "incidents.workspace.review": "Revisar estado actual",
-  "incidents.failure.conflict": "Otra persona modificó el incidente. Tu texto se conservó. Revisa el estado actual antes de volver a intentar.",
-  "incidents.failure.rejected": "El servidor rechazó la acción. Revisa el estado y los requisitos antes de volver a intentar.",
-  "incidents.failure.uncertain": "No se pudo confirmar el resultado. Revisa el historial antes de decidir si vuelves a intentar; la acción no se reenviará sola.",
+  "incidents.failure.conflict":
+    "Otra persona modificó el incidente. Tu texto se conservó. Revisa el estado actual antes de volver a intentar.",
+  "incidents.failure.rejected":
+    "El servidor rechazó la acción. Revisa el estado y los requisitos antes de volver a intentar.",
+  "incidents.failure.uncertain":
+    "No se pudo confirmar el resultado. Revisa el historial antes de decidir si vuelves a intentar; la acción no se reenviará sola.",
   "incidents.evidence.file": "Foto de evidencia",
-  "incidents.evidence.hint": "JPEG o PNG original, hasta 10 MiB. Debe verificarse antes del cierre.",
+  "incidents.evidence.hint":
+    "JPEG o PNG original, hasta 10 MiB. Debe verificarse antes del cierre.",
   "incidents.evidence.verified": "Verificada",
   "incidents.evidence.pending": "Pendiente de verificación",
   "incidents.evidence.restricted": "No disponible o sin verificar",
   "incidents.evidence.upload": "Cargar y verificar",
   "incidents.evidence.invalid": "Selecciona un JPEG o PNG válido de hasta 10 MiB.",
   "incidents.evidence.failed": "No se verificó la evidencia. Reintenta la misma carga.",
-  "incidents.evidence.noPermission": "Para adjuntar evidencia se requiere un responsable con permiso de carga.",
+  "incidents.evidence.noPermission":
+    "Para adjuntar evidencia se requiere un responsable con permiso de carga.",
 } as const;

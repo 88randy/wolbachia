@@ -7,15 +7,18 @@ import { IncidentTray } from "./IncidentTray";
 import { useIncidentScope, incidentScopeKey } from "./use-incident-scope";
 import styles from "./incidents.module.css";
 export function W6Page() {
- const { t } = useTranslation();
- const sessionScope = useIncidentScope();
- const search = useSearch({ strict: false });
- const center = "center" in search && typeof search.center === "string" ? search.center : undefined;
- const scope = { ...sessionScope, identity: centerIdentity(sessionScope.identity, center) };
- useDocumentTitle(t("incidents.workspace.title"));
- return <section className={styles.page} key={incidentScopeKey(scope.identity)}>
- <h1>{t("incidents.workspace.title")}</h1>
- <IncidentCounts scope={scope} />
- <IncidentTray />
- </section>;
+  const { t } = useTranslation();
+  const sessionScope = useIncidentScope();
+  const search = useSearch({ strict: false });
+  const center =
+    "center" in search && typeof search.center === "string" ? search.center : undefined;
+  const scope = { ...sessionScope, identity: centerIdentity(sessionScope.identity, center) };
+  useDocumentTitle(t("incidents.workspace.title"));
+  return (
+    <section className={styles.page} key={incidentScopeKey(scope.identity)}>
+      <h1>{t("incidents.workspace.title")}</h1>
+      <IncidentCounts scope={scope} />
+      <IncidentTray />
+    </section>
+  );
 }

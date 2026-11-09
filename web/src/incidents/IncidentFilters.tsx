@@ -7,20 +7,26 @@ import type { TableController } from "../data-table/table-types";
 import type { IncidentScope } from "./incidents-query";
 import { IncidentTypeFilter } from "./IncidentTypeFilter";
 import { IncidentContextFilter } from "./IncidentContextFilter";
+import { incidentFilterControls, incidentFilterChips } from "./incident-filter-controllers";
 import filterStyles from "../data-table/filter-bar.module.css";
-const REFERENCES = ["type", "center", "quadrant"];
-export function IncidentFilters({ scope, controller }: { scope: IncidentScope; controller: TableController }) {
- const { t } = useTranslation();
- const controls = { ...controller, config: { ...controller.config, filters: controller.config.filters.filter(filter => !REFERENCES.includes(filter.key) && filter.key !== "state") } };
- const chips = { ...controller, state: { ...controller.state, filters: Object.fromEntries(Object.entries(controller.state.filters).map(([key,value]) => [key, REFERENCES.includes(key) ? t("incidents.workspace.selectedContext") : value])) } };
- return <section className={filterStyles.bar} aria-label={t("table.filters.label")}>
- <IgnoredNotice names={controller.ignored} onDismiss={controller.dropIgnored} />
- <div className={filterStyles.row}>
- <IncidentStateFilter controller={controller} />
- <FilterControls controller={controls} />
- <IncidentTypeFilter scope={scope} controller={controller} />
- <IncidentContextFilter scope={scope} controller={controller} />
- </div>
- <FilterChips controller={chips} />
- </section>;
+interface IncidentFiltersProps {
+  scope: IncidentScope;
+  controller: TableController;
+}
+export function IncidentFilters({ scope, controller }: IncidentFiltersProps) {
+  const { t } = useTranslation();
+  const controls = incidentFilterControls(controller);
+  const chips = incidentFilterChips(controller, t("incidents.workspace.selectedContext"));
+  return (
+    <section className={filterStyles.bar} aria-label={t("table.filters.label")}>
+      <IgnoredNotice names={controller.ignored} onDismiss={controller.dropIgnored} />
+      <div className={filterStyles.row}>
+        <IncidentStateFilter controller={controller} />
+        <FilterControls controller={controls} />
+        <IncidentTypeFilter scope={scope} controller={controller} />
+        <IncidentContextFilter scope={scope} controller={controller} />
+      </div>
+      <FilterChips controller={chips} />
+    </section>
+  );
 }

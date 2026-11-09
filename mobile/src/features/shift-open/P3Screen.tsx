@@ -1,7 +1,7 @@
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { captureShiftId } from "../ovitrap-check/shift-authorization.ts";
 import { OvitrapEntry } from "../ovitrap-check/OvitrapEntry.tsx";
 import { HomeShiftAction } from "./HomeShiftAction.tsx";
-import { ScrollView } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useNavigation } from "../../navigation/NavigationProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
@@ -17,7 +17,7 @@ export function P3Screen() {
   const { push } = useNavigation();
   const styles = useStyles(createShiftStyles);
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <AppScrollView style={styles.root} contentContainerStyle={styles.content}>
       <SaveFeedback model={model} />
       <HomeShiftCard state={model.state} />
       <HomeShiftAction model={model} />
@@ -34,6 +34,6 @@ export function P3Screen() {
           push({ name: "settings" });
         }}
       />
-    </ScrollView>
+    </AppScrollView>
   );
 }

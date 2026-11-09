@@ -10,7 +10,9 @@ export function IncidentStateFilter({ controller }: { controller: TableControlle
       label={t("incidents.workspace.state")}
       value={controller.state.filters["state"] ?? "open"}
       options={STATES.map((value) => ({ value, label: t(`incidents.state.${value}`) }))}
-      onChange={(event) => { controller.setFilter("state", event.target.value); }}
+      onChange={(event) => {
+        controller.setFilter("state", event.target.value);
+      }}
     />
   );
 }

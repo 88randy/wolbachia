@@ -25,10 +25,13 @@ const createStyles = (theme: Theme) =>
       gap: mobileLayout.compactGap,
       paddingHorizontal: spacing[1.5],
       borderRadius: radius.full,
+      flexShrink: 1,
+      maxWidth: "100%",
     },
     success: { backgroundColor: theme.color.status.success.bg },
     warning: { backgroundColor: theme.color.status.warning.bg },
     critical: { backgroundColor: theme.color.status.critical.bg },
+    label: { flexShrink: 1 },
   });
 
 /**
@@ -56,7 +59,7 @@ export function SyncChip({ largeTarget = false }: { readonly largeTarget?: boole
       style={[styles.chip, styles[tone], largeTarget ? styles.large : null]}
     >
       <Icon name={icon} color={color} size={ICON_SIZE} />
-      <AppText variant="captionStrong" style={{ color }}>
+      <AppText variant="status" style={[styles.label, { color }]}>
         {label}
       </AppText>
     </Pressable>

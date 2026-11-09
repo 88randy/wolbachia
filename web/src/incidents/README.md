@@ -20,6 +20,12 @@ consumers retain the facade's original default behavior.
 - Record observers and private work are remounted by actor, organization,
   authorization, center and code. Text drafts use identity/code/kind session
   storage and fall back to RAM when storage is unavailable. Files remain in RAM.
+- A failed detail refresh keeps the last accepted record, mounted forms,
+  in-memory drafts and selected evidence file visible. A scoped error offers
+  Retry; commands remain blocked until a fresh detail read succeeds.
+- Blocker kinds use localized labels, including a readable fallback for unknown
+  kinds. Voided tray rows show the retained void event's reason and author using
+  the shared struck-through row and audit presentation.
 
 ## Commands and evidence
 
@@ -66,13 +72,22 @@ preserved as returned; this workspace does not add an incident-report composer.
 | Missing/duplicate/unverified/restricted evidence, reason limits and closed state cannot authorize close | `incident-command.test.ts` |
 | W7 close command sends the reviewed revision and verified IDs after confirmation | `incidents.test.tsx`: close sends only verified evidence |
 | Full W7 thread, Other description and voided source | `incidents.test.tsx`: resolves a human code |
+| First-load skeleton and partial count failure preserve the available tray | `incidents.test.tsx`: loads with a skeleton |
+| Failed detail refresh retains in-memory drafts/evidence and gates commands until retry | `incidents.test.tsx`: keeps in-memory drafts and evidence |
+| Known and unknown blocker kinds remain readable in the interface language | `incidents.test.tsx`: translates blocker kinds |
+| Voided rows retain correction reason and author | `incidents.test.tsx`: marks voided rows |
 | Scoped permissions, filters/sort/All, missing code, independent retry, reassign/severity and duplicate comments | `incidents.test.tsx` |
 | Original evidence bytes, exact parent and stable-ID renewal | `incident-evidence.test.ts` |
 | A retired upload releases busy state and drops its late result | `incident-session.test.tsx` |
-| W6/W7 keyboard navigation, axe and 320 px, both themes/locales | `../../e2e/incidents.spec.ts` |
+| W6/W7 navigation, close-dialog keyboard focus, axe and 320 px in both themes/locales; synthetic 30% DOM text expansion | `../../e2e/incidents.spec.ts` |
 
-Verification must distinguish these authored tests from executed results. Local
-web checks were blocked because `npm ci` cannot create the workspace symlink
-(`EPERM`); the pinned TypeScript, ESLint, Prettier, Vitest and browser matrix
-require a prepared dependency installation. No database/API qualification or
-browser visual result is established by these fixtures.
+Verification uses `npm ci`, `node scripts/typecheck.mjs web`, ESLint and Prettier
+on the affected files, and the touched web Vitest files with `--maxWorkers=1`.
+Run the incident Playwright spec with one worker for the browser matrix and
+`PYTHON_CPU_COUNT=2 pre-commit run --all-files` before committing. Report actual
+results separately from this authored coverage map. The synthetic browser/API
+fixtures do not establish database behavior, live backend authorization or
+production integration; the text expansion checks reflow, not translation quality.
+
+Representative synthetic W6/W7 screenshots (light/es-MX and dark/en) are in
+`../../docs/screenshots/` under `incidents-tray-*` and `incident-detail-*`.

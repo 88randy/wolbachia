@@ -35,7 +35,13 @@ describe("sidebar navigation", () => {
   test("lists every area as a link inside lists", async () => {
     await renderApp({
       me: makeMe({
-        permissions: ["catalog.read", "motorcycle.read", "quadrant.read", "supply_type.read", "incident.read"],
+        permissions: [
+          "catalog.read",
+          "motorcycle.read",
+          "quadrant.read",
+          "supply_type.read",
+          "incident.read",
+        ],
       }),
     });
     const nav = screen.getByRole("navigation", { name: "Navegación principal" });

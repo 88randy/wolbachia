@@ -11,7 +11,8 @@ export const incidents = {
   "incidents.workspace.draftRestored": "Draft restored.",
   "incidents.workspace.discardDraft": "Discard draft",
   "incidents.evidence.download": "Download evidence {id}",
-  "incidents.evidence.downloadFailed": "Could not download. Retry to check your current permission.",
+  "incidents.evidence.downloadFailed":
+    "Could not download. Retry to check your current permission.",
   "incidents.workspace.title": "Incidents",
   "incidents.workspace.views": "Incident views",
   "incidents.workspace.mine": "Mine",
@@ -45,12 +46,15 @@ export const incidents = {
   "incidents.workspace.escalated": "Escalated",
   "incidents.workspace.unavailable": "Unavailable",
   "incidents.workspace.noDeadline": "No deadline configured",
-  "incidents.workspace.defaultView": "Initial view: open incidents in your zone. Change the state using the filters.",
-  "incidents.workspace.orderHint": "Critical incidents appear first, followed by the server ordering.",
+  "incidents.workspace.defaultView":
+    "Initial view: open incidents in your zone. Change the state using the filters.",
+  "incidents.workspace.orderHint":
+    "Critical incidents appear first, followed by the server ordering.",
   "incidents.workspace.thread": "Comments and events",
   "incidents.workspace.noEvents": "No events yet.",
   "incidents.workspace.system": "System",
-  "incidents.workspace.eventState": "Revision {revision} · {state} · {severity} · owner (ID): {owner}",
+  "incidents.workspace.eventState":
+    "Revision {revision} · {state} · {severity} · owner (ID): {owner}",
   "incidents.event.report": "Reported",
   "incidents.event.comment": "Comment",
   "incidents.event.reassign": "Reassigned",
@@ -61,12 +65,17 @@ export const incidents = {
   "incidents.event.reminder": "Reminder",
   "incidents.workspace.linked": "Linked record",
   "incidents.workspace.blocks": "What it blocks",
+  "incidents.blocker.dispatch": "Supply dispatch",
+  "incidents.blocker.quadrantClosure": "Quadrant closure",
+  "incidents.blocker.lotDispatch": "Lot dispatch",
+  "incidents.blocker.unknown": "Blocked operation",
   "incidents.workspace.noBlocks": "No recorded blockers.",
   "incidents.workspace.blockActive": "Active blocker",
   "incidents.workspace.blockCleared": "Cleared blocker",
   "incidents.workspace.report": "Report",
   "incidents.workspace.actions": "Act on incident",
-  "incidents.workspace.actionsBlocked": "Actions blocked. Review the current state; an authorized supervisor or coordinator can act on it.",
+  "incidents.workspace.actionsBlocked":
+    "Actions blocked. Review the current state; an authorized supervisor or coordinator can act on it.",
   "incidents.workspace.comment": "Comment",
   "incidents.workspace.sendComment": "Send comment",
   "incidents.workspace.ownerSearch": "Search owners",
@@ -75,22 +84,31 @@ export const incidents = {
   "incidents.workspace.next": "Next",
   "incidents.workspace.reassign": "Reassign",
   "incidents.workspace.changeSeverity": "Change severity",
-  "incidents.workspace.protected": "Severity is protected by the type. An administrator can review its configuration.",
+  "incidents.workspace.protected":
+    "Severity is protected by the type. An administrator can review its configuration.",
   "incidents.workspace.close": "Close incident",
   "incidents.workspace.closeReason": "Closing reason",
   "incidents.workspace.requiredEvidence": "Verified evidence required: {count}.",
-  "incidents.workspace.closeBlocked": "Add a reason and the required verified evidence. An owner with upload permission can attach it.",
-  "incidents.workspace.closeConsequence": "The closure will be recorded and only server-authorized blockers will be resolved.",
+  "incidents.workspace.closeBlocked":
+    "Add a reason and the required verified evidence. An owner with upload permission can attach it.",
+  "incidents.workspace.closeConsequence":
+    "The closure will be recorded and only server-authorized blockers will be resolved.",
   "incidents.workspace.void": "Void incident",
   "incidents.workspace.voidReason": "Void reason",
-  "incidents.workspace.voidConsequence": "The void will remain in the history and the incident will stay visible as voided.",
-  "incidents.workspace.voidBlocked": "There are dependents or later events. A coordinator must review the history; this incident cannot be voided.",
+  "incidents.workspace.voidConsequence":
+    "The void will remain in the history and the incident will stay visible as voided.",
+  "incidents.workspace.voidBlocked":
+    "There are dependents or later events. A coordinator must review the history; this incident cannot be voided.",
   "incidents.workspace.review": "Review current state",
-  "incidents.failure.conflict": "Someone else changed this incident. Your text was preserved. Review the current state before trying again.",
-  "incidents.failure.rejected": "The server rejected the action. Review its state and requirements before trying again.",
-  "incidents.failure.uncertain": "The outcome could not be confirmed. Check the history before deciding whether to try again; this action will not be replayed automatically.",
+  "incidents.failure.conflict":
+    "Someone else changed this incident. Your text was preserved. Review the current state before trying again.",
+  "incidents.failure.rejected":
+    "The server rejected the action. Review its state and requirements before trying again.",
+  "incidents.failure.uncertain":
+    "The outcome could not be confirmed. Check the history before deciding whether to try again; this action will not be replayed automatically.",
   "incidents.evidence.file": "Evidence photo",
-  "incidents.evidence.hint": "Original JPEG or PNG, up to 10 MiB. Verification is required before closing.",
+  "incidents.evidence.hint":
+    "Original JPEG or PNG, up to 10 MiB. Verification is required before closing.",
   "incidents.evidence.verified": "Verified",
   "incidents.evidence.pending": "Pending verification",
   "incidents.evidence.restricted": "Unavailable or unverified",

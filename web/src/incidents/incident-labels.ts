@@ -11,5 +11,19 @@ export function incidentOriginKey(origin: Schemas["OriginEnum"]) {
   return ORIGINS[origin];
 }
 export function incidentEventKey(action: Schemas["IncidentEventActionEnum"]) {
-  return action === "change_severity" ? "incidents.event.changeSeverity" : `incidents.event.${action}` as const;
+  return action === "change_severity"
+    ? "incidents.event.changeSeverity"
+    : (`incidents.event.${action}` as const);
+}
+export function incidentBlockerKey(kind: string) {
+  switch (kind) {
+    case "dispatch":
+      return "incidents.blocker.dispatch";
+    case "quadrant_closure":
+      return "incidents.blocker.quadrantClosure";
+    case "lot_dispatch":
+      return "incidents.blocker.lotDispatch";
+    default:
+      return "incidents.blocker.unknown";
+  }
 }
