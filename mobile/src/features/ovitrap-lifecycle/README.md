@@ -1,5 +1,25 @@
 # M-09 lifecycle capture (#138)
 
+## Native acquisition composition (#253)
+
+The production root shares ONE native acquisition port between M08 and M09. M09
+passes its original draft UUID, AbortSignal and interactive admission through every
+permission, native and private-file await. Cancel returns the unchanged draft;
+retirement cannot publish a late result. Canonical EvidenceCapture adopts bytes
+before success. Publication appends only `{id,fileRef}` using the original M09
+owner/session/context/target guard and the captured file authority in ONE SQL UPDATE.
+Save alone enrolls those same UUIDs with the original envelope transaction.
+
+Partial photo publication requires every whole-draft editor and Save to compare
+the exact raw JSON it read. Otherwise an older editor could silently erase a newly
+adopted photo. A stale editor retains buffered input with the existing localized
+concurrent-edit message; stale Save rolls back its entire outbox/projection/binding
+transaction. Retrying is an explicit user action. No persisted version field,
+schema, migration, auth policy or event-envelope change is introduced. Existing
+AC3 owns both photo/editor orders and stale Save with actual private files/SQLite.
+This composition is a draft qualification candidate; native SQLCipher, real API,
+physical process restart, Q1/Q2 and both MO01 device profiles remain pending.
+
 ## Current M5 composition (local, not device qualification)
 
 The actual history6/B33 producer is fully decoded by the existing DayStore writer.
@@ -47,8 +67,8 @@ photo UUIDs in the SAME lifecycle/outbox/evidence transaction. Undo/cancelled ad
 photos remain local; a write failure retains draft/file recovery. The existing
 serialized AttachmentSync verifies declared bytes before their event is eligible;
 verification never changes an in_review verdict or manufactures review acceptance.
-The acquisition port is still unavailable by default; actual camera acquisition is
-[#253](https://github.com/88randy/wolbachia/issues/253), not a mocked native success.
+The production root supplies the shared #253 native acquisition port. An isolated
+factory without a supplied port remains unavailable; it never mocks native success.
 
 Local schema16 appends only a case-insensitive legacy lifecycle-evidence index and
 fresh attachment reservation guard after protected evaluated SQL1–15. Runtime reserve

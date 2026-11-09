@@ -14,7 +14,7 @@ from core.filters import CodeLookupFilter
 from core.pagination import StandardPagination
 from core.views import OrgScopedViewSetMixin
 from lab.facade import BagLabActions, ReadingLabActions
-from lab.permissions import BAG_RECEIVE, COUNT_CREATE, REJECTION_CREATE
+from lab.permissions import BAG_RECEIVE, COUNT_CREATE, RECOUNT_CREATE, REJECTION_CREATE
 from ovitraps.lifecycle.serializers import OvitrapHistorySerializer
 from ovitraps.models import Bag, Ovitrap, OvitrapReading
 from ovitraps.permissions import OVITRAP_READ, READING_READ
@@ -108,6 +108,7 @@ class BagViewSet(BagLabActions, RecordViewSet):
         "receive": BAG_RECEIVE,
         "mark_missing": BAG_RECEIVE,
         "counts": COUNT_CREATE,
+        "recount": RECOUNT_CREATE,
         "rejections": REJECTION_CREATE,
     }
     query_serializer_class = BagQuerySerializer
@@ -125,11 +126,46 @@ class BagViewSet(BagLabActions, RecordViewSet):
         ):
             return rows
         from lab.access import scoped_bags
+        from lab.independent_qa.selectors import blind_visible_bags
         from lab.selectors import annotate_lab_bags
         from uploads.access import actor_from_request
 
         # A lab status filter is an action-specific read, never a reading.read upgrade.
         visible = scoped_bags(actor_from_request(self.request), BAG_RECEIVE)
-        return annotate_lab_bags(rows.filter(pk__in=visible)).filter(
-            **{"lab_status": self.request.query_params["lab_status"]}
-        )
+        return annotate_lab_bags(
+            blind_visible_bags(actor_from_request(self.request), rows.filter(pk__in=visible))
+        ).filter(**{"lab_status": self.request.query_params["lab_status"]})
+
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        from lab.independent_qa.services import numeric_read_transaction
+        from uploads.access import actor_from_request
+
+        with numeric_read_transaction(actor_from_request(request)):
+            return self.bag_list_response(request, *args, **kwargs)
+
+    def bag_list_response(self, request: Request, *args: object, **kwargs: object) -> Response:
+        response = super().list(request, *args, **kwargs)
+        if "lab_status" in request.query_params:
+            from django.db.models import OuterRef, Subquery
+
+            from lab.access import scoped_bags
+            from lab.independent_qa.selectors import blind_visible_bags
+            from lab.independent_qa.services import publish_inferred_counts
+            from lab.models import EggCountAttempt, LabResultRevision
+            from uploads.access import actor_from_request
+
+            actor = actor_from_request(request)
+            candidates = self.filter_queryset(
+                blind_visible_bags(
+                    actor,
+                    RecordViewSet.get_queryset(self).filter(pk__in=scoped_bags(actor, BAG_RECEIVE)),
+                )
+            )
+            current = LabResultRevision.objects.filter(bag_id=OuterRef("pk")).order_by("-revision")
+            count_ids = candidates.annotate(_first=Subquery(current.values("count_id")[:1])).values(
+                "_first"
+            )
+            publish_inferred_counts(
+                actor, EggCountAttempt.objects.filter(pk__in=count_ids), BAG_RECEIVE
+            )
+        return response

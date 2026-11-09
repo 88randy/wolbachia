@@ -608,6 +608,7 @@ class MovementSerializer(OrgScopedModelSerializer):
             "supply_return",
             "lot_write_off",
             "supply_compensation",
+            "paddle_return",
         ],
         read_only=True,
     )

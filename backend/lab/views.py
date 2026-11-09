@@ -103,10 +103,31 @@ class LabResultViewSet(LabReadViewSet):
 
     @extend_schema(parameters=[LabListQuerySerializer])
     def list(self, request: Request) -> Response:
-        return self.page_response(self.get_queryset(), selectors.result_projection)
+        actor = actor_from_request(request)
+        from lab.independent_qa.services import numeric_read_transaction
+
+        with numeric_read_transaction(actor):
+            return self.result_list_response(actor)
+
+    def result_list_response(self, actor: Any) -> Response:  # noqa: ANN401 -- actual request UploadActor
+        response = self.page_response(
+            self.get_queryset(), lambda row: selectors.published_result_projection(actor, row)
+        )
+        if self.result_kind == "count" and "qa_state" in self.request.query_params:
+            from lab.independent_qa.services import publish_inferred_counts
+
+            base = {key: value for key, value in self.read_query().items() if key != "qa_state"}
+            publish_inferred_counts(
+                actor, selectors.result_rows(actor, EggCountAttempt, base), COUNT_READ
+            )
+        return response
 
     def retrieve(self, request: Request, pk: str | None = None) -> Response:
-        return Response(selectors.result_projection(get_object_or_404(self.get_queryset(), pk=pk)))
+        return Response(
+            selectors.published_result_projection(
+                actor_from_request(request), get_object_or_404(self.get_queryset(), pk=pk)
+            )
+        )
 
     @extend_schema(responses=LabVoidContextSerializer)
     @action(detail=True, methods=["get"], url_path="void-context")
@@ -200,10 +221,20 @@ class RecountRequestViewSet(LabReadViewSet):
 
     @extend_schema(parameters=[LabListQuerySerializer])
     def list(self, request: Request) -> Response:
-        return self.page_response(
-            selectors.recount_rows(actor_from_request(request), self.read_query()),
-            lambda row: RecountRequestSerializer(row).data,
-        )
+        actor = actor_from_request(request)
+        from lab.independent_qa.services import numeric_read_transaction
+
+        with numeric_read_transaction(actor):
+            return self.page_response(
+                selectors.recount_rows(actor, self.read_query()),
+                lambda row: self.published_request(actor, row),
+            )
+
+    def published_request(self, actor: Any, row: Any) -> dict[str, Any]:  # noqa: ANN401 -- existing serializer projection boundary
+        from lab.independent_qa.services import NumericPublication, publish_numeric_access
+
+        publish_numeric_access(actor, row.count, NumericPublication(COUNT_READ, "request"))
+        return dict(RecountRequestSerializer(row).data)
 
 
 class LabMethodViewSet(LabReadViewSet, mixins.ListModelMixin, mixins.RetrieveModelMixin):

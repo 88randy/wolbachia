@@ -12,6 +12,7 @@ import { engineFor, publishSnapshots } from "./support/m-08-harness.ts";
 import { ASSIGNMENT, CATALOG, POINT, RULES, makeDraft } from "./support/m-08-fixtures.ts";
 import type { TestStores } from "./support/factories.ts";
 import type { LifecycleDraft } from "../src/features/ovitrap-lifecycle/types.ts";
+import type { EvidenceCaptureContext } from "../src/features/ovitrap-check/types.ts";
 import {
   hydrateLifecycleCaptureFixture,
   fixtureBundle,
@@ -114,7 +115,13 @@ async function harness(local?: TestStores) {
     now: () => FIXED_NOW,
     uuid: () => `aaaaaaaa-aaaa-4aaa-8aaa-${String(++sequence).padStart(12, "0")}`,
     gps: { locate: () => Promise.resolve({ lat: 19, lng: -99, accuracy_m: 5 }) },
-    evidence: { capture: () => Promise.resolve(PHOTO) },
+    evidence: {
+      capture: (context: EvidenceCaptureContext) =>
+        Promise.resolve({
+          ...PHOTO,
+          authority: store.evidenceCaptureGuard(context.draftId),
+        }),
+    },
     shiftId: () => Promise.resolve("55555555-5555-4555-8555-555555555555"),
   };
   return {
@@ -153,6 +160,28 @@ async function complete(h: Awaited<ReturnType<typeof harness>>, draft: Lifecycle
   );
   await h.service.refreshGps(draft.eventId);
   await h.service.captureEvidence(draft.eventId);
+}
+/** Existing M08 consumers retain their own draft/shift authority when composed with M09. */
+function checkEvidence(h: Awaited<ReturnType<typeof harness>>) {
+  return {
+    evidence: {
+      capture: (context: EvidenceCaptureContext) =>
+        Promise.resolve({
+          ...PHOTO,
+          authority: h.store.capture.evidenceCaptureGuard(context.draftId),
+        }),
+    },
+    evidenceShift: async () => {
+      const id = await h.deps.shiftId();
+      return {
+        id,
+        guard: {
+          sql: "SELECT 1 FROM ovitrap_draft WHERE slot=1 AND event_id IS NULL AND json_extract(draft,'$.shiftId')=?",
+          params: [id],
+        },
+      };
+    },
+  };
 }
 void test("AC1: replacement retains fixed point code/lineage and reserves fresh physical UUIDs", async () => {
   const h = await harness();
@@ -212,7 +241,10 @@ void test("AC1: replacement retains fixed point code/lineage and reserves fresh 
   const placement = makeDraft({ eventId: h.deps.uuid(), mode: "place", ovitrapId: reserved });
   await h.store.capture.begin(placement);
   await assert.rejects(
-    h.outbox.enqueue(captureEvent(placement), h.store.capture.commitStatements(placement)),
+    h.outbox.enqueue(
+      captureEvent(placement),
+      h.store.capture.commitStatements(placement, (await h.store.capture.read()).draftVersion),
+    ),
   );
 });
 void test("AC1: offline relocation is Proposed, retains geometry and requires GPS/photo/Other", async () => {
@@ -413,6 +445,7 @@ void test("AC3: failed lifecycle transaction retains draft, references and truth
   assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
   assert.equal((await h.store.physical(SOURCE))?.isRetired, false);
   await actualEvidenceJourney(test);
+  await lifecyclePhotoWriterArbitration(test);
 });
 void test("AC3: every lifecycle command rejects the wrong displayed UUID before write or native effect", async () => {
   const h = await harness();
@@ -471,7 +504,10 @@ void test("AC2: advisory thresholds use delivered values and fixed-point local e
       ovitrapId: index ? "99999999-9999-4999-8999-999999999999" : SOURCE,
     };
     await h.store.capture.begin(check);
-    await h.outbox.enqueue(captureEvent(check), h.store.capture.commitStatements(check));
+    await h.outbox.enqueue(
+      captureEvent(check),
+      h.store.capture.commitStatements(check, (await h.store.capture.read()).draftVersion),
+    );
   }
   assert.deepEqual(await relocationSuggestion(h.db, draft), {
     state: "unavailable",
@@ -486,7 +522,10 @@ void test("AC2: advisory thresholds use delivered values and fixed-point local e
   );
   const earlier = { ...base, eventId: h.deps.uuid(), ovitrapId: h.deps.uuid() };
   await h.store.capture.begin(earlier);
-  await h.outbox.enqueue(captureEvent(earlier), h.store.capture.commitStatements(earlier));
+  await h.outbox.enqueue(
+    captureEvent(earlier),
+    h.store.capture.commitStatements(earlier, (await h.store.capture.read()).draftVersion),
+  );
   assert.deepEqual(await relocationSuggestion(h.db, legacy), { closedHouseWeeks: 2 });
   assert.equal(
     await relocationSuggestion(h.db, { ...legacy, rules: { ...draft.rules, closedHouseWeeks: 3 } }),
@@ -801,9 +840,12 @@ async function lockedDepartureRejectsBeforePorts() {
       },
     },
     evidence: {
-      capture: () => {
+      capture: (context: EvidenceCaptureContext) => {
         nativeCalls++;
-        return Promise.resolve(PHOTO);
+        return Promise.resolve({
+          ...PHOTO,
+          authority: h.store.evidenceCaptureGuard(context.draftId),
+        });
       },
     },
   });
@@ -942,7 +984,10 @@ void test("AC2 regression: removal correction cannot restore occupancy over a la
     deviceTime: "2026-01-16T15:00:00Z",
   });
   await h.store.capture.begin(placed);
-  await h.outbox.enqueue(captureEvent(placed), h.store.capture.commitStatements(placed));
+  await h.outbox.enqueue(
+    captureEvent(placed),
+    h.store.capture.commitStatements(placed, (await h.store.capture.read()).draftVersion),
+  );
   await assert.rejects(
     h.service.correct(
       { reasonCode: "other", reason: "Do not restore over a new placement" },
@@ -959,6 +1004,7 @@ void test("AC1 wiring: M08 checks the replacement physical identity and blocks t
   const check = new OvitrapService({
     ...h.deps,
     store: h.store.capture,
+    ...checkEvidence(h),
     scanner: { scan: () => Promise.resolve({ status: "unavailable" }) },
   });
   const pendingCheck = await check.startCheck(SOURCE, true, null);
@@ -1212,6 +1258,7 @@ async function reviewCaptureHarness(mode: "check" | "place" = "check", local?: T
   const check = new OvitrapService({
     ...h.deps,
     store: h.store.capture,
+    ...checkEvidence(h),
     scanner: { scan: () => Promise.resolve({ status: "unavailable" }) },
   });
   const state =
@@ -1297,7 +1344,10 @@ void test("review 1: downloaded physical or point retirement blocks M08 save and
     await assert.rejects(h.check.save(h.eventId));
     // Simulate a command that already passed its read-side check before the upsert arrived.
     await assert.rejects(
-      h.outbox.enqueue(captureEvent(state.draft), h.store.capture.commitStatements(state.draft)),
+      h.outbox.enqueue(
+        captureEvent(state.draft),
+        h.store.capture.commitStatements(state.draft, (await h.store.capture.read()).draftVersion),
+      ),
     );
     assert.equal((await h.db.query("SELECT * FROM outbox_event")).length, 0);
     assert.equal((await h.db.query("SELECT * FROM ovitrap_capture")).length, 0);
@@ -1355,6 +1405,7 @@ void test("review 3: downloaded active state overrides retired assignment fallba
   const check = new OvitrapService({
     ...h.deps,
     store: h.store.capture,
+    ...checkEvidence(h),
     scanner: { scan: () => Promise.resolve({ status: "unavailable" }) },
   });
   const checked = await check.startCheck(SOURCE, true, null);
@@ -2090,6 +2141,173 @@ import { PrivateAttachmentTransport } from "../src/attachments/attachment-transp
 import { attachmentSyncHooks } from "../src/attachments/sync-hooks.ts";
 import { SyncEngine } from "../src/sync/sync-engine.ts";
 import { lifecycleEvidence } from "../src/features/ovitrap-lifecycle/evidence-configuration.ts";
+import { createPhotoAcquisitionPort } from "../src/attachments/photo-acquisition.ts";
+import { pathToFileURL } from "node:url";
+import { ConcurrentCaptureError } from "../src/features/ovitrap-check/capture-identity.ts";
+import { actionErrorKey as lifecycleErrorKey } from "../src/features/ovitrap-lifecycle/action-error-key.ts";
+/** Same AC3 transaction owner: native/file adoption and whole-draft writers share one arbiter. */
+async function lifecyclePhotoWriterArbitration(test: TestContext) {
+  await lifecyclePhotoEditorOrder(test, "editor-first");
+  await lifecyclePhotoEditorOrder(test, "photo-first");
+  await lifecyclePhotoStaleSave(test);
+}
+async function lifecyclePhotoFixture(test: TestContext) {
+  const local = await attachmentHarness(test);
+  local.setIdentity(PROJECTION_IDENTITY);
+  const h = await harness(local);
+  let camera: () => Promise<void> = () => Promise.resolve();
+  let cancelNext = false;
+  const evidence = lifecycleEvidence({
+    store: h.store,
+    attachments: {
+      capture: new EvidenceCapture(local),
+      session: local.session,
+      store: local.store,
+    },
+    port: createPhotoAcquisitionPort({
+      uuid: h.deps.uuid,
+      canStart: () => true,
+      picker: {
+        getPendingResultAsync: () => Promise.resolve(null),
+        getCameraPermissionsAsync: () => Promise.resolve({ granted: true, canAskAgain: true }),
+        requestCameraPermissionsAsync: () =>
+          Promise.reject(new Error("Unexpected permission request")),
+        launchCameraAsync: async () => {
+          await camera();
+          if (cancelNext) {
+            cancelNext = false;
+            return { canceled: true, assets: null };
+          }
+          return {
+            canceled: false,
+            assets: [{ uri: pathToFileURL(local.source).href, width: 1, height: 1 }],
+          };
+        },
+      },
+    }),
+  });
+  const service = new LifecycleService({ ...h.deps, ...evidence });
+  const state = await service.start(
+    { kind: "relocate", ovitrapId: SOURCE, manualCapture: false },
+    null,
+  );
+  assert.ok(state.draft);
+  const eventId = state.draft.eventId;
+  await service.update({ reasonCode: "closed-house" }, eventId);
+  await service.refreshGps(eventId);
+  return {
+    h,
+    local,
+    evidence,
+    service,
+    eventId,
+    cancelNext: () => {
+      cancelNext = true;
+    },
+    holdCamera: (callback: typeof camera) => {
+      camera = callback;
+    },
+  };
+}
+async function lifecyclePhotoEditorOrder(test: TestContext, order: "editor-first" | "photo-first") {
+  const f = await lifecyclePhotoFixture(test);
+  const entered = deferred<undefined>(),
+    resume = deferred<undefined>();
+  let checks = 0;
+  const editor = new LifecycleService({
+    ...f.h.deps,
+    shiftId: async () => {
+      if (order === "photo-first" && ++checks === 2) {
+        entered.resolve(undefined);
+        await resume.promise;
+      }
+      return f.h.deps.shiftId();
+    },
+  });
+  editor.draftBuffer.edit(f.eventId, { otherText: "recoverable editor input" });
+  if (order === "editor-first") {
+    f.holdCamera(async () => {
+      entered.resolve(undefined);
+      await resume.promise;
+    });
+    const photo = f.service.captureEvidence(f.eventId);
+    await entered.promise;
+    await editor.draftBuffer.persist(editor, f.eventId);
+    resume.resolve(undefined);
+    await photo;
+  } else {
+    const edit = editor.draftBuffer.persist(editor, f.eventId);
+    const rejected = assert.rejects(edit, (error) => {
+      assert.ok(error instanceof ConcurrentCaptureError);
+      assert.equal(lifecycleErrorKey(error), "mobile.ovitrap.concurrentEdit");
+      return true;
+    });
+    await entered.promise;
+    await f.service.captureEvidence(f.eventId);
+    resume.resolve(undefined);
+    await rejected;
+    assert.equal(
+      editor.draftBuffer.merge(await editor.read()).draft?.otherText,
+      "recoverable editor input",
+    );
+    assert.equal((await f.h.store.read()).draft?.otherText, "");
+    await editor.draftBuffer.persist(editor, f.eventId); // Explicit user retry; no automatic replay.
+  }
+  const stored = await f.h.store.read();
+  assert.equal(stored.draft?.otherText, "recoverable editor input");
+  assert.equal(stored.draft.evidence.length, 1);
+  assert.deepEqual(Object.keys(stored.draft.evidence[0] ?? {}).sort(), ["fileRef", "id"]);
+  assert.equal((await f.local.db.query("SELECT * FROM attachment_file")).length, 1);
+  assert.deepEqual(await f.local.db.query("SELECT * FROM attachment_event"), []);
+  assert.deepEqual(await f.local.db.query("SELECT * FROM outbox_event"), []);
+}
+async function lifecyclePhotoStaleSave(test: TestContext) {
+  const f = await lifecyclePhotoFixture(test);
+  const original = (await f.h.store.read()).draft;
+  f.cancelNext();
+  assert.deepEqual((await f.service.captureEvidence(f.eventId)).draft, original);
+  assert.deepEqual(await f.local.db.query("SELECT * FROM attachment_file"), []);
+  await f.service.captureEvidence(f.eventId);
+  const entered = deferred<undefined>(),
+    resume = deferred<undefined>();
+  let held = false;
+  const saving = new LifecycleService({
+    ...f.h.deps,
+    ...f.evidence,
+    evidenceBindings: async (draft, turn) => {
+      const statements = await f.evidence.evidenceBindings(draft, turn);
+      if (!held) {
+        held = true;
+        entered.resolve(undefined);
+        await resume.promise;
+      }
+      return statements;
+    },
+  });
+  const pending = saving.save(f.eventId);
+  const rejected = assert.rejects(pending, /could not be saved/);
+  await entered.promise;
+  await f.service.captureEvidence(f.eventId);
+  const before = await f.local.db.query("SELECT draft,event_id FROM lifecycle_draft");
+  resume.resolve(undefined);
+  await rejected;
+  assert.deepEqual(await f.local.db.query("SELECT draft,event_id FROM lifecycle_draft"), before);
+  for (const table of [
+    "outbox_event",
+    "lifecycle_capture",
+    "lifecycle_evidence",
+    "attachment_event",
+  ])
+    assert.deepEqual(await f.local.db.query(`SELECT * FROM ${table}`), []);
+  await saving.save(f.eventId); // The explicit retry reads and binds BOTH original adopted UUIDs.
+  const state = await f.h.store.read();
+  assert.equal(state.event?.envelope.id, f.eventId);
+  assert.deepEqual(
+    state.event.envelope.payload.evidence_ids,
+    state.draft?.evidence.map((item) => item.id),
+  );
+  assert.equal((await f.local.db.query("SELECT * FROM attachment_event")).length, 2);
+}
 async function actualEvidenceJourney(test: TestContext) {
   const local = await attachmentHarness(test);
   local.setIdentity(PROJECTION_IDENTITY);
@@ -2165,14 +2383,28 @@ async function actualEvidenceJourney(test: TestContext) {
     ...h.deps,
     engine,
     ...lifecycleEvidence({
-      port: {
-        capture: () => {
-          nativeCalls++;
+      store: h.store,
+      port: createPhotoAcquisitionPort({
+        uuid: () => {
           const photoId = ids[cursor++];
           assert.ok(photoId);
-          return Promise.resolve({ id: photoId, fileRef: local.source });
+          return photoId;
         },
-      },
+        canStart: () => true,
+        picker: {
+          getPendingResultAsync: () => Promise.resolve(null),
+          getCameraPermissionsAsync: () => Promise.resolve({ granted: true, canAskAgain: true }),
+          requestCameraPermissionsAsync: () =>
+            Promise.reject(new Error("Unexpected permission request")),
+          launchCameraAsync: () => {
+            nativeCalls++;
+            return Promise.resolve({
+              canceled: false,
+              assets: [{ uri: pathToFileURL(local.source).href, width: 1, height: 1 }],
+            });
+          },
+        },
+      }),
       attachments: { capture, session: local.session, store: local.store },
     }),
   });

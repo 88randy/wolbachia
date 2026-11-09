@@ -1184,3 +1184,27 @@ source FEs BEFORE sorted Users→Device→Session→Pair→known FEs→Organizat
 →planned courier TRY→domain→Uploads. Changed closure aborts for fresh preparation
 outside retained locks. Final upload uses the ONE existing lifecycle/savepoint and
 fresh eligibility precedence; no new device bridge or transport grant is implied.
+
+## Independent Lab delivery (#115)
+
+Independent observation/adjudication and physical paddle commands are authenticated
+Lab HTTP actions, not new FieldEvents, result codes or an offline queue writer.
+The SAME history producer advances6→7, adding lab_recount, lab_adjudication and
+lab_paddle_reuse while preserving the18 old kinds, root bootstrap2 and supplies1.
+Each new history UUID is its actual immutable typed fact, with original first/
+request/source identity rather than a made-up review or shift record.
+
+Current complete Lab numeric authority and the central blind predicate apply
+before bootstrap serialization and changes LIMIT. Hidden first-result/inferred
+status payloads cannot affect paging/count/order. Actual selected delivery records
+an immutable actor/count disclosure receipt, even if that actor currently lacks a
+recount grant. History storage remains unchanged and is not proof of device delivery.
+The existing private scope/readiness revision includes actual own observation
+eligibility; clients use the existing rebootstrap/retention invalidation when it
+changes. No new cursor version or phantom removal is introduced. Root/other
+producer versions and old history wire shapes remain unchanged.
+
+Late real QA after physical treatment remains awaiting_material, without an
+invented observation, erased request, stock restoration or automatic resubmission.
+See api-conventions.md and lab/README.md for current paired actions, exact saved
+replies, external legacy assessments and genuine stock/evidence receipts.

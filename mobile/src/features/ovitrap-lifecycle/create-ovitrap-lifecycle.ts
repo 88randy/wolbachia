@@ -96,9 +96,8 @@ export function createOvitrapLifecycle(deps: Dependencies): LifecycleService {
     gps: deps.gps ?? gps,
     cancelNative: gps.cancel,
     selectTask: deps.selectTask,
-    evidence: deps.evidence ?? { capture: () => Promise.resolve(null) },
     refreshAdvisory: (draft, turn, operation) => advisory.refresh(draft, turn, operation),
-    ...lifecycleEvidence({ port: deps.evidence, attachments: deps.attachments }),
+    ...lifecycleEvidence({ port: deps.evidence, store, attachments: deps.attachments }),
     refresh: async (turn, operation) => {
       await download(deps, store, { turn, operation });
       const current = await store.readOwned(turn);

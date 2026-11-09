@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { AttachmentStore } from "../src/attachments/attachment-store.ts";
 import { createStores, FIXED_NOW, makeEnvelope } from "./support/factories.ts";
-import { EvidenceCapture } from "../src/attachments/capture-evidence.ts";
+import { FixtureEvidenceCapture as EvidenceCapture } from "./support/capture-fixture.ts";
 import { readVerified } from "../src/attachments/owned-files.ts";
 import { MAX_EVIDENCE_BYTES } from "../src/attachments/types.ts";
 import { attachmentHarness, EVIDENCE_ID, PNG_BYTES, NOW } from "./support/attachment-fixtures.ts";
@@ -16,7 +16,6 @@ import { DayBundleService } from "../src/features/day/bundle-service.ts";
 import { LifecycleStore } from "../src/features/ovitrap-lifecycle/store.ts";
 import { startOwnedLifecycleDraft } from "../src/features/ovitrap-lifecycle/new-owned-draft.ts";
 import { startDraft } from "../src/features/ovitrap-lifecycle/new-draft.ts";
-import type { SqlExecutor } from "../src/db/sql.ts";
 import type { EvidenceIdentity } from "../src/attachments/evidence-session.ts";
 import { projectionBundle, projectionDraft } from "./support/lifecycle-projection-fixtures.ts";
 import { hasLocalRecords } from "../src/db/owner-data.ts";
@@ -30,11 +29,26 @@ import { randomBytes } from "node:crypto";
 import { captureConfiguration } from "../src/attachments/capture-configuration.ts";
 import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { makeDraft } from "./support/m-08-fixtures.ts";
-import { harness } from "./support/m-08-harness.ts";
+import { harness, publishSnapshots } from "./support/m-08-harness.ts";
 import { SyncEngine } from "../src/sync/sync-engine.ts";
 import { attachmentSyncHooks } from "../src/attachments/sync-hooks.ts";
 import { accepted, answer } from "./support/scripted-transport.ts";
 import { privateDirectoryFiles } from "../src/attachments/private-directory-files.ts";
+import { createPhotoAcquisitionPort } from "../src/attachments/photo-acquisition.ts";
+import { pathToFileURL } from "node:url";
+import type { SqlExecutor, SqlStatement } from "../src/db/sql.ts";
+import { ConcurrentCaptureError } from "../src/features/ovitrap-check/capture-identity.ts";
+import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
+import { reportCaptureError } from "../src/features/ovitrap-check/use-capture-actions.ts";
+import type { Snapshot } from "../src/features/ovitrap-check/service.ts";
+import { ShiftOpenStore } from "../src/features/shift-open/store.ts";
+import { hydrateLifecycleCaptureFixture } from "./support/lifecycle-capture-fixture.ts";
+import { ShiftOpenService } from "../src/features/shift-open/service.ts";
+import { UNAVAILABLE_MAP } from "../src/features/shift-open/domain.ts";
+import {
+  captureShiftId,
+  readCaptureShift,
+} from "../src/features/ovitrap-check/shift-authorization.ts";
 
 const OWNER = {
   issuer: "https://api.example.test",
@@ -621,10 +635,21 @@ void test("owned capture wiring commits M08 reference, binding and original even
   let captures = 0;
   const configuration = captureConfiguration({
     store: new OvitrapStore(h.db),
-    port: {
-      capture: () =>
-        Promise.resolve({ id: captures++ ? secondId : EVIDENCE_ID, fileRef: h.source }),
-    },
+    port: createPhotoAcquisitionPort({
+      uuid: () => (captures++ ? secondId : EVIDENCE_ID),
+      canStart: () => true,
+      picker: {
+        getPendingResultAsync: () => Promise.resolve(null),
+        getCameraPermissionsAsync: () => Promise.resolve({ granted: true, canAskAgain: true }),
+        requestCameraPermissionsAsync: () =>
+          Promise.reject(new Error("Unexpected permission request")),
+        launchCameraAsync: () =>
+          Promise.resolve({
+            canceled: false,
+            assets: [{ uri: pathToFileURL(h.source).href, width: 1, height: 1 }],
+          }),
+      },
+    }),
     attachments: { ...h, capture: new EvidenceCapture(h) },
   });
   const wired = await harness(h, configuration);
@@ -639,11 +664,9 @@ void test("owned capture wiring commits M08 reference, binding and original even
   assert.equal(await wired.service.captureEvidence(draft.eventId), true);
   const before = await wired.store.read();
   assert.ok(before.draft);
-  // Draft-level removal models cancellation/Undo without importing unmerged #203 UI.
-  await wired.store.update({
-    ...before.draft,
-    evidence: before.draft.evidence.filter((item) => item.id !== EVIDENCE_ID),
-  });
+  await wired.service.undoEvidence(draft.eventId, EVIDENCE_ID);
+  await wired.service.undoEvidence(draft.eventId, EVIDENCE_ID);
+  assert.equal((await h.db.query("SELECT id FROM attachment_file")).length, 2);
   assert.equal(await h.store.next(await h.session.capture(), NOW.toISOString()), null);
   const snapshot = await wired.service.save(draft.eventId);
   assert.equal(snapshot.event?.envelope.id, draft.eventId);
@@ -656,6 +679,543 @@ void test("owned capture wiring commits M08 reference, binding and original even
     secondId,
   );
   assert.equal((await h.outbox.claimPending(50, await h.session.selection())).length, 0);
+  await assert.rejects(wired.service.undoEvidence(draft.eventId, secondId), /immutable/i);
+  assert.deepEqual((await wired.store.read()).event?.envelope, snapshot.event.envelope);
+});
+
+void test("native capture cannot adopt into a draft replaced while the camera is open", async (test) => {
+  const h = await attachmentHarness(test);
+  const camera = deferred<{ id: string; fileRef: string }>();
+  const opened = deferred<undefined>();
+  const store = new OvitrapStore(h.db);
+  const configuration = captureConfiguration({
+    store,
+    port: {
+      capture: () => {
+        opened.resolve(undefined);
+        return camera.promise;
+      },
+    },
+    attachments: { ...h, capture: new EvidenceCapture(h) },
+  });
+  const wired = await harness(h, configuration);
+  const original = makeDraft();
+  await store.begin(original);
+  const capture = wired.service.captureEvidence(original.eventId);
+  await opened.promise;
+  const replacement = makeDraft({
+    eventId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    shiftId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+  });
+  await store.begin(replacement);
+  camera.resolve({ id: EVIDENCE_ID, fileRef: h.source });
+  await assert.rejects(capture);
+  assert.deepEqual(await h.db.query("SELECT id FROM attachment_file"), []);
+  assert.deepEqual((await store.read()).draft?.evidence, []);
+});
+
+void test("the exact unsaved draft is checked inside the reservation INSERT, before file I/O", async (test) => {
+  const h = await attachmentHarness(test);
+  const draftStore = new OvitrapStore(h.db);
+  let copies = 0;
+  let hasReplaced = false;
+  const db = {
+    ...h.db,
+    query: async (sql: string, params?: import("../src/db/sql.ts").SqlStatement["params"]) => {
+      if (sql.includes("INSERT INTO attachment_file") && !hasReplaced) {
+        hasReplaced = true;
+        await draftStore.begin(
+          makeDraft({ eventId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", shiftId: "new-shift" }),
+        );
+      }
+      return h.db.query(sql, params);
+    },
+  };
+  const configuration = captureConfiguration({
+    store: draftStore,
+    port: { capture: () => Promise.resolve({ id: EVIDENCE_ID, fileRef: h.source }) },
+    attachments: {
+      ...h,
+      capture: new EvidenceCapture({
+        ...h,
+        store: new AttachmentStore(db),
+        files: {
+          ...h.files,
+          createExclusive: (id) => {
+            copies++;
+            return h.files.createExclusive(id);
+          },
+        },
+      }),
+    },
+  });
+  const wired = await harness(h, configuration);
+  const draft = makeDraft();
+  await draftStore.begin(draft);
+  await assert.rejects(wired.service.captureEvidence(draft.eventId), /stale_context/);
+  assert.equal(hasReplaced, true);
+  assert.equal(copies, 0);
+  assert.deepEqual(await h.db.query("SELECT id FROM attachment_file"), []);
+});
+
+const PUBLICATION_ORDERS = [
+  "target-first",
+  "temperature-first",
+  "revocation-first",
+  "assignment-first",
+  "photo-first",
+  "stale-save",
+  "shift-severe-first",
+] as const;
+type PublicationOrder = (typeof PUBLICATION_ORDERS)[number];
+interface WriterOutcome {
+  readonly applied: boolean;
+  readonly error?: unknown;
+}
+interface PhotoOutcome {
+  readonly value: boolean;
+  readonly error: unknown;
+}
+
+function publicationCamera(source: string) {
+  return createPhotoAcquisitionPort({
+    uuid: () => EVIDENCE_ID,
+    canStart: () => true,
+    picker: {
+      getPendingResultAsync: () => Promise.resolve(null),
+      getCameraPermissionsAsync: () => Promise.resolve({ granted: true, canAskAgain: true }),
+      requestCameraPermissionsAsync: () =>
+        Promise.reject(new Error("Unexpected permission request")),
+      launchCameraAsync: () =>
+        Promise.resolve({
+          canceled: false,
+          assets: [{ uri: pathToFileURL(source).href, width: 1, height: 1 }],
+        }),
+    },
+  });
+}
+async function publicationShift(
+  h: Awaited<ReturnType<typeof attachmentHarness>>,
+  engine: SyncEngine,
+) {
+  const store = new ShiftOpenStore(h.db);
+  const item = makeDraft().catalog?.findings[0];
+  assert.ok(item);
+  await store.saveCatalog({ version: "motorcycle-v1", items: [item] });
+  await store.saveMap({
+    ...UNAVAILABLE_MAP,
+    status: "ready",
+    version: "maps-v1",
+    progress: 100,
+    requiredCoverage: ["Q-1"],
+    coverage: ["Q-1"],
+    assets: [{ id: "Q-1.pmtiles", license: "licensed", size: 10 }],
+    verifiedAssets: [{ id: "Q-1.pmtiles", fileRef: "file:///Q-1.pmtiles", size: 10 }],
+  });
+  let ids = 0;
+  const shift = new ShiftOpenService({
+    store,
+    engine,
+    now: () => NOW,
+    uuid: () => (ids++ ? "99999999-9999-4999-8999-999999999999" : makeDraft().shiftId),
+    maps: { prepare: () => Promise.resolve(UNAVAILABLE_MAP) },
+    photos: { capture: () => Promise.resolve({ status: "unavailable" }) },
+  });
+  const beforeStart = await shift.read();
+  assert.equal(beforeStart.draft, null);
+  assert.equal(beforeStart.catalog?.version, "motorcycle-v1");
+  assert.equal(beforeStart.map?.version, "maps-v1");
+  await shift.start();
+  await shift.update({ motorcycle_code: "M-TEST" });
+  await shift.update({ odometer_km: "100", checks: [{ item: item.code, result: "ok" }] });
+  assert.equal((await shift.open()).canDepart, true);
+  return shift;
+}
+async function publicationFixture(
+  scenario: import("node:test").TestContext,
+  order: PublicationOrder,
+) {
+  const h = await attachmentHarness(scenario);
+  const held = deferred<undefined>();
+  const release = deferred<undefined>();
+  let didIntercept = false;
+  let generationBeforeRevocation: number | null = null;
+  const initial = makeDraft({
+    paddlePresent: false,
+    prepared: ["clean", "water", "liner"],
+    reviewAcknowledged: true,
+  });
+  assert.ok(initial.point);
+  assert.ok(initial.assignment);
+  const secondPoint = {
+    ...initial.point,
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    code: "OV-2",
+  };
+  const draft = {
+    ...initial,
+    assignment: { ...initial.assignment, points: [initial.point, secondPoint] },
+  };
+  const otherFirst = order === "photo-first" || order === "stale-save";
+  const hold = async () => {
+    didIntercept = true;
+    held.resolve(undefined);
+    await release.promise;
+  };
+  const proxy: SqlExecutor = {
+    ...h.db,
+    query: async (sql, params) => {
+      await intercept(sql, params);
+      return h.db.query(sql, params);
+    },
+    runAtomically: async (statements) => {
+      if (
+        order === "stale-save" &&
+        !didIntercept &&
+        statements.some((item) => item.sql.startsWith("INSERT INTO ovitrap_capture"))
+      )
+        await hold();
+      await h.db.runAtomically(statements);
+    },
+  };
+  const store = new OvitrapStore(otherFirst ? h.db : proxy);
+  const configuration = captureConfiguration({
+    store,
+    port: publicationCamera(h.source),
+    attachments: { ...h, capture: new EvidenceCapture(h) },
+  });
+  const shiftId = async () => (shift === null ? draft.shiftId : captureShiftId(await shift.read()));
+  const guardedShift =
+    order === "shift-severe-first"
+      ? {
+          evidenceShift: async () => {
+            assert.ok(shift);
+            return readCaptureShift(shift);
+          },
+        }
+      : {};
+  const capture = await harness(h, { ...configuration, ...guardedShift, store, shiftId });
+  const shift: ShiftOpenService | null =
+    order === "shift-severe-first" ? await publicationShift(h, capture.engine) : null;
+  const other = await harness(
+    order === "stale-save"
+      ? { ...h, db: proxy, outbox: new OutboxRepository(proxy, () => NOW) }
+      : h,
+    {
+      ...configuration,
+      ...guardedShift,
+      store: new OvitrapStore(otherFirst ? proxy : h.db),
+      shiftId,
+    },
+  );
+  const before: Record<PublicationOrder, () => Promise<unknown>> = {
+    "target-first": () =>
+      other.service.update({ point: secondPoint, temperature: "37" }, draft.eventId),
+    "temperature-first": () => other.service.update({ temperature: "37" }, draft.eventId),
+    "revocation-first": async () => {
+      generationBeforeRevocation = Number(
+        (await h.db.query("SELECT generation FROM attachment_context"))[0]?.generation,
+      );
+      await new DayStore(h.db).revoke();
+    },
+    "assignment-first": async () =>
+      publishSnapshots(store, { ...(await store.snapshots()), assignment: null }),
+    "photo-first": hold,
+    "stale-save": hold,
+    "shift-severe-first": async () => {
+      assert.ok(shift);
+      const beforeGeneration = await h.db.query("SELECT generation FROM attachment_context");
+      const beforeAssignment = (await store.snapshots()).assignment;
+      const opening = (await shift.read()).opening;
+      assert.ok(opening);
+      await h.outbox.claimPending(10);
+      await h.outbox.settle([
+        { id: opening.envelope.id, action: "review", result: { code: "severe_check", params: {} } },
+      ]);
+      const blocked = await shift.read();
+      assert.equal(blocked.gate, "severe");
+      assert.equal(blocked.canDepart, false);
+      assert.deepEqual(
+        await h.db.query("SELECT generation FROM attachment_context"),
+        beforeGeneration,
+      );
+      assert.deepEqual((await store.snapshots()).assignment, beforeAssignment);
+    },
+  };
+  async function intercept(sql: string, params?: SqlStatement["params"]) {
+    if (order === "stale-save" || didIntercept || !sql.startsWith("UPDATE ovitrap_draft SET draft"))
+      return;
+    const isPhoto = sql.includes("json_insert") || String(params?.[0]).includes(EVIDENCE_ID);
+    if (isPhoto === otherFirst) return;
+    didIntercept = true;
+    await before[order]();
+  }
+  await publishSnapshots(store, { ...(await store.snapshots()), assignment: draft.assignment });
+  await hydrateLifecycleCaptureFixture(h.db, draft.assignment, {
+    force: true,
+    identity: h.session.deps.current(),
+  });
+  await store.begin(draft);
+  return {
+    h,
+    held,
+    release,
+    capture,
+    other,
+    store,
+    draft,
+    secondPoint,
+    generationBeforeRevocation: () => generationBeforeRevocation,
+    didIntercept: () => didIntercept,
+  };
+}
+type PublicationFixture = Awaited<ReturnType<typeof publicationFixture>>;
+
+async function holdPublicWriter(f: PublicationFixture, order: PublicationOrder) {
+  if (order !== "photo-first" && order !== "stale-save") return null;
+  if (order === "photo-first")
+    f.other.service.draftBuffer.edit(f.draft.eventId, { temperature: "37" });
+  const operation =
+    order === "stale-save"
+      ? f.other.service.save(f.draft.eventId)
+      : f.other.service.draftBuffer.persist(f.other.service, f.draft.eventId);
+  const completion = operation.then(
+    (): WriterOutcome => ({ applied: true }),
+    (error: unknown): WriterOutcome => ({ applied: false, error }),
+  );
+  await Promise.race([
+    f.held.promise,
+    completion.then((outcome) => {
+      if (outcome.error instanceof Error) throw outcome.error;
+      throw new Error("Writer completed before the held boundary");
+    }),
+  ]);
+  return { completion };
+}
+async function finishPublicationOrder(input: {
+  f: PublicationFixture;
+  order: PublicationOrder;
+  edit: WriterOutcome | undefined;
+}) {
+  const { f, order, edit } = input;
+  if (order === "photo-first") {
+    assert.ok(edit);
+    assert.equal(edit.applied, false);
+    assert.ok(edit.error instanceof ConcurrentCaptureError);
+    assert.equal(
+      f.other.service.draftBuffer.merge(await f.other.service.read()).draft?.temperature,
+      "37",
+    );
+    await f.other.service.draftBuffer.persist(f.other.service, f.draft.eventId);
+    assert.equal((await f.store.read()).draft?.evidence.length, 1);
+    assert.equal((await f.store.read()).draft?.temperature, "37");
+  }
+  if (order === "stale-save") {
+    assert.ok(edit);
+    assert.equal(edit.applied, false);
+    assert.equal((await f.h.outbox.countByStatus()).pending, 0);
+    const saved = await f.other.service.save(f.draft.eventId);
+    assert.deepEqual(saved.event?.envelope.payload.evidence_ids, [EVIDENCE_ID]);
+  }
+  if (order === "revocation-first") {
+    const before = f.generationBeforeRevocation();
+    assert.notEqual(before, null);
+    assert.equal(
+      (await f.h.db.query("SELECT generation FROM attachment_context"))[0]?.generation,
+      Number(before) + 1,
+    );
+  }
+}
+async function assertPublicationOutcome(input: {
+  f: PublicationFixture;
+  order: PublicationOrder;
+  result: PhotoOutcome;
+  edit: WriterOutcome | undefined;
+}) {
+  const { f, order, result, edit } = input;
+  const rejects = [
+    "target-first",
+    "revocation-first",
+    "assignment-first",
+    "shift-severe-first",
+  ].includes(order);
+  assert.equal(Boolean(result.error), rejects, order);
+  assert.equal(result.value, !rejects, order);
+  assert.equal(f.didIntercept(), true);
+  const current = await f.store.read();
+  assert.ok(current.draft);
+  assert.equal(
+    current.draft.point?.id,
+    order === "target-first" ? f.secondPoint.id : f.draft.point?.id,
+  );
+  assert.equal(
+    current.draft.temperature,
+    ["target-first", "temperature-first"].includes(order) ? "37" : "",
+  );
+  assert.equal(current.draft.evidence.length, rejects ? 0 : 1);
+  const [reference] = current.draft.evidence;
+  if (reference) assert.deepEqual(Object.keys(reference).sort(), ["fileRef", "id"]);
+  if (result.error) await refreshRejectedPublication(f, result.error);
+  await finishPublicationOrder({ f, order, edit });
+  const [file] = await f.h.db.query("SELECT metadata,state FROM attachment_file WHERE id=?", [
+    EVIDENCE_ID,
+  ]);
+  assert.ok(file);
+  assert.equal(file.state, "ready");
+  assert.deepEqual(
+    await readFile((JSON.parse(String(file.metadata)) as { fileRef: string }).fileRef),
+    PNG_BYTES,
+  );
+  assert.equal(
+    (await f.h.db.query("SELECT * FROM attachment_event")).length,
+    order === "stale-save" ? 1 : 0,
+  );
+}
+async function refreshRejectedPublication(f: PublicationFixture, error: unknown) {
+  const states: Snapshot[] = [];
+  const errors: unknown[] = [];
+  await reportCaptureError(
+    {
+      refresh: async () => {
+        states.push(await f.capture.service.read());
+      },
+      setError: (key) => {
+        errors.push(key);
+      },
+    },
+    error,
+  );
+  assert.equal(states.length, 1);
+  assert.equal(errors.at(-1), "mobile.ovitrap.staleView");
+  assert.deepEqual(states[0]?.draft, (await f.store.read()).draft);
+}
+void test("photo publication and public draft writers preserve both winner orders and original authority", async (test) => {
+  for (const order of PUBLICATION_ORDERS) {
+    await test.test(order, async (scenario) => {
+      const f = await publicationFixture(scenario, order);
+      const writer = await holdPublicWriter(f, order);
+      const result = await f.capture.service.captureEvidence(f.draft.eventId).then(
+        (value): PhotoOutcome => ({ value, error: null }),
+        (error: unknown): PhotoOutcome => ({ value: false, error }),
+      );
+      f.release.resolve(undefined);
+      await assertPublicationOutcome({ f, order, result, edit: await writer?.completion });
+    });
+  }
+});
+
+void test("a native continuation retains its original actor, session, live shift, scope and unsaved state", async (test) => {
+  for (const change of ["actor", "session", "shift", "scope", "target", "saved"] as const) {
+    const h = await attachmentHarness(test);
+    const camera = deferred<{ id: string; fileRef: string }>();
+    const opened = deferred<undefined>();
+    const store = new OvitrapStore(h.db);
+    const draft = makeDraft();
+    let shiftId = draft.shiftId;
+    const configuration = captureConfiguration({
+      store,
+      port: {
+        capture: () => {
+          opened.resolve(undefined);
+          return camera.promise;
+        },
+      },
+      attachments: { ...h, capture: new EvidenceCapture(h) },
+    });
+    const wired = await harness(h, { ...configuration, shiftId: () => Promise.resolve(shiftId) });
+    await store.begin(draft);
+    const pending = wired.service.captureEvidence(draft.eventId);
+    await opened.promise;
+    if (change === "actor")
+      h.setIdentity({ owner: { ...OWNER, userId: "another-user" }, sessionId: "session-one" });
+    if (change === "session") h.setIdentity({ owner: OWNER, sessionId: "replacement-session" });
+    if (change === "shift") shiftId = "replacement-shift";
+    if (change === "scope")
+      await publishSnapshots(store, { ...(await store.snapshots()), assignment: null });
+    if (change === "target")
+      await store.update(
+        { ...draft, ovitrapId: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa" },
+        (await store.read()).draftVersion,
+      );
+    if (change === "saved")
+      await h.outbox.enqueue(
+        captureEvent(draft),
+        store.commitStatements(draft, (await store.read()).draftVersion),
+      );
+    camera.resolve({ id: EVIDENCE_ID, fileRef: h.source });
+    await assert.rejects(pending);
+    assert.deepEqual(await h.db.query("SELECT id FROM attachment_file"), [], change);
+    assert.deepEqual((await store.read()).draft?.evidence, [], change);
+  }
+});
+
+void test("retiring a capture during a real file read stops publication and writes while retaining ambiguous bytes", async (test) => {
+  const h = await attachmentHarness(test);
+  const read = deferred<undefined>();
+  const resume = deferred<undefined>();
+  const controller = new AbortController();
+  let firstRead = true;
+  let writes = 0;
+  let fileRef = "";
+  let closed = 0;
+  const files = {
+    ...h.files,
+    openRead: async (ref: string) => {
+      const reader = await h.files.openRead(ref);
+      return {
+        close: () => reader.close(),
+        read: async (length: number) => {
+          const bytes = await reader.read(length);
+          if (firstRead) {
+            firstRead = false;
+            read.resolve(undefined);
+            await resume.promise;
+          }
+          return bytes;
+        },
+      };
+    },
+    createExclusive: async (id: string) => {
+      const target = await h.files.createExclusive(id);
+      fileRef = target.ref;
+      return {
+        ref: target.ref,
+        writer: {
+          write: (bytes: Uint8Array) => {
+            writes++;
+            return target.writer.write(bytes);
+          },
+          close: () => {
+            closed++;
+            return target.writer.close();
+          },
+        },
+      };
+    },
+  };
+  const store = new OvitrapStore(h.db);
+  const wired = await harness(
+    h,
+    captureConfiguration({
+      store,
+      port: { capture: () => Promise.resolve({ id: EVIDENCE_ID, fileRef: h.source }) },
+      attachments: { ...h, capture: new EvidenceCapture({ ...h, files }) },
+    }),
+  );
+  const draft = makeDraft();
+  await store.begin(draft);
+  const pending = wired.service.captureEvidence(draft.eventId, controller.signal);
+  await read.promise;
+  controller.abort();
+  resume.resolve(undefined);
+  await assert.rejects(pending, /stale_context/);
+  assert.equal(writes, 0);
+  assert.equal(closed, 1);
+  assert.equal((await readFile(fileRef)).length, 0);
+  assert.deepEqual((await store.read()).draft?.evidence, []);
+  const [row] = await h.db.query("SELECT metadata,last_error FROM attachment_file");
+  assert.equal(row?.metadata, null);
+  assert.equal(row.last_error, "stale_context");
 });
 
 void test("login versus adopted-only reserve is arbitrated atomically in either order", async () => {

@@ -12,6 +12,15 @@ export class StaleCaptureError extends ImmutableCaptureError {
     this.name = "StaleCaptureError";
   }
 }
-export function assertCaptureIdentity(state: StoredCapture, eventId: string | null): void {
+export class ConcurrentCaptureError extends Error {
+  constructor() {
+    super("The unsaved capture changed concurrently; retry the pending edit.");
+    this.name = "ConcurrentCaptureError";
+  }
+}
+export function assertCaptureIdentity(
+  state: Pick<StoredCapture, "draft" | "event">,
+  eventId: string | null,
+): void {
   if ((state.draft?.eventId ?? null) !== eventId) throw new StaleCaptureError();
 }

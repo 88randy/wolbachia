@@ -30,6 +30,7 @@ import { createScopedSyncTransport } from "../sync/scoped-sync-transport.ts";
 import { createAttachments } from "../attachments/create-attachments.ts";
 import { attachmentSyncHooks } from "../attachments/sync-hooks.ts";
 import type { Attachments } from "../attachments/create-attachments.ts";
+import { createNativePhotoAcquisition } from "../attachments/native-photo-acquisition.ts";
 import { acceptedEvidenceOwner } from "../attachments/accepted-owner.ts";
 
 /** Everything the screens share, created once at startup. */
@@ -79,7 +80,8 @@ export async function createServices(): Promise<AppServices> {
   const engine = createEngine(shared, bundle);
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
-  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments };
+  const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
+  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
   const captures = createCaptures(captureDeps, bundle, day);
   return { ...shared, ...captures, engine, shiftOpen, day };
 }

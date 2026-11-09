@@ -184,6 +184,8 @@ export interface PhysicalOvitrap {
   readonly replacedBy: string | null;
 }
 export interface StoredLifecycle {
+  /** Exact bytes read for whole-draft CAS; never part of the persisted draft or envelope. */
+  readonly draftVersion?: string | null;
   readonly reviews?: readonly Schemas["ReviewHistoryEntry"][];
   readonly remoteProposals?: readonly Schemas["RelocationHistoryEntry"][];
   readonly recovery?: "blocked_ownership" | "unsupported_draft";

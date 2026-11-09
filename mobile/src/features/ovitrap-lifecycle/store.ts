@@ -2,7 +2,7 @@ import { KvStore } from "../../db/kv-store.ts";
 import { readText } from "../../db/sql.ts";
 import { CURRENT_FENCE, fenceParams } from "../../attachments/attachment-store.ts";
 import { ownerKey } from "../../attachments/types.ts";
-import { CURRENT_CAPTURE_CONTEXT } from "./context-sql.ts";
+import { CURRENT_CAPTURE_CONTEXT, capturePointScopeSql } from "./context-sql.ts";
 import { readLifecycleDraft } from "./draft-context.ts";
 import { lifecycleCommitGuards } from "./new-owned-draft.ts";
 import { boundConfiguration } from "./source-context.ts";
@@ -10,7 +10,8 @@ import { CourierContractError } from "./contract-readers.ts";
 import type { CaptureTransportHandle } from "./capture-context-contract.ts";
 import type { SqlExecutor, SqlStatement } from "../../db/sql.ts";
 import { OvitrapStore } from "../ovitrap-check/store.ts";
-import { StaleCaptureError } from "../ovitrap-check/capture-identity.ts";
+import { ConcurrentCaptureError } from "../ovitrap-check/capture-identity.ts";
+import type { CapturedEvidence } from "../ovitrap-check/types.ts";
 import type {
   Configuration,
   LifecycleDraft,
@@ -19,6 +20,7 @@ import type {
   LifecycleSourceTurn,
 } from "./types.ts";
 import { physicalOvitrap } from "./physical-projection.ts";
+import { physicalIdentityStateSql } from "./physical-identity-state.ts";
 import { readHistory, readProposal, decisionStatement } from "./proposals.ts";
 import { activeFeedback, sourceReviews } from "./feedback.ts";
 import type { Schemas } from "@wolbachia/api-client";
@@ -44,11 +46,12 @@ export class LifecycleStore {
   /** Internal storage read only; display/actions must use readOwned under a proven original turn. */
   async read(turn?: LifecycleSourceTurn): Promise<StoredLifecycle> {
     const [row] = await this.db.query("SELECT draft,event_id FROM lifecycle_draft WHERE slot = 1");
-    if (!row) return { draft: null, event: null, proposal: null, history: [] };
+    if (!row) return { draft: null, draftVersion: null, event: null, proposal: null, history: [] };
     const draft = readLifecycleDraft(JSON.parse(readText(row, "draft")));
     const feedback = turn ? await activeFeedback(this.db, turn.handle) : [];
     return {
       draft,
+      draftVersion: readText(row, "draft"),
       event: typeof row.event_id === "string" ? await this.capture.event(row.event_id) : null,
       proposal: await readProposal(this.db, draft.eventId, {
         handle: turn?.handle,
@@ -183,27 +186,106 @@ export class LifecycleStore {
       },
     ];
   }
-  async update(draft: LifecycleDraft, turn?: LifecycleSourceTurn): Promise<void> {
-    if (turn) {
+  async update(
+    draft: LifecycleDraft,
+    expectedVersion: string | null | undefined,
+    turn?: LifecycleSourceTurn,
+  ): Promise<void> {
+    if (!turn) {
+      const rows = await this.db.query(
+        `UPDATE lifecycle_draft SET draft=? WHERE slot=1 AND event_id IS NULL AND json_extract(draft,'$.eventId')=? AND draft=? RETURNING slot`,
+        [JSON.stringify(draft), draft.eventId, expectedVersion ?? null],
+      );
+      if (!rows.length) throw new ConcurrentCaptureError();
+      return;
+    }
+    try {
       await this.db.runAtomically([
         ...lifecycleCommitGuards(turn.handle, turn.ownerFence),
         identityGuard(draft.eventId),
-        {
-          sql: `INSERT INTO lifecycle_guard(slot,value) SELECT 1,CASE WHEN event_id IS NULL THEN 1 ELSE 0 END FROM lifecycle_draft WHERE slot=1
-          ON CONFLICT(slot) DO UPDATE SET value=excluded.value`,
-        },
+        this.#versionGuard(expectedVersion),
         { sql: "UPDATE lifecycle_draft SET draft=? WHERE slot=1", params: [JSON.stringify(draft)] },
       ]);
-      return;
+    } catch (error) {
+      if ((await this.read()).draftVersion !== expectedVersion) throw new ConcurrentCaptureError();
+      throw error;
     }
-    const rows = await this.db.query(
-      `UPDATE lifecycle_draft SET draft=? WHERE slot=1 AND event_id IS NULL AND json_extract(draft,'$.eventId')=? RETURNING slot`,
-      [JSON.stringify(draft), draft.eventId],
-    );
-    if (!rows.length) throw new StaleCaptureError();
   }
-  commitStatements(draft: LifecycleDraft): readonly SqlStatement[] {
-    return [identityGuard(draft.eventId), ...lifecycleStatements(draft)];
+  #versionGuard(expectedVersion: string | null | undefined): SqlStatement {
+    return {
+      sql: `INSERT INTO lifecycle_guard(slot,value) VALUES(1,CASE WHEN EXISTS(
+        SELECT 1 FROM lifecycle_draft WHERE slot=1 AND event_id IS NULL AND draft=?) THEN 1 ELSE 0 END)
+        ON CONFLICT(slot) DO UPDATE SET value=excluded.value`,
+      params: [expectedVersion ?? null],
+    };
+  }
+  evidenceCaptureGuard(eventId: string): SqlStatement {
+    return {
+      sql: "SELECT 1 FROM lifecycle_draft WHERE slot=1 AND event_id IS NULL AND json_extract(draft,'$.eventId')=?",
+      params: [eventId],
+    };
+  }
+  evidencePublicationGuard(draft: LifecycleDraft, turn: LifecycleSourceTurn): SqlStatement {
+    const target = ["eventId", "kind", "ovitrapId", "point", "shiftId", "source"]
+      .map(
+        (field) =>
+          `json_extract(d.draft,'$.${field}') IS json_extract(original.value,'$.${field}')`,
+      )
+      .join(" AND ");
+    return {
+      sql: `SELECT 1 FROM lifecycle_draft d, (SELECT ? AS value) original
+        JOIN lifecycle_courier_projection origin ON origin.id=json_extract(d.draft,'$.eventId')
+          AND origin.kind='lifecycle.owned-draft'
+          AND json_extract(origin.body,'$.pointId')=json_extract(d.draft,'$.point.id')
+          AND json_extract(origin.body,'$.ovitrapId')=json_extract(d.draft,'$.ovitrapId')
+          AND json_extract(origin.body,'$.kind')=json_extract(d.draft,'$.kind')
+          AND (json_extract(origin.body,'$.draftSchemaVersion') IS NOT 2 OR json_extract(d.draft,'$.schemaVersion')=2)
+        JOIN (${CURRENT_CAPTURE_CONTEXT}) context ON json_extract(origin.body,'$.ownerKey')=json_extract(context.value,'$.ownerKey')
+        WHERE d.slot=1 AND d.event_id IS NULL AND ${target}
+          AND json_extract(context.value,'$.ownerKey')=? AND json_extract(context.value,'$.sessionId')=?
+          AND json_extract(context.value,'$.authorityRevision')=? AND ${CURRENT_FENCE}
+          AND EXISTS(${capturePointScopeSql("json_extract(d.draft,'$.point.id')")})
+          AND ${physicalIdentityStateSql({ idSql: "json_extract(d.draft,'$.ovitrapId')", pointIdSql: "json_extract(d.draft,'$.point.id')" })}=0`,
+      params: [
+        JSON.stringify(draft),
+        ownerKey(turn.handle.owner),
+        turn.handle.sessionId,
+        turn.handle.revision,
+        ...fenceParams(turn.ownerFence),
+      ],
+    };
+  }
+  async publishEvidence(input: {
+    captured: CapturedEvidence;
+    guard: SqlStatement;
+    limit: number;
+  }): Promise<void> {
+    const { captured, guard, limit } = input;
+    const rows = await this.db.query(
+      `UPDATE lifecycle_draft SET draft=json_set(draft,'$.evidence',
+        json_insert(json_extract(draft,'$.evidence'),'$[#]',json(?)))
+        WHERE slot=1 AND event_id IS NULL AND EXISTS(${guard.sql}) AND EXISTS(${captured.authority.sql})
+          AND json_array_length(draft,'$.evidence')<?
+          AND NOT EXISTS(SELECT 1 FROM json_each(draft,'$.evidence') WHERE json_extract(value,'$.id')=?) RETURNING slot`,
+      [
+        JSON.stringify({ id: captured.id, fileRef: captured.fileRef }),
+        ...(guard.params ?? []),
+        ...(captured.authority.params ?? []),
+        limit,
+        captured.id,
+      ],
+    );
+    if (!rows.length) throw new ConcurrentCaptureError();
+  }
+  commitStatements(
+    draft: LifecycleDraft,
+    expectedVersion: string | null | undefined,
+  ): readonly SqlStatement[] {
+    return [
+      identityGuard(draft.eventId),
+      this.#versionGuard(expectedVersion),
+      ...lifecycleStatements(draft),
+    ];
   }
   /** Local typed ingest seam ONLY. B-33 has no documented producer/wire decoder yet. */
   async ingestDecision(decision: RelocationDecision): Promise<void> {

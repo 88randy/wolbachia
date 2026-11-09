@@ -158,6 +158,9 @@ def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
     scope = captured_scope(membership)
     if not scope.allows(permission):
         raise PermissionDenied
+    from lab.independent_qa.selectors import visibility_revision
+    from uploads.access import UploadActor
+
     return ProducerContext(
         batch.organization,
         batch.user,
@@ -165,6 +168,7 @@ def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
         batch.received_at,
         permission,
         configuration_generation=captured_generation(membership),
+        lab_visibility_revision=visibility_revision(UploadActor(batch.user, batch.organization)),
     )
 
 
@@ -180,6 +184,10 @@ def scope_revision(ctx: ProducerContext) -> str:
         FIELD_EVENT_SYNC,
         "supply_assignment.receive",
         "supply_assignment.reconcile",
+        "egg_count.read",
+        "egg_count.void",
+        "recount.create",
+        "recount.adjudicate",
     }
     grants = [
         {"permissions": sorted(codes & relevant), "scope": scope}
@@ -192,6 +200,7 @@ def scope_revision(ctx: ProducerContext) -> str:
             "grants": [json.loads(grant) for grant in sorted(unique)],
             "generation": ctx.configuration_generation,
             "schema": bundle_schema_version(),
+            "lab_visibility": ctx.lab_visibility_revision,
         }
     )
 
@@ -267,10 +276,19 @@ def list_courier_changes(ctx: ProducerContext, after: int) -> tuple[list[Courier
     return rows[: settings.API_CURSOR_PAGE_SIZE], len(rows) > settings.API_CURSOR_PAGE_SIZE
 
 
-def _typed_changes(rows: list[CourierChange]) -> dict[str, list[dict[str, Any]]]:
+def _typed_changes(
+    rows: list[CourierChange], ctx: ProducerContext
+) -> dict[str, list[dict[str, Any]]]:
     from field_sync.producers import SECTION_KEYS
 
     sections: dict[str, list[dict[str, Any]]] = {key: [] for key in SECTION_KEYS}
+    from lab.independent_qa.services import publish_history_batch
+    from uploads.access import UploadActor
+
+    publish_history_batch(
+        UploadActor(ctx.user, ctx.organization),
+        [row.payload for row in rows if row.kind == "history"],
+    )
     for row in rows:
         sections[row.kind].append(
             {
@@ -307,7 +325,7 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerConte
         next_change_at=rules["next_change_at"],
         capture_context=capture_context(ctx, revision=revision),
         has_more=page.has_more or has_more,
-        **_typed_changes(rows),
+        **_typed_changes(rows, ctx),
     )
 
 

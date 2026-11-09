@@ -174,7 +174,10 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
   await assert.rejects(
     new OutboxRepository(local.executor, () => PROJECTION_NOW).enqueue(
       lifecycleEvent(legacyDraft),
-      new LifecycleStore(local.executor).commitStatements(legacyDraft),
+      new LifecycleStore(local.executor).commitStatements(
+        legacyDraft,
+        (await new LifecycleStore(local.executor).read()).draftVersion,
+      ),
     ),
     /could not be saved/,
   );
@@ -194,7 +197,7 @@ void test("C3/C4: schema14 recovery requires a complete owned body across 304, f
   await assert.rejects(
     new OutboxRepository(local.executor, () => PROJECTION_NOW).enqueue(
       lifecycleEvent(legacyDraft),
-      lifecycle.commitStatements(legacyDraft),
+      lifecycle.commitStatements(legacyDraft, (await lifecycle.read()).draftVersion),
     ),
     /could not be saved/,
   );
@@ -362,7 +365,10 @@ async function invalidCursorReadiness(directory: string) {
       await assert.rejects(
         outbox.enqueue(
           lifecycleEvent(draft),
-          new LifecycleStore(local.executor).commitStatements(draft),
+          new LifecycleStore(local.executor).commitStatements(
+            draft,
+            (await new LifecycleStore(local.executor).read()).draftVersion,
+          ),
         ),
         /could not be saved/,
       );
@@ -394,7 +400,10 @@ async function invalidCursorReadiness(directory: string) {
     assert.deepEqual(await kept(), before);
     await new OutboxRepository(local.executor, () => PROJECTION_NOW).enqueue(
       lifecycleEvent(draft),
-      new LifecycleStore(local.executor).commitStatements(draft),
+      new LifecycleStore(local.executor).commitStatements(
+        draft,
+        (await new LifecycleStore(local.executor).read()).draftVersion,
+      ),
     );
     assert.deepEqual(
       (await local.executor.query("SELECT id FROM outbox_event ORDER BY id")).map((row) => row.id),
@@ -768,7 +777,10 @@ async function saveProjectionCapture(db: SqlExecutor, id = CONTRACT_IDS.source) 
   const draft = await prepareProjectionCapture(db, id);
   const store = new LifecycleStore(db);
   const outbox = new OutboxRepository(db, () => PROJECTION_NOW);
-  await outbox.enqueue(lifecycleEvent(draft), store.commitStatements(draft));
+  await outbox.enqueue(
+    lifecycleEvent(draft),
+    store.commitStatements(draft, (await store.read()).draftVersion),
+  );
   return draft;
 }
 async function prepareProjectionCapture(db: SqlExecutor, id = CONTRACT_IDS.source) {

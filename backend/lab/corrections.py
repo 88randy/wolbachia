@@ -53,6 +53,10 @@ def void_result(actor: UploadActor, command: LabCommand, request: LabCommandInpu
         or request.target.identifier not in {previous.count_id, previous.rejection_id}
     ):
         raise LabConflictError("lab_state_conflict", 0 if previous is None else previous.revision)
+    from lab.models import PaddleReuse
+
+    if PaddleReuse.objects.filter(binding__bag=bag).exists():
+        raise LabConflictError("lab_material_dependency")
     choice = lab_void_reason(request.values, actor.organization.pk)
     replacement = request.values.get("replacement")
     old_request = (

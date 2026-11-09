@@ -194,6 +194,8 @@ class LabMethodWriteSerializer(StrictPayloadSerializer):
     effective_from = serializers.DateTimeField()
     supports_viability = StrictBooleanField()
     supports_rejection = StrictBooleanField()
+    supports_independent_qa = StrictBooleanField(required=False, default=False)
+    supports_paddle_reuse = StrictBooleanField(required=False, default=False)
 
 
 class LabMethodDecisionSerializer(StrictPayloadSerializer):
@@ -257,6 +259,8 @@ class LabMethodVersionSerializer(OrgScopedModelSerializer):
             "content_hash",
             "supports_viability",
             "supports_rejection",
+            "supports_independent_qa",
+            "supports_paddle_reuse",
             "verification",
             "availability",
             "created_at",
@@ -342,7 +346,7 @@ class LabMethodPinSerializer(serializers.Serializer[Any]):
 class LabMaterialSerializer(serializers.Serializer[Any]):
     available = serializers.BooleanField()
     disposition_id = serializers.UUIDField(allow_null=True)
-    reason = serializers.ChoiceField(choices=["bag_disposed"], allow_null=True)
+    reason = serializers.ChoiceField(choices=["bag_disposed", "paddle_reused"], allow_null=True)
 
 
 class LabCountSerializer(serializers.Serializer[Any]):
@@ -482,16 +486,66 @@ class LabVoidContextSerializer(serializers.Serializer[Any]):
     blocked_by = serializers.ListField(child=serializers.DictField())
 
 
+class LabIndependentCandidateSerializer(serializers.Serializer[Any]):
+    candidate_kind = serializers.ChoiceField(choices=["first", "second", "third"])
+    id = serializers.UUIDField()
+    value = serializers.IntegerField(min_value=0, max_value=MAX_OBSERVATION)
+    viable_eggs = serializers.IntegerField(allow_null=True)
+    total_examined = serializers.IntegerField(allow_null=True)
+    viability_percent = serializers.DecimalField(max_digits=9, decimal_places=6, allow_null=True)
+    viability_reason = serializers.ChoiceField(choices=["not_requested", "zero_examined", ""])
+    method_version = serializers.UUIDField(allow_null=True)
+    method = LabMethodPinSerializer(allow_null=True)
+    verification_id = serializers.UUIDField(allow_null=True)
+    created_at = serializers.DateTimeField()
+    created_by = serializers.UUIDField()
+
+
+class LabIndependentResolutionSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    candidate_kind = serializers.ChoiceField(choices=["first", "second", "third"])
+    final_attempt_id = serializers.UUIDField()
+    revision = serializers.IntegerField(min_value=1)
+    reason_code = serializers.CharField()
+    reason = serializers.CharField()
+    created_at = serializers.DateTimeField()
+    created_by = serializers.UUIDField()
+
+
+class LabIndependentRequestDetailsSerializer(serializers.Serializer[Any]):
+    first_result_id = serializers.UUIDField()
+    expected_result_revision = serializers.IntegerField(min_value=1)
+    expected_revision = serializers.IntegerField(min_value=0)
+    candidates = serializers.ListField(
+        child=LabIndependentCandidateSerializer(), min_length=1, max_length=3
+    )
+    resolution = LabIndependentResolutionSerializer(allow_null=True)
+
+
 class RecountRequestSerializer(OrgScopedModelSerializer):
     causes = serializers.SerializerMethodField()
     superseded = serializers.SerializerMethodField()
+    independent_qa = serializers.SerializerMethodField()
+
+    @extend_schema_field(LabIndependentRequestDetailsSerializer(allow_null=True))
+    def get_independent_qa(self, request: RecountRequest) -> dict[str, Any] | None:
+        from lab.selectors import independent_request_projection
+
+        return independent_request_projection(request)
 
     def get_causes(self, request: RecountRequest) -> list[dict[str, Any]]:
-        return list(
-            request.causes.order_by("created_at", "id").values(
-                "id", "kind", "proof", "actor_kind", "created_at"
+        return [
+            {
+                "id": cause.pk,
+                "kind": cause.kind,
+                "proof": cause.proof,
+                "actor_kind": cause.actor_kind,
+                "created_at": cause.created_at,
+            }
+            for cause in sorted(
+                request.causes.all(), key=lambda cause: (cause.created_at, cause.pk)
             )
-        )
+        ]
 
     def get_superseded(self, request: RecountRequest) -> bool:
         return hasattr(request, "supersession")
@@ -507,6 +561,7 @@ class RecountRequestSerializer(OrgScopedModelSerializer):
             "policy_version",
             "causes",
             "superseded",
+            "independent_qa",
             "created_at",
         )
         read_only_fields = fields
