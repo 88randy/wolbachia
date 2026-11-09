@@ -7,11 +7,13 @@ import { DayBundleService } from "../src/features/day/bundle-service.ts";
 import type { BundleResult } from "../src/features/day/bundle-service.ts";
 import { DayStore } from "../src/features/day/store.ts";
 import { ShiftCloseService } from "../src/features/shift-close/service.ts";
-import { KvStore } from "../src/db/kv-store.ts";
+import { KvStore, setStatement } from "../src/db/kv-store.ts";
 import { OutboxRepository } from "../src/outbox/outbox-repository.ts";
 import { ownerKey } from "../src/attachments/types.ts";
 import { openTestDatabase } from "./support/sqlite-executor.ts";
 import { makeEnvelope } from "./support/factories.ts";
+import { supplyAssignment, RECEIPT_PROFILE } from "./support/m-05-fixtures.ts";
+import { readClosingSupplies } from "../src/features/shift-close/supplies.ts";
 import { CONTRACT_IDS } from "./support/lifecycle-contract-fixtures.ts";
 import {
   projectionBundle,
@@ -23,12 +25,22 @@ import {
 const SHIFT = CONTRACT_IDS.history;
 const RECEIPT = "10000000-0000-4000-8000-000000000001";
 const CLOSE = "10000000-0000-4000-8000-000000000002";
+const ASSIGNMENT = supplyAssignment();
 const SUPPLY = {
+  ...ASSIGNMENT,
   id: CONTRACT_IDS.source,
   shift_id: SHIFT,
   date: "2026-11-06",
   origin_id: CONTRACT_IDS.center,
-  reconciliation: { revision: 1, frame: null },
+  lines: ASSIGNMENT.lines.map((line) => ({ ...line, quantity: "10" })),
+  reconciliation: null,
+  releases: [
+    {
+      ...ASSIGNMENT.releases[0],
+      id: RECEIPT,
+      lines: [{ ...ASSIGNMENT.releases[0]?.lines[0], id: RECEIPT, quantity: "10" }],
+    },
+  ],
   receipts: [
     {
       id: RECEIPT,
@@ -72,11 +84,25 @@ void test("an upgraded supply consumer requires a complete bootstrap across fail
           ? CLOSE
           : `20000000-0000-4000-8000-${String(uuidSequence).padStart(12, "0")}`,
       identity: () => ownerKey(PROJECTION_IDENTITY.owner),
+      supplySource: () =>
+        readClosingSupplies(phone.executor, {
+          identity: PROJECTION_IDENTITY,
+          isCurrent: () => true,
+        }),
       pending: () => Promise.resolve([]),
       serialize: (write) => write(),
       notify: () => undefined,
     });
   try {
+    await phone.executor.runAtomically([
+      setStatement(
+        "session_profile",
+        JSON.stringify({
+          ...RECEIPT_PROFILE,
+          permissions: ["field_event.sync", "supply_assignment.reconcile"],
+        }),
+      ),
+    ]);
     // The previous consumer retained a valid cursor/context but did not materialize supplies.
     await bundle().refresh();
     await new OutboxRepository(phone.executor, () => PROJECTION_NOW).enqueue(
@@ -102,7 +128,7 @@ void test("an upgraded supply consumer requires a complete bootstrap across fail
       kind: "bundle",
       body: { ...projectionBundle(), supplies: [{ ...SUPPLY, receipts: null }] },
     };
-    await assert.rejects(bundle().refresh(), /supply collection/);
+    await assert.rejects(bundle().refresh(), /courier body contract/);
     await bundle().applyProjectionChanges(projectionChanges({ supplies: [] }));
     assert.equal(
       await store().needsBootstrap(),

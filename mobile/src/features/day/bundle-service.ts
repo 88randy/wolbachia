@@ -10,6 +10,8 @@ import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-contex
 import type { LifecycleSourceReader } from "../ovitrap-lifecycle/source-context.ts";
 import type { LifecycleSourceRequest, LifecycleAdmission } from "../ovitrap-lifecycle/types.ts";
 import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
+import type { SupplyProjectionSource } from "../supply-receipt/projection-types.ts";
+import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
 
 export type BundleResult =
   | { readonly kind: "bundle"; readonly body: unknown }
@@ -180,7 +182,11 @@ export class DayBundleService {
   async #requiresBody(force: boolean, handle: CaptureTransportHandle | null): Promise<boolean> {
     const consumesLifecycle = this.#deps.getCaptureIdentity !== undefined;
     if (consumesLifecycle && (handle === null || handle.scopeRevision === null)) return true;
-    return force || (await this.#deps.store.needsBootstrap(consumesLifecycle));
+    return (
+      force ||
+      (await this.#deps.store.needsBootstrap(consumesLifecycle)) ||
+      (consumesLifecycle && (await this.#deps.store.needsSupplyBootstrap()))
+    );
   }
   #replace(body: unknown, turn: ProjectionTurn): Promise<ProjectionTurn> {
     return turn.write(async () => {
@@ -308,6 +314,21 @@ export class DayBundleService {
       const cache = await this.read();
       assertCurrent();
       return action(cache);
+    });
+  }
+  /** Supply capture shares the existing short writer, original identity and durable projection CAS. */
+  async withSupplyAssignments<T>(
+    action: (source: SupplyProjectionSource) => Promise<T>,
+  ): Promise<T> {
+    const turn = await this.#captureTurn();
+    if (turn.handle === null)
+      throw new SupplyProjectionUnavailable("Supply capture context unavailable.");
+    const handle = turn.handle;
+    return turn.write(async () => {
+      const source = await this.#deps.store.supplyAssignments(handle);
+      if (!handle.isCurrent())
+        throw new SupplyProjectionUnavailable("Supply capture context unavailable.");
+      return action(source);
     });
   }
 }

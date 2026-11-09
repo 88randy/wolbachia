@@ -34,10 +34,13 @@ import { attachmentSyncHooks } from "../attachments/sync-hooks.ts";
 import type { Attachments } from "../attachments/create-attachments.ts";
 import { createNativePhotoAcquisition } from "../attachments/native-photo-acquisition.ts";
 import { acceptedEvidenceOwner } from "../attachments/accepted-owner.ts";
+import { createSupplyReceipt } from "../features/supply-receipt/create-supply-receipt.ts";
+import type { SupplyReceiptService } from "../features/supply-receipt/service.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly attachments: Attachments;
+  readonly supplyReceipt: SupplyReceiptService;
   readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
@@ -72,11 +75,8 @@ export async function createServices(): Promise<AppServices> {
     requests: () => requests,
     getCaptureIdentity: () => captureIdentity(acceptedAuth, credentials, deviceId),
   });
-  const {
-    auth,
-    credentials: tokens,
-    requests,
-  } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  const runtime = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  const { auth, credentials: tokens, requests } = runtime;
   acceptedAuth = auth;
   const attachments = createAttachments({ db, auth, tokens, deviceId, requests });
   const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
@@ -87,7 +87,8 @@ export async function createServices(): Promise<AppServices> {
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
   const captures = createCaptures(captureDeps, bundle, day);
   const shiftClose = createShiftClose({ ...captureDeps, day, bundle, auth, deviceId });
-  return { ...shared, ...captures, engine, shiftOpen, shiftClose, day };
+  const supplyReceipt = createSupplyReceipt({ ...captureDeps, auth, bundle });
+  return { ...shared, ...captures, engine, shiftOpen, shiftClose, day, supplyReceipt };
 }
 function captureIdentity(
   auth: AuthController | null,

@@ -1,16 +1,10 @@
 import type { Schemas } from "@wolbachia/api-client";
-import type { SqlStatement } from "../../db/sql.ts";
-import { courierSection, projectionStatement } from "../ovitrap-lifecycle/projection-record.ts";
-import {
-  readDate,
-  readRecord,
-  readUuid,
-  readString,
-  nullable,
-  readBoolean,
-  readEnvelope,
-  requireResourceIdentity,
-} from "../ovitrap-lifecycle/contract-readers.ts";
+import { readSupplyAssignment } from "../supply-receipt/projection-contract.ts";
+import { readSupplyAssignments } from "../supply-receipt/projection-state.ts";
+import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
+import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
+import type { SqlExecutor } from "../../db/sql.ts";
+import { readCaptureTransport } from "../ovitrap-lifecycle/context-state.ts";
 
 export interface SupplySource {
   readonly id: string;
@@ -21,92 +15,27 @@ export interface SupplySource {
   readonly frame: Schemas["SupplyFrameLine"][];
   readonly receipts: Schemas["SupplyReceiptBundle"][];
 }
-function array(value: unknown): unknown[] {
-  if (!Array.isArray(value)) throw new Error("Invalid supply collection.");
-  return value as unknown[];
-}
-function revision(value: unknown): number {
-  if (typeof value !== "number" || !Number.isSafeInteger(value) || value < 0)
-    throw new Error("Invalid supply revision.");
-  return value;
-}
-function quantity(value: unknown): string {
-  const result = readString(value);
-  if (!/^-?\d+(?:\.\d{1,6})?$/.test(result)) throw new Error("Invalid supply quantity.");
-  return result;
-}
-function frameLine(value: unknown): Schemas["SupplyFrameLine"] {
-  const row = readRecord(value);
-  return {
-    assignment_line_id: readUuid(row.assignment_line_id),
-    plan_revision: revision(row.plan_revision),
-    planned: quantity(row.planned),
-    credited: nullable(quantity)(row.credited),
-    used: quantity(row.used),
-    returned: quantity(row.returned),
-    shrinkage: quantity(row.shrinkage),
-    difference: nullable(quantity)(row.difference),
-    delivery_variance: nullable(quantity)(row.delivery_variance),
-  };
-}
-function receipt(value: unknown): Schemas["SupplyReceiptBundle"] {
-  const row = readRecord(value);
-  return {
-    id: readUuid(row.id),
-    event_id: readUuid(row.event_id),
-    source_event_id: readUuid(row.source_event_id),
-    release_id: readUuid(row.release_id),
-    signature_upload_id: readUuid(row.signature_upload_id),
-    voided: readBoolean(row.voided),
-    lines: array(row.lines).map((value) => {
-      const line = readRecord(value);
-      return {
-        id: readUuid(line.id),
-        release_line_id: readUuid(line.release_line_id),
-        quantity: quantity(line.quantity),
-      };
-    }),
-  };
-}
-/** Decode the consumed subset of the generated SupplyBundle, keeping null custody distinct. */
+
+/** Copy canonical received custody and usage; local receipt drafts are not server credit. */
 export function readSupplySource(value: unknown): SupplySource {
-  const row = readRecord(value);
-  const reconciliation = row.reconciliation === null ? null : readRecord(row.reconciliation);
-  const frame = reconciliation?.frame == null ? null : readRecord(reconciliation.frame);
+  const assignment = readSupplyAssignment(value);
   return {
-    id: readUuid(row.id),
-    date: readDate(row.date),
-    shiftId: nullable(readUuid)(row.shift_id),
-    originId: readUuid(row.origin_id),
-    revision: reconciliation === null ? 0 : revision(reconciliation.revision),
-    frame: frame === null ? [] : array(frame.lines).map(frameLine),
-    receipts: array(row.receipts).map(receipt),
+    id: assignment.id,
+    date: assignment.date,
+    shiftId: assignment.shift_id,
+    originId: assignment.origin_id,
+    revision: assignment.reconciliation?.revision ?? 0,
+    frame: assignment.reconciliation?.frame?.lines ?? [],
+    receipts: assignment.receipts,
   };
 }
-export function supplyBundleStatements(body: unknown): readonly SqlStatement[] {
-  return courierSection(body, "supplies")
-    .map(readSupplySource)
-    .map((source) =>
-      projectionStatement({
-        kind: "supply_assignment",
-        id: source.id,
-        version: "bootstrap",
-        sequence: 0,
-        body: source,
-      }),
-    );
-}
-export function supplyChangeStatements(body: unknown): readonly SqlStatement[] {
-  return courierSection(body, "supplies").map((value) => {
-    const envelope = readEnvelope(value, ["supply_assignment"]);
-    const source = readSupplySource(envelope.data);
-    requireResourceIdentity(envelope.resource_id, source.id);
-    return projectionStatement({
-      kind: "supply_assignment",
-      id: source.id,
-      version: envelope.resource_version,
-      sequence: envelope.sequence,
-      body: source,
-    });
-  });
+
+/** Caller owns the existing projection writer; this read never acquires it again. */
+export async function readClosingSupplies(
+  db: SqlExecutor,
+  input: { readonly identity: EvidenceIdentity | null; readonly isCurrent: () => boolean },
+) {
+  const handle = await readCaptureTransport(db, input.identity, input.isCurrent);
+  if (handle === null) throw new SupplyProjectionUnavailable("Supply capture context unavailable.");
+  return readSupplyAssignments(db, handle, "reconcile");
 }

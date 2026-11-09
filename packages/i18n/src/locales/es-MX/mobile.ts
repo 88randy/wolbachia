@@ -675,4 +675,94 @@ export const mobile = {
     "El borrador se conserva, pero su propiedad no está probada para esta sesión. Entra con la cuenta original o pide ayuda a soporte.",
   "mobile.lifecycle.remoteProposal":
     "Propuesta descargada del servidor; no es una captura local editable.",
+  "mobile.supplyReceipt.title": "Recibir insumos",
+  "mobile.supplyReceipt.subtitle": "Firma solo lo que recibiste físicamente",
+  "mobile.supplyReceipt.start": "Revisar esta entrega",
+  "mobile.supplyReceipt.resume": "Abrir recibo guardado",
+  "mobile.supplyReceipt.assignment": "Asignación",
+  "mobile.supplyReceipt.release": "Salida de almacén",
+  "mobile.supplyReceipt.lot": "Lote",
+  "mobile.supplyReceipt.piece": "Pieza",
+  "mobile.supplyReceipt.unit": "Unidad declarada",
+  "mobile.supplyReceipt.expected": "Cantidad esperada",
+  "mobile.supplyReceipt.actual": "Cantidad recibida",
+  "mobile.supplyReceipt.declaredUnits":
+    "Usa la unidad declarada en esta entrega. No conviertas cajas a piezas. Los códigos y nombres de unidad aún no están disponibles; verifica los identificadores con almacén.",
+  "mobile.supplyReceipt.noAssignments":
+    "No hay entregas asignadas disponibles en la copia descargada. Puedes actualizar o volver a tu jornada.",
+  "mobile.supplyReceipt.unavailable":
+    "Falta una copia actual autorizada de tus entregas. Actualiza con señal o pide ayuda a tu supervisor. Tus recibos se conservan.",
+  "mobile.supplyReceipt.refresh": "Actualizar entregas",
+  "mobile.supplyReceipt.working": "Guardando en el teléfono…",
+  "mobile.supplyReceipt.save": "Guardar recibo firmado en el teléfono",
+  "mobile.supplyReceipt.saved":
+    "Recibo firmado guardado en el teléfono. Esto aún no confirma su recepción en el servidor.",
+  "mobile.supplyReceipt.serverReceived":
+    "Acuse inicial: el servidor recibió el recibo. Consulta por separado cualquier revisión de tu supervisor.",
+  "mobile.supplyReceipt.review":
+    "Acuse inicial: el servidor recibió el recibo para revisión. Se conserva lo que firmaste; este acuse por sí solo no confirma inventario acreditado.",
+  "mobile.supplyReceipt.rejected":
+    "El servidor no aplicó el recibo. La captura y tu firma se conservan; revisa la bandeja o pide ayuda a tu supervisor.",
+  "mobile.supplyReceipt.pendingSignature":
+    "La firma está guardada en el teléfono y su archivo sigue pendiente de carga. Puedes consultar o reintentar en la bandeja.",
+  "mobile.supplyReceipt.inbox": "Abrir bandeja de sincronización",
+  "mobile.supplyReceipt.scanLabel": "Código QR del lote",
+  "mobile.supplyReceipt.scanHint":
+    "También puedes pegar el contenido completo del QR o capturar el UUID del lote. Un código de etiqueta sin identificación confirmada no se agrega.",
+  "mobile.supplyReceipt.scan": "Validar QR del lote",
+  "mobile.supplyReceipt.manual": "Validar UUID del lote manualmente",
+  "mobile.supplyReceipt.duplicate": "Este código ya fue registrado. No se agregó otra pieza.",
+  "mobile.supplyReceipt.added":
+    "Código reconocido. Revisa la cantidad en la unidad declarada antes de firmar.",
+  "mobile.supplyReceipt.invalid":
+    "No pudimos validar este código para tu entrega. No se agregó. Verifica el identificador con almacén o tu supervisor.",
+  "mobile.supplyReceipt.discrepancy": "Explica cualquier diferencia",
+  "mobile.supplyReceipt.missing": "Falta material",
+  "mobile.supplyReceipt.damaged": "Llegó dañado",
+  "mobile.supplyReceipt.other": "Otro (especificar)",
+  "mobile.supplyReceipt.discrepancyText": "Explicación de la diferencia",
+  "mobile.supplyReceipt.discrepancyHint":
+    "Firma las cantidades reales. El servidor conservará la diferencia para revisión; no cambies las cantidades para hacerlas coincidir.",
+  "mobile.supplyReceipt.photo": "Fotografiar el daño",
+  "mobile.supplyReceipt.photoSaved":
+    "Foto del daño conservada solo en el teléfono. Aún no puede enviarse junto con este recibo; pide ayuda a tu supervisor.",
+  "mobile.supplyReceipt.signatureTitle": "Firma de recibido",
+  "mobile.supplyReceipt.signatureHint":
+    "Firma aquí con el dedo o fotografía tu firma manuscrita. La firma corresponde a las cantidades y diferencias que aparecen arriba.",
+  "mobile.supplyReceipt.signatureCapture": "Conservar esta firma",
+  "mobile.supplyReceipt.signaturePhoto": "Fotografiar mi firma manuscrita",
+  "mobile.supplyReceipt.signatureSaved": "Firma conservada en el teléfono",
+  "mobile.supplyReceipt.undo": "Deshacer último trazo",
+  "mobile.supplyReceipt.clear": "Empezar la firma de nuevo",
+  "mobile.supplyReceipt.signatureRequired":
+    "Falta tu firma. Firma con el dedo o fotografía tu firma manuscrita antes de guardar.",
+  "mobile.supplyReceipt.quantityInvalid":
+    "Revisa las cantidades en su unidad declarada. Una pieza solo admite cero o uno; el resto admite hasta seis decimales dentro de la entrega.",
+  "mobile.supplyReceipt.discrepancyRequired":
+    "Declara el motivo de la diferencia antes de firmar el recibo.",
+  "mobile.supplyReceipt.otherRequired": "Escribe una explicación para Otro antes de guardar.",
+  "mobile.supplyReceipt.evidenceRequired":
+    "Falta la foto del daño. Tómala antes de firmar; el resto de tu captura se conserva.",
+  "mobile.supplyReceipt.staleDraft":
+    "La captura cambió mientras trabajabas. Revisa el recibo conservado y vuelve a intentar.",
+  "mobile.supplyReceipt.shiftRequired":
+    "Abre una jornada autorizada antes de recibir insumos. Tu borrador se conserva.",
+  "mobile.supplyReceipt.configurationRequired":
+    "Faltan catálogos o reglas descargados. Actualiza con señal antes de firmar.",
+  "mobile.supplyReceipt.startScanner": "Escanear QR con la cámara",
+  "mobile.supplyReceipt.scannerTitle": "Escanear lote de esta entrega",
+  "mobile.supplyReceipt.scannerHint":
+    "Apunta al código QR del lote. El lector se cierra después de cada lectura; revisa la cantidad antes de firmar.",
+  "mobile.supplyReceipt.stopScanner": "Cerrar lector y volver al recibo",
+  "mobile.supplyReceipt.scannerPermission":
+    "El permiso de cámara no está disponible. Puedes activarlo en Ajustes o usar la captura manual del identificador.",
+  "mobile.supplyReceipt.scannerRetry":
+    "Desbloquea el teléfono y vuelve a abrir el lector desde este recibo. La captura manual sigue disponible.",
+  "mobile.supplyReceipt.scannerUnavailable":
+    "No pudimos abrir la cámara. Vuelve a intentar o usa la captura manual del identificador.",
+  "mobile.supplyReceipt.reviewedAccepted": "Revisión posterior: recibo aceptado por el supervisor.",
+  "mobile.supplyReceipt.reviewedVoided":
+    "Revisión posterior: recibo anulado por el supervisor. La captura firmada se conserva.",
+  "mobile.supplyReceipt.incidentOpen":
+    "Revisión posterior: se abrió una incidencia. Esto no acepta ni anula el recibo.",
 } as const satisfies AreaCatalog<"mobile">;

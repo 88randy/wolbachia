@@ -22,12 +22,87 @@ import type { SqlExecutor } from "../src/db/sql.ts";
 import { ShiftLocationSource } from "../src/features/shift-close/location.ts";
 import type { LocationState } from "../src/features/day/location.ts";
 import { reconciliationEvents } from "../src/features/shift-close/reconciliation.ts";
-import { readSupplySource, supplyBundleStatements } from "../src/features/shift-close/supplies.ts";
+import { readSupplySource, readClosingSupplies } from "../src/features/shift-close/supplies.ts";
+import { supplyBundleStatements } from "../src/features/supply-receipt/projection-state.ts";
+import {
+  supplyAssignment,
+  RECEIPT_PROFILE,
+  receiptHarness,
+  RECEIPT_SIGNATURE_ID,
+} from "./support/m-05-fixtures.ts";
+import { captureClosePhoto } from "../src/features/shift-close/photo.ts";
+import { ShiftCloseStore } from "../src/features/shift-close/store.ts";
+import {
+  PROJECTION_IDENTITY,
+  PROJECTION_NOW,
+  projectionBundle,
+} from "./support/lifecycle-projection-fixtures.ts";
+import { DayStore } from "../src/features/day/store.ts";
+import { ownerKey } from "../src/attachments/types.ts";
+import { setStatement } from "../src/db/kv-store.ts";
+import type { Schemas } from "@wolbachia/api-client";
 import { toOutboxEvent } from "../src/outbox/outbox-event.ts";
 
 const SHIFT = "10000000-0000-4000-8000-000000000001";
-const OWNER = "synthetic-owner";
+const OWNER = ownerKey(PROJECTION_IDENTITY.owner);
+async function projectSupplies(db: SqlExecutor, supplies: readonly Schemas["SupplyBundle"][]) {
+  const store = new DayStore(db);
+  const handle = await store.captureTransport(PROJECTION_IDENTITY, () => true);
+  await store.replace({ ...projectionBundle(), supplies }, PROJECTION_NOW, handle);
+}
+function supplyFixture(
+  frame: Schemas["SupplyFrameLine"][] | null = null,
+  revision = 1,
+): Schemas["SupplyBundle"] {
+  const assignment = {
+    ...supplyAssignment(),
+    shift_id: SHIFT,
+    date: "2026-01-15",
+    origin_id: SHIFT,
+    lines: supplyAssignment().lines.map((line) => ({ ...line, id: SHIFT, quantity: "10" })),
+  };
+  return {
+    ...assignment,
+    releases: [
+      {
+        id: SHIFT,
+        plan_revision: 1,
+        manifest_hash: "a".repeat(64),
+        lines: [{ id: SHIFT, assignment_line_id: SHIFT, quantity: "10", transit_policy_id: null }],
+      },
+    ],
+    reconciliation: {
+      id: SHIFT,
+      assignment,
+      revision,
+      frame_id: frame === null ? null : SHIFT,
+      frame: frame === null ? null : { assignment_id: SHIFT, lines: frame },
+      discrepancy_id: null,
+      justification_ids: [],
+    },
+  };
+}
+function receiptFixture(): Schemas["SupplyReceiptBundle"] {
+  return {
+    id: SHIFT,
+    event_id: SHIFT,
+    source_event_id: SHIFT,
+    release_id: SHIFT,
+    signature_upload_id: SHIFT,
+    voided: false,
+    lines: [{ id: SHIFT, release_line_id: SHIFT, quantity: "10" }],
+  };
+}
 async function fixture(db: SqlExecutor) {
+  await db.runAtomically([
+    setStatement(
+      "session_profile",
+      JSON.stringify({
+        ...RECEIPT_PROFILE,
+        permissions: ["field_event.sync", "supply_assignment.reconcile"],
+      }),
+    ),
+  ]);
   const outbox = new OutboxRepository(db, () => FIXED_NOW);
   const opening = makeEnvelope({
     type: "shift.open",
@@ -44,11 +119,48 @@ function serviceFor(db: SqlExecutor) {
     now: () => FIXED_NOW,
     uuid: () => `20000000-0000-4000-8000-${String(++sequence).padStart(12, "0")}`,
     identity: () => OWNER,
+    supplySource: () =>
+      readClosingSupplies(db, { identity: PROJECTION_IDENTITY, isCurrent: () => true }),
     pending: () => Promise.resolve([{ taskId: "task-one", pointCode: "OV-001" }]),
     serialize: (write) => write(),
     notify: () => undefined,
   });
 }
+void test("AC supply scope: unready foreign supply rows cannot enter a new closing draft", async () => {
+  const db = await createTestDatabase();
+  const { service } = await fixture(db);
+  await db.runAtomically(
+    supplyBundleStatements(
+      {
+        supplies: [{ ...supplyFixture(), courier_id: "90000000-0000-4000-8000-000000000001" }],
+      },
+      null,
+    ),
+  );
+  const state = await service.start();
+  assert.deepEqual(state.draft?.supplies, []);
+  await projectSupplies(db, [
+    { ...supplyFixture(), courier_id: "90000000-0000-4000-8000-000000000001" },
+    {
+      ...supplyFixture(),
+      id: "90000000-0000-4000-8000-000000000002",
+      organization_id: "90000000-0000-4000-8000-000000000003",
+      reconciliation: null,
+    },
+    {
+      ...supplyFixture(),
+      id: "90000000-0000-4000-8000-000000000004",
+      center_id: "90000000-0000-4000-8000-000000000005",
+      reconciliation: null,
+    },
+  ]);
+  assert.deepEqual((await service.refreshSupplies()).draft?.supplies, []);
+  await service.update({ odometer: "110", dispositions: { "task-one": "leave_pending" } });
+  assert.ok(
+    (await service.close()).draft?.locallyClosedAt,
+    "unavailable supplies do not block an empty local close",
+  );
+});
 void test("AC1: nonzero supply differences remain explicit and never prevent local close", async () => {
   assert.equal(
     supplyDifference({ credited: "10.000001", used: "2", returned: "7", shrinkage: "0" }),
@@ -71,20 +183,7 @@ void test("AC1: nonzero supply differences remain explicit and never prevent loc
     difference: "1",
     delivery_variance: "0",
   };
-  await db.runAtomically(
-    supplyBundleStatements({
-      supplies: [
-        {
-          id: SHIFT,
-          shift_id: SHIFT,
-          date: "2026-01-15",
-          origin_id: SHIFT,
-          reconciliation: { revision: 1, frame: { lines: [retainedFrame] } },
-          receipts: [],
-        },
-      ],
-    }),
-  );
+  await projectSupplies(db, [supplyFixture([retainedFrame])]);
   await service.start();
   await service.update({ odometer: "99", dispositions: { "task-one": "leave_pending" } });
   const result = await service.close();
@@ -228,22 +327,7 @@ void test("AC truthful delivery: pending, error, rejected and review remain dist
 void test("AC1 reconciliation: actual receipt return precedes close in one atomic outbox commit", async () => {
   const db = await createTestDatabase();
   const { service } = await fixture(db);
-  await db.runAtomically([
-    {
-      sql: "INSERT INTO lifecycle_courier_projection(kind,id,version,sequence,body) VALUES('supply_assignment',?,'v1',0,?)",
-      params: [
-        SHIFT,
-        JSON.stringify({
-          id: SHIFT,
-          shiftId: SHIFT,
-          originId: SHIFT,
-          revision: 2,
-          frame: [],
-          receipts: [{ id: SHIFT, source_event_id: SHIFT, voided: false, lines: [{ id: SHIFT }] }],
-        }),
-      ],
-    },
-  ]);
+  await projectSupplies(db, [{ ...supplyFixture(null, 2), receipts: [receiptFixture()] }]);
   const started = await service.start();
   const supply = started.draft?.supplies[0];
   assert.ok(supply);
@@ -280,6 +364,74 @@ void test("AC1 reconciliation: actual receipt return precedes close in one atomi
     ],
     shrinkage: [],
   });
+});
+
+void test("AC supply authority: create, additions and reconciliation CAS reject invalidated sources while retaining original snapshots", async () => {
+  for (const phase of ["create", "additions", "reconcile"] as const) {
+    const db = await createTestDatabase();
+    const { service } = await fixture(db);
+    const original = { ...supplyFixture(null, 2), receipts: [receiptFixture()] };
+    await projectSupplies(db, [original]);
+    if (phase !== "create") await service.start();
+    if (phase === "additions") {
+      await projectSupplies(db, [
+        original,
+        {
+          ...supplyFixture(),
+          id: "90000000-0000-4000-8000-000000000001",
+          reconciliation: null,
+        },
+      ]);
+    }
+    if (phase === "reconcile") {
+      const supply = (await service.read()).draft?.supplies[0];
+      assert.ok(supply);
+      await service.update({
+        odometer: "110",
+        dispositions: { "task-one": "leave_pending" },
+        supplies: [
+          {
+            ...supply,
+            returns: [{ receiptLineId: SHIFT, receiptSourceEventId: SHIFT, returned: "1" }],
+          },
+        ],
+      });
+    }
+    const before = (await service.read()).draft;
+    const stale = serviceFor({
+      ...db,
+      runAtomically: async (statements) => {
+        await db.runAtomically([setStatement("supply_receipt_projection", '{"ready":false}')]);
+        await db.runAtomically(statements);
+      },
+    });
+    const attempt = {
+      create: () => stale.start(),
+      additions: () => stale.refreshSupplies(),
+      reconcile: () => stale.close(),
+    }[phase];
+    await assert.rejects(attempt, (error: unknown) => error instanceof Error, phase);
+    assert.deepEqual((await service.read()).draft, before, phase);
+    assert.equal(
+      (
+        await db.query(
+          "SELECT id FROM outbox_event WHERE type IN ('supplies.reconcile','shift.close')",
+        )
+      ).length,
+      0,
+      phase,
+    );
+    if (phase === "reconcile") {
+      await projectSupplies(db, [{ ...supplyFixture(null, 3), receipts: [receiptFixture()] }]);
+      const closed = await service.close();
+      assert.equal(
+        closed.events[0]?.envelope.payload.expected_revision,
+        2,
+        "current authority does not rewrite the captured reconciliation revision",
+      );
+      assert.equal(closed.draft?.supplies[0]?.source.revision, 2);
+    }
+  }
 });
 
 void test("AC2 location: local close stops a late native watcher; cold start refuses it and rejected close cannot resume capture", async () => {
@@ -374,29 +526,18 @@ void test("AC1 source projection: received zero and missing receipt differ; malf
     difference: "0",
     delivery_variance: "10",
   };
-  const body = {
-    supplies: [
-      {
-        id: SHIFT,
-        shift_id: SHIFT,
-        date: "2026-01-15",
-        origin_id: SHIFT,
-        reconciliation: { revision: 1, frame: { lines: [frame] } },
-        receipts: [],
-      },
-    ],
-  };
-  await db.runAtomically(supplyBundleStatements(body));
+  const body = { supplies: [supplyFixture([frame])] };
+  await projectSupplies(db, body.supplies);
   const { service } = await fixture(db);
   const started = await service.start();
   assert.equal(started.draft?.supplies[0]?.source.frame[0]?.credited, "0");
   assert.throws(
-    () => supplyBundleStatements({ supplies: [{ ...body.supplies[0], receipts: null }] }),
-    /supply collection/i,
+    () => supplyBundleStatements({ supplies: [{ ...body.supplies[0], receipts: null }] }, null),
+    /courier body contract/i,
   );
 });
 
-void test("AC evidence dependency: an unverified nested shrinkage photo holds both reconcile and close", async () => {
+void test("AC evidence dependency: signature and nested shrinkage evidence hold receipt, reconcile and close without blocking unrelated JSON", async () => {
   const db = await createTestDatabase();
   const { service, outbox } = await fixture(db);
   const store = new AttachmentStore(db);
@@ -412,10 +553,34 @@ void test("AC evidence dependency: an unverified nested shrinkage photo holds bo
     isFinal: () => false,
   });
   const fence = await session.capture();
+  const signatureId = "30000000-0000-4000-8000-000000000001";
+  const receipt = makeEnvelope({
+    type: "supplies.receive",
+    shift_id: SHIFT,
+    payload: { signature_upload_id: signatureId },
+  });
+  await store.reserve({ id: signatureId, draftId: receipt.id, fence });
+  await store.saveOwned(
+    {
+      id: signatureId,
+      fileRef: "private-test-signature",
+      contentType: "image/png",
+      sizeBytes: 1,
+      sha256: "synthetic-signature-hash",
+    },
+    fence,
+  );
+  await outbox.enqueue(
+    receipt,
+    store.bindingStatements({ eventId: receipt.id, evidenceIds: [signatureId], fence }),
+  );
   const reconcile = makeEnvelope({
     type: "supplies.reconcile",
     shift_id: SHIFT,
-    payload: { shrinkage: [{ evidence_ids: [SHIFT] }] },
+    payload: {
+      returned: [{ receipt_source_event_id: receipt.id }],
+      shrinkage: [{ evidence_ids: [SHIFT] }],
+    },
   });
   await store.reserve({ id: SHIFT, draftId: reconcile.id, fence });
   await store.saveOwned(
@@ -436,11 +601,9 @@ void test("AC evidence dependency: an unverified nested shrinkage photo holds bo
   await service.update({ odometer: "110", dispositions: { "task-one": "leave_pending" } });
   const closed = await service.close();
   const selected = await outbox.claimPending(50, { fence, isFinal: false });
-  assert.ok(
-    !selected.some(
-      (event) =>
-        event.envelope.type === "shift.close" || event.envelope.type === "supplies.reconcile",
-    ),
+  assert.deepEqual(
+    selected.map((event) => event.envelope.type),
+    ["shift.open"],
   );
   assert.equal(closeDeliveryKey(closed.events), "mobile.shiftClose.phoneClosed");
   assert.equal(
@@ -453,13 +616,29 @@ void test("AC evidence dependency: an unverified nested shrinkage photo holds bo
     }),
     true,
   );
+  assert.deepEqual(
+    await outbox.claimPending(50, { fence, isFinal: false }),
+    [],
+    "the verified shrinkage photo cannot bypass the pending receipt signature",
+  );
+  assert.equal(
+    await store.saveProgress({
+      id: signatureId,
+      fence,
+      state: "verified",
+      verifiedAt: FIXED_NOW.toISOString(),
+      attemptVersion: 0,
+    }),
+    true,
+  );
   const released = await outbox.claimPending(50, { fence, isFinal: false });
   assert.deepEqual(
     released.map((event) => event.envelope.type),
-    ["supplies.reconcile", "shift.close"],
+    ["supplies.receive", "supplies.reconcile", "shift.close"],
   );
   assert.ok(closed.draft);
   await outbox.settle([
+    { id: receipt.id, action: "accept", result: { code: "accepted", params: {} } },
     { id: reconcile.id, action: "failTransient", retryAt: "2026-01-15T12:01:00.000Z" },
     { id: closed.draft.closeEventId, action: "release" },
   ]);
@@ -512,29 +691,51 @@ void test("AC evidence retention: a stale form edit cannot erase an already adop
   assert.deepEqual(updated.supplies[0]?.photos, supply.photos);
 });
 
+void test("AC photo authority: suspension after file adoption retains bytes without publishing a stale closing photo", async (t) => {
+  const h = await receiptHarness(t);
+  const { service } = await fixture(h.db);
+  await projectSupplies(h.db, [{ ...supplyFixture(null, 2), receipts: [receiptFixture()] }]);
+  const { draft } = await service.start();
+  assert.ok(draft);
+  const supply = draft.supplies[0];
+  assert.ok(supply);
+  const source = await readClosingSupplies(h.db, {
+    identity: PROJECTION_IDENTITY,
+    isCurrent: () => true,
+  });
+  const store = new ShiftCloseStore({
+    ...h.db,
+    runAtomically: async (statements) => {
+      await h.db.runAtomically([setStatement("supply_receipt_projection", '{"ready":false}')]);
+      await h.db.runAtomically(statements);
+    },
+  });
+  await assert.rejects(
+    captureClosePhoto({
+      store,
+      draft,
+      eventId: supply.eventId,
+      attachments: h.attachments,
+      port: h.photo,
+      signal: new AbortController().signal,
+      assertCurrent: () => undefined,
+      sourceGuard: source.guard,
+    }),
+  );
+  assert.deepEqual((await service.read()).draft, draft);
+  assert.equal(
+    (await h.db.query("SELECT state FROM attachment_file WHERE id=?", [RECEIPT_SIGNATURE_ID]))[0]
+      ?.state,
+    "ready",
+  );
+});
+
 void test("AC1 shrinkage: real receipt and photo references are retained; Other without text cannot close", async () => {
   const db = await createTestDatabase();
   const { service } = await fixture(db);
   const state = await service.start();
   assert.ok(state.draft);
-  const source = readSupplySource({
-    id: SHIFT,
-    shift_id: SHIFT,
-    date: "2026-01-15",
-    origin_id: SHIFT,
-    reconciliation: { revision: 2, frame: null },
-    receipts: [
-      {
-        id: SHIFT,
-        event_id: SHIFT,
-        source_event_id: SHIFT,
-        release_id: SHIFT,
-        signature_upload_id: SHIFT,
-        voided: false,
-        lines: [{ id: SHIFT, release_line_id: SHIFT, quantity: "10" }],
-      },
-    ],
-  });
+  const source = readSupplySource({ ...supplyFixture(null, 2), receipts: [receiptFixture()] });
   const loss = {
     receiptLineId: SHIFT,
     receiptSourceEventId: SHIFT,

@@ -1,5 +1,13 @@
 # Database startup and schema lineage (#266)
 
+## Additive receipt schema17 (#134)
+
+Schema17 appends retained owner-bound receipt drafts after unchanged SQL1–16.
+A unique owner/release index prevents parallel starts. Owner/identity cannot be
+rewritten; a saved draft cannot be edited or removed. Shared owner admission also
+checks no-file receipt origins, and local-record detection protects those drafts.
+The existing outbox and attachment tables remain the only transport journals.
+
 Read mobile/README.md and engineering-rules.md first. Encryption/key validation
 remains in encrypted-database.ts. After it returns, open-database.ts delegates to
 prepare-database.ts: structural preflight, existing WAL/FULL, then migrate. Public

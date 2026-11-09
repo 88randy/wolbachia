@@ -44,6 +44,14 @@ import {
   removeManifest,
 } from "./projection-statements.ts";
 import type { AssignedTask, BundleMeta, DayCache, MapManifest, ProjectionChange } from "./types.ts";
+import {
+  supplyBundleStatements,
+  supplyChangeStatements,
+  clearSupplyProjection,
+  invalidateSupplyProjection,
+  needsSupplyBootstrap,
+  readSupplyAssignments,
+} from "../supply-receipt/projection-state.ts";
 function assignmentStatement(change: ProjectionChange) {
   if (change.action === "remove") return { statement: removeTask(change), isUnreadable: false };
   const task = parseAssignment(change.data);
@@ -103,6 +111,12 @@ export class DayStore {
   currentTask(id: string, expected: TaskOwner) {
     return readCurrentTask(this.#db, id, expected);
   }
+  supplyAssignments(handle: CaptureTransportHandle) {
+    return readSupplyAssignments(this.#db, handle);
+  }
+  needsSupplyBootstrap(): Promise<boolean> {
+    return needsSupplyBootstrap(this.#db);
+  }
   advanceCaptureTransport(
     handle: CaptureTransportHandle | null,
   ): Promise<CaptureTransportHandle | null> {
@@ -126,6 +140,7 @@ export class DayStore {
       ...bundle.manifests.map((manifest) => upsertManifest(manifest)),
       bundleMetadata(bundle.meta),
       ...courierBundleStatements(body),
+      ...supplyBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
       isRecord(body) && Array.isArray(body.supplies)
         ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
@@ -152,6 +167,7 @@ export class DayStore {
       ...tasks.map((entry) => entry.statement),
       ...manifests,
       ...courierChangeStatements(body),
+      ...supplyChangeStatements(body, handle),
       ...publishCaptureContext(body, handle, "changes"),
     ];
     statements.push(...changeMetadata(body, tasks.filter((entry) => entry.isUnreadable).length));
@@ -161,12 +177,17 @@ export class DayStore {
     await this.#db.runAtomically([
       setStatement("day_cleanup_pending", "true"),
       ...invalidateCaptureContext,
+      invalidateSupplyProjection,
       revokeCaptureScope(),
     ]);
   }
   /** Preserve caches and authored facts while a known-invalid cursor requires a new full body. */
   async suspendCaptureForRecovery(handle: CaptureTransportHandle | null): Promise<void> {
-    await this.#db.runAtomically([...captureRecoveryStatements(handle), INVALIDATE_ATTACHMENTS]);
+    await this.#db.runAtomically([
+      ...captureRecoveryStatements(handle),
+      invalidateSupplyProjection,
+      INVALIDATE_ATTACHMENTS,
+    ]);
   }
   /** Missing supply readiness also covers upgrades without changing released migrations. */
   async needsBootstrap(includeLifecycle = true): Promise<boolean> {
@@ -196,6 +217,7 @@ export class DayStore {
       { sql: "DELETE FROM day_bundle_meta" },
       ...clearDownloadedProjections,
       removeStatement(KV_KEYS.daySuppliesBootstrapReady),
+      ...clearSupplyProjection,
       ...invalidateCaptureContext,
       revokeCaptureScope(),
       { sql: "DELETE FROM day_sampling_point" },

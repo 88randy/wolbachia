@@ -3,6 +3,7 @@ import { randomUUID } from "expo-crypto";
 import { ownerKey } from "../../attachments/types.ts";
 import { acceptedEvidenceOwner } from "../../attachments/accepted-owner.ts";
 import { ShiftCloseService } from "./service.ts";
+import { readClosingSupplies } from "./supplies.ts";
 import { buildDay } from "../day/domain.ts";
 import type { SqlExecutor } from "../../db/sql.ts";
 import type { DayService } from "../day/service.ts";
@@ -25,13 +26,36 @@ interface Dependencies {
   readonly engine: SyncEngine;
   readonly shiftOpen: ShiftOpenService;
 }
-function currentOwner(deps: Dependencies): string | null {
-  const identity = acceptedEvidenceOwner({
+function currentIdentity(deps: Dependencies) {
+  return acceptedEvidenceOwner({
     profile: deps.auth.getSnapshot().profile,
     credentials: deps.tokens.getSnapshot(),
     deviceId: deps.deviceId,
   });
+}
+function currentOwner(deps: Dependencies): string | null {
+  const identity = currentIdentity(deps);
   return identity === null ? null : ownerKey(identity.owner);
+}
+function supplyReader(deps: Dependencies, readRevision: () => number) {
+  return () => {
+    const identity = currentIdentity(deps);
+    const revision = readRevision();
+    return readClosingSupplies(deps.db, {
+      identity,
+      isCurrent: () => {
+        const current = currentIdentity(deps);
+        return (
+          revision === readRevision() &&
+          deps.auth.getSnapshot().phase === "unlocked" &&
+          identity !== null &&
+          current !== null &&
+          identity.sessionId === current.sessionId &&
+          ownerKey(identity.owner) === ownerKey(current.owner)
+        );
+      },
+    });
+  };
 }
 async function pendingPoints(day: DayService) {
   const snapshot = await day.read();
@@ -40,6 +64,11 @@ async function pendingPoints(day: DayService) {
     location: { kind: "unavailable" },
     now: new Date(),
   }).pendingTasks.map(({ task }) => ({ taskId: task.id, pointCode: task.point_code }));
+}
+function notifyLocalClose(deps: Dependencies): void {
+  deps.day.stopLocation();
+  deps.shiftOpen.notifyLocalClose();
+  void deps.engine.hint();
 }
 /** Close uses the existing short projection writer and actual session owner; no capture awaits network. */
 export function createShiftClose(deps: Dependencies): ShiftCloseService {
@@ -59,6 +88,7 @@ export function createShiftClose(deps: Dependencies): ShiftCloseService {
         : null,
     canReconcile: () =>
       deps.auth.getSnapshot().profile?.permissions.includes("supply_assignment.reconcile") ?? false,
+    supplySource: supplyReader(deps, () => revision),
     localDate: (instant) =>
       captureLocalDate(instant, deps.auth.getSnapshot().profile?.organization?.timezone),
     serialize: (write) => deps.bundle.captureProjectionWriter()(write),
@@ -66,9 +96,7 @@ export function createShiftClose(deps: Dependencies): ShiftCloseService {
     attachments: deps.attachments,
     photos: deps.evidence,
     notify: () => {
-      deps.day.stopLocation();
-      deps.shiftOpen.notifyLocalClose();
-      void deps.engine.hint();
+      notifyLocalClose(deps);
     },
   });
 }

@@ -29,6 +29,7 @@
       "@maplibre/maplibre-react-native",
       "expo-location",
       ["expo-image-picker", { "microphonePermission": false, "photosPermission": false }],
+      ["expo-camera", { "microphonePermission": false, "recordAudioAndroid": false }],
       [
         "./plugins/with-package-queries",
         {

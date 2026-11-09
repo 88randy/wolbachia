@@ -1,5 +1,34 @@
 # Day projections and task locations
 
+## Courier supply projection (#134)
+
+The same DayStore transaction also publishes the actual `supplies` section into
+private KV cache rows. Full replacement binds readiness to the proven owner,
+session and capture scope revision; a missing section, legacy ETag/cursor or delta
+cannot hydrate this new consumer. Production refresh omits its ETag until a full
+body commits. Recovery suspends readiness, and revocation removes only these
+downloaded rows. Authored receipt drafts, evidence and outbox events remain owned
+by their existing local writers.
+
+Supply deltas use the canonical sequence and opaque resource version. A valid
+envelope with an unreadable body invalidates that assignment; older deltas cannot
+restore it. Invalid envelopes reject the whole transaction. Generated B10 DTOs
+retain decimal text and exact assignment/release/receipt UUIDs. Current projection
+replacement never rewrites a draft's captured original plan.
+
+`withSupplyAssignments` shares the existing short projection gate and original
+transport identity. It requires current owner/session/capture readiness, own
+assignment identity, an explicit paired sync grant, and current session-profile
+receive/upload codes. It returns a SQL predicate comparing all raw source rows;
+the receipt writer must assert that predicate inside its atomic draft/outbox write.
+The current backend context does not expose per-action grant pairs, human lot codes
+or unit labels. These are not reconstructed from display data; the server remains
+the final authority for each received source and its current receive/upload scope.
+
+`supply-projections.test.ts` owns strict custody parsing, new-consumer hydration,
+malformed delta invalidation, action-code denial and stale original-source CAS.
+These ordinary SQLite tests do not establish native cold-start or device evidence.
+
 `DayStore` owns downloaded day projections. Bootstrap replaces its sampling-point
 cache in the same SQLite transaction as assignments, manifests, metadata and the
 cursor. Deltas use the existing bundle/sync writer gate and transaction. Revoking

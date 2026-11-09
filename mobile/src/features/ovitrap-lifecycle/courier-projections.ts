@@ -1,4 +1,3 @@
-import { supplyBundleStatements, supplyChangeStatements } from "../shift-close/supplies.ts";
 import { replaceCaptureScope } from "./current-scope.ts";
 import { courierPointChanges } from "./courier-point-projections.ts";
 import { parseSamplingPoints } from "../day/sampling-point-parser.ts";
@@ -52,7 +51,6 @@ export function courierChangeStatements(changes: unknown): readonly SqlStatement
     ...section(changes, "ovitraps").map(changeStatement),
     ...courierPointChanges(section(changes, "sampling_points")),
     ...historyChangeStatements(changes),
-    ...supplyChangeStatements(changes),
     ...quadrantChangeStatements(changes),
     ...(isDrained ? [reconcileIdentityEffects(false)] : []),
   ];
@@ -75,7 +73,6 @@ export function courierBundleStatements(bundle: unknown): readonly SqlStatement[
     ...replaceSamplingPoints(validPoints),
     ...[...traps, ...points].map(statement),
     ...historyBundleStatements(bundle),
-    ...supplyBundleStatements(bundle),
     ...quadrantBundleStatements(bundle),
     replaceCaptureScope(
       points.map((point) => point.id),

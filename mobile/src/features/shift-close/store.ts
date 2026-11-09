@@ -3,6 +3,7 @@ import { readText } from "../../db/sql.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
 import type { CloseDraft } from "./domain.ts";
 import type { Schemas } from "@wolbachia/api-client";
+import { requireGuard } from "../supply-receipt/store.ts";
 
 export const CLOSE_KIND = "local.shift-close";
 /** Authored drafts live in the existing retained projection store, never in downloaded cache. */
@@ -24,8 +25,9 @@ export class ShiftCloseStore {
     );
     return row ? (JSON.parse(readText(row, "body")) as CloseDraft) : null;
   }
-  async create(draft: CloseDraft): Promise<void> {
+  async create(draft: CloseDraft, guard?: SqlStatement): Promise<void> {
     await this.db.runAtomically([
+      ...(guard === undefined ? [] : [requireGuard(guard)]),
       {
         sql: "INSERT OR IGNORE INTO lifecycle_courier_projection(kind,id,version,sequence,body) VALUES(?,?,'1',0,?)",
         params: [CLOSE_KIND, draft.shiftId, JSON.stringify(draft)],
@@ -54,23 +56,6 @@ export class ShiftCloseStore {
       [shiftId],
     );
     return rows.map(toOutboxEvent);
-  }
-  sourceGuard(ids: readonly string[]): SqlStatement {
-    return {
-      sql: `SELECT 1 WHERE NOT EXISTS(SELECT 1 FROM kv WHERE key='day_cleanup_pending' AND value='true')
-        AND NOT EXISTS(SELECT 1 FROM json_each(?) required WHERE NOT EXISTS(
-          SELECT 1 FROM lifecycle_courier_projection source WHERE source.kind='supply_assignment' AND source.id=required.value))`,
-      params: [JSON.stringify(ids)],
-    };
-  }
-  async supplies(shiftId: string, date: string | null) {
-    const rows = await this.db.query(
-      "SELECT body FROM lifecycle_courier_projection WHERE kind='supply_assignment' AND (json_extract(body,'$.shiftId')=? OR (json_extract(body,'$.shiftId') IS NULL AND json_extract(body,'$.date')=?))",
-      [shiftId, date],
-    );
-    return rows.map(
-      (row) => JSON.parse(readText(row, "body")) as import("./supplies.ts").SupplySource,
-    );
   }
   async history(shiftId: string) {
     const rows = await this.db.query(

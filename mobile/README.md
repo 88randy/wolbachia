@@ -1,5 +1,15 @@
 # mobile
 
+## M05 courier supplies (#134)
+
+P8 is reachable from the open-shift home. It retains original released lines and
+declared units, validates discrepancies and adopts a raster signature before atomic
+local save. The existing outbox/file journal owns all retry work. Phone-saved,
+signature pending, server ingest and later review outcomes remain separate.
+See [feature contract, test map and limitations](src/features/supply-receipt/README.md).
+Native/API/TalkBack and MO01 qualification remain UNRUN; no phone installation or
+deployment is part of this change.
+
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
 > Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Day list/offline map/navigation P9-P10 (#135) is aligned to scheduling assignments v2 (#109); native/device qualification is pending. P1/P2 login and local unlock are #7 (decision 116); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
@@ -990,6 +1000,7 @@ existing transactions. This is partial preparation, not full138/native acceptanc
 
 See [shift-close/README.md](src/features/shift-close/README.md) for retained close drafts,
 receipt-backed return/shrinkage, local capture/location shutdown, truthful receipt/review
-states and the criterion-to-test map. P3 restores P26/P27. Missing reception/usage facts
-stay unavailable. Supply bootstrap readiness also recovers older valid cursors/ETags before
+states and the criterion-to-test map. P3 restores P26/P27 alongside P8 supply receipt.
+Closure consumes #134's canonical downloaded receipt/frame data; missing reception/usage
+facts stay unavailable. Supply bootstrap readiness also recovers older valid cursors/ETags before
 acknowledging the new supply projection. Native/API/accessibility qualification remains pending.

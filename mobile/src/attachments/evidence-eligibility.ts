@@ -23,12 +23,16 @@ const DEPENDENCIES = `edges(parent,child) AS (
    ON ref.key='receipt_source_event_id' AND ref.value=p.id AND p.type='supplies.receive'
 )`;
 
-const UNVERIFIED_EVIDENCE = `EXISTS(SELECT 1 FROM json_tree(waiting.payload) refs
+const UNVERIFIED_EVIDENCE = `(EXISTS(SELECT 1 FROM json_tree(waiting.payload) refs
   WHERE refs.key IN ('evidence_ids','transit_evidence_ids') AND
     (refs.type<>'array' OR EXISTS(SELECT 1 FROM json_each(CASE WHEN refs.type='array' THEN refs.value ELSE '[]' END) ref
       WHERE ref.type<>'text' OR NOT EXISTS(SELECT 1 FROM attachment_file f WHERE f.id=ref.value
         AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?
-        AND EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=f.id AND b.event_id=waiting.id)))))`;
+        AND EXISTS(SELECT 1 FROM attachment_event b WHERE b.evidence_id=f.id AND b.event_id=waiting.id))))))
+    OR (type='supplies.receive' AND NOT EXISTS(SELECT 1 FROM attachment_file f
+      JOIN attachment_event b ON b.evidence_id=f.id AND b.event_id=waiting.id
+      WHERE f.id=json_extract(waiting.payload,'$.signature_upload_id')
+        AND f.state='verified' AND f.verified_at IS NOT NULL AND f.owner_key=?))`;
 
 /** Claim and timer share evidence/dependency/owner/final eligibility, before due/LIMIT/MIN. */
 function eligibleRows(
@@ -36,6 +40,7 @@ function eligibleRows(
   now: string,
   holdFuture = true,
 ): SqlStatement {
+  const evidenceOwner = fence?.ownerKey ?? "";
   return {
     sql: `WITH RECURSIVE waiting AS (SELECT * FROM outbox_event WHERE local_status='pending'),
       ${DEPENDENCIES},blocked(id) AS (SELECT id FROM waiting WHERE (${isFinal ? "0" : UNVERIFIED_EVIDENCE}) ${holdFuture ? "OR retry_at>?" : ""}
@@ -43,7 +48,7 @@ function eligibleRows(
       eligible AS (SELECT * FROM waiting WHERE id NOT IN (SELECT id FROM blocked)
         AND ${fence === null ? "1" : CURRENT_FENCE})`,
     params: [
-      ...(isFinal ? [] : [fence?.ownerKey ?? ""]),
+      ...(isFinal ? [] : [evidenceOwner, evidenceOwner]),
       ...(holdFuture ? [now] : []),
       ...(fence === null ? [] : fenceParams(fence)),
     ],

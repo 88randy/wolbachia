@@ -10,6 +10,9 @@ import { reconciliationEvents } from "./reconciliation.ts";
 import { ShiftCloseStore } from "./store.ts";
 import { applyClosePatch, validateClose } from "./domain.ts";
 import type { CloseDraft, ClosePatch, PendingPoint } from "./domain.ts";
+import { readSupplySource } from "./supplies.ts";
+import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
+import type { SupplyProjectionSource } from "../supply-receipt/projection-types.ts";
 
 interface Dependencies {
   readonly db: SqlExecutor;
@@ -19,6 +22,7 @@ interface Dependencies {
   readonly admission?: () => string | null;
   readonly localDate?: (instant: string) => string | null;
   readonly canReconcile?: () => boolean;
+  readonly supplySource?: () => Promise<SupplyProjectionSource>;
   readonly pending: () => Promise<readonly PendingPoint[]>;
   readonly serialize: <Result>(write: () => Promise<Result>) => Promise<Result>;
   readonly notify: () => void;
@@ -86,11 +90,28 @@ export class ShiftCloseService {
     return draft?.locallyClosedAt ? Promise.resolve(draft.pending) : this.#deps.pending();
   }
   async #suppliesFor(opening: FieldEventEnvelope) {
-    const sources = await this.#store.supplies(
-      opening.shift_id ?? "",
-      this.#deps.localDate?.(opening.device_time) ?? null,
-    );
-    return sources.map((source) => ({ source, eventId: this.#deps.uuid(), returns: [] }));
+    const projection = await this.#supplyProjection();
+    const date = this.#deps.localDate?.(opening.device_time) ?? null;
+    const supplies = (projection?.assignments ?? [])
+      .filter(
+        (source) =>
+          source.shift_id === opening.shift_id ||
+          (source.shift_id === null && source.date === date),
+      )
+      .map((source) => ({
+        source: readSupplySource(source),
+        eventId: this.#deps.uuid(),
+        returns: [],
+      }));
+    return { supplies, guard: supplies.length ? projection?.guard : undefined };
+  }
+  async #supplyProjection(): Promise<SupplyProjectionSource | null> {
+    try {
+      return (await this.#deps.supplySource?.()) ?? null;
+    } catch (error) {
+      if (!(error instanceof SupplyProjectionUnavailable)) throw error;
+      return null;
+    }
   }
   start() {
     return this.#write(async (assertCurrent) => {
@@ -103,19 +124,22 @@ export class ShiftCloseService {
       this.#requireOwner(ownerKey);
       const pending = await this.#deps.pending();
       this.#requireOwner(ownerKey);
-      const supplies = await this.#suppliesFor(opening.envelope);
+      const { supplies, guard } = await this.#suppliesFor(opening.envelope);
       assertCurrent();
-      await this.#store.create({
-        supplies,
-        shiftId,
-        ownerKey,
-        closeEventId: this.#deps.uuid(),
-        odometer: "",
-        note: "",
-        pending,
-        dispositions: {},
-        locallyClosedAt: null,
-      });
+      await this.#store.create(
+        {
+          supplies,
+          shiftId,
+          ownerKey,
+          closeEventId: this.#deps.uuid(),
+          odometer: "",
+          note: "",
+          pending,
+          dispositions: {},
+          locallyClosedAt: null,
+        },
+        guard,
+      );
       return this.read();
     });
   }
@@ -136,20 +160,22 @@ export class ShiftCloseService {
     return this.#write(async (assertCurrent) => {
       const state = await this.read();
       if (!state.draft || state.draft.locallyClosedAt) return state;
-      const date = state.opening
-        ? (this.#deps.localDate?.(state.opening.envelope.device_time) ?? null)
-        : null;
-      const sources = await this.#store.supplies(state.draft.shiftId, date);
-      const additions = sources
-        .filter((source) => !state.draft?.supplies.some((supply) => supply.source.id === source.id))
-        .map((source) => ({ source, eventId: this.#deps.uuid(), returns: [] }));
+      if (!state.opening) return state;
+      const { supplies, guard } = await this.#suppliesFor(state.opening.envelope);
+      const additions = supplies.filter(
+        (source) => !state.draft?.supplies.some((supply) => supply.source.id === source.source.id),
+      );
       assertCurrent();
       if (additions.length)
         await this.#deps.db.runAtomically([
-          this.#store.replace(state.draft, {
-            ...state.draft,
-            supplies: [...state.draft.supplies, ...additions],
-          }),
+          this.#store.replace(
+            state.draft,
+            {
+              ...state.draft,
+              supplies: [...state.draft.supplies, ...additions],
+            },
+            guard,
+          ),
         ]);
       return this.read();
     });
@@ -202,17 +228,24 @@ export class ShiftCloseService {
     const { original, closed, reconciliations, event, assertCurrent } = input;
     const events = [...reconciliations, event];
     const bindings = await this.#bindings(closed, events);
-    assertCurrent();
     const sourceGuard = reconciliations.length
-      ? this.#store.sourceGuard(
-          reconciliations.map((source) => String(source.payload.assignment_id)),
-        )
+      ? await this.#supplyGuard(reconciliations.map((event) => String(event.payload.assignment_id)))
       : undefined;
+    assertCurrent();
     await this.#deps.db.runAtomically([
       ...events.map((source) => eventInsertStatement(source, source.device_time)),
       ...bindings,
       this.#store.replace(original, closed, sourceGuard),
     ]);
+  }
+  async #supplyGuard(ids: readonly string[]) {
+    const projection = await this.#supplyProjection();
+    if (
+      projection === null ||
+      ids.some((id) => !projection.assignments.some((source) => source.id === id))
+    )
+      throw new SupplyProjectionUnavailable("Current reconciliation supply source unavailable.");
+    return projection.guard;
   }
   async #bindings(draft: CloseDraft, events: readonly FieldEventEnvelope[]) {
     const attachments = this.#deps.attachments;
@@ -233,15 +266,12 @@ export class ShiftCloseService {
       this.#deps.admission === undefined ? this.#deps.identity() : this.#deps.admission();
     const { draft } = await this.read();
     const { attachments, photos } = this.#deps;
-    if (
-      !draft ||
-      draft.locallyClosedAt ||
-      !attachments ||
-      !photos ||
-      !draft.supplies.some((supply) => supply.eventId === eventId)
-    )
+    const supply = draft?.supplies.find((supply) => supply.eventId === eventId);
+    if (!draft || draft.locallyClosedAt || !attachments || !photos || !supply)
       throw new Error("Closing photo unavailable.");
     const assertCurrent = this.#photoGuard(draft, admission);
+    const sourceGuard = await this.#supplyGuard([supply.source.id]);
+    assertCurrent();
     await captureClosePhoto({
       store: this.#store,
       draft,
@@ -250,6 +280,7 @@ export class ShiftCloseService {
       port: photos,
       signal,
       assertCurrent,
+      sourceGuard,
     });
   }
   #photoGuard(draft: CloseDraft, admission: string | null): () => void {
