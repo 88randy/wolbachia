@@ -12,13 +12,13 @@ export function usePointHistoryColumns() {
       align: "end" as const,
     },
     column("location", "geography.field.location", (row) => row.location.join(",")),
-    column("effective", "geography.field.effective", (row) => format(row.effective_from)),
+    column("effective_from", "geography.field.effective", (row) => format(row.effective_from)),
     column(
-      "author",
+      "created_by",
       "geography.field.author",
       (row) => row.created_by ?? t("geography.status.unknown"),
     ),
-    column("status", "geography.field.status", (row) =>
+    column("is_retired", "geography.field.status", (row) =>
       t(row.is_retired ? "geography.status.retired" : "geography.status.active"),
     ),
   ];

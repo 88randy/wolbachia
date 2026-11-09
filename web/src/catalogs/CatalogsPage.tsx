@@ -12,7 +12,8 @@ import { catalogEditorKey, catalogsQueryOptions } from "./catalogs-query";
 import { useSessionIdentity } from "../session/use-session-identity";
 
 import { CatalogItems } from "./CatalogItems";
-import { CatalogTabs } from "./CatalogTabs";
+import { CatalogNavigation } from "./CatalogNavigation";
+import { useCatalogRefresh } from "./use-catalog-refresh";
 import page from "../styles/page.module.css";
 
 /** W63: API-defined tabs, first-catalog redirect, and an identity- and slug-scoped editor. */
@@ -21,6 +22,7 @@ export function CatalogsPage() {
   const { slug } = useParams({ strict: false });
   const scope = { client: useApiClient(), identity: useSessionIdentity() };
   const query = useQuery(catalogsQueryOptions(scope));
+  const refresh = useCatalogRefresh();
   useDocumentTitle(t("catalogs.page.title"));
   if (query.error && query.data === undefined) throw query.error;
   if (!query.data) return <CatalogLoadingState />;
@@ -33,9 +35,9 @@ export function CatalogsPage() {
   return (
     <section className={page.page}>
       <h1 className={page.title}>{t("catalogs.page.title")}</h1>
-      <CatalogRefreshNotice error={query.error} onRetry={query.refetch} />
-      <CatalogTabs catalogs={query.data} slug={slug} />
-      <CatalogItems key={catalogEditorKey(scope.identity, slug)} catalog={catalog} />
+      <CatalogRefreshNotice error={query.error} onRetry={refresh} />
+      <CatalogNavigation slug={slug} isParentError={query.error !== null} />
+      <CatalogItems key={catalogEditorKey(scope.identity, "tabs")} catalog={catalog} />
     </section>
   );
 }

@@ -3,7 +3,15 @@ export type { Draft, DraftPatch } from "./types.ts";
 export const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const QR_PATTERN =
   /^wbf:1:(lot|ovitrap|bag|release-device|sample):([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12})$/;
-export const NO_PADDLE_FINDINGS = ["closed-house", "absent", "missing", "destroyed", "no-paddle"];
+export const NO_PADDLE_FINDINGS = [
+  "closed-house",
+  "absent",
+  "missing",
+  "destroyed",
+  "no-paddle",
+  "abandoned",
+  "removed",
+];
 export const PREPARATION = ["clean", "water", "liner"] as const;
 export const PLACEMENT_PREPARATION = [
   ...PREPARATION,

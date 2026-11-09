@@ -1,6 +1,7 @@
 import type { SqlExecutor, SqlStatement } from "../db/sql.ts";
 import { readInteger, readText } from "../db/sql.ts";
 import { EvidenceError, ownerKey } from "./types.ts";
+import { RETAINED_PROJECTION_KINDS } from "../features/ovitrap-lifecycle/context-sql.ts";
 import type { EvidenceFence, EvidenceOwner, OwnedEvidence, StoredEvidence } from "./types.ts";
 
 export const CURRENT_FENCE = `EXISTS(SELECT 1 FROM attachment_context WHERE slot=1
@@ -33,8 +34,10 @@ export class AttachmentStore {
     const [row] = await this.db.query(
       `UPDATE attachment_context SET owner_key=?,session_id=?,is_active=?,
       generation=generation+CASE WHEN owner_key IS ? AND session_id IS ? AND is_active=? THEN 0 ELSE 1 END
-      WHERE slot=1 AND (?=0 OR NOT EXISTS(SELECT 1 FROM attachment_file WHERE owner_key IS NOT ?)) RETURNING generation`,
-      [key, session, isActive, key, session, isActive, isLogin || input !== null ? 1 : 0, key],
+      WHERE slot=1 AND (?=0 OR (NOT EXISTS(SELECT 1 FROM attachment_file WHERE owner_key IS NOT ?)
+        AND NOT EXISTS(SELECT 1 FROM lifecycle_courier_projection WHERE kind IN (${RETAINED_PROJECTION_KINDS})
+          AND json_extract(body,'$.ownerKey') IS NOT ?))) RETURNING generation`,
+      [key, session, isActive, key, session, isActive, isLogin || input !== null ? 1 : 0, key, key],
     );
     if (!row) throw new EvidenceError("owner_conflict");
     if (input === null) return null;
@@ -49,9 +52,10 @@ export class AttachmentStore {
     const { id, draftId, fence } = input;
     const rows = await this.db.query(
       `INSERT INTO attachment_file(id,owner_key,draft_id)
-      SELECT ?,?,? WHERE ${CURRENT_FENCE} AND NOT EXISTS(SELECT 1 FROM ovitrap_evidence WHERE lower(evidence_id)=?)
+      SELECT ?,?,? WHERE ${CURRENT_FENCE} AND NOT EXISTS(SELECT 1 FROM ovitrap_evidence WHERE lower(evidence_id)=lower(?))
+        AND NOT EXISTS(SELECT 1 FROM lifecycle_evidence WHERE lower(evidence_id)=lower(?))
       RETURNING id`,
-      [id, fence.ownerKey, draftId, ...fenceParams(fence), id],
+      [id, fence.ownerKey, draftId, ...fenceParams(fence), id, id],
     );
     if (!rows.length) throw new EvidenceError("stale_context");
   }

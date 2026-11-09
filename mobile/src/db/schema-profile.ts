@@ -3,7 +3,7 @@ import { tableShape } from "./schema-table.ts";
 import type { TableShape } from "./schema-table.ts";
 
 export interface SchemaObject {
-  readonly type: "table" | "index" | "trigger";
+  readonly type: "table" | "index" | "trigger" | "view";
   readonly name: string;
   readonly table: string;
   readonly tokens: readonly string[];
@@ -15,10 +15,11 @@ export interface SchemaProfile {
 }
 function createdObject(tokens: readonly string[]): SchemaObject {
   const type = tokens[1] === "unique" ? tokens[2] : tokens[1];
-  if (type !== "table" && type !== "index" && type !== "trigger")
+  if (type !== "table" && type !== "index" && type !== "trigger" && type !== "view")
     throw new UnsupportedSchemaDefinitionError("Unsupported CREATE form.");
   const name = schemaIdentifier(tokens[tokens[1] === "unique" ? 3 : 2]);
-  const table = type === "table" ? name : schemaIdentifier(tokens[tokens.indexOf("on") + 1]);
+  const table =
+    type === "table" || type === "view" ? name : schemaIdentifier(tokens[tokens.indexOf("on") + 1]);
   return { type, name, table, tokens };
 }
 function appendColumn(objects: Map<string, SchemaObject>, tokens: readonly string[]): void {
@@ -38,19 +39,28 @@ function appendColumn(objects: Map<string, SchemaObject>, tokens: readonly strin
     tokens: [...previous.tokens.slice(0, -1), ",", ...tokens.slice(5), ")"],
   });
 }
+function isDataStatement(tokens: readonly string[]): boolean {
+  return (
+    ["insert into kv", "insert into attachment_context"].includes(tokens.slice(0, 3).join(" ")) ||
+    tokens.slice(0, 2).join(" ") === "update day_assignment" ||
+    tokens.slice(0, 5).join(" ") === "insert or ignore into lifecycle_receipt"
+  );
+}
 function foldOtherStatement(objects: Map<string, SchemaObject>, tokens: readonly string[]): void {
-  if (tokens[0] === "drop" && tokens[1] === "trigger" && tokens.length === 3) {
-    if (!objects.delete(schemaIdentifier(tokens[2])))
+  if (
+    tokens[0] === "drop" &&
+    (tokens[1] === "trigger" || tokens[1] === "view") &&
+    tokens.length === 3
+  ) {
+    const name = schemaIdentifier(tokens[2]);
+    if (objects.get(name)?.type !== tokens[1])
       throw new UnsupportedSchemaDefinitionError("Unknown DROP target.");
+    objects.delete(name);
     return;
   }
   if (tokens.includes(";"))
     throw new UnsupportedSchemaDefinitionError("Unsupported compound migration.");
-  if (
-    ["insert into kv", "insert into attachment_context"].includes(tokens.slice(0, 3).join(" ")) ||
-    tokens.slice(0, 2).join(" ") === "update day_assignment"
-  )
-    return;
+  if (isDataStatement(tokens)) return;
   throw new UnsupportedSchemaDefinitionError("Unsupported migration statement.");
 }
 function foldStatement(objects: Map<string, SchemaObject>, sql: string): void {

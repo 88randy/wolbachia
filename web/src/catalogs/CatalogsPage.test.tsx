@@ -1,8 +1,10 @@
+import { installTableGeometry } from "../test/table-geometry";
 import { invalidateCatalogs } from "./catalogs-query";
 import { act, screen, within, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { expect, test } from "vitest";
-import { apiError, createFakeApi, makeMe } from "../test/fake-api";
+import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { apiError, createFakeApi, makeMe, FAKE_IDENTITY } from "../test/fake-api";
+import { commitKnown, readToken } from "../session/session-controller";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
 import { pageOf } from "../test/rules-fixtures";
@@ -43,6 +45,25 @@ async function open(
   return { api, app };
 }
 
+beforeEach(() => {
+  installTableGeometry();
+});
+afterEach(() => {
+  vi.restoreAllMocks();
+});
+
+async function keyboardMove(name: string) {
+  const user = userEvent.setup();
+  const handle = screen.getByRole("button", { name: `Reordenar: ${name}` });
+  handle.focus();
+  await user.keyboard("[Space]");
+  await waitFor(() => {
+    expect(handle.getAttribute("aria-pressed")).toBe("true");
+  });
+  await user.keyboard("[ArrowUp]");
+  await user.keyboard("[Space]");
+}
+
 test.each(["none", "create", "update", "deactivate", "activate"])(
   "each catalog permission gates only its own controls: %s",
   async (action) => {
@@ -52,7 +73,7 @@ test.each(["none", "create", "update", "deactivate", "activate"])(
     const controls = [
       { name: "Agregar elemento", permission: "create" },
       { name: "Editar", permission: "update" },
-      { name: "Mover arriba: Rociado", permission: "update" },
+      { name: "Reordenar: Rociado", permission: "update" },
       { name: "Desactivar", permission: "deactivate" },
       { name: "Reactivar", permission: "activate" },
     ];
@@ -63,84 +84,128 @@ test.each(["none", "create", "update", "deactivate", "activate"])(
     }
   },
 );
-test("permitted moves are disabled at the ends and fixed Other has no actions", async () => {
+test("fixed Other has no actions and keyboard handles replace text moves", async () => {
   await open();
-  expect(screen.getByRole("button", { name: "Mover arriba: Rociado" }).getAttribute("title")).toBe(
-    "Ya es el primer elemento activo.",
-  );
-  const other = screen.getByRole("row", { name: /Otro \(especificar\)/ });
-  expect(within(other).queryByRole("button")).toBeNull();
+  expect(screen.getByRole("button", { name: "Reordenar: Rociado" })).toBeDefined();
+  expect(screen.queryByRole("button", { name: /Mover arriba|Mover abajo/ })).toBeNull();
   expect(
-    screen.getByRole("button", { name: "Mover abajo: Nebulización" }).getAttribute("title"),
-  ).toBe("Ya es el último elemento activo.");
+    within(screen.getByRole("row", { name: /Otro \(especificar\)/ })).queryByRole("button"),
+  ).toBeNull();
 });
-
-test("deactivated visibility is URL synced and English fallback is warned on the row and form", async () => {
-  const { app } = await open({
+test("availability is announced by segments and English fallback remains editable", async () => {
+  await open({
     rows: [makeCatalogItem({ label_en: "" }), ...catalogRows().slice(1)],
     language: "en",
+    path: `${CATALOG_PATH}?is_active=all`,
   });
-  expect(screen.queryByText("Previous")).toBeNull();
-  expect(
-    within(screen.getByRole("row", { name: /spraying/ })).getByText(
-      "No English label: using Spanish.",
-    ),
-  ).toBeDefined();
-  const user = userEvent.setup();
-  await user.click(screen.getByLabelText("Include deactivated"));
-  await waitFor(() => {
-    expect(app.router.state.location.search).toMatchObject({ include_deactivated: "true" });
-  });
-  expect(await screen.findByText("Previous")).toBeDefined();
-  await user.click(
-    within(screen.getByRole("row", { name: /spraying/ })).getByRole("button", { name: "Edit" }),
+  expect(screen.getByText("Previous")).toBeDefined();
+  const availability = within(screen.getByRole("group", { name: "Status" }));
+  expect(availability.getByRole("button", { name: "All" }).getAttribute("aria-pressed")).toBe(
+    "true",
   );
+  expect(availability.getByRole("button", { name: "Active" }).getAttribute("aria-pressed")).toBe(
+    "false",
+  );
+  const row = screen.getByRole("row", { name: /spraying/ });
+  expect(within(row).getByText("No English label: using Spanish.")).toBeDefined();
+  await userEvent.setup().click(within(row).getByRole("button", { name: "Edit" }));
   expect(
     within(screen.getByRole("dialog")).getByText("No English label: using Spanish."),
   ).toBeDefined();
 });
+test.each([
+  { isActive: true, grants: "both" },
+  { isActive: false, grants: "both" },
+  { isActive: true, grants: "initial-only" },
+  { isActive: false, grants: "initial-only" },
+  { isActive: true, grants: "revoked" },
+  { isActive: false, grants: "revoked" },
+])(
+  "availability $isActive Undo requires its own current inverse grant: $grants",
+  async ({ isActive, grants }) => {
+    const initial = isActive ? "deactivate" : "activate";
+    const inverse = isActive ? "activate" : "deactivate";
+    const permissions = ["catalog.read", `catalog_item.${initial}`];
+    let rows = catalogRows().map((item) =>
+      item.id === "item-a" ? { ...item, is_active: isActive } : item,
+    );
+    const { api, app } = await open({
+      permissions:
+        grants === "initial-only" ? permissions : [...permissions, `catalog_item.${inverse}`],
+      path: `${CATALOG_PATH}?is_active=all`,
+      routes: {
+        [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
+        [`POST ${ITEMS_PATH}item-a/${initial}/`]: () => {
+          rows = rows.map((item) => ({
+            ...item,
+            catalog_version: 1,
+            is_active: item.id === "item-a" ? !isActive : item.is_active,
+          }));
+          return Response.json(makeCatalogItem({ is_active: !isActive, catalog_version: 1 }));
+        },
+        [`POST ${ITEMS_PATH}item-a/${inverse}/`]: () => {
+          rows = rows.map((item) => ({
+            ...item,
+            catalog_version: 2,
+            is_active: item.id === "item-a" ? isActive : item.is_active,
+          }));
+          return Response.json(makeCatalogItem({ is_active: isActive, catalog_version: 2 }));
+        },
+      },
+    });
+    const user = userEvent.setup();
+    await user.click(
+      within(screen.getByRole("row", { name: /spraying/ })).getByRole("button", {
+        name: isActive ? "Desactivar" : "Reactivar",
+      }),
+    );
+    await screen.findAllByText("Cambios guardados.");
+    if (grants === "initial-only") {
+      expect(screen.queryByRole("button", { name: "Deshacer" })).toBeNull();
+      expect(
+        api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+      ).toEqual([{ version: 0 }]);
+      return;
+    }
+    const undo = screen.getByRole("button", { name: "Deshacer" });
+    expect(
+      within(screen.getByRole("row", { name: /spraying/ })).getByText(
+        isActive ? "Desactivado" : "Activo",
+      ),
+    ).toBeDefined();
+    if (grants === "revoked") {
+      const me = makeMe({ permissions });
+      api.setRoute("GET /api/v1/me/", Response.json(me));
+      act(() => {
+        expect(
+          commitKnown(app.queryClient, readToken(), {
+            me,
+            attestation: FAKE_IDENTITY,
+            passive: true,
+          }),
+        ).toBe(true);
+      });
+      await user.click(undo);
+      expect(
+        api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+      ).toEqual([{ version: 0 }]);
+      return;
+    }
+    await user.click(undo);
+    await waitFor(() => {
+      expect(
+        within(screen.getByRole("row", { name: /spraying/ })).getByText(
+          isActive ? "Activo" : "Desactivado",
+        ),
+      ).toBeDefined();
+    });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(
+      api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+    ).toEqual([{ version: 0 }, { version: 1 }]);
+  },
+);
 
-test("deactivation confirms without reason, returns focus on cancel, and reactivation is direct", async () => {
-  let rows = catalogRows();
-  const { api } = await open({
-    routes: {
-      [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
-      [`POST ${ITEMS_PATH}item-a/deactivate/`]: () => {
-        rows = rows.map((item) => (item.id === "item-a" ? { ...item, is_active: false } : item));
-        return Response.json(makeCatalogItem({ is_active: false }));
-      },
-      [`POST ${ITEMS_PATH}item-a/activate/`]: () => {
-        rows = rows.map((item) => (item.id === "item-a" ? { ...item, is_active: true } : item));
-        return Response.json(makeCatalogItem());
-      },
-    },
-  });
-  const user = userEvent.setup();
-  const opener = within(screen.getByRole("row", { name: /spraying/ })).getByRole("button", {
-    name: "Desactivar",
-  });
-  await user.click(opener);
-  expect(within(screen.getByRole("dialog")).queryByRole("textbox")).toBeNull();
-  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Cancelar" }));
-  expect(document.activeElement).toBe(opener);
-  expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(0);
-  await user.click(opener);
-  await user.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Desactivar" }));
-  await waitFor(() => {
-    expect(screen.queryByRole("row", { name: /spraying/ })).toBeNull();
-  });
-  await user.click(screen.getByLabelText("Incluir desactivados"));
-  const inactive = await screen.findByRole("row", { name: /spraying/ });
-  expect(within(inactive).getByText("Desactivado")).toBeDefined();
-  await user.click(within(inactive).getByRole("button", { name: "Reactivar" }));
-  await waitFor(() => {
-    expect(within(screen.getByRole("row", { name: /spraying/ })).getByText("Activo")).toBeDefined();
-  });
-  expect(screen.queryByRole("dialog")).toBeNull();
-  expect(
-    api.requests.filter((request) => request.method === "POST").map((request) => request.body),
-  ).toEqual([undefined, undefined]);
-});
 test("a late submit after a same-identity revision change keeps the draft without extra refetches", async () => {
   let resolve!: (answer: Response) => void;
   const answer = new Promise<Response>((done) => {
@@ -193,7 +258,7 @@ test("reorder sends one conditional POST and displays the refreshed order", asyn
       },
     },
   });
-  await userEvent.setup().click(screen.getByRole("button", { name: "Mover arriba: Nebulización" }));
+  await keyboardMove("Nebulización");
   await waitFor(() => {
     expect(screen.getAllByRole("row")[1]?.textContent).toContain("Nebulización");
   });
@@ -213,7 +278,7 @@ test("a stale reorder refetches both queries and asks to retry without showing s
   const { api } = await open({
     routes: { [`POST ${ITEMS_PATH}reorder/`]: apiError(409, "catalog_version_conflict") },
   });
-  await userEvent.setup().click(screen.getByRole("button", { name: "Mover arriba: Nebulización" }));
+  await keyboardMove("Nebulización");
   expect(await screen.findByRole("alert")).toHaveProperty(
     "textContent",
     "El catálogo cambió. Se recargó la lista; revisa el orden e intenta de nuevo.",
@@ -259,6 +324,11 @@ test("fetches all catalog and item pages without following arbitrary next URLs",
   const api = createFakeApi({
     "GET /api/v1/me/": Response.json(CATALOG_ADMIN),
     "GET /api/v1/catalogs/": (request) => {
+      if (new URL(request.path, "http://api.invalid").searchParams.get("page_size") === "25")
+        return pageOf([
+          { ...CATALOG, slug: "closed", label_es: "Cerrado", is_open: false },
+          CATALOG,
+        ]);
       const second = request.path.includes("page=2");
       return Response.json({
         count: 2,
@@ -269,15 +339,21 @@ test("fetches all catalog and item pages without following arbitrary next URLs",
           : [{ ...CATALOG, slug: "closed", label_es: "Cerrado", is_open: false }],
       });
     },
-    [`GET ${ITEMS_PATH}`]: (request) =>
-      Response.json({
+    [`GET ${ITEMS_PATH}`]: (request) => {
+      if (new URL(request.path, "http://api.invalid").searchParams.get("page_size") === "25")
+        return pageOf([
+          makeCatalogItem(),
+          makeCatalogItem({ id: "last", code: "last", label_es: "Último", sort: 20 }),
+        ]);
+      return Response.json({
         count: 2,
         next: request.path.includes("page=2") ? null : "/items/?page=2",
         previous: null,
         results: request.path.includes("page=2")
           ? [makeCatalogItem({ id: "last", code: "last", label_es: "Último", sort: 20 })]
           : [makeCatalogItem()],
-      }),
+      });
+    },
   });
   await renderApp({ path: CATALOG_PATH, fetch: api.fetch });
   expect(await screen.findByText("Último")).toBeDefined();
@@ -385,9 +461,8 @@ test("a session revision change during the reorder POST drops its answer and ext
     resolve = done;
   });
   const { api, app } = await open({ routes: { [`POST ${ITEMS_PATH}reorder/`]: () => answer } });
-  const user = userEvent.setup();
-  const move = screen.getByRole("button", { name: "Mover arriba: Nebulización" });
-  await user.click(move);
+  const move = screen.getByRole("button", { name: "Reordenar: Nebulización" });
+  await keyboardMove("Nebulización");
   await waitFor(() => {
     expect(api.requests.some((request) => request.method === "POST")).toBe(true);
   });
@@ -407,11 +482,12 @@ test("a session revision change during the reorder POST drops its answer and ext
   expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(1);
   expect(api.requests.filter((request) => request.method === "GET")).toHaveLength(reads);
   expect(screen.queryByText("Se movió Nebulización arriba.")).toBeNull();
+  expect(screen.getAllByRole("row")[1]?.textContent).toContain("Rociado");
 });
 
-test("an add draft survives a failed catalog refetch and the notice can retry", async () => {
-  let resolveRefetch!: (answer: Response) => void;
-  const pendingRefetch = new Promise<Response>((resolve) => {
+test("an add draft survives a failed catalog refetch and one retry refreshes both navigation queries", async () => {
+  let resolveRefetch!: () => void;
+  const pendingRefetch = new Promise<void>((resolve) => {
     resolveRefetch = resolve;
   });
   const { api, app } = await open();
@@ -420,7 +496,10 @@ test("an add draft survives a failed catalog refetch and the notice can retry", 
   const dialog = screen.getByRole("dialog");
   await user.type(within(dialog).getByLabelText("Código"), "draft-code");
   await user.type(within(dialog).getByLabelText("Etiqueta en español (obligatoria)"), "Borrador");
-  api.setRoute("GET /api/v1/catalogs/", () => pendingRefetch);
+  api.setRoute("GET /api/v1/catalogs/", async () => {
+    await pendingRefetch;
+    return apiError(503, "server_error");
+  });
   const reads = api.requests.filter((request) =>
     request.path.startsWith("/api/v1/catalogs/?"),
   ).length;
@@ -431,10 +510,10 @@ test("an add draft survives a failed catalog refetch and the notice can retry", 
   await waitFor(() => {
     expect(
       api.requests.filter((request) => request.path.startsWith("/api/v1/catalogs/?")),
-    ).toHaveLength(reads + 1);
+    ).toHaveLength(reads + 2);
   });
   await act(async () => {
-    resolveRefetch(apiError(503, "server_error"));
+    resolveRefetch();
     await refresh;
   });
   const notice = await screen.findByText(
@@ -548,9 +627,103 @@ test("reorder uses the oldest item-page revision even when the catalog query is 
     await secondPage.promise;
   });
   await screen.findByRole("row", { name: /spraying/ });
-  await userEvent.setup().click(screen.getByRole("button", { name: /Mover arriba: Nebulizaci/ }));
+  await keyboardMove("Nebulización");
   await screen.findByRole("alert");
   expect(
     api.requests.filter((request) => request.method === "POST").map((request) => request.body),
   ).toEqual([{ version: 1, ordered_ids: ["item-b", "item-a"] }]);
+});
+
+test("a background refresh during drag cannot replace the revision of the displayed order", async () => {
+  let rows = catalogRows().map((item) => ({ ...item, catalog_version: 1 }));
+  const { api, app } = await open({
+    routes: {
+      [`GET ${ITEMS_PATH}`]: () => pageOf(rows),
+      [`POST ${ITEMS_PATH}reorder/`]: apiError(409, "catalog_version_conflict"),
+    },
+  });
+  const user = userEvent.setup();
+  const handle = screen.getByRole("button", { name: "Reordenar: Nebulización" });
+  handle.focus();
+  await user.keyboard("[Space]");
+  await waitFor(() => {
+    expect(handle.getAttribute("aria-pressed")).toBe("true");
+  });
+  rows = rows.map((item) => ({
+    ...item,
+    catalog_version: 2,
+    label_es: item.id === "item-a" ? "Updated elsewhere" : item.label_es,
+  }));
+  await act(async () => {
+    await invalidateCatalogs(app.queryClient);
+  });
+  expect(screen.queryByText("Updated elsewhere")).toBeNull();
+  await user.keyboard("[ArrowUp]");
+  await user.keyboard("[Space]");
+  await screen.findByRole("alert");
+  expect(
+    api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+  ).toEqual([{ version: 1, ordered_ids: ["item-b", "item-a"] }]);
+  expect(await screen.findByText("Updated elsewhere")).toBeDefined();
+});
+test("Undo compares our returned revision and never adopts a later editor's version", async () => {
+  let version = 4;
+  let rows = catalogRows();
+  const { api, app } = await open({
+    routes: {
+      [`GET ${ITEMS_PATH}`]: () =>
+        pageOf(rows.map((item) => ({ ...item, catalog_version: version }))),
+      [`POST ${ITEMS_PATH}reorder/`]: (request) => {
+        const body = request.body as { version: number };
+        if (body.version !== version) return apiError(409, "catalog_version_conflict");
+        version += 1;
+        rows = [...rows.slice(0, 2).reverse(), ...rows.slice(2)];
+        return Response.json({ version, items: rows });
+      },
+    },
+  });
+  await keyboardMove("Nebulización");
+  await screen.findByRole("button", { name: "Deshacer" });
+  version = 6;
+  await act(async () => {
+    await invalidateCatalogs(app.queryClient);
+  });
+  await userEvent.setup().click(screen.getByRole("button", { name: "Deshacer" }));
+  await screen.findByRole("alert");
+  expect(
+    api.requests.filter((request) => request.method === "POST").map((request) => request.body),
+  ).toEqual([
+    { version: 4, ordered_ids: ["item-b", "item-a"] },
+    { version: 5, ordered_ids: ["item-a", "item-b"] },
+  ]);
+  expect(version).toBe(6);
+});
+
+test("reauthentication cancels an older drag, restores its DOM order and sends no write", async () => {
+  const { api, app } = await open();
+  const user = userEvent.setup();
+  const handle = screen.getByRole("button", { name: "Reordenar: Nebulización" });
+  handle.focus();
+  await user.keyboard("[Space]");
+  await waitFor(() => {
+    expect(handle.getAttribute("aria-pressed")).toBe("true");
+  });
+  await user.keyboard("[ArrowUp]");
+  await waitFor(() => {
+    expect(screen.getAllByRole("row")[1]?.textContent).toContain("Nebulización");
+  });
+  await act(async () => {
+    bumpEpoch();
+    await Promise.resolve();
+  });
+  await waitFor(() => {
+    expect(app.queryClient.isFetching()).toBe(0);
+  });
+  await waitFor(() => {
+    expect(handle.getAttribute("aria-pressed")).toBe("false");
+  });
+  await waitFor(() => {
+    expect(screen.getAllByRole("row")[1]?.textContent).toContain("Rociado");
+  });
+  expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(0);
 });

@@ -21,7 +21,10 @@ function readItem(value: unknown): ChecklistItem {
     requires_photo: value.requires_photo,
   };
 }
-function items(catalogs: readonly unknown[], slug: string): readonly ChecklistItem[] {
+export function readCatalogItems(
+  catalogs: readonly unknown[],
+  slug: string,
+): readonly ChecklistItem[] {
   const catalog = catalogs.find((entry) => isRecord(entry) && entry.slug === slug);
   if (!isRecord(catalog) || !Array.isArray(catalog.items)) return [];
   return catalog.items.map(readItem);
@@ -36,12 +39,12 @@ export function readCatalog(value: unknown): Catalog {
     throw new Error("Malformed ovitrap catalog.");
   return {
     version: value.version,
-    findings: items(value.catalogs, "ovitrap-finding"),
-    paddleTypes: items(value.catalogs, "paddle-type"),
-    voidReasons: items(value.catalogs, "void-reason"),
+    findings: readCatalogItems(value.catalogs, "ovitrap-finding"),
+    paddleTypes: readCatalogItems(value.catalogs, "paddle-type"),
+    voidReasons: readCatalogItems(value.catalogs, "void-reason"),
   };
 }
-function parameter(parameters: readonly unknown[], key: string): number | null {
+export function readParameter(parameters: readonly unknown[], key: string): number | null {
   const entry = parameters.find((item) => isRecord(item) && item.key === key);
   return isRecord(entry) && typeof entry.value === "number" && Number.isFinite(entry.value)
     ? entry.value
@@ -66,14 +69,14 @@ export function readRules(value: unknown): Rules {
     !Array.isArray(value.parameters)
   )
     throw new Error("Malformed ovitrap rules.");
-  const accuracy = parameter(value.parameters, "max_gps_accuracy_m");
-  const distance = parameter(value.parameters, "max_distance_to_point_m");
+  const accuracy = readParameter(value.parameters, "max_gps_accuracy_m");
+  const distance = readParameter(value.parameters, "max_distance_to_point_m");
   return {
     version: value.version,
     nextChangeAt: nextChangeAt(value.next_change_at),
     maxAccuracyM: accuracy ?? 50,
     maxDistanceM: distance ?? 50,
-    maxPaddleReuses: parameter(value.parameters, "max_paddle_reuses") ?? 2,
+    maxPaddleReuses: readParameter(value.parameters, "max_paddle_reuses") ?? 2,
     isConfigured: hasValidBounds(accuracy, distance),
     gpsPolicy: "review",
     stalePolicy: "review",

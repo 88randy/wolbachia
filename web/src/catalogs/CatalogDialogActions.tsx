@@ -1,7 +1,7 @@
 import { useTranslation } from "react-i18next";
 import type { MessageKey } from "@wolbachia/i18n";
 import { Button } from "../ui/Button";
-import styles from "./catalogs.module.css";
+import { DialogFooter } from "../ui/DialogFooter";
 interface Props {
   isBusy: boolean;
   onCancel: () => void;
@@ -12,7 +12,7 @@ interface Props {
 export function CatalogDialogActions({ isBusy, onCancel, confirmKey, onConfirm }: Props) {
   const { t } = useTranslation();
   return (
-    <div className={styles.actions}>
+    <DialogFooter>
       <Button variant="secondary" disabled={isBusy} onClick={onCancel}>
         {t("common.actions.cancel")}
       </Button>
@@ -25,6 +25,6 @@ export function CatalogDialogActions({ isBusy, onCancel, confirmKey, onConfirm }
       >
         {t(confirmKey)}
       </Button>
-    </div>
+    </DialogFooter>
   );
 }

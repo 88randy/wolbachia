@@ -1,8 +1,101 @@
 import type { fleet as Spanish } from "../es-MX/fleet.ts";
 export const fleet = {
+  "fleet.letter.scope":
+    "These are issued responsibility letters. Departure/return conditions and shift signatures are not exposed by this history.",
+  "fleet.history.actions": "Actions",
+  "fleet.efficiency.value": "{value} km/L",
+  "fleet.history.id": "Record reference",
+  "fleet.history.event": "Source event",
+  "fleet.history.courier": "Courier reference",
+  "fleet.history.notes": "Notes",
+  "fleet.history.created": "Recorded at",
+  "fleet.history.author": "Author reference",
+  "fleet.history.reference":
+    "Source {id}: only the accepted page is shown. This reference may be outside this page; no full history scan is performed.",
+  "fleet.history.opaqueDocument": "Document reference (download not established)",
+  "fleet.history.provenance": "Recorded provenance",
+  "fleet.service.kind": "Service type",
+  "fleet.service.routine": "Routine",
+  "fleet.service.repair": "Repair",
+  "fleet.service.inspection": "Inspection",
+  "fleet.service.date": "Performed on",
+  "fleet.service.odometer": "Odometer (km)",
+  "fleet.service.intervalKm": "Service interval (km, optional)",
+  "fleet.service.intervalDays": "Service interval (days, optional)",
+  "fleet.service.hint":
+    "Intervals remain unconfigured when blank. A service alone does not clear a severe fault.",
+  "fleet.action.service": "Register service",
+  "fleet.action.clearFault": "Clear this severe fault",
+  "fleet.action.review": "Review current state and keep input",
+  "fleet.action.refreshUnknown": "Refresh record without replaying the command",
+  "fleet.write.readback":
+    "Last explicit record read: revision {revision}. It does not establish this command's outcome; submission remains blocked.",
+  "fleet.action.discard": "Discard this attempt",
+  "fleet.action.busy": "Saving…",
+  "fleet.action.refresh": "Refresh record",
+  "fleet.action.blocked":
+    "The record is voided or its current state is unverified. Refresh or ask an authorized fleet administrator.",
+  "fleet.write.invalid": "Check the required values and server limits before saving.",
+  "fleet.write.conflict":
+    "The state changed. Your input and evidence remain. Review the current record before another explicit attempt.",
+  "fleet.write.uncertain":
+    "The outcome is unconfirmed. This command will not be replayed. Refresh the record and review or discard the attempt before a new capture.",
+  "fleet.write.retry":
+    "The request was refused. Your input remains; an explicit retry is required.",
+  "fleet.write.denied":
+    "Current authority could not be confirmed. Private input was retired. Refresh your session and record.",
+  "fleet.clear.title": "Clear severe fault · {record}",
+  "fleet.clear.hint":
+    "This clears only the reviewed fault. Other holds and the server motorcycle status remain authoritative. Inspection/service recording is separate.",
+  "fleet.clear.reason": "Inspection reason",
+  "fleet.clear.fault": "Reviewed fault",
+  "fleet.clear.revision": "Reviewed motorcycle revision",
+  "fleet.clear.open": "Open severe fault",
+  "fleet.clear.closed": "Cleared fault",
+  "fleet.clear.reviewer": "Reviewer reference",
+  "fleet.clear.proof": "Immutable clearance proof",
+  "fleet.evidence.files": "JPEG/PNG evidence",
+  "fleet.evidence.hint":
+    "Select up to 50 original JPEG/PNG files, up to 10 MiB each. Only evidence verified for this exact fault can be submitted.",
+  "fleet.evidence.upload": "Upload and verify evidence",
+  "fleet.evidence.pending": "Pending verification",
+  "fleet.evidence.verified": "Verified evidence",
+  "fleet.evidence.failed":
+    "Evidence could not be verified. Retain the original file and retry explicitly.",
+  "fleet.evidence.invalid": "Use up to 50 nonempty JPEG/PNG files no larger than 10 MiB each.",
+  "fleet.evidence.download": "Download authorized evidence",
+  "fleet.evidence.downloadFailure":
+    "Evidence is unavailable under current authority. Refresh before retrying.",
+  "fleet.summary.odometer": "Latest recorded odometer (km)",
+  "fleet.summary.nextKm": "Next service odometer (km)",
+  "fleet.summary.nextDate": "Next service date",
+  "fleet.summary.lastService": "Source service",
+  "fleet.summary.efficiency": "Latest comparable efficiency (km/L)",
+  "fleet.efficiency.ok": "Comparable interval · advisory",
+  "fleet.efficiency.review": "Comparable interval · review advised",
+  "fleet.efficiency.thresholds":
+    "Recorded advisory bounds: {min}–{max} km/L. These do not authorize operation.",
+  "fleet.efficiency.detail":
+    "Open fuel history to inspect the actual interval and saved thresholds.",
+  "fleet.fuel.comparison": "Efficiency comparison",
+  "fleet.fuel.from": "From (instant with time zone)",
+  "fleet.fuel.before": "Before (instant with time zone)",
+  "fleet.fuel.litres": "Litres",
+  "fleet.fuel.amount": "Amount / currency",
+  "fleet.fuel.shift": "Source shift reference",
+  "fleet.fuel.baseline": "Baseline load reference",
+  "fleet.fuel.receipt": "Receipt reference",
+  "fleet.fuel.pending": "Receipt pending",
+  "fleet.fuel.provisional": "Provisional · excluded from comparable metrics",
+  "fleet.fuel.full": "Full refill",
+  "fleet.fuel.partial": "Partial refill",
+  "fleet.fuel.deviceTime": "Capture time",
+  "fleet.fuel.serverTime": "Server receipt time",
+  "fleet.fuel.rules": "Rules / catalog snapshots",
+  "fleet.letter.date": "Issued at",
   "fleet.page.title": "Motorcycles",
   "fleet.page.gaps":
-    "The center filter, odometer, next service and efficiency are not available yet. They require fleet backend B-05 (#103).",
+    "List-wide odometer, service and efficiency metrics are unavailable. Open an authorized record for its actual detail.",
   "fleet.table.caption": "Organization motorcycles",
   "fleet.column.code": "Code",
   "fleet.column.plate": "Plate",
@@ -25,13 +118,6 @@ export const fleet = {
   "fleet.tab.fuel": "Fuel",
   "fleet.tab.incidents": "Incidents",
   "fleet.tab.navigation": "Motorcycle record sections",
-  "fleet.gap.title": "Not available yet",
-  "fleet.gap.services": "Service history and next service need fleet backend B-05 (#103).",
-  "fleet.gap.responsibility": "Responsibility letter history needs fleet backend B-05 (#103).",
-  "fleet.gap.fuel":
-    "Fuel loads, odometer readings and comparable intervals need fleet backend B-05 (#103). Efficiency cannot be calculated.",
-  "fleet.gap.incidents":
-    "Incident history and fault-specific clearance need fleet backend B-05 (#103).",
   "fleet.gap.insufficient": "Insufficient data",
   "fleet.summary.unknown": "No data",
   "fleet.summary.system": "System / no author reference",
@@ -39,8 +125,7 @@ export const fleet = {
   "fleet.summary.createdBy": "Creator reference",
   "fleet.summary.voidedAt": "Voided at",
   "fleet.summary.voidedBy": "Voiding author reference",
-  "fleet.summary.historyGap":
-    "Block and unblock history is not available yet. This record shows the current state; full history requires backend B-05 (#103).",
+  "fleet.summary.historyGap": "This status does not certify an authorized departure or allocation.",
   "fleet.unblock.title": "Unblock {record}",
   "fleet.unblock.hint":
     "Document the inspection and evidence in the reason. This action only removes the server-recorded block and requires motorcycle unblock permission.",
@@ -52,6 +137,10 @@ export const fleet = {
     "This motorcycle is voided and cannot be changed. Someone with manage permission can register a new one.",
   "fleet.action.notBlocked": "This motorcycle is not blocked. There is no block to remove.",
   "fleet.action.saved": "Change saved.",
+  "fleet.clear.reasonLimits":
+    "Enter between {min} and {max} characters under current configuration.",
+  "fleet.write.cooldown":
+    "Wait for the server delay before another manual attempt. The request will not replay.",
   "fleet.create.title": "Add motorcycle",
   "fleet.create.invalidCode": "Enter a code of up to 50 characters.",
   "fleet.create.invalidPlate": "The plate can have up to 20 characters.",

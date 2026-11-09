@@ -5,6 +5,7 @@ import {
   needsOther,
   PLACEMENT_PREPARATION,
   PREPARATION,
+  NO_PADDLE_FINDINGS,
   UUID_PATTERN,
   validReason,
   visibleLength,
@@ -64,9 +65,7 @@ function policyGate(draft: Draft, now: Date): Gate | null {
 }
 function preparationGate(draft: Draft): Gate | null {
   const required = draft.mode === "place" ? PLACEMENT_PREPARATION : PREPARATION;
-  const shouldPrepare =
-    draft.mode === "place" ||
-    !["closed-house", "absent", "missing", "destroyed"].includes(draft.finding);
+  const shouldPrepare = draft.mode === "place" || !NO_PADDLE_FINDINGS.includes(draft.finding);
   if (shouldPrepare && required.some((key) => !draft.prepared.includes(key))) return "prepare";
   if (
     draft.reuseId &&

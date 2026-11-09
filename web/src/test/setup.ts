@@ -58,3 +58,46 @@ if (typeof globalThis.ResizeObserver !== "function") {
 if (typeof HTMLElement.prototype.scrollIntoView !== "function") {
   HTMLElement.prototype.scrollIntoView = () => undefined;
 }
+
+// jsdom has no Web Animations implementation; dnd-kit finishes existing browser animations
+// before measuring a row. There are no animations to finish in this environment.
+if (typeof Document.prototype.getAnimations !== "function") {
+  Document.prototype.getAnimations = () => [];
+}
+if (typeof Element.prototype.getAnimations !== "function") {
+  Element.prototype.getAnimations = () => [];
+}
+
+// Layout observation is browser-owned. Unit tests provide row rectangles for drag geometry.
+if (typeof globalThis.IntersectionObserver !== "function") {
+  globalThis.IntersectionObserver = class {
+    readonly root = null;
+    readonly rootMargin = "0px";
+    readonly scrollMargin = "0px";
+    readonly thresholds = [0];
+    observe() {
+      return undefined;
+    }
+    unobserve() {
+      return undefined;
+    }
+    disconnect() {
+      return undefined;
+    }
+    takeRecords() {
+      return [];
+    }
+  };
+}
+
+if (typeof window.matchMedia !== "function") {
+  window.matchMedia = (media) =>
+    Object.assign(new EventTarget(), { media, matches: false, onchange: null }) as MediaQueryList;
+}
+
+// Pointer capture belongs to the browser; jsdom dispatches our test pointer events directly.
+if (typeof HTMLElement.prototype.setPointerCapture !== "function") {
+  HTMLElement.prototype.setPointerCapture = () => undefined;
+  HTMLElement.prototype.releasePointerCapture = () => undefined;
+  HTMLElement.prototype.hasPointerCapture = () => false;
+}

@@ -7,7 +7,6 @@ import styles from "./Sidebar.module.css";
 import { SidebarBrand } from "./SidebarBrand";
 import { SidebarGroup } from "./SidebarGroup";
 import { SidebarToggle } from "./SidebarToggle";
-import { UserMenu } from "./UserMenu";
 interface SidebarProps {
   collapsed: boolean;
   onToggle: () => void;
@@ -26,7 +25,6 @@ export function Sidebar({ collapsed, onToggle, canToggle }: SidebarProps) {
       </nav>
       <footer className={styles.footer}>
         {canToggle && <SidebarToggle collapsed={collapsed} onToggle={onToggle} />}
-        <UserMenu placement="sidebar" collapsed={collapsed} />
       </footer>
     </div>
   );

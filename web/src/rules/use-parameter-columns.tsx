@@ -49,7 +49,7 @@ function valueColumns(write: Writers): Column[] {
       cell: ({ value }) => (value === null ? <NotConfiguredBadge /> : write.number(value)),
     },
     {
-      id: "since",
+      id: "effective_from",
       headerKey: "rules.column.since",
       cell: (p) => write.dateOrNone(p.effective_from),
     },

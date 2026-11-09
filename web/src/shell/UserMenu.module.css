@@ -52,23 +52,6 @@
 .hiddenLabel {
   composes: srOnly from "../styles/utilities.module.css";
 }
-.menu[data-placement="sidebar"] {
-  width: 100%;
-}
-.menu[data-placement="sidebar"] .button {
-  width: 100%;
-  padding-inline: var(--space-0-5);
-}
-.menu[data-collapsed="true"] {
-  width: var(--web-control-xl);
-}
-.menu[data-collapsed="true"] .button {
-  justify-content: center;
-  padding-inline: 0;
-}
-.menu[data-collapsed="true"] .chevron {
-  display: none;
-}
 .panel {
   position: absolute;
   z-index: 10;
@@ -87,12 +70,6 @@
   background: var(--color-surface-raised);
   box-shadow: var(--shadow-overlay);
   animation: enter var(--web-motion-fast) var(--web-motion-easing);
-}
-.menu[data-placement="sidebar"] .panel {
-  top: auto;
-  right: auto;
-  bottom: calc(100% + var(--space-1));
-  left: 0;
 }
 .name {
   margin: 0;
@@ -156,7 +133,7 @@
   .chevron {
     display: none;
   }
-  .menu[data-placement="topbar"] .buttonName {
+  .buttonName {
     position: absolute;
     width: 1px;
     height: 1px;
