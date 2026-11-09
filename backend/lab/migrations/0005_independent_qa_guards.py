@@ -293,7 +293,7 @@ BEGIN
          OR NEW.authority_proof->>'role' IS DISTINCT FROM NEW.role
          OR NEW.authority_proof->'cause_count' IS DISTINCT FROM to_jsonb(jsonb_array_length(lab_qa_cause_ids(request.id)))
          OR NEW.authority_proof->'attester_actions' IS DISTINCT FROM '["recount.adjudicate","egg_count.read"]'::jsonb
-         OR NEW.authority_proof->'target_actions' IS DISTINCT FROM CASE WHEN NEW.role='third' THEN '["recount.create","recount.adjudicate"]'::jsonb ELSE '["recount.create"]'::jsonb END
+         OR NEW.authority_proof->'target_actions' IS DISTINCT FROM (CASE WHEN NEW.role='third' THEN '["recount.create","recount.adjudicate"]'::jsonb ELSE '["recount.create"]'::jsonb END)
          OR (NEW.authority_proof->>'qa_revision')::integer IS DISTINCT FROM (input->>'expected_revision')::integer
          OR (input->>'expected_result_revision')::integer IS DISTINCT FROM (SELECT revision FROM lab_labresultrevision WHERE id=NEW.first_result_id)
          OR NOT EXISTS(SELECT 1 FROM ovitraps_ovitrapreading reading JOIN ovitraps_ovitrap ovitrap ON ovitrap.id=reading.ovitrap_id
