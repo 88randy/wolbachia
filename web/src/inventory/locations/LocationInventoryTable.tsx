@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "@tanstack/react-router";
 import type { Schemas } from "@wolbachia/api-client";
 import { FilterBar } from "../../data-table/FilterBar";
+import { SortSelect } from "../../data-table/SortSelect";
 import { FilterControls } from "../../data-table/FilterControls";
 import { FilterChips } from "../../data-table/FilterChips";
 import { IgnoredNotice } from "../../data-table/IgnoredNotice";
@@ -59,6 +60,7 @@ function LocationFilters({
       <IgnoredNotice names={controller.ignored} onDismiss={controller.dropIgnored} />
       <div className={filterStyles.row}>
         <FilterControls controller={controls} />
+        <SortSelect controller={controller} />
       </div>
       <FilterChips controller={controller} />
     </section>

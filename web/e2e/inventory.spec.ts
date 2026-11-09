@@ -421,6 +421,7 @@ for (const language of LANGUAGES) {
         "/inventory/lots",
         "/inventory/lots/LOT-01",
         "/inventory/locations/LOC-01",
+        "/inventory/locations/LOC-01?view=movements",
         `/inventory/lots/LOT-01?custody_location=${INVENTORY_LOCATION}`,
         "/inventory/locations",
       ]) {

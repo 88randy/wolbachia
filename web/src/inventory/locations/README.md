@@ -29,6 +29,9 @@ identities. A redacted source_transfer remains null and triggers no lookup.
 The direct exact lot_code movement filter delivered by #292 works when stock is
 zero without resolving current lot metadata. Existing UUID/operation/piece/unit
 facets remain intersecting server filters; no manual UUID input or client scan
-is introduced. Context metadata survives tabs and clear filters. Historical rows
+is introduced. The history filter composition retains the shared ordering selector
+alongside its editable human-code control and removable linked-UUID chips. Sorting
+preserves the current operation, lot and location metadata in both the URL and
+server request. Context metadata survives tabs and clear filters. Historical rows
 remain available independently of current positive-custody lot metadata, subject
 to the backend's current location/lot authority.

@@ -81,6 +81,27 @@ test("a physical stock quantity links to actual server-filtered legs using the o
     api.requests.some((request) => request.path.includes(`operation=${INVENTORY_ADMISSION}`)),
   ).toBe(false);
   expect(screen.getByText(INVENTORY_ADMISSION)).toBeDefined();
+  await user.selectOptions(screen.getByRole("combobox", { name: "Ordenar por" }), "-quantity");
+  await waitFor(() => {
+    expect(
+      api.requests.some((request) => {
+        const url = new URL(request.path, "https://test.invalid");
+        return (
+          url.pathname === `/api/v1/locations/${location.id}/movements/` &&
+          url.searchParams.get("ordering") === "-quantity" &&
+          url.searchParams.get("operation") === INVENTORY_OPERATION &&
+          url.searchParams.get("lot") === lot.id
+        );
+      }),
+    ).toBe(true);
+  });
+  expect(app.router.state.location.search).toMatchObject({
+    view: "movements",
+    center: location.center,
+    ordering: "-quantity",
+    operation: INVENTORY_OPERATION,
+    lot: lot.id,
+  });
   const beforeClear = api.requests.length;
   await user.click(screen.getByRole("button", { name: "Limpiar filtros" }));
   await waitFor(() => {
