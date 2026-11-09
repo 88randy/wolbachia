@@ -121,7 +121,7 @@ def authorize_target(
 ) -> dict[str, object]:
     """Current attach authority; no parent row locks or public-key-based authority."""
     scope = current_scope(actor)
-    if target.kind in {"inventory_intent", "lab_rejection", "transfer_event"}:
+    if target.kind in {"inventory_intent", "lab_rejection", "transfer_event", "certification"}:
         return _domain_attachment_target(actor, target, upload)
     if target.kind == "review_item":
         return _review_attachment_target(actor, target, scope)
@@ -174,6 +174,10 @@ def authorize_target(
 def _domain_attachment_target(
     actor: UploadActor, target: AttachmentTarget, upload: Upload
 ) -> dict[str, object]:
+    if target.kind == "certification":
+        from people.evidence import authorize_certification_attachment
+
+        return authorize_certification_attachment(actor, target.identifier, upload)
     if target.kind == "inventory_intent":
         from inventory.allocations.evidence import authorize_intent_attachment
 
@@ -239,6 +243,11 @@ def authorize_download(actor: UploadActor, link: AttachmentLink) -> None:
     from uploads.services import _resolve_link_target
 
     parent = _resolve_link_target(link)
+    if parent.kind == "certification":
+        from people.evidence import authorize_certification_download
+
+        authorize_certification_download(actor, parent.identifier)
+        return
     if parent.kind == "inventory_intent":
         from inventory.allocations.evidence import authorize_intent_download
 

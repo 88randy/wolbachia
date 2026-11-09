@@ -60,6 +60,69 @@ def test_new_producers_have_concrete_contracts_and_change_schema_boundary(monkey
         assert "$ref" in components[change]["properties"]["data"]
 
 
+@pytest.mark.django_db(transaction=True)
+def test_eligibility_publication_is_genuine_private_and_refreshes_expiry_in_bootstrap_and_changes(
+    org_a, make_member, monkeypatch, settings, tmp_path
+):
+    from uuid import UUID
+
+    from rest_framework.test import APIClient
+
+    from accounts.models import DeviceSession
+    from people.eligibility import AssessmentQuery
+    from people.models import EligibilityAssessmentReceipt
+    from people.projections import original_assessment
+    from tests.people_support import certify, people_context, require_training, training_version
+
+    context = people_context(org_a, make_member, monkeypatch, settings, tmp_path)
+    version = training_version(context)
+    require_training(context, version)
+    start = context.clock["now"]
+    certify(context, version, end=start + timedelta(seconds=30))
+    session = DeviceSession.objects.get(pk=context.phone.issued.session.pk)
+    forced = APIClient()
+    forced.force_authenticate(context.phone.user, token=session)
+    forced_body = forced.get(BOOTSTRAP)
+    assert forced_body.status_code == 200, forced_body.data
+    assert forced_body.data["eligibility"][0]["assessment_receipt"] is None
+    assert not EligibilityAssessmentReceipt.objects.exists()
+    first = context.phone.client.get(BOOTSTRAP)
+    assert first.status_code == 200, first.data
+    row = first.data["eligibility"][0]
+    receipt = UUID(str(row["assessment_receipt"]))
+    assert row["training_eligible"]
+    assert (
+        not {"score", "section_scores", "critical_responses", "recipient", "evidence_ids"}
+        & row.keys()
+    )
+    query = AssessmentQuery(
+        org_a, context.phone.user.pk, "release.record", context.context, start, start
+    )
+    assert original_assessment(query, receipt)["training_eligible"]
+    assert original_assessment(replace(query, at=start - timedelta(seconds=1)), receipt) is None
+    assert context.phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=first["ETag"]).status_code == 304
+    assert EligibilityAssessmentReceipt.objects.count() == 1
+    context.clock["now"] = start + timedelta(seconds=30)
+    expired = context.phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=first["ETag"])
+    assert expired.status_code == 200, expired.data
+    assert expired["ETag"] != first["ETag"]
+    assert not expired.data["eligibility"][0]["training_eligible"]
+    delta = context.phone.sync([], cursor=first.data["cursor"])
+    assert delta.status_code == 200, delta.data
+    assert not delta.data["changes"]["eligibility"][-1]["data"]["training_eligible"]
+    before = EligibilityAssessmentReceipt.objects.count()
+    no_pull = sync_batch(replace(batch_context(context.phone), is_final_upload=True), [], None)
+    assert no_pull.changes.eligibility == []
+    assert EligibilityAssessmentReceipt.objects.count() == before
+    profile = context.subject.profiles.get()
+    profile.permission_codes = ["field.bootstrap"]
+    profile.save(update_fields=["permission_codes"])
+    private = context.phone.client.get(BOOTSTRAP, HTTP_IF_NONE_MATCH=expired["ETag"])
+    assert private.status_code == 200, private.data
+    assert private.data["eligibility"] == []
+    assert EligibilityAssessmentReceipt.objects.count() == before
+
+
 @pytest.mark.django_db
 def test_lifecycle_fans_out_once_replays_do_not_duplicate_and_bundle_has_no_counts(field):
     other = second_courier(field)

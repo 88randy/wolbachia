@@ -285,6 +285,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        "training.read",
         "community_activity.read",
         "community_activity.void",
         "inventory.reconcile",
@@ -371,6 +372,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "condition.create",
     }
     assert by_slug["coordinator"] == {
+        "training.read",
         "community_activity.read",
         "community_activity.void",
         "field.upload",
@@ -387,6 +389,10 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sampling_point.create",
     }
     assert by_slug["admin"] == {
+        "training.read",
+        "training.manage",
+        "evaluation.create",
+        "evaluation.read",
         "community_activity.read",
         "community_activity.create",
         "community_activity.void",
@@ -544,11 +550,16 @@ def test_seed_never_regrants_a_code_an_admin_revoked() -> None:
     Profile.objects.filter(organization=organization, slug="courier").update(
         permission_codes=["catalog.read"]
     )
+    administrator = Profile.objects.get(organization=organization, slug="admin")
+    administrator.permission_codes.remove("evaluation.read")
+    administrator.save(update_fields=["permission_codes"])
 
     seed_default_permission_codes(organization)
 
     courier = Profile.objects.get(organization=organization, slug="courier")
     assert courier.permission_codes == ["catalog.read"]
+    administrator.refresh_from_db()
+    assert "evaluation.read" not in administrator.permission_codes
 
 
 def test_seed_grants_only_codes_never_seeded_before() -> None:

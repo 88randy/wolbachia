@@ -83,6 +83,7 @@ def test_record_void_is_registered_by_the_app_itself() -> None:
             "quadrants",
             "sampling_points",
             "ovitraps",
+            "eligibility",
         )
     } == {
         "history": 6,
@@ -91,6 +92,7 @@ def test_record_void_is_registered_by_the_app_itself() -> None:
         "quadrants": 2,
         "sampling_points": 1,
         "ovitraps": 1,
+        "eligibility": 1,
     }
 
 

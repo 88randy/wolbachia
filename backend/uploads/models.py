@@ -98,6 +98,9 @@ class AttachmentLink(EvidenceRecord):
     inventory_intent = models.ForeignKey(
         "inventory.InventoryIntent", null=True, on_delete=models.PROTECT, related_name="attachments"
     )
+    certification = models.ForeignKey(
+        "people.Certification", null=True, on_delete=models.PROTECT, related_name="attachments"
+    )
 
     class Meta(EvidenceRecord.Meta):
         constraints = [
@@ -105,6 +108,7 @@ class AttachmentLink(EvidenceRecord):
                 condition=(
                     models.Q(
                         field_event__isnull=False,
+                        certification__isnull=True,
                         inventory_intent__isnull=True,
                         fault__isnull=True,
                         incident__isnull=True,
@@ -115,6 +119,7 @@ class AttachmentLink(EvidenceRecord):
                     | models.Q(
                         field_event__isnull=True,
                         fault__isnull=False,
+                        certification__isnull=True,
                         inventory_intent__isnull=True,
                         incident__isnull=True,
                         review_item__isnull=True,
@@ -125,6 +130,7 @@ class AttachmentLink(EvidenceRecord):
                         field_event__isnull=True,
                         fault__isnull=True,
                         incident__isnull=False,
+                        certification__isnull=True,
                         inventory_intent__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=True,
@@ -135,6 +141,7 @@ class AttachmentLink(EvidenceRecord):
                         fault__isnull=True,
                         incident__isnull=True,
                         review_item__isnull=False,
+                        certification__isnull=True,
                         inventory_intent__isnull=True,
                         transfer_event__isnull=True,
                         lab_rejection__isnull=True,
@@ -145,6 +152,7 @@ class AttachmentLink(EvidenceRecord):
                         incident__isnull=True,
                         review_item__isnull=True,
                         transfer_event__isnull=False,
+                        certification__isnull=True,
                         inventory_intent__isnull=True,
                         lab_rejection__isnull=True,
                     )
@@ -155,6 +163,7 @@ class AttachmentLink(EvidenceRecord):
                         review_item__isnull=True,
                         transfer_event__isnull=True,
                         lab_rejection__isnull=False,
+                        certification__isnull=True,
                         inventory_intent__isnull=True,
                     )
                     | models.Q(
@@ -165,6 +174,17 @@ class AttachmentLink(EvidenceRecord):
                         transfer_event__isnull=True,
                         lab_rejection__isnull=True,
                         inventory_intent__isnull=False,
+                        certification__isnull=True,
+                    )
+                    | models.Q(
+                        field_event__isnull=True,
+                        fault__isnull=True,
+                        incident__isnull=True,
+                        review_item__isnull=True,
+                        transfer_event__isnull=True,
+                        lab_rejection__isnull=True,
+                        inventory_intent__isnull=True,
+                        certification__isnull=False,
                     )
                 ),
                 name="attachment_exactly_one_parent",

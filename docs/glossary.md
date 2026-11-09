@@ -268,3 +268,17 @@ custody. BagDisposition: whole real Bag disposal preserving Lab/source/QA histor
 CourierTransitPolicyVersion: named authored evidence-review procedure, not a seeded
 scientific recipe or a storage certification. Material unavailable: actual disposed
 material cannot support another physical act even when its audit can be corrected.
+
+## Training and evaluations (#101)
+
+| Spanish | English name | Meaning |
+| --- | --- | --- |
+| curso | Training, TrainingVersion | Stable course identity and explicitly configured immutable validity/action version. |
+| certificación | Certification, CertificationRevocation | Evidence-backed subject/context qualification and append-only effective withdrawal; a score is not a certificate. |
+| requisito de capacitación | ActionTrainingRequirementVersion | Nonempty exact acceptable training/version pins for a real action/context/effective instant. |
+| rúbrica | EvaluationRubric, EvaluationRubricVersion | Stable identity and immutable weights/threshold/critical checks, without retroactive rescoring. |
+| evaluación | Evaluation, EvaluationAttempt, EvaluationCompletion, EvaluationVoid | Retained observation/successor, genuine server completion order and reasoned void fact. |
+| recibo de evaluación de elegibilidad | EligibilityAssessmentReceipt | Genuine self/session semantic publication proof; historical scalar pair UUID permits token pruning. |
+| causa de aviso de capacitación | TrainingNoticeCause | Unique actual third-adverse episode or certificate-expiry cause, distinct from delivery. |
+| intención de aviso | TrainingNoticeIntent, TrainingNoticeRoute, TrainingNoticePublication | Current authorized retained routing and truthful unpublished/unavailable observations. |
+| comando de capacitación | PeopleCommand | Immutable exact UUID/body/subject response receipt, independently reauthorized on replay. |

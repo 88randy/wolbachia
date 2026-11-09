@@ -2,6 +2,7 @@ import json
 import uuid
 from copy import deepcopy
 from dataclasses import dataclass, field, replace
+from datetime import datetime
 from typing import Any, Literal, TypedDict
 
 from django.conf import settings
@@ -242,6 +243,7 @@ def list_courier_changes(ctx: ProducerContext, after: int) -> tuple[list[Courier
     from django.db.models.functions import Cast
 
     from inventory.allocations.producers import current_supply_assignments
+    from people.projections import eligibility_change_filter
     from reviews.history_scope import visible_history_contexts
 
     history_ids = visible_history_contexts(ctx)
@@ -256,10 +258,14 @@ def list_courier_changes(ctx: ProducerContext, after: int) -> tuple[list[Courier
         .filter(
             Q(kind="history", pk__in=history_ids)
             | (
+                Q(kind="eligibility", resource_type="training_eligibility")
+                & eligibility_change_filter(ctx)
+            )
+            | (
                 Q(kind="supplies", resource_type="supply_assignment", resource_id__in=supply_ids)
                 & _change_scope_filter(ctx)
             )
-            | (~Q(kind__in=("history", "supplies")) & _change_scope_filter(ctx))
+            | (~Q(kind__in=("history", "supplies", "eligibility")) & _change_scope_filter(ctx))
         )
         .filter(courier=ctx.user, sequence__gt=after)
         .order_by("sequence")[: settings.API_CURSOR_PAGE_SIZE + 1]
@@ -304,16 +310,16 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerConte
         reviews=page.items,
         catalog_version=str(build_catalog_snapshot(batch.organization)["version"]),
         rules_version=str(rules["version"]),
-        next_change_at=rules["next_change_at"],
+        next_change_at=_next_change_at(rules["next_change_at"], ctx),
         capture_context=capture_context(ctx, revision=revision),
         has_more=page.has_more or has_more,
         **_typed_changes(rows),
     )
 
 
-def build_bootstrap(batch: BatchContext) -> dict[str, Any]:
+def build_bootstrap(batch: BatchContext, ctx: ProducerContext | None = None) -> dict[str, Any]:
     """Materialize the entire bundle and cursor while holding the courier transaction lock."""
-    ctx = producer_context(batch, FIELD_BOOTSTRAP)
+    ctx = producer_context(batch, FIELD_BOOTSTRAP) if ctx is None else ctx
     position = latest_change_sequence(batch)
     sections = build_sections(ctx)
     rules = build_rules_snapshot(batch.organization, batch.received_at)
@@ -324,7 +330,7 @@ def build_bootstrap(batch: BatchContext) -> dict[str, Any]:
         "capture_context": capture_context(ctx, revision=revision),
         "catalog_version": build_catalog_snapshot(batch.organization)["version"],
         "rules_version": rules["version"],
-        "next_change_at": rules["next_change_at"],
+        "next_change_at": _next_change_at(rules["next_change_at"], ctx),
         "map_manifest_ready": map_manifests_ready(sections["map_manifests"]),
         **sections,
     }
@@ -336,3 +342,14 @@ def build_bootstrap(batch: BatchContext) -> dict[str, Any]:
             batch.organization.pk, batch.user.pk, ChangesCursor(0, position, revision)
         ),
     }
+
+
+def _next_change_at(rule_boundary: str | None, ctx: ProducerContext) -> str | None:
+    from people.projections import earliest_eligibility_change
+
+    values = [
+        datetime.fromisoformat(value)
+        for value in (rule_boundary, earliest_eligibility_change(ctx))
+        if value is not None
+    ]
+    return None if not values else min(values).isoformat()

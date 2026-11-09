@@ -16,6 +16,7 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-community`: community127.
 - `migrations-supplies`: courier-supplies107.
 - `migrations-session-audit`: session-audit181.
+- `migrations-people`: training/evaluation101.
 - `regular-integration`: complete B10 supplies and B04 private-upload test modules.
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
@@ -47,14 +48,14 @@ incomplete evidence cannot become a successful fragment.
 
 Shard coverage is **data only** (`--cov-report= --cov-fail-under=0`), never a passing
 whole-backend percentage. The existing coverage source/omit configuration remains
-unchanged except adding the Lab and Community domains: 17 configured apps,
+unchanged except adding the Lab, Community and People domains: 18 configured apps,
 migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires all eleven matrix results to succeed. It runs
+The original `checks` job first requires all twelve matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-eleven exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+twelve exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
@@ -68,7 +69,7 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: all eleven fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all twelve fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
@@ -78,8 +79,8 @@ cannot pass it. It executes no tests and emits no fragment or passing-test count
 `PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
 protection or repository setting is changed.
 
-All eleven test jobs and final `checks` keep their 15-minute timeout and standard runner.
-The eleven PostgreSQL test services and final drift service duplicate setup work and can
+All twelve test jobs and final `checks` keep their 15-minute timeout and standard runner.
+The twelve PostgreSQL test services and final drift service duplicate setup work and can
 increase runner-minutes/storage. Session-audit181 adds one complete upgrade-owner
 cohort to the canonical ten-partition workflow, including its own setup/service;
 tests still execute exactly once. The target is at least three minutes' headroom per
@@ -126,9 +127,23 @@ remaining regular selection. These observations justify one explicit ordinary
 cohort, not product/test rewrites or a guaranteed wall-time reduction.
 
 Both modules keep every original case, assertion and collected order. The other
-regular modules remain in the residual `regular` cohort; all nine complete
+regular modules remain in the residual `regular` cohort; all ten complete
 MigrationExecutor modules remain independently classified by their real AST owner.
-The unchanged final gate requires all eleven current fragments, including the ordinary
+The unchanged final gate requires all twelve current fragments, including the ordinary
 cohort. Its additional standard service/setup/runner-minutes are explicit; actual
 final-head CI must measure every wall time/margin and the unchanged coverage union.
 No paid runner, retry, skip, timeout or coverage exception is introduced.
+
+## Whole People migration owner (#101)
+
+The complete tests/test_people_migrations_101.py module owns the real legacy
+upgrade, immutable private certification/command/evaluation/notice/assessment
+chains, raw constraints and protected populated reverse. Register it once as
+migrations-people; retain every existing whole module and the ordinary B10/B04
+cohort. Ten migration cohorts plus regular and regular-integration require twelve
+fresh same-attempt fragments. The configured statement denominator adds the real
+People app (18 sources) without changing old source paths, omissions or the 85%
+threshold. Exact inventories/phases/provenance/coverage union, 900-second budgets
+and the measured 180-second headroom target remain. One additional standard
+runner/service/setup increases runner-minutes; no paid runner, test cut, retry,
+timeout growth or repository-setting change is introduced.

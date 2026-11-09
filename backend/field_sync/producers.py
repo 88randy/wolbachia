@@ -36,6 +36,8 @@ class ProducerContext:
     now: datetime
     permission: str
     configuration_generation: dict[str, Any] = field(default_factory=dict)
+    eligibility_payloads: tuple[dict[str, Any], ...] | None = None
+    eligibility_frame: tuple[str, str, str, str] | None = None
 
     def includes(self, row: dict[str, Any]) -> bool:
         """Defense in depth before serialization: require ownership metadata on every row.
