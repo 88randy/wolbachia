@@ -4,6 +4,7 @@ import { resolve, dirname } from "node:path";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 import * as tokens from "@wolbachia/tokens";
+import * as messages from "@wolbachia/i18n";
 import type { Locale } from "@wolbachia/i18n";
 import { createTranslate } from "../../src/i18n/translate.ts";
 export interface RenderNode {
@@ -18,6 +19,7 @@ interface Options {
 function nativeRequire(name: string, options: Options): unknown {
   const theme = options.scheme === "dark" ? tokens.darkTheme : tokens.lightTheme;
   if (name === "@wolbachia/tokens") return tokens;
+  if (name === "@wolbachia/i18n") return messages;
   if (name.endsWith("I18nProvider.tsx"))
     return { useT: () => createTranslate(options.locale), useLocale: () => options.locale };
   if (name.endsWith("ThemeProvider.tsx"))

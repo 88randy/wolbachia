@@ -1,10 +1,9 @@
 import { radius, spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet } from "react-native";
 
 import { useStyles, useTheme } from "../theme/ThemeProvider.tsx";
-import { AppText } from "./AppText.tsx";
-import { Icon } from "./Icon.tsx";
+import { ButtonContent } from "./ButtonContent.tsx";
 import type { IconName } from "./icon-paths.ts";
 
 export type ButtonVariant = "primary" | "outline" | "text";
@@ -17,13 +16,18 @@ const createStyles = (theme: Theme) =>
   StyleSheet.create({
     base: {
       minHeight: MIN_HEIGHT,
-      borderRadius: radius.md,
+      borderRadius: radius.inner,
       paddingHorizontal: spacing[2],
       paddingVertical: spacing[1],
       alignItems: "center",
       justifyContent: "center",
+      alignSelf: "stretch",
     },
-    primary: { backgroundColor: theme.color.action },
+    primary: {
+      backgroundColor: theme.color.action,
+      borderWidth: OUTLINE_WIDTH,
+      borderColor: theme.color.action,
+    },
     outline: {
       backgroundColor: theme.color.surface,
       borderWidth: OUTLINE_WIDTH,
@@ -31,7 +35,8 @@ const createStyles = (theme: Theme) =>
     },
     text: {},
     disabled: { backgroundColor: theme.color.disabled.background },
-    content: { flexDirection: "row", alignItems: "center", gap: spacing[1] },
+    primaryPressed: { borderColor: theme.color.actionStrong },
+    secondaryPressed: { borderColor: theme.color.actionStrong, backgroundColor: theme.color.tint },
   });
 
 interface ButtonProps {
@@ -51,22 +56,34 @@ export function Button({
 }: ButtonProps) {
   const styles = useStyles(createStyles);
   const { theme } = useTheme();
-  const isPrimary = variant === "primary";
-  const color = isPrimary ? theme.color.onAction : theme.color.actionStrong;
+  const color = buttonColor({ theme, disabled, variant });
   return (
     <Pressable
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
       onPress={onPress}
-      style={[styles.base, styles[variant], disabled ? styles.disabled : null]}
+      style={({ pressed }) => [
+        styles.base,
+        styles[variant],
+        disabled ? styles.disabled : null,
+        pressed ? (variant === "primary" ? styles.primaryPressed : styles.secondaryPressed) : null,
+      ]}
     >
-      <View style={styles.content}>
-        {icon === undefined ? null : <Icon name={icon} color={color} />}
-        <AppText variant="button" style={{ color }}>
-          {label}
-        </AppText>
-      </View>
+      <ButtonContent icon={icon} color={color} label={label} />
     </Pressable>
   );
+}
+
+function buttonColor({
+  theme,
+  disabled,
+  variant,
+}: {
+  theme: Theme;
+  disabled: boolean;
+  variant: ButtonVariant;
+}) {
+  if (disabled) return theme.color.text.secondary;
+  return variant === "primary" ? theme.color.onAction : theme.color.actionStrong;
 }

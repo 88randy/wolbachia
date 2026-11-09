@@ -1,4 +1,5 @@
-import { ScrollView, View } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
+import { View } from "react-native";
 import appManifest from "../../../package.json";
 
 import type { AuthSnapshot } from "../../auth/auth-controller.ts";
@@ -22,7 +23,7 @@ export function LoginContent({ snapshot, form }: LoginContentProps) {
   const styles = useStyles(createAuthStyles);
   const notice = loginNotice(snapshot, form.error);
   return (
-    <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+    <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
       <View style={styles.logo}>
         <AppText variant="caption">{t("mobile.login.logo")}</AppText>
       </View>
@@ -38,6 +39,6 @@ export function LoginContent({ snapshot, form }: LoginContentProps) {
       <AppText variant="caption" style={styles.centered}>
         {t("mobile.login.version", { version: appManifest.version })}
       </AppText>
-    </ScrollView>
+    </AppScrollView>
   );
 }

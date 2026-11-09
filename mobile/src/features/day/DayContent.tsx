@@ -1,6 +1,6 @@
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
 import { DayBody } from "./DayBody.tsx";
 import { DayRefreshStatus } from "./DayRefreshStatus.tsx";
-import { ScrollView } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { Button } from "../../ui/Button.tsx";
@@ -12,7 +12,7 @@ export function DayContent({ model }: { readonly model: M06Model }) {
   const t = useT();
   const styles = useStyles(createDayStyles);
   return (
-    <ScrollView style={styles.root} contentContainerStyle={styles.content}>
+    <AppScrollView style={styles.root} contentContainerStyle={styles.content}>
       <DayRefreshStatus model={model} />
       <DayNotices model={model} />
       {model.state === null ? null : <LocationNotice model={model} />}
@@ -27,6 +27,6 @@ export function DayContent({ model }: { readonly model: M06Model }) {
           }}
         />
       )}
-    </ScrollView>
+    </AppScrollView>
   );
 }

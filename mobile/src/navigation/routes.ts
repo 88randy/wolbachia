@@ -16,7 +16,8 @@ export type Route =
   | { readonly name: "openShift" }
   | { readonly name: "home" }
   | { readonly name: "inbox" }
-  | { readonly name: "settings" };
+  | { readonly name: "settings" }
+  | { readonly name: "stylePreview" };
 
 export type RouteName = Route["name"];
 

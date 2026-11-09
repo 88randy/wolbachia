@@ -1,4 +1,4 @@
-import { mobileLayout, radius, spacing } from "@wolbachia/tokens";
+import { radius, shadow, spacing } from "@wolbachia/tokens";
 import type { Theme } from "@wolbachia/tokens";
 import { StyleSheet, View } from "react-native";
 import type { ReactNode } from "react";
@@ -10,10 +10,15 @@ const createStyles = (theme: Theme) =>
     card: {
       backgroundColor: theme.color.surface,
       borderWidth: 1,
-      borderColor: theme.color.border.default,
-      borderRadius: radius.lg,
+      borderColor: theme.color.border.soft,
+      borderRadius: radius.card,
       padding: spacing[2],
-      gap: mobileLayout.compactGap,
+      gap: spacing[1.5],
+      shadowColor: shadow.card.color,
+      shadowOffset: { width: shadow.card.offsetX, height: shadow.card.offsetY },
+      shadowRadius: shadow.card.blur,
+      shadowOpacity: 1,
+      elevation: shadow.level1.offsetY,
     },
     critical: { borderColor: theme.color.status.critical.fg },
   });
