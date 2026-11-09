@@ -77,6 +77,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["rules.range.atLeast", ["min"]],
   ["rules.range.atMost", ["max"]],
   ["rules.range.between", ["max", "min"]],
+  ["shift.field.reasonHint", ["max", "min"]],
   ["table.filters.ignoredBody", ["names"]],
   ["table.filters.ignoredMore", ["count"]],
   ["table.filters.remove", ["filter", "value"]],

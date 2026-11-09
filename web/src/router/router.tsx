@@ -1,3 +1,6 @@
+import { OperationsHome } from "../operations/OperationsHome";
+import { ShiftsPage } from "../operations/ShiftsPage";
+import { W29Page } from "../operations/W29Page";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { W8Page } from "../inventory/supplies/W8Page";
 import { W9Page } from "../inventory/lots/W9Page";
@@ -106,7 +109,9 @@ const areaRoutes = AREAS.map((area) =>
       requireAreaAccess(area, context.me);
     },
     component:
-      area.id === "settings"
+      area.id === "operations"
+        ? OperationsHome
+        : area.id === "settings"
         ? SettingsPage
         : area.id === "fleet"
           ? FleetHome
@@ -263,6 +268,21 @@ const inventoryRoutes = [
   inventoryRoute("/inventory/lots/$code", { permission: "lot.read", component: W10Page }),
   inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
 ];
+const shiftsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/operations/shifts",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => { requirePermission("operations", context.me, "shift.read"); },
+  component: ShiftsPage,
+  errorComponent: AreaErrorState,
+});
+const shiftRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/operations/shifts/$id",
+  beforeLoad: ({ context }) => { requirePermission("operations", context.me, "shift.read"); },
+  component: W29Page,
+  errorComponent: AreaErrorState,
+});
 const routeTree = rootRoute.addChildren([
   loginRoute,
   forgotPasswordRoute,
@@ -272,6 +292,8 @@ const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     ...areaRoutes,
     ...inventoryRoutes,
+    shiftsRoute,
+    shiftRoute,
     quadrantVersionsRoute,
     catalogsRoute,
     catalogRoute,

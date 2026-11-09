@@ -113,3 +113,7 @@ Both sync catalogs include six actual B10 result keys for inaccessible, blocked
 void, changed assignment, state conflict, missing evidence and unavailable transit.
 Existing inactive-reason/clock/final-upload codes are reused. Review messages retain
 the capture/signature; no text claims physical use or warehouse credit was applied.
+
+Issue #34 adds the shift area in both locales for W29, real validation/blocker
+states, reason requirements and explicit summary/GPS/per-point-history gaps.
+shift.field.reasonHint uses min/max from the existing Me reason limits.
