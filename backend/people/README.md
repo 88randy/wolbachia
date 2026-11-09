@@ -93,6 +93,8 @@ requests do not mint them, and no-pull/final upload creates no projection or
 receipt. Producer reads consume a per-context semantic cache without writes.
 Clock-only expiry changes the real bootstrap and change feed before conditional
 304; request time/token rotation is not a content-version ingredient.
+Assessments use the wire serializer before hashing or retaining a receipt, so
+the exact stored proof and published JSON share canonical instants and identity.
 
 Evidence uses authorize/PUT/finalize unbound outside domain locks, then real
 Certification + verified owned attachment + exact command in one transaction.

@@ -90,6 +90,11 @@ def test_eligibility_publication_is_genuine_private_and_refreshes_expiry_in_boot
     assert first.status_code == 200, first.data
     row = first.data["eligibility"][0]
     receipt = UUID(str(row["assessment_receipt"]))
+    assert EligibilityAssessmentReceipt.objects.get(pk=receipt).assessment == {
+        key: value
+        for key, value in row.items()
+        if key not in {"id", "organization_id", "assessment_receipt", "version"}
+    }
     assert row["training_eligible"]
     assert (
         not {"score", "section_scores", "critical_responses", "recipient", "evidence_ids"}

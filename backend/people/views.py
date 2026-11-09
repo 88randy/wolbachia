@@ -348,7 +348,9 @@ class CertificationViewSet(PeopleViewSet):
         self.ordering = ["revision", "id"]
         self.ordering_fields = ["revision", "effective_from", "created_at", "id"]
         return self.respond_list(
-            models.CertificationRevocation.objects.filter(certification=parent)
+            models.CertificationRevocation.objects.filter(certification=parent).order_by(
+                *self.ordering
+            )
         )
 
 
@@ -412,7 +414,9 @@ class EvaluationViewSet(PeopleViewSet):
         self.ordering = ["revision", "id"]
         self.ordering_fields = ["revision", "observed_at", "created_at", "id"]
         return self.respond_list(
-            models.EvaluationAttempt.objects.filter(evaluation=parent).select_related("completion")
+            models.EvaluationAttempt.objects.filter(evaluation=parent)
+            .select_related("completion")
+            .order_by(*self.ordering)
         )
 
 

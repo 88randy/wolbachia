@@ -26,6 +26,7 @@ from people.eligibility import AssessmentQuery, assess_training_eligibility
 from people.models import ActionTrainingRequirementVersion, EligibilityAssessmentReceipt
 from people.permissions import PeopleContext, allows_contexts
 from people.selectors import scoped_facts
+from people.serializers import TrainingAssessmentSerializer
 
 
 def requires_publication_arbiter(batch: BatchContext) -> bool:
@@ -89,9 +90,13 @@ def _resource_id(ctx: ProducerContext, action: str, context: PeopleContext) -> U
 
 
 def _assessment(ctx: ProducerContext, action: str, context: PeopleContext) -> dict[str, Any]:
-    return assess_training_eligibility(
-        AssessmentQuery(ctx.organization, ctx.user.pk, action, context, ctx.now, ctx.now)
+    assessment = TrainingAssessmentSerializer(
+        data=assess_training_eligibility(
+            AssessmentQuery(ctx.organization, ctx.user.pk, action, context, ctx.now, ctx.now)
+        )
     )
+    assessment.is_valid(raise_exception=True)
+    return dict(assessment.data)
 
 
 def _payload(

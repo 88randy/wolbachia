@@ -350,7 +350,7 @@ BEGIN
           AND recipient_membership_id::text=NEW.assessment->>'recipient_membership_id'))
     THEN RAISE EXCEPTION 'People notice publication mismatch' USING ERRCODE='23514'; END IF;
     IF jsonb_array_length(NEW.assessment->'contexts')<>jsonb_array_length(required_contexts)
-      OR NOT (NEW.assessment->'contexts' @> required_contexts AND required_contexts @> NEW.assessment->'contexts')
+      OR NOT ((NEW.assessment->'contexts') @> required_contexts AND required_contexts @> (NEW.assessment->'contexts'))
     THEN RAISE EXCEPTION 'People notice publication context mismatch' USING ERRCODE='23514'; END IF;
     IF cause.kind='certification_expired' THEN
       IF NEW.assessment->'facts' IS DISTINCT FROM jsonb_build_array(cause.certification_id::text)
@@ -512,14 +512,14 @@ BEGIN
 END; $$;
 
 CREATE FUNCTION people_complete_guard() RETURNS trigger LANGUAGE plpgsql AS $$
-DECLARE facts jsonb := to_jsonb(NEW); expected_operation text; identity uuid; attempt uuid; revision bigint;
+DECLARE facts jsonb := to_jsonb(NEW); expected_operation text; identity uuid; attempt uuid; receipt_revision bigint;
         command people_peoplecommand; target_table text; target jsonb; selected record; field text;
 BEGIN
   CASE TG_TABLE_NAME
-  WHEN 'people_training' THEN expected_operation:='training.create'; identity:=NEW.id; revision:=0;
-  WHEN 'people_trainingversion' THEN expected_operation:='training.version'; identity:=NEW.id; revision:=NEW.version;
-  WHEN 'people_actiontrainingrequirementversion' THEN expected_operation:='requirement.version'; identity:=NEW.id; revision:=NEW.revision;
-  WHEN 'people_certification' THEN expected_operation:='certification.issue'; identity:=NEW.id; revision:=1;
+  WHEN 'people_training' THEN expected_operation:='training.create'; identity:=NEW.id; receipt_revision:=0;
+  WHEN 'people_trainingversion' THEN expected_operation:='training.version'; identity:=NEW.id; receipt_revision:=NEW.version;
+  WHEN 'people_actiontrainingrequirementversion' THEN expected_operation:='requirement.version'; identity:=NEW.id; receipt_revision:=NEW.revision;
+  WHEN 'people_certification' THEN expected_operation:='certification.issue'; identity:=NEW.id; receipt_revision:=1;
     IF EXISTS(SELECT 1 FROM jsonb_array_elements_text(NEW.evidence_ids) evidence_id WHERE NOT EXISTS(
       SELECT 1 FROM uploads_upload upload JOIN uploads_uploadverification verified ON verified.upload_id=upload.id
         JOIN uploads_attachmentlink link ON link.upload_id=upload.id
@@ -530,22 +530,22 @@ BEGIN
       OR EXISTS(SELECT 1 FROM uploads_attachmentlink link JOIN uploads_upload upload ON upload.id=link.upload_id
         WHERE link.certification_id=NEW.id AND NOT NEW.evidence_ids ? upload.public_id::text)
     THEN RAISE EXCEPTION 'People certification evidence incomplete' USING ERRCODE='23514'; END IF;
-  WHEN 'people_certificationrevocation' THEN expected_operation:='certification.revoke'; identity:=NEW.id; revision:=NEW.revision;
-  WHEN 'people_evaluationrubric' THEN expected_operation:='rubric.create'; identity:=NEW.id; revision:=0;
-  WHEN 'people_evaluationrubricversion' THEN expected_operation:='rubric.version'; identity:=NEW.id; revision:=NEW.version;
-  WHEN 'people_evaluation' THEN expected_operation:='evaluation.create'; identity:=NEW.id; revision:=1;
-    IF NOT EXISTS(SELECT 1 FROM people_evaluationattempt WHERE evaluation_id=NEW.id AND revision=1) THEN
+  WHEN 'people_certificationrevocation' THEN expected_operation:='certification.revoke'; identity:=NEW.id; receipt_revision:=NEW.revision;
+  WHEN 'people_evaluationrubric' THEN expected_operation:='rubric.create'; identity:=NEW.id; receipt_revision:=0;
+  WHEN 'people_evaluationrubricversion' THEN expected_operation:='rubric.version'; identity:=NEW.id; receipt_revision:=NEW.version;
+  WHEN 'people_evaluation' THEN expected_operation:='evaluation.create'; identity:=NEW.id; receipt_revision:=1;
+    IF NOT EXISTS(SELECT 1 FROM people_evaluationattempt observed WHERE observed.evaluation_id=NEW.id AND observed.revision=1) THEN
       RAISE EXCEPTION 'People evaluation initial attempt missing' USING ERRCODE='23514';
     END IF;
   WHEN 'people_evaluationattempt' THEN
     expected_operation:=CASE WHEN NEW.revision=1 THEN 'evaluation.create' ELSE 'evaluation.revise' END;
-    identity:=NEW.evaluation_id; revision:=NEW.revision; attempt:=NEW.id;
+    identity:=NEW.evaluation_id; receipt_revision:=NEW.revision; attempt:=NEW.id;
     IF (NEW.outcome<>'incomplete') IS DISTINCT FROM EXISTS(
       SELECT 1 FROM people_evaluationcompletion WHERE attempt_id=NEW.id) THEN
       RAISE EXCEPTION 'People evaluation completion incomplete' USING ERRCODE='23514';
     END IF;
-  WHEN 'people_evaluationvoid' THEN expected_operation:='evaluation.void'; identity:=NEW.id; revision:=NEW.revision;
-  WHEN 'people_evaluationnoticepolicyversion' THEN expected_operation:='notice_policy.version'; identity:=NEW.id; revision:=NEW.revision;
+  WHEN 'people_evaluationvoid' THEN expected_operation:='evaluation.void'; identity:=NEW.id; receipt_revision:=NEW.revision;
+  WHEN 'people_evaluationnoticepolicyversion' THEN expected_operation:='notice_policy.version'; identity:=NEW.id; receipt_revision:=NEW.revision;
   WHEN 'people_trainingnoticeroute' THEN
     IF NOT EXISTS(SELECT 1 FROM people_peoplecommand WHERE organization_id=NEW.organization_id
       AND created_by_id=NEW.created_by_id AND command_id=NEW.command_id AND operation='notice_policy.version'
@@ -597,7 +597,7 @@ BEGIN
     SELECT 1 FROM people_peoplecommand receipt
     WHERE receipt.organization_id=NEW.organization_id AND receipt.created_by_id=NEW.created_by_id
       AND receipt.operation=expected_operation AND receipt.response->>'id'=identity::text
-      AND receipt.response->'revision'=to_jsonb(revision)
+      AND receipt.response->'revision'=to_jsonb(receipt_revision)
       AND (attempt IS NULL OR receipt.response->'evaluation'->>'attempt_id'=attempt::text)
   ) THEN RAISE EXCEPTION 'People fact command incomplete' USING ERRCODE='23514'; END IF;
   RETURN NEW;
@@ -605,7 +605,7 @@ END; $$;
 """
 
 FORWARD_SQL = GUARDS + "\n".join(
-    f"CREATE TRIGGER {table}_fact_guard BEFORE INSERT OR UPDATE OR DELETE ON {table} "
+    f"CREATE TRIGGER {table}_guard BEFORE INSERT OR UPDATE OR DELETE ON {table} "
     f"FOR EACH ROW EXECUTE FUNCTION people_fact_guard();"
     f"CREATE CONSTRAINT TRIGGER {table}_complete_guard AFTER INSERT ON {table} "
     f"DEFERRABLE INITIALLY DEFERRED FOR EACH ROW EXECUTE FUNCTION people_complete_guard();"
@@ -613,7 +613,7 @@ FORWARD_SQL = GUARDS + "\n".join(
 )
 REVERSE_SQL = (
     "\n".join(
-        f"DROP TRIGGER {table}_complete_guard ON {table}; DROP TRIGGER {table}_fact_guard ON {table};"
+        f"DROP TRIGGER {table}_complete_guard ON {table}; DROP TRIGGER {table}_guard ON {table};"
         for table in reversed(TABLES)
     )
     + "\nDROP FUNCTION people_complete_guard(); DROP FUNCTION people_fact_guard(); DROP FUNCTION people_notice_contexts(uuid);"

@@ -101,9 +101,7 @@ def test_people_upgrade_retains_legacy_and_raw_guards_preserve_real_private_chai
             "peoplecommand",
         )
         additions = {
-            f"people_{table}_{suffix}"
-            for table in tables
-            for suffix in ("fact_guard", "complete_guard")
+            f"people_{table}_{suffix}" for table in tables for suffix in ("guard", "complete_guard")
         } | {"uploads_certification_parent_guard"}
         assert set(upgraded) - set(baseline) == additions
         assert Training.objects.count() == Certification.objects.count() == 0

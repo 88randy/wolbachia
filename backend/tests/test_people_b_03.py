@@ -135,6 +135,7 @@ def people(org_a, make_member, monkeypatch, settings, tmp_path):
 
 
 @pytest.mark.django_db(transaction=True)
+@pytest.mark.filterwarnings("error::django.core.paginator.UnorderedObjectListWarning")
 def test_certificate_uses_actual_effective_version_and_retains_backdated_revoked_history(people):
     from django.http import Http404
 
@@ -232,6 +233,7 @@ def test_certificate_uses_actual_effective_version_and_retains_backdated_revoked
 
 
 @pytest.mark.django_db(transaction=True)
+@pytest.mark.filterwarnings("error::django.core.paginator.UnorderedObjectListWarning")
 def test_completion_notice_routing_is_current_before_deferred_reassessment_and_exact_replay(
     people, make_member
 ):
