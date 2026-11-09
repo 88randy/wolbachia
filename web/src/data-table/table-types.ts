@@ -17,12 +17,14 @@ interface FilterBase {
 export interface SelectFilter extends FilterBase {
   kind: "select";
   options: readonly FilterOption[];
+  presentation?: "segmented";
 }
 
 export interface TextFilter extends FilterBase {
   kind: "text";
   /** Longest accepted value; longer ones in the URL are ignored. */
   maxLength: number;
+  format?: "positive-integer";
 }
 
 export type FilterDefinition = SelectFilter | TextFilter;
@@ -37,10 +39,12 @@ export interface TableQueryConfig {
   filters: readonly FilterDefinition[];
   /** Column ids the API can order by (`?ordering=<id>` or `-<id>`). */
   sortableIds: readonly string[];
+  sortOptions?: readonly FilterOption[];
   /** Ordering the API applies when the URL has none, e.g. `-created_at`. */
   defaultOrdering?: string;
   /** Whether the list endpoint understands `?include_voided=true`. */
   supportsVoided: boolean;
+  limitationsKey?: MessageKey;
 }
 
 export type SortDirection = "asc" | "desc";
@@ -81,6 +85,7 @@ export interface TableController {
   ignored: readonly string[];
   hasActiveFilters: boolean;
   toggleSort: (columnId: string) => void;
+  setOrdering: (ordering: string | undefined) => void;
   goToPage: (page: number) => void;
   goToCursor: (cursor: string | null) => void;
   setFilter: (key: string, value: string | undefined) => void;

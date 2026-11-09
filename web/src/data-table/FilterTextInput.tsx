@@ -14,6 +14,8 @@ export function FilterTextInput({ id, filter, value }: FilterTextInputProps) {
       id={id}
       name={filter.key}
       type="text"
+      inputMode={filter.format === "positive-integer" ? "numeric" : undefined}
+      pattern={filter.format === "positive-integer" ? "[1-9][0-9]*" : undefined}
       className={styles.control}
       defaultValue={value ?? ""}
       maxLength={filter.maxLength}

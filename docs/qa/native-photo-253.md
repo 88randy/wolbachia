@@ -65,8 +65,9 @@ there is no false Saved or automatic adoption under a fresh proof. This tradeoff
 requires explicit MO01 qualification along with the remaining physical matrix.
 
 Shift-open photo contract work is [#260](https://github.com/88randy/wolbachia/issues/260).
-M09 remains conditional on actual #138 production integration; no draft feature
-or schema was copied. Neither seam is represented as working camera integration.
+M09 is connected in source through the actual serial #138 composition described
+above. Native camera behavior and the physical acceptance matrix remain pending;
+the separate shift-open binding is not represented as working camera integration.
 
 ## Dependency and permission evidence
 

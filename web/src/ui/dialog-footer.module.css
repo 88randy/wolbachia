@@ -1,0 +1,21 @@
+.footer {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  align-items: stretch;
+  width: max-content;
+  max-width: 100%;
+  margin-inline-start: auto;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+.footer > button {
+  width: 100%;
+  min-width: calc(var(--space-6) * 2);
+  min-height: var(--web-control-md);
+}
+.footer[data-compact="true"] {
+  display: flex;
+  flex-direction: column-reverse;
+  width: 100%;
+}
