@@ -5,7 +5,7 @@ export async function hasLocalRecords(db: SqlExecutor): Promise<boolean> {
   const rows = await db.query(`SELECT 1 FROM outbox_event
     UNION ALL SELECT 1 FROM shift_open_state
     UNION ALL SELECT 1 FROM lifecycle_courier_projection WHERE kind NOT IN (
-      'ovitrap','sampling_point','quadrant','block','history.review_decision',
+      'supply_assignment','ovitrap','sampling_point','quadrant','block','history.review_decision',
       'history.shift_validation','history.relocation_proposal','history.transfer_custody')
     UNION ALL SELECT 1 FROM lifecycle_draft
     UNION ALL SELECT 1 FROM ovitrap_draft

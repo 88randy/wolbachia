@@ -1,3 +1,4 @@
+import { CloseShiftScreen } from "../features/shift-close/CloseShiftScreen.tsx";
 import { LifecycleRoute } from "../features/ovitrap-lifecycle/LifecycleRoute.tsx";
 import { P9Screen } from "../features/day/P9Screen.tsx";
 import { P10Screen } from "../features/day/P10Screen.tsx";
@@ -23,6 +24,7 @@ const SCREENS = {
   map: P10Screen,
   ovitrapCapture: OvitrapScreen,
   openShift: OpenShiftScreen,
+  closeShift: CloseShiftScreen,
   supplyReceipt: P8Screen,
   home: HomeScreen,
   inbox: InboxScreen,

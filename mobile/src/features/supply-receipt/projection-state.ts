@@ -13,7 +13,11 @@ import {
 } from "../ovitrap-lifecycle/contract-readers.ts";
 import { courierSection } from "../ovitrap-lifecycle/projection-record.ts";
 import { readSupplyAssignment } from "./projection-contract.ts";
-import type { SupplyAssignment, SupplyProjectionSource } from "./projection-types.ts";
+import type {
+  SupplyAssignment,
+  SupplyProjectionSource,
+  SupplyProjectionAccess,
+} from "./projection-types.ts";
 import { SupplyProjectionUnavailable } from "./projection-types.ts";
 
 const STATE_KEY = "supply_receipt_projection";
@@ -155,10 +159,10 @@ const READ_SOURCE = `SELECT metadata.value AS metadata,context.value AS context,
     AND json_extract(context.value,'$.scopeRevision')=? AND json_extract(context.value,'$.authorityRevision')=?
     AND json_extract(profile.value,'$.issuer')=? AND json_extract(profile.value,'$.sessionId')=?
     AND json_extract(profile.value,'$.userId')=? AND json_extract(profile.value,'$.organization.id')=?
-    AND EXISTS(SELECT 1 FROM json_each(profile.value,'$.permissions') WHERE value='supply_assignment.receive')
-    AND EXISTS(SELECT 1 FROM json_each(profile.value,'$.permissions') WHERE value='field.upload')`;
+    AND EXISTS(SELECT 1 FROM json_each(profile.value,'$.permissions') WHERE value=?)
+    AND (?=0 OR EXISTS(SELECT 1 FROM json_each(profile.value,'$.permissions') WHERE value='field.upload'))`;
 /** One short projection read. Its exact raw CAS is reusable by the caller's atomic draft/outbox write. */
-function sourceParams(handle: CaptureTransportHandle) {
+function sourceParams(handle: CaptureTransportHandle, access: SupplyProjectionAccess) {
   const key = ownerKey(handle.owner);
   return [
     key,
@@ -172,6 +176,8 @@ function sourceParams(handle: CaptureTransportHandle) {
     handle.sessionId,
     handle.owner.userId,
     handle.owner.organizationId,
+    `supply_assignment.${access}`,
+    access === "receive" ? 1 : 0,
   ];
 }
 function assignmentsFromRow(row: SqlRow, handle: CaptureTransportHandle) {
@@ -186,10 +192,11 @@ function assignmentsFromRow(row: SqlRow, handle: CaptureTransportHandle) {
 export async function readSupplyAssignments(
   db: SqlExecutor,
   handle: CaptureTransportHandle,
+  access: SupplyProjectionAccess = "receive",
 ): Promise<SupplyProjectionSource> {
   if (!handle.isCurrent() || handle.scopeRevision === null)
     throw new SupplyProjectionUnavailable("Supply capture context unavailable.");
-  const params = sourceParams(handle);
+  const params = sourceParams(handle, access);
   const [row] = await db.query(READ_SOURCE, params);
   if (!row || !handle.isCurrent())
     throw new SupplyProjectionUnavailable("Supply capture context unavailable.");
