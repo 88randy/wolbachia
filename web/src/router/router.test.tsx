@@ -38,17 +38,16 @@ const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
 };
 
 describe("area routes", () => {
-  test.each(AREAS.filter(({ id }) => !["quadrants", "settings", "inventory"].includes(id)))(
-    "$path opens the placeholder of $id",
-    async ({ path, id }) => {
-      await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
+  test.each(
+    AREAS.filter(({ id }) => !["quadrants", "settings", "inventory", "incidents"].includes(id)),
+  )("$path opens the placeholder of $id", async ({ path, id }) => {
+    await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
 
-      expect(
-        await screen.findByRole("heading", { level: 1, name: AREA_TITLES_ES[id] }),
-      ).toBeDefined();
-      expect(screen.getByText("Esta sección todavía está en construcción.")).toBeDefined();
-    },
-  );
+    expect(
+      await screen.findByRole("heading", { level: 1, name: AREA_TITLES_ES[id] }),
+    ).toBeDefined();
+    expect(screen.getByText("Esta sección todavía está en construcción.")).toBeDefined();
+  });
 
   test("there is one route per area and all paths are different", () => {
     const paths = AREAS.map((area) => area.path);
@@ -67,9 +66,9 @@ describe("area routes", () => {
   });
 
   test("the area title is translated to English", async () => {
-    await renderApp({ path: "/incidents", language: "en" });
+    await renderApp({ path: "/operations", language: "en" });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Incidents" })).toBeDefined();
+    expect(await screen.findByRole("heading", { level: 1, name: "Supervision" })).toBeDefined();
   });
 });
 
@@ -134,9 +133,9 @@ describe("pending state", () => {
 
 describe("document title (WCAG 2.4.2)", () => {
   test("each area sets its own title", async () => {
-    await renderApp({ path: "/incidents" });
+    await renderApp({ path: "/operations" });
 
-    expect(document.title).toBe("Incidentes · Wolbachia");
+    expect(document.title).toBe("Supervisión · Wolbachia");
   });
 
   test("navigating changes the title", async () => {

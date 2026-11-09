@@ -387,3 +387,10 @@ See [capabilities and verification](../docs/web-ux-polish-218.md).
 
 The synthetic local review at `/harness/ux-preview.html` uses the real app routes with no API
 network calls. It is a separate Vite development entry excluded from the production build.
+
+### Incident workspace (W6/W7, #33)
+
+`/incidents` and `/incidents/<code>` consume the generated reported facade,
+server-paged named metadata, immutable thread and revisioned commands. See
+[`src/incidents/README.md`](src/incidents/README.md) for session boundaries,
+evidence, criterion-to-test ownership and the remaining W4 integration.

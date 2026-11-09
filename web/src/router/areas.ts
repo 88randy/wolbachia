@@ -14,7 +14,7 @@ export const PENDING = "pending";
 
 export const AREAS = [
   { id: "home", path: "/", group: "main", requiredPermissions: [] },
-  { id: "incidents", path: "/incidents", group: "main", requiredPermissions: PENDING },
+  { id: "incidents", path: "/incidents", group: "main", requiredPermissions: ["incident.read"] },
   { id: "operations", path: "/operations", group: "operation", requiredPermissions: PENDING },
   {
     id: "quadrants",
