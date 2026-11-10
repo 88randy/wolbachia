@@ -89,17 +89,18 @@ export function page(results: readonly unknown[], count = results.length) {
 }
 export function receptionApi(permissions = ["bag.receive", "reading.read", "egg_count.create"]) {
   return createFakeApi({
-    "GET /api/v1/me/": Response.json(
-      makeMe({
-        permissions,
-        scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
-      }),
-    ),
-    "GET /api/v1/lab-receptions/": page([]),
-    "GET /api/v1/bags/": page([]),
-    "GET /api/v1/lab-reception-discrepancies/": page([]),
-    [`GET /api/v1/bags/${BAG_ID}/`]: Response.json(bag()),
-    [`GET /api/v1/readings/${READING_ID}/`]: Response.json(reading()),
+    "GET /api/v1/me/": () =>
+      Response.json(
+        makeMe({
+          permissions,
+          scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
+        }),
+      ),
+    "GET /api/v1/lab-receptions/": () => page([]),
+    "GET /api/v1/bags/": () => page([]),
+    "GET /api/v1/lab-reception-discrepancies/": () => page([]),
+    [`GET /api/v1/bags/${BAG_ID}/`]: () => Response.json(bag()),
+    [`GET /api/v1/readings/${READING_ID}/`]: () => Response.json(reading()),
   });
 }
 export function receptionReply(code = "B-030") {

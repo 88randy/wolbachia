@@ -127,7 +127,7 @@ test("duplicate scans, unknown codes and no-reading incidents stay keyboard usab
     if (!answer) throw new Error("Unexpected repeated reception");
     return answer;
   });
-  api.setRoute(`GET /api/v1/incidents/${ID}/`, Response.json(incident()));
+  api.setRoute(`GET /api/v1/incidents/${ID}/`, () => Response.json(incident()));
   await renderApp({ path: "/lab/bags", fetch: api.fetch, language: "en" });
   const user = userEvent.setup();
   const scan = await screen.findByRole("textbox", { name: "Bag code" });
@@ -180,7 +180,7 @@ test("Enter-delimited scans remain serialized and pause on uncertainty until exp
   const drained = new Promise<void>((finish) => {
     finishDrain = finish;
   });
-  api.setRoute("GET /api/v1/lab-receptions/", page([]));
+  api.setRoute("GET /api/v1/lab-receptions/", () => page([]));
   api.setRoute("POST /api/v1/bags/receive/", (request) => {
     const { code } = request.body as { code: string };
     if (code === "B-032") finishDrain();
@@ -232,7 +232,7 @@ test("an old-session response cannot overwrite a queued scan resumed after expli
   await vi.waitFor(() => {
     expect(app.queryClient.isFetching()).toBe(0);
   });
-  api.setRoute("POST /api/v1/bags/receive/", receptionReply("B-031"));
+  api.setRoute("POST /api/v1/bags/receive/", () => receptionReply("B-031"));
   await reviewCurrentState(user);
   await vi.waitFor(() => {
     expect(api.requests.filter((request) => request.method === "POST")).toHaveLength(2);
@@ -250,9 +250,8 @@ test("an old-session response cannot overwrite a queued scan resumed after expli
 
 test("expected missing observations use the real bag and retain configuration-pending truth", async () => {
   const api = receptionApi();
-  api.setRoute("GET /api/v1/bags/", page([bag()], 30));
-  api.setRoute(
-    `POST /api/v1/bags/${BAG_ID}/mark-missing/`,
+  api.setRoute("GET /api/v1/bags/", () => page([bag()], 30));
+  api.setRoute(`POST /api/v1/bags/${BAG_ID}/mark-missing/`, () =>
     Response.json(
       {
         code: "lab_configuration_unavailable",
@@ -293,9 +292,8 @@ test("expected missing observations use the real bag and retain configuration-pe
 
 test("received details show boolean field facts and no-paddle receipts never require a bag", async () => {
   const api = receptionApi();
-  api.setRoute("GET /api/v1/lab-receptions/", page([receipt()]));
-  api.setRoute(
-    `POST /api/v1/readings/${READING_ID}/receive/`,
+  api.setRoute("GET /api/v1/lab-receptions/", () => page([receipt()]));
+  api.setRoute(`POST /api/v1/readings/${READING_ID}/receive/`, () =>
     Response.json({
       bag: null,
       reading: { id: READING_ID, paddle_present: false },
@@ -332,7 +330,7 @@ test("partial read errors leave scanning available and retry only the failed lis
   await renderApp({ path: "/lab/bags", fetch: api.fetch, language: "en" });
   await screen.findByRole("button", { name: "Try again" });
   expect(screen.getByRole("textbox", { name: "Bag code" })).toBeDefined();
-  api.setRoute("GET /api/v1/lab-receptions/", page([]));
+  api.setRoute("GET /api/v1/lab-receptions/", () => page([]));
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
   await screen.findByText("There are no records here yet");
   expect(api.requests.some((request) => request.path.startsWith("/api/v1/bags/"))).toBe(false);
@@ -348,7 +346,7 @@ test("deep links without bag.receive are denied before reception API reads", asy
 test("switching to expected never authorizes missing from a received placeholder", async () => {
   const api = receptionApi();
   let resolve!: (reply: Response) => void;
-  api.setRoute("GET /api/v1/lab-receptions/", page([receipt()]));
+  api.setRoute("GET /api/v1/lab-receptions/", () => page([receipt()]));
   api.setRoute("GET /api/v1/bags/", (request) =>
     new URL(request.path, "http://localhost").searchParams.get("page_size") === "1"
       ? page([])
@@ -380,7 +378,7 @@ test("summary links use independent server counts and lists keep exact filters, 
       new URL(request.path, "http://localhost").searchParams.get("kind") === "no_paddle" ? 2 : 47,
     ),
   );
-  api.setRoute("GET /api/v1/bags/", page([], 13));
+  api.setRoute("GET /api/v1/bags/", () => page([], 13));
   const path = `/lab/bags?point=${READING_ID}&week=2026-W45&code=B-030&page=2&ordering=created_at`;
   await renderApp({ path, fetch: api.fetch, language: "en" });
   const summary = screen.getByRole("region", { name: /Totals are independent/ });

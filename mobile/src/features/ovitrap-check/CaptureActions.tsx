@@ -15,7 +15,7 @@ export function CaptureActions({ model }: { readonly model: M08Model }) {
         label={t("mobile.ovitrap.check")}
         disabled={model.isBusy || model.state?.canStartCapture !== true}
         onPress={() => {
-          push({ name: "ovitrapScanner", target: "ovitrap" });
+          push({ name: "ovitrapScanner", target: "ovitrap", eventId });
         }}
       />
       <CaptureCommand eventId={eventId} model={model} command="refresh" />

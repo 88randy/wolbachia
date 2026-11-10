@@ -41,7 +41,7 @@ export class OvitrapDraftBuffer {
     this.#pending = null;
     this.#revision++;
   }
-  async persist(service: OvitrapService, eventId = this.#eventId): Promise<void> {
+  async persist(service: Pick<OvitrapService, "update">, eventId = this.#eventId): Promise<void> {
     if (!this.#pending) return;
     if (eventId !== this.#eventId) throw new StaleCaptureError();
     const revision = this.#revision;
