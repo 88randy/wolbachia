@@ -4,6 +4,7 @@ import type { MessageKey } from "@wolbachia/i18n";
 
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { BigActionCard } from "../../ui/BigActionCard.tsx";
+import { HomeNextSkeleton } from "./HomeNextSkeleton.tsx";
 import type { HomeNext } from "./home-next.ts";
 import type { HomeNextModel } from "./use-home-next.ts";
 
@@ -56,6 +57,7 @@ export function HomeNextCard({
   readonly isBusy: boolean;
 }) {
   const t = useT();
+  if (model.next === "loading") return <HomeNextSkeleton />;
   const copy = COPY[model.next];
   return (
     <BigActionCard

@@ -22,8 +22,12 @@ function subscribeLocation({ source, isShiftOpen, publish }: LocationSubscriptio
     const current = ++generation;
     stop?.();
     stop = undefined;
-    publish({ kind: "unavailable" });
-    if (!isShiftOpen || AppState.currentState !== "active") return;
+    // Keep the last known state while the check repeats; resetting it made the banner blink.
+    if (!isShiftOpen) {
+      publish({ kind: "unavailable" });
+      return;
+    }
+    if (AppState.currentState !== "active") return;
     void source
       .start((fix) => {
         if (current === generation) publish(fix);
