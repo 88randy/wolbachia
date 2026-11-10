@@ -16,6 +16,7 @@ import { notificationRoutes } from "../notifications/routes";
 import { operationRoutes } from "../operations/routes";
 import { peopleRoutes } from "../people/routes";
 import { quadrantRoutes } from "../quadrants/routes";
+import { regulatoryRoutes } from "../regulatory/routes";
 import { releaseRoutes } from "../releases/routes";
 import { schedulingRoutes } from "../scheduling/routes";
 import { settingsRoutes } from "../settings/routes";
@@ -36,6 +37,7 @@ export const areaRouteModules = [
   ...labRoutes,
   ...peopleRoutes,
   ...dashboardsRoutes,
+  ...regulatoryRoutes,
   ...settingsRoutes,
   ...placeholderRoutes,
 ];

@@ -2,7 +2,8 @@ import type { Locale } from "@wolbachia/i18n";
 /** Preserve every Decimal digit, including the sign; Number would round stock quantities. */
 export function formatInventoryQuantity(value: string, locale: Locale) {
   if (!/^-?\d+(?:\.\d+)?$/.test(value)) return value;
-  const [integer = "0", fraction] = value.split(".");
+  const [integer = "0", rawFraction] = value.split(".");
+  const fraction = rawFraction?.replace(/0+$/, "");
   const formatter = new Intl.NumberFormat(locale);
   const grouped = formatter.format(BigInt(integer));
   if (!fraction) return grouped;

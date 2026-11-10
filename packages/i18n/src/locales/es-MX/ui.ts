@@ -11,6 +11,7 @@ export const ui = {
   "ui.actions.review": "Revisar",
   "ui.actions.dismiss": "Cerrar aviso",
   "ui.states.refreshing": "Actualizando…",
+  "ui.states.noValue": "Sin dato",
   "ui.states.noData": "Todavía no hay registros. Crea el primero para empezar.",
   "ui.states.noResults": "No hay resultados con estos filtros. Límpialos para ver más registros.",
   "ui.states.loadError": "No pudimos cargar esta sección. Reintenta para actualizarla.",
