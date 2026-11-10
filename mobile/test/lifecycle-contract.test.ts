@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import type { Schemas } from "@wolbachia/api-client";
 import {
   readHistoryChange,
   readHistoryEntry,
@@ -30,6 +31,64 @@ import {
   captureHandle,
   historyChange,
 } from "./support/lifecycle-contract-fixtures.ts";
+
+void test("M15: history7 retains actual QA fact identities and rejects malformed facts before cursor settlement", () => {
+  const base = {
+    id: ID.history,
+    bag_id: ID.point,
+    reading_id: ID.point,
+    source_event_id: ID.source,
+    source_device_time: LAB_RECEIPT.source_device_time,
+    source_server_received_at: LAB_RECEIPT.source_server_received_at,
+    recorded_at: LAB_RECEIPT.recorded_at,
+    author_id: ID.actor,
+    count_id: ID.source,
+    request_id: ID.point,
+    attempt_id: ID.history,
+    resolution_id: null,
+    reuse_id: null,
+    value: 0,
+    method_version_id: ID.point,
+    subjects: LAB_RECEIPT.subjects,
+  };
+  const entries: Schemas["LabQAHistoryEntry"][] = [
+    { ...base, kind: "lab_recount" },
+    {
+      ...base,
+      kind: "lab_adjudication",
+      attempt_id: null,
+      resolution_id: ID.history,
+      method_version_id: null,
+    },
+    {
+      ...base,
+      kind: "lab_paddle_reuse",
+      request_id: null,
+      attempt_id: null,
+      reuse_id: ID.history,
+      value: null,
+    },
+  ];
+  for (const entry of entries) {
+    assert.deepEqual(readHistoryEntry(entry), entry);
+    assert.deepEqual(readHistoryChange(historyChange(entry)).data, entry);
+    for (const field of Object.keys(entry)) {
+      const missing = Object.fromEntries(Object.entries(entry).filter(([key]) => key !== field));
+      assert.throws(() => readHistoryEntry(missing), CourierContractError);
+    }
+    assert.throws(
+      () => readHistoryChange({ ...historyChange(entry), resource_id: ID.source }),
+      CourierContractError,
+    );
+  }
+  for (const mutation of [
+    { value: -1 },
+    { value: 1.5 },
+    { attempt_id: ID.source },
+    { reuse_id: ID.history },
+  ])
+    assert.throws(() => readHistoryEntry({ ...entries[0], ...mutation }), CourierContractError);
+});
 
 function assertCanonicalLabHistory() {
   // Observe every valid kind on the old decoder, rather than stopping at the first rejection.

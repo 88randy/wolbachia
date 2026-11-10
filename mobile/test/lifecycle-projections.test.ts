@@ -535,11 +535,16 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
   assert.deepEqual(
     rows.map((row) => row.kind),
     [
-      "history.relocation_proposal",
-      "history.review_decision",
-      "history.shift_validation",
-      "history.transfer_custody",
-    ],
+      REVIEW_HISTORY,
+      SHIFT_HISTORY,
+      RELOCATION_HISTORY,
+      TRANSFER_HISTORY,
+      ...LAB_HISTORY,
+      COMMUNITY_HISTORY,
+      ...SUPPLY_HISTORY,
+    ]
+      .map((entry) => `history.${entry.kind}`)
+      .sort(),
   );
   const review = rows.find((row) => row.kind === "history.review_decision");
   assert.equal(
@@ -597,7 +602,14 @@ void test("C3/C4: typed history and epoch floors share the existing projection t
     await local.executor.query(
       "SELECT kind,body FROM lifecycle_courier_projection WHERE kind LIKE 'history.%' ORDER BY kind",
     ),
-    rows,
+    rows.map((row) =>
+      row.kind === "history.lab_count"
+        ? Object.assign(Object.create(null) as typeof row, {
+            ...row,
+            body: JSON.stringify({ ...LAB_COUNT, qa_state: "superseded" }),
+          })
+        : row,
+    ),
   );
   const beforeBadPage = await readProjectionState(local.executor);
   await assert.rejects(
