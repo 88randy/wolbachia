@@ -5881,6 +5881,11 @@ export interface components {
             id?: string;
             link: string;
         };
+        /**
+         * @description * `incident_conflict` - incident_conflict
+         * @enum {string}
+         */
+        CodeEnum: "incident_conflict";
         CommentRequest: {
             expected_revision: number;
             text: string;
@@ -6970,15 +6975,10 @@ export interface components {
             current_revision?: number;
         };
         IncidentConflictResponse: {
-            code: components["schemas"]["IncidentConflictResponseCodeEnum"];
+            code: components["schemas"]["CodeEnum"];
             detail: string;
             blocked_by: components["schemas"]["IncidentBlockedBy"][];
         };
-        /**
-         * @description * `incident_conflict` - incident_conflict
-         * @enum {string}
-         */
-        IncidentConflictResponseCodeEnum: "incident_conflict";
         IncidentContextOption: {
             /** Format: uuid */
             center_id: string;

@@ -15429,6 +15429,11 @@ components:
       - link
       - permission
       - reason
+    CodeEnum:
+      enum:
+      - incident_conflict
+      type: string
+      description: '* `incident_conflict` - incident_conflict'
     CommentRequest:
       type: object
       properties:
@@ -17891,7 +17896,7 @@ components:
       type: object
       properties:
         code:
-          $ref: '#/components/schemas/IncidentConflictResponseCodeEnum'
+          $ref: '#/components/schemas/CodeEnum'
         detail:
           type: string
         blocked_by:
@@ -17902,11 +17907,6 @@ components:
       - blocked_by
       - code
       - detail
-    IncidentConflictResponseCodeEnum:
-      enum:
-      - incident_conflict
-      type: string
-      description: '* `incident_conflict` - incident_conflict'
     IncidentContextOption:
       type: object
       properties:

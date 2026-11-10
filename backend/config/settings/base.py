@@ -236,6 +236,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "CodeEnum": ["incident_conflict"],
         "NotificationKindEnum": [
             ("critical", "Critical"),
             ("incident", "Incident"),

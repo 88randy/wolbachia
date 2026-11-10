@@ -6,6 +6,10 @@ is immutable. Reading appends one `NotificationRead`; preference changes append
 reject updates/deletes and cross-organization ownership. There is no public create
 or delete endpoint.
 
+All three immutable tables retain enabled `<table>_guard` triggers, matching the
+repository's structural guard checks. Migration 0003 renames the original triggers
+without changing their function or stored history.
+
 `services.publish_notification(NotificationDraft(...))` is an internal producer seam.
 It accepts only registered message codes and typed UUID/integer parameters. It does
 not publish existing incident/training intents or send email. B-07/#49 continues to
