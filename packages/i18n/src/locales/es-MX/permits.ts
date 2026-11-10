@@ -128,7 +128,17 @@ export const permits = {
   "permits.form.number": "Número oficial",
   "permits.form.authority": "Autoridad que lo emite",
   "permits.form.attestation": "Constancia: quién verificó el documento y cómo",
-  "permits.form.geometry": "Zona oficial (GeoJSON Polygon)",
+  "permits.zone.modeDraw": "Dibujar en el mapa",
+  "permits.zone.modeQuadrants": "Elegir cuadrantes",
+  "permits.zone.pickQuadrants": "Cuadrantes de la zona",
+  "permits.zone.mapLabel": "Mapa para dibujar la zona",
+  "permits.zone.drawHint":
+    "Toca el mapa para marcar las esquinas y cierra la figura sobre la primera.",
+  "permits.zone.adjustHint": "Arrastra las esquinas para ajustar la zona.",
+  "permits.zone.redraw": "Dibujar de nuevo",
+  "permits.zone.mapUnavailable": "El mapa no está disponible. Elige los cuadrantes de la zona.",
+  "permits.zone.advanced": "Avanzado: esquinas de la zona",
+  "permits.form.geometry": "Zona oficial del permiso",
   "permits.form.geometryHint":
     "Pega el polígono del documento oficial, con el primer y el último vértice iguales y pares [longitud, latitud].",
   "permits.form.validFrom": "Vigente desde",

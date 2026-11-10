@@ -1,29 +1,21 @@
-import { useCan } from "../session/use-can";
 import { LabListScreen } from "./LabListScreen";
-import { RecordResultDialog } from "./RecordResultDialog";
-import { ReceiveSampleButton } from "./ReceiveSampleButton";
+import { SampleRowActions } from "./LabRowActions";
 import { SAMPLE_TABLE, sampleOptions } from "./lab-lists";
 import { useSampleColumns } from "./use-lab-list-columns";
+import { useSampleDetail } from "./use-lab-details";
 
-/** W40 Wolbachia results: receive samples, record attempts; an invalid one is repeated, not replaced. */
+/** W40 Wolbachia results: receive samples and record attempts; an invalid one is repeated. */
 export function W40Page() {
-  const columns = useSampleColumns();
-  const can = useCan();
   return (
     <LabListScreen
       titleKey="lab.results.title"
       descriptionKey="lab.results.description"
       table={SAMPLE_TABLE}
       options={sampleOptions}
-      columns={columns}
+      columns={useSampleColumns()}
       getRowId={(row) => row.id}
-      rowActions={(row) => {
-        if (row.voided) return null;
-        if (!row.receipt)
-          return can("sample.receive") ? <ReceiveSampleButton sample={row} /> : null;
-        if (row.result_status !== "missing" && row.result_status !== "invalid") return null;
-        return can("sample.result_create") ? <RecordResultDialog sample={row} /> : null;
-      }}
+      detailOf={useSampleDetail()}
+      rowActions={(row) => <SampleRowActions sample={row} />}
     />
   );
 }

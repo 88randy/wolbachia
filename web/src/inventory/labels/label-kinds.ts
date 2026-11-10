@@ -15,6 +15,8 @@ export interface LabelKindSpec {
    * the parser registers them.
    */
   qr: string;
+  /** The payload carries the human code instead of the UUID. */
+  byCode?: boolean;
 }
 
 export const LABEL_KIND_SPECS: Record<LabelKind, LabelKindSpec> = {
@@ -30,6 +32,7 @@ export const LABEL_KIND_SPECS: Record<LabelKind, LabelKindSpec> = {
     permission: "egg_paddle.reuse",
     labelKey: "inventory.labels.kind.paddles",
     qr: "paddle",
+    byCode: true,
   },
   ovitraps: {
     kind: "ovitraps",
@@ -42,6 +45,7 @@ export const LABEL_KIND_SPECS: Record<LabelKind, LabelKindSpec> = {
     permission: "motorcycle.read",
     labelKey: "inventory.labels.kind.motorcycles",
     qr: "motorcycle",
+    byCode: true,
   },
 };
 

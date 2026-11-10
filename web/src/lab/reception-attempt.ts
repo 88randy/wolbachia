@@ -39,7 +39,7 @@ function finishReception(context: ReceptionAttemptContext, attempt: ReceptionAtt
 function publishFailure(
   context: ReceptionAttemptContext,
   guard: SessionGuard,
-  failure: { error: unknown; subject: string },
+  failure: { error: unknown; subject: string | undefined },
 ) {
   if (guard.isStale()) return;
   context.publish({ ...receptionFailure(failure.error), subject: failure.subject });
@@ -58,13 +58,13 @@ export async function executeReception(
     onStarted?.();
     const result = await postReception(context.scope.client, command, attempt.guard.signal);
     if (attempt.guard.isStale()) return false;
-    context.publish({ ...result, subject: command.kind === "bag" ? command.code : command.id });
+    context.publish({ ...result, subject: command.kind === "bag" ? command.code : undefined });
     void invalidateOrgScoped(context.cache, "lab-reception");
     return result.code === "received" || result.code === "lab_missing";
   } catch (error) {
     publishFailure(context, attempt.guard, {
       error,
-      subject: command.kind === "bag" ? command.code : command.id,
+      subject: command.kind === "bag" ? command.code : undefined,
     });
     return false;
   } finally {

@@ -8,7 +8,8 @@ export interface LabelItem {
   caption?: string;
 }
 
-/** The text a label encodes; mobile and the backend parse `wbf:1:<kind>:<uuid>`. */
-export function qrPayload(kind: LabelKind, id: string): string {
-  return `wbf:1:${LABEL_KIND_SPECS[kind].qr}:${id.toLowerCase()}`;
+/** The text a label encodes: `wbf:1:<kind>:<uuid>`, or the human code for motorcycles and paddles. */
+export function qrPayload(kind: LabelKind, item: Pick<LabelItem, "id" | "code">): string {
+  const spec = LABEL_KIND_SPECS[kind];
+  return `wbf:1:${spec.qr}:${spec.byCode ? item.code : item.id.toLowerCase()}`;
 }
