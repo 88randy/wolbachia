@@ -67,9 +67,9 @@ async function open(
   }),
 ) {
   const api = createFakeApi({
-    "GET /api/v1/me/": Response.json(me),
-    [LIST]: Response.json({ count: 1, next: null, previous: null, results: [review()] }),
-    [DETAIL]: Response.json(review()),
+    "GET /api/v1/me/": () => Response.json(me),
+    [LIST]: () => Response.json({ count: 1, next: null, previous: null, results: [review()] }),
+    [DETAIL]: () => Response.json(review()),
     ...routes,
   });
   const app = await renderApp({ path: `/operations/reviews?item=${ID}`, fetch: api.fetch });
@@ -238,16 +238,13 @@ test.each([503, 403, 404])(
 );
 
 test("a nonempty scope change purges a denied private reason and old cached evidence", async () => {
-  const { api, app } = await open({
-    [LIST]: () => Response.json({ count: 1, next: null, previous: null, results: [review()] }),
-  });
+  const { api, app } = await open();
   await userEvent.type(
     await screen.findByLabelText("Motivo de la decisión"),
     "Private original reason",
   );
-  api.setRoute(DETAIL, apiError(404, "not_found"));
-  api.setRoute(
-    "GET /api/v1/me/",
+  api.setRoute(DETAIL, () => apiError(404, "not_found"));
+  api.setRoute("GET /api/v1/me/", () =>
     Response.json(
       makeMe({
         permissions,
@@ -266,7 +263,7 @@ test("a nonempty scope change purges a denied private reason and old cached evid
     expect(record.getByRole("alert")).toBeDefined();
   });
   expect(screen.queryByLabelText("Motivo de la decisión")).toBeNull();
-  api.setRoute(DETAIL, Response.json(review()));
+  api.setRoute(DETAIL, () => Response.json(review()));
   const currentRecord = within(
     screen.getByRole("region", { name: "Registro original y decisiones" }),
   );

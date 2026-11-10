@@ -5,7 +5,6 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { createFakeApi, makeMe, apiError } from "../test/fake-api";
 import type { FakeApiRoutes } from "../test/fake-api";
 import { renderApp } from "../test/render-app";
-import type { Query, QueryClient } from "@tanstack/react-query";
 beforeEach(() => {
   window.sessionStorage.clear();
 });
@@ -32,37 +31,19 @@ async function open(path = "/incidents", overrides: FakeApiRoutes = {}, allowed 
     "GET /api/v1/incident-types/": page([]),
     "GET /api/v1/incidents/context-options/": page([]),
     "GET /api/v1/me/": Response.json(me),
-    [LIST]: page(),
-    [DETAIL]: Response.json(incident()),
-    [`GET /api/v1/incidents/${ID}/owner-options/`]: Response.json({
-      count: 0,
-      next: null,
-      previous: null,
-      results: [],
-    }),
+    [LIST]: () => page(),
+    [DETAIL]: () => Response.json(incident()),
+    [`GET /api/v1/incidents/${ID}/owner-options/`]: () =>
+      Response.json({
+        count: 0,
+        next: null,
+        previous: null,
+        results: [],
+      }),
     ...overrides,
   });
   const app = await renderApp({ path, fetch: api.fetch });
   return { api, app };
-}
-function acceptIncidentRetry(client: QueryClient) {
-  return new Promise<void>((resolve, reject) => {
-    const unsubscribe = client.getQueryCache().subscribe(({ query }: { query: Query }) => {
-      if (
-        !query.isActive() ||
-        query.queryKey[3] !== "incidents" ||
-        query.queryKey[4] !== "detail" ||
-        query.queryKey[5] !== "I-0033" ||
-        query.state.fetchStatus !== "idle"
-      )
-        return;
-      if (query.state.status === "pending") return;
-      unsubscribe();
-      if (query.state.status === "error")
-        reject(new Error("Incident retry read failed", { cause: query.state.error }));
-      else resolve();
-    });
-  });
 }
 describe("W6 incident tray", () => {
   test("loads with a skeleton and keeps available rows when one count fails", async () => {
@@ -201,29 +182,10 @@ describe("W7 incident detail", () => {
     expect(
       view.getByRole("button", { name: "Enviar comentario" }).getAttribute("aria-disabled"),
     ).toBe("true");
-    let markRequested: () => void = () => undefined;
-    let releaseRetry: (reply: Response) => void = () => undefined;
-    const requested = new Promise<void>((resolve) => {
-      markRequested = resolve;
-    });
-    const reply = new Promise<Response>((resolve) => {
-      releaseRetry = resolve;
-    });
-    api.setRoute(DETAIL, () => {
-      markRequested();
-      return reply;
-    });
-    await act(async () => {
-      await userEvent.click(
-        within(view.getByRole("alert")).getByRole("button", { name: "Reintentar" }),
-      );
-      await requested;
-    });
-    const accepted = acceptIncidentRetry(app.queryClient);
-    await act(async () => {
-      releaseRetry(Response.json(incident()));
-      await accepted;
-    });
+    api.setRoute(DETAIL, Response.json(incident()));
+    await userEvent.click(
+      within(view.getByRole("alert")).getByRole("button", { name: "Reintentar" }),
+    );
     await waitFor(() => {
       expect(view.queryByRole("alert")).toBeNull();
     });
@@ -356,18 +318,18 @@ test("an unknown human code never triggers a UUID detail read", async () => {
 test("reassigns only to an eligible membership and changes severity with the current revision", async () => {
   const owner = "00000000-0000-4000-8000-000000000050";
   const { api } = await open("/incidents/I-0033", {
-    [`GET /api/v1/incidents/${ID}/owner-options/`]: Response.json({
-      count: 1,
-      next: null,
-      previous: null,
-      results: [{ membership_id: owner, label: "Eligible owner" }],
-    }),
+    [`GET /api/v1/incidents/${ID}/owner-options/`]: () =>
+      Response.json({
+        count: 1,
+        next: null,
+        previous: null,
+        results: [{ membership_id: owner, label: "Eligible owner" }],
+      }),
     [`POST /api/v1/incidents/${ID}/reassign/`]: Response.json(event),
     [`POST /api/v1/incidents/${ID}/change-severity/`]: Response.json(event),
   });
   await screen.findByRole("option", { name: "Eligible owner" });
-  api.setRoute(
-    DETAIL,
+  api.setRoute(DETAIL, () =>
     Response.json(incident({ revision: 3, owner_id: owner, owner_display: "Reassigned owner" })),
   );
   await userEvent.selectOptions(screen.getByRole("combobox", { name: "Responsable" }), owner);

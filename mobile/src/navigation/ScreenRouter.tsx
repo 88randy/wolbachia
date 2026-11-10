@@ -4,7 +4,8 @@ import { P9Screen } from "../features/day/P9Screen.tsx";
 import { P10Screen } from "../features/day/P10Screen.tsx";
 import { OvitrapScreen } from "../features/ovitrap-check/OvitrapScreen.tsx";
 import { ScannerScreen } from "../features/ovitrap-check/ScannerScreen.tsx";
-import { P21Screen } from "../features/ovitrap-check/P21Screen.tsx";
+import { P11Screen } from "../features/scanner/P11Screen.tsx";
+import { P12Screen } from "../features/scanner/P12Screen.tsx";
 import { OpenShiftScreen } from "../features/shift-open/OpenShiftScreen.tsx";
 import { P8Screen } from "../features/supply-receipt/P8Screen.tsx";
 import { P22Screen } from "../features/fuel/P22Screen.tsx";
@@ -24,6 +25,7 @@ import type { Route } from "./routes.ts";
 
 const SCREENS = {
   day: P9Screen,
+  qrScanner: P11Screen,
   map: P10Screen,
   ovitrapCapture: OvitrapScreen,
   openShift: OpenShiftScreen,
@@ -40,8 +42,15 @@ const SCREENS = {
 
 function screenFor(route: Route): ReactNode {
   if ("ovitrapId" in route) return <LifecycleRoute route={route} />;
-  if (route.name === "ovitrapScanner") return <ScannerScreen target={route.target} />;
-  if (route.name === "invalidOvitrapCode") return <P21Screen target={route.target} />;
+  if (route.name === "supplyDetail") return <P12Screen lotId={route.lotId} />;
+  if (route.name === "ovitrapScanner")
+    return (
+      <ScannerScreen
+        key={`${route.target}:${route.eventId ?? "none"}`}
+        target={route.target}
+        eventId={route.eventId}
+      />
+    );
   const Screen = SCREENS[route.name];
   return <Screen />;
 }

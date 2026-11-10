@@ -69,6 +69,6 @@ export function useM08() {
         return reportCaptureError(input, error);
       });
   };
-  return { state, errorKey, setError, edit, service: ovitrapCheck, ...actions };
+  return { state, errorKey, setError, edit, refresh, service: ovitrapCheck, ...actions };
 }
 export type M08Model = ReturnType<typeof useM08>;

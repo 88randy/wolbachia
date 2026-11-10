@@ -66,11 +66,12 @@ export async function openShift(
   } = {},
 ) {
   const api = createFakeApi({
-    "GET /api/v1/me/": Response.json({
-      ...ALLOWED,
-      permissions: options.permissions ?? ALLOWED.permissions,
-    }),
-    ["GET " + DETAIL]: Response.json(options.shift ?? shiftDetail()),
+    "GET /api/v1/me/": () =>
+      Response.json({
+        ...ALLOWED,
+        permissions: options.permissions ?? ALLOWED.permissions,
+      }),
+    ["GET " + DETAIL]: () => Response.json(options.shift ?? shiftDetail()),
     ...options.routes,
   });
   const app = await renderApp({ path: options.path ?? SHIFT_PATH, fetch: api.fetch });

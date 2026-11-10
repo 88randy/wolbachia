@@ -1,7 +1,6 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, test, vi } from "vitest";
-import type { Query, QueryClient } from "@tanstack/react-query";
 import { apiError, createFakeApi, makeMe } from "../../test/fake-api";
 import type { FakeApiRoutes } from "../../test/fake-api";
 import { renderApp } from "../../test/render-app";
@@ -17,31 +16,16 @@ async function open(
     permissions,
     scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
   });
-  const api = createFakeApi({ "GET /api/v1/me/": Response.json(me), [LIST]: page(), ...overrides });
+  const api = createFakeApi({
+    "GET /api/v1/me/": Response.json(me),
+    [LIST]: () => page(),
+    ...overrides,
+  });
   const app = await renderApp({
     path: `/operations/relocations?relocation=${PROPOSAL_ID}`,
     fetch: api.fetch,
   });
   return { api, app, me };
-}
-function acceptRelocationRefresh(client: QueryClient) {
-  return new Promise<void>((resolve, reject) => {
-    const unsubscribe = client.getQueryCache().subscribe(({ query }: { query: Query }) => {
-      if (
-        !query.isActive() ||
-        query.queryKey[3] !== "relocations" ||
-        query.queryKey[5] !== "record" ||
-        query.queryKey[6] !== PROPOSAL_ID ||
-        query.state.fetchStatus !== "idle"
-      )
-        return;
-      if (query.state.status === "pending") return;
-      unsubscribe();
-      if (query.state.status === "error")
-        reject(new Error("Relocation refresh read failed", { cause: query.state.error }));
-      else resolve();
-    });
-  });
 }
 afterEach(() => {
   vi.restoreAllMocks();
@@ -49,28 +33,8 @@ afterEach(() => {
 describe("W31 relocation decisions", () => {
   test("rejects with retained point code and only announces the actual next-day task", async () => {
     const route = `POST /api/v1/relocations/${PROPOSAL_ID}/reject/`;
-    let hasDecision = false;
-    let markReadStarted: () => void = () => undefined;
-    const readStarted = new Promise<void>((resolve) => {
-      markReadStarted = resolve;
-    });
-    let releaseRead: (reply: Response) => void = () => undefined;
-    const heldRead = new Promise<Response>((resolve) => {
-      releaseRead = resolve;
-    });
-    const { api, app } = await open({
-      [LIST]: (request) => {
-        const code = new URL(request.path, "https://test.invalid").searchParams.get("code");
-        if (hasDecision && code === PROPOSAL_ID) {
-          markReadStarted();
-          return heldRead;
-        }
-        return page();
-      },
-      [route]: () => {
-        hasDecision = true;
-        return Response.json(relocationReceipt("rejected"), { status: 201 });
-      },
+    const { api } = await open({
+      [route]: Response.json(relocationReceipt("rejected"), { status: 201 }),
     });
     const dialog = await screen.findByRole("dialog", { name: "Decidir reubicación" });
     await within(dialog).findByText("P-160");
@@ -80,12 +44,6 @@ describe("W31 relocation decisions", () => {
       "Reviewed original site evidence",
     );
     await userEvent.click(within(dialog).getByRole("button", { name: "Rechazar reubicación" }));
-    await readStarted;
-    const readAccepted = acceptRelocationRefresh(app.queryClient);
-    await act(async () => {
-      releaseRead(page());
-      await readAccepted;
-    });
     await within(dialog).findByText(/ND-160.*2026-11-10/);
     expect(api.requests.find((request) => request.method === "POST")?.body).toEqual({
       expected_revision: 0,

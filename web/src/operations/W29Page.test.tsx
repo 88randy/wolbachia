@@ -348,10 +348,7 @@ test("same-identity reauthentication retires a hung attempt without losing its d
   const oldReply = deferred<Response>();
   const newReply = deferred<Response>();
   const app = await openShift({
-    routes: {
-      ["GET " + DETAIL]: () => Response.json(shiftDetail()),
-      ["POST " + DETAIL + "observe/"]: () => oldReply.promise,
-    },
+    routes: { ["POST " + DETAIL + "observe/"]: () => oldReply.promise },
   });
   const { user, dialog } = await openObservation();
   await user.type(dialog.getByRole("textbox"), "Reason retained through reauthentication");
