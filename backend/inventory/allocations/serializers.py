@@ -180,14 +180,14 @@ class PrepareInventoryIntentSchema(OpenApiSerializerExtension):  # type: ignore[
     target_class = PrepareInventoryIntentSerializer
 
     def map_serializer(self, auto_schema: Any, direction: Any) -> dict[str, Any]:  # noqa: ANN401 -- drf-spectacular extension boundary
-        components = [
-            auto_schema.resolve_serializer(kind(), direction).ref
-            for kind in PrepareInventoryIntentSerializer.kinds.values()
-        ]
+        refs = {
+            name: auto_schema.resolve_serializer(kind(), direction).ref["$ref"]
+            for name, kind in PrepareInventoryIntentSerializer.kinds.items()
+        }
         return {
             "required": ["kind"],
-            "oneOf": components,
-            "discriminator": {"propertyName": "kind"},
+            "oneOf": [{"$ref": ref} for ref in refs.values()],
+            "discriminator": {"propertyName": "kind", "mapping": refs},
         }
 
 

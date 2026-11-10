@@ -28065,6 +28065,13 @@ components:
       - $ref: '#/components/schemas/BagDisposalIntentRequest'
       discriminator:
         propertyName: kind
+        mapping:
+          assignment_release: '#/components/schemas/AssignmentReleaseIntentRequest'
+          release_cancel: '#/components/schemas/ReleaseCancelIntentRequest'
+          return_accept: '#/components/schemas/ReturnAcceptIntentRequest'
+          reconcile_justify: '#/components/schemas/ReconcileJustifyIntentRequest'
+          lot_write_off: '#/components/schemas/LotWriteOffIntentRequest'
+          bag_disposal: '#/components/schemas/BagDisposalIntentRequest'
     PrepareLineRequest:
       type: object
       properties:

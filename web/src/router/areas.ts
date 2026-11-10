@@ -45,6 +45,9 @@ export const AREAS = [
       "location.read",
       "transfer.read",
       "discrepancy.read",
+      "inventory.allocate",
+      "inventory.reconcile",
+      "inventory.write_off",
     ],
   },
   { id: "fleet", path: "/fleet", group: "resources", requiredPermissions: ["motorcycle.read"] },
@@ -52,7 +55,7 @@ export const AREAS = [
     id: "lab",
     path: "/lab",
     group: "resources",
-    requiredPermissions: ["egg_count.create", "egg_count.read", "bag.receive"],
+    requiredPermissions: ["egg_count.create", "egg_count.read", "bag.receive", "bag.dispose"],
   },
   {
     id: "people",

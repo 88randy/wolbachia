@@ -77,8 +77,17 @@ export function inventoryApi(routes: FakeApiRoutes = {}, me = inventoryMe()) {
     ...routes,
   });
 }
-export async function openInventory(options: { path: string; routes?: FakeApiRoutes; me?: Me }) {
+export async function openInventory(options: {
+  path: string;
+  routes?: FakeApiRoutes;
+  me?: Me;
+  language?: "es-MX" | "en";
+}) {
   const api = inventoryApi(options.routes, options.me);
-  const app = await renderApp({ path: options.path, fetch: api.fetch });
+  const app = await renderApp({
+    path: options.path,
+    fetch: api.fetch,
+    ...(options.language ? { language: options.language } : {}),
+  });
   return { api, app };
 }

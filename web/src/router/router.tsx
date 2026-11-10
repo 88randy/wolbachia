@@ -16,6 +16,10 @@ import { W33Page } from "../operations/closure/W33Page";
 import { W34Page } from "../lab/W34Page";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { W12Page } from "../inventory/transfers/W12Page";
+import { W15Page } from "../inventory/allocation/W15Page";
+import { W16Page } from "../inventory/allocation/W16Page";
+import { W17Page } from "../inventory/allocation/W17Page";
+import { W39Page } from "../inventory/allocation/W39Page";
 import { W14Page } from "../inventory/transfers/W14Page";
 import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
@@ -405,6 +409,18 @@ const inventoryRoutes = [
     permission: "discrepancy.read",
     component: W14Page,
   }),
+  inventoryRoute("/inventory/assignments", {
+    permission: "inventory.allocate",
+    component: W15Page,
+  }),
+  inventoryRoute("/inventory/reconciliations", {
+    permission: "inventory.reconcile",
+    component: W16Page,
+  }),
+  inventoryRoute("/inventory/write-offs", {
+    permission: "inventory.write_off",
+    component: W17Page,
+  }),
   inventoryRoute("/inventory/supplies", { permission: "supply_type.read", component: W8Page }),
   inventoryRoute("/inventory/lots", { permission: "lot.read", component: W9Page }),
   inventoryRoute("/inventory/locations", { permission: "location.read", component: W11Page }),
@@ -420,6 +436,16 @@ const inventoryRoutes = [
   }),
   inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
 ];
+const labWriteOffsRoute = createRoute({
+  getParentRoute: () => inventoryLayout,
+  path: "/lab/write-offs",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "bag.dispose");
+  },
+  component: W39Page,
+  errorComponent: AreaErrorState,
+});
 const eggCountsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/lab/egg-counts",
@@ -467,7 +493,7 @@ const routeTree = rootRoute.addChildren([
   selectOrganizationRoute,
   authenticatedRoute.addChildren([
     ...areaRoutes,
-    inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
+    inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes, labWriteOffsRoute]),
     eggCountsRoute,
     eggCountHistoryRoute,
     shiftsRoute,

@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Card } from "../ui/Card";
 import { useCan } from "../session/use-can";
 import { useDocumentTitle } from "../shell/use-document-title";
+import { AllocationLinks } from "./allocation/AllocationLinks";
 import page from "../styles/page.module.css";
 export function InventoryHome() {
   const { t } = useTranslation();
@@ -18,6 +19,7 @@ export function InventoryHome() {
           {can("discrepancy.read") && (
             <Link to="/inventory/discrepancies">{t("discrepancies.page.title")}</Link>
           )}
+          <AllocationLinks />
           {can("supply_type.read") && (
             <Link to="/inventory/supplies">{t("inventory.page.supplies")}</Link>
           )}
