@@ -5,7 +5,7 @@ import re
 from collections import Counter
 from typing import Any
 
-ORDINARY_PARTITIONS = frozenset({"regular-integration", "regular-lab"})
+ORDINARY_PARTITIONS = frozenset({"regular-integration", "regular-lab", "regular-field"})
 MODULE_PARTITIONS = {
     "migrations-foundation": frozenset({"tests/test_inventory_migrations_105.py"}),
     "migrations-field": frozenset({"tests/test_geography_migrations_b_33.py"}),
@@ -39,6 +39,33 @@ MODULE_PARTITIONS = {
             "tests/test_lab_reception_114.py",
             "tests/test_lab_recounts_114.py",
             "tests/test_lab_recounts_b_19.py",
+        }
+    ),
+    "regular-field": frozenset(
+        {
+            "tests/test_bundle_producers_196.py",
+            "tests/test_field_sync_b_13.py",
+            "tests/test_geography_b_11.py",
+            "tests/test_geography_decision_policy_b_33.py",
+            "tests/test_geography_decisions_b_33.py",
+            "tests/test_ovitrap_advisory_contract_287.py",
+            "tests/test_ovitrap_advisory_read_287.py",
+            "tests/test_ovitraps_b_14.py",
+            "tests/test_ovitraps_lifecycle_b_15.py",
+            "tests/test_removal_resolution_217.py",
+            "tests/test_sync_api.py",
+            "tests/test_sync_changes.py",
+            "tests/test_sync_clock.py",
+            "tests/test_sync_hardening.py",
+            "tests/test_sync_idempotency.py",
+            "tests/test_sync_ingest.py",
+            "tests/test_sync_locks.py",
+            "tests/test_sync_quota_time.py",
+            "tests/test_sync_registry.py",
+            "tests/test_sync_rejection_quota.py",
+            "tests/test_sync_rejection_quota_locks.py",
+            "tests/test_sync_void.py",
+            "tests/test_task_completion_212.py",
         }
     ),
 }

@@ -21,13 +21,17 @@ then executes one disjoint selection serially. The single closed registry
   permit/release test modules.
 - `regular-lab`: all eight ordinary Lab test modules (API, concurrency, counts,
   history, policy, reception and both recount modules).
+- `regular-field`: all 23 explicitly registered ordinary field-sync, QR,
+  ovitrap/lifecycle, geography/decision and task-completion modules.
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
-detector; the explicitly ordinary `regular-integration` and `regular-lab` cohorts
+detector; the explicitly ordinary `regular-integration`, `regular-lab` and
+`regular-field` cohorts
 are excluded from that derived migration-only subset. No second module registry
-exists. Every migration cohort contains exactly one whole module; each ordinary
-cohort retains its eight whole modules. No module can belong to two cohorts. Each selection retains its original collected
+exists. Every migration cohort contains exactly one whole module. Integration and
+Lab each retain eight whole modules; field retains 23. No module can belong to two
+cohorts. Each selection retains its original collected
 order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
 `-m`, external `PYTEST_ADDOPTS`,
@@ -56,9 +60,9 @@ migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.
 
-The original `checks` job first requires all thirteen matrix results to succeed. It runs
+The original `checks` job first requires all fourteen matrix results to succeed. It runs
 the existing Ruff lint/format, mypy and migration drift checks once, downloads the
-thirteen exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
+fourteen exact current artifacts and runs `python -m ci.aggregate`. The aggregate rejects
 missing/duplicate/foreign/stale/incomplete fragments before combining, even when one
 fragment could exceed 85% alone. It verifies ordered inventories, exact partition
 membership, successful unique phases, PostgreSQL provenance and coverage digests,
@@ -72,7 +76,7 @@ Artifacts contain only `manifest.json`, `session.json`, `exit.json` and non-hidd
 `coverage.data` for a shard, or the bounded combined result. Their exact names include
 repository ID, run, attempt, checkout SHA and shard, with three-day retention. Hidden
 path support is enabled only for these explicitly selected CI paths. A partial
-failed-jobs rerun cannot reuse artifacts from a previous attempt: all thirteen fragments must
+failed-jobs rerun cannot reuse artifacts from a previous attempt: all fourteen fragments must
 be freshly produced for the same attempt. No repository permission or required-check
 setting change is needed.
 
@@ -82,9 +86,9 @@ cannot pass it. It executes no tests and emits no fragment or passing-test count
 `PostgreSQL (regular)` and the final `checks` contexts also remain. No branch
 protection or repository setting is changed.
 
-Eleven test jobs and final `checks` keep their 15-minute timeout and standard runner.
+Twelve test jobs and final `checks` keep their 15-minute timeout and standard runner.
 Only `migrations-field` and `migrations-review` temporarily allow 25 minutes (#331,
-decision 172): each already owns exactly one complete module. The thirteen
+decision 172): each already owns exactly one complete module. The fourteen
 PostgreSQL services and final drift service duplicate setup work and can increase
 runner-minutes/storage; tests still execute exactly once. The operational target
 remains at least three minutes' measured headroom per job. The temporary exception
@@ -96,6 +100,26 @@ Tests: `tests/test_ci_gate.py` owns grouped evidence/partition/coverage/exit reg
 at the lowest layer, using synthetic source/data and short non-DB child processes.
 The actual workflow is the real PostgreSQL wiring proof; do not replace it with these
 helper tests or run a second full suite just to check partition arithmetic.
+
+## Ordinary field cohort (#139 CI prerequisite)
+
+In [run 42784308028](https://github.com/88randy/wolbachia/actions/runs/42784308028),
+attempt 2, residual `regular` reported all 2256 tests passed but its job was
+cancelled at 906 seconds during publication. Its existing complete session receipt
+contains 6768 successful phases. The 23 ordinary field modules now registered in
+`regular-field` retain 472 cases with 217.702 seconds of measured phases: setup
+38.170s, call 111.531s and teardown 68.001s. None is a MigrationExecutor owner.
+The remaining 1784 cases retain their collected order in `regular`.
+
+The first case's 179.690s database setup stays in residual `regular` and is not
+counted as a saving. Subtracting the observed field phases from that job's wall
+time gives 688.298s and an indicative 211.702s margin to 900s. That arithmetic does
+not qualify future performance: fixture locality and duplicated database setup
+can change execution costs. One additional standard PostgreSQL runner/service
+increases setup and runner-minutes. Measure the fresh final-head fourteen-fragment
+run; no test, assertion, owner boundary, budget, provenance rule or coverage gate
+is removed or weakened. This uses decision 172's existing ordinary-cohort split
+authorization and adds no timeout exception.
 
 Verified interfaces: [pytest collection hooks](https://docs.pytest.org/en/stable/reference/reference.html#pytest.hookspec.pytest_collection_modifyitems),
 [pytest-cov configuration](https://pytest-cov.readthedocs.io/en/latest/config.html),
@@ -129,7 +153,7 @@ owner boundaries, so only these two jobs receive the authorized temporary 25-min
 limit. Restore 15 minutes when whole-owner execution plus finalization fits with
 measured headroom; no SQL/host cause or future speedup is inferred.
 
-The workflow matrix and downloads require thirteen fresh same-attempt fragments.
+The workflow matrix and downloads require fourteen fresh same-attempt fragments.
 The existing runner choices and aggregate derive from the same registry; migration
 AST detection, phase/provenance validation, coverage inputs/union and 85% threshold
 remain mandatory. No tests, assertions, dependencies, retries, paid runners or

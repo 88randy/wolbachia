@@ -52,6 +52,31 @@ EXPECTED_COHORTS = {
         "tests/test_lab_recounts_114.py",
         "tests/test_lab_recounts_b_19.py",
     },
+    "regular-field": {
+        "tests/test_bundle_producers_196.py",
+        "tests/test_field_sync_b_13.py",
+        "tests/test_geography_b_11.py",
+        "tests/test_geography_decision_policy_b_33.py",
+        "tests/test_geography_decisions_b_33.py",
+        "tests/test_ovitrap_advisory_contract_287.py",
+        "tests/test_ovitrap_advisory_read_287.py",
+        "tests/test_ovitraps_b_14.py",
+        "tests/test_ovitraps_lifecycle_b_15.py",
+        "tests/test_removal_resolution_217.py",
+        "tests/test_sync_api.py",
+        "tests/test_sync_changes.py",
+        "tests/test_sync_clock.py",
+        "tests/test_sync_hardening.py",
+        "tests/test_sync_idempotency.py",
+        "tests/test_sync_ingest.py",
+        "tests/test_sync_locks.py",
+        "tests/test_sync_quota_time.py",
+        "tests/test_sync_registry.py",
+        "tests/test_sync_rejection_quota.py",
+        "tests/test_sync_rejection_quota_locks.py",
+        "tests/test_sync_void.py",
+        "tests/test_task_completion_212.py",
+    },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
 
@@ -148,8 +173,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 27
-        )  # Residual regular, ten migration owners and sixteen complete ordinary modules.
+            validate_fragments(bundles, expected) == 50
+        )  # Residual regular, ten migration owners and thirty-nine complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -167,9 +192,11 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         *collected[:2],
         "tests/test_uploads_b_04.py::test_earlier_case",
         "tests/test_lab_counts_114.py::test_earlier_case",
+        "tests/test_sync_ingest.py::test_earlier_case",
         *collected[2:],
         "tests/test_inventory_allocations_b_10.py::test_later_case",
         "tests/test_lab_counts_114.py::test_later_case",
+        "tests/test_bundle_producers_196.py::test_later_case",
     ]
     parts = partition_nodes(nodes)
     assert tuple(parts) == EXPECTED_PARTITIONS
@@ -182,6 +209,7 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         "tests/test_inventory_allocations_migrations_107.py",
         "tests/test_release_stock_116.py",
         "tests/test_lab_recounts_b_19.py",
+        "tests/test_sync_locks.py",
     ):
         with pytest.raises(ValueError, match="CI evidence"):
             partition_nodes([node for node in nodes if node.split("::")[0] != absent])
@@ -189,6 +217,17 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         {**EXPECTED_COHORTS, "migrations-foundation": set()},
         {**EXPECTED_COHORTS, "regular-integration": set()},
         {**EXPECTED_COHORTS, "regular-lab": set()},
+        {**EXPECTED_COHORTS, "regular-field": set()},
+        {name: modules for name, modules in EXPECTED_COHORTS.items() if name != "regular-field"},
+        {
+            **EXPECTED_COHORTS,
+            "regular-field": EXPECTED_COHORTS["regular-field"]
+            | EXPECTED_COHORTS["migrations-field"],
+        },
+        {
+            **EXPECTED_COHORTS,
+            "regular-lab": EXPECTED_COHORTS["regular-lab"] | {"tests/test_sync_api.py"},
+        },
         {
             **EXPECTED_COHORTS,
             "regular-lab": EXPECTED_COHORTS["regular-lab"] | EXPECTED_COHORTS["migrations-lab"],
