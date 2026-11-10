@@ -399,8 +399,12 @@ def test_people_upgrade_retains_legacy_and_raw_guards_preserve_real_private_chai
         )
         assert CertificationRevocation.objects.count() == EvaluationVoid.objects.count() == 1
         retained = Certification.objects.filter(pk=certificate.pk).values().get()
-        with pytest.raises(IrreversibleError):
-            MigrationExecutor(connection).migrate([("people", "0001_people_certification_parent")])
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        # Keep the refused multi-migration downgrade and dependent DDL in one rollback.
+        with pytest.raises(IrreversibleError), transaction.atomic():
+            executor.migrate([("people", "0001_people_certification_parent")])
+        assert set(executor.recorder.applied_migrations()) == applied
         assert Certification.objects.filter(pk=certificate.pk).values().get() == retained
         assert AttachmentLink.objects.get(pk=attachment.pk).certification_id == certificate.pk
         assert (
