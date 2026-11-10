@@ -34,6 +34,7 @@ import { catalogs } from "./catalogs.ts";
  */
 import { fleet } from "./fleet.ts";
 import { hub } from "./hub.ts";
+import { perm } from "./perm.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
@@ -84,6 +85,7 @@ export const esMX = {
   ...catalogs,
   ...fleet,
   ...hub,
+  ...perm,
   ...common,
   ...errors,
   ...mobile,

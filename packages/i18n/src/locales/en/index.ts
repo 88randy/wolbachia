@@ -32,6 +32,7 @@ import { catalogs } from "./catalogs.ts";
 import type { MessageKey } from "../es-MX/index.ts";
 import { fleet } from "./fleet.ts";
 import { hub } from "./hub.ts";
+import { perm } from "./perm.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
@@ -82,6 +83,7 @@ export const en: Record<MessageKey, string> = {
   ...catalogs,
   ...fleet,
   ...hub,
+  ...perm,
   ...common,
   ...errors,
   ...mobile,
