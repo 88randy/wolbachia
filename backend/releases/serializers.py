@@ -223,7 +223,35 @@ class ReleaseDeviceStatusSerializer(OrgScopedModelSerializer):
         read_only_fields = fields
 
 
+class ReleaseScheduleProvenanceSerializer(serializers.Serializer[Any]):
+    task_id = serializers.UUIDField(read_only=True)
+    permit_version_id = serializers.UUIDField(read_only=True)
+
+
+class ReleaseStockProvenanceSerializer(serializers.Serializer[Any]):
+    unit_version_id = serializers.UUIDField(read_only=True)
+    lot_version_id = serializers.UUIDField(read_only=True)
+    transit_policy_id = serializers.UUIDField(read_only=True)
+    transit_mode = serializers.CharField(read_only=True)
+    quantity = serializers.CharField(read_only=True)
+
+
+class ReleaseProvenanceSerializer(serializers.Serializer[Any]):
+    """Regulatory ids only: no courier, certification, reviewer, assignment or receipt ids."""
+
+    permit_version = serializers.UUIDField(read_only=True)
+    current_permit_version = serializers.UUIDField(read_only=True)
+    permit_type = serializers.UUIDField(read_only=True)
+    official_document = serializers.UUIDField(read_only=True)
+    source_lot_version = serializers.UUIDField(read_only=True)
+    rules_version = serializers.CharField(read_only=True)
+    catalog_version = serializers.CharField(read_only=True)
+    schedule = ReleaseScheduleProvenanceSerializer(read_only=True)
+    stock = ReleaseStockProvenanceSerializer(read_only=True)
+
+
 class ReleaseSerializer(OrgScopedModelSerializer):
+    provenance = ReleaseProvenanceSerializer(read_only=True)
     blocked_by = ReleaseBlockerSerializer(many=True, read_only=True, default=list)
 
     class Meta:

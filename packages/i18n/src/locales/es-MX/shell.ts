@@ -2,6 +2,7 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const shell = {
+  "shell.nav.notifications": "Notificaciones",
   // Web shell: brand, skip link, sidebar, top bar
   "shell.brand.name": "Wolbachia",
   "shell.brand.mark": "CQ",

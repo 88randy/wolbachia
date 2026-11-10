@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     "lab.apps.LabConfig",
     "community.apps.CommunityConfig",
     "people.apps.PeopleConfig",
+    "notifications",
     "privacy.apps.PrivacyConfig",
     "releases.apps.ReleasesConfig",
 ]
@@ -239,6 +240,14 @@ SPECTACULAR_SETTINGS = {
     "ENUM_NAME_OVERRIDES": {
         "WolbachiaAttemptStatusEnum": ["valid", "invalid", "disputed"],
         "WolbachiaResultEnum": ["positive", "negative"],
+        "CodeEnum": ["incident_conflict"],
+        "NotificationKindEnum": [
+            ("critical", "Critical"),
+            ("incident", "Incident"),
+            ("training", "Training"),
+            ("system", "System"),
+        ],
+        "NotificationObjectKindEnum": ["incident", "motorcycle", "review_item"],
         "ReleaseDeviceStatusEnum": ["active", "inactive", "retired"],
         "OutcomeEnum": ["recovered_later", "written_off"],
         "EvaluationOutcomeEnum": ["incomplete", "pass", "low", "critical_failure"],

@@ -1,6 +1,7 @@
 import type { MessageKey } from "@wolbachia/i18n";
 import {
   Bike,
+  Bell,
   Bug,
   ChartColumn,
   FlaskConical,
@@ -22,6 +23,7 @@ import type { Me } from "../session/me";
 
 export const AREA_ICONS: Record<AreaId, LucideIcon> = {
   home: House,
+  notifications: Bell,
   incidents: TriangleAlert,
   operations: ListChecks,
   quadrants: MapIcon,

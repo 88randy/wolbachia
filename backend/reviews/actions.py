@@ -353,10 +353,11 @@ def _prepare_accept(
         raise ReviewBlockedError(("handler_unavailable",))
     from reviews.boundaries import retain_domain_boundary
 
-    if (
-        evaluation.subjects.resource_kind in {"transfer", "supply_assignment", "release"}
-        or source.type == "shift.close"
-    ):
+    if evaluation.subjects.resource_kind in {
+        "transfer",
+        "supply_assignment",
+        "release",
+    } or source.type in {"shift.close", "release.record"}:
         from inventory.transactions import inventory_transaction
 
         stack.enter_context(inventory_transaction(organization=source.organization))

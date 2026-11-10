@@ -10,6 +10,12 @@ only their own persisted fact; sample.read separately authorizes full attempts,
 selected valid binary result and analytical eligibility. Null invalid/disputed/
 missing outcomes never mean negative. See [samples](../../backend/lab/samples/README.md).
 
+#150 adds the owned notification inbox, signed cursor pages and unread totals,
+idempotent read/read-all actions, and per-type in-app/email preferences with
+required-channel policy. Object references are reauthorized on each read and
+unavailable targets redact their identity. Messages remain `code` + `params`;
+clients translate them. See [the notification contract](../../docs/notifications.md).
+
 #101 adds training/requirement versions, evidence-backed certifications,
 evaluation rubrics/attempts/revisions/voids, pending notice-policy routing and
 qualification reads. Commands use immutable UUID receipts plus CAS; private

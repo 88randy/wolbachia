@@ -41,6 +41,7 @@ describe("sidebar navigation", () => {
           "quadrant.read",
           "supply_type.read",
           "incident.read",
+          "notification.read",
           "egg_count.read",
           "review_item.read",
           "bag.receive",
@@ -52,7 +53,7 @@ describe("sidebar navigation", () => {
 
     const links = within(nav).getAllByRole("link");
 
-    expect(links).toHaveLength(13);
+    expect(links).toHaveLength(14);
     expect(links.map((link) => link.getAttribute("href"))).toEqual(AREAS.map((area) => area.path));
   });
 
@@ -128,7 +129,6 @@ describe("keyboard", () => {
       screen.getByRole("button", { name: "Colapsar menú" }),
       screen.getByRole("separator"),
       screen.getByRole("searchbox", { name: "Buscar" }),
-      screen.getByRole("button", { name: "Notificaciones" }),
       screen.getByRole("button", { name: "ES: cambiar idioma a inglés" }),
       screen.getByRole("switch", { name: "Tema oscuro" }),
       screen.getByRole("button", { name: /Menú de usuario/ }),
@@ -307,17 +307,9 @@ describe("top bar", () => {
     expect(document.documentElement.lang).toBe("en");
   });
 
-  test("notifications button has a name and no invented count", async () => {
+  test("notifications are hidden without the inbox permission", async () => {
     await renderApp();
-
-    const bell = screen.getByRole("button", { name: "Notificaciones" });
-
-    expect(bell.textContent).toBe("");
-    expect(bell.getAttribute("aria-disabled")).toBe("true");
-    expect(bell.getAttribute("aria-describedby")).toBe("notifications-hint");
-    expect(document.getElementById("notifications-hint")?.textContent).toBe(
-      "Todavía no está disponible.",
-    );
+    expect(screen.queryByRole("button", { name: "Notificaciones" })).toBeNull();
   });
 });
 

@@ -7652,6 +7652,84 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/me/notification-preferences/:
+    get:
+      operationId: me_notification_preferences_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - me
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: me_notification_preferences_partial_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - me
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedNotificationPreferencesPatchRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPreferences'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/memberships/:
     get:
       operationId: memberships_list
@@ -8541,6 +8619,153 @@ paths:
               schema:
                 $ref: '#/components/schemas/Motorcycle'
           description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/notifications/:
+    get:
+      operationId: notifications_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 4096
+      - in: query
+        name: kind
+        schema:
+          enum:
+          - critical
+          - incident
+          - training
+          - system
+          type: string
+          minLength: 1
+        description: |-
+          * `critical` - Critical
+          * `incident` - Incident
+          * `training` - Training
+          * `system` - System
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 50
+      - in: query
+        name: unread
+        schema:
+          enum:
+          - 'true'
+          - 'false'
+          type: string
+          minLength: 1
+        description: |-
+          * `true` - true
+          * `false` - false
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationPage'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/notifications/{id}/read/:
+    post:
+      operationId: notifications_read_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/notifications/read-all/:
+    post:
+      operationId: notifications_read_all_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - notifications
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
           content:
@@ -22890,6 +23115,189 @@ components:
       - command_id
       - expected_revision
       - recipient_membership_id
+    Notification:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        kind:
+          allOf:
+          - $ref: '#/components/schemas/NotificationKindEnum'
+          readOnly: true
+        code:
+          allOf:
+          - $ref: '#/components/schemas/NotificationCodeEnum'
+          readOnly: true
+        params:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        object_ref:
+          allOf:
+          - $ref: '#/components/schemas/NotificationObjectReference'
+          nullable: true
+          readOnly: true
+      required:
+      - code
+      - created_at
+      - id
+      - kind
+      - object_ref
+      - params
+      - read_at
+    NotificationCodeEnum:
+      enum:
+      - incident.created
+      - incident.comment
+      - incident.reassigned
+      - incident.severity_changed
+      - incident.closed
+      - incident.escalated
+      - incident.critical_source
+      - incident.critical_review
+      - incident.severe_fault
+      - training.certification_expired
+      - training.third_adverse
+      - notification.system
+      type: string
+      description: |-
+        * `incident.created` - incident.created
+        * `incident.comment` - incident.comment
+        * `incident.reassigned` - incident.reassigned
+        * `incident.severity_changed` - incident.severity_changed
+        * `incident.closed` - incident.closed
+        * `incident.escalated` - incident.escalated
+        * `incident.critical_source` - incident.critical_source
+        * `incident.critical_review` - incident.critical_review
+        * `incident.severe_fault` - incident.severe_fault
+        * `training.certification_expired` - training.certification_expired
+        * `training.third_adverse` - training.third_adverse
+        * `notification.system` - notification.system
+    NotificationKindEnum:
+      enum:
+      - critical
+      - incident
+      - training
+      - system
+      type: string
+      description: |-
+        * `critical` - Critical
+        * `incident` - Incident
+        * `training` - Training
+        * `system` - System
+    NotificationObjectKindEnum:
+      enum:
+      - incident
+      - motorcycle
+      - review_item
+      type: string
+      description: |-
+        * `incident` - incident
+        * `motorcycle` - motorcycle
+        * `review_item` - review_item
+    NotificationObjectReference:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/NotificationObjectKindEnum'
+        available:
+          type: boolean
+        id:
+          type: string
+          format: uuid
+          nullable: true
+        code:
+          type: string
+          nullable: true
+        is_voided:
+          type: boolean
+          nullable: true
+      required:
+      - available
+      - code
+      - id
+      - is_voided
+      - kind
+    NotificationPage:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Notification'
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        unread_total:
+          type: integer
+          minimum: 0
+      required:
+      - next
+      - previous
+      - results
+      - unread_total
+    NotificationPreference:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/NotificationKindEnum'
+        in_app:
+          type: boolean
+        email:
+          type: boolean
+        required_in_app:
+          type: boolean
+        required_email:
+          type: boolean
+      required:
+      - email
+      - in_app
+      - kind
+      - required_email
+      - required_in_app
+    NotificationPreferencePatchRequest:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/NotificationKindEnum'
+        in_app:
+          type: boolean
+        email:
+          type: boolean
+      required:
+      - kind
+    NotificationPreferences:
+      type: object
+      properties:
+        preferences:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationPreference'
+      required:
+      - preferences
     NotificationProjection:
       type: object
       properties:
@@ -25582,6 +25990,13 @@ components:
           type: string
           format: uuid
           nullable: true
+    PatchedNotificationPreferencesPatchRequest:
+      type: object
+      properties:
+        preferences:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationPreferencePatchRequest'
     PatchedOrganizationUpdateRequest:
       type: object
       properties:
@@ -27930,6 +28345,8 @@ components:
           format: date-time
           readOnly: true
         provenance:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseProvenance'
           readOnly: true
         blocked_by:
           type: array
@@ -28172,6 +28589,55 @@ components:
           $ref: '#/components/schemas/SupplyRelease'
       required:
       - release
+    ReleaseProvenance:
+      type: object
+      description: 'Regulatory ids only: no courier, certification, reviewer, assignment
+        or receipt ids.'
+      properties:
+        permit_version:
+          type: string
+          format: uuid
+          readOnly: true
+        current_permit_version:
+          type: string
+          format: uuid
+          readOnly: true
+        permit_type:
+          type: string
+          format: uuid
+          readOnly: true
+        official_document:
+          type: string
+          format: uuid
+          readOnly: true
+        source_lot_version:
+          type: string
+          format: uuid
+          readOnly: true
+        rules_version:
+          type: string
+          readOnly: true
+        catalog_version:
+          type: string
+          readOnly: true
+        schedule:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseScheduleProvenance'
+          readOnly: true
+        stock:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseStockProvenance'
+          readOnly: true
+      required:
+      - catalog_version
+      - current_permit_version
+      - official_document
+      - permit_type
+      - permit_version
+      - rules_version
+      - schedule
+      - source_lot_version
+      - stock
     ReleaseSchedule:
       type: object
       properties:
@@ -28190,6 +28656,20 @@ components:
       required:
       - courier_id
       - due_date
+      - permit_version_id
+      - task_id
+    ReleaseScheduleProvenance:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          readOnly: true
+        permit_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
       - permit_version_id
       - task_id
     ReleaseScheduleWriteRequest:
@@ -28212,6 +28692,33 @@ components:
       - due_date
       - expected_revision
       - point_id
+    ReleaseStockProvenance:
+      type: object
+      properties:
+        unit_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        lot_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        transit_policy_id:
+          type: string
+          format: uuid
+          readOnly: true
+        transit_mode:
+          type: string
+          readOnly: true
+        quantity:
+          type: string
+          readOnly: true
+      required:
+      - lot_version_id
+      - quantity
+      - transit_mode
+      - transit_policy_id
+      - unit_version_id
     Relocation:
       type: object
       description: |-
