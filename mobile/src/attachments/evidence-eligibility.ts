@@ -46,7 +46,7 @@ const UNVERIFIED_EVIDENCE = `(EXISTS(SELECT 1 FROM json_tree(waiting.payload) re
 const UNSETTLED_FUEL = `(type='shift.close' AND EXISTS(SELECT 1 FROM outbox_event fuel
   WHERE fuel.type='fuel.load' AND fuel.shift_id=waiting.shift_id AND fuel.seq<waiting.seq
     AND fuel.local_status IN ('pending','sending','error')))`;
-const UNSETTLED_OPENING = `(type='fuel.load' AND EXISTS(SELECT 1 FROM outbox_event opening
+const UNSETTLED_OPENING = `(type IN ('fuel.load','incident.report','emergency.accident') AND EXISTS(SELECT 1 FROM outbox_event opening
   WHERE opening.type='shift.open' AND opening.shift_id=waiting.shift_id
     AND opening.local_status IN ('pending','sending','error')))`;
 
