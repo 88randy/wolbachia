@@ -15,6 +15,9 @@ export const release = {
     "Las opciones vienen de tu copia descargada. El registro conserva la tarea, el dispositivo y sus versiones originales.",
   "mobile.release.selectedChoice": "Seleccionado",
   "mobile.release.begin": "Preparar esta captura",
+  "mobile.release.restart": "Iniciar otro borrador con los requisitos actualizados",
+  "mobile.release.restartHint":
+    "El borrador y su evidencia originales se conservan. El nuevo borrador sólo copia la cantidad; necesita su propia ubicación, fotos y comprobaciones. Esto no aprueba la captura anterior.",
   "mobile.release.beginHint":
     "Elige la tarea y el dispositivo para abrir o recuperar su captura en el teléfono. Los requisitos se vuelven a comprobar antes de guardar.",
   "mobile.release.draftPending":
@@ -42,7 +45,7 @@ export const release = {
   "mobile.release.gate.gps": "Ubicación con precisión suficiente",
   "mobile.release.gate.device": "Dispositivo de liberación activo",
   "mobile.release.gate.configuration": "Configuración de captura disponible",
-  "mobile.release.pass": "Comprobado en la copia descargada",
+  "mobile.release.pass": "Comprobado",
   "mobile.release.fail": "No cumple",
   "mobile.release.unavailable": "No disponible; liberación bloqueada",
   "mobile.release.contact.supervisor": "Pide a tu supervisor que revise este requisito.",

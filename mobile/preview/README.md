@@ -33,6 +33,9 @@ synthetic task/device/permit/lot, eight passing fixture gates, quantity 2500,
 synthetic GPS ±4 m and one synthetic evidence reference **without photo bytes**.
 Changing quantity or Undo changes preview memory only. Taking a photo always
 cancels; Save displays a preview-only explanation and never reports Phone saved.
+Add `blocked=1&restart=1` to inspect the explicit fresh-draft recovery control
+when newer prerequisites are available. Its action only explains the synthetic
+boundary; it does not mutate an original source or create a stored draft.
 
 The release preview renders the production view, header, controls and footer.
 Only the header's navigation and sync hooks are replaced by browser-only no-op

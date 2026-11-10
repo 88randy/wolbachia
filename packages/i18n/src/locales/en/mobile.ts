@@ -946,4 +946,48 @@ export const mobile: Record<keyof typeof source, string> = {
     "No validated work phone is available. No emergency number is configured for this app.",
   "mobile.incidents.callFallback":
     "If you need immediate help, use the device phone app and an emergency contact you know. Calls depend on the device and network.",
+  "mobile.history.title": "My history",
+  "mobile.history.search": "Search code or reference",
+  "mobile.history.partial":
+    "Partial local copy: saved, received and reviewed records have separate states.",
+  "mobile.history.failed":
+    "Could not refresh. Your captures are retained; retry with a connection.",
+  "mobile.history.refresh": "Refresh history",
+  "mobile.history.allShifts": "Back to shifts",
+  "mobile.history.noMatches": "No matches in this copy. Change the search or refresh online.",
+  "mobile.history.unavailable":
+    "History unavailable. Refresh online or ask your supervisor to check access.",
+  "mobile.history.unknownTime": "Date unavailable",
+  "mobile.history.shift": "Shift",
+  "mobile.history.openShift": "View events and observations",
+  "mobile.history.reviewed": "Reviewed",
+  "mobile.history.voided": "Voided",
+  "mobile.history.observed": "Observed",
+  "mobile.history.received": "Received by server",
+  "mobile.history.serverFact": "Server observation",
+  "mobile.history.author": "Author (name or reference)",
+  "mobile.history.unavailableValue": "Unavailable",
+  "mobile.history.reference": "Original reference",
+  "mobile.history.reason": "Reason or observation",
+  "mobile.history.voids": "Corrects reference",
+  "mobile.settings.textSize": "Text size",
+  "mobile.settings.textSystem": "Same as phone",
+  "mobile.settings.textLarge": "Additional 30 % larger text",
+  "mobile.settings.saveFailed":
+    "Could not save your preference. The previous selection is retained; choose again to retry.",
+  "mobile.settings.readFailed":
+    "Could not read local state. Retry; you can lock access without deleting your captures.",
+  "mobile.settings.version": "Running app version",
+  "mobile.settings.updaterUnavailable":
+    "Updater unavailable. There is no verified manifest or installation receipt; contact support.",
+  "mobile.settings.support": "Organization support contact",
+  "mobile.settings.supportUnavailable": "No contact configured. Ask your supervisor for help.",
+  "mobile.settings.pendingWork": "Work retained on this phone",
+  "mobile.settings.events": "Records awaiting receipt",
+  "mobile.settings.files": "Files awaiting verification or binding",
+  "mobile.settings.drafts": "Drafts not yet saved as records",
+  "mobile.settings.lockHint":
+    "Closing access locks this phone. Drafts, files and uploads are retained; unlock with your PIN to continue. The server session keeps its original lifetime.",
+  "mobile.settings.viewUploads": "View uploads and observations",
+  "mobile.settings.lockAccess": "Close local access and retain work",
 };

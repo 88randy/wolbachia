@@ -17,6 +17,13 @@ import {
 } from "../ovitrap-lifecycle/context-sql.ts";
 import { clearDownloadedProjections } from "../ovitrap-lifecycle/quadrant-projections.ts";
 import { retainedHistoryStatements } from "../ovitrap-lifecycle/history-projections.ts";
+import {
+  trainingBundleStatements,
+  trainingChangeStatements,
+  invalidateTrainingProjection,
+  clearTrainingProjection,
+  needsTrainingBootstrap,
+} from "../training/projection-state.ts";
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
 import { readLifecycleSource } from "../ovitrap-lifecycle/source-context.ts";
 import { readCurrentTask } from "./current-task.ts";
@@ -84,6 +91,11 @@ function scopeInvalidation(
   return hasTasks || parseChanges(body.sampling_points).length || parseChanges(body.ovitraps).length
     ? [INVALIDATE_ATTACHMENTS]
     : [];
+}
+function suppliesBootstrapReadiness(body: unknown): SqlStatement {
+  return isRecord(body) && Array.isArray(body.supplies)
+    ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
+    : removeStatement(KV_KEYS.daySuppliesBootstrapReady);
 }
 /** Only downloaded projections are owned here; no draft, event or attachment is ever replaced. */
 export class DayStore {
@@ -160,10 +172,9 @@ export class DayStore {
       ...courierBundleStatements(body),
       ...supplyBundleStatements(body, handle),
       ...releaseBundleStatements(body, handle),
+      ...trainingBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
-      isRecord(body) && Array.isArray(body.supplies)
-        ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
-        : removeStatement(KV_KEYS.daySuppliesBootstrapReady),
+      suppliesBootstrapReadiness(body),
       removeStatement(KV_KEYS.daySamplingPointsBootstrapPending),
       removeStatement(KV_KEYS.dayCompletionBootstrapPending),
       setStatement(KV_KEYS.syncCursor, bundle.cursor),
@@ -188,6 +199,7 @@ export class DayStore {
       ...courierChangeStatements(body),
       ...supplyChangeStatements(body, handle),
       ...releaseChangeStatements(body, handle),
+      ...trainingChangeStatements(body, handle),
       ...publishCaptureContext(body, handle, "changes"),
     ];
     statements.push(...changeMetadata(body, tasks.filter((entry) => entry.isUnreadable).length));
@@ -199,6 +211,7 @@ export class DayStore {
       ...invalidateCaptureContext,
       invalidateSupplyProjection,
       invalidateReleaseProjection,
+      invalidateTrainingProjection,
       revokeCaptureScope(),
     ]);
   }
@@ -208,15 +221,18 @@ export class DayStore {
       ...captureRecoveryStatements(handle),
       invalidateSupplyProjection,
       invalidateReleaseProjection,
+      invalidateTrainingProjection,
       INVALIDATE_ATTACHMENTS,
     ]);
   }
   /** Missing supply readiness also covers upgrades without changing released migrations. */
   async needsBootstrap(includeLifecycle = true): Promise<boolean> {
+    if (includeLifecycle && (await needsTrainingBootstrap(this.#db))) return true;
     const rows = await this.#db.query(
       `SELECT 1 FROM kv WHERE key IN (?,?,?) AND value='true'
         UNION ALL SELECT 1 WHERE ? AND (NOT EXISTS(${CURRENT_CAPTURE_CONTEXT})
-          OR NOT EXISTS(SELECT 1 FROM kv WHERE key=? AND value='true')) LIMIT 1`,
+          OR NOT EXISTS(SELECT 1 FROM kv WHERE key=? AND value='true')
+          OR NOT EXISTS(SELECT 1 FROM kv WHERE key='history_projection_ready' AND value='true')) LIMIT 1`,
       [
         KV_KEYS.daySamplingPointsBootstrapPending,
         KV_KEYS.dayCompletionBootstrapPending,
@@ -241,6 +257,8 @@ export class DayStore {
       removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       ...clearSupplyProjection,
       ...clearReleaseProjection,
+      ...clearTrainingProjection,
+      removeStatement("history_projection_ready"),
       ...invalidateCaptureContext,
       revokeCaptureScope(),
       { sql: "DELETE FROM day_sampling_point" },

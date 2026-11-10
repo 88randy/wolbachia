@@ -146,3 +146,30 @@ void test("file-backed restart replays the original release UUID and retains a l
   );
   assert.equal((await database.executor.query("SELECT id FROM outbox_event")).length, 1);
 });
+
+void test("a failed fresh-origin insert rolls supersession back without changing the original raw draft", async () => {
+  const { db } = await createStores(),
+    store = new ReleaseStore(db);
+  await db.query("PRAGMA foreign_keys=ON");
+  const original = releaseDraft({
+    evidence: [{ id: RELEASE_IDS.assessment, fileRef: "private-retained-proof" }],
+  });
+  const occupied = releaseDraft({
+    eventId: RELEASE_IDS.assignment,
+    pins: { ...original.pins, task: { ...original.pins.task, id: RELEASE_IDS.point } },
+  });
+  await store.begin(original, [TRUE_GUARD]);
+  await store.begin(occupied, [TRUE_GUARD]);
+  const before = await store.read(original.eventId, original.ownerKey);
+  assert.ok(before);
+  const fresh = releaseDraft({ eventId: occupied.eventId, quantity: original.quantity, gps: null });
+  await assert.rejects(store.restart(original, fresh, [TRUE_GUARD]), /UNIQUE constraint failed/);
+  const retained = await store.read(original.eventId, original.ownerKey);
+  assert.ok(retained);
+  assert.equal(retained.raw, before.raw);
+  assert.equal(retained.supersededBy, null);
+  assert.deepEqual(
+    (await store.list(original.ownerKey)).map(({ eventId }) => eventId).sort(),
+    [original.eventId, occupied.eventId].sort(),
+  );
+});

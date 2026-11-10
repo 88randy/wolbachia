@@ -2,6 +2,7 @@ import { ReleaseChoiceList } from "./ReleaseChoiceList.tsx";
 import type { ReleaseViewModel } from "./view-model.ts";
 
 export function ReleaseChoices({ model }: { readonly model: ReleaseViewModel }) {
+  if (model.hasDraft) return null;
   const disabled = model.isBusy || model.status !== "draft";
   return (
     <>

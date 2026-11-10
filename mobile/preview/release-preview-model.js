@@ -68,6 +68,8 @@ export function useReleasePreviewModel(isBlocked) {
   const units = quantityUnits(quantity),
     isQuantityValid = units !== null && units > 0n;
   const gates = previewGates({ isBlocked, evidenceCount, isQuantityValid });
+  const canRestart =
+    isBlocked && new URLSearchParams(globalThis.location.search).get("restart") === "1";
   const model = {
     isLoading: false,
     isBusy: false,
@@ -79,6 +81,12 @@ export function useReleasePreviewModel(isBlocked) {
     selectedDeviceId: DEVICE_ID,
     hasDraft: true,
     canBegin: false,
+    canRestart,
+    restart: () => {
+      setHint(
+        "Synthetic fresh-draft action only. The original source/evidence remain unchanged; no storage or server write occurred.",
+      );
+    },
     hasPendingEdits: false,
     quantity,
     quantityErrorKey: null,

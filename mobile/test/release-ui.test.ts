@@ -7,7 +7,7 @@ import type { ReleaseViewModel } from "../src/features/releases/view-model.ts";
 import { ReleaseEditBuffer } from "../src/features/releases/edit-buffer.ts";
 import { ReleaseEditorController } from "../src/features/releases/editor-controller.ts";
 import type { ReleaseState } from "../src/features/releases/types.ts";
-import { releaseDraft, RELEASE_IDS } from "./support/release-fixtures.ts";
+import { releaseDraft, releaseEnvelope, RELEASE_IDS } from "./support/release-fixtures.ts";
 import { deferred } from "./support/auth-fakes.ts";
 import { componentHarness, flattenStyle } from "./support/m-09-render.ts";
 import type { RenderNode } from "./support/m-09-render.ts";
@@ -31,10 +31,12 @@ function model(patch: Partial<ReleaseViewModel> = {}): ReleaseViewModel {
     selectedDeviceId: "device-139",
     hasDraft: true,
     canBegin: false,
+    canRestart: false,
     hasPendingEdits: false,
     selectTask: NO_ACTION,
     selectDevice: NO_ACTION,
     begin: NO_ACTION,
+    restart: NO_ACTION,
     status: "draft",
     resultKey: null,
     reviewedKey: null,
@@ -248,6 +250,7 @@ void test("P18 chooses exact downloaded task/device identities and prepares only
   const render = componentHarness({ locale: "en", scheme: "light", fontScale: 1.3 }).render;
   const selected: string[] = [];
   const capture = model({
+    hasDraft: false,
     selectTask: (id) => {
       selected.push(id);
     },
@@ -267,6 +270,14 @@ void test("P18 chooses exact downloaded task/device identities and prepares only
   press(presses(options)[0]);
   press(presses(options)[1]);
   assert.deepEqual(selected, ["task-139", "device-139"]);
+  const frozen = render(`${FEATURE}ReleaseChoices.tsx`, "ReleaseChoices", {
+    model: { ...capture, hasDraft: true },
+  });
+  assert.equal(
+    presses(frozen).length,
+    0,
+    "original task/device choices cannot change after a draft exists",
+  );
   const begin = render(`${FEATURE}ReleaseBegin.tsx`, "ReleaseBegin", {
     model: { ...capture, hasDraft: false, canBegin: false },
   });
@@ -280,6 +291,7 @@ function editorState(patch: Partial<ReleaseState> = {}): ReleaseState {
     draft: releaseDraft(),
     event: null,
     ready: true,
+    canRestart: false,
     evidencePending: false,
     review: null,
     gates: model().gates,
@@ -314,6 +326,7 @@ function editorHarness() {
     subscribe: signal.subscribe,
     read: () => Promise.resolve(stored),
     begin: () => Promise.resolve(RELEASE_IDS.event),
+    restart: () => Promise.resolve("10000000-0000-4000-8000-000000000239"),
     edit: (id: string, quantity: string) => {
       assert.equal(id, stored.draft?.eventId);
       assert.ok(stored.draft);
@@ -514,5 +527,87 @@ void test("an old release read cannot restore private references after replaceme
   await pending;
   assert.equal(harness.controller.getSnapshot().state?.draft, null);
   assert.deepEqual(harness.controller.getSnapshot().state?.devices, []);
+  harness.controller.stop();
+});
+
+void test("fresh-draft recovery flushes raw input, changes active UUID and fences old camera callbacks without restarting saved events", async () => {
+  const harness = editorHarness(),
+    write = deferred<undefined>(),
+    started = deferred<undefined>();
+  let cameraLease: () => boolean = () => false;
+  harness.store(editorState({ canRestart: true }));
+  harness.service.photo = (_id, isCurrent) => {
+    cameraLease = isCurrent;
+    return Promise.resolve();
+  };
+  harness.service.edit = async (_id, quantity) => {
+    started.resolve(undefined);
+    await write.promise;
+    const state = harness.getStored();
+    assert.ok(state.draft);
+    harness.store({ ...state, draft: { ...state.draft, quantity } });
+  };
+  let restarted = 0;
+  harness.service.restart = () => {
+    const state = harness.getStored();
+    assert.ok(state.draft);
+    assert.equal(state.draft.quantity, "32.000001");
+    restarted++;
+    const fresh = {
+      ...state.draft,
+      eventId: "10000000-0000-4000-8000-000000000239",
+      gps: null,
+      evidence: [],
+    };
+    harness.store({ ...state, draft: fresh, canRestart: false });
+    return Promise.resolve(fresh.eventId);
+  };
+  harness.controller.start();
+  await harness.controller.load();
+  harness.controller.photo();
+  await editorIdle(harness.controller);
+  assert.equal(cameraLease(), true);
+  harness.controller.editQuantity("32.000001");
+  await started.promise;
+  harness.controller.restart();
+  assert.equal(restarted, 0);
+  write.resolve(undefined);
+  await editorIdle(harness.controller);
+  assert.equal(restarted, 1);
+  assert.equal(
+    harness.controller.getSnapshot().state?.draft?.eventId,
+    "10000000-0000-4000-8000-000000000239",
+  );
+  assert.equal(harness.controller.getSnapshot().state?.draft?.quantity, "32.000001");
+  assert.equal(cameraLease(), false, "the old camera lease cannot attach to the fresh origin");
+  const fresh = harness.getStored().draft;
+  assert.ok(fresh);
+  harness.store(
+    editorState({
+      draft: fresh,
+      canRestart: true,
+      event: {
+        seq: 1,
+        status: "pending",
+        attempts: 0,
+        lastError: null,
+        result: null,
+        envelope: releaseEnvelope(fresh),
+      },
+    }),
+  );
+  await harness.controller.load();
+  harness.controller.restart();
+  assert.equal(restarted, 1, "a saved original event never becomes a new draft");
+  const render = componentHarness({ locale: "es-MX", scheme: "dark", fontScale: 1.3 }).render;
+  const control = render(`${FEATURE}ReleaseRestart.tsx`, "ReleaseRestart", {
+    model: model({ canRestart: true }),
+  });
+  assert.ok(texts(control).includes(messages["es-MX"]["mobile.release.restartHint"]));
+  assert.equal(presses(control).length, 1);
+  const saved = render(`${FEATURE}ReleaseRestart.tsx`, "ReleaseRestart", {
+    model: model({ canRestart: true, status: "phone_saved" }),
+  });
+  assert.equal(presses(saved).length, 0);
   harness.controller.stop();
 });

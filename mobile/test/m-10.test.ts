@@ -629,3 +629,79 @@ void test("M10 opening and release predecessors hold only close transport while 
     [close.id],
   );
 });
+
+void test("M10 a renewed qualification requires an explicit fresh draft while the blocked original stays retained", async (t) => {
+  const h = await harness(t),
+    invalid = downloadedBundle();
+  invalid.eligibility = invalid.eligibility.map((row) => ({
+    ...row,
+    training_eligible: false,
+    version: "qualification-invalid-v1",
+  }));
+  h.setBundle(invalid);
+  await h.bundle.refresh(true);
+  const originalId = await h.service.begin(SELECTION);
+  await h.service.edit(originalId, "3.250000");
+  await h.service.photo(originalId, () => true);
+  const original = await h.store.read(originalId, (await h.attachments.session.capture()).ownerKey);
+  assert.ok(original?.draft.evidence[0]);
+  h.setClock(new Date("2026-11-09T16:02:00Z"));
+  const renewed = downloadedBundle();
+  renewed.eligibility = renewed.eligibility.map((row) => ({
+    ...row,
+    version: "qualification-valid-v2",
+    training_version_ids: [id(744)],
+    certification_ids: [id(745)],
+    assessment_receipt: id(746),
+    valid_from: "2026-11-09T16:01:00Z",
+  }));
+  h.setBundle(renewed);
+  await h.db.runAtomically([
+    setStatement("shift_open_rules", JSON.stringify({ version: "rules-renewed-v2" })),
+    setStatement("shift_open_catalog", JSON.stringify({ version: "catalog-renewed-v2" })),
+  ]);
+  await h.bundle.refresh(true);
+  assert.equal(canSaveRelease((await h.service.read(SELECTION)).gates), false);
+  assert.equal(
+    await h.service.begin(SELECTION),
+    originalId,
+    "ordinary restore must not relabel the original qualifier",
+  );
+  const freshId = await h.service.restart(originalId);
+  assert.notEqual(freshId, originalId);
+  const fresh = await h.service.read(SELECTION);
+  assert.ok(fresh.draft);
+  assert.equal(fresh.draft.eventId, freshId);
+  assert.equal(fresh.draft.quantity, "3.250000");
+  assert.deepEqual(fresh.draft.evidence, []);
+  assert.equal(fresh.draft.trainingVersionId, id(744));
+  assert.equal(fresh.draft.pins.eligibility.version, "qualification-valid-v2");
+  assert.equal(fresh.draft.rulesVersion, "rules-renewed-v2");
+  assert.equal(fresh.draft.catalogVersion, "catalog-renewed-v2");
+  assert.equal(fresh.draft.deviceTime, "2026-11-09T16:02:00.000Z");
+  const retained = await h.store.read(originalId, fresh.draft.ownerKey);
+  assert.ok(retained);
+  assert.equal(retained.raw, original.raw);
+  assert.equal(retained.supersededBy, freshId);
+  assert.deepEqual(
+    (await h.store.list(fresh.draft.ownerKey)).map(({ eventId }) => eventId),
+    [freshId],
+  );
+  assert.deepEqual(await readFile(original.draft.evidence[0].fileRef), PNG_BYTES);
+  await h.service.photo(freshId, () => true);
+  await h.service.locate(freshId, () => true);
+  await h.service.save(freshId);
+  await assert.rejects(h.service.restart(freshId));
+  assert.equal(
+    (await h.db.query("SELECT id FROM outbox_event WHERE type='release.record'")).length,
+    1,
+  );
+  assert.equal(
+    (
+      await h.db.query("SELECT evidence_id FROM attachment_event WHERE evidence_id=?", [
+        original.draft.evidence[0].id,
+      ])
+    ).length,
+    0,
+  );
+});

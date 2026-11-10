@@ -16,6 +16,7 @@ const EMPTY: ReleaseState = {
   draft: null,
   event: null,
   ready: false,
+  canRestart: false,
   evidencePending: false,
   review: null,
   tasks: [],
@@ -134,6 +135,7 @@ function formPresentation(input: {
     canSave: canSaveForm({ ...input, state }),
     quantityErrorKey: quantityError(input.snapshot),
     hasPendingEdits: input.hasPending,
+    canRestart: state.draft !== null && state.event === null && state.canRestart,
   };
 }
 function canSaveForm(input: {
@@ -175,6 +177,7 @@ function useReleaseNavigation() {
 function editorActions(controller: ReleaseEditorController) {
   return {
     begin: controller.begin,
+    restart: controller.restart,
     changeQuantity: controller.editQuantity,
     blurQuantity: controller.blurQuantity,
     acquireGps: controller.locate,

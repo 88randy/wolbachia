@@ -49,6 +49,7 @@ export interface ReleaseState {
   readonly event: OutboxEvent | null;
   readonly gates: readonly ReleaseGate[];
   readonly ready: boolean;
+  readonly canRestart: boolean;
   readonly evidencePending: boolean;
   readonly review: Schemas["ReviewHistoryEntry"] | null;
   readonly tasks: readonly { readonly id: string; readonly code: string }[];

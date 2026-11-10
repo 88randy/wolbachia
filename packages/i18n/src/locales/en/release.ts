@@ -16,6 +16,9 @@ export const release: Record<keyof typeof source, string> = {
     "Options come from your downloaded copy. The record retains the original task, device and versions.",
   "mobile.release.selectedChoice": "Selected",
   "mobile.release.begin": "Prepare this capture",
+  "mobile.release.restart": "Start a new draft with updated requirements",
+  "mobile.release.restartHint":
+    "The original draft and its evidence are retained. The new draft copies only the quantity; it needs its own location, photos and checks. This does not approve the previous capture.",
   "mobile.release.beginHint":
     "Choose the task and device to open or recover their capture on the phone. Requirements are checked again before saving.",
   "mobile.release.draftPending":
@@ -43,7 +46,7 @@ export const release: Record<keyof typeof source, string> = {
   "mobile.release.gate.gps": "Location with sufficient accuracy",
   "mobile.release.gate.device": "Active release device",
   "mobile.release.gate.configuration": "Available capture configuration",
-  "mobile.release.pass": "Checked in the downloaded copy",
+  "mobile.release.pass": "Checked",
   "mobile.release.fail": "Requirement not met",
   "mobile.release.unavailable": "Unavailable; release blocked",
   "mobile.release.contact.supervisor": "Ask your supervisor to review this requirement.",

@@ -15,6 +15,12 @@ can finish privately under a same-owner local lock; new actions and changed
 owner/session/selection/scope cannot use that continuation. Undo removes only the
 draft reference; private bytes remain retained and unenrolled until Save.
 
+When a refreshed prerequisite repairs a blocked origin, an explicit restart in
+the same active shift atomically retains the original draft and creates a new
+UUID with current pins. Only raw quantity carries forward; photos and GPS must be
+captured again. Superseded rows are immutable and cannot be saved or edited.
+Starting work in a new shift leaves earlier drafts retained under their origin.
+
 Save measures fresh foreground GPS, seals the actual capture time, rechecks
 original/current prerequisites and local custody reservations, then atomically
 enrolls the immutable event, assessment and evidence in the existing outbox/file
@@ -44,7 +50,7 @@ Phone-saved, server-received and later-reviewed outcomes are separate.
 | --- | --- |
 | Gate matrix, decimal limits, original/current safety and no bypass | `release-domain.test.ts` |
 | Transactional bootstrap readiness, delta floors, ownership and original-source guard | `release-projections.test.ts` |
-| Retained owner drafts, immutable pins, raw CAS and cold SQLite reopen | `release-store.test.ts` |
+| Retained owner drafts, immutable pins, raw CAS, atomic supersession and cold SQLite reopen | `release-store.test.ts` |
 | Offline Save/evidence, generated-client retry, suspension, reservations, camera lock/revocation, review after close and transport ordering | `m-10.test.ts` |
 | Actual QR/manual routing with no unrelated capture mutation | `m-07-source.test.ts` |
 | Raw-edit/native flush barriers, truthful statuses and localized 48dp controls in both themes at 130% host scale | `release-ui.test.ts` |

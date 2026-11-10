@@ -8,7 +8,7 @@ type Unsubscribe = () => void;
 interface Dependencies {
   readonly service: Pick<
     ReleaseService,
-    "read" | "begin" | "edit" | "save" | "locate" | "photo" | "undoPhoto" | "subscribe"
+    "read" | "begin" | "restart" | "edit" | "save" | "locate" | "photo" | "undoPhoto" | "subscribe"
   >;
   readonly selection: ReleaseSelection;
   readonly buffer: ReleaseEditBuffer;
@@ -198,6 +198,18 @@ export class ReleaseEditorController {
   }
   begin = (): void => {
     void this.#operate(() => this.#deps.service.begin(this.#snapshot.selection));
+  };
+  restart = (): void => {
+    const state = this.#snapshot.state;
+    if (!state?.draft || state.event !== null || !state.canRestart) return;
+    const id = state.draft.eventId;
+    void this.#operate(async () => {
+      await this.#deps.service.restart(id);
+      this.#epoch++;
+      this.#contextDraftId = undefined;
+      this.#publish({ state: null, touchedId: null });
+      await this.load();
+    });
   };
   editQuantity = (quantity: string): void => {
     const state = this.#snapshot.state,

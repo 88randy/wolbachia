@@ -1,13 +1,14 @@
 import type { Locale } from "@wolbachia/i18n";
-import { createContext, useCallback, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
 import type { ReactNode } from "react";
 import { useColorScheme } from "react-native";
 
 import { I18nProvider } from "../i18n/I18nProvider.tsx";
-import { KV_KEYS } from "../db/kv-store.ts";
 import { ThemeProvider } from "../theme/ThemeProvider.tsx";
 import type { ColorScheme } from "../theme/ThemeProvider.tsx";
 import { resolveScheme } from "./preferences.ts";
+import { DEFAULT_PREFERENCES } from "./preferences.ts";
+import { PreferenceStore } from "./preference-store.ts";
 import type { Preferences, ThemePreference } from "./preferences.ts";
 import { useServices } from "./services-context.ts";
 
@@ -15,6 +16,8 @@ interface PreferencesValue extends Preferences {
   readonly resolvedScheme: ColorScheme;
   readonly setScheme: (scheme: ThemePreference) => void;
   readonly setLocale: (locale: Locale) => void;
+  readonly setTextSize: (textSize: Preferences["textSize"]) => void;
+  readonly hasError: boolean;
 }
 
 const PreferencesContext = createContext<PreferencesValue | null>(null);
@@ -25,28 +28,42 @@ interface PreferencesProviderProps {
 }
 
 /** Holds the language and the theme, saves a change to the phone, and feeds both providers. */
+function usePreferenceStore(initial: Preferences): PreferenceStore {
+  const { kv, auth } = useServices();
+  const { profile } = useSyncExternalStore(auth.subscribe, auth.getSnapshot);
+  const owner =
+    profile?.userId && profile.organization ? `${profile.organization.id}:${profile.userId}` : null;
+  const firstOwner = useRef(owner);
+  const store = useMemo(
+    () =>
+      new PreferenceStore(kv, owner, firstOwner.current === owner ? initial : DEFAULT_PREFERENCES),
+    [kv, owner, initial],
+  );
+  useEffect(() => {
+    void store.load();
+  }, [store]);
+  return store;
+}
 function usePreferenceState(initial: Preferences): PreferencesValue {
-  const { kv } = useServices();
-  const [preferences, setPreferences] = useState(initial);
+  const store = usePreferenceStore(initial);
+  const preferences = useSyncExternalStore(store.subscribe, store.getSnapshot);
   const systemScheme = useColorScheme();
   const resolvedScheme = resolveScheme(preferences.scheme, systemScheme);
-  const setScheme = useCallback(
-    (scheme: ThemePreference) => {
-      setPreferences((previous) => ({ ...previous, scheme }));
-      void kv.set(KV_KEYS.themePreference, scheme);
-    },
-    [kv],
-  );
-  const setLocale = useCallback(
-    (locale: Locale) => {
-      setPreferences((previous) => ({ ...previous, locale }));
-      void kv.set(KV_KEYS.locale, locale);
-    },
-    [kv],
-  );
   return useMemo(
-    () => ({ ...preferences, resolvedScheme, setScheme, setLocale }),
-    [preferences, resolvedScheme, setScheme, setLocale],
+    () => ({
+      ...preferences,
+      resolvedScheme,
+      setScheme: (scheme: ThemePreference) => {
+        void store.change({ scheme });
+      },
+      setLocale: (locale: Locale) => {
+        void store.change({ locale });
+      },
+      setTextSize: (textSize: Preferences["textSize"]) => {
+        void store.change({ textSize });
+      },
+    }),
+    [preferences, resolvedScheme, store],
   );
 }
 
@@ -55,7 +72,7 @@ export function PreferencesProvider({ initial, children }: PreferencesProviderPr
   const value = usePreferenceState(initial);
   return (
     <PreferencesContext.Provider value={value}>
-      <ThemeProvider scheme={value.resolvedScheme}>
+      <ThemeProvider scheme={value.resolvedScheme} textScale={value.textSize === "large" ? 1.3 : 1}>
         <I18nProvider locale={value.locale}>{children}</I18nProvider>
       </ThemeProvider>
     </PreferencesContext.Provider>

@@ -10,7 +10,13 @@ export function SaveAvailability({
   const t = useT();
   return isBlocked ? (
     <AppText accessibilityLiveRegion="polite">
-      {t(gate === "review" ? "mobile.lifecycle.reviewAcknowledge" : "mobile.lifecycle.incomplete")}
+      {t(
+        gate === "training"
+          ? "trainings.mobile.boundary"
+          : gate === "review"
+            ? "mobile.lifecycle.reviewAcknowledge"
+            : "mobile.lifecycle.incomplete",
+      )}
     </AppText>
   ) : null;
 }

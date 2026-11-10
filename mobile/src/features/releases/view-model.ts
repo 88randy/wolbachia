@@ -31,10 +31,12 @@ export interface ReleaseViewModel {
   readonly selectedDeviceId: string | null;
   readonly hasDraft: boolean;
   readonly canBegin: boolean;
+  readonly canRestart: boolean;
   readonly hasPendingEdits: boolean;
   readonly selectTask: (id: string) => void;
   readonly selectDevice: (id: string) => void;
   readonly begin: () => void;
+  readonly restart: () => void;
   readonly quantity: string;
   readonly quantityErrorKey: MessageKey | null;
   readonly gates: readonly ReleaseGateView[];

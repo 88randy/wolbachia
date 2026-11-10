@@ -58,14 +58,28 @@ interface ReadWriteContext extends WriteRequest {
   readonly shift: ReleaseShift;
   readonly fence: EvidenceFence;
 }
+interface RestartRequest {
+  readonly identity: EvidenceIdentity;
+  readonly fence: EvidenceFence;
+  readonly stored: StoredRelease;
+}
 type ReleaseOrigin = Pick<
   ReleaseDraft,
   "ownerKey" | "shiftId" | "deviceTime" | "timezone" | "pins" | "manualCapture"
 >;
+interface SelectionFrame {
+  readonly source: ReleaseProjectionSource;
+  readonly selection: ReleaseSelection;
+  readonly shiftId: string;
+  readonly timezone: string;
+  readonly deviceTime: string;
+  readonly shift: ReleaseShift;
+}
 const EMPTY: ReleaseState = {
   draft: null,
   event: null,
   ready: false,
+  canRestart: false,
   evidencePending: false,
   review: null,
   tasks: [],
@@ -96,6 +110,29 @@ function currentPins(source: ReleaseProjectionSource, draft: ReleaseDraft): Rele
       manualCapture: draft.manualCapture,
     },
   });
+}
+function changedFrame(draft: ReleaseDraft, fresh: ReleaseDraft): boolean {
+  return (
+    draft.shiftId !== fresh.shiftId ||
+    draft.timezone !== fresh.timezone ||
+    draft.pins.captureVersion !== fresh.pins.captureVersion ||
+    draft.pins.permit.version !== fresh.pins.permit.version ||
+    draft.pins.eligibility.version !== fresh.pins.eligibility.version
+  );
+}
+function safeFreshOrigin(draft: ReleaseDraft, fresh: ReleaseDraft, now: Date): boolean {
+  if (!changedFrame(draft, fresh) || fresh.pins.custody.blocked_by.length > 0) return false;
+  const staticNames = ["permit", "training", "schedule", "device", "configuration"];
+  const gates = releaseGates({
+    draft: fresh,
+    current: fresh.pins,
+    now,
+    availableQuantity: fresh.pins.custody.available_quantity,
+    taskCaptured: false,
+  });
+  return gates
+    .filter(({ name }) => staticNames.includes(name))
+    .every(({ state }) => state === "pass");
 }
 /** One local edit queue; native I/O stays outside it, guarded by the original source and draft CAS. */
 export class ReleaseService {
@@ -142,7 +179,10 @@ export class ReleaseService {
     this.#tail = next.catch(() => undefined);
     return next;
   }
-  async #selectionSource(source: ReleaseProjectionSource, selection: ReleaseSelection) {
+  async #selectionSource(
+    source: ReleaseProjectionSource,
+    selection: ReleaseSelection,
+  ): Promise<SelectionFrame> {
     const shift = await this.deps.shift(),
       timezone = this.deps.timezone();
     if (!timezone) throw new ReleaseError("context_unavailable");
@@ -197,8 +237,56 @@ export class ReleaseService {
       evidence: [],
     };
   }
+  restart(id: string): Promise<string> {
+    return this.#run(async (identity) => {
+      const fence = await this.deps.attachments.session.capture();
+      const stored = await this.deps.store.read(id, fence.ownerKey);
+      if (!stored || stored.event || stored.supersededBy) throw new ReleaseError("stale_draft");
+      return this.deps.bundle.withReleaseProjection((source) =>
+        this.#restartSource({ identity, fence, stored }, source),
+      );
+    });
+  }
+  async #restartSource(request: RestartRequest, source: ReleaseProjectionSource): Promise<string> {
+    const { identity, fence, stored } = request;
+    const selection = {
+      taskId: stored.draft.pins.task.id,
+      deviceId: stored.draft.pins.device.id,
+      manualCapture: stored.draft.manualCapture,
+    };
+    const frame = await this.#selectionSource(source, selection),
+      pins = resolveReleasePins(frame);
+    if (stored.draft.shiftId !== frame.shiftId) throw new ReleaseError("stale_draft");
+    if (!pins) throw new ReleaseError("context_unavailable");
+    const fresh = await this.#renewedDraft(stored.draft, frame, pins);
+    const captured = await this.deps.store.taskCaptured(fence.ownerKey, pins.task.id);
+    if (captured || !safeFreshOrigin(stored.draft, fresh, this.deps.now()))
+      throw new ReleaseError("safety_blocked");
+    this.assertIdentity(identity);
+    await this.deps.store.restart(stored.draft, fresh, [
+      source.guard,
+      frame.shift.guard,
+      this.deps.store.draftGuard({ id: stored.draft.eventId, raw: stored.raw, fence }),
+    ]);
+    return fresh.eventId;
+  }
+  async #renewedDraft(
+    original: ReleaseDraft,
+    frame: SelectionFrame,
+    pins: ReleasePins,
+  ): Promise<ReleaseDraft> {
+    const fresh = await this.#newDraft({
+      ownerKey: original.ownerKey,
+      shiftId: frame.shiftId,
+      deviceTime: frame.deviceTime,
+      timezone: frame.timezone,
+      pins,
+      manualCapture: original.manualCapture,
+    });
+    return { ...fresh, quantity: original.quantity };
+  }
   async #currentState(source: ReleaseProjectionSource, draft: ReleaseDraft) {
-    const current = currentPins(source, draft);
+    const current = draft.timezone === this.deps.timezone() ? currentPins(source, draft) : null;
     const reservations = await this.deps.store.reservations(
       draft.ownerKey,
       draft.pins.device.source_lot_id,
@@ -222,10 +310,11 @@ export class ReleaseService {
       if (stored?.event) return this.#readSaved(source, stored);
       const input = await this.#selectionSource(source, selection),
         choices = releaseChoices(input);
-      if (!stored) return { ...EMPTY, ...choices };
+      if (!stored || stored.draft.shiftId !== input.shift.id) return { ...EMPTY, ...choices };
       const current = await this.#currentState(source, stored.draft);
       const review = await this.#review(source, stored.draft.eventId);
       const evidencePending = await this.deps.store.evidencePending(stored.draft);
+      const canRestart = await this.#canRestart(stored.draft, input);
       if (!source.handle.isCurrent()) throw new ReleaseError("scope");
       return {
         ...choices,
@@ -234,9 +323,29 @@ export class ReleaseService {
         event: stored.event,
         gates: current.gates,
         ready: stored.draft.shiftId === input.shift.id,
+        canRestart,
         evidencePending,
       };
     });
+  }
+  async #canRestart(draft: ReleaseDraft, frame: SelectionFrame): Promise<boolean> {
+    if (draft.shiftId !== frame.shiftId) return false;
+    const selection = {
+      taskId: draft.pins.task.id,
+      deviceId: draft.pins.device.id,
+      manualCapture: draft.manualCapture,
+    };
+    const pins = resolveReleasePins({ ...frame, selection });
+    if (!pins || (await this.deps.store.taskCaptured(draft.ownerKey, pins.task.id))) return false;
+    const fresh = {
+      ...draft,
+      pins,
+      shiftId: frame.shiftId,
+      timezone: frame.timezone,
+      deviceTime: frame.deviceTime,
+      trainingVersionId: pins.eligibility.training_version_ids[0] ?? "",
+    };
+    return safeFreshOrigin(draft, fresh, this.deps.now());
   }
   async #readSaved(source: ReleaseProjectionSource, stored: StoredRelease): Promise<ReleaseState> {
     const review = await this.#review(source, stored.draft.eventId);
@@ -287,7 +396,7 @@ export class ReleaseService {
     const fence = await this.deps.attachments.session.capture(),
       shift = await this.deps.shift();
     const stored = await this.deps.store.read(id, fence.ownerKey);
-    if (!stored || stored.event || stored.draft.shiftId !== shift.id)
+    if (!stored || stored.event || stored.supersededBy || stored.draft.shiftId !== shift.id)
       throw new ReleaseError("stale_draft");
     return this.deps.bundle.withReleaseProjection((source) =>
       this.#writeContext({ ...input, source, stored, shift, fence }, apply),

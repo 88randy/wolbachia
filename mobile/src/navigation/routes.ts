@@ -33,6 +33,8 @@ export type Route =
   | { readonly name: "home" }
   | { readonly name: "inbox" }
   | { readonly name: "settings" }
+  | { readonly name: "history" }
+  | { readonly name: "training" }
   | { readonly name: "stylePreview" };
 
 export type RouteName = Route["name"];

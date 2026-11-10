@@ -1,5 +1,5 @@
 import type { SqlExecutor, SqlStatement, SqlRow } from "../../db/sql.ts";
-import { readText } from "../../db/sql.ts";
+import { readOptionalText, readText } from "../../db/sql.ts";
 import type { EvidenceFence } from "../../attachments/types.ts";
 import { CURRENT_FENCE, fenceParams } from "../../attachments/attachment-store.ts";
 import { toOutboxEvent } from "../../outbox/outbox-event.ts";
@@ -46,6 +46,13 @@ function snapshotVersion(rows: readonly SqlRow[], key: string): string {
   const snapshot: unknown = JSON.parse(readText(row, "value"));
   return isRecord(snapshot) && typeof snapshot.version === "string" ? snapshot.version : "";
 }
+function restartGuard(draft: ReleaseDraft): SqlStatement {
+  return {
+    sql: `SELECT 1 FROM release_draft WHERE id=? AND owner_key=? AND draft=?
+    AND event_id IS NULL AND superseded_by IS NULL`,
+    params: [draft.eventId, draft.ownerKey, JSON.stringify(draft)],
+  };
+}
 
 /** Authored releases share the existing outbox and immutable private-evidence journal. */
 export class ReleaseStore {
@@ -56,14 +63,14 @@ export class ReleaseStore {
 
   async list(owner: string): Promise<readonly ReleaseDraft[]> {
     const rows = await this.db.query(
-      "SELECT draft FROM release_draft WHERE owner_key=? ORDER BY rowid DESC",
+      "SELECT draft FROM release_draft WHERE owner_key=? AND superseded_by IS NULL ORDER BY rowid DESC",
       [owner],
     );
     return rows.map((row) => JSON.parse(readText(row, "draft")) as ReleaseDraft);
   }
   async read(id: string, owner: string) {
     const [row] = await this.db.query(
-      "SELECT draft,event_id FROM release_draft WHERE id=? AND owner_key=?",
+      "SELECT draft,event_id,superseded_by FROM release_draft WHERE id=? AND owner_key=?",
       [id, owner],
     );
     if (!row) return null;
@@ -75,6 +82,7 @@ export class ReleaseStore {
       draft: JSON.parse(readText(row, "draft")) as ReleaseDraft,
       raw: readText(row, "draft"),
       event: event ? toOutboxEvent(event) : null,
+      supersededBy: readOptionalText(row, "superseded_by"),
     };
   }
   begin(draft: ReleaseDraft, guards: readonly SqlStatement[]): Promise<void> {
@@ -86,9 +94,35 @@ export class ReleaseStore {
       },
     ]);
   }
+  /** Supersession and the new origin commit together; the original JSON and files never move. */
+  restart(
+    original: ReleaseDraft,
+    fresh: ReleaseDraft,
+    guards: readonly SqlStatement[],
+  ): Promise<void> {
+    if (
+      fresh.eventId === original.eventId ||
+      fresh.ownerKey !== original.ownerKey ||
+      fresh.evidence.length > 0 ||
+      fresh.gps !== null
+    )
+      throw new ReleaseError("stale_draft");
+    return this.db.runAtomically([
+      ...[...guards, restartGuard(original)].map(requireReleaseGuard),
+      {
+        sql: "UPDATE release_draft SET superseded_by=? WHERE id=?",
+        params: [fresh.eventId, original.eventId],
+      },
+      {
+        sql: "INSERT INTO release_draft(id,owner_key,draft) VALUES(?,?,?)",
+        params: [fresh.eventId, fresh.ownerKey, JSON.stringify(fresh)],
+      },
+    ]);
+  }
   draftGuard(input: { id: string; raw: string; fence: EvidenceFence }): SqlStatement {
     return {
-      sql: `SELECT 1 FROM release_draft WHERE id=? AND draft=? AND event_id IS NULL AND owner_key=? AND ${CURRENT_FENCE}`,
+      sql: `SELECT 1 FROM release_draft WHERE id=? AND draft=? AND event_id IS NULL
+        AND superseded_by IS NULL AND owner_key=? AND ${CURRENT_FENCE}`,
       params: [input.id, input.raw, input.fence.ownerKey, ...fenceParams(input.fence)],
     };
   }
@@ -96,7 +130,7 @@ export class ReleaseStore {
     return this.db.runAtomically([
       ...guards.map(requireReleaseGuard),
       {
-        sql: "UPDATE release_draft SET draft=? WHERE id=? AND event_id IS NULL",
+        sql: "UPDATE release_draft SET draft=? WHERE id=? AND event_id IS NULL AND superseded_by IS NULL",
         params: [JSON.stringify(draft), draft.eventId],
       },
     ]);
@@ -105,7 +139,7 @@ export class ReleaseStore {
     return [
       ...guards.map(requireReleaseGuard),
       {
-        sql: "UPDATE release_draft SET draft=?,event_id=? WHERE id=? AND event_id IS NULL",
+        sql: "UPDATE release_draft SET draft=?,event_id=? WHERE id=? AND event_id IS NULL AND superseded_by IS NULL",
         params: [JSON.stringify(draft), draft.eventId, draft.eventId],
       },
     ];
