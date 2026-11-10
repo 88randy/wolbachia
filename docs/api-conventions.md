@@ -1809,3 +1809,23 @@ the18 older kinds remain. Persistence is not a claim of courier delivery or
 operational biological certification. Structural validation remains400 fields,
 absent actions403, unknown/foreign/hidden subjects404, typed state/configuration/
 independence/material conflicts409, real NOWAIT contention429 with Retry-After.
+
+## Home, universal search and record history (#123, B-27)
+
+All three endpoints need `home.read` (seeded for every internal profile and admin; `government`
+has only `portal.read`). Each record type then rechecks its own read permission and both scope
+dimensions through the visibility rule of its domain (incidents: `scoped_incidents`; shipments:
+`shipment_rows`; motorcycles, quadrants, sampling points: the paired action/center/quadrant
+filter). A type the caller cannot read is absent from search (no group, no count) and its history
+is `404`; unknown, foreign, out-of-scope and hidden-type codes give the same `404` or empty
+answer. Responses are `Cache-Control: private, no-store`. The organization is the membership's,
+never a parameter.
+
+| Endpoint | Contract |
+| --- | --- |
+| `GET /home/summary/` | `{cutoff, cards[{key, value, resource, filters, cutoff}], critical[], attention[], link_filters{critical, attention}, support}`. Card values use the same function and filters as the incident list they link to (`kind=reported` plus `state`, `severity`, `overdue`, `escalated`), so card and list cannot differ. `critical` is open critical incidents, `attention` is overdue ones (5 each, `{type, code, severity, deadline}`). A member with `home.read` but no readable type gets empty lists and `support: {contact}` (the organization `support_contact`); everyone else gets `support: null`. |
+| `GET /search/?q=&include_voided=&type=&page=&page_size=` | `q` is a case-insensitive code prefix (1-50 chars, no NUL; else `400 validation_error` on `fields.q`). Groups per readable type: `{type, count, hits[{type, id, code, is_voided}]}`; `count` covers only accessible records; `page`/`page_size` (default 5, max 50) slice every group, `type` limits to one. Voided records are excluded unless `include_voided=true`, then flagged `is_voided`. Types: `incident`, `motorcycle`, `quadrant`, `sampling_point`, `shipment`. |
+| `GET /records/{type}/{code}/history/?cursor=&page_size=` | The path segment is the human code, never a database id. `{record, results[], next_cursor}`, newest first (default 25, max 100). Entry: `{source_type, source_id, occurred_at, kind, author{username} or null, reason or null, refs[{type, code}], params}`; `kind` is a code, never text. The cursor is opaque and keyed by (time, source type, row id), so it stays stable while rows are appended; a malformed one is `400` with `fields.cursor` code `invalid_cursor`. Voided provenance (reason, author, time) is always included. Sources: incident events, its field event and that event void; motorcycle block events and void; quadrant and sampling-point versions and point decisions; shipment creation, revisions (`supersedes`) and void. A related shipment is listed only when the caller can read it. |
+
+No model, migration or write path is added. Samples and lab count facts are not yet producers:
+they are a follow-up (they need the sample source-context rule of `lab.samples.selectors`).

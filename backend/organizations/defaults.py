@@ -22,6 +22,7 @@ from catalogs.permissions import (
     CATALOG_READ,
 )
 from catalogs.seeds import missing_catalog_slugs, seed_default_catalogs
+from discovery.permissions import HOME_READ
 from field_sync.permissions import FIELD_BOOTSTRAP, FIELD_EVENT_SYNC
 from fleet.permissions import MOTORCYCLE_SERVICE_CLEAR
 from geography.permissions import (
@@ -83,6 +84,7 @@ from uploads.limits import FIELD_UPLOAD
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (
+    HOME_READ,
     CATALOG_READ,
     RULE_PARAMETER_READ,
     "organization.read",
@@ -90,6 +92,7 @@ READ_ONLY_CODES = (
     *NOTIFICATION_CODES,
 )
 ADMIN_CODES = (
+    HOME_READ,
     *ADMIN_PERSONNEL_PERMISSION_CODES,
     *NOTIFICATION_CODES,
     PERMIT_MANAGE,

@@ -341,3 +341,7 @@ invented. #115 owns independent execution/adjudication and paddle reuse. See
 lab/README.md for current paired authority, exact replay, configuration gates,
 lock/SQL boundaries and criterion owners. Lab is covered and strict; the existing
 combined statement-coverage gate stays 85%.
+
+## discovery (#123)
+
+Read-only home summary, grouped code search and unified record history (`/home/summary/`, `/search/`, `/records/{type}/{code}/history/`). `sources.py` is the registry of record types and reuses each domain's own visibility selector; `timeline.py` merges the append-only tables of one record with a stable (time, source type, id) cursor. No models. Contract: `docs/api-conventions.md`.

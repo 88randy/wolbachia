@@ -4255,6 +4255,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/home/summary/:
+    get:
+      operationId: home_summary_retrieve
+      description: Home, search and history share one action permission; each type
+        rechecks its own.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - home
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HomeSummary'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/incident-types/:
     get:
       operationId: incident_types_list
@@ -10767,6 +10797,59 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/records/{record_type}/{code}/history/:
+    get:
+      operationId: records_history_retrieve
+      description: Home, search and history share one action permission; each type
+        rechecks its own.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: code
+        schema:
+          type: string
+        required: true
+      - in: query
+        name: cursor
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 512
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+          default: 25
+      - in: path
+        name: record_type
+        schema:
+          type: string
+        required: true
+      tags:
+      - records
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoryResponse'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/recount-requests/:
     get:
       operationId: recount_requests_list
@@ -13113,6 +13196,79 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ReassignResult'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/search/:
+    get:
+      operationId: search_retrieve
+      description: Home, search and history share one action permission; each type
+        rechecks its own.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: page
+        schema:
+          type: integer
+          maximum: 1000
+          minimum: 1
+          default: 1
+      - in: query
+        name: page_size
+        schema:
+          type: integer
+          maximum: 50
+          minimum: 1
+          default: 5
+      - in: query
+        name: q
+        schema:
+          type: string
+          minLength: 1
+          maxLength: 50
+        required: true
+      - in: query
+        name: type
+        schema:
+          enum:
+          - incident
+          - motorcycle
+          - quadrant
+          - sampling_point
+          - shipment
+          type: string
+          minLength: 1
+        description: |-
+          * `incident` - incident
+          * `motorcycle` - motorcycle
+          * `quadrant` - quadrant
+          * `sampling_point` - sampling_point
+          * `shipment` - shipment
+      tags:
+      - search
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -19975,6 +20131,22 @@ components:
       - void_reason
       - void_reason_code
       - voided_at
+    HistoryResponse:
+      type: object
+      properties:
+        record:
+          $ref: '#/components/schemas/SearchHit'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TimelineEntry'
+        next_cursor:
+          type: string
+          nullable: true
+      required:
+      - next_cursor
+      - record
+      - results
     HistorySubject:
       type: object
       properties:
@@ -19989,6 +20161,57 @@ components:
       required:
       - center_id
       - quadrant_id
+    HomeItem:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        code:
+          type: string
+        severity:
+          type: string
+        deadline:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - code
+      - deadline
+      - severity
+      - type
+    HomeSummary:
+      type: object
+      properties:
+        cutoff:
+          type: string
+          format: date-time
+        cards:
+          type: array
+          items:
+            $ref: '#/components/schemas/SummaryCard'
+        critical:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeItem'
+        attention:
+          type: array
+          items:
+            $ref: '#/components/schemas/HomeItem'
+        link_filters:
+          type: object
+          additionalProperties:
+            $ref: '#/components/schemas/LinkFilter'
+        support:
+          allOf:
+          - $ref: '#/components/schemas/Support'
+          nullable: true
+      required:
+      - attention
+      - cards
+      - critical
+      - cutoff
+      - link_filters
+      - support
     IdentifiedExtra:
       type: object
       properties:
@@ -22491,6 +22714,18 @@ components:
       required:
       - courier
       - issued_at
+    LinkFilter:
+      type: object
+      properties:
+        resource:
+          type: string
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+      required:
+      - filters
+      - resource
     Load:
       type: object
       properties:
@@ -29620,6 +29855,16 @@ components:
       - evidence_ids
       - method_version
       - reason
+    RelatedRef:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        code:
+          type: string
+      required:
+      - code
+      - type
     Release:
       type: object
       description: |-
@@ -32656,6 +32901,50 @@ components:
       required:
       - ids
       - mode
+    SearchGroup:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        count:
+          type: integer
+        hits:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchHit'
+      required:
+      - count
+      - hits
+      - type
+    SearchHit:
+      type: object
+      properties:
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        is_voided:
+          type: boolean
+      required:
+      - code
+      - id
+      - is_voided
+      - type
+    SearchResponse:
+      type: object
+      properties:
+        q:
+          type: string
+        groups:
+          type: array
+          items:
+            $ref: '#/components/schemas/SearchGroup'
+      required:
+      - groups
+      - q
     ServiceKindEnum:
       enum:
       - routine
@@ -33418,6 +33707,28 @@ components:
       - source_ids
       - supply
       - unit
+    SummaryCard:
+      type: object
+      properties:
+        resource:
+          type: string
+        filters:
+          type: object
+          additionalProperties:
+            type: string
+        key:
+          type: string
+        value:
+          type: integer
+        cutoff:
+          type: string
+          format: date-time
+      required:
+      - cutoff
+      - filters
+      - key
+      - resource
+      - value
     Supply:
       type: object
       description: |-
@@ -34156,6 +34467,13 @@ components:
       - is_biological
       - label
       - unit
+    Support:
+      type: object
+      properties:
+        contact:
+          type: string
+      required:
+      - contact
     SyncBatchRequest:
       type: object
       description: |-
@@ -34337,6 +34655,49 @@ components:
         * `place` - place
         * `check` - check
         * `release` - release
+    TimelineAuthor:
+      type: object
+      properties:
+        username:
+          type: string
+      required:
+      - username
+    TimelineEntry:
+      type: object
+      properties:
+        source_type:
+          type: string
+        source_id:
+          type: string
+          format: uuid
+        occurred_at:
+          type: string
+          format: date-time
+        kind:
+          type: string
+        author:
+          allOf:
+          - $ref: '#/components/schemas/TimelineAuthor'
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        refs:
+          type: array
+          items:
+            $ref: '#/components/schemas/RelatedRef'
+        params:
+          type: object
+          additionalProperties: {}
+      required:
+      - author
+      - kind
+      - occurred_at
+      - params
+      - reason
+      - refs
+      - source_id
+      - source_type
     TrainingRead:
       type: object
       description: |-
@@ -34906,6 +35267,20 @@ components:
       - proof_roles
       - reference
       - supply_version_id
+    TypeEnum:
+      enum:
+      - incident
+      - motorcycle
+      - quadrant
+      - sampling_point
+      - shipment
+      type: string
+      description: |-
+        * `incident` - incident
+        * `motorcycle` - motorcycle
+        * `quadrant` - quadrant
+        * `sampling_point` - sampling_point
+        * `shipment` - shipment
     UnavailableReasonEnum:
       enum:
       - rule_context_unavailable
