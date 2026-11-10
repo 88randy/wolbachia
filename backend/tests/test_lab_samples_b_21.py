@@ -364,6 +364,45 @@ def test_in_review_collection_has_no_effect_and_authorized_acceptance_keeps_inge
     assert WolbachiaSample.objects.count() == 1
 
 
+@pytest.mark.django_db
+@pytest.mark.parametrize(("action", "expected_status"), [("accept", 409), ("void", 201)])
+def test_pending_sample_review_after_collector_permission_loss_has_no_effects(
+    samples_context, action, expected_status
+):
+    from reviews.models import ReviewDecision, ReviewItem
+
+    context = samples_context
+    context.field.batch = replace(context.field.batch, is_final_upload=True)
+    capture = sample_capture(context)
+    assert ingest(context.field, capture).status == "in_review"
+    review = ReviewItem.objects.get(field_event_id=capture.id)
+    context.field.profile.permission_codes = [
+        code for code in context.field.profile.permission_codes if code != "sample.collect"
+    ]
+    context.field.profile.save(update_fields=["permission_codes"])
+    client = APIClient()
+    client.force_authenticate(context.actor.user)
+
+    response = client.post(
+        f"/api/v1/review-items/{review.pk}/{action}/",
+        {
+            "expected_revision": 0,
+            "reason": "Require current collector permission before acceptance",
+        },
+        format="json",
+    )
+
+    assert response.status_code == expected_status, response.data
+    if action == "accept":
+        assert response.data["code"] == "review_blocked"
+        assert not ReviewDecision.objects.filter(review_item=review).exists()
+    else:
+        assert ReviewDecision.objects.get(review_item=review).is_terminal
+    assert not WolbachiaSample.objects.exists()
+    assert not SampleReceipt.objects.exists()
+    assert not WolbachiaResultAttempt.objects.exists()
+
+
 @pytest.mark.django_db(transaction=True)
 def test_foreign_reading_lot_and_canonical_release_are_opaque(
     samples_context, org_b, make_member, monkeypatch, settings, tmp_path

@@ -61,12 +61,12 @@ class SampleReviewAdapter(ReviewAdapter):
         return {"sample": deepcopy(ctx.observed_facts["sample"])}
 
     def inspect_existing(self, source: FieldEvent, ctx: EventContext) -> ExistingEffect:
-        collection_facts(ctx, validated_original_payload(source))
         sample = WolbachiaSample.objects.filter(
             organization=source.organization, event_id=source.pk
         ).first()
         if sample is None:
             return ExistingEffect()
+        collection_facts(ctx, validated_original_payload(source))
         if sample.created_by_id != source.created_by_id:
             return ExistingEffect("partial", blockers=("sample_effect_unavailable",))
         return ExistingEffect(

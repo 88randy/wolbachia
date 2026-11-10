@@ -34,8 +34,11 @@ def source_references(ctx: EventContext) -> set[UUID]:
     if not payload.is_valid():
         return set()
     values = dict(payload.validated_data)
-    authorize_collection(ctx, values)
-    source = resolve_source(ctx.organization, values["source_ref"])
+    try:
+        authorize_collection(ctx, values)
+        source = resolve_source(ctx.organization, values["source_ref"])
+    except (EventRejected, Http404):
+        return set()
     return {source.event_id} if source.event_id is not None else set()
 
 
