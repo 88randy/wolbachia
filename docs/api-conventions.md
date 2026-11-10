@@ -67,10 +67,18 @@ NOWAIT contention returns429 with Retry-After. No PATCH or DELETE is provided.
 
 `official_document` input is the actor's own verified unbound public upload UUID;
 the version retains the actual UploadVerification identity and authored review
-attestation. Current `field.upload` is independently required. **[ASSUMPTION]**
-the authorized reviewer attests that this verified JPEG/PNG scan is an official
-signed/reviewed permit document and that its polygon matches it. The image verifier
-does not authenticate a digital signature or accept arbitrary PDF bytes. Retained
+attestation. Current `field.upload` is independently required (#343). The upload must
+be `application/pdf`, `image/jpeg` or `image/png` (scans); any other type is rejected with 400
+`permit.document_type_invalid` on `official_document_id`. One upload backs at most one
+permit version: reuse is 409 `permit_document_already_bound` (unique constraint as
+backstop). **[ASSUMPTION]** the authorized reviewer attests that this verified document
+is an official signed/reviewed permit and that its polygon matches it. **[DECISION #343]**
+PDF, JPEG and PNG are all accepted because the generic `uploads` app only accepts images
+today (real PDF support in `uploads` is a separate follow-up; decision 171 already covers
+the review attestation). The verifier does not authenticate a digital
+signature. Release `provenance` exposes regulatory ids only (permit version, type,
+document, lot version, schedule task, transit policy/mode, quantity), never courier,
+certification, reviewer, assignment or receipt ids. Retained
 verification grants no attachment download or reparenting capability. Risk colors
 and courier-drawn polygons never grant regulatory authority.
 
