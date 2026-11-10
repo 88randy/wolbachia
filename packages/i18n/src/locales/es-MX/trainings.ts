@@ -150,4 +150,6 @@ export const trainings = {
   "trainings.mobile.revision": "Revisión",
   "trainings.mobile.source": "Registro original",
   "trainings.mobile.context": "Centro y cuadrante",
+  "trainings.state.configured": "Configurado",
+  "trainings.facts.certificateCount": "Certificados vigentes: {count}",
 } satisfies AreaCatalog<"trainings">;

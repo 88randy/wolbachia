@@ -11,7 +11,7 @@ export function ReceptionMissingPhoto({ line, model, scope }: ReceptionLineProps
   return (
     <TransferEvidence
       scope={scope}
-      label={t("transfers.line.photo", { id: line.piece_id ?? line.lot_id })}
+      label={t("transfers.line.photo", { id: line.lot_code })}
       isBlocked={model.write.isBusy || model.write.isFrozen}
       onVerified={verifyPhoto}
     />

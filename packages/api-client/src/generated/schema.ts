@@ -6862,6 +6862,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag_disposal` - bag_disposal
@@ -6918,6 +6919,7 @@ export interface components {
             dependency_proof: {
                 [key: string]: unknown;
             };
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag` - bag
@@ -6945,6 +6947,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -7000,6 +7003,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `severe_check` - Severe Check
@@ -7132,6 +7136,7 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+            readonly created_by_name?: string | null;
         };
         /** @description `sort` is optional: an omitted value appends the item at the end of the catalog. */
         CatalogItemCreateRequest: {
@@ -7199,6 +7204,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
         CertificationRevokeRequest: {
@@ -7378,6 +7384,7 @@ export interface components {
             readonly created_by: string;
             readonly events: components["schemas"]["CommunityEvent"][];
             readonly incident: components["schemas"]["CommunityIncidentReference"] | null;
+            readonly created_by_name?: string | null;
         };
         CommunityActivityPage: {
             count: number;
@@ -7406,6 +7413,7 @@ export interface components {
             created_by: string;
             reason: string;
             reason_code: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `create` - create
@@ -7550,6 +7558,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ConditionBlockingIncident: {
             /** Format: uuid */
@@ -7805,6 +7814,7 @@ export interface components {
             /** Format: uuid */
             readonly created_by: string | null;
             readonly expected_revision: number;
+            readonly created_by_name?: string | null;
         };
         DeliveryWriteRequest: {
             /** Format: uuid */
@@ -7859,6 +7869,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -8003,6 +8014,7 @@ export interface components {
             /** Format: uuid */
             readonly created_by: string;
             readonly completion_sequence: number | null;
+            readonly created_by_name?: string | null;
         };
         EvaluationCreateRequest: {
             /** Format: uuid */
@@ -8116,6 +8128,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
         EvaluationVoidRequest: {
@@ -8186,6 +8199,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ExecuteInventoryIntentRequest: {
             /** Format: uuid */
@@ -8337,6 +8351,7 @@ export interface components {
             readonly server_received_at: string;
             readonly rules_version: string;
             readonly catalog_version: string;
+            readonly created_by_name?: string | null;
         };
         GenerateResult: {
             created: number;
@@ -8398,6 +8413,7 @@ export interface components {
             gps: unknown;
             payload: unknown;
             effects: unknown;
+            readonly author_name?: string | null;
         };
         HistoryResponse: {
             record: components["schemas"]["SearchHit"];
@@ -8504,6 +8520,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -8529,6 +8546,7 @@ export interface components {
             /** Format: date-time */
             readonly cleared_at: string | null;
             readonly clearance: components["schemas"]["InspectionClearanceRead"] | null;
+            readonly created_by_name?: string | null;
         };
         IncidentActionPermissions: {
             comment: boolean;
@@ -8598,6 +8616,8 @@ export interface components {
             readonly created_at: string;
             readonly policy_version: string;
             readonly author_display: string | null;
+            readonly owner_display: string | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `report` - report
@@ -8620,6 +8640,7 @@ export interface components {
             verified_at: string | null;
             content_type: string | null;
             size_bytes: number | null;
+            filename?: string | null;
         };
         IncidentLinkedRecord: {
             kind: (components["schemas"]["IncidentLinkedRecordKindEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -8755,6 +8776,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         IncidentTypeSnapshot: {
             /** Format: uuid */
@@ -8870,6 +8892,7 @@ export interface components {
             readonly reviewer: string;
             readonly reason: string;
             readonly evidence_ids: string[];
+            readonly reviewer_name?: string | null;
         };
         Intervention: {
             /** Format: uuid */
@@ -8890,6 +8913,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         InterventionRequestRequest: {
             /** Format: uuid */
@@ -8990,6 +9014,7 @@ export interface components {
             expected_revision: number;
             current_revision?: number;
             is_current?: boolean;
+            readonly created_by_name?: string | null;
         };
         LabCountOutcome: {
             count: components["schemas"]["LabCount"];
@@ -9087,6 +9112,7 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @enum {string} */
         LabIndependentQAStateEnum: "awaiting_second" | "awaiting_third" | "awaiting_selection" | "resolved" | "superseded" | "awaiting_configuration" | "awaiting_material";
@@ -9111,6 +9137,7 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @enum {string} */
         LabIndependentRoleEnum: "second" | "third";
@@ -9136,6 +9163,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         LabMethodDecisionRequest: {
             expected_revision: number;
@@ -9175,6 +9203,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `verify` - verify
@@ -9213,6 +9242,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         LabMethodWriteRequest: {
             code?: string;
@@ -9357,11 +9387,13 @@ export interface components {
             reading_id: string;
             /** Format: uuid */
             bag_id: string | null;
+            bag_code?: string | null;
             kind: components["schemas"]["LabReceiptKindEnum"];
             /** Format: date-time */
             created_at: string;
             /** Format: uuid */
             created_by: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag` - bag
@@ -9407,6 +9439,7 @@ export interface components {
             expected_revision: number;
             current_revision?: number;
             is_current?: boolean;
+            readonly created_by_name?: string | null;
         };
         LabRejectionOutcome: {
             rejection: components["schemas"]["LabRejection"];
@@ -9546,6 +9579,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         LocationWriteRequest: {
             /** @default 0 */
@@ -9640,6 +9674,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         LotPlacementOption: {
             /**
@@ -9721,6 +9756,7 @@ export interface components {
             piece_id: string | null;
             /** Format: uuid */
             unit_version_id: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `lot` - lot
@@ -9901,6 +9937,7 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly user: string;
+            readonly user_display_name: string | null;
             readonly profiles: string[];
             readonly scope: components["schemas"]["MeScope"];
             readonly is_active: boolean;
@@ -9909,6 +9946,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         MembershipChangeRequest: {
             expected_revision: number;
@@ -9988,6 +10026,8 @@ export interface components {
             readonly voided_by: string | null;
             readonly void_reason: string;
             readonly void_reason_code: string;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /** @description One checklist line; `item_code` is the code of the catalog item. */
         MotorcycleCheck: {
@@ -10028,6 +10068,8 @@ export interface components {
             readonly void_reason: string;
             readonly void_reason_code: string;
             readonly metrics: components["schemas"]["MotorcycleMetrics"];
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         MotorcycleMetrics: {
             /** Format: uuid */
@@ -10108,6 +10150,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         NextDayTask: {
             /** Format: uuid */
@@ -10133,6 +10176,7 @@ export interface components {
             readonly quadrant_id: string | null;
             /** Format: uuid */
             readonly recipient_membership_id: string;
+            readonly recipient_name: string | null;
             revision: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -10399,6 +10443,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         OvitrapAdvisory: {
             schema_version: number;
@@ -12030,6 +12075,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitBundle: {
             /** Format: uuid */
@@ -12089,6 +12135,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitSuspensionWriteRequest: {
             reason: string;
@@ -12112,6 +12159,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitTypeWriteRequest: {
             code: string;
@@ -12149,6 +12197,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitVersionAppendRequest: {
             /** Format: uuid */
@@ -12274,6 +12323,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PointWrite: {
             point: components["schemas"]["SamplingPoint"];
@@ -12401,6 +12451,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ProtocolTypeOption: {
             /** Format: uuid */
@@ -12459,6 +12510,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         QuadrantChange: {
             sequence: number;
@@ -12480,6 +12532,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -12575,6 +12628,7 @@ export interface components {
             /** Format: date-time */
             readonly created_at: string;
             readonly point_resolutions: components["schemas"]["ExcludedPointResolution"][];
+            readonly created_by_name?: string | null;
         };
         QuadrantWrite: {
             version: components["schemas"]["QuadrantVersion"];
@@ -12653,6 +12707,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag_disposed` - bag_disposed
@@ -12766,6 +12821,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         ReceptionPolicyContext: {
             revision: number;
@@ -12985,6 +13041,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ReleaseBlocker: {
             reason: string;
@@ -13119,6 +13176,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -13140,6 +13198,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `active` - active
@@ -13182,6 +13241,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -13216,6 +13276,7 @@ export interface components {
             readonly effective_from: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         /** @description Regulatory ids only: no courier, certification, reviewer, assignment or receipt ids. */
         ReleaseProvenance: {
@@ -13287,6 +13348,7 @@ export interface components {
             /** Format: uuid */
             readonly point: string;
             readonly point_code: string;
+            readonly ovitrap_code: string;
             /** Format: uuid */
             readonly point_version: string;
             readonly old_location: unknown;
@@ -13320,6 +13382,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         RelocationDecision: {
             /** Format: uuid */
@@ -13339,6 +13402,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `approved` - approved
@@ -13427,6 +13491,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         RemovalResolutionRequestRequest: {
             expected_state: components["schemas"]["ExpectedStateEnum"];
@@ -13480,6 +13545,7 @@ export interface components {
             readonly evidence: components["schemas"]["IncidentEvidence"][];
             readonly action_permissions: components["schemas"]["IncidentActionPermissions"];
             readonly action_prerequisites: components["schemas"]["IncidentActionPrerequisites"] | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `access` - Access
@@ -13585,6 +13651,8 @@ export interface components {
             /** Format: uuid */
             readonly document_reference: string | null;
             readonly notes: string;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /**
          * @description * `missing` - missing
@@ -13677,7 +13745,9 @@ export interface components {
             readonly created_at: string;
             readonly safety_disposition: components["schemas"]["ReviewSafetyDisposition"] | null;
             readonly incident_id: string | null;
+            readonly incident_code: string | null;
             readonly effect_receipt: components["schemas"]["ReviewEffectReceipt"] | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `accept` - accept
@@ -13729,6 +13799,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ReviewEvaluation: {
             can_accept: boolean;
@@ -13770,6 +13841,7 @@ export interface components {
             /** Format: uuid */
             declared_void_target_uuid: string | null;
             approval_current: boolean | null;
+            readonly decided_by_name?: string | null;
         };
         /**
          * @description A review item for the supervisor's list: what was flagged, why (`code` + `params`) and who
@@ -13851,6 +13923,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ReviewState: {
             revision: number;
@@ -13908,6 +13981,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `signature` - signature
@@ -14018,6 +14092,8 @@ export interface components {
             readonly voided_by_username: string | null;
             readonly void_reason: string;
             readonly void_reason_code: string;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /** @description `effective_from` is a local calendar date (`YYYY-MM-DD`): the server resolves the instant. */
         RuleParameterVersionCreateRequest: {
@@ -14228,11 +14304,13 @@ export interface components {
             readonly code: string;
             /** Format: uuid */
             readonly block: string;
+            readonly block_code: string;
             readonly current_version: components["schemas"]["PointVersion"] | null;
             /** Format: uuid */
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         SamplingPointBundle: {
             /** Format: uuid */
@@ -14349,6 +14427,8 @@ export interface components {
             readonly service_interval_km: number | null;
             readonly service_interval_days: number | null;
             readonly due_metric_provenance: unknown;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -14436,6 +14516,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ShiftDecisionRequestRequest: {
             reason: string;
@@ -14678,6 +14759,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         SupplyAssignmentRead: {
             /** Format: uuid */
@@ -15053,6 +15135,7 @@ export interface components {
             params: {
                 [key: string]: unknown;
             };
+            readonly author_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -15132,6 +15215,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         TransferAuthorization: {
             /** Format: uuid */
@@ -15150,7 +15234,7 @@ export interface components {
             /** Format: date-time */
             readonly valid_until: string;
             readonly reference: string;
-            readonly created_by_name: string | null;
+            readonly created_by_name?: string | null;
             readonly status: string;
             readonly revoked_at: unknown;
             readonly revocation_reason: string | null;
@@ -15203,6 +15287,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `prepared` - prepared
@@ -15252,6 +15337,7 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly lot_id: string;
+            readonly lot_code: string;
             /** Format: uuid */
             readonly location_id: string;
             /** Format: uuid */
@@ -15272,6 +15358,7 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly lot_id: string;
+            readonly lot_code: string;
             /** Format: uuid */
             readonly piece_id: string | null;
             /** Format: uuid */

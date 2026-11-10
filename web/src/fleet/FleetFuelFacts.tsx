@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
+import { useCouriers } from "../scheduling/use-directories";
 import { useFormatDateTime } from "../format/use-format-date-time";
 import { FleetSourceLink } from "./FleetSourceLink";
 import { FleetProvenance } from "./FleetProvenance";
@@ -10,7 +11,7 @@ function BaselineReference({ load, code }: FuelProps) {
   if (!load.baseline) return <>{t("fleet.summary.unknown")}</>;
   return (
     <FleetSourceLink code={code} target={{ tab: "fuel", id: load.baseline }}>
-      {load.baseline}
+      {t("fleet.fuel.previousLoad")}
     </FleetSourceLink>
   );
 }
@@ -18,7 +19,7 @@ function ReceiptReference({ load }: FuelProps) {
   const { t } = useTranslation();
   return (
     <>
-      {load.receipt_upload_id ?? t("fleet.summary.unknown")}
+      {load.receipt_upload_id ? t("fleet.fuel.receiptAttached") : t("fleet.summary.unknown")}
       {load.receipt_pending && <p>{t("fleet.fuel.pending")}</p>}
     </>
   );
@@ -26,12 +27,11 @@ function ReceiptReference({ load }: FuelProps) {
 function FuelReferences(props: FuelProps) {
   const { load } = props;
   const { t } = useTranslation();
+  const courierName = useCouriers([]).nameOf;
   return (
     <FleetFactList
       facts={[
-        ["fleet.history.event", load.event],
-        ["fleet.fuel.shift", load.shift],
-        ["fleet.history.courier", load.courier],
+        ["fleet.history.courier", courierName(load.courier)],
         ["fleet.fuel.baseline", <BaselineReference key="baseline" {...props} />],
         ["fleet.fuel.receipt", <ReceiptReference key="receipt" {...props} />],
         ["fleet.fuel.full", t(load.is_full_refill ? "fleet.fuel.full" : "fleet.fuel.partial")],

@@ -1,20 +1,25 @@
 import { useTranslation } from "react-i18next";
+import { useFormatDateTime } from "../../format/use-format-date-time";
+import { nameOrDash } from "../../lookups/use-reference-names";
 import type { Review } from "./review-query";
-import styles from "./reviews.module.css";
+
 export function ReviewDecisionEvidence({ decision }: { decision: Review["timeline"][number] }) {
   const { t } = useTranslation();
+  const format = useFormatDateTime();
+  const receipt = decision.effect_receipt;
   return (
     <>
-      {decision.effect_receipt && (
-        <details>
-          <summary>{t("reviews.workspace.receipt")}</summary>
-          <pre className={styles.snapshot}>{JSON.stringify(decision.effect_receipt, null, 2)}</pre>
-        </details>
+      {receipt && (
+        <p>
+          {t("reviews.workspace.effectConfirmed", {
+            author: nameOrDash(receipt.created_by_name),
+            time: format(receipt.created_at),
+          })}
+        </p>
       )}
-      <details>
-        <summary>{t("reviews.workspace.decisionEvidence")}</summary>
-        <pre className={styles.snapshot}>{JSON.stringify(decision.evidence_ids, null, 2)}</pre>
-      </details>
+      {decision.evidence_ids.length > 0 && (
+        <p>{t("reviews.workspace.evidenceCount", { count: decision.evidence_ids.length })}</p>
+      )}
     </>
   );
 }

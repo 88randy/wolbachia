@@ -47,4 +47,6 @@ export const relocations = {
   "relocations.workspace.samePoint":
     "Compara la ubicación anterior y la propuesta. El folio del punto se conserva.",
   "relocations.workspace.openSelected": "Revisar propuesta seleccionada",
+  "relocations.workspace.oldLocationPlain": "Ubicación anterior",
+  "relocations.workspace.newLocationPlain": "Ubicación propuesta",
 };

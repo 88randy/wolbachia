@@ -29,7 +29,7 @@ export function ReviewTray({ scope }: { scope: ReviewScope }) {
         data={operationTableData(query, table.state.page, REVIEW_PAGE_SIZE)}
         rowActions={(row) => (
           <Link to="/operations/reviews" search={{ ...search, item: row.id }}>
-            {t("reviews.workspace.open", { id: row.event_id })}
+            {t("reviews.workspace.open", { id: row.code })}
           </Link>
         )}
       />

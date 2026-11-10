@@ -117,4 +117,5 @@ export const incidents = {
   "incidents.evidence.failed": "No se verificó la evidencia. Reintenta la misma carga.",
   "incidents.evidence.noPermission":
     "Para adjuntar evidencia se requiere un responsable con permiso de carga.",
+  "incidents.workspace.eventStateNamed": "{state} · {severity} · responsable: {owner}",
 } as const;

@@ -12,7 +12,7 @@ class OrgScopedModelSerializer(AuthorNamesMixin, serializers.ModelSerializer[Any
     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
     never link a record to another organization's data. Relations to models that are not
     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
-    build with `ImproperlyConfigured`. User-id fields (`created_by`...) also get a read-only `<field>_name`.
+    build with `ImproperlyConfigured`.
     """
 
     serializer_related_field = OrgScopedPrimaryKeyRelatedField

@@ -46,6 +46,11 @@ def resolve_author_names(
 
 
 def _user_id_of(item: Any, field: str) -> str | None:
+    if "." in field:  # a path through relations, e.g. "recipient_membership.user"
+        *path, last = field.split(".")
+        for part in path:
+            item = getattr(item, part, None)
+        return None if item is None else _user_id_of(item, last)
     if isinstance(item, dict):
         value = item.get(field, item.get(f"{field}_id"))
     else:
@@ -109,7 +114,7 @@ class AuthorNameField(serializers.Field[Any, Any, Any, Any]):
 
 
 class AuthorNamesMixin:
-    """Adds a read-only `<field>_name` next to each user-id field the serializer exposes."""
+    # Adds a read-only `<field>_name` next to each user-id field the serializer exposes.
 
     def get_fields(self) -> dict[str, serializers.Field[Any, Any, Any, Any]]:
         fields: dict[str, serializers.Field[Any, Any, Any, Any]] = super().get_fields()  # type: ignore[misc]

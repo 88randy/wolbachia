@@ -37,7 +37,6 @@ export function ActivitiesTable({ onVoid, actions }: Props) {
   const query = useQuery(activitiesOptions(useApiClient(), useSessionIdentity(), controller.state));
   const formatWhen = useFormatDateTime();
   const reasonLabel = useVoidReasonLabel();
-  const author = () => t("community.author.unknown");
   return (
     <>
       <ActivityTotals totals={query.data?.totals} />
@@ -48,7 +47,7 @@ export function ActivitiesTable({ onVoid, actions }: Props) {
         getRowId={getActivityId}
         controller={controller}
         data={pageTableData(query, controller.state.page, COMMUNITY_PAGE_SIZE)}
-        voidOf={(row) => activityVoidInfo(row, { author, formatWhen, reasonLabel })}
+        voidOf={(row) => activityVoidInfo(row, { formatWhen, reasonLabel })}
         rowActions={(row) =>
           row.is_voided ? null : (
             <Button

@@ -60,14 +60,8 @@ export function FaultClearanceDialog(props: FleetOperationProps & { scope: Fleet
     draft.files.length > 0 && draft.files.every((file) => !!file.verifiedAt && !!file.uploadId);
   return (
     <dialog {...modal} className={dialogStyles.dialog} aria-labelledby={title}>
-      <h2 id={title}>{t("fleet.clear.title", { record: draft.motorcycle })}</h2>
+      <h2 id={title}>{t("fleet.clear.title", { record: scope.code })}</h2>
       <p>{t("fleet.clear.hint")}</p>
-      <p>
-        {t("fleet.clear.fault")}: {draft.fault?.id}
-      </p>
-      <p>
-        {t("fleet.clear.revision")}: {draft.revision}
-      </p>
       <FleetOperationForm draft={draft} operations={operations} verified={verified}>
         <ClearanceReason draft={draft} operations={operations} />
         <FleetFaultEvidence draft={draft} operations={operations} />

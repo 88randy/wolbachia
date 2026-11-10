@@ -16,7 +16,7 @@ export function ReceptionLine(props: ReceptionLineProps) {
   const { line, model } = props;
   return (
     <li className={styles.form}>
-      <p className={styles.mono}>{line.piece_id ?? line.lot_id}</p>
+      <p>{line.lot_code}</p>
       <p>
         {t("transfers.line.count", {
           expected: line.quantity,

@@ -81,9 +81,7 @@ export function FleetHistory(props: Props) {
       <FleetFilters controller={model.controller} />
       {tab === "responsibility" && <p>{t("fleet.letter.scope")}</p>}
       {tab === "fuel" && model.query.data?.count === 0 && <p>{t("fleet.gap.insufficient")}</p>}
-      {typeof model.source === "string" && (
-        <p role="status">{t("fleet.history.reference", { id: model.source })}</p>
-      )}
+      {typeof model.source === "string" && <p role="status">{t("fleet.history.referenceShown")}</p>}
       <HistoryRows model={model} tab={tab} />
       {model.voiding && model.voiding.context === actions.scope.context && actions.canManage && (
         <FleetHistoryVoidDialog

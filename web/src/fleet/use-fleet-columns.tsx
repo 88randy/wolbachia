@@ -1,3 +1,4 @@
+import { useCenterName } from "../lookups/use-reference-names";
 import styles from "./fleet.module.css";
 import type { DataTableColumn } from "../data-table/table-types";
 import { useSearch } from "@tanstack/react-router";
@@ -37,6 +38,7 @@ export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
   const search = useSearch({ strict: false });
   const format = useFormatDateTime();
   const identity = useIdentityColumns();
+  const centerName = useCenterName();
   return [
     ...identity,
     {
@@ -47,7 +49,7 @@ export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
     {
       id: "center",
       headerKey: "geography.field.center",
-      cell: (item) => item.center ?? t("fleet.summary.unknown"),
+      cell: (item) => centerName(item.center),
       link: (item) =>
         item.center
           ? {
