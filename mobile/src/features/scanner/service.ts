@@ -10,6 +10,10 @@ import type { ScannerResource } from "./resource-source.ts";
 import type { Route } from "../../navigation/routes.ts";
 
 interface Dependencies {
+  readonly sample?: (
+    input: ScannerInput,
+    isCurrent: () => boolean,
+  ) => Promise<ScannerDestination | null>;
   readonly read: () => LifecycleSourceReader;
   readonly resources: (turn: LifecycleSourceTurn) => Promise<readonly ScannerResource[]>;
   readonly ovitrap: Pick<OvitrapService, "startCheck" | "enterBag" | "draftBuffer" | "update">;
@@ -42,23 +46,46 @@ export class ScannerService {
     }
   }
   async open({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {
+    const sample = await this.#deps.sample?.(input, isCurrent);
+    if (sample) return sample;
     const result = await this.resolve(input);
     if ("error" in result) return result;
     if (!isCurrent()) return { error: "unavailable" };
     const { resource, manualCapture } = result;
-    if (resource.kind === "lot") return { route: { name: "supplyDetail", lotId: resource.id } };
+    const readRoute = readOnlyRoute(resource, manualCapture);
+    if (readRoute) return { route: readRoute };
     await this.#deps.ovitrap.draftBuffer.persist(this.#deps.ovitrap, eventId);
-    if (!isCurrent()) return { error: "unavailable" };
-    if (resource.kind === "ovitrap")
-      await this.#deps.ovitrap.startCheck(`wbf:1:ovitrap:${resource.id}`, manualCapture, eventId);
-    else if (resource.kind === "bag" && eventId !== null)
-      await this.#deps.ovitrap.enterBag(`wbf:1:bag:${resource.id}`, eventId, manualCapture);
-    else return { error: "unavailable" };
+    if (!isCurrent() || !(await this.#startCapture(resource, eventId, manualCapture)))
+      return { error: "unavailable" };
     const current = await this.resolve(input);
     return isCurrent() && stillMatches(current, resource)
       ? { route: { name: "ovitrapCapture" } }
       : { error: "unavailable" };
   }
+  async #startCapture(
+    resource: ScannerResource,
+    eventId: string | null,
+    manualCapture: boolean,
+  ): Promise<boolean> {
+    if (resource.kind === "ovitrap") {
+      await this.#deps.ovitrap.startCheck(`wbf:1:ovitrap:${resource.id}`, manualCapture, eventId);
+      return true;
+    }
+    if (resource.kind !== "bag" || eventId === null) return false;
+    await this.#deps.ovitrap.enterBag(`wbf:1:bag:${resource.id}`, eventId, manualCapture);
+    return true;
+  }
+}
+function readOnlyRoute(resource: ScannerResource, manualCapture: boolean): Route | null {
+  if (resource.kind === "lot") return { name: "supplyDetail", lotId: resource.id };
+  return resource.kind === "release-device"
+    ? {
+        name: "releaseCapture",
+        taskId: null,
+        deviceId: resource.id,
+        manualCapture,
+      }
+    : null;
 }
 function stillMatches(result: ScannerResult, resource: ScannerResource): boolean {
   return "resource" in result && sameResource(resource, result.resource);

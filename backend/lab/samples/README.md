@@ -22,6 +22,34 @@ Methods use the existing Lab owner, with explicit `supports_wolbachia`. No metho
 procedure, result threshold or verification is seeded. Collection retains historical
 method/catalog proof; acceptance also checks current source and method safety.
 
+## Courier capture download (#139 / P20)
+
+Bootstrap and ordinary sync changes include the optional nullable root
+`sample_capture` snapshot. Legacy omission or null means unavailable and clears
+previous positive capture configuration. It is not a CourierChange section or a
+second transport. Current self `field.bootstrap`, `field_event.sync` and
+`sample.collect` grants cover every actual center/quadrant pair; no Lab read grant
+is added. Methods are minimal verified/current Wolbachia-capable pins. Sources are
+real own effective Reading/Release IDs or scoped Lot IDs with their genuine version;
+lot provenance never claims courier custody or stock consumption. No result or
+procedure is exposed by this capture projection.
+
+The schema1 snapshot carries owner IDs, stable `version`, observation `as_of`,
+nullable genuine future `valid_until`, `methods`, `sources` and minimal own
+`receipts: [{sample_id,event_id,received_at}]`. A receipt exists only after the real
+Lab command; it can clear an exact local reception reminder without inventing a
+result. Origins and their Other/photo policy use the existing archived catalog.
+The prepared frame binds owner, captured grants/configuration, clock and payload.
+Semantic hashes exclude `as_of`; source/method/receipt changes invalidate the
+cursor for full bootstrap recovery. Future activation also participates in
+`next_change_at`. Clients retain immutable local captures/outbox during recovery
+and commit snapshot metadata inside the existing bootstrap/sync SQLite transaction.
+Ingest/review remain authoritative and revalidate every original/current fact.
+
+`tests/test_sample_capture_139.py` owns genuine source/method consumption, exact
+self/paired scope, prepared-frame isolation, stable observation hashes, future
+boundaries, receipt proof and cursor recovery. PostgreSQL CI executes those proofs.
+
 HTTP commands use the existing Lab transaction: sorted authentic Users, actor
 Device/Session/Pair, known FieldEvents, Organization NOWAIT, courier TRY, domain.
 Sync/review keep their existing outer lock owner. In-review ingest creates no

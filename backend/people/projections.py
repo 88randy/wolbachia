@@ -243,6 +243,20 @@ def _frame(ctx: ProducerContext, payloads: tuple[dict[str, Any], ...]) -> tuple[
     )
 
 
+def rebind_eligibility(before: ProducerContext, after: ProducerContext) -> ProducerContext:
+    """Re-seal prepared eligibility after later producers re-prepared the same context.
+
+    The old frame is verified against `before` first, so a tampered frame is still rejected; the
+    payloads are unchanged and only the scope revision they are bound to moved.
+    """
+    payloads = before.eligibility_payloads
+    if payloads is None:
+        return after
+    if before.eligibility_frame != _frame(before, payloads):
+        raise ImproperlyConfigured("Prepared eligibility context changed.")
+    return replace(after, eligibility_payloads=payloads, eligibility_frame=_frame(after, payloads))
+
+
 def publish_changed_eligibility(organization: Organization) -> None:
     """Domain command already prepared every affected User/courier before Org."""
     from field_sync.selectors import captured_generation, captured_scope

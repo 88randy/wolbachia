@@ -2,12 +2,16 @@
 
 ## Permit and release owner (#116)
 
-`releases` owns `release.record` schema1 and the typed `permits` producer1.
+`releases` owns `release.record` schema1 and the typed `permits` producer2.
 Preparation retains the existing inventory arbiter through source/effect receipt
 insertion. Manual transit evidence may require source-bound review; original
 permit, requirements, training, schedule owner and genuine custody pins survive
 without operational effects. Acceptance rechecks current mandatory safety before
 the single existing inventory ledger debit. See releases/README.md and docs/sync.md.
+The #139 additive own capture snapshot uses the SAME captured scope and prepared
+producer context. A stable release dependency digest joins the existing scope
+revision so safety/custody changes require full bootstrap. Observation `as_of`
+is excluded from semantic bootstrap hashing. No new feed kind or write path exists.
 
 ## Own training eligibility (#101)
 

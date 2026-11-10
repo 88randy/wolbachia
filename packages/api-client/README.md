@@ -4,6 +4,13 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#139 adds the read-only permits2 capture facts and optional nullable root
+`sample_capture` snapshot on field bootstrap/changes. The latter exposes scoped
+canonical sources, verified method pins and own reception receipts without granting
+Lab administration or adding a command endpoint. Missing metadata means capture is
+unavailable. A reception matches both sample and event UUIDs; no result is inferred.
+See [field sync](../../docs/sync.md).
+
 #117 adds `/wolbachia-samples/`, immutable reception/result commands and explicit
 `supports_wolbachia` on the existing Lab method version. Command replies expose
 only their own persisted fact; sample.read separately authorizes full attempts,

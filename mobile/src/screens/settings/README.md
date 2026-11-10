@@ -17,4 +17,6 @@ It is displayed as selectable text, never interpreted as an arbitrary link,
 emergency number or delivery proof. No personal identifiers or secrets are added.
 
 See `mobile/test/settings-preferences.test.ts` and `settings-journey.test.ts`.
+M10 retained release and sample drafts participate in the same pending-work count before any
+event or photo exists; closing local access preserves them and their original UUID.
 Native TalkBack, force-stop and real-API testing remain UNRUN.

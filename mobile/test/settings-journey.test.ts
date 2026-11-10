@@ -7,6 +7,10 @@ import { makeCredentials } from "./support/auth-fakes.ts";
 import { createStores, makeEnvelope } from "./support/factories.ts";
 import { componentHarness } from "./support/m-09-render.ts";
 import { messages } from "@wolbachia/i18n";
+import { ReleaseStore } from "../src/features/releases/store.ts";
+import { releaseDraft } from "./support/release-fixtures.ts";
+import { SampleStore } from "../src/features/samples/store.ts";
+import { sampleDraft } from "./support/sample-fixtures.ts";
 
 void test("closing local access explains pending work and retains credentials, draft, files and original UUID", async () => {
   const { credentials } = await makeCredentials();
@@ -26,6 +30,10 @@ void test("closing local access explains pending work and retains credentials, d
     },
   ]);
   const originalCredentials = credentials.getSnapshot();
+  const retainedRelease = releaseDraft();
+  await new ReleaseStore(db).begin(retainedRelease, [{ sql: "SELECT 1" }]);
+  const retainedSample = sampleDraft();
+  await new SampleStore(db).begin(retainedSample, [{ sql: "SELECT 1" }]);
   const service = new SettingsService({
     db,
     appVersion: "0.0.0",
@@ -46,7 +54,7 @@ void test("closing local access explains pending work and retains credentials, d
     },
   });
   const state = await service.read();
-  assert.deepEqual([state.pendingEvents, state.pendingFiles, state.drafts], [1, 1, 1]);
+  assert.deepEqual([state.pendingEvents, state.pendingFiles, state.drafts], [1, 1, 3]);
   assert.equal(state.updater, "unavailable");
   assert.equal(state.support, null);
   await service.lock();
@@ -58,6 +66,11 @@ void test("closing local access explains pending work and retains credentials, d
     JSON.stringify({ eventId: "draft-original" }),
   );
   assert.equal((await db.query("SELECT id FROM attachment_file"))[0]?.id, "file");
+  assert.equal((await db.query("SELECT id FROM release_draft"))[0]?.id, retainedRelease.eventId);
+  assert.equal(
+    (await db.query("SELECT sample_id FROM sample_draft"))[0]?.sample_id,
+    retainedSample.sampleId,
+  );
 });
 
 void test("P31 support, pending-work and lock actions remain labelled in both themes and languages at130percent", () => {

@@ -40,7 +40,7 @@ function hasAssignmentFields(value: Record<string, unknown>): boolean {
   return (
     value.kind === "task" &&
     ["id", "code", "point", "quadrant_id", "courier"].every((key) => isText(value[key])) &&
-    (value.action === "place" || value.action === "check")
+    (value.action === "place" || value.action === "check" || value.action === "release")
   );
 }
 /** Optional enrichment never fabricates coordinates or rejects an otherwise valid scheduling task. */

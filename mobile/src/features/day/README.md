@@ -1,5 +1,32 @@
 # Day projections and task locations
 
+## Sample capture prerequisites (#139)
+
+The existing full bootstrap transaction retains the typed optional `sample_capture`
+snapshot under the original owner/session/scope binding. Only a complete bootstrap
+hydrates this new consumer; deltas or a304 cannot repair legacy readiness. Missing
+or unsupported metadata blocks P20; explicit null records known unavailability.
+`withSampleProjection` shares the original short writer and raw SQL guard, including
+the current profile, catalog and rules. Recovery invalidates readiness and revocation
+removes downloaded rows while preserving authored sample drafts, events and files.
+The Day entry opens P20's durable own work list and new collection form.
+
+## Release prerequisites (#139)
+
+The same DayStore bootstrap/delta/revocation transaction consumes permits2,
+eligibility1 and actual assignments4 release tasks. A new private readiness key
+requires explicit full sections under the original capture identity before reads;
+legacy ETags/cursors and deltas cannot hydrate the consumer. Production refresh
+omits ETag while this consumer is pending. No released migration changes.
+
+`withReleaseProjection` shares the existing short projection gate and checks the
+original owner/session/context/profile and paired scope in one SQLite read. Its
+raw source guard includes actual quadrant metadata for task scope. The day parser
+retains action=release without turning it into ovitrap work or completion.
+P18/P19 fail closed on missing B20 device/lot/custody/task-binding facts. The actual
+new nested capture bundle supplies them; no quadrant or selected permit infers
+task authority. Evidence, drafts and original outcomes are retained separately.
+
 ## Personal history/training consumers (#144)
 
 The same bootstrap/change transaction now retains every current history7 kind and

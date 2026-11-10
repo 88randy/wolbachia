@@ -7,6 +7,7 @@ import { DayStore } from "../src/features/day/store.ts";
 import { OvitrapStore } from "../src/features/ovitrap-check/store.ts";
 import { readScannerResources } from "../src/features/scanner/resource-source.ts";
 import { ScannerService } from "../src/features/scanner/service.ts";
+import { sampleScannerRoute } from "../src/features/scanner/sample-route.ts";
 import { OvitrapDraftBuffer } from "../src/features/ovitrap-check/draft-buffer.ts";
 import { createStores } from "./support/factories.ts";
 import { CONTRACT_IDS } from "./support/lifecycle-contract-fixtures.ts";
@@ -18,6 +19,7 @@ import {
   projectionBundle,
 } from "./support/lifecycle-projection-fixtures.ts";
 import { ASSIGNMENT, CATALOG, RULES, makeDraft } from "./support/m-08-fixtures.ts";
+import { releasePins } from "./support/release-fixtures.ts";
 
 const id = (suffix: number) => `10000000-0000-4000-8000-${String(suffix).padStart(12, "0")}`;
 const POINT = { id: PROJECTION_POINT.id, code: PROJECTION_POINT.code, lat: 19, lng: -99 };
@@ -176,4 +178,128 @@ void test("M07 retired identity stays explicit and stale authority or storage fa
   await assert.rejects(readScannerResources(broken, turn), /storage read failed/);
   await fixture.bundle.clearSessionData();
   await assert.rejects(readScannerResources(fixture.db, turn));
+});
+
+void test("M10 release-device QR and exact manual code route only downloaded paired identity without touching an ovitrap draft", async () => {
+  const fixture = await scannerFixture();
+  const pins = releasePins();
+  const permit = {
+    ...pins.permit,
+    center_id: CONTRACT_IDS.center,
+    quadrant_id: CONTRACT_IDS.quadrant,
+  };
+  Object.assign(fixture.body, { permits: [permit], eligibility: [] });
+  await fixture.db.runAtomically([
+    {
+      sql: "UPDATE kv SET value=json_set(value,'$.permissions',json(?)) WHERE key='session_profile'",
+      params: [JSON.stringify(["field_event.sync", "field.upload", "supply_assignment.receive"])],
+    },
+  ]);
+  await fixture.bundle.refresh(true);
+  const scanner = new ScannerService({
+    read: () => fixture.bundle.captureLifecycleSource(),
+    resources: (turn) => readScannerResources(fixture.db, turn),
+    ovitrap: {
+      draftBuffer: new OvitrapDraftBuffer(),
+      update: () => Promise.reject(new Error("Unrelated draft write")),
+      startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
+      enterBag: () => Promise.reject(new Error("Unrelated bag")),
+    },
+  });
+  for (const isManual of [false, true]) {
+    assert.deepEqual(
+      await scanner.open({
+        input: {
+          isManual,
+          value: isManual ? pins.device.code : `wbf:1:release-device:${pins.device.id}`,
+        },
+        eventId: null,
+        isCurrent: () => true,
+      }),
+      {
+        route: {
+          name: "releaseCapture",
+          taskId: null,
+          deviceId: pins.device.id,
+          manualCapture: isManual,
+        },
+      },
+    );
+  }
+  assert.equal((await fixture.db.query("SELECT id FROM outbox_event")).length, 0);
+  assert.equal((await fixture.db.query("SELECT id FROM release_draft")).length, 0);
+  await fixture.bundle.clearSessionData();
+  assert.deepEqual(
+    await scanner.resolve({ value: `wbf:1:release-device:${pins.device.id}`, isManual: false }),
+    { error: "unavailable" },
+  );
+});
+
+function sampleScanner(admit: Parameters<typeof sampleScannerRoute>[1]["admit"]) {
+  return new ScannerService({
+    sample: (input, current) => sampleScannerRoute(input, { admit }, current),
+    read: () => () => Promise.reject(new Error("Sample QR borrowed ovitrap authority")),
+    resources: () => Promise.reject(new Error("Sample QR manufactured a downloaded resource")),
+    ovitrap: {
+      draftBuffer: new OvitrapDraftBuffer(),
+      update: () => Promise.reject(new Error("Unrelated draft write")),
+      startCheck: () => Promise.reject(new Error("Unrelated ovitrap")),
+      enterBag: () => Promise.reject(new Error("Unrelated bag")),
+    },
+  });
+}
+
+void test("M10 sample QR is only an identity candidate admitted by its current capture reader", async () => {
+  const sampleId = id(139);
+  let allowed = true;
+  const seen: string[] = [];
+  const scanner = sampleScanner((candidate) => {
+    seen.push(candidate);
+    return Promise.resolve(allowed);
+  });
+  const input = { value: "wbf:1:sample:" + sampleId, isManual: false };
+  const open = { input, eventId: id(140), isCurrent: () => true };
+  assert.deepEqual(await scanner.open(open), {
+    route: { name: "sampleCapture", sampleId, sourceRef: null, manualCapture: false },
+  });
+  allowed = false;
+  assert.deepEqual(await scanner.open(open), { error: "unavailable" });
+  assert.deepEqual(
+    await scanner.open({ ...open, input: { ...input, expected: "release-device" } }),
+    { error: "kind" },
+  );
+  assert.deepEqual(seen, [sampleId, sampleId]);
+  assert.equal(
+    await sampleScannerRoute(
+      { ...input, isManual: true },
+      { admit: () => Promise.resolve(true) },
+      () => true,
+    ),
+    null,
+  );
+});
+
+void test("M10 sample QR cannot navigate after its admission lease changes", async () => {
+  let entered!: () => void;
+  let release!: (allowed: boolean) => void;
+  const admitted = new Promise<void>((resolve) => {
+    entered = resolve;
+  });
+  const answer = new Promise<boolean>((resolve) => {
+    release = resolve;
+  });
+  let current = true;
+  const scanner = sampleScanner(() => {
+    entered();
+    return answer;
+  });
+  const pending = scanner.open({
+    input: { value: "wbf:1:sample:" + id(139), isManual: false },
+    eventId: null,
+    isCurrent: () => current,
+  });
+  await admitted;
+  current = false;
+  release(true);
+  assert.deepEqual(await pending, { error: "unavailable" });
 });

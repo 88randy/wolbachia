@@ -6506,6 +6506,7 @@ export interface components {
             generated_at: string;
             scope_revision: string;
             capture_context?: components["schemas"]["CaptureContext"] | null;
+            sample_capture?: components["schemas"]["SampleCaptureSnapshot"] | null;
             cursor: string;
             catalog_version: string;
             rules_version: string;
@@ -6748,6 +6749,7 @@ export interface components {
             /** Format: date-time */
             next_change_at: string | null;
             capture_context?: components["schemas"]["CaptureContext"] | null;
+            sample_capture?: components["schemas"]["SampleCaptureSnapshot"] | null;
             assignments: components["schemas"]["ProducerChange"][];
             supplies: components["schemas"]["SupplyChange"][];
             permits: components["schemas"]["PermitChange"][];
@@ -11353,6 +11355,7 @@ export interface components {
             valid_to: string | null;
             requirements: unknown;
             blocked_by: string[];
+            capture: components["schemas"]["ReleaseCaptureBundle"] | null;
         };
         PermitChange: {
             sequence: number;
@@ -12282,6 +12285,84 @@ export interface components {
             /** Format: uuid */
             release_id: string;
         };
+        ReleaseCaptureBundle: {
+            /** Format: date-time */
+            as_of: string;
+            version: string;
+            devices: components["schemas"]["ReleaseCaptureDevice"][];
+            tasks: components["schemas"]["ReleaseCaptureTask"][];
+        };
+        ReleaseCaptureCustody: {
+            /** Format: uuid */
+            receipt_line_id: string;
+            /** Format: uuid */
+            receipt_source_event_id: string;
+            /** Format: uuid */
+            assignment_id: string;
+            /** Format: date */
+            assignment_date: string;
+            /** Format: uuid */
+            shift_id: string | null;
+            /** Format: uuid */
+            unit_version_id: string;
+            /** Format: uuid */
+            piece_id: string | null;
+            /** Format: decimal */
+            available_quantity: string;
+            accounted_release_event_ids: string[];
+            /** Format: date-time */
+            received_at: string;
+            /** Format: uuid */
+            source_lot_version_id: string;
+            /** Format: uuid */
+            current_lot_version_id: string;
+            /** Format: date-time */
+            source_expires_at: string | null;
+            /** Format: date-time */
+            current_expires_at: string | null;
+            /** Format: uuid */
+            transit_policy_id: string | null;
+            transit_mode: string | null;
+            proof_roles: string[];
+            requires_evidence: boolean;
+            blocked_by: string[];
+        };
+        ReleaseCaptureDevice: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            status: components["schemas"]["ReleaseDeviceStatusEnum"];
+            revision: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: uuid */
+            source_lot_id: string;
+            /** Format: uuid */
+            source_lot_version_id: string;
+            custody: components["schemas"]["ReleaseCaptureCustody"][];
+        };
+        ReleaseCaptureTask: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            point_id: string;
+            /** Format: uuid */
+            permit_id: string;
+            /** Format: uuid */
+            permit_version_id: string;
+            /** Format: uuid */
+            courier_id: string;
+            /** Format: date */
+            due_date: string;
+            owner_revision: number;
+            is_completed: boolean;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            binding_created_at: string;
+            /** Format: date-time */
+            owner_created_at: string;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -13190,6 +13271,89 @@ export interface components {
             /** Format: date-time */
             created_at: string;
         };
+        SampleCaptureMethod: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            method_id: string;
+            label: string;
+            revision: number;
+            /** Format: date-time */
+            created_at: string;
+            /** Format: date-time */
+            effective_from: string;
+            content_hash: string;
+            supports_wolbachia: boolean;
+            verification: components["schemas"]["SampleCaptureVerification"];
+        };
+        SampleCaptureReceipt: {
+            /** Format: uuid */
+            sample_id: string;
+            /** Format: uuid */
+            event_id: string;
+            /** Format: date-time */
+            received_at: string;
+        };
+        SampleCaptureSnapshot: {
+            schema_version: number;
+            /** Format: uuid */
+            organization_id: string;
+            /** Format: uuid */
+            user_id: string;
+            version: string;
+            /** Format: date-time */
+            as_of: string;
+            /** Format: date-time */
+            valid_until: string | null;
+            methods: components["schemas"]["SampleCaptureMethod"][];
+            sources: components["schemas"]["SampleCaptureSource"][];
+            receipts: components["schemas"]["SampleCaptureReceipt"][];
+        };
+        SampleCaptureSource: {
+            kind: components["schemas"]["SampleCaptureSourceKindEnum"];
+            /** Format: uuid */
+            id: string;
+            label: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id: string | null;
+            /** Format: uuid */
+            author_id: string | null;
+            /** Format: uuid */
+            event_id: string | null;
+            /** Format: date-time */
+            device_time: string | null;
+            /** Format: date-time */
+            created_at: string;
+            effective: boolean;
+            /** Format: uuid */
+            lot_version_id: string | null;
+            lot_version_revision: number | null;
+            /** Format: date-time */
+            lot_version_created_at: string | null;
+        };
+        /**
+         * @description * `reading` - reading
+         *     * `lot` - lot
+         *     * `release` - release
+         * @enum {string}
+         */
+        SampleCaptureSourceKindEnum: "reading" | "lot" | "release";
+        SampleCaptureVerification: {
+            /** Format: uuid */
+            id: string;
+            revision: number;
+            decision: components["schemas"]["SampleCaptureVerificationDecisionEnum"];
+            content_hash: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        /**
+         * @description * `verify` - verify
+         * @enum {string}
+         */
+        SampleCaptureVerificationDecisionEnum: "verify";
         SampleCommandOutcome: {
             /** Format: uuid */
             sample_id: string;

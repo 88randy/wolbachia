@@ -28,7 +28,23 @@ import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-contex
 import { readLifecycleSource } from "../ovitrap-lifecycle/source-context.ts";
 import { readCurrentTask } from "./current-task.ts";
 import { readFuelCaptureContext } from "../fuel/capture-context.ts";
+import {
+  releaseBundleStatements,
+  releaseChangeStatements,
+  invalidateReleaseProjection,
+  clearReleaseProjection,
+  needsReleaseBootstrap,
+  readReleaseProjection,
+} from "../releases/projections.ts";
 import type { TaskOwner } from "./current-task.ts";
+import {
+  sampleBundleStatements,
+  sampleChangeStatements,
+  invalidateSampleProjection,
+  clearSampleProjection,
+  needsSampleBootstrap,
+  readSampleProjection,
+} from "../samples/projection.ts";
 import type { LifecycleSourceRequest } from "../ovitrap-lifecycle/types.ts";
 import type { EvidenceIdentity } from "../../attachments/evidence-session.ts";
 import { LOCATED_ASSIGNMENTS } from "./task-locations.ts";
@@ -84,6 +100,11 @@ function scopeInvalidation(
     ? [INVALIDATE_ATTACHMENTS]
     : [];
 }
+function suppliesBootstrapReadiness(body: unknown): SqlStatement {
+  return isRecord(body) && Array.isArray(body.supplies)
+    ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
+    : removeStatement(KV_KEYS.daySuppliesBootstrapReady);
+}
 /** Only downloaded projections are owned here; no draft, event or attachment is ever replaced. */
 export class DayStore {
   readonly #db: SqlExecutor;
@@ -125,6 +146,18 @@ export class DayStore {
   fuelCaptureContext(handle: CaptureTransportHandle) {
     return readFuelCaptureContext(this.#db, handle);
   }
+  releaseProjection(handle: CaptureTransportHandle) {
+    return readReleaseProjection(this.#db, handle);
+  }
+  sampleProjection(handle: CaptureTransportHandle) {
+    return readSampleProjection(this.#db, handle);
+  }
+  needsSampleBootstrap(): Promise<boolean> {
+    return needsSampleBootstrap(this.#db);
+  }
+  needsReleaseBootstrap(): Promise<boolean> {
+    return needsReleaseBootstrap(this.#db);
+  }
   needsSupplyBootstrap(): Promise<boolean> {
     return needsSupplyBootstrap(this.#db);
   }
@@ -152,11 +185,11 @@ export class DayStore {
       bundleMetadata(bundle.meta),
       ...courierBundleStatements(body),
       ...supplyBundleStatements(body, handle),
+      ...releaseBundleStatements(body, handle),
+      ...sampleBundleStatements(body, handle),
       ...trainingBundleStatements(body, handle),
       ...publishCaptureContext(body, handle, "bootstrap"),
-      isRecord(body) && Array.isArray(body.supplies)
-        ? setStatement(KV_KEYS.daySuppliesBootstrapReady, "true")
-        : removeStatement(KV_KEYS.daySuppliesBootstrapReady),
+      suppliesBootstrapReadiness(body),
       removeStatement(KV_KEYS.daySamplingPointsBootstrapPending),
       removeStatement(KV_KEYS.dayCompletionBootstrapPending),
       setStatement(KV_KEYS.syncCursor, bundle.cursor),
@@ -180,6 +213,8 @@ export class DayStore {
       ...manifests,
       ...courierChangeStatements(body),
       ...supplyChangeStatements(body, handle),
+      ...releaseChangeStatements(body, handle),
+      ...sampleChangeStatements(body, handle),
       ...trainingChangeStatements(body, handle),
       ...publishCaptureContext(body, handle, "changes"),
     ];
@@ -191,6 +226,8 @@ export class DayStore {
       setStatement("day_cleanup_pending", "true"),
       ...invalidateCaptureContext,
       invalidateSupplyProjection,
+      invalidateReleaseProjection,
+      invalidateSampleProjection,
       invalidateTrainingProjection,
       revokeCaptureScope(),
     ]);
@@ -200,6 +237,8 @@ export class DayStore {
     await this.#db.runAtomically([
       ...captureRecoveryStatements(handle),
       invalidateSupplyProjection,
+      invalidateReleaseProjection,
+      invalidateSampleProjection,
       invalidateTrainingProjection,
       INVALIDATE_ATTACHMENTS,
     ]);
@@ -235,6 +274,8 @@ export class DayStore {
       ...clearDownloadedProjections,
       removeStatement(KV_KEYS.daySuppliesBootstrapReady),
       ...clearSupplyProjection,
+      ...clearReleaseProjection,
+      ...clearSampleProjection,
       ...clearTrainingProjection,
       removeStatement("history_projection_ready"),
       ...invalidateCaptureContext,

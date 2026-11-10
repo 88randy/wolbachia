@@ -16824,6 +16824,10 @@ components:
           allOf:
           - $ref: '#/components/schemas/CaptureContext'
           nullable: true
+        sample_capture:
+          allOf:
+          - $ref: '#/components/schemas/SampleCaptureSnapshot'
+          nullable: true
         cursor:
           type: string
         catalog_version:
@@ -17445,6 +17449,10 @@ components:
         capture_context:
           allOf:
           - $ref: '#/components/schemas/CaptureContext'
+          nullable: true
+        sample_capture:
+          allOf:
+          - $ref: '#/components/schemas/SampleCaptureSnapshot'
           nullable: true
         assignments:
           type: array
@@ -27467,8 +27475,13 @@ components:
           type: array
           items:
             type: string
+        capture:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseCaptureBundle'
+          nullable: true
       required:
       - blocked_by
+      - capture
       - center_id
       - code
       - geometry
@@ -29745,6 +29758,198 @@ components:
       - reason
       - reason_code
       - release_id
+    ReleaseCaptureBundle:
+      type: object
+      properties:
+        as_of:
+          type: string
+          format: date-time
+        version:
+          type: string
+        devices:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseCaptureDevice'
+        tasks:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseCaptureTask'
+      required:
+      - as_of
+      - devices
+      - tasks
+      - version
+    ReleaseCaptureCustody:
+      type: object
+      properties:
+        receipt_line_id:
+          type: string
+          format: uuid
+        receipt_source_event_id:
+          type: string
+          format: uuid
+        assignment_id:
+          type: string
+          format: uuid
+        assignment_date:
+          type: string
+          format: date
+        shift_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        available_quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,14}(?:\.\d{0,6})?$
+        accounted_release_event_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+        received_at:
+          type: string
+          format: date-time
+        source_lot_version_id:
+          type: string
+          format: uuid
+        current_lot_version_id:
+          type: string
+          format: uuid
+        source_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        current_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        transit_policy_id:
+          type: string
+          format: uuid
+          nullable: true
+        transit_mode:
+          type: string
+          nullable: true
+        proof_roles:
+          type: array
+          items:
+            type: string
+        requires_evidence:
+          type: boolean
+        blocked_by:
+          type: array
+          items:
+            type: string
+      required:
+      - accounted_release_event_ids
+      - assignment_date
+      - assignment_id
+      - available_quantity
+      - blocked_by
+      - current_expires_at
+      - current_lot_version_id
+      - piece_id
+      - proof_roles
+      - receipt_line_id
+      - receipt_source_event_id
+      - received_at
+      - requires_evidence
+      - shift_id
+      - source_expires_at
+      - source_lot_version_id
+      - transit_mode
+      - transit_policy_id
+      - unit_version_id
+    ReleaseCaptureDevice:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        status:
+          $ref: '#/components/schemas/ReleaseDeviceStatusEnum'
+        revision:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        source_lot_id:
+          type: string
+          format: uuid
+        source_lot_version_id:
+          type: string
+          format: uuid
+        custody:
+          type: array
+          items:
+            $ref: '#/components/schemas/ReleaseCaptureCustody'
+      required:
+      - code
+      - created_at
+      - custody
+      - id
+      - revision
+      - source_lot_id
+      - source_lot_version_id
+      - status
+    ReleaseCaptureTask:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        point_id:
+          type: string
+          format: uuid
+        permit_id:
+          type: string
+          format: uuid
+        permit_version_id:
+          type: string
+          format: uuid
+        courier_id:
+          type: string
+          format: uuid
+        due_date:
+          type: string
+          format: date
+        owner_revision:
+          type: integer
+          minimum: 1
+        is_completed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        binding_created_at:
+          type: string
+          format: date-time
+        owner_created_at:
+          type: string
+          format: date-time
+      required:
+      - binding_created_at
+      - courier_id
+      - created_at
+      - due_date
+      - id
+      - is_completed
+      - owner_created_at
+      - owner_revision
+      - permit_id
+      - permit_version_id
+      - point_id
     ReleaseDevice:
       type: object
       description: |-
@@ -31900,6 +32105,202 @@ components:
       - result
       - revision
       - status
+    SampleCaptureMethod:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        method_id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        revision:
+          type: integer
+          minimum: 1
+        created_at:
+          type: string
+          format: date-time
+        effective_from:
+          type: string
+          format: date-time
+        content_hash:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        supports_wolbachia:
+          type: boolean
+        verification:
+          $ref: '#/components/schemas/SampleCaptureVerification'
+      required:
+      - content_hash
+      - created_at
+      - effective_from
+      - id
+      - label
+      - method_id
+      - revision
+      - supports_wolbachia
+      - verification
+    SampleCaptureReceipt:
+      type: object
+      properties:
+        sample_id:
+          type: string
+          format: uuid
+        event_id:
+          type: string
+          format: uuid
+        received_at:
+          type: string
+          format: date-time
+      required:
+      - event_id
+      - received_at
+      - sample_id
+    SampleCaptureSnapshot:
+      type: object
+      properties:
+        schema_version:
+          type: integer
+          maximum: 1
+          minimum: 1
+        organization_id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        version:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        as_of:
+          type: string
+          format: date-time
+        valid_until:
+          type: string
+          format: date-time
+          nullable: true
+        methods:
+          type: array
+          items:
+            $ref: '#/components/schemas/SampleCaptureMethod'
+        sources:
+          type: array
+          items:
+            $ref: '#/components/schemas/SampleCaptureSource'
+        receipts:
+          type: array
+          items:
+            $ref: '#/components/schemas/SampleCaptureReceipt'
+      required:
+      - as_of
+      - methods
+      - organization_id
+      - receipts
+      - schema_version
+      - sources
+      - user_id
+      - valid_until
+      - version
+    SampleCaptureSource:
+      type: object
+      properties:
+        kind:
+          $ref: '#/components/schemas/SampleCaptureSourceKindEnum'
+        id:
+          type: string
+          format: uuid
+        label:
+          type: string
+        center_id:
+          type: string
+          format: uuid
+        quadrant_id:
+          type: string
+          format: uuid
+          nullable: true
+        author_id:
+          type: string
+          format: uuid
+          nullable: true
+        event_id:
+          type: string
+          format: uuid
+          nullable: true
+        device_time:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        effective:
+          type: boolean
+        lot_version_id:
+          type: string
+          format: uuid
+          nullable: true
+        lot_version_revision:
+          type: integer
+          minimum: 1
+          nullable: true
+        lot_version_created_at:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+      - author_id
+      - center_id
+      - created_at
+      - device_time
+      - effective
+      - event_id
+      - id
+      - kind
+      - label
+      - lot_version_created_at
+      - lot_version_id
+      - lot_version_revision
+      - quadrant_id
+    SampleCaptureSourceKindEnum:
+      enum:
+      - reading
+      - lot
+      - release
+      type: string
+      description: |-
+        * `reading` - reading
+        * `lot` - lot
+        * `release` - release
+    SampleCaptureVerification:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        decision:
+          $ref: '#/components/schemas/SampleCaptureVerificationDecisionEnum'
+        content_hash:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - content_hash
+      - created_at
+      - decision
+      - id
+      - revision
+    SampleCaptureVerificationDecisionEnum:
+      enum:
+      - verify
+      type: string
+      description: '* `verify` - verify'
     SampleCommandOutcome:
       type: object
       properties:

@@ -2,6 +2,229 @@
 import type { AreaCatalog } from "../area.ts";
 
 export const mobile = {
+  "mobile.sample.title": "Muestra de Wolbachia",
+  "mobile.sample.subtitle": "Captura y entrega al laboratorio",
+  "mobile.sample.loading": "Consultando tus muestras guardadas…",
+  "mobile.sample.refresh": "Actualizar datos de captura",
+  "mobile.sample.source": "Elige la fuente de la muestra",
+  "mobile.sample.sourceReading": "Lectura de ovitrampa",
+  "mobile.sample.sourceLot": "Lote",
+  "mobile.sample.sourceRelease": "Liberación",
+  "mobile.sample.noSources":
+    "No hay fuentes disponibles en tu copia descargada. Actualiza o consulta a tu supervisor.",
+  "mobile.sample.origin": "¿De dónde viene la muestra?",
+  "mobile.sample.noOrigins": "No hay orígenes configurados disponibles. Consulta al administrador.",
+  "mobile.sample.method": "Método verificado",
+  "mobile.sample.noMethods": "No hay métodos verificados disponibles. Consulta al administrador.",
+  "mobile.sample.selected": "Seleccionado",
+  "mobile.sample.identity": "Identificador de la muestra",
+  "mobile.sample.unavailable": "No disponible",
+  "mobile.sample.code": "Código de la muestra",
+  "mobile.sample.codeHint":
+    "Escribe el código del recipiente, de hasta 50 caracteres. El servidor comprueba que sea único.",
+  "mobile.sample.codeRequired": "Escribe un código de hasta 50 caracteres.",
+  "mobile.sample.otherText": "Especifica el otro origen",
+  "mobile.sample.otherHint": "Describe el origen de la muestra, de hasta 1000 caracteres.",
+  "mobile.sample.otherRequired": "Describe el otro origen antes de guardar.",
+  "mobile.sample.gps": "Precisión de la ubicación (m)",
+  "mobile.sample.acquireGps": "Obtener ubicación",
+  "mobile.sample.photo": "Evidencia fotográfica",
+  "mobile.sample.photoUnknown": "Elige un origen para conocer el requisito de foto.",
+  "mobile.sample.photoUnavailable":
+    "No pudimos abrir la cámara. Conserva tus datos e intenta de nuevo.",
+  "mobile.sample.photoRequired": "Este origen requiere una foto.",
+  "mobile.sample.photoOptional": "Para este origen la foto es opcional.",
+  "mobile.sample.photoPreview": "Foto privada de la muestra",
+  "mobile.sample.takePhoto": "Tomar foto",
+  "mobile.sample.undoPhoto": "Deshacer última foto",
+  "mobile.sample.savedCaptures": "Muestras guardadas en este teléfono",
+  "mobile.sample.draftStatus": "Borrador en el teléfono",
+  "mobile.sample.deliveryPending": "Entrega al laboratorio sin confirmar",
+  "mobile.sample.beginHint":
+    "Elige una fuente real de tu copia descargada. El identificador QR por sí solo no confirma su origen ni autorización.",
+  "mobile.sample.begin": "Preparar muestra",
+  "mobile.sample.save": "Guardar muestra",
+  "mobile.sample.saveHint":
+    "Los datos se guardan en este teléfono y se envían con señal. Guardar no confirma recepción en laboratorio.",
+  "mobile.sample.pendingEdits":
+    "Guardando los últimos cambios. Si no terminan, conserva tus datos y usa Reintentar.",
+  "mobile.sample.working": "Procesando…",
+  "mobile.sample.blockedHint":
+    "Completa los campos pendientes. Si faltan requisitos descargados, actualiza o consulta a tu supervisor. No hay una opción para omitirlos.",
+  "mobile.sample.phoneSaved": "Muestra guardada en el teléfono. El envío sigue pendiente.",
+  "mobile.sample.serverReceived": "El servidor recibió el registro de la muestra.",
+  "mobile.sample.inReview":
+    "El registro está en revisión. Esto no confirma una muestra operativa ni recepción en laboratorio.",
+  "mobile.sample.rejected":
+    "El servidor rechazó el registro. Tus datos y fotos se conservan; revisa la bandeja y consulta a tu supervisor.",
+  "mobile.sample.evidencePending": "La evidencia privada sigue pendiente de verificación.",
+  "mobile.sample.reviewApplied":
+    "Se observó una revisión aplicada. El estado original del envío se conserva.",
+  "mobile.sample.reviewDiscarded":
+    "Se observó el descarte en revisión. La captura original se conserva.",
+  "mobile.sample.reviewObserved": "Hay una decisión posterior de revisión. Consulta la bandeja.",
+  "mobile.sample.inbox": "Ver bandeja",
+  "mobile.sample.backToDay": "Volver al día",
+  "mobile.sample.deliver": "Entrega el recipiente al laboratorio al cerrar jornada.",
+  "mobile.sample.receiptUnknown":
+    "No hay una recepción confirmada en los datos descargados. El recordatorio se conserva.",
+  "mobile.sample.received":
+    "Hay una recepción de laboratorio confirmada para esta muestra y este registro.",
+  "mobile.sample.noResultAssumption":
+    "La recepción no es un resultado. Un resultado ausente, inválido o en disputa no significa negativo.",
+  "mobile.sample.storageError":
+    "No pudimos guardar los cambios. Tus campos se conservan; usa Reintentar.",
+  "mobile.sample.scopeUnavailable":
+    "Tu acceso o contexto cambió. Desbloquea y actualiza para continuar.",
+  "mobile.sample.shiftRequired": "Necesitas una jornada abierta para capturar una muestra.",
+  "mobile.sample.configurationUnavailable":
+    "Faltan requisitos originales o actuales de origen y método. Actualiza o consulta al administrador.",
+  "mobile.sample.sourceUnavailable":
+    "La fuente original ya no está disponible o no corresponde a esta captura. Consulta a tu supervisor.",
+  "mobile.sample.originRequired": "Elige un origen disponible.",
+  "mobile.sample.methodRequired": "Elige una versión de método verificada disponible.",
+  "mobile.sample.gpsRequired": "Obtén una ubicación antes de guardar.",
+  "mobile.sample.evidenceRequired": "Agrega la foto requerida por el origen antes de guardar.",
+  "mobile.sample.staleDraft":
+    "Este borrador ya cambió. Recupera su estado actual antes de continuar.",
+  "mobile.release.title": "Registrar liberación",
+  "mobile.release.blockedTitle": "No puedes liberar",
+  "mobile.release.subtitle": "Requisitos de la copia descargada",
+  "mobile.release.loading": "Consultando los requisitos guardados en el teléfono…",
+  "mobile.release.chooseTask": "Elige la tarea de liberación",
+  "mobile.release.chooseDevice": "Elige el dispositivo de liberación",
+  "mobile.release.emptyTask":
+    "No hay tareas disponibles en tu copia descargada. Consulta a tu supervisor.",
+  "mobile.release.emptyDevice":
+    "No hay dispositivos disponibles para esta selección. Consulta a tu supervisor.",
+  "mobile.release.selectionHint":
+    "Las opciones vienen de tu copia descargada. El registro conserva la tarea, el dispositivo y sus versiones originales.",
+  "mobile.release.selectedChoice": "Seleccionado",
+  "mobile.release.begin": "Preparar esta captura",
+  "mobile.release.restart": "Iniciar otro borrador con los requisitos actualizados",
+  "mobile.release.restartHint":
+    "El borrador y su evidencia originales se conservan. El nuevo borrador sólo copia la cantidad; necesita su propia ubicación, fotos y comprobaciones. Esto no aprueba la captura anterior.",
+  "mobile.release.beginHint":
+    "Elige la tarea y el dispositivo para abrir o recuperar su captura en el teléfono. Los requisitos se vuelven a comprobar antes de guardar.",
+  "mobile.release.draftPending":
+    "Guardando los últimos cambios en el teléfono. Si no terminan, conserva tus datos y usa Reintentar.",
+  "mobile.release.staleDraft":
+    "Esta captura cambió o perdió autorización. Conserva tus datos y vuelve a consultar la copia descargada.",
+  "mobile.release.shiftRequired":
+    "Necesitas una jornada abierta en este teléfono. Vuelve al inicio para revisarla.",
+  "mobile.release.safetyBlocked":
+    "Falta un requisito de seguridad. Revisa los renglones marcados; no hay opción de omitirlos.",
+  "mobile.release.photoUnavailable":
+    "No pudimos obtener la foto. Tus datos se conservan; revisa el permiso de cámara y vuelve a intentarlo.",
+  "mobile.release.reviewApplied":
+    "Se registró una revisión aplicada a esta declaración. La respuesta original del servidor se conserva.",
+  "mobile.release.reviewDiscarded":
+    "La revisión descartó esta declaración. La evidencia y la respuesta original se conservan.",
+  "mobile.release.reviewObserved":
+    "Hay una revisión vinculada con esta declaración. Consulta su resultado en la bandeja.",
+  "mobile.release.prerequisites": "Requisitos para liberar",
+  "mobile.release.gatePermit": "Permiso vigente",
+  "mobile.release.gateZone": "Zona oficial autorizada",
+  "mobile.release.gateLot": "Lote y existencia disponibles",
+  "mobile.release.gateTraining": "Capacitación vigente",
+  "mobile.release.gateSchedule": "Programación autorizada",
+  "mobile.release.gateGps": "Ubicación con precisión suficiente",
+  "mobile.release.gateDevice": "Dispositivo de liberación activo",
+  "mobile.release.gateConfiguration": "Configuración de captura disponible",
+  "mobile.release.pass": "Comprobado",
+  "mobile.release.fail": "No cumple",
+  "mobile.release.unavailable": "No disponible; liberación bloqueada",
+  "mobile.release.contactSupervisor": "Pide a tu supervisor que revise este requisito.",
+  "mobile.release.contactAdmin": "Pide al administrador que revise la configuración.",
+  "mobile.release.contactCourier":
+    "Obtén una ubicación precisa en un lugar seguro y vuelve a revisar.",
+  "mobile.release.noBypass":
+    "No liberes mientras falte un requisito. Desde aquí no hay forma de omitirlo.",
+  "mobile.release.cachedOnly":
+    "Esta comprobación usa la copia descargada. El servidor vuelve a validar al sincronizar.",
+  "mobile.release.deviceId": "Dispositivo de liberación",
+  "mobile.release.taskId": "Tarea programada",
+  "mobile.release.permitId": "Permiso",
+  "mobile.release.lotId": "Lote de origen",
+  "mobile.release.referenceUnavailable": "Sin información comprobada",
+  "mobile.release.detailQuantityInvalid":
+    "Registra una cantidad mayor que cero, con hasta 14 dígitos enteros y 6 decimales.",
+  "mobile.release.detailStockUnavailable":
+    "La cantidad supera la existencia recibida disponible, incluida la reservada por otros registros del teléfono.",
+  "mobile.release.detailLotBlocked":
+    "El lote o su política de traslado tienen un bloqueo. No liberes; consulta a tu supervisor.",
+  "mobile.release.detailLotExpired":
+    "El lote no está vigente para esta captura. No liberes; consulta a tu supervisor.",
+  "mobile.release.detailDeviceBlocked":
+    "El dispositivo está inactivo o retirado. No lo uses para liberar; avisa a tu supervisor.",
+  "mobile.release.detailScheduleBlocked":
+    "La tarea ya fue usada o cambió su programación, permiso o responsable. No liberes con esta captura.",
+  "mobile.release.detailEvidenceRequired":
+    "Toma la foto de evidencia que requiere esta liberación antes de guardar.",
+  "mobile.release.detailPinsChanged":
+    "Cambió una referencia original de seguridad, equipo o existencia. Conserva la captura y consulta a tu supervisor.",
+  "mobile.release.detailTrainingPinInvalid":
+    "La capacitación declarada no está vigente en ambas comprobaciones. No liberes; consulta a tu supervisor.",
+  "mobile.release.detailPermitUnavailable": "Falta el permiso oficial en la copia descargada.",
+  "mobile.release.detailPermitBlocked":
+    "El permiso tiene un bloqueo o una suspensión. No liberes; consulta a tu supervisor.",
+  "mobile.release.detailPermitExpired":
+    "El permiso no está vigente para esta captura. No liberes; consulta a tu supervisor.",
+  "mobile.release.detailZoneUnavailable":
+    "No está disponible la geometría oficial del permiso para comprobar esta ubicación.",
+  "mobile.release.detailZoneOutside":
+    "La ubicación está fuera de la zona oficial autorizada. No liberes en este lugar.",
+  "mobile.release.detailGpsUnavailable":
+    "Falta una ubicación válida y precisa. Obtén la ubicación en un lugar seguro.",
+  "mobile.release.detailGpsAccuracy":
+    "La precisión de la ubicación no cumple el límite configurado. Vuelve a obtener la ubicación.",
+  "mobile.release.detailTrainingUnavailable":
+    "No se pudo comprobar tu capacitación para esta liberación.",
+  "mobile.release.detailTrainingBlocked":
+    "La capacitación descargada no permite esta liberación. Pide a tu supervisor que la revise.",
+  "mobile.release.detailScheduleUnavailable":
+    "No se pudo comprobar una tarea autorizada vinculada con este permiso.",
+  "mobile.release.detailLotUnavailable":
+    "No se pudo comprobar la seguridad del lote y su existencia recibida para esta liberación.",
+  "mobile.release.detailDeviceUnavailable":
+    "No se pudo comprobar el dispositivo y su lote de origen en la copia descargada.",
+  "mobile.release.detailConfigurationUnavailable":
+    "Falta la configuración comprobada para registrar esta liberación.",
+  "mobile.release.detailScopeUnavailable":
+    "La copia descargada no autoriza esta captura. Conserva el registro y consulta a tu supervisor.",
+  "mobile.release.detailContractUnavailable":
+    "Faltan datos de seguridad que el servidor debe descargar al teléfono. No liberes; consulta a tu supervisor.",
+  "mobile.release.quantity": "Cantidad estimada",
+  "mobile.release.quantityHint":
+    "Registra la cantidad observada. La cantidad planeada no confirma existencia ni autorización.",
+  "mobile.release.gpsAccuracy": "Precisión de ubicación, en metros",
+  "mobile.release.acquireGps": "Obtener ubicación",
+  "mobile.release.evidence": "Fotos de evidencia",
+  "mobile.release.evidenceRequired":
+    "La configuración requiere evidencia fotográfica antes de guardar.",
+  "mobile.release.evidenceOptional": "La configuración permite guardar sin foto.",
+  "mobile.release.evidenceUnknown":
+    "No se pudo comprobar el requisito de evidencia. No liberes; consulta a tu supervisor.",
+  "mobile.release.photoPreview": "Vista previa de la foto de liberación",
+  "mobile.release.capturePhoto": "Tomar foto",
+  "mobile.release.undoPhoto": "Deshacer última foto",
+  "mobile.release.phoneSaved": "Guardada en el teléfono. Todavía no hay recepción del servidor.",
+  "mobile.release.serverReceived":
+    "El servidor recibió el registro. Consulta por separado su resultado de revisión.",
+  "mobile.release.inReview":
+    "El servidor recibió el registro para revisión. Esto no confirma una liberación autorizada.",
+  "mobile.release.criticalRejected":
+    "El servidor rechazó la liberación por seguridad. La evidencia se conserva; avisa a tu supervisor. No hay opción de aprobarla desde aquí.",
+  "mobile.release.evidencePending":
+    "Las fotos siguen pendientes de envío o verificación. El registro permanece guardado en el teléfono.",
+  "mobile.release.openInbox": "Ver recepción y resultado en la bandeja",
+  "mobile.release.saveHint":
+    "Guardar conserva el registro en el teléfono; no confirma autorización del servidor.",
+  "mobile.release.working": "Procesando en el teléfono…",
+  "mobile.release.save": "Guardar registro de liberación",
+  "mobile.release.reportDevice": "Reportar dispositivo dañado",
+  "mobile.release.reportSupervisor": "Reportar al supervisor",
+  "mobile.release.backToDay": "Volver al día",
   "mobile.scanner.title": "Escanear código",
   "mobile.scanner.hint": "Apunta al código QR del programa.",
   "mobile.scanner.start": "Usar cámara",

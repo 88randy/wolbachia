@@ -14,6 +14,10 @@ import type { SupplyProjectionSource } from "../supply-receipt/projection-types.
 import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
 import type { FuelCaptureSource } from "../fuel/capture-context.ts";
 import { FuelError } from "../fuel/domain.ts";
+import { ReleaseProjectionUnavailable } from "../releases/projections.ts";
+import type { ReleaseProjectionSource } from "../releases/projections.ts";
+import { SampleProjectionUnavailable } from "../samples/projection.ts";
+import type { SampleProjectionSource } from "../samples/projection.ts";
 
 export type BundleResult =
   | { readonly kind: "bundle"; readonly body: unknown }
@@ -184,10 +188,13 @@ export class DayBundleService {
   async #requiresBody(force: boolean, handle: CaptureTransportHandle | null): Promise<boolean> {
     const consumesLifecycle = this.#deps.getCaptureIdentity !== undefined;
     if (consumesLifecycle && (handle === null || handle.scopeRevision === null)) return true;
+    if (force || (await this.#deps.store.needsBootstrap(consumesLifecycle))) return true;
+    if (!consumesLifecycle) return false;
+    const { store } = this.#deps;
     return (
-      force ||
-      (await this.#deps.store.needsBootstrap(consumesLifecycle)) ||
-      (consumesLifecycle && (await this.#deps.store.needsSupplyBootstrap()))
+      (await store.needsReleaseBootstrap()) ||
+      (await store.needsSampleBootstrap()) ||
+      (await store.needsSupplyBootstrap())
     );
   }
   #replace(body: unknown, turn: ProjectionTurn): Promise<ProjectionTurn> {
@@ -341,6 +348,34 @@ export class DayBundleService {
     return turn.write(async () => {
       const source = await this.#deps.store.fuelCaptureContext(handle);
       if (!handle.isCurrent()) throw new FuelError("scope");
+      return action(source);
+    });
+  }
+  /** Sample reads share the original owner, short projection writer and raw revision guard. */
+  async withSampleProjection<T>(
+    action: (source: SampleProjectionSource) => Promise<T>,
+  ): Promise<T> {
+    const turn = await this.#captureTurn();
+    if (turn.handle === null) throw new SampleProjectionUnavailable();
+    const handle = turn.handle;
+    return turn.write(async () => {
+      const source = await this.#deps.store.sampleProjection(handle);
+      if (!handle.isCurrent()) throw new SampleProjectionUnavailable();
+      return action(source);
+    });
+  }
+  /** Release reads use the same original identity, projection gate and raw SQL revision guard. */
+  async withReleaseProjection<T>(
+    action: (source: ReleaseProjectionSource) => Promise<T>,
+  ): Promise<T> {
+    const turn = await this.#captureTurn();
+    if (turn.handle === null)
+      throw new ReleaseProjectionUnavailable("Release context unavailable.");
+    const handle = turn.handle;
+    return turn.write(async () => {
+      const source = await this.#deps.store.releaseProjection(handle);
+      if (!handle.isCurrent())
+        throw new ReleaseProjectionUnavailable("Release context unavailable.");
       return action(source);
     });
   }

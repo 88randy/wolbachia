@@ -25,13 +25,22 @@ def permit_payload(permit: Permit) -> dict[str, Any]:
         "valid_to": None if version is None else version.valid_to.isoformat(),
         "requirements": {} if version is None else version.type.requirements,
         "blocked_by": [item["reason"] for item in permit_blockers(permit)],
+        "capture": None,
     }
     return {**body, "version": snapshot_hash(body)}
 
 
 def build_permits(ctx: ProducerContext) -> list[dict[str, Any]]:
+    from releases.capture_projections import bound_release_capture
+
+    prepared = bound_release_capture(ctx)
+    captures = prepared.release_capture_payloads or {}
     return [
-        {**permit_payload(permit), "organization_id": str(ctx.organization.pk)}
+        {
+            **permit_payload(permit),
+            "capture": captures.get(str(permit.pk)),
+            "organization_id": str(ctx.organization.pk),
+        }
         for permit in filter_producer_rows(Permit.objects.all(), ctx, ("center_id", "quadrant_id"))
     ]
 
@@ -92,4 +101,4 @@ def _record_suspension_notices(permit: Permit) -> None:
 
 
 def register_permit_producer() -> None:
-    register(BundleProducer("permits", 1, build_permits, PermitBundleSerializer))
+    register(BundleProducer("permits", 2, build_permits, PermitBundleSerializer))

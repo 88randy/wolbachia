@@ -21,10 +21,11 @@ function readItem(value: unknown): ChecklistItem {
     requires_photo: value.requires_photo,
   };
 }
-function readItems(catalogs: readonly unknown[]): readonly ChecklistItem[] {
-  const checklist = catalogs.find(
-    (entry) => isRecord(entry) && entry.slug === "motorcycle-check-item",
-  );
+function readItems(
+  catalogs: readonly unknown[],
+  slug = "motorcycle-check-item",
+): readonly ChecklistItem[] {
+  const checklist = catalogs.find((entry) => isRecord(entry) && entry.slug === slug);
   if (checklist === undefined) return [];
   if (!isRecord(checklist) || !Array.isArray(checklist.items))
     throw new Error("Malformed safety checklist.");
@@ -52,6 +53,7 @@ export function readCatalogSnapshot(value: unknown): ChecklistCatalog {
     version: value.version,
     items: readItems(value.catalogs),
     blockedMotorcycles: blockedCodes(value.motorcycles),
+    sampleOrigins: readItems(value.catalogs, "sample-origin"),
   };
 }
 export function readRulesSnapshot(value: unknown): {

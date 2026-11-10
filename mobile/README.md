@@ -1,5 +1,30 @@
 # mobile
 
+## M10 release, blocked release and samples (#139)
+
+Assignments4 release tasks now remain visible in the day list and open P18/P19.
+The permits2 capture bundle and eligibility1 data commit with the existing DayStore
+writer, cursor and owner/session/scope fences. Actual devices, ReleaseSchedule
+bindings, receipt custody, transit policy and original/current safety drive every
+gate. P19 provides supervisor reporting and has no proceed override. Raw drafts,
+fresh GPS and adopted evidence save through the existing atomic outbox/file journal.
+See [release contract, tests and limits](src/features/releases/README.md).
+
+The existing QR router opens actual downloaded release devices. Capture and retry
+retain one UUID; phone-saved, server-received and review outcomes remain separate.
+Schemas20-21 add retained owner-bound drafts after unchanged SQL1-19. No new
+handler, ledger, permission grant, transport queue or dependency is introduced.
+
+P20 uses the real #117 `sample.collect` handler. A small read-only `sample_capture`
+snapshot supplies scoped canonical source IDs, verified Wolbachia-capable method
+versions and authentic own reception receipts. Sample origins retain their delivered
+catalog pins. Missing facts block Save; no source is inferred from an event UUID.
+QR identity, human code, source, GPS and private evidence commit through the same
+outbox transaction. Only a receipt matching both sample and event UUIDs closes the
+durable lab reminder; no absent or invalid result is interpreted as negative.
+See [sample contract and test ownership](src/features/samples/README.md).
+Native/API/accessibility qualification remains UNRUN; no phone install.
+
 ## M15 history, training and settings (#144)
 
 Settings links P29 local shift/event/code history and P30 own training/evaluation
@@ -37,7 +62,7 @@ P11/P21 share native camera/torch and explicit manual entry, current scoped loca
 routing and duplicate feedback. P12 shows actual downloaded lot/unit/assignment
 pins without inferred stock or expiry. M08 durable drafts and the existing outbox
 own all captures and retry. See [scanner contracts, test map and producer limits](src/features/scanner/README.md).
-Release/sample destinations await #139; supply human labels/codes/expiry and native
+Sample QR routes use the P20 capture reader. Supply human labels/codes/expiry and native
 MO01/API/accessibility qualification remain unavailable or unrun as documented there.
 
 ## M12 incidents and emergency (#141)

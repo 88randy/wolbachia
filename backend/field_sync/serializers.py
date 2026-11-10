@@ -22,6 +22,7 @@ from field_sync.projection_serializers import (
     SamplingPointBundleSerializer,
 )
 from inventory.allocations.serializers import SupplyBundleSerializer
+from lab.samples.capture_serializers import SampleCaptureSnapshotSerializer
 from organizations.serializers import MeScopeSerializer
 from people.serializers import EligibilityBundleSerializer, EligibilityChangeSerializer
 from releases.projection_serializers import PermitBundleSerializer
@@ -206,6 +207,7 @@ class ChangesSerializer(serializers.Serializer[Any]):
     has_more = serializers.BooleanField()
     next_change_at = serializers.DateTimeField(allow_null=True)
     capture_context = CaptureContextSerializer(required=False, allow_null=True)
+    sample_capture = SampleCaptureSnapshotSerializer(required=False, allow_null=True)
     assignments = ProducerChangeSerializer(many=True)
     supplies = SupplyChangeSerializer(many=True)
     permits = PermitChangeSerializer(many=True)
@@ -229,6 +231,7 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     generated_at = serializers.DateTimeField()
     scope_revision = serializers.CharField()
     capture_context = CaptureContextSerializer(required=False, allow_null=True)
+    sample_capture = SampleCaptureSnapshotSerializer(required=False, allow_null=True)
     cursor = serializers.CharField()
     catalog_version = serializers.CharField()
     rules_version = serializers.CharField()

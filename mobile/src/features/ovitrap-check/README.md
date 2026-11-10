@@ -61,11 +61,11 @@ es-MX/en and refreshes from the store. If refresh fails, the notice keeps its re
 instruction. Buffered input keeps its original identity. Discard is private buffer
 cleanup, never an unbound UI command; historical events remain immutable.
 
-| Criterion | Regression in `test/m-08.test.ts` |
-| --- | --- |
-| Every service command rejects a mismatched displayed UUID before writes/native ports | `round 4: every capture command rejects another displayed UUID before any effect` (12 command rows) |
-| Saving A and beginning B both commit but fail their later reads; engine notifications also fail; Edit on A cannot alter B or flush B's pending input | `round 4: Edit on A cannot change B after both post-commit read failures and engine notifications` |
-| Stale action shows its localized notice, reloads B at `point`, and a fresh service resumes B correctly | Same end-to-end local regression, using the production confirmation command and notification observer |
+| Criterion                                                                                                                                            | Regression in `test/m-08.test.ts`                                                                     |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Every service command rejects a mismatched displayed UUID before writes/native ports                                                                 | `round 4: every capture command rejects another displayed UUID before any effect` (12 command rows)   |
+| Saving A and beginning B both commit but fail their later reads; engine notifications also fail; Edit on A cannot alter B or flush B's pending input | `round 4: Edit on A cannot change B after both post-commit read failures and engine notifications`    |
+| Stale action shows its localized notice, reloads B at `point`, and a fresh service resumes B correctly                                               | Same end-to-end local regression, using the production confirmation command and notification observer |
 
 No new dependencies, sync envelope changes or native layout changes.
 

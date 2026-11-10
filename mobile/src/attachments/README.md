@@ -1,5 +1,12 @@
 # Private evidence transport (#246)
 
+M10 (#139) declares release and sample evidence_ids through the same journal and field_event
+parent. Only Save enrolls photos; Undo retains unenrolled private files. Normal
+release/sample JSON waits for verified originals and the opening receipt; same-shift close
+JSON waits for earlier unsettled releases or samples, including future retries. The final
+upload exception and the single SyncEngine remain unchanged. Capture-time safety
+and server review stay independent of file verification or receipt.
+
 M11 (#140) enrolls only the saved fuel event's `receipt_upload_id` through this
 same journal. Retaken/adopted-only files remain private and unenrolled. Normal
 claim and retry timing require that exact enrolled receipt to be verified, while

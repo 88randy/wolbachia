@@ -89,6 +89,7 @@ class Changes:
     has_more: bool = False
     next_change_at: str | None = None
     capture_context: CaptureContext | None = None
+    sample_capture: dict[str, Any] | None = None
     assignments: list[dict[str, Any]] = field(default_factory=list)
     supplies: list[dict[str, Any]] = field(default_factory=list)
     permits: list[dict[str, Any]] = field(default_factory=list)
@@ -160,16 +161,24 @@ def producer_context(batch: BatchContext, permission: str) -> ProducerContext:
     if not scope.allows(permission):
         raise PermissionDenied
     from lab.independent_qa.selectors import visibility_revision
+    from lab.samples.capture import prepare_sample_capture
+    from releases.capture_projections import prepare_release_capture
     from uploads.access import UploadActor
 
-    return ProducerContext(
-        batch.organization,
-        batch.user,
-        scope,
-        batch.received_at,
-        permission,
-        configuration_generation=captured_generation(membership),
-        lab_visibility_revision=visibility_revision(UploadActor(batch.user, batch.organization)),
+    return prepare_sample_capture(
+        prepare_release_capture(
+            ProducerContext(
+                batch.organization,
+                batch.user,
+                scope,
+                batch.received_at,
+                permission,
+                configuration_generation=captured_generation(membership),
+                lab_visibility_revision=visibility_revision(
+                    UploadActor(batch.user, batch.organization)
+                ),
+            )
+        )
     )
 
 
@@ -180,6 +189,9 @@ def scope_revision(ctx: ProducerContext) -> str:
     outside the scope have no CourierChange for it. Any membership/profile revision bump, and any
     producer schema change (rows that were never delivered by changes), forces a re-bootstrap.
     """
+    from lab.samples.capture import bound_sample_capture
+
+    ctx = bound_sample_capture(ctx)
     relevant = {
         FIELD_BOOTSTRAP,
         FIELD_EVENT_SYNC,
@@ -189,6 +201,7 @@ def scope_revision(ctx: ProducerContext) -> str:
         "egg_count.void",
         "recount.create",
         "recount.adjudicate",
+        "sample.collect",
     }
     grants = [
         {"permissions": sorted(codes & relevant), "scope": scope}
@@ -202,6 +215,8 @@ def scope_revision(ctx: ProducerContext) -> str:
             "generation": ctx.configuration_generation,
             "schema": bundle_schema_version(),
             "lab_visibility": ctx.lab_visibility_revision,
+            "release_visibility": ctx.release_visibility_revision,
+            "sample_visibility": ctx.sample_visibility_revision,
         }
     )
 
@@ -311,6 +326,19 @@ def _typed_changes(
 
 def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerContext) -> Changes:
     """Read both streams under the courier lock; advance each only to its last delivered row."""
+    from lab.samples.capture import (
+        bound_sample_capture,
+        prepare_sample_capture,
+        sample_capture_snapshot,
+    )
+    from people.projections import rebind_eligibility
+    from releases.capture_projections import prepare_release_capture
+
+    # This batch can have just changed a genuine sample source; publish its new facts.
+    # Own release.record / sample events of this batch change the facts both captures publish.
+    ctx = rebind_eligibility(
+        ctx, prepare_sample_capture(prepare_release_capture(bound_sample_capture(ctx)))
+    )
     page = list_courier_reviews(batch.organization, batch.user, cursor.sequence)
     rows, has_more = list_courier_changes(
         replace(ctx, permission=FIELD_BOOTSTRAP), cursor.change_sequence
@@ -330,6 +358,7 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerConte
         rules_version=str(rules["version"]),
         next_change_at=_next_change_at(rules["next_change_at"], ctx),
         capture_context=capture_context(ctx, revision=revision),
+        sample_capture=sample_capture_snapshot(ctx),
         has_more=page.has_more or has_more,
         **_typed_changes(rows, ctx),
     )
@@ -337,7 +366,10 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerConte
 
 def build_bootstrap(batch: BatchContext, ctx: ProducerContext | None = None) -> dict[str, Any]:
     """Materialize the entire bundle and cursor while holding the courier transaction lock."""
-    ctx = producer_context(batch, FIELD_BOOTSTRAP) if ctx is None else ctx
+    from lab.samples.capture import bound_sample_capture
+    from lab.samples.capture import capture_content as sample_content
+
+    ctx = bound_sample_capture(producer_context(batch, FIELD_BOOTSTRAP) if ctx is None else ctx)
     position = latest_change_sequence(batch)
     sections = build_sections(ctx)
     rules = build_rules_snapshot(batch.organization, batch.received_at)
@@ -346,14 +378,23 @@ def build_bootstrap(batch: BatchContext, ctx: ProducerContext | None = None) -> 
         "schema_version": bundle_schema_version(),
         "scope_revision": revision,
         "capture_context": capture_context(ctx, revision=revision),
+        "sample_capture": ctx.sample_capture_payload,
         "catalog_version": build_catalog_snapshot(batch.organization)["version"],
         "rules_version": rules["version"],
         "next_change_at": _next_change_at(rules["next_change_at"], ctx),
         "map_manifest_ready": map_manifests_ready(sections["map_manifests"]),
         **sections,
     }
+    from releases.capture_projections import capture_content
+
     return {
-        "bundle_version": snapshot_hash(payload),
+        "bundle_version": snapshot_hash(
+            {
+                **payload,
+                "permits": capture_content(sections["permits"]),
+                "sample_capture": sample_content(ctx.sample_capture_payload),
+            }
+        ),
         **payload,
         "generated_at": batch.received_at,
         "cursor": encode_cursor(
@@ -363,11 +404,17 @@ def build_bootstrap(batch: BatchContext, ctx: ProducerContext | None = None) -> 
 
 
 def _next_change_at(rule_boundary: str | None, ctx: ProducerContext) -> str | None:
+    from lab.samples.capture import sample_capture_snapshot
     from people.projections import earliest_eligibility_change
 
+    sample = sample_capture_snapshot(ctx)
     values = [
         datetime.fromisoformat(value)
-        for value in (rule_boundary, earliest_eligibility_change(ctx))
+        for value in (
+            rule_boundary,
+            earliest_eligibility_change(ctx),
+            None if sample is None else sample["valid_until"],
+        )
         if value is not None
     ]
     return None if not values else min(values).isoformat()

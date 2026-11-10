@@ -57,16 +57,16 @@ local write. Retained closing source frames remain unchanged after plan updates.
 
 ## Criterion to test
 
-| Criterion / invariant | Cheapest owning test |
-| --- | --- |
-| Mismatch, Other, signature, declared units / indivisible pieces | m-05.test.ts domain matrix |
-| Duplicate, wrong kind/foreign/ambiguous scan | m-05.test.ts scan matrix |
-| Original signed receipt survives restart and changed plan | m-05.test.ts file-backed reopen + changed-plan cases |
+| Criterion / invariant                                                           | Cheapest owning test                                        |
+| ------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Mismatch, Other, signature, declared units / indivisible pieces                 | m-05.test.ts domain matrix                                  |
+| Duplicate, wrong kind/foreign/ambiguous scan                                    | m-05.test.ts scan matrix                                    |
+| Original signed receipt survives restart and changed plan                       | m-05.test.ts file-backed reopen + changed-plan cases        |
 | Lost response retries original UUID; pending signature blocks only related JSON | m-05.test.ts generated transport and attachment eligibility |
-| Failed save has no outbox/success; stale owner/session/UI cannot mutate | m-05.test.ts rollback, deferred ABA and expected UUID cases |
-| Strict feed, bootstrap recovery, original projection CAS | supply-projections.test.ts |
-| Failed editor retry preserves inputs | m-05-editor.test.ts |
-| Local/server/review copy and es-MX/en, theme, 130% host controls | m-05-ui.test.ts |
+| Failed save has no outbox/success; stale owner/session/UI cannot mutate         | m-05.test.ts rollback, deferred ABA and expected UUID cases |
+| Strict feed, bootstrap recovery, original projection CAS                        | supply-projections.test.ts                                  |
+| Failed editor retry preserves inputs                                            | m-05-editor.test.ts                                         |
+| Local/server/review copy and es-MX/en, theme, 130% host controls                | m-05-ui.test.ts                                             |
 
 Native force-stop/cold start, physical QR/signature/photo, real B04/B10/review/API,
 TalkBack, 130% native layout, light/dark and both MO01 hardware profiles are UNRUN.

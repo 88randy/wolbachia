@@ -39,7 +39,12 @@ async function scannerHarness(overrides: Parameters<typeof harness>[1] = {}) {
     transport: () => Promise.resolve({ kind: "bundle", body }),
   });
   await bundle.refresh();
-  return { ...local, body, bundle, scanner: createScanner(local.db, bundle, local.service) };
+  return {
+    ...local,
+    body,
+    bundle,
+    scanner: createScanner(local.db, bundle, { ovitrap: local.service }),
+  };
 }
 
 void test("M07 manual routing commits once before navigation and cold services retry the original UUID", async () => {

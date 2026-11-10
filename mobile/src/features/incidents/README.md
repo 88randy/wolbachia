@@ -61,16 +61,16 @@ observed scope/permission loss hides it without deleting captured evidence.
 
 ## Criterion → test
 
-| Criterion / edge | Owning check |
-| --- | --- |
-| Offline report, storage rollback, journal reopen, original UUID lost-response retry, truthful review | `m-12.test.ts` report journey |
-| Other/nonblank description and immutable type version | Report journey |
-| Accident with absent detail/GPS, owner isolation, immutable saved capture | `m-12.test.ts` accident journey; `incident-domain.test.ts` |
-| Photo denial/Undo/enrollment, pending file and revocation during camera/REST | `m-12.test.ts` photo and barrier journeys |
-| Opening retry ordering and unrelated pulls | `m-12.test.ts` opening regression |
-| Call present/absent/denied and URI injection | `incident-domain.test.ts` |
-| Generated REST types/timeline/work contact and stale session | `remote.test.ts` |
-| es-MX/en, light/dark, 130% host text, labels/actions/status/safe close | `incident-ui.test.ts` |
+| Criterion / edge                                                                                     | Owning check                                               |
+| ---------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| Offline report, storage rollback, journal reopen, original UUID lost-response retry, truthful review | `m-12.test.ts` report journey                              |
+| Other/nonblank description and immutable type version                                                | Report journey                                             |
+| Accident with absent detail/GPS, owner isolation, immutable saved capture                            | `m-12.test.ts` accident journey; `incident-domain.test.ts` |
+| Photo denial/Undo/enrollment, pending file and revocation during camera/REST                         | `m-12.test.ts` photo and barrier journeys                  |
+| Opening retry ordering and unrelated pulls                                                           | `m-12.test.ts` opening regression                          |
+| Call present/absent/denied and URI injection                                                         | `incident-domain.test.ts`                                  |
+| Generated REST types/timeline/work contact and stale session                                         | `remote.test.ts`                                           |
+| es-MX/en, light/dark, 130% host text, labels/actions/status/safe close                               | `incident-ui.test.ts`                                      |
 
 Node uses ordinary SQLite, private fixture files and scripted HTTP through the real
 generated client. These checks do not certify live B06/B07, SQLCipher, Android

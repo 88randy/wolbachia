@@ -31,7 +31,7 @@ const FALLBACK_HINT_KEY: Readonly<Partial<Record<OutboxStatus, MessageKey>>> = {
   error: "mobile.inbox.parkedHint",
 };
 
-function resultKey(result: EventResult | null): MessageKey | null {
+export function resultMessageKey(result: EventResult | null): MessageKey | null {
   if (result === null) return null;
   const key = `sync.result.${snakeToCamel(result.code)}`;
   return isMessageKey(key) ? key : null;
@@ -42,7 +42,9 @@ function resultKey(result: EventResult | null): MessageKey | null {
  * knows it, otherwise the generic hint of the status. Never the raw code.
  */
 export function problemMessageKey(item: ProblemItem): MessageKey {
-  return resultKey(item.result) ?? FALLBACK_HINT_KEY[item.status] ?? "sync.inbox.rejectedHint";
+  return (
+    resultMessageKey(item.result) ?? FALLBACK_HINT_KEY[item.status] ?? "sync.inbox.rejectedHint"
+  );
 }
 
 /** The inbox sections, ready to render. */

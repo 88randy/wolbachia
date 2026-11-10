@@ -74,7 +74,46 @@ is retained; `record.void` refuses to erase its consumed custody.
 An unapplied in-review declaration can be voided through the canonical reasoned
 source marker; its immutable ingest status and evidence remain, with no debit.
 
-Permits producer1 is typed in bootstrap and changes. Suspension publishes scoped
+Permits producer2 is typed in bootstrap and changes. Suspension publishes scoped
 CourierChanges and immutable recipient notices; `delivery_unavailable` explicitly
 does not claim external notification delivery. Assignment producer4 admits only
 explicitly planned release work; root2, history7 and supplies1 are preserved.
+
+## Own offline capture prerequisites (#139)
+
+The existing permits section adds nullable typed `capture`: `as_of`, stable
+`version`, `devices` and `tasks`. Both current `field.bootstrap` and
+`field_event.sync` must cover the actual permit pair. The narrow self download
+does not grant `permit.manage`, `release.read` or `lot.read`. Devices are limited
+to biological source lots with genuine effective nonvoid receipts belonging to
+this courier in that pair. It retains current authored equipment state/revision,
+original source lot/version, the real task/PermitVersion binding and current
+owned task revision; no same-quadrant inference creates a binding.
+
+Each custody row retains receipt/source/assignment/shift/unit/piece identity,
+receipt time, original/current lot versions/expiry, exact decimal available
+quantity and actual transit policy/evidence requirements. Availability is the
+nonnegative minimum of `receipt_remaining` and `assignment_balance`, never a plan.
+`accounted_release_event_ids` lists only original source UUIDs whose actual
+same-courier canonical release debit belongs to that exact receipt line. It can
+discharge a local reservation without reinterpreting the immutable ingest verdict.
+Original/current safety uses the same B20 transit evaluator and source-lot snapshot
+builder. Custody rows retain UUID order. For the actual shift/local day ingestion
+selects the first row with enough remaining AND ledger balance, then checks its
+safety; an unsafe first sufficient row is not skipped for a later row.
+
+The request-bound prepared capture cache and stable dependency digest participate
+in the existing scope revision. Device/status, task/owner, lot/safety/policy and
+custody changes invalidate the old cursor; the client obtains a full bootstrap
+before capture resumes. This avoids a second feed or publication in unrelated
+inventory writers. Regulatory changes still publish the existing base permit
+delta with `capture:null`; that cannot hydrate self capture prerequisites.
+`as_of` is an observation clock and is excluded from capture and bootstrap content
+hashes; unchanged facts retain conditional304. Time-sensitive blockers still
+change the dependency hash when their actual expiry is crossed.
+
+No handler, ledger, event payload, scientific threshold, new grant, database
+migration or transport was added. Original event/review/stock revalidation remains
+mandatory. `test_release_capture_139.py` covers genuine own pins, whole-pair
+isolation, stable ETags, safety recovery and single-ledger debit/completion; it
+requires PostgreSQL.
