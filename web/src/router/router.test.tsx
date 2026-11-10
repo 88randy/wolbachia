@@ -36,10 +36,16 @@ const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
   regulatory: "Regulatorio",
   settings: "Configuración",
 };
+const OPERATIONS_ME = makeMe({
+  permissions: ["review_item.read"],
+  scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
+});
 
 describe("area routes", () => {
   test.each(
-    AREAS.filter(({ id }) => !["quadrants", "settings", "inventory", "incidents"].includes(id)),
+    AREAS.filter(
+      ({ id }) => !["quadrants", "settings", "inventory", "incidents", "operations"].includes(id),
+    ),
   )("$path opens the placeholder of $id", async ({ path, id }) => {
     await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
 
@@ -47,6 +53,16 @@ describe("area routes", () => {
       await screen.findByRole("heading", { level: 1, name: AREA_TITLES_ES[id] }),
     ).toBeDefined();
     expect(screen.getByText("Esta sección todavía está en construcción.")).toBeDefined();
+  });
+
+  test("/operations opens the permitted workflow instead of a placeholder", async () => {
+    await renderApp({ path: "/operations", me: OPERATIONS_ME });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Operación" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Bandeja de revisión" }).getAttribute("href")).toBe(
+      "/operations/reviews",
+    );
+    expect(screen.queryByText("Esta sección todavía está en construcción.")).toBeNull();
   });
 
   test("there is one route per area and all paths are different", () => {
@@ -66,9 +82,9 @@ describe("area routes", () => {
   });
 
   test("the area title is translated to English", async () => {
-    await renderApp({ path: "/operations", language: "en" });
+    await renderApp({ path: "/operations", language: "en", me: OPERATIONS_ME });
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Supervision" })).toBeDefined();
+    expect(await screen.findByRole("heading", { level: 1, name: "Operations" })).toBeDefined();
   });
 });
 
@@ -133,9 +149,9 @@ describe("pending state", () => {
 
 describe("document title (WCAG 2.4.2)", () => {
   test("each area sets its own title", async () => {
-    await renderApp({ path: "/operations" });
+    await renderApp({ path: "/operations", me: OPERATIONS_ME });
 
-    expect(document.title).toBe("Supervisión · Wolbachia");
+    expect(document.title).toBe("Operación · Wolbachia");
   });
 
   test("navigating changes the title", async () => {

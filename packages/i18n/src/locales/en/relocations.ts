@@ -1,0 +1,52 @@
+import type { relocations as source } from "../es-MX/relocations";
+export const relocations: Record<keyof typeof source, string> = {
+  "relocations.workspace.blockers": "Current blockers and responsible permissions",
+  "relocations.workspace.offline":
+    "No connection. Your reason is retained. Reconnect and review the current evidence before deciding; an authorized relocation reviewer can resolve server blockers.",
+  "relocations.workspace.title": "Relocations",
+  "relocations.workspace.status": "Decision status",
+  "relocations.workspace.pending": "Pending decision",
+  "relocations.workspace.approved": "Approved",
+  "relocations.workspace.rejected": "Rejected",
+  "relocations.workspace.all": "All",
+  "relocations.workspace.code": "Proposal code",
+  "relocations.workspace.pointId": "Point (ID)",
+  "relocations.workspace.point": "Point code",
+  "relocations.workspace.ovitrap": "Ovitrap (ID)",
+  "relocations.workspace.reason": "Original reason",
+  "relocations.workspace.author": "Author (ID)",
+  "relocations.workspace.createdAt": "Proposed at",
+  "relocations.workspace.deviceTime": "Device time",
+  "relocations.workspace.receivedAt": "Received by server",
+  "relocations.workspace.unavailable": "Unavailable",
+  "relocations.workspace.oldLocation": "Previous location (longitude, latitude)",
+  "relocations.workspace.newLocation": "Proposed location (longitude, latitude)",
+  "relocations.workspace.pointVersion": "Original point version (ID)",
+  "relocations.workspace.evidence": "Original evidence references",
+  "relocations.workspace.capturedRules": "Rules and versions evaluated at capture",
+  "relocations.workspace.voided": "Voided capture",
+  "relocations.workspace.saved": "Decision recorded by the server.",
+  "relocations.workspace.decisionReason": "Decision reason",
+  "relocations.workspace.decidedAt": "Decided at",
+  "relocations.workspace.publishedVersion": "Published version of the same point (ID):",
+  "relocations.workspace.task": "Next-day task:",
+  "relocations.workspace.noTask": "This response does not include a next-day task.",
+  "relocations.workspace.advisory": "Server advisory:",
+  "relocations.workspace.historyPolicy":
+    "The original capture is retained. A decision does not reopen a closed quadrant; late records follow the server's historical policy.",
+  "relocations.workspace.refresh": "Refresh evidence and state",
+  "relocations.workspace.conflict":
+    "The proposal changed or is blocked. Review the refreshed evidence and ask the indicated owner to resolve the blocker; your reason is retained.",
+  "relocations.workspace.decision": "Decide relocation",
+  "relocations.workspace.blocked":
+    "The proposal already has a decision or its capture was voided. An authorized reviewer must inspect the source; this screen cannot replace a decision.",
+  "relocations.workspace.reasonHint":
+    "A reason is required for approval and rejection. The server validates its length. After rejection, only the task confirmed by the server is shown.",
+  "relocations.workspace.reject": "Reject relocation",
+  "relocations.workspace.approve": "Approve relocation",
+  "relocations.workspace.defaultView":
+    "Initial view: proposals awaiting a decision. The server applies filters, ordering and paging.",
+  "relocations.workspace.samePoint":
+    "Compare the previous and proposed locations. The point code is retained.",
+  "relocations.workspace.openSelected": "Review selected proposal",
+};
