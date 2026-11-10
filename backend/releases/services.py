@@ -89,7 +89,7 @@ def create_permit_type(actor: UploadActor, values: dict[str, Any]) -> PermitType
         raise
 
 
-DOCUMENT_CONTENT_TYPES = frozenset({"application/pdf"})
+DOCUMENT_CONTENT_TYPES = frozenset({"application/pdf", "image/jpeg", "image/png"})
 
 
 def _official_document(actor: UploadActor, values: dict[str, Any]) -> UploadVerification:

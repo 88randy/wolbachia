@@ -62,9 +62,9 @@ def _version_values(context, document_id, **extra):
     }
 
 
-def test_photo_is_rejected_as_official_document(release_context):
+def test_disallowed_content_type_is_rejected_as_official_document(release_context):
     context = release_context
-    photo = verified_upload(context.actor, "image/png")
+    photo = verified_upload(context.actor, "text/html")
     values = _version_values(
         context, photo, code="R343-PHOTO", quadrant_id=context.point.quadrant_id
     )
