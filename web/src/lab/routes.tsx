@@ -17,6 +17,7 @@ import { W37Page } from "./W37Page";
 import { W38Page } from "./W38Page";
 import { W40Page } from "./W40Page";
 import { W41Page } from "./W41Page";
+import { pcrRoutes } from "./pcr/routes";
 
 const labReceptionRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -103,4 +104,5 @@ export const labRoutes = [
   shipmentsRoute,
   resultsRoute,
   materialsRoute,
+  ...pcrRoutes,
 ];

@@ -8,6 +8,7 @@ import {
   Recycle,
   Repeat2,
   Send,
+  TestTubes,
   Trash2,
 } from "lucide-react";
 import { useTranslation } from "react-i18next";
@@ -18,6 +19,7 @@ import { canAny } from "../session/can";
 import { useMe } from "../session/use-me";
 import { useCan } from "../session/use-can";
 import { pendingCountOptions } from "./lab-lists";
+import { pcrSummaryOptions } from "./pcr/pcr-api";
 import { useLabScope } from "./use-lab-scope";
 
 type Item = HubCardItem & { permissions: readonly string[] };
@@ -39,6 +41,10 @@ export function LabHome() {
   const results = useQuery({
     ...pendingCountOptions(scope, "results"),
     enabled: can("sample.result_create") && scope.identity.isSettled,
+  });
+  const pcr = useQuery({
+    ...pcrSummaryOptions(scope),
+    enabled: can("pcr.read") && scope.identity.isSettled,
   });
   const candidates: HubCardItem[] = [
     {
@@ -66,6 +72,24 @@ export function LabHome() {
       title: t("lab.home.pending.results"),
       description: t("lab.home.pending.resultsHint"),
       count: results.data,
+      tone: "warning",
+    },
+    {
+      id: "pcr-in-process",
+      icon: TestTubes,
+      link: { to: "/lab/pcr" },
+      title: t("pcr.home.inProcess"),
+      description: t("pcr.home.inProcessHint"),
+      count: pcr.data?.in_process,
+      tone: "info",
+    },
+    {
+      id: "pcr-pending-results",
+      icon: TestTubes,
+      link: { to: "/lab/pcr" },
+      title: t("pcr.home.pendingResults"),
+      description: t("pcr.home.pendingResultsHint"),
+      count: pcr.data?.pending_results,
       tone: "warning",
     },
   ];
@@ -98,6 +122,13 @@ export function LabHome() {
       icon: Microscope,
       to: "/lab/results",
       text: [t("lab.results.title"), t("lab.hub.results")],
+    }),
+    item({
+      id: "pcr",
+      permissions: ["pcr.read"],
+      icon: TestTubes,
+      to: "/lab/pcr",
+      text: [t("pcr.list.title"), t("pcr.home.card")],
     }),
     item({
       id: "shipments",

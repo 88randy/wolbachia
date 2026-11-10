@@ -80,6 +80,7 @@ export const AREAS = [
       "shipment.read",
       "sample.read",
       "material_request.read",
+      "pcr.read",
     ],
   },
   {

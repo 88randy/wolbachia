@@ -176,24 +176,6 @@ class PcrBatchDetailSerializer(PcrBatchRowSerializer):
     reports = PcrReportFileSerializer(many=True)
 
 
-class PcrStatusCountsSerializer(serializers.Serializer[Any]):
-    preparing = serializers.IntegerField()
-    ready_to_ship = serializers.IntegerField()
-    shipped = serializers.IntegerField()
-    received_by_lab = serializers.IntegerField()
-    results_received = serializers.IntegerField()
-    closed = serializers.IntegerField()
-    voided = serializers.IntegerField()
-
-
-class PcrBatchPageSerializer(serializers.Serializer[Any]):
-    count = serializers.IntegerField()
-    next = serializers.CharField(allow_null=True)
-    previous = serializers.CharField(allow_null=True)
-    results = PcrBatchRowSerializer(many=True)
-    status_counts = PcrStatusCountsSerializer()
-
-
 class PcrSummarySerializer(serializers.Serializer[Any]):
     in_process = serializers.IntegerField()
     pending_results = serializers.IntegerField()
@@ -221,3 +203,14 @@ class PcrPreviewSerializer(serializers.Serializer[Any]):
     valid_count = serializers.IntegerField()
     error_count = serializers.IntegerField()
     file_error = serializers.CharField(allow_null=True)
+
+
+class PcrQuadrantOptionSerializer(serializers.Serializer[Any]):
+    id = serializers.UUIDField()
+    code = serializers.CharField()
+    name = serializers.CharField()
+
+
+class PcrEligibleFacetsSerializer(serializers.Serializer[Any]):
+    quadrants = PcrQuadrantOptionSerializer(many=True)
+    weeks = serializers.ListField(child=serializers.CharField())

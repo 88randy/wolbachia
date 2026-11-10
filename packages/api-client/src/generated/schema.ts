@@ -4405,6 +4405,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/pcr-batches/eligible-samples/facets/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["pcr_batches_eligible_samples_facets_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/pcr-batches/summary/": {
         parameters: {
             query?: never;
@@ -11687,7 +11713,7 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["PaddleReuseReceipt"][];
         };
-        PaginatedPcrBatchPageList: {
+        PaginatedPcrBatchRowList: {
             /** @example 123 */
             count: number;
             /**
@@ -11700,7 +11726,10 @@ export interface components {
              * @example http://api.example.org/accounts/?page=2
              */
             previous?: string | null;
-            results: components["schemas"]["PcrBatchPage"][];
+            results: components["schemas"]["PcrBatchRow"][];
+            status_counts?: {
+                [key: string]: number;
+            };
         };
         PaginatedPcrSampleEntryList: {
             /** @example 123 */
@@ -11716,6 +11745,9 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["PcrSampleEntry"][];
+            status_counts?: {
+                [key: string]: number;
+            };
         };
         PaginatedPermitList: {
             /** @example 123 */
@@ -12480,13 +12512,6 @@ export interface components {
             results: components["schemas"]["PcrResult"][];
             reports: components["schemas"]["PcrReportFile"][];
         };
-        PcrBatchPage: {
-            count: number;
-            next: string | null;
-            previous: string | null;
-            results: components["schemas"]["PcrBatchRow"][];
-            status_counts: components["schemas"]["PcrStatusCounts"];
-        };
         PcrBatchRow: {
             /** Format: uuid */
             id: string;
@@ -12513,6 +12538,10 @@ export interface components {
          * @enum {string}
          */
         PcrBatchStatusEnum: "preparing" | "ready_to_ship" | "shipped" | "received_by_lab" | "results_received" | "closed" | "voided";
+        PcrEligibleFacets: {
+            quadrants: components["schemas"]["PcrQuadrantOption"][];
+            weeks: string[];
+        };
         PcrEvent: {
             /** Format: uuid */
             id: string;
@@ -12570,6 +12599,12 @@ export interface components {
             serotype: string;
             ct_value: string | null;
             errors: components["schemas"]["PcrRowError"][];
+        };
+        PcrQuadrantOption: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            name: string;
         };
         PcrReasonRequest: {
             reason: string;
@@ -12647,15 +12682,6 @@ export interface components {
             tracking_number: string;
             /** Format: uuid */
             evidence_id?: string | null;
-        };
-        PcrStatusCounts: {
-            preparing: number;
-            ready_to_ship: number;
-            shipped: number;
-            received_by_lab: number;
-            results_received: number;
-            closed: number;
-            voided: number;
         };
         PcrStepRequest: {
             /** Format: date-time */
@@ -23536,7 +23562,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["PaginatedPcrBatchPageList"];
+                    "application/json": components["schemas"]["PaginatedPcrBatchRowList"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
@@ -24130,6 +24156,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PaginatedPcrSampleEntryList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    pcr_batches_eligible_samples_facets_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PcrEligibleFacets"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

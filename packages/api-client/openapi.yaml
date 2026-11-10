@@ -10435,7 +10435,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/PaginatedPcrBatchPageList'
+                $ref: '#/components/schemas/PaginatedPcrBatchRowList'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -11235,6 +11235,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedPcrSampleEntryList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/eligible-samples/facets/:
+    get:
+      operationId: pcr_batches_eligible_samples_facets_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrEligibleFacets'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -28735,7 +28772,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaddleReuseReceipt'
-    PaginatedPcrBatchPageList:
+    PaginatedPcrBatchRowList:
       type: object
       required:
       - count
@@ -28757,7 +28794,11 @@ components:
         results:
           type: array
           items:
-            $ref: '#/components/schemas/PcrBatchPage'
+            $ref: '#/components/schemas/PcrBatchRow'
+        status_counts:
+          type: object
+          additionalProperties:
+            type: integer
     PaginatedPcrSampleEntryList:
       type: object
       required:
@@ -28781,6 +28822,10 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PcrSampleEntry'
+        status_counts:
+          type: object
+          additionalProperties:
+            type: integer
     PaginatedPermitList:
       type: object
       required:
@@ -30154,29 +30199,6 @@ components:
       - shipped_at
       - status
       - targets
-    PcrBatchPage:
-      type: object
-      properties:
-        count:
-          type: integer
-        next:
-          type: string
-          nullable: true
-        previous:
-          type: string
-          nullable: true
-        results:
-          type: array
-          items:
-            $ref: '#/components/schemas/PcrBatchRow'
-        status_counts:
-          $ref: '#/components/schemas/PcrStatusCounts'
-      required:
-      - count
-      - next
-      - previous
-      - results
-      - status_counts
     PcrBatchRow:
       type: object
       properties:
@@ -30233,6 +30255,20 @@ components:
         * `results_received` - results_received
         * `closed` - closed
         * `voided` - voided
+    PcrEligibleFacets:
+      type: object
+      properties:
+        quadrants:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrQuadrantOption'
+        weeks:
+          type: array
+          items:
+            type: string
+      required:
+      - quadrants
+      - weeks
     PcrEvent:
       type: object
       properties:
@@ -30377,6 +30413,20 @@ components:
       - sample_id
       - serotype
       - target
+    PcrQuadrantOption:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        name:
+          type: string
+      required:
+      - code
+      - id
+      - name
     PcrReasonRequest:
       type: object
       properties:
@@ -30569,31 +30619,6 @@ components:
           nullable: true
       required:
       - tracking_number
-    PcrStatusCounts:
-      type: object
-      properties:
-        preparing:
-          type: integer
-        ready_to_ship:
-          type: integer
-        shipped:
-          type: integer
-        received_by_lab:
-          type: integer
-        results_received:
-          type: integer
-        closed:
-          type: integer
-        voided:
-          type: integer
-      required:
-      - closed
-      - preparing
-      - ready_to_ship
-      - received_by_lab
-      - results_received
-      - shipped
-      - voided
     PcrStepRequest:
       type: object
       properties:

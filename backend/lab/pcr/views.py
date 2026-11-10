@@ -37,8 +37,9 @@ from lab.pcr.serializers import (
     ExternalLabUpdateSerializer,
     PcrBatchCreateSerializer,
     PcrBatchDetailSerializer,
-    PcrBatchPageSerializer,
     PcrBatchQuerySerializer,
+    PcrBatchRowSerializer,
+    PcrEligibleFacetsSerializer,
     PcrPreviewSerializer,
     PcrReasonSerializer,
     PcrReportSerializer,
@@ -53,6 +54,18 @@ from uploads.access import actor_from_request
 from uploads.exceptions import UploadStorageError
 from uploads.models import UploadVerification
 from uploads.storage import read_object
+
+
+class PcrPagination(StandardPagination):
+    """Standard page plus the per-status counts of the filtered batches (status tabs)."""
+
+    def get_paginated_response_schema(self, schema: dict[str, Any]) -> dict[str, Any]:
+        paged = super().get_paginated_response_schema(schema)
+        paged["properties"]["status_counts"] = {
+            "type": "object",
+            "additionalProperties": {"type": "integer"},
+        }
+        return paged
 
 
 def _lab_snapshot(lab: ExternalLab) -> dict[str, Any]:
@@ -142,7 +155,7 @@ class PcrBatchViewSet(
 ):
     queryset = PcrBatch.objects.none()
     serializer_class = PcrBatchDetailSerializer
-    pagination_class = StandardPagination
+    pagination_class = PcrPagination
     filter_backends = [CodeLookupFilter]
     code_lookup_field = "code"
     required_permissions = {
@@ -150,6 +163,7 @@ class PcrBatchViewSet(
         "retrieve": PCR_READ,
         "summary": PCR_READ,
         "eligible_samples": PCR_MANAGE,
+        "eligible_facets": PCR_MANAGE,
         "create": PCR_MANAGE,
         "ready": PCR_MANAGE,
         "ship": PCR_MANAGE,
@@ -175,7 +189,7 @@ class PcrBatchViewSet(
     def _detail(self, batch: PcrBatch) -> Response:
         return Response(batch_detail(self.get_queryset().get(pk=batch.pk)))
 
-    @extend_schema(parameters=[PcrBatchQuerySerializer], responses=PcrBatchPageSerializer)
+    @extend_schema(parameters=[PcrBatchQuerySerializer], responses=PcrBatchRowSerializer(many=True))
     def list(self, request: Request) -> Response:
         query = PcrBatchQuerySerializer(data=request.query_params)
         query.is_valid(raise_exception=True)
@@ -233,6 +247,36 @@ class PcrBatchViewSet(
             rows = rows.filter(code__icontains=values["search"])
         page = self.paginate_queryset(rows.order_by("-device_time", "code"))
         return self.get_paginated_response([eligible_sample_row(row) for row in page or []])
+
+    @extend_schema(responses=PcrEligibleFacetsSerializer)
+    @action(detail=False, methods=["get"], url_path="eligible-samples/facets", filter_backends=[])
+    def eligible_facets(self, request: Request) -> Response:
+        rows = eligible_samples(actor_from_request(request))
+        quadrants = (
+            rows.filter(quadrant__isnull=False)
+            .values("quadrant_id", "quadrant__code", "quadrant__name")
+            .distinct()
+            .order_by("quadrant__code")
+        )
+        weeks = (
+            rows.filter(reading__isnull=False)
+            .values_list("reading__epi_week", flat=True)
+            .distinct()
+            .order_by("-reading__epi_week")
+        )
+        return Response(
+            {
+                "quadrants": [
+                    {
+                        "id": str(row["quadrant_id"]),
+                        "code": row["quadrant__code"],
+                        "name": row["quadrant__name"],
+                    }
+                    for row in quadrants
+                ],
+                "weeks": list(weeks),
+            }
+        )
 
     @extend_schema(request=PcrBatchCreateSerializer, responses={201: PcrBatchDetailSerializer})
     def create(self, request: Request) -> Response:
