@@ -24,6 +24,7 @@ from field_sync.projection_serializers import (
 from inventory.allocations.serializers import SupplyBundleSerializer
 from organizations.serializers import MeScopeSerializer
 from people.serializers import EligibilityBundleSerializer, EligibilityChangeSerializer
+from releases.projection_serializers import PermitBundleSerializer
 from reviews.history_serializers import CourierHistoryEntrySerializer
 from reviews.models import ReviewKind
 
@@ -181,6 +182,11 @@ class SupplyChangeSerializer(ProducerChangeSerializer):
     data = SupplyBundleSerializer()  # type: ignore[assignment]  # Required wire name overlaps Serializer.data.
 
 
+class PermitChangeSerializer(ProducerChangeSerializer):
+    action = serializers.ChoiceField(choices=["upsert"])
+    data = PermitBundleSerializer()  # type: ignore[assignment]
+
+
 class CaptureContextSerializer(serializers.Serializer[Any]):
     """Self current SYNC observation; no session secret or immutable source authority."""
 
@@ -202,7 +208,7 @@ class ChangesSerializer(serializers.Serializer[Any]):
     capture_context = CaptureContextSerializer(required=False, allow_null=True)
     assignments = ProducerChangeSerializer(many=True)
     supplies = SupplyChangeSerializer(many=True)
-    permits = ProducerChangeSerializer(many=True)
+    permits = PermitChangeSerializer(many=True)
     eligibility = EligibilityChangeSerializer(many=True)
     history = HistoryChangeSerializer(many=True)
     map_manifests = ProducerChangeSerializer(many=True)
@@ -230,7 +236,7 @@ class BootstrapSerializer(serializers.Serializer[Any]):
     map_manifest_ready = serializers.BooleanField()
     assignments = serializers.ListField(child=serializers.DictField())
     supplies = SupplyBundleSerializer(many=True)
-    permits = serializers.ListField(child=serializers.DictField())
+    permits = PermitBundleSerializer(many=True)
     eligibility = EligibilityBundleSerializer(many=True)
     history = CourierHistoryEntrySerializer(many=True)
     map_manifests = MapManifestSerializer(many=True)

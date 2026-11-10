@@ -277,8 +277,9 @@ Rules for handlers: keep row locks short: the batch runs under `SET LOCAL lock_t
 | `ovitrap.place`, `ovitrap.check`, `ovitrap.replace`, `ovitrap.relocate`, `ovitrap.remove` | #9 (`ovitrap.check` carries `paddle_present` and `has_eggs`, `null` without a paddle; feeds `/bags/receive/`, W34) |
 | `fuel.load` | `fleet` app (#103) |
 | `incident.report`, `emergency.accident` | `incidents` app (#104) |
+| `release.record` | `releases` app (#116); authoritative permit/training/task/stock revalidation |
 
-Location, release/permit/training, count and supply families without a real
+Location, count and other families without a real
 registered handler remain unavailable. Their presence in the backlog or a
 generic schema is not an operational capability.
 
@@ -504,7 +505,7 @@ reuse still returns ovitrap_identity_used; no new sync code is added.
 
 ## Scheduling integration boundary (#109, B-12)
 
-SchedulingConfig.ready registers the assignments v3 producer (#212). Bootstrap returns
+SchedulingConfig.ready registers the assignments v4 producer (#116; v3 introduced by #212). Bootstrap returns
 one flat list of kind=quadrant_assignment and kind=task rows, filtered by active
 courier membership, organization and captured permission/paired center/quadrant
 scope. IDs are stable quadrant/task UUIDs. Common fields are id, kind, quadrant_id,
@@ -546,8 +547,9 @@ TokenPair order and generic void-target lock are preserved; no network occurs
 under these locks. Contention remains retryable 429 sync_in_progress.
 
 The task's content-hash resource_version includes is_completed; ownership revisions
-and original FieldEvent status/evidence stay unchanged. Producer v3 changes the
-bundle schema_version and scope_revision, invalidating prior cursors before ingest.
+and original FieldEvent status/evidence stay unchanged. Producer v3 introduced that
+completion schema boundary; v4 adds explicit release tasks (#116). Producer changes
+update bundle schema_version and scope_revision, invalidating prior cursors before ingest.
 Clients must bootstrap and atomically replace their old projections; immutable
 historical v2 feed payloads are retained, never backfilled. Duplicate physical-
 ovitrap/local-week readings remain rejected and completed tasks cannot be reassigned.
@@ -1225,3 +1227,79 @@ Late real QA after physical treatment remains awaiting_material, without an
 invented observation, erased request, stock restoration or automatic resubmission.
 See api-conventions.md and lab/README.md for current paired actions, exact saved
 replies, external legacy assessments and genuine stock/evidence receipts.
+
+## Revalidated releases (#116 / B-20)
+
+`release.record` schema1 declares permit_id, release_device_id, lot_id, positive
+decimal quantity, schedule_task_id, training_version and evidence_ids. Envelope
+shift, GPS, rules_version and catalog_version are required. Capture is retained
+evidence; offline success never grants server release authorization.
+
+The server uses the actual official PermitVersion/PermitType requirements at
+capture and checks current suspension, validity and official zone again. Current
+and capture-time canonical People eligibility must both accept the declared
+training version. Capture assessment excludes qualification facts recorded after
+device_time, even when later backdated. GPS must satisfy each applicable explicit
+accuracy threshold. Equipment uses its latest immutable lifecycle revision;
+inactive or terminal retired status blocks ingestion and later acceptance.
+The actual action=release task must belong to this courier, local capture day and
+permit; it cannot already be consumed. `/permits/{id}/schedule/` creates that
+explicit task/version binding. Task, binding and matching capture-time ownership
+must already exist by device_time, and the current owner must still match. Review
+preserves those exact original task/binding/owner pins. Risk-generated place/check
+work is insufficient.
+Planning requires the courier's current paired sync and bootstrap grants. Later
+bootstrap loss suppresses assignment completion publication without inventing a
+physical release denial or exposing a task outside current download scope.
+
+| `status` | `code` | Meaning |
+| --- | --- | --- |
+| rejected | `release_inaccessible` | Missing or unauthorized permit/reference; no foreign existence disclosure. |
+| rejected | `release_permit_expired` | Capture-time or current permit validity is unavailable or expired. |
+| rejected | `release_permit_suspended` | The permit identity has a retained suspension. |
+| rejected | `release_zone_invalid` | GPS lies outside an applicable official permit polygon. |
+| rejected | `release_training_invalid` | Capture-time/current training or the declared training pin is invalid. |
+| rejected | `release_schedule_invalid` | No matching authorized, owned, unconsumed explicit release task. |
+| rejected | `release_lot_blocked` | Lot expiry, holds, incomplete biological provenance or unsupported transit policy blocks release. |
+| rejected | `release_stock_unavailable` | No sufficient genuine courier receipt/custody or unchanged original source pin. |
+| rejected | `release_gps_unusable` | Missing, nonfinite, nonpositive or insufficiently accurate GPS. |
+| rejected | `release_configuration_unavailable` | Required explicit requirements or envelope configuration pins are missing. |
+| rejected | `release_device_unavailable` | Equipment is currently inactive/retired, absent or does not match the actual permit/source-lot context. |
+| rejected | `release_evidence_required` | Original declared release evidence is not verified and eligible for this source. |
+| rejected | `release_void_blocked` | Physical consumption must remain; no automatic stock reversal. |
+| in_review | `release_transit_review_required` | Existing manual_evidence_review policy requires source-bound authorized review of verified transit evidence. |
+
+Invalid permit/training/zone/GPS/lot safety is a critical rejection with no override
+path. The adapter only acknowledges clock_skew, final_upload_after_revoke,
+causal_parent_pending and release_transit_review_required. It never converts a
+rejected source into validity. A fresh in_review source has no Release, stock
+debit or task-completion effect. Acceptance retains the exact original regulatory,
+training, receipt/unit/lot/policy and evidence pins, rechecks current safety and
+applies once through the existing review receipt. Original ingest status, both
+timestamps, payload hash and rule/catalog provenance are unchanged.
+
+The one canonical inventory ledger uses source_kind=release_record with the
+actual Release and credited SupplyReceiptLine. Its negative same-custodian leg
+reduces both receipt remaining quantity and reconciliation availability; retry
+cannot consume again. No alternate ledger, fabricated assignment or stock credit
+is created. Required evidence uses the existing FieldEvent attachment parent and
+current whole-vector scope; downloads require current release.read and, for a
+pending source, review_item.read.
+Reasoned `record.void` can cancel an unapplied in-review declaration, retaining its
+source and evidence. Once a real Release exists, physical custody is preserved and
+the correction returns `release_void_blocked` rather than reversing consumption.
+
+Prepared locks retain sorted authentic Users, Device/DeviceSession/TokenPair,
+known source FieldEvents, Organization NO KEY UPDATE NOWAIT, courier try-locks,
+the permit and domain/stock locks, then sorted Uploads through source/effect commit.
+No late account/source lock or network/storage/mail operation occurs under domain
+locks. Suspension uses the same permit arbiter; a concurrent loser returns a
+retryable429, and a retry sees committed suspension before any consumption.
+
+The permits1 producer emits current official geometry/requirements/validity and
+coded blockers, with scoped transactional upserts on permit writes/suspension.
+Suspension also retains scoped courier/coordinator recipient facts with explicit
+delivery_unavailable; persistence and feed publication do not establish external
+notification delivery. Assignments4 adds release tasks/completion; root2,
+history7 and supplies1 stay unchanged. Producer-boundary changes require a full
+bootstrap before clients resume with the new cursor.

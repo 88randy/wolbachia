@@ -139,6 +139,29 @@ PEOPLE_ADDITIVE_TRIGGERS = {
 } | {("uploads_attachmentlink", "uploads_certification_parent_guard")}
 
 
+# Explicit #116 additions; preserve every independent legacy-trigger assertion.
+RELEASE_ADDITIVE_TRIGGERS = {
+    (table, f"{table}_guard")
+    for table in (
+        "releases_permit",
+        "releases_permittype",
+        "releases_permitversion",
+        "releases_permitsuspension",
+        "releases_permitsuspensionnotice",
+        "releases_releasedevice",
+        "releases_releasedevicestatus",
+        "releases_releaseschedule",
+        "releases_release",
+    )
+} | {
+    ("releases_release", "releases_release_source_guard"),
+    ("releases_release", "inventory_release_stock_complete"),
+    ("inventory_stockoperation", "inventory_release_operation_guard"),
+    ("inventory_stockoperation", "inventory_release_operation_complete"),
+    ("inventory_stockmovement", "inventory_release_movement_complete"),
+}
+
+
 def insert_genuine_legacy_lab_observation(apps, context, bag):
     """Construct a real source/pins/command chain in the supplied model state.
 
@@ -321,6 +344,7 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
             | COMMUNITY_ADDITIVE_TRIGGERS
             | QA_ADDITIVE_TRIGGERS
             | PEOPLE_ADDITIVE_TRIGGERS
+            | RELEASE_ADDITIVE_TRIGGERS
         )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
