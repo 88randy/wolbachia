@@ -27451,9 +27451,19 @@ components:
           type: string
           format: uuid
           readOnly: true
+        center_code:
+          type: string
+          readOnly: true
         quadrant:
           type: string
           format: uuid
+          readOnly: true
+        quadrant_code:
+          type: string
+          readOnly: true
+        type_name:
+          type: string
+          nullable: true
           readOnly: true
         revision:
           type: integer
@@ -27467,6 +27477,7 @@ components:
           allOf:
           - $ref: '#/components/schemas/PermitSuspension'
           readOnly: true
+          nullable: true
         blocked_by:
           type: array
           items:
@@ -27484,14 +27495,17 @@ components:
       required:
       - blocked_by
       - center
+      - center_code
       - code
       - created_at
       - created_by
       - current_version
       - id
       - quadrant
+      - quadrant_code
       - revision
       - suspension
+      - type_name
     PermitBundle:
       type: object
       properties:
@@ -27576,6 +27590,19 @@ components:
       - resource_type
       - resource_version
       - sequence
+    PermitNoticeSummary:
+      type: object
+      properties:
+        kind:
+          type: string
+        status:
+          type: string
+        count:
+          type: integer
+      required:
+      - count
+      - kind
+      - status
     PermitSuspension:
       type: object
       description: |-
@@ -27604,6 +27631,11 @@ components:
           type: string
           format: date-time
           readOnly: true
+        notices:
+          type: array
+          items:
+            $ref: '#/components/schemas/PermitNoticeSummary'
+          readOnly: true
         created_by:
           type: string
           format: uuid
@@ -27618,6 +27650,7 @@ components:
       - created_by
       - effective_from
       - id
+      - notices
       - permit
       - reason
       - revision

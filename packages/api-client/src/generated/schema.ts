@@ -11349,11 +11349,14 @@ export interface components {
             readonly code: string;
             /** Format: uuid */
             readonly center: string;
+            readonly center_code: string;
             /** Format: uuid */
             readonly quadrant: string;
+            readonly quadrant_code: string;
+            readonly type_name: string | null;
             readonly revision: number;
             readonly current_version: components["schemas"]["PermitVersion"] | null;
-            readonly suspension: components["schemas"]["PermitSuspension"];
+            readonly suspension: components["schemas"]["PermitSuspension"] | null;
             readonly blocked_by: components["schemas"]["ReleaseBlocker"][];
             /** Format: uuid */
             readonly created_by: string | null;
@@ -11391,6 +11394,11 @@ export interface components {
             resource_version: string;
             data: components["schemas"]["PermitBundle"];
         };
+        PermitNoticeSummary: {
+            kind: string;
+            status: string;
+            count: number;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -11408,6 +11416,7 @@ export interface components {
             readonly reason: string;
             /** Format: date-time */
             readonly effective_from: string;
+            readonly notices: components["schemas"]["PermitNoticeSummary"][];
             /** Format: uuid */
             readonly created_by: string | null;
             /** Format: date-time */

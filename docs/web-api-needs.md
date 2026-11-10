@@ -238,3 +238,6 @@ reply. It must present actual method/configuration blockers and exact source pro
 not invent scientific defaults or delivery. #115 owns independent execution/blind
 adjudication/paddle reuse; durable RecountRequest ids are the handoff, not a claim
 that those operations already ran. Evidence follows the real sixth Lab parent.
+
+> W43-W45 (#166): `GET /permits/` and `/permits/{id}/` also return `center_code`, `quadrant_code`,
+> `type_name` and, once suspended, `suspension.notices` (kind, status, count per recipient kind).

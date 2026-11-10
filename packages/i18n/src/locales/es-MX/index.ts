@@ -2,6 +2,7 @@ import { notifications } from "./notifications.ts";
 import { transfers } from "./transfers.ts";
 import { allocation } from "./allocation.ts";
 import { permitDocument } from "./permitDocument.ts";
+import { permits } from "./permits.ts";
 import { transferEvidence } from "./transferEvidence.ts";
 
 import { trainings } from "./trainings.ts";
@@ -49,6 +50,7 @@ export const esMX = {
   ...discrepancies,
   ...transferEvidence,
   ...permitDocument,
+  ...permits,
 
   ...trainings,
   ...evaluations,

@@ -48,6 +48,10 @@ import { ResetPasswordPage } from "../auth/ResetPasswordPage";
 import { SelectOrganizationPage } from "../auth/SelectOrganizationPage";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { PhonesPage } from "../devices/PhonesPage";
+import { PERMIT_MANAGE } from "../releases/permits/permissions";
+import { W43Page } from "../releases/permits/W43Page";
+import { W44Page } from "../releases/permits/W44Page";
+import { W45Page } from "../releases/permits/W45Page";
 import { AppShell } from "../shell/AppShell";
 import { SettingsPage } from "../settings/SettingsPage";
 import { PHONES_PERMISSION } from "../devices/permissions";
@@ -269,6 +273,39 @@ const motorcycleRoute = createRoute({
     requirePermission("fleet", context.me, MOTORCYCLE_READ);
   },
   component: W21Page,
+  errorComponent: AreaErrorState,
+});
+
+// W43-W45: permit types, permits and one permit by its human code. All need permit.manage; the
+// suspend action inside W45 checks permit.suspend on its own.
+const permitTypesRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/releases/permit-types",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("releases", context.me, PERMIT_MANAGE);
+  },
+  component: W43Page,
+  errorComponent: AreaErrorState,
+});
+const permitsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/releases/permits",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("releases", context.me, PERMIT_MANAGE);
+  },
+  component: W44Page,
+  errorComponent: AreaErrorState,
+});
+const permitRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/releases/permits/$code",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("releases", context.me, PERMIT_MANAGE);
+  },
+  component: W45Page,
   errorComponent: AreaErrorState,
 });
 
@@ -513,6 +550,9 @@ const routeTree = rootRoute.addChildren([
     organizationRoute,
     rolesRoute,
     phonesRoute,
+    permitTypesRoute,
+    permitsRoute,
+    permitRoute,
     incidentTypesRoute,
     ruleParametersRoute,
     ruleParameterRoute,
