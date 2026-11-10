@@ -9,7 +9,7 @@ from uuid import uuid5
 
 from lab.access import LabTarget
 from lab.commands import LabCommandInput, execute_lab_command
-from lab.models import BagReceipt
+from lab.models import EggCountAttempt
 from organizations.demo_seed.field import NAMESPACE
 from organizations.demo_seed.history import (
     MEAN_EGGS_BY_WEEK,
@@ -17,6 +17,7 @@ from organizations.demo_seed.history import (
     ZONE_FACTOR,
     hotspot_factor,
 )
+from organizations.demo_seed.resilience import retrying
 from organizations.models import Organization
 from ovitraps.models import Bag
 from uploads.access import UploadActor
@@ -52,16 +53,16 @@ def ensure_lab_history(organization: Organization, entomologist: UploadActor) ->
     # Spread the counted bags over quadrants instead of taking the first codes of each week.
     bags.sort(key=lambda bag: (bag.reading.epi_week, uuid5(NAMESPACE, bag.code).hex))
     weeks = sorted({bag.reading.epi_week for bag in bags})
-    done = set(
-        BagReceipt.objects.filter(organization=organization).values_list("bag_id", flat=True)
+    counted_bags = set(
+        EggCountAttempt.objects.filter(organization=organization).values_list("bag_id", flat=True)
     )
     counted = 0
     per_week: dict[str, int] = {}
-    for bag in bags:  # bags received in an earlier run count toward the weekly share
-        if bag.pk in done:
+    for bag in bags:  # bags counted in an earlier run use up the weekly share
+        if bag.pk in counted_bags:
             per_week[bag.reading.epi_week] = per_week.get(bag.reading.epi_week, 0) + 1
     for bag in bags:
-        if bag.pk in done:
+        if bag.pk in counted_bags:
             continue
         weeks_ago = len(weeks) - weeks.index(bag.reading.epi_week)
         taken = per_week.get(bag.reading.epi_week, 0)
@@ -69,16 +70,16 @@ def ensure_lab_history(organization: Organization, entomologist: UploadActor) ->
             continue
         per_week[bag.reading.epi_week] = taken + 1
         target = LabTarget("bag", bag.pk)
-        execute_lab_command(
-            entomologist, LabCommandInput("receive", target, _command_id("receive", bag), {})
-        )
+        # The command ids are fixed per bag: a bag received by an interrupted run replays its
+        # reception and only the missing count is written.
+        receive = LabCommandInput("receive", target, _command_id("receive", bag), {})
+        retrying(lambda receive=receive: execute_lab_command(entomologist, receive))
         values = {
             "expected_revision": 0,
             "value": _egg_value(bag, weeks_ago),
             "confirmed_implausible": False,
         }
-        execute_lab_command(
-            entomologist, LabCommandInput("count", target, _command_id("count", bag), values)
-        )
+        count = LabCommandInput("count", target, _command_id("count", bag), values)
+        retrying(lambda count=count: execute_lab_command(entomologist, count))
         counted += 1
     return counted
