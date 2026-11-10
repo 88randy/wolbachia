@@ -29,4 +29,11 @@ export const errors = {
     "La falla ya no est? pendiente. Actualiza la información para continuar.",
   "errors.api.motorcycleInspectionRequired":
     "La motocicleta necesita una inspección autorizada. Pide apoyo a tu supervisor.",
+  "errors.upload.contentMismatch":
+    "El contenido del archivo no coincide con su tipo. Selecciona el archivo original.",
+  "errors.upload.invalidPdf": "El PDF no es válido o está dañado. Selecciona otro archivo.",
+  "errors.upload.pdfEncrypted":
+    "El PDF está protegido con contraseña. Quita la protección y vuelve a cargarlo.",
+  "errors.upload.typeNotAllowed": "Este tipo de archivo no se acepta aquí. Usa PDF, JPEG o PNG.",
+  "errors.upload.tooLarge": "El archivo supera el límite de {max}. Selecciona uno más ligero.",
 } as const satisfies AreaCatalog<"errors">;

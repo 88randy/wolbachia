@@ -3,6 +3,8 @@
 from typing import Any
 
 from django.db.models import QuerySet
+from django.http import HttpResponse
+from drf_spectacular.types import OpenApiTypes
 from drf_spectacular.utils import extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
@@ -12,6 +14,7 @@ from rest_framework.response import Response
 from core.filters import CodeLookupFilter
 from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.views import OrgScopedViewSetMixin
+from releases.documents import permit_document_response
 from releases.models import Permit, PermitType, Release, ReleaseDevice
 from releases.permissions import PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ
 from releases.selectors import filter_context, scoped_devices, scoped_permits, scoped_releases
@@ -96,6 +99,7 @@ class PermitViewSet(ReleaseReadViewSet):
         "retrieve": PERMIT_MANAGE,
         "create": PERMIT_MANAGE,
         "versions": PERMIT_MANAGE,
+        "document": PERMIT_MANAGE,
         "suspend": PERMIT_SUSPEND,
         "schedule": "schedule.manage",
     }
@@ -126,6 +130,25 @@ class PermitViewSet(ReleaseReadViewSet):
             actor_from_request(request), self.get_object().pk, body.validated_data
         )
         return Response(PermitVersionSerializer(row).data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        responses={
+            (200, "image/jpeg"): OpenApiTypes.BINARY,
+            (200, "image/png"): OpenApiTypes.BINARY,
+            (200, "application/pdf"): OpenApiTypes.BINARY,
+        }
+    )
+    @action(
+        detail=True,
+        methods=["get"],
+        url_path=r"versions/(?P<revision>[0-9]+)/document",
+        filter_backends=[],
+    )
+    def document(
+        self, request: Request, pk: str | None = None, revision: str = "1"
+    ) -> HttpResponse:
+        permit = self.get_object()
+        return permit_document_response(actor_from_request(request), permit.pk, int(revision))
 
     @extend_schema(request=PermitSuspensionWriteSerializer, responses=PermitSuspensionSerializer)
     @action(detail=True, methods=["post"], filter_backends=[])

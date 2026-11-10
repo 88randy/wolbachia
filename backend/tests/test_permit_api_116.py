@@ -319,3 +319,36 @@ def test_equipment_status_is_an_authored_revision_without_rewriting_biological_l
     )
     assert refused.status_code == 409
     assert refused.data["blocked_by"][0]["reason"] == "release_device_retired"
+
+
+@pytest.mark.django_db(transaction=True)
+def test_official_document_downloads_as_attachment_with_nosniff(permits, api_client):
+    api_client.force_authenticate(permits.user)
+    base = f"/api/v1/permits/{permits.permit.pk}/versions"
+    answer = api_client.get(f"{base}/1/document/")
+    assert answer.status_code == 200
+    assert answer["Content-Disposition"].startswith("attachment")
+    assert answer["X-Content-Type-Options"] == "nosniff"
+    assert answer["Content-Type"] == "image/png"
+    assert answer["Cache-Control"] == "private, no-store"
+    assert answer.content.startswith(b"\x89PNG")
+    assert api_client.get(f"{base}/9/document/").status_code == 404
+
+
+@pytest.mark.django_db(transaction=True)
+def test_official_document_is_coded_404_for_another_organization(
+    permits, api_client, org_b, make_member
+):
+    other, _member = make_member(org_b, ("permit.manage",))
+    api_client.force_authenticate(other)
+    answer = api_client.get(f"/api/v1/permits/{permits.permit.pk}/versions/1/document/")
+    assert answer.status_code == 404
+    assert "code" in answer.json()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_official_document_requires_permit_permission(permits, api_client, make_member):
+    reader, _member = make_member(permits.organization, ("release.read",))
+    api_client.force_authenticate(reader)
+    answer = api_client.get(f"/api/v1/permits/{permits.permit.pk}/versions/1/document/")
+    assert answer.status_code == 403
