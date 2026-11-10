@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from datetime import UTC, datetime, time, timedelta
 from decimal import Decimal
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from uuid import UUID
 from zoneinfo import ZoneInfo
 
@@ -38,6 +38,9 @@ from inventory.selectors import (
 from inventory.transactions import inventory_transaction, require_inventory_lock
 from organizations.models import Center
 from uploads.access import UploadActor
+
+if TYPE_CHECKING:
+    from lab.shipments.models import DeliveryReceipt
 
 
 @dataclass(frozen=True)
@@ -319,11 +322,73 @@ def _opening_movements(actor: UploadActor, admission: LotAdmission, count: int |
     StockMovement.objects.bulk_create(movements, batch_size=SQL_BATCH_SIZE)
 
 
-def require_dispatchable(lot: Lot, actor: UploadActor) -> LotSafety:
+def require_dispatchable(
+    lot: Lot, actor: UploadActor, location: Location | None = None
+) -> LotSafety:
     """Future debits must call this gate while retaining the same transaction/arbiter."""
     require_inventory_lock(lot.organization_id)
-    require_scope(actor, "lot.read", lot)
-    safety = lot_safety(current_lot(lot))
+    require_scope(actor, "lot.read", location if location is not None else lot)
+    safety = lot_safety(current_lot(lot), location=location)
     if safety.status != "available":
         raise InventoryConflictError("inventory_not_dispatchable")
     return safety
+
+
+def append_material_delivery_stock(receipt: "DeliveryReceipt", actor: UploadActor) -> None:
+    """Debit one real external delivery under the shared inventory arbiter."""
+    from inventory.allocations.stock import spendable_balance
+
+    request = receipt.request
+    require_inventory_lock(actor.organization.pk)
+    require_scope(actor, "material_request.deliver", request.location)
+    _require_material_delivery_identity(receipt, actor)
+    require_dispatchable(request.lot, actor, request.location)
+    if spendable_balance(request, request.location) < request.quantity:
+        raise InventoryConflictError("material_delivery_insufficient_stock")
+    operation = StockOperation.objects.create(
+        organization=actor.organization,
+        created_by=actor.user,
+        material_delivery=receipt,
+        source_kind="material_delivery",
+        source_id=receipt.pk,
+        content_hash=receipt.input_hash,
+    )
+    StockMovement.objects.create(
+        organization=actor.organization,
+        created_by=actor.user,
+        operation=operation,
+        line_number=1,
+        lot=request.lot,
+        location=request.location,
+        piece=request.piece,
+        unit_version=request.unit_version,
+        quantity=-request.quantity,
+    )
+
+
+def _require_material_delivery_identity(receipt: "DeliveryReceipt", actor: UploadActor) -> None:
+    request = receipt.request
+    if (
+        receipt.organization_id != actor.organization.pk
+        or request.organization_id != actor.organization.pk
+        or request.lot.organization_id != actor.organization.pk
+        or request.unit_version.organization_id != actor.organization.pk
+        or request.unit_version.supply_type_id != request.lot.supply_id
+        or receipt.created_by_id != actor.user.pk
+    ):
+        raise Http404
+    unit = request.unit_version
+    if not request.quantity.is_finite() or request.quantity <= 0:
+        raise InventoryConflictError("material_delivery_quantity_invalid")
+    if not request.location.center.is_active:
+        raise InventoryConflictError("material_delivery_storage_unavailable")
+    if unit.identity_kind == "lot" and request.piece_id is None:
+        return
+    if (
+        unit.identity_kind != "piece"
+        or request.quantity != 1
+        or request.piece is None
+        or request.piece.organization_id != actor.organization.pk
+        or request.piece.lot_id != request.lot_id
+    ):
+        raise InventoryConflictError("material_delivery_identity_invalid")

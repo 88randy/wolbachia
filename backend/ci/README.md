@@ -51,7 +51,7 @@ incomplete evidence cannot become a successful fragment.
 
 Shard coverage is **data only** (`--cov-report= --cov-fail-under=0`), never a passing
 whole-backend percentage. The existing coverage source/omit configuration remains
-unchanged except adding the Lab, Community, People and Release domains: 19 configured apps,
+unchanged except adding the Lab, Community, People, Release and Privacy domains: 20 configured apps,
 migrations/WSGI/ASGI omitted, and the historical
 absence of `shifts`. This is configured statement coverage, not all installed apps
 or the monorepo. No percentage or exclusion is relaxed in the final gate.

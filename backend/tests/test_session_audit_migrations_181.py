@@ -28,9 +28,10 @@ def test_session_audit_upgrade_keeps_unknown_end_honest_and_cannot_restore_peopl
     executor = MigrationExecutor(connection)
     leaves = executor.loader.graph.leaf_nodes()
     previous = [("accounts", "0002_device_session_and_token_pair")]
+    head_state = None
     try:
-        executor.migrate(previous)
-        old_apps = MigrationExecutor(connection).loader.project_state(previous).apps
+        legacy_state = executor.migrate(previous)
+        old_apps = legacy_state.apps
         sessions = old_apps.get_model("accounts", "DeviceSession")
         pairs = old_apps.get_model("accounts", "TokenPair")
         common = {
@@ -58,7 +59,8 @@ def test_session_audit_upgrade_keeps_unknown_end_honest_and_cannot_restore_peopl
             row.pk: sessions.objects.filter(pk=row.pk).values().get()
             for row in (known, unknown, live)
         }
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=legacy_state)
         for identifier, values in retained.items():
             current = DeviceSession.objects.filter(pk=identifier).values().get()
             assert {key: current[key] for key in values} == values
@@ -79,8 +81,10 @@ def test_session_audit_upgrade_keeps_unknown_end_honest_and_cannot_restore_peopl
         assert live.end_basis == ""
         assert live.retention_anchor is None
         # Before any identity is removed, schema reversal is allowed and preserves original fields.
-        MigrationExecutor(connection).migrate(previous)
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        legacy_state = executor.migrate(previous)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=legacy_state)
         assert dissociate_ended_sessions().sessions_dissociated == 1
         known.refresh_from_db()
         assert known.user_id is known.created_by_id is known.revoked_by_id is None
@@ -96,14 +100,19 @@ def test_session_audit_upgrade_keeps_unknown_end_honest_and_cannot_restore_peopl
             ):
                 cursor.execute(sql, [user.pk, known.pk])
             assert blocked.value.__cause__.sqlstate == "23514"
-        with pytest.raises(IrreversibleError, match="cannot be restored"):
-            MigrationExecutor(connection).migrate(previous)
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        with pytest.raises(IrreversibleError, match="cannot be restored"), transaction.atomic():
+            executor.migrate(previous)
+        assert set(executor.recorder.applied_migrations()) == applied
         assert Widget.objects.filter(pk=business.pk).values().get() == business_before
         device.refresh_from_db()
         assert device.last_user_id == user.pk
         assert DeviceSession.objects.count() == len(retained)
     finally:
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(leaves)
+        executor.migrate(leaves, plan=plan, state=head_state if not plan else None)
 
 
 @pytest.mark.django_db(transaction=True)

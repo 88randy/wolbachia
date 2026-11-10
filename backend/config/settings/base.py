@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "lab.apps.LabConfig",
     "community.apps.CommunityConfig",
     "people.apps.PeopleConfig",
+    "privacy.apps.PrivacyConfig",
     "releases.apps.ReleasesConfig",
 ]
 
