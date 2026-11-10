@@ -12,6 +12,8 @@ import { lab } from "./lab.ts";
 import { conditions } from "./conditions.ts";
 import { incidentTypes } from "./incidentTypes.ts";
 import { shift } from "./shift.ts";
+import { scheduling } from "./scheduling.ts";
+import { live } from "./live.ts";
 import { incidents } from "./incidents.ts";
 import { reviews } from "./reviews.ts";
 import { relocations } from "./relocations.ts";
@@ -19,6 +21,7 @@ import { closure } from "./closure.ts";
 import { inventory } from "./inventory.ts";
 import { ui } from "./ui.ts";
 import { analytics } from "./analytics.ts";
+import { discovery } from "./discovery.ts";
 import { refresh } from "./refresh.ts";
 import { orgAdmin } from "./orgAdmin.ts";
 import { geography } from "./geography.ts";
@@ -58,6 +61,8 @@ export const en: Record<MessageKey, string> = {
   ...evaluations,
   ...lab,
   ...shift,
+  ...scheduling,
+  ...live,
   ...reviews,
   ...relocations,
   ...closure,
@@ -66,6 +71,7 @@ export const en: Record<MessageKey, string> = {
   ...inventory,
   ...ui,
   ...analytics,
+  ...discovery,
   ...refresh,
   ...orgAdmin,
   ...geography,

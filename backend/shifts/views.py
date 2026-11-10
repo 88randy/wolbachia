@@ -46,6 +46,15 @@ class ShiftViewSet(
             return Shift.objects.none()
         scoped = super().get_queryset()
         actor = actor_from_request(self.request)
+        if self.action == "list":
+            organization = self.request.organization  # type: ignore[attr-defined]
+            query = ShiftFilterSerializer(
+                data=self.request.query_params, context={"timezone": organization.timezone}
+            )
+            query.is_valid(raise_exception=True)
+            # Narrow by the requested filters first, so the per-row scope check below only
+            # runs on the rows that could be returned (same rows, far fewer scope lookups).
+            scoped = list_shifts(scoped, query.to_filters())
         visible = []
         for shift in scoped.select_related("motorcycle", "organization"):
             try:
@@ -56,12 +65,7 @@ class ShiftViewSet(
         scoped = scoped.filter(pk__in=visible)
         if self.action != "list":
             return scoped.select_related("motorcycle").prefetch_related("checks__item")
-        organization = self.request.organization  # type: ignore[attr-defined]
-        query = ShiftFilterSerializer(
-            data=self.request.query_params, context={"timezone": organization.timezone}
-        )
-        query.is_valid(raise_exception=True)
-        return list_shifts(scoped, query.to_filters())
+        return scoped
 
     @extend_schema(parameters=[ShiftFilterSerializer])
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:

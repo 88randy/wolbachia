@@ -20,6 +20,7 @@ export const hub: Record<keyof typeof source, string> = {
   "hub.operations.description": "Shifts, reviews and relocations of field work.",
   "hub.operations.reviews": "Records that need a decision.",
   "hub.operations.relocations": "Requests to move ovitraps.",
+  "hub.operations.live": "Who is out in the field right now, and where.",
   "hub.operations.shifts": "Closed shifts and their daily summary.",
 
   "hub.lab.description": "Bag reception, egg counts and lab write-offs.",

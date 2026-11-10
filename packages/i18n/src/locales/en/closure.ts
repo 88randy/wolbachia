@@ -1,5 +1,6 @@
 import type { closure as Spanish } from "../es-MX/closure.ts";
 export const closure = {
+  "closure.crumb": "Closure",
   "closure.page.title": "Close quadrant {code}",
   "closure.page.purpose": "Review every blocker before closing the current quadrant version.",
   "closure.readiness.title": "Closure readiness",
@@ -7,7 +8,7 @@ export const closure = {
   "closure.readiness.ready": "No blockers remain. You can review and confirm closure.",
   "closure.readiness.blocked":
     "Each blocker must be resolved by someone with the indicated permission. Refresh after resolution.",
-  "closure.blocker.unblocker": "Resolved by someone with permission: {permission}",
+  "closure.blocker.unblocker": "The supervisor in charge of this item can resolve it.",
   "closure.blocker.reference": "Reference: {reference}",
   "closure.readiness.version": "Version: {version} · revision {revision}",
   "closure.actions.refresh": "Refresh readiness",

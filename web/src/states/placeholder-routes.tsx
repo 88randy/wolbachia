@@ -8,6 +8,5 @@ import { AreaPlaceholder } from "./AreaPlaceholder";
  */
 export const placeholderRoutes = [
   areaHomeRoute("community", () => <AreaPlaceholder areaId="community" />),
-  areaHomeRoute("dashboards", () => <AreaPlaceholder areaId="dashboards" />),
   areaHomeRoute("regulatory", () => <AreaPlaceholder areaId="regulatory" />),
 ];

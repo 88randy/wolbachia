@@ -1,3 +1,4 @@
+import { Info } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { Button } from "../ui/Button";
 import { CountInput } from "./CountInput";
@@ -33,6 +34,10 @@ export function CountFormFields({ form, scope, code, isLocked }: CountFormFields
         isInvalid={form.isInvalid}
         isReadOnly={isLocked || form.write.failure?.kind === "conflict"}
       />
+      <p className="m-0 flex items-center gap-1.5 text-xs text-ink-3">
+        <Info aria-hidden="true" className="size-3.5 flex-none" />
+        {t("lab.count.hint")}
+      </p>
       <CountFeedback failure={form.write.failure} scope={scope} code={code} />
       <CountFormActions form={form} />
     </>
