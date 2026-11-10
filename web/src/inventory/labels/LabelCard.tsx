@@ -13,7 +13,7 @@ export function LabelCard({ kind, item }: { kind: LabelKind; item: LabelItem }) 
     <div className={styles["label"]}>
       <QRCodeSVG
         className={styles["qr"]}
-        value={qrPayload(kind, item.id)}
+        value={qrPayload(kind, item)}
         level="M"
         marginSize={0}
         fgColor="black"
