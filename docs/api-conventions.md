@@ -66,6 +66,13 @@ the capture action at the actual selected/default location pair; the `/me/` acti
 union cannot infer that capability. Existing condition capture/history and
 incident writers retain their authorization and immutable audit contracts.
 
+## Notification inbox and preferences (#150)
+
+The owned `/notifications/` cursor stream, idempotent read/read-all actions and
+`/me/notification-preferences/` GET/PATCH contract are documented in
+[`notifications.md`](notifications.md). The backend returns registered `code` +
+typed `params`, reauthorizes safe object references and enforces required channels.
+
 ## Regulatory permits and releases (#116 / B-20)
 
 All routes below use `/api/v1/`. Organization comes from the authenticated

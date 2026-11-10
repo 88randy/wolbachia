@@ -1,3 +1,4 @@
+import { notifications } from "./notifications.ts";
 import { transfers } from "./transfers.ts";
 import { transferEvidence } from "./transferEvidence.ts";
 
@@ -40,6 +41,7 @@ import { discrepancies } from "./discrepancies.ts";
 export const esMX = {
   ...conditions,
   ...incidentTypes,
+  ...notifications,
   ...transfers,
   ...discrepancies,
   ...transferEvidence,

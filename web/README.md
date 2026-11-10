@@ -8,6 +8,11 @@ See [incident type configuration](src/settings/incident-types/README.md) and
 [biological monitoring](src/inventory/conditions/README.md) for contract boundaries,
 design differences and criterion-to-test ownership.
 
+Issue #150 adds the W5 notification inbox, shell badge/panel, read/read-all and
+per-type required/optional channel preferences at `/notifications`. See
+[notifications](src/notifications/README.md) for cache/session boundaries,
+criterion-to-test mapping and the accessibility matrix.
+
 Issue #152 adds W12–W14 at `/inventory/transfers[/:code]` and
 `/inventory/discrepancies[/:code]`: verified signed dispatch of prepared transfers,
 manifest identity scanning, photo-backed reception and discrepancy resolution.
@@ -138,7 +143,7 @@ Rules enforced here: every visual value is a `var(--...)` from `@wolbachia/token
 ### What the shell does today
 
 - Sidebar with the 13 areas of the table above (`/`, `/incidents`, `/operations`, `/quadrants`, `/releases`, `/community`, `/inventory`, `/fleet`, `/lab`, `/people`, `/dashboards`, `/regulatory`, `/settings`), each an empty placeholder page. It lists only the areas the user may open (see "Session, guards and permissions"); a group with no visible area loses its heading.
-- Top bar slots: search (Ctrl+K / Cmd+K opens the command palette; hint in the field), notifications (announced as not available yet; no panel, no count), es-MX / en switch (no reload; remembered), one sun/moon dark-theme switch on the right; the user menu stays in the sidebar footer. The backend-scoped center selector is a remembered filter; see W65/W68 (#147) below.
+- Top bar slots: search (Ctrl+K / Cmd+K opens the command palette; hint in the field), permission-scoped W5 notifications (durable unread badge and keyboard-accessible panel), es-MX / en switch (no reload; remembered), one sun/moon dark-theme switch on the right; the user menu stays in the sidebar footer. The backend-scoped center selector is a remembered filter; see W65/W68 (#147) below.
 - The theme preference uses `storage/safe-storage.ts` (`wolbachia.theme`); absent, invalid or unavailable storage defaults to System (Light only when `matchMedia` is unavailable), and a failed write still applies the choice for the current page. Until the first toggle, the switch announces the resolved System appearance and follows live system changes. Space, Enter or a click selects the opposite resolved theme and stores an explicit Light/Dark preference, removing the system listener. The switch uses the shared focus ring and a target larger than 24 px; narrow top bars put search on its own row so all controls remain reachable.
 - Below 768 px (`web.layout.compactBreakpoint`) the sidebar stays collapsed, so the page reflows at 320 CSS px without two-axis scroll (WCAG 1.4.10; e2e checks it). Each page sets its own `document.title` ("<page> · Wolbachia", WCAG 2.4.2).
 - Banner when the browser is offline. It only says the screen may be out of date: the web is not offline-first like the phone.
