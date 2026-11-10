@@ -71,6 +71,6 @@ export const NAV_GROUPS: readonly NavGroup[] = GROUP_ORDER.map((id) => ({
 export function visibleNavGroups(me: Pick<Me, "permissions">): readonly NavGroup[] {
   return NAV_GROUPS.map((group) => ({
     ...group,
-    areas: group.areas.filter((area) => canOpenArea(me, area)),
+    areas: group.areas.filter((area) => !("hidden" in area) && canOpenArea(me, area)),
   })).filter((group) => group.areas.length > 0);
 }

@@ -18,7 +18,7 @@ export const auth: Record<keyof typeof source, string> = {
   "auth.login.noMembership":
     "Your account has no active access to an organization. Contact your administrator.",
   "auth.login.passwordChanged": "Your password was updated. Sign in with the new one.",
-  "auth.login.program": "Wolbachia program",
+  "auth.login.program": "Aedes control with Wolbachia",
   "auth.login.headline": "Entomological operations and surveillance platform",
   "auth.login.tagline":
     "This is where the office prepares, controls and analyzes what happens in the field.",

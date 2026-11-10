@@ -9,5 +9,5 @@
     "erasableSyntaxOnly": true,
     "types": ["node"]
   },
-  "include": ["src", "test", "index.ts", "App.tsx"]
+  "include": ["src", "test", "index.ts", "App.tsx", "nativewind-env.d.ts"]
 }

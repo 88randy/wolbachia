@@ -48,8 +48,7 @@ export const incidents = {
   "incidents.workspace.noDeadline": "Sin plazo configurado",
   "incidents.workspace.defaultView":
     "Vista inicial: abiertos de tu zona. Puedes cambiar el estado en los filtros.",
-  "incidents.workspace.orderHint":
-    "Los críticos aparecen primero; después se aplica el orden del servidor.",
+  "incidents.workspace.orderHint": "Los críticos aparecen primero; después se aplica el orden.",
   "incidents.workspace.thread": "Comentarios y eventos",
   "incidents.workspace.noEvents": "Aún no hay eventos.",
   "incidents.workspace.system": "Sistema",
@@ -92,7 +91,7 @@ export const incidents = {
   "incidents.workspace.closeBlocked":
     "Agrega un motivo y la evidencia verificada requerida. Un responsable con permiso de carga puede adjuntarla.",
   "incidents.workspace.closeConsequence":
-    "Se registrará el cierre y se resolverán únicamente los bloqueos que autorice el servidor.",
+    "Se registrará el cierre y se resolverán únicamente los bloqueos que estén autorizados.",
   "incidents.workspace.void": "Anular incidente",
   "incidents.workspace.voidReason": "Motivo de anulación",
   "incidents.workspace.voidConsequence":
@@ -103,7 +102,7 @@ export const incidents = {
   "incidents.failure.conflict":
     "Otra persona modificó el incidente. Tu texto se conservó. Revisa el estado actual antes de volver a intentar.",
   "incidents.failure.rejected":
-    "El servidor rechazó la acción. Revisa el estado y los requisitos antes de volver a intentar.",
+    "No se pudo completar la acción. Revisa el estado y los requisitos antes de volver a intentar.",
   "incidents.failure.uncertain":
     "No se pudo confirmar el resultado. Revisa el historial antes de decidir si vuelves a intentar; la acción no se reenviará sola.",
   "incidents.evidence.file": "Foto de evidencia",

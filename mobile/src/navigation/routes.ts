@@ -1,8 +1,13 @@
+import type { FeatureRoute } from "./feature-routes.ts";
+
 /**
  * The screens of the app and how a stack of them changes. Pure, so the back rules are tested
- * without a phone. Later epics add their routes here (one union member each).
+ * without a phone. NEW features do not edit this union: they add routes through
+ * feature-routes.ts (declaration merging) and screen-registry.ts.
  */
-export type Route =
+export type Route = FeatureRoute | CoreRoute;
+
+type CoreRoute =
   | {
       readonly name: "ovitrapReplace" | "ovitrapRelocate" | "ovitrapRemove";
       readonly ovitrapId: string;
@@ -53,7 +58,10 @@ export type Stack = readonly [Route, ...Route[]];
 export const INITIAL_STACK: Stack = [{ name: "home" }];
 
 export type NavigationAction =
-  { readonly type: "push"; readonly route: Route } | { readonly type: "pop" };
+  | { readonly type: "push"; readonly route: Route }
+  | { readonly type: "pop" }
+  | { readonly type: "popToRoot" }
+  | { readonly type: "replace"; readonly route: Route };
 
 /** `push` opens a screen on top; `pop` goes back, but never removes the first screen. */
 export function navigationReducer(stack: Stack, action: NavigationAction): Stack {
@@ -63,6 +71,9 @@ export function navigationReducer(stack: Stack, action: NavigationAction): Stack
     return isSameRoute(top, action.route) ? stack : [...stack, action.route];
   }
   const [first, ...rest] = stack;
+  if (action.type === "popToRoot") return [first];
+  if (action.type === "replace")
+    return rest.length === 0 ? [action.route] : [first, ...rest.slice(0, -1), action.route];
   return rest.length === 0 ? stack : [first, ...rest.slice(0, -1)];
 }
 
@@ -76,7 +87,9 @@ function isSameRoute(left: Route | undefined, right: Route): boolean {
   if (right.name === "releaseCapture") return isSameRelease(left, right);
   if (right.name === "sampleCapture") return isSameSample(left, right);
   if ("target" in right) return isSameScanner(left, right);
-  return isSameOvitrap(left, right);
+  if ("ovitrapId" in right) return isSameOvitrap(left, right);
+  // Routes without params, and every feature route: equal params mean the same screen.
+  return JSON.stringify(left) === JSON.stringify(right);
 }
 function isSameOvitrap(left: Route, right: Route): boolean {
   if (!("ovitrapId" in right)) return true;

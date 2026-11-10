@@ -7,6 +7,8 @@
  * - an empty list: every signed-in member (Home);
  * - `"pending"`: the issue that builds the area has not defined its permission code yet, so every
  *   member sees it until then. A test lists these areas; each issue replaces its `"pending"`.
+ *
+ * `hidden: true` keeps an area without screens out of the sidebar and Home (no dead links).
  */
 export type AreaGroup = "main" | "operation" | "resources" | "analysis";
 
@@ -34,7 +36,13 @@ export const AREAS = [
     requiredPermissions: ["quadrant.read"],
   },
   { id: "releases", path: "/releases", group: "operation", requiredPermissions: PENDING },
-  { id: "community", path: "/community", group: "operation", requiredPermissions: PENDING },
+  {
+    id: "community",
+    path: "/community",
+    group: "operation",
+    requiredPermissions: PENDING,
+    hidden: true,
+  },
   {
     id: "inventory",
     path: "/inventory",
@@ -68,8 +76,20 @@ export const AREAS = [
       "evaluation.create",
     ],
   },
-  { id: "dashboards", path: "/dashboards", group: "analysis", requiredPermissions: PENDING },
-  { id: "regulatory", path: "/regulatory", group: "analysis", requiredPermissions: PENDING },
+  {
+    id: "dashboards",
+    path: "/dashboards",
+    group: "analysis",
+    requiredPermissions: PENDING,
+    hidden: true,
+  },
+  {
+    id: "regulatory",
+    path: "/regulatory",
+    group: "analysis",
+    requiredPermissions: PENDING,
+    hidden: true,
+  },
   {
     id: "settings",
     path: "/settings",

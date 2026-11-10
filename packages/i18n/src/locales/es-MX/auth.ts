@@ -18,7 +18,7 @@ export const auth = {
   "auth.login.noMembership":
     "Tu cuenta no tiene acceso activo a una organización. Contacta a tu administrador.",
   "auth.login.passwordChanged": "Tu contraseña se actualizó. Inicia sesión con la nueva.",
-  "auth.login.program": "Programa Wolbachia",
+  "auth.login.program": "Control de Aedes con Wolbachia",
   "auth.login.headline": "Plataforma de operación y vigilancia entomológica",
   "auth.login.tagline": "Aquí la oficina prepara, controla y analiza lo que pasa en campo.",
   "auth.login.standards": "NOM-032-SSA2-2014 · Guías CENAPRECE 2024",

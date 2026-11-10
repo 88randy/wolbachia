@@ -8,6 +8,7 @@ import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
 import { Button } from "../../ui/Button.tsx";
+import { Wordmark } from "../../ui/Wordmark.tsx";
 import { LoginServerSetup } from "./LoginServerSetup.tsx";
 import { loginNotice } from "./auth-notice-presentation.ts";
 import { AuthNotice } from "./AuthNotice.tsx";
@@ -24,9 +25,7 @@ export function LoginContent({ snapshot, form }: LoginContentProps) {
   const notice = loginNotice(snapshot, form.error);
   return (
     <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <View style={styles.logo}>
-        <AppText variant="caption">{t("mobile.login.logo")}</AppText>
-      </View>
+      <Wordmark />
       <AppText variant="h1">{t("mobile.login.title")}</AppText>
       <AuthNotice notice={notice} />
       <LoginFields

@@ -41,6 +41,7 @@ export function AuthOverlay({ snapshot, isWarning, keepWorking }: AuthOverlayPro
     <SafeAreaView style={styles.overlay} accessibilityViewIsModal>
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       <GlobalStateList
+        isCalm
         states={globals.filter(
           (state) => state.cause !== "speedLock" && state.cause !== "clockSkew",
         )}

@@ -26,6 +26,8 @@ import { DEV_TOOLS_ENABLED } from "../config/build-config.ts";
 import { useTheme } from "../theme/ThemeProvider.tsx";
 import { useNavigation } from "./NavigationProvider.tsx";
 import type { Route } from "./routes.ts";
+import { registeredScreen } from "./screen-registry.ts";
+import "./feature-screens.ts";
 
 const SCREENS = {
   day: P9Screen,
@@ -47,6 +49,8 @@ const SCREENS = {
 };
 
 function screenFor(route: Route): ReactNode {
+  const Registered = registeredScreen(route.name);
+  if (Registered) return <Registered key={JSON.stringify(route)} route={route as never} />;
   if ("ovitrapId" in route) return <LifecycleRoute route={route} />;
   if (route.name === "supplyDetail") return <P12Screen lotId={route.lotId} />;
   if (route.name === "releaseCapture")
@@ -63,7 +67,7 @@ function screenFor(route: Route): ReactNode {
         eventId={route.eventId}
       />
     );
-  const Screen = SCREENS[route.name];
+  const Screen = SCREENS[route.name as keyof typeof SCREENS];
   return <Screen />;
 }
 

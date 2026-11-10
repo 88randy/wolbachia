@@ -1,32 +1,44 @@
-import { Link } from "@tanstack/react-router";
+import { CalendarCheck, ClipboardList, MoveRight } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { HubPage } from "../components/templates/HubPage";
+import type { HubCardItem } from "../components/templates/HubCard";
 import { useCan } from "../session/use-can";
-import { Card } from "../ui/Card";
-import { useDocumentTitle } from "../shell/use-document-title";
 
+/** Operations home: reviews, relocations and closed shifts as icon cards. */
 export function OperationsHome() {
   const { t } = useTranslation();
   const can = useCan();
-  useDocumentTitle(t("reviews.workspace.operations"));
+  const items: (HubCardItem & { permission: string })[] = [
+    {
+      id: "reviews",
+      permission: "review_item.read",
+      icon: ClipboardList,
+      link: { to: "/operations/reviews" },
+      title: t("reviews.workspace.title"),
+      description: t("hub.operations.reviews"),
+    },
+    {
+      id: "relocations",
+      permission: "relocation.read",
+      icon: MoveRight,
+      link: { to: "/operations/relocations" },
+      title: t("relocations.workspace.title"),
+      description: t("hub.operations.relocations"),
+    },
+    {
+      id: "shifts",
+      permission: "shift.read",
+      icon: CalendarCheck,
+      link: { to: "/operations/shifts", search: { status: "closed" } },
+      title: t("shift.page.title"),
+      description: t("hub.operations.shifts"),
+    },
+  ];
   return (
-    <Card title={t("reviews.workspace.operations")} headingLevel={1}>
-      {can("review_item.read") && (
-        <p>
-          <Link to="/operations/reviews">{t("reviews.workspace.title")}</Link>
-        </p>
-      )}
-      {can("relocation.read") && (
-        <p>
-          <Link to="/operations/relocations">{t("relocations.workspace.title")}</Link>
-        </p>
-      )}
-      {can("shift.read") && (
-        <p>
-          <Link to="/operations/shifts" search={{ status: "closed" }}>
-            {t("shift.page.title")}
-          </Link>
-        </p>
-      )}
-    </Card>
+    <HubPage
+      title={t("reviews.workspace.operations")}
+      description={t("hub.operations.description")}
+      items={items.filter((item) => can(item.permission))}
+    />
   );
 }

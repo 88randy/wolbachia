@@ -7,6 +7,7 @@
 // 19.3.1 and the app would crash with "Incompatible React versions".
 const path = require("node:path");
 const { getDefaultConfig } = require("expo/metro-config");
+const { withNativeWind } = require("nativewind/metro");
 
 const config = getDefaultConfig(__dirname);
 const upstreamResolve = config.resolver.resolveRequest;
@@ -25,4 +26,4 @@ config.resolver.resolveRequest = (context, moduleName, platform) => {
     : context.resolveRequest(context, moduleName, platform);
 };
 
-module.exports = config;
+module.exports = withNativeWind(config, { input: "./global.css" });

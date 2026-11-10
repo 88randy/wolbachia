@@ -26,7 +26,7 @@ export const geography = {
   "geography.editor.publish": "Publicar nueva versión",
   "geography.editor.discard": "Descartar borrador",
   "geography.editor.hint":
-    "WGS84: un par longitud,latitud por línea. Cierra cada anillo repitiendo el primer vértice; separa los huecos con una línea vacía. El servidor valida la geometría.",
+    "WGS84: un par longitud,latitud por línea. Cierra cada anillo repitiendo el primer vértice; separa los huecos con una línea vacía.",
   "geography.editor.blocked":
     "Resuelve cada punto excluido con evidencia antes de publicar. Quien tenga permiso para crear puntos puede reubicarlos o retirarlos; quien publica cuadrantes puede conservarlos fuera.",
   "geography.editor.pointsLoading":
@@ -42,7 +42,7 @@ export const geography = {
   "geography.error.stale":
     "Hay una revisión más reciente. Actualiza y revisa tu borrador y sus resoluciones antes de volver a publicar.",
   "geography.error.unresolved":
-    "El servidor encontró puntos sin resolver. Revisa los puntos señalados y actualiza su lista.",
+    "Hay puntos sin resolver. Revisa los puntos señalados y actualiza su lista.",
   "geography.error.busy":
     "La geografía está en uso. Espera el plazo indicado y vuelve a intentar explícitamente.",
   "geography.error.wait": "Espera antes de volver a intentar.",
