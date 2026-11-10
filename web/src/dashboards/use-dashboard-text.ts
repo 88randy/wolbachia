@@ -15,6 +15,7 @@ type Translate = (key: string, options?: Record<string, unknown>) => string;
 
 const MAX_FRACTION_DIGITS = 2;
 const WEEK_COLUMNS = new Set(["epi_week", "week"]);
+const WEEK_LABEL = /^\d{4}-W(\d{2})$/;
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 const EMPTY = "—";
 
@@ -57,7 +58,14 @@ function epiLabel(context: Context, isoDate: string): string | null {
   return week === null ? null : context.translate("analytics.epiWeek", { week: week.week });
 }
 
+function weekLabel(context: Context, value: string): string | null {
+  const match = WEEK_LABEL.exec(value);
+  return match === null ? null : context.translate("analytics.epiWeek", { week: Number(match[1]) });
+}
+
 function shortAxis(context: Context, value: string, granularity: Granularity): string {
+  const label = weekLabel(context, value);
+  if (label !== null) return label;
   if (!DATE_PATTERN.test(value)) return value;
   if (granularity === "week") return epiLabel(context, value) ?? value;
   const options: Intl.DateTimeFormatOptions = { day: "numeric", month: "short", timeZone: "UTC" };
@@ -65,6 +73,8 @@ function shortAxis(context: Context, value: string, granularity: Granularity): s
 }
 
 function longAxis(context: Context, value: string, granularity: Granularity): string {
+  const label = weekLabel(context, value);
+  if (label !== null) return `${label} · ${value.slice(0, 4)}`;
   if (!DATE_PATTERN.test(value)) return value;
   const options: Intl.DateTimeFormatOptions = { dateStyle: "medium", timeZone: "UTC" };
   const date = new Intl.DateTimeFormat(context.tag, options).format(utcDate(value));
@@ -81,9 +91,7 @@ function formatWithUnit(context: Context, value: number | null, unit: string): s
 
 function formatCell(
   context: Context,
-  column: string,
-  value: unknown,
-  granularity: Granularity,
+  { column, value, granularity }: { column: string; value: unknown; granularity: Granularity },
 ): string {
   if (typeof value === "number") return formatNumber(context, value);
   if (typeof value !== "string" || value === "") return EMPTY;
@@ -100,7 +108,7 @@ function buildText(context: Context): DashboardText {
     axisLong: (value, granularity) => longAxis(context, value, granularity),
     number: (value) => formatNumber(context, value),
     withUnit: (value, unit) => formatWithUnit(context, value, unit),
-    cell: (column, value, granularity) => formatCell(context, column, value, granularity),
+    cell: (column, value, granularity) => formatCell(context, { column, value, granularity }),
   };
 }
 

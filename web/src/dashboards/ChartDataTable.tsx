@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function -- presentational JSX of a dashboard widget; splitting it into one-use fragments would hurt readability. */
 import { ChevronDown } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";

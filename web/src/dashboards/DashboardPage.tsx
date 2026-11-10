@@ -85,11 +85,13 @@ export function DashboardPage(props: DashboardPageProps) {
       )}
       {dashboard && (
         <>
-          {dashboard.notes.map((note) => (
-            <InlineNotice key={note.code + JSON.stringify(note.params)} tone="info">
-              <p>{text.label(note)}</p>
-            </InlineNotice>
-          ))}
+          {dashboard.notes
+            .filter((note) => note.params["count"] !== 0)
+            .map((note) => (
+              <InlineNotice key={note.code + JSON.stringify(note.params)} tone="info">
+                <p>{text.label(note)}</p>
+              </InlineNotice>
+            ))}
           <IndicatorCards indicators={dashboard.indicators} label={t("analytics.kpi.label")} />
           <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
             {dashboard.charts.map((chart) => (

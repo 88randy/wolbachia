@@ -96,7 +96,7 @@ export function ChartPlot(props: ChartPlotProps) {
           ) : (
             <Line
               key={series.dataKey}
-              type="monotone"
+              type="linear"
               dataKey={series.dataKey}
               stroke={seriesColor(index)}
               strokeWidth={2}

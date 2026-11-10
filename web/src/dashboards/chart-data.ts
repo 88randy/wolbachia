@@ -53,7 +53,7 @@ export function buildChartData(chart: Chart): ChartData {
   return { rows: rows.sort((a, b) => String(a["x"]).localeCompare(String(b["x"]))), series };
 }
 
-const DATE_X = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_X = /^(\d{4}-\d{2}-\d{2}|\d{4}-W\d{2})$/;
 
 /** The x values are calendar dates (a day or the start of an epi week), or plain categories. */
 export function isDateAxis(rows: readonly ChartRow[]): boolean {
