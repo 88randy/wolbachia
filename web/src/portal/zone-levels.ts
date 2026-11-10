@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
+/* eslint-disable max-lines-per-function -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { lightTheme } from "@wolbachia/tokens";
 import type { Zone } from "./portal-data";
 

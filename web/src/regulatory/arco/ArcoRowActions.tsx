@@ -1,4 +1,4 @@
-/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
+/* eslint-disable max-lines-per-function -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { unwrap } from "@wolbachia/api-client";
 import { Play, UserCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
