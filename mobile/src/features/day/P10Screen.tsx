@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
+import { useFieldZones } from "../../maps/use-field-zones.ts";
 import { MapView } from "../../maps/MapView.tsx";
 import { AppHeader } from "../../ui/AppHeader.tsx";
 import { InfoNotice } from "../../ui/InfoNotice.tsx";
@@ -14,6 +15,7 @@ export function P10Screen() {
   const model = useM06();
   const t = useT();
   const points = useMemo(() => toMapPoints(model.tasks, t), [model.tasks, t]);
+  const zones = useFieldZones();
   const hasMissingLocation = model.tasks.length > points.length;
   return (
     <ScreenScaffold
@@ -30,6 +32,7 @@ export function P10Screen() {
       <View className="flex-1">
         <MapView
           points={points}
+          zones={zones}
           selectedId={model.selected?.task.id ?? null}
           onSelectPoint={(id) => {
             const row = model.tasks.find((candidate) => candidate.task.id === id);
