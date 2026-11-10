@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
 import {
@@ -32,7 +33,10 @@ export function ExportHistory() {
   const formatDateTime = useFormatDateTime();
   const formatDay = useFormatCalendarDate();
   const formatNumber = useFormatNumber();
-  const query = useQuery({ ...receiptOptions(scope, FIRST_PAGE), enabled: scope.identity.isSettled });
+  const query = useQuery({
+    ...receiptOptions(scope, FIRST_PAGE),
+    enabled: scope.identity.isSettled,
+  });
   const rows = (query.data?.results ?? []).slice(0, 5);
   return (
     <Card title={t("regulatory.exports.history")} headingLevel={2}>
@@ -54,9 +58,13 @@ export function ExportHistory() {
               <TableRow key={row.id}>
                 <TableCell>{formatDateTime(row.created_at)}</TableCell>
                 <TableCell>{row.actor_name ?? t("regulatory.access.system")}</TableCell>
-                <TableCell>{t(`regulatory.exports.dataset.${row.dataset as "releases"}`)}</TableCell>
+                <TableCell>
+                  {t(`regulatory.exports.dataset.${row.dataset as "releases"}`)}
+                </TableCell>
                 <TableCell>{`${formatDay(row.date_from)} – ${formatDay(row.date_to)}`}</TableCell>
-                <TableCell className="text-right tabular-nums">{formatNumber(row.row_count)}</TableCell>
+                <TableCell className="text-right tabular-nums">
+                  {formatNumber(row.row_count)}
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>

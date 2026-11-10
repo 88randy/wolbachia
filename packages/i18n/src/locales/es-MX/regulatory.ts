@@ -32,7 +32,8 @@ export const regulatory = {
   "regulatory.common.next": "Siguiente",
   "regulatory.common.previous": "Anterior",
   "regulatory.common.denied": "No tienes permiso para ver esta pantalla.",
-  "regulatory.common.noPermissionAction": "Tu perfil no puede hacer esto. Pide ayuda a quien administra.",
+  "regulatory.common.noPermissionAction":
+    "Tu perfil no puede hacer esto. Pide ayuda a quien administra.",
   "regulatory.common.from": "Desde",
   "regulatory.common.to": "Hasta",
 
@@ -62,7 +63,8 @@ export const regulatory = {
   "regulatory.transfers.form.quadrantPlaceholder": "Todo el centro",
   "regulatory.transfers.form.validity": "Vigencia",
   "regulatory.transfers.form.reference": "Oficio o referencia",
-  "regulatory.transfers.form.referenceHint": "Número del oficio o convenio que respalda la entrega.",
+  "regulatory.transfers.form.referenceHint":
+    "Número del oficio o convenio que respalda la entrega.",
   "regulatory.transfers.form.fields": "Datos que se pueden entregar",
   "regulatory.transfers.form.required": "Completa este campo.",
   "regulatory.transfers.form.submit": "Autorizar",
@@ -103,9 +105,11 @@ export const regulatory = {
   "regulatory.exports.historyEmpty": "Todavía no se descarga ninguna exportación.",
 
   "regulatory.arco.title": "Solicitudes ARCO",
-  "regulatory.arco.description": "Acceso, rectificación, cancelación y oposición de datos personales.",
+  "regulatory.arco.description":
+    "Acceso, rectificación, cancelación y oposición de datos personales.",
   "regulatory.arco.new": "Registrar solicitud",
-  "regulatory.arco.newDescription": "Anota la solicitud tal como llegó. El plazo empieza a contar hoy.",
+  "regulatory.arco.newDescription":
+    "Anota la solicitud tal como llegó. El plazo empieza a contar hoy.",
   "regulatory.arco.col.type": "Tipo",
   "regulatory.arco.col.requester": "Solicitante",
   "regulatory.arco.col.received": "Recibida",
@@ -131,7 +135,8 @@ export const regulatory = {
   "regulatory.arco.noOwner": "Sin responsable",
   "regulatory.arco.form.type": "Tipo de solicitud",
   "regulatory.arco.form.requester": "Referencia del solicitante",
-  "regulatory.arco.form.requesterHint": "Folio o seudónimo. No escribas nombre ni datos de contacto.",
+  "regulatory.arco.form.requesterHint":
+    "Folio o seudónimo. No escribas nombre ni datos de contacto.",
   "regulatory.arco.form.received": "Fecha de recepción",
   "regulatory.arco.form.assignMe": "Asignármela",
   "regulatory.arco.form.submit": "Registrar",
@@ -142,7 +147,8 @@ export const regulatory = {
   "regulatory.arco.assigned": "La solicitud quedó a tu nombre.",
   "regulatory.arco.resolve": "Resolver",
   "regulatory.arco.resolveTitle": "Resolver solicitud",
-  "regulatory.arco.resolveDescription": "Cierra la solicitud con su respuesta. No se puede reabrir.",
+  "regulatory.arco.resolveDescription":
+    "Cierra la solicitud con su respuesta. No se puede reabrir.",
   "regulatory.arco.outcome": "Resultado",
   "regulatory.arco.outcome.resolved": "Atendida",
   "regulatory.arco.outcome.rejected": "Rechazada",
@@ -184,7 +190,8 @@ export const regulatory = {
   "regulatory.access.system": "Sistema",
 
   "regulatory.portal.title": "Portal público",
-  "regulatory.portal.description": "Define qué datos agregados ve la ciudadanía. Nunca se muestran datos personales.",
+  "regulatory.portal.description":
+    "Define qué datos agregados ve la ciudadanía. Nunca se muestran datos personales.",
   "regulatory.portal.enabled": "Portal activo",
   "regulatory.portal.enabledHint": "Cuando está apagado, la dirección pública no responde.",
   "regulatory.portal.indicators": "Indicadores visibles",

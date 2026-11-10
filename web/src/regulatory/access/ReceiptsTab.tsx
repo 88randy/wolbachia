@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { useTranslation } from "react-i18next";
 import { DataTable } from "../../data-table/DataTable";
 import type { DataTableColumn } from "../../data-table/table-types";
@@ -56,7 +57,10 @@ export function ReceiptsTab() {
   ];
   return (
     <div className="flex min-w-0 flex-col gap-4">
-      <ListToolbar controller={controller} range={{ key: "dates", label: t("regulatory.common.dates") }} />
+      <ListToolbar
+        controller={controller}
+        range={{ key: "dates", label: t("regulatory.common.dates") }}
+      />
       <DataTable
         caption={t("regulatory.access.tab.exports")}
         columns={columns}

@@ -387,7 +387,15 @@ class PortalHomeView(PortalView):
         summary = [code for code in enabled if code in portal.SUMMARY_INDICATORS]
         return self._respond(
             {
-                "organization": {"name": organization.name, "slug": organization.slug},
+                "organization": {
+                    "name": organization.name,
+                    "slug": organization.slug,
+                    "logo_url": (
+                        f"/api/v1/portal/{organization.slug}/logo/"
+                        if organization.logo_content
+                        else None
+                    ),
+                },
                 "enabled_indicators": enabled,
                 "indicators": portal.indicators(organization, summary),
             }
@@ -410,3 +418,17 @@ class PortalCoverageView(PortalView):
         if "coverage" not in enabled:
             raise Http404
         return self._respond(portal.coverage(organization))
+
+
+class PortalLogoView(PortalView):
+    """The public face of the organization: its own logo, only when the portal is on."""
+
+    @extend_schema(responses={(200, "image/png"): OpenApiTypes.BINARY})
+    def get(self, request: Request, org_slug: str) -> HttpResponse:
+        organization, _enabled = self._context(org_slug)
+        if not organization.logo_content:
+            raise Http404
+        response = HttpResponse(bytes(organization.logo_content), content_type="image/png")
+        response["Cache-Control"] = "public, max-age=300"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response

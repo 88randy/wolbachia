@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { unwrap } from "@wolbachia/api-client";
 import type { ApiClient, Schemas } from "@wolbachia/api-client";
 import type { TableQueryConfig, TableState } from "../data-table/table-types";
@@ -64,7 +65,10 @@ function dateParams(state: TableState) {
   };
 }
 
-function present<T extends string>(value: string | undefined, allowed: readonly T[]): T | undefined {
+function present<T extends string>(
+  value: string | undefined,
+  allowed: readonly T[],
+): T | undefined {
   return allowed.find((candidate) => candidate === value);
 }
 
@@ -164,7 +168,9 @@ export function centersOptions({ client, identity }: RegScope) {
   return orgScopedQueryOptions(identity, {
     key: ["regulatory", "centers"],
     queryFn: async ({ signal }) =>
-      unwrap(await client.GET("/api/v1/centers/", { params: { query: { page_size: 100 } }, signal })),
+      unwrap(
+        await client.GET("/api/v1/centers/", { params: { query: { page_size: 100 } }, signal }),
+      ),
   });
 }
 

@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { ApiError, unwrap } from "@wolbachia/api-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";

@@ -5,7 +5,8 @@ export const portal: Record<keyof typeof esPortal, string> = {
   "portal.nav.home": "Home",
   "portal.nav.trends": "Trends",
   "portal.nav.map": "Map",
-  "portal.footer.privacy": "This portal only shows totals. It never shows data about people or exact locations.",
+  "portal.footer.privacy":
+    "This portal only shows totals. It never shows data about people or exact locations.",
   "portal.footer.source": "Data from {organization}.",
   "portal.cutoff": "Data as of {date}",
   "portal.noCutoff": "No data published yet",
@@ -35,7 +36,8 @@ export const portal: Record<keyof typeof esPortal, string> = {
   "portal.trends.download": "Download CSV",
   "portal.trends.empty": "There are no releases to show yet.",
   "portal.map.title": "Where we have released",
-  "portal.map.lead": "Each zone shows how many releases were made. The line pattern repeats the color.",
+  "portal.map.lead":
+    "Each zone shows how many releases were made. The line pattern repeats the color.",
   "portal.map.label": "Map of release zones",
   "portal.map.legend": "Releases per zone",
   "portal.map.level.none": "No releases",

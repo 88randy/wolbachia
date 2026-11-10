@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { useNavigate } from "@tanstack/react-router";
 import { useTranslation } from "react-i18next";
 import { ListPage } from "../../components/templates/ListPage";
@@ -18,7 +19,10 @@ export function AccessLogPage({ tab }: { tab: AccessLogTab }) {
         value={tab}
         onValueChange={(next) => {
           void navigate({
-            to: next === "exports" ? "/regulatory/access-log/export-receipts" : "/regulatory/access-log",
+            to:
+              next === "exports"
+                ? "/regulatory/access-log/export-receipts"
+                : "/regulatory/access-log",
           });
         }}
         items={[

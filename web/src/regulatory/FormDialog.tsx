@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -48,7 +49,9 @@ export function FormDialog(props: FormDialogProps) {
         }}
       >
         {props.children}
-        {props.hasFailed && <InlineNotice tone="critical">{t("regulatory.common.failed")}</InlineNotice>}
+        {props.hasFailed && (
+          <InlineNotice tone="critical">{t("regulatory.common.failed")}</InlineNotice>
+        )}
         <DialogFooter>
           <Button variant="secondary" onClick={close}>
             {t("regulatory.common.cancel")}

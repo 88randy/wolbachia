@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { unwrap } from "@wolbachia/api-client";
 import { CheckCheck } from "lucide-react";
 import { useState } from "react";

@@ -13,7 +13,11 @@ import { RegulatoryHome } from "./RegulatoryHome";
 import { DataTransfersPage } from "./transfers/DataTransfersPage";
 
 /** A screen of the area: needs the one permission that opens it (the backend re-checks). */
-function screen<const Path extends string>(path: Path, permission: string, component: RouteComponent) {
+function screen<const Path extends string>(
+  path: Path,
+  permission: string,
+  component: RouteComponent,
+) {
   return createRoute({
     getParentRoute: () => authenticatedRoute,
     path,

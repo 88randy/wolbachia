@@ -7,7 +7,8 @@ export const portal = {
   "portal.nav.home": "Inicio",
   "portal.nav.trends": "Tendencias",
   "portal.nav.map": "Mapa",
-  "portal.footer.privacy": "Este portal solo muestra totales. Nunca muestra datos de personas ni ubicaciones exactas.",
+  "portal.footer.privacy":
+    "Este portal solo muestra totales. Nunca muestra datos de personas ni ubicaciones exactas.",
   "portal.footer.source": "Datos de {organization}.",
   "portal.cutoff": "Datos al {date}",
   "portal.noCutoff": "Aún no hay datos publicados",
@@ -37,7 +38,8 @@ export const portal = {
   "portal.trends.download": "Descargar CSV",
   "portal.trends.empty": "Todavía no hay liberaciones por mostrar.",
   "portal.map.title": "Dónde hemos liberado",
-  "portal.map.lead": "Cada zona muestra cuántas liberaciones se han hecho. El patrón de líneas repite el color.",
+  "portal.map.lead":
+    "Cada zona muestra cuántas liberaciones se han hecho. El patrón de líneas repite el color.",
   "portal.map.label": "Mapa de zonas de liberación",
   "portal.map.legend": "Liberaciones por zona",
   "portal.map.level.none": "Sin liberaciones",

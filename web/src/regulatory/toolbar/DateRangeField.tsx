@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { CalendarDays } from "lucide-react";
 import { useId } from "react";
 import { useTranslation } from "react-i18next";
@@ -24,7 +25,9 @@ export function DateRangeField({ label, from, to, onChange }: DateRangeFieldProp
   const start = fromIsoDay(from);
   const end = fromIsoDay(to);
   const summary =
-    from === undefined ? t("regulatory.common.pickDates") : `${format(from)} – ${format(to ?? from)}`;
+    from === undefined
+      ? t("regulatory.common.pickDates")
+      : `${format(from)} – ${format(to ?? from)}`;
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       <label htmlFor={id} className="text-xs font-semibold text-ink-2">

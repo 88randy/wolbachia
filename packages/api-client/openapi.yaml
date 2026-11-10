@@ -10846,6 +10846,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/portal/{org_slug}/logo/:
+    get:
+      operationId: portal_logo_retrieve
+      description: 'The public face of the organization: its own logo, only when the
+        portal is on.'
+      parameters:
+      - in: path
+        name: org_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - portal
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/portal/{org_slug}/releases-by-week/:
     get:
       operationId: portal_releases_by_week_retrieve

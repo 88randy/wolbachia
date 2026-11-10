@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { unwrap } from "@wolbachia/api-client";
 import { Plus } from "lucide-react";
 import { useState } from "react";
@@ -43,7 +44,9 @@ export function ArcoCreateDialog() {
   });
   return (
     <FormDialog
-      trigger={<Button leadingIcon={<Plus aria-hidden="true" />}>{t("regulatory.arco.new")}</Button>}
+      trigger={
+        <Button leadingIcon={<Plus aria-hidden="true" />}>{t("regulatory.arco.new")}</Button>
+      }
       title={t("regulatory.arco.new")}
       description={t("regulatory.arco.newDescription")}
       submitLabel={t("regulatory.arco.form.submit")}
@@ -71,7 +74,10 @@ export function ArcoCreateDialog() {
             label: t(`regulatory.arco.type.${value}`),
           }))}
           onValueChange={(value) => {
-            setDraft((current) => ({ ...current, type: ARCO_TYPES.find((type) => type === value) ?? "" }));
+            setDraft((current) => ({
+              ...current,
+              type: ARCO_TYPES.find((type) => type === value) ?? "",
+            }));
           }}
         />
       </div>

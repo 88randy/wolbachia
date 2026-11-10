@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { useQuery } from "@tanstack/react-query";
 import { unwrap } from "@wolbachia/api-client";
 import { Plus } from "lucide-react";

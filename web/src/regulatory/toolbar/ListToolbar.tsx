@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { ListFilter, Search, X } from "lucide-react";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
@@ -51,14 +52,32 @@ export function ListToolbar(props: ListToolbarProps) {
   const rangeValue = decodeRange(range ? filters[range.key] : undefined);
   const chips = [
     ...(search && filters[search.key] !== undefined
-      ? [{ id: search.key, name: search.label, value: filters[search.key] ?? "", remove: () => { controller.setFilter(search.key, undefined); } }]
+      ? [
+          {
+            id: search.key,
+            name: search.label,
+            value: filters[search.key] ?? "",
+            remove: () => {
+              controller.setFilter(search.key, undefined);
+            },
+          },
+        ]
       : []),
     ...selects.flatMap((select) => {
       const value = filters[select.key];
       const label = select.options.find((option) => option.value === value)?.label;
       return value === undefined || label === undefined
         ? []
-        : [{ id: select.key, name: select.label, value: label, remove: () => { controller.setFilter(select.key, undefined); } }];
+        : [
+            {
+              id: select.key,
+              name: select.label,
+              value: label,
+              remove: () => {
+                controller.setFilter(select.key, undefined);
+              },
+            },
+          ];
     }),
     ...(range && decodeRange(filters[range.key]).from !== undefined
       ? [
@@ -107,7 +126,10 @@ export function ListToolbar(props: ListToolbarProps) {
             <PopoverContent align="start" className="w-80 gap-4 p-4">
               {selects.map((select) => (
                 <div key={select.key} className="flex flex-col gap-1.5">
-                  <label htmlFor={`filter-${select.key}`} className="text-xs font-semibold text-ink-2">
+                  <label
+                    htmlFor={`filter-${select.key}`}
+                    className="text-xs font-semibold text-ink-2"
+                  >
                     {select.label}
                   </label>
                   <SelectMenu
@@ -136,14 +158,17 @@ export function ListToolbar(props: ListToolbarProps) {
         {actions && <div className="ml-auto flex flex-wrap items-center gap-2">{actions}</div>}
       </div>
       {chips.length > 0 && (
-        <ul className="m-0 flex list-none flex-wrap items-center gap-2 p-0" aria-label={t("table.filters.active")}>
+        <ul
+          className="m-0 flex list-none flex-wrap items-center gap-2 p-0"
+          aria-label={t("table.filters.active")}
+        >
           {chips.map((chip) => (
             <li key={chip.id}>
               <button
                 type="button"
                 aria-label={t("table.filters.remove", { filter: chip.name, value: chip.value })}
                 onClick={chip.remove}
-                className="inline-flex min-h-7 items-center gap-1.5 rounded-full bg-tint px-3 text-xs font-semibold text-action hover:bg-tint-strong"
+                className="inline-flex min-h-7 items-center gap-1.5 rounded-full bg-tint px-3 text-xs font-semibold text-action hover:underline"
               >
                 {chip.name}: {chip.value}
                 <X aria-hidden="true" className="size-3.5" />

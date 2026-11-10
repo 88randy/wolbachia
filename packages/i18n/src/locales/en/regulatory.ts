@@ -60,7 +60,8 @@ export const regulatory: Record<keyof typeof esRegulatory, string> = {
   "regulatory.transfers.form.quadrantPlaceholder": "Whole center",
   "regulatory.transfers.form.validity": "Validity",
   "regulatory.transfers.form.reference": "Official letter or reference",
-  "regulatory.transfers.form.referenceHint": "Number of the letter or agreement that backs the transfer.",
+  "regulatory.transfers.form.referenceHint":
+    "Number of the letter or agreement that backs the transfer.",
   "regulatory.transfers.form.fields": "Data that may be handed over",
   "regulatory.transfers.form.required": "Fill in this field.",
   "regulatory.transfers.form.submit": "Authorize",
@@ -101,9 +102,11 @@ export const regulatory: Record<keyof typeof esRegulatory, string> = {
   "regulatory.exports.historyEmpty": "No export has been downloaded yet.",
 
   "regulatory.arco.title": "ARCO requests",
-  "regulatory.arco.description": "Access, rectification, cancellation and opposition of personal data.",
+  "regulatory.arco.description":
+    "Access, rectification, cancellation and opposition of personal data.",
   "regulatory.arco.new": "Register request",
-  "regulatory.arco.newDescription": "Write the request as it arrived. The deadline starts counting today.",
+  "regulatory.arco.newDescription":
+    "Write the request as it arrived. The deadline starts counting today.",
   "regulatory.arco.col.type": "Type",
   "regulatory.arco.col.requester": "Requester",
   "regulatory.arco.col.received": "Received",
@@ -129,7 +132,8 @@ export const regulatory: Record<keyof typeof esRegulatory, string> = {
   "regulatory.arco.noOwner": "No owner",
   "regulatory.arco.form.type": "Request type",
   "regulatory.arco.form.requester": "Requester reference",
-  "regulatory.arco.form.requesterHint": "Case number or alias. Do not write a name or contact data.",
+  "regulatory.arco.form.requesterHint":
+    "Case number or alias. Do not write a name or contact data.",
   "regulatory.arco.form.received": "Date received",
   "regulatory.arco.form.assignMe": "Assign it to me",
   "regulatory.arco.form.submit": "Register",
@@ -182,7 +186,8 @@ export const regulatory: Record<keyof typeof esRegulatory, string> = {
   "regulatory.access.system": "System",
 
   "regulatory.portal.title": "Public portal",
-  "regulatory.portal.description": "Choose which aggregate data citizens see. Personal data is never shown.",
+  "regulatory.portal.description":
+    "Choose which aggregate data citizens see. Personal data is never shown.",
   "regulatory.portal.enabled": "Portal on",
   "regulatory.portal.enabledHint": "When it is off, the public address does not answer.",
   "regulatory.portal.indicators": "Visible indicators",

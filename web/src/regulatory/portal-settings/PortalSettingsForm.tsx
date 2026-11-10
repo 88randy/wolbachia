@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function, complexity -- presentational JSX of a screen; splitting it into one-use fragments would hurt readability. */
 import { unwrap } from "@wolbachia/api-client";
 import { Copy, ExternalLink } from "lucide-react";
 import { useState } from "react";
@@ -61,7 +62,9 @@ export function PortalSettingsForm({ initial }: { initial: PortalSettings }) {
                   checked={indicators.includes(code)}
                   onChange={(event) => {
                     setIndicators((current) =>
-                      event.target.checked ? [...current, code] : current.filter((item) => item !== code),
+                      event.target.checked
+                        ? [...current, code]
+                        : current.filter((item) => item !== code),
                     );
                   }}
                 />

@@ -6,7 +6,10 @@ const SEARCH_DELAY_MS = 300;
  * A search box that applies itself 300 ms after the last keystroke (no "Apply" button) and follows
  * the address when it changes from outside (a removed chip, "Clear filters", the back button).
  */
-export function useDebouncedSearch(applied: string | undefined, apply: (value: string | undefined) => void) {
+export function useDebouncedSearch(
+  applied: string | undefined,
+  apply: (value: string | undefined) => void,
+) {
   const [value, setValue] = useState(applied ?? "");
   const latest = useRef(apply);
   const lastApplied = useRef(applied ?? "");

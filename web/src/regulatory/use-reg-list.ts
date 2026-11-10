@@ -20,14 +20,21 @@ export function useRegScope(): RegScope {
 /** A cursor list of the regulatory area: filters in the address, rows from the server. */
 export function useRegList<Row>(
   table: TableQueryConfig,
-  options: (scope: RegScope, state: TableState) => UseQueryOptions<CursorPage<Row>, Error, CursorPage<Row>>,
+  options: (
+    scope: RegScope,
+    state: TableState,
+  ) => UseQueryOptions<CursorPage<Row>, Error, CursorPage<Row>>,
 ) {
   const scope = useRegScope();
   const controller = useTableUrlState(table);
   const query = useQuery({
     ...options(scope, controller.state),
     enabled: scope.identity.isSettled,
-    select: (page) => ({ next: page.next ?? null, previous: page.previous ?? null, results: page.results }),
+    select: (page) => ({
+      next: page.next ?? null,
+      previous: page.previous ?? null,
+      results: page.results,
+    }),
   });
   return { controller, data: cursorTableData(query) };
 }
