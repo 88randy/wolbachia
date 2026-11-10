@@ -6,16 +6,6 @@ import { AppText } from "../../ui/AppText.tsx";
 import { ShiftField } from "../shift-open/ShiftField.tsx";
 import { ShiftAction } from "../shift-open/ShiftAction.tsx";
 import type { CaptureProps } from "./model.ts";
-function scanBag({ model, draft }: CaptureProps, onInvalid: () => void): void {
-  void model.run(
-    async () => {
-      const result = await model.service.scan("bag", draft.eventId);
-      if (result === "invalid") onInvalid();
-      if (result === "unavailable") model.setError("mobile.ovitrap.scannerUnavailable");
-    },
-    { eventId: draft.eventId },
-  );
-}
 export function BagFields({ model, draft }: CaptureProps) {
   const t = useT();
   const { push } = useNavigation();
@@ -34,9 +24,7 @@ export function BagFields({ model, draft }: CaptureProps) {
         label={t("mobile.ovitrap.scanBag")}
         disabled={model.isBusy}
         onPress={() => {
-          scanBag({ model, draft }, () => {
-            push({ name: "invalidOvitrapCode", target: "bag" });
-          });
+          push({ name: "ovitrapScanner", target: "bag", eventId: draft.eventId });
         }}
       />
       <LaggedToggle model={model} draft={draft} />

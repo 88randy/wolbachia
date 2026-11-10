@@ -26,7 +26,7 @@ export function CaptureOutcome({ event }: { readonly event: OutboxEvent }) {
       <ShiftAction
         label={t("mobile.ovitrap.nextTarget")}
         onPress={() => {
-          push({ name: "ovitrapScanner", target: "ovitrap" });
+          push({ name: "ovitrapScanner", target: "ovitrap", eventId: event.envelope.id });
         }}
       />
     </View>

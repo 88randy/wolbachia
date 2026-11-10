@@ -1,5 +1,14 @@
 # mobile
 
+## M07 QR scanner and supply detail (#136)
+
+P11/P21 share native camera/torch and explicit manual entry, current scoped local
+routing and duplicate feedback. P12 shows actual downloaded lot/unit/assignment
+pins without inferred stock or expiry. M08 durable drafts and the existing outbox
+own all captures and retry. See [scanner contracts, test map and producer limits](src/features/scanner/README.md).
+Release/sample destinations await #139; supply human labels/codes/expiry and native
+MO01/API/accessibility qualification remain unavailable or unrun as documented there.
+
 ## M12 incidents and emergency (#141)
 
 P23/P24 retain reports/accidents and private photos offline in the existing
