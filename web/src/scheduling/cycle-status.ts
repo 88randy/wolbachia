@@ -54,7 +54,30 @@ export function cycleSteps(facts: CycleFacts): CycleStep[] {
   ];
 }
 
-/** The step to do next: the first of 1-4 that is not done (the fifth is optional). */
-export function nextStep(steps: readonly CycleStep[]): CycleStep | undefined {
-  return steps.find((step) => step.id !== "intervention" && step.state !== "done");
+export interface Abilities {
+  canImport: boolean;
+  canManage: boolean;
+}
+
+/** Whether this person can do the step (the fifth is optional and never "next"). */
+function canDo(step: CycleStep, abilities: Abilities): boolean {
+  if (step.id === "risk") return abilities.canImport;
+  return abilities.canManage;
+}
+
+/** The first step of 1-4 that is not done and that this person can do. */
+export function nextStep(
+  steps: readonly CycleStep[],
+  abilities: Abilities,
+): CycleStep | undefined {
+  return steps.find(
+    (step) => step.id !== "intervention" && step.state !== "done" && canDo(step, abilities),
+  );
+}
+
+/** Some step is open but belongs to someone else. */
+export function isWaitingForOthers(steps: readonly CycleStep[], abilities: Abilities): boolean {
+  return steps.some(
+    (step) => step.id !== "intervention" && step.state !== "done" && !canDo(step, abilities),
+  );
 }

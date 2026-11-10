@@ -24,7 +24,7 @@ export function useCycleCards(steps: readonly CycleStep[], facts: CycleFacts): C
       state: stateOf("risk"),
       summary: isRiskDone
         ? t("scheduling.step.risk.done", { count: facts.riskCount })
-        : t("scheduling.step.risk.pending"),
+        : `${t("scheduling.step.risk.pending")}${canImport ? "" : ` ${t("scheduling.step.risk.noPermission")}`}`,
       actionLabel:
         canImport && !isRiskDone ? t("scheduling.step.risk.load") : t("scheduling.step.risk.see"),
       link: { to: canImport && !isRiskDone ? "/scheduling/risk/import" : "/scheduling/risk" },
@@ -44,7 +44,7 @@ export function useCycleCards(steps: readonly CycleStep[], facts: CycleFacts): C
                 total: facts.quadrantCount,
               }),
       actionLabel:
-        assignState === "done"
+        assignState === "done" || !canManage
           ? t("scheduling.step.assign.see")
           : t("scheduling.step.assign.action"),
       link: { to: "/scheduling/assignments" },

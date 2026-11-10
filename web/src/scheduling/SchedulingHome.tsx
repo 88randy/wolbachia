@@ -1,4 +1,4 @@
-import { CalendarDays, CircleCheck } from "lucide-react";
+import { CalendarDays } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageFrame } from "../components/templates/PageFrame";
 import { PageHeader } from "../components/templates/PageHeader";
@@ -56,12 +56,13 @@ export function SchedulingHome() {
                 {t("scheduling.home.next", { step: nextCard.title })}
               </p>
             </InlineNotice>
+          ) : status.isWaiting ? (
+            <InlineNotice tone="info">
+              <p className="font-semibold">{t("scheduling.home.waiting")}</p>
+            </InlineNotice>
           ) : (
             <InlineNotice tone="success">
-              <p className="flex items-center gap-2 font-semibold">
-                <CircleCheck aria-hidden="true" className="size-4" />
-                {t("scheduling.home.allDone")}
-              </p>
+              <p className="font-semibold">{t("scheduling.home.allDone")}</p>
             </InlineNotice>
           )}
           <ol aria-label={week} className="m-0 flex list-none flex-col gap-4 p-0">

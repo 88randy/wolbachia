@@ -44,7 +44,7 @@ export function CourierColumn({
       )}
     >
       <header className="flex flex-col gap-3 px-1">
-        <div className="flex items-baseline justify-between gap-2">
+        <div className="flex flex-col gap-0.5">
           <h2 id={headingId} className="m-0 text-[15px] font-semibold text-ink">
             {column.courier === null ? (
               <span className="inline-flex items-center gap-1.5">

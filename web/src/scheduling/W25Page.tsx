@@ -58,7 +58,7 @@ export function W25Page() {
       ) : (
         <>
           <p className="m-0 text-[13px] text-ink-2">
-            {t("scheduling.assign.autosave")} {t("scheduling.assign.pendingNote")}
+            {t("scheduling.assign.pendingNote")}
           </p>
           <div className="grid min-w-0 items-start gap-4 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
             {board.unassigned.length > 0 && (

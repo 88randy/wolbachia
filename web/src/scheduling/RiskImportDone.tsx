@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CircleCheck, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { PageFrame } from "../components/templates/PageFrame";
 import { PageHeader } from "../components/templates/PageHeader";
@@ -13,10 +13,7 @@ export function RiskImportDone({ count, week }: { count: number; week: string })
     <PageFrame width="narrow">
       <PageHeader title={t("scheduling.import.title")} />
       <InlineNotice tone="success">
-        <p className="flex items-center gap-2 font-semibold">
-          <CircleCheck aria-hidden="true" className="size-4" />
-          {t("scheduling.import.applied", { count })}
-        </p>
+        <p className="font-semibold">{t("scheduling.import.applied", { count })}</p>
       </InlineNotice>
       <section className="flex flex-col gap-3 rounded-2xl border border-line bg-surface p-6 shadow-card">
         <h2 className="m-0 text-base font-semibold">{t("scheduling.import.nextStep")}</h2>

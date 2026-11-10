@@ -3,7 +3,7 @@ import { useApiClient } from "../api/ApiClientProvider";
 import { useCan } from "../session/use-can";
 import { useMe } from "../session/use-me";
 import { useSessionIdentity } from "../session/use-session-identity";
-import { cycleSteps, nextStep, weekFacts } from "./cycle-status";
+import { cycleSteps, isWaitingForOthers, nextStep, weekFacts } from "./cycle-status";
 import type { CycleFacts } from "./cycle-status";
 import {
   assignmentsOptions,
@@ -39,12 +39,14 @@ export function useCycleStatus() {
     ...weekFacts(days, loads.data ?? [], today),
   };
   const steps = cycleSteps(facts);
+  const abilities = { canImport: can("risk_import.apply"), canManage: can("schedule.manage") };
   return {
     week,
     days,
     facts,
     steps,
-    next: nextStep(steps),
+    next: nextStep(steps, abilities),
+    isWaiting: isWaitingForOthers(steps, abilities),
     isLoading: canRead && (risk.isPending || assignments.isPending || loads.isPending),
     isError: risk.isError || assignments.isError || loads.isError,
     refetch: () => {

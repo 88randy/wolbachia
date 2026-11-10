@@ -41,11 +41,8 @@ export function W27Page() {
   const columns = useRiskColumns();
   const canImport = can("risk_import.apply");
   const isEmpty = query.isSuccess && query.data.count === 0;
-  const importLink = (
-    <Link
-      to="/scheduling/risk/import"
-      className={buttonVariants({ variant: canImport && isEmpty ? "primary" : "secondary" })}
-    >
+  const importLink = (variant: "primary" | "secondary") => (
+    <Link to="/scheduling/risk/import" className={buttonVariants({ variant })}>
       <Upload aria-hidden="true" />
       {t("scheduling.risk.import")}
     </Link>
@@ -62,7 +59,7 @@ export function W27Page() {
       actions={
         <>
           <WeekSwitcher week={week} />
-          {canImport && importLink}
+          {canImport && importLink(isEmpty ? "secondary" : "primary")}
         </>
       }
       notices={
@@ -89,7 +86,7 @@ export function W27Page() {
         <EmptyState
           kind="noData"
           message={`${t("scheduling.risk.emptyTitle")}. ${t(canImport ? "scheduling.risk.emptyHelp" : "scheduling.risk.emptyReadOnly")}`}
-          action={canImport ? importLink : undefined}
+          action={canImport ? importLink("primary") : undefined}
         />
       ) : (
         <DataTable

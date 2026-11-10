@@ -10,7 +10,9 @@ import { blocksDirectoryOptions } from "./scheduling-queries";
 import { downloadText, riskTemplate } from "./risk-template";
 import type { RiskImport } from "./use-risk-import";
 
-/** Step 2: pick or drop the CSV, with the format explained and a template to start from. */
+const EXAMPLE = "block_code,category,protocol\nMZ-0123,high,Revisión semanal\nMZ-0124,low,";
+
+/** Step 2: pick or drop the CSV, with the format explained and, when possible, a template. */
 export function RiskImportFileStep({ flow }: { flow: RiskImport }) {
   const { t } = useTranslation();
   const client = useApiClient();
@@ -57,29 +59,30 @@ export function RiskImportFileStep({ flow }: { flow: RiskImport }) {
             pick(event.target.files?.[0]);
           }}
         />
-        <Button
-          variant={flow.file ? "tertiary" : "primary"}
-          onClick={() => input.current?.click()}
-        >
+        <Button variant={flow.file ? "tertiary" : "primary"} onClick={() => input.current?.click()}>
           {t(flow.file ? "scheduling.import.changeFile" : "scheduling.import.chooseFile")}
         </Button>
       </div>
-      <div className="rounded-xl bg-surface-muted p-4 text-[13px] text-ink-2">
+      <div className="flex flex-col gap-2 rounded-xl bg-surface-muted p-4 text-[13px] text-ink-2">
         <p className="m-0 font-semibold text-ink">{t("scheduling.import.formatTitle")}</p>
-        <p className="mt-1 mb-3">{t("scheduling.import.formatHint")}</p>
-        <Button
-          variant="tertiary"
-          leadingIcon={<Download aria-hidden="true" />}
-          disabled={blocks.length === 0}
-          onClick={() => {
-            downloadText(
-              t("scheduling.import.templateName"),
-              riskTemplate(blocks.map((block) => block.code)),
-            );
-          }}
-        >
-          {t("scheduling.import.template")}
-        </Button>
+        <p className="m-0">{t("scheduling.import.formatHint")}</p>
+        <pre className="m-0 overflow-x-auto rounded-lg bg-surface p-3 text-xs text-ink">
+          {EXAMPLE}
+        </pre>
+        {blocks.length > 0 && (
+          <Button
+            variant="tertiary"
+            leadingIcon={<Download aria-hidden="true" />}
+            onClick={() => {
+              downloadText(
+                t("scheduling.import.templateName"),
+                riskTemplate(blocks.map((block) => block.code)),
+              );
+            }}
+          >
+            {t("scheduling.import.template")}
+          </Button>
+        )}
       </div>
     </div>
   );

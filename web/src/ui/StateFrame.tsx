@@ -33,7 +33,7 @@ export function StateFrame({
         <Icon strokeWidth={1.75} className="size-6" />
       </span>
       <p className="m-0 max-w-[60ch] text-sm leading-5 font-medium text-ink">{message}</p>
-      {children}
+      {children && <div className="flex flex-wrap justify-center gap-2">{children}</div>}
     </div>
   );
 }
