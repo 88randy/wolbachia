@@ -170,6 +170,20 @@ uv run python manage.py seed_organization_defaults --organization acme --apply  
 
 The seeded values come from the design brief and must be validated with the program entomologist; parameters the brief gives no value for have no version (`value: null`, "not configured") until an admin sets one.
 
+## Demo data for local end-to-end testing (#358)
+
+`seed_demo` builds a complete synthetic dataset so every web screen and the courier day can be exercised by hand. It is for a local database only: it refuses to run unless `DEBUG` is on or the settings module is `config.settings.dev` / `config.settings.local` (nothing is written when it refuses). Everything goes through the existing services and the ORM, and a rerun finds each row by its code, so nothing is created twice.
+
+```bash
+uv run python manage.py seed_demo                    # create or complete the demo organization `demo`
+uv run python manage.py seed_demo --reset-passwords  # also set every demo password back to its documented value
+```
+
+- **Users**: one per profile, `demo-admin`, `demo-supervisor`, `demo-courier-1`, `demo-courier-2`, `demo-entomologist`, `demo-promoter`, `demo-coordinator`, `demo-warehouse`, `demo-regulatory`, `demo-government`. All names are synthetic. The DEV-ONLY passwords are the fixed list in `organizations/demo_seed/people.py`, valid only on a local database.
+- **Credentials file**: the command writes the users, passwords and the starting data (quadrants, ovitrap QR texts, bag codes) to `backend/demo-credentials.local.md`, which is git-ignored, and prints only its path. Passwords are never printed or logged.
+- **Data**: two centers; three quadrants with polygons, blocks and sampling points; four ovitraps placed in `Q-DEMO-01-B1` (three already read and bagged this week, one left to check on the phone) and the other points left for placing; two motorcycles; quadrant assignments (`demo-courier-1`: `Q-DEMO-01`, `Q-DEMO-02`; `demo-courier-2`: `Q-DEMO-03`) and this week's task schedule; incident types; a storage location with paddle, bag and biological lots and a planned supply assignment for `demo-courier-1`; a release permit and a release device.
+- **Ovitraps** are the effect of `ovitrap.place` field events, so the seed sends real events through `sync_batch` from a synthetic device. A stored demo event that was not accepted stops the command with an error instead of being skipped.
+
 ## Authentication (#4)
 
 Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth endpoints", "Tokens", "Devices and revocation", "Error codes", "Login protection"). Decisions 48 to 61 in [`docs/decisions.md`](../docs/decisions.md).
