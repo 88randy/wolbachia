@@ -12,6 +12,7 @@ import { createShiftStyles } from "./styles.ts";
 import { useM04 } from "./use-m-04.ts";
 import { SupplyReceiptEntry } from "../supply-receipt/SupplyReceiptEntry.tsx";
 import { FuelEntry } from "../fuel/FuelEntry.tsx";
+import { IncidentEntry } from "../incidents/IncidentEntry.tsx";
 /** No invented assignment, motorcycle availability or server receipt on the no-shift home. */
 export function P3Screen() {
   const model = useM04();
@@ -26,6 +27,7 @@ export function P3Screen() {
       <OvitrapEntry isAllowed={Boolean(captureShiftId(model.state))} />
       <SupplyReceiptEntry isAllowed={Boolean(captureShiftId(model.state))} />
       <FuelEntry isAllowed={Boolean(captureShiftId(model.state))} />
+      <IncidentEntry />
       <ShiftAction
         label={t("mobile.shiftOpen.inbox")}
         onPress={() => {

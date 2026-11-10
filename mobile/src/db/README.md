@@ -1,5 +1,13 @@
 # Database startup and schema lineage (#266)
 
+## Additive incident schema19 (#141)
+
+Retained owner-bound incident/accident drafts append after unchanged SQL1–18.
+Original UUID, kind, shift, device time and snapshot identities cannot change;
+saved captures cannot be edited or removed. No-file drafts participate in owner
+activation and local-record detection. REST read caches use existing private KV;
+the event outbox and evidence journal remain the only transport queues.
+
 ## Additive fuel schema18 (#140)
 
 Schema18 retains owner-bound fuel drafts after unchanged SQL1–17, including

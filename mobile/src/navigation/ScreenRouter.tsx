@@ -8,6 +8,8 @@ import { P21Screen } from "../features/ovitrap-check/P21Screen.tsx";
 import { OpenShiftScreen } from "../features/shift-open/OpenShiftScreen.tsx";
 import { P8Screen } from "../features/supply-receipt/P8Screen.tsx";
 import { P22Screen } from "../features/fuel/P22Screen.tsx";
+import { P23Screen } from "../features/incidents/P23Screen.tsx";
+import { P24Screen } from "../features/incidents/P24Screen.tsx";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 
@@ -28,6 +30,8 @@ const SCREENS = {
   closeShift: CloseShiftScreen,
   supplyReceipt: P8Screen,
   fuel: P22Screen,
+  incidents: P23Screen,
+  emergency: P24Screen,
   home: HomeScreen,
   inbox: InboxScreen,
   settings: SettingsScreen,
