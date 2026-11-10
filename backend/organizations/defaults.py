@@ -54,6 +54,8 @@ from lab.permissions import COUNT_VOID
 from lab.permissions import ENTOMOLOGIST_CODES as LAB_ENTOMOLOGIST_CODES
 from notifications.permissions import INTERNAL_CODES as NOTIFICATION_CODES
 from organizations.models import Organization, Profile
+from privacy.permissions import ADMIN_CODES as PRIVACY_ADMIN_CODES
+from privacy.permissions import REGULATORY_CODES as PRIVACY_REGULATORY_CODES
 from ovitraps.permissions import (
     OVITRAP_REMOVAL_RESOLVE,
     READ_CODES,
@@ -92,6 +94,7 @@ READ_ONLY_CODES = (
 )
 ADMIN_CODES = (
     HOME_READ,
+    *PRIVACY_ADMIN_CODES,
     *ADMIN_PERSONNEL_PERMISSION_CODES,
     *NOTIFICATION_CODES,
     PERMIT_MANAGE,
@@ -242,7 +245,13 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         *TRANSFER_WAREHOUSE_CODES,
         FIELD_UPLOAD,
     ),
-    "regulatory": (*READ_ONLY_CODES, PERMIT_MANAGE, PERMIT_SUSPEND, RELEASE_READ),
+    "regulatory": (
+        *READ_ONLY_CODES,
+        PERMIT_MANAGE,
+        PERMIT_SUSPEND,
+        RELEASE_READ,
+        *PRIVACY_REGULATORY_CODES,
+    ),
     "government": ("portal.read",),
 }
 
