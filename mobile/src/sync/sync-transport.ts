@@ -51,7 +51,6 @@ export function createSyncTransport(client: ApiClient, session?: SessionRequests
     } catch (error) {
       if (error instanceof RemoteSessionEnded) return endedSyncFailure();
       // `fetch` rejects when there is no answer (offline, DNS, timeout): the outbox keeps the events.
-      console.warn("DIAG sync transport error", String(error), (error as Error).name);
       return { ok: false, failure: { kind: "network" } };
     }
   };
