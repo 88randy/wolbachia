@@ -28,7 +28,18 @@ describe("canOpenArea", () => {
   });
 
   test("a pending area is visible to every member until its issue defines a code", () => {
-    expect(canOpenArea(makeMe({ permissions: [] }), area("people"))).toBe(true);
+    expect(canOpenArea(makeMe({ permissions: [] }), area("releases"))).toBe(true);
+  });
+
+  test.each(["bag.receive", "egg_count.create", "egg_count.read"])(
+    "laboratory navigation accepts %s independently",
+    (permission) => {
+      expect(canOpenArea(makeMe({ permissions: [permission] }), area("lab"))).toBe(true);
+    },
+  );
+
+  test("unrelated reading permissions do not grant laboratory navigation", () => {
+    expect(canOpenArea(makeMe({ permissions: ["reading.read"] }), area("lab"))).toBe(false);
   });
 });
 

@@ -40,7 +40,7 @@ export const AREAS = [
     id: "lab",
     path: "/lab",
     group: "resources",
-    requiredPermissions: ["bag.receive", "egg_count.create"],
+    requiredPermissions: ["egg_count.create", "egg_count.read", "bag.receive"],
   },
   { id: "people", path: "/people", group: "resources", requiredPermissions: PENDING },
   { id: "dashboards", path: "/dashboards", group: "analysis", requiredPermissions: PENDING },

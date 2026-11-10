@@ -65,6 +65,7 @@ test.describe("shell layout", () => {
   });
 
   test("an area opens from the sidebar and is marked as current", async ({ page }) => {
+    await mockApi(page, { me: makeMe({ permissions: ["egg_count.read"] }) });
     await openShell(page);
 
     await page.getByRole("link", { name: "Laboratorio" }).click();

@@ -41,6 +41,7 @@ describe("sidebar navigation", () => {
           "quadrant.read",
           "supply_type.read",
           "incident.read",
+          "egg_count.read",
           "review_item.read",
           "bag.receive",
         ],
@@ -68,8 +69,8 @@ describe("sidebar navigation", () => {
     expect(hrefs).not.toContain("/quadrants");
     expect(hrefs).not.toContain("/inventory");
     expect(hrefs).not.toContain("/incidents");
-    expect(hrefs).not.toContain("/operations");
     expect(hrefs).not.toContain("/lab");
+    expect(hrefs).not.toContain("/operations");
     expect(hrefs).toHaveLength(6);
   });
 
@@ -182,7 +183,7 @@ describe("focus on navigation", () => {
   });
 
   test("moves focus to main after following a sidebar link", async () => {
-    await renderApp({ me: makeMe({ permissions: ["bag.receive"] }) });
+    await renderApp({ me: makeMe({ permissions: ["egg_count.read"] }) });
 
     await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));
 

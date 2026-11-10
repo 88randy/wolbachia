@@ -1,3 +1,6 @@
+import { LabHome } from "../lab/LabHome";
+import { W35Page } from "../lab/W35Page";
+import { W35HistoryPage } from "../lab/W35HistoryPage";
 import { OperationsHome } from "../operations/OperationsHome";
 import { ShiftsPage } from "../operations/ShiftsPage";
 import { W29Page } from "../operations/W29Page";
@@ -7,7 +10,6 @@ import { W30Page } from "../operations/reviews/W30Page";
 import { W31Page } from "../operations/relocations/W31Page";
 import { W33Page } from "../operations/closure/W33Page";
 import { W34Page } from "../lab/W34Page";
-import { LabHome } from "../lab/LabHome";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
@@ -351,6 +353,26 @@ const inventoryRoutes = [
   inventoryRoute("/inventory/lots/$code", { permission: "lot.read", component: W10Page }),
   inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
 ];
+const eggCountsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/egg-counts",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "egg_count.create");
+  },
+  component: W35Page,
+  errorComponent: AreaErrorState,
+});
+const eggCountHistoryRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/count-history",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "egg_count.read");
+  },
+  component: W35HistoryPage,
+  errorComponent: AreaErrorState,
+});
 const shiftsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/operations/shifts",
@@ -379,6 +401,8 @@ const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     ...areaRoutes,
     inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
+    eggCountsRoute,
+    eggCountHistoryRoute,
     shiftsRoute,
     shiftRoute,
     quadrantVersionsRoute,

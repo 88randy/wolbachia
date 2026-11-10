@@ -1,4 +1,5 @@
 import { labReception } from "./labReception.ts";
+import { lab } from "./lab.ts";
 import { shift } from "./shift.ts";
 import { incidents } from "./incidents.ts";
 import { reviews } from "./reviews.ts";
@@ -27,6 +28,7 @@ import { table } from "./table.ts";
 import { voiding } from "./voiding.ts";
 
 export const en: Record<MessageKey, string> = {
+  ...lab,
   ...shift,
   ...reviews,
   ...relocations,

@@ -19,6 +19,7 @@ describe("visibleNavGroups", () => {
             "quadrant.read",
             "location.read",
             "bag.receive",
+            "egg_count.read",
           ],
         }),
       ),
