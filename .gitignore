@@ -35,3 +35,4 @@ backend/schema.yml
 # Playwright
 test-results/
 playwright-report/
+backend/demo-credentials.local.md
