@@ -1,6 +1,9 @@
 import { PeopleHome } from "../people/PeopleHome";
 import { W50Page } from "../people/trainings/W50Page";
 import { W51Page } from "../people/evaluations/W51Page";
+import { LabHome } from "../lab/LabHome";
+import { W35Page } from "../lab/W35Page";
+import { W35HistoryPage } from "../lab/W35HistoryPage";
 import { OperationsHome } from "../operations/OperationsHome";
 import { ShiftsPage } from "../operations/ShiftsPage";
 import { W29Page } from "../operations/W29Page";
@@ -131,7 +134,9 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
                 ? FleetHome
                 : area.id === "quadrants"
                   ? W22Page
-                  : () => <AreaPlaceholder areaId={area.id} />,
+                  : area.id === "lab"
+                    ? LabHome
+                    : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
@@ -369,6 +374,26 @@ const inventoryRoutes = [
   inventoryRoute("/inventory/lots/$code", { permission: "lot.read", component: W10Page }),
   inventoryRoute("/inventory/locations/$code", { permission: "location.read", component: W11Page }),
 ];
+const eggCountsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/egg-counts",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "egg_count.create");
+  },
+  component: W35Page,
+  errorComponent: AreaErrorState,
+});
+const eggCountHistoryRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/count-history",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "egg_count.read");
+  },
+  component: W35HistoryPage,
+  errorComponent: AreaErrorState,
+});
 const shiftsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/operations/shifts",
@@ -397,6 +422,8 @@ const routeTree = rootRoute.addChildren([
   authenticatedRoute.addChildren([
     ...areaRoutes,
     inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
+    eggCountsRoute,
+    eggCountHistoryRoute,
     shiftsRoute,
     shiftRoute,
     quadrantVersionsRoute,

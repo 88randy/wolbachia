@@ -45,7 +45,15 @@ describe("area routes", () => {
   test.each(
     AREAS.filter(
       ({ id }) =>
-        !["quadrants", "settings", "inventory", "incidents", "operations", "people"].includes(id),
+        ![
+          "quadrants",
+          "settings",
+          "inventory",
+          "incidents",
+          "operations",
+          "people",
+          "lab",
+        ].includes(id),
     ),
   )("$path opens the placeholder of $id", async ({ path, id }) => {
     await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
@@ -71,6 +79,17 @@ describe("area routes", () => {
 
     expect(new Set(paths).size).toBe(AREAS.length);
     expect(AREAS).toHaveLength(13);
+  });
+
+  test("the laboratory home exposes only its permitted implemented workspace", async () => {
+    await renderApp({ path: "/lab", me: makeMe({ permissions: ["egg_count.read"] }) });
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Laboratorio" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "Historial de conteos" }).getAttribute("href")).toBe(
+      "/lab/count-history",
+    );
+    expect(screen.queryByRole("link", { name: "Conteo de huevos" })).toBeNull();
+    expect(screen.queryByText("Esta sección todavía está en construcción.")).toBeNull();
   });
 
   test("an unknown address shows the not-found state with a way home", async () => {
@@ -156,7 +175,7 @@ describe("document title (WCAG 2.4.2)", () => {
   });
 
   test("navigating changes the title", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["egg_count.read"] }) });
     expect(document.title).toBe("Inicio · Wolbachia");
 
     await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));

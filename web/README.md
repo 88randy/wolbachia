@@ -397,6 +397,12 @@ See [capabilities and verification](../docs/web-ux-polish-218.md).
 The synthetic local review at `/harness/ux-preview.html` uses the real app routes with no API
 network calls. It is a separate Vite development entry excluded from the production build.
 
+## Egg counting (W35, #31)
+
+Server-confirmed keyboard/scanner counting and append-only corrections are at
+`/lab/egg-counts` and `/lab/count-history`. See [the laboratory README](src/lab/README.md)
+for permissions, replay/session ownership, design deviations and API gaps.
+
 ## Shift validation W29 (#34)
 
 The operations entry links to the server-paged shift list and the real UUID detail.
