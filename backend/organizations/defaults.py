@@ -54,6 +54,8 @@ from ovitraps.permissions import (
     READING_READ,
     RELOCATION_DECIDE,
 )
+from people.permissions import ADMIN_CODES as PEOPLE_ADMIN_CODES
+from people.permissions import TRAINING_READ
 from reviews.permissions import REVIEW_ITEM_DECIDE, REVIEW_ITEM_READ
 from rules.permissions import (
     RULE_PARAMETER_READ,
@@ -76,6 +78,7 @@ from uploads.limits import FIELD_UPLOAD
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    *PEOPLE_ADMIN_CODES,
     "community_activity.read",
     "community_activity.create",
     "community_activity.void",
@@ -136,6 +139,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    TRAINING_READ,
     "community_activity.read",
     "community_activity.void",
     RECONCILE,
@@ -188,6 +192,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     ),
     "admin": ADMIN_CODES,
     "coordinator": (
+        TRAINING_READ,
         "community_activity.read",
         "community_activity.void",
         *READ_ONLY_CODES,

@@ -1,5 +1,24 @@
 # field_sync
 
+## Own training eligibility (#101)
+
+The reserved eligibility section now has one typed producer (version1). It exposes
+only the authenticated subject's actual action/context qualification, exact
+minimal version pins, coded blockers/validity boundaries and opaque genuine
+assessment receipt. Both field.bootstrap and field_event.sync must cover the
+same real context; scope applies before feed LIMIT/count and bootstrap hashing.
+Root2/history7/supplies1 and every old history branch remain unchanged.
+
+Genuine DeviceBearer views pass server-owned publication context and observed
+session/pair to the prepared writer. Cookie/forced/unbound contexts cannot mint
+capture receipts. Publication revalidates account authority before Organization
+and courier arbitration; producer/selector reads acquire no late lock or write.
+A request-bound semantic cache supplies the same assessment to bootstrap,
+changes and earliest next_change_at. Due expiry refreshes the real projection
+even without another business mutation, before304. Final/no-pull stays no pull.
+Historical pair UUIDs are scalar; token pruning and later Session.user audit
+dissociation do not erase business provenance or allow identity reconstruction.
+
 ## Paired current capture context (#289)
 
 Bootstrap and every normal changes page expose optional/nullable root

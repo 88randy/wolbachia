@@ -112,6 +112,32 @@ QA_ADDITIVE_TRIGGERS = {
     ("uploads_attachmentlink", "uploads_lab_paddle_parent_complete"),
 }
 
+# Approved #101 additions, independent of the restored database or migration implementation.
+PEOPLE_ADDITIVE_TRIGGERS = {
+    (table, f"{table}_{suffix}")
+    for table in (
+        "people_training",
+        "people_trainingversion",
+        "people_actiontrainingrequirementversion",
+        "people_certification",
+        "people_certificationrevocation",
+        "people_evaluationrubric",
+        "people_evaluationrubricversion",
+        "people_evaluation",
+        "people_evaluationattempt",
+        "people_evaluationvoid",
+        "people_evaluationcompletion",
+        "people_evaluationnoticepolicyversion",
+        "people_trainingnoticecause",
+        "people_trainingnoticeintent",
+        "people_trainingnoticepublication",
+        "people_trainingnoticeroute",
+        "people_eligibilityassessmentreceipt",
+        "people_peoplecommand",
+    )
+    for suffix in ("guard", "complete_guard")
+} | {("uploads_attachmentlink", "uploads_certification_parent_guard")}
+
 
 def insert_genuine_legacy_lab_observation(apps, context, bag):
     """Construct a real source/pins/command chain in the supplied model state.
@@ -291,7 +317,10 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         assert {key: restored[key] for key in retained} == retained
         assert (
             restored.keys() - retained.keys()
-            == SUPPLY_ADDITIVE_TRIGGERS | COMMUNITY_ADDITIVE_TRIGGERS | QA_ADDITIVE_TRIGGERS
+            == SUPPLY_ADDITIVE_TRIGGERS
+            | COMMUNITY_ADDITIVE_TRIGGERS
+            | QA_ADDITIVE_TRIGGERS
+            | PEOPLE_ADDITIVE_TRIGGERS
         )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
