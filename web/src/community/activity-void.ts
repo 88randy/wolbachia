@@ -1,9 +1,9 @@
+import { nameOrDash } from "../lookups/use-reference-names";
 import { voidInfoOf } from "../void";
 import type { VoidInfo } from "../void";
 import type { CommunityActivity } from "./community-query";
 
 interface Display {
-  author: (userId: string | null) => string;
   formatWhen: (iso: string) => string;
   reasonLabel: (code: string) => string;
 }
@@ -19,7 +19,7 @@ export function activityVoidInfo(row: CommunityActivity, display: Display): Void
       void_reason_code: event.reason_code,
       void_reason: event.reason,
     },
-    display.author,
+    () => nameOrDash(event.created_by_name),
     { formatWhen: display.formatWhen, reasonLabel: display.reasonLabel },
   );
 }

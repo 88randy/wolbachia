@@ -73,7 +73,7 @@ function identityColumns(context: Context): Column[] {
     {
       id: "piece_id",
       headerKey: "inventory.field.piece",
-      cell: (row) => row.piece_id ?? t("inventory.option.none"),
+      cell: (row) => (row.piece_id ? row.lot_code : t("inventory.option.none")),
     },
     operationColumn(location),
   ];

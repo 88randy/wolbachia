@@ -116,4 +116,5 @@ export const incidents = {
   "incidents.evidence.invalid": "Select a valid JPEG or PNG up to 10 MiB.",
   "incidents.evidence.failed": "Evidence was not verified. Retry the same upload.",
   "incidents.evidence.noPermission": "An owner with upload permission must attach evidence.",
+  "incidents.workspace.eventStateNamed": "{state} · {severity} · owner: {owner}",
 } as const;

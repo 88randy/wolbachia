@@ -308,11 +308,14 @@ class TransferEventSerializer(OrgScopedModelSerializer):
 
 
 class TransferLineSerializer(OrgScopedModelSerializer):
+    lot_code = serializers.CharField(source="lot.code", read_only=True)
+
     class Meta:
         model = TransferLine
         fields = [
             "id",
             "lot_id",
+            "lot_code",
             "piece_id",
             "unit_version_id",
             "quantity",
@@ -379,9 +382,11 @@ class TransferHoldSerializer(OrgScopedModelSerializer):
         source="resolution.resolution_id", read_only=True, allow_null=True
     )
 
+    lot_code = serializers.CharField(source="lot.code", read_only=True)
+
     class Meta:
         model = TransferHold
-        fields = ["id", "lot_id", "location_id", "piece_id", "resolution_id"]
+        fields = ["id", "lot_id", "lot_code", "location_id", "piece_id", "resolution_id"]
         read_only_fields = fields
 
 

@@ -4676,6 +4676,161 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/platform/availability/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description `GET /platform/availability/?slug=&username=`: whether a new slug/username is free. */
+        get: operations["platform_availability_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        get: operations["platform_organizations_list"];
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        get: operations["platform_organizations_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/admins/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_admins_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/apply-defaults/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_apply_defaults_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/centers/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_centers_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/logo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        get: operations["platform_organizations_logo_retrieve"];
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_logo_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/reactivate/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_reactivate_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/platform/organizations/{slug}/suspend/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** @description Per-user read/write throttles and the identity attestation of platform views. */
+        post: operations["platform_organizations_suspend_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portal-settings/": {
         parameters: {
             query?: never;
@@ -7187,6 +7342,14 @@ export interface components {
             /** Format: decimal */
             quantity: string;
         };
+        AdminInputRequest: {
+            admin_first_name: string;
+            admin_last_name: string;
+            admin_username: string;
+            /** Format: email */
+            admin_email: string;
+            admin_delivery: components["schemas"]["CredentialDeliveryEnum"];
+        };
         AdvisoryParameters: {
             closed_house_weeks_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
             incidents_to_relocate: components["schemas"]["AdvisoryRuleVersion"];
@@ -7362,6 +7525,10 @@ export interface components {
             /** Format: uuid */
             id: string;
         };
+        Availability: {
+            slug_available: boolean | null;
+            username_available: boolean | null;
+        };
         /**
          * @description * `unconfigured` - unconfigured
          *     * `configured` - configured
@@ -7412,6 +7579,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag_disposal` - bag_disposal
@@ -7468,6 +7636,7 @@ export interface components {
             dependency_proof: {
                 [key: string]: unknown;
             };
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag` - bag
@@ -7495,6 +7664,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -7548,7 +7718,7 @@ export interface components {
             readonly effective_from: string;
             /** Format: uuid */
             readonly created_by: string | null;
-            readonly created_by_name: string | null;
+            readonly created_by_name?: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -7683,6 +7853,7 @@ export interface components {
             readonly created_at: string;
             /** Format: date-time */
             readonly updated_at: string;
+            readonly created_by_name?: string | null;
         };
         /** @description `sort` is optional: an omitted value appends the item at the end of the catalog. */
         CatalogItemCreateRequest: {
@@ -7728,6 +7899,10 @@ export interface components {
             readonly code: string;
             readonly name: string;
         };
+        CenterInputRequest: {
+            code: string;
+            name: string;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -7750,6 +7925,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
         CertificationRevokeRequest: {
@@ -7929,6 +8105,7 @@ export interface components {
             readonly created_by: string;
             readonly events: components["schemas"]["CommunityEvent"][];
             readonly incident: components["schemas"]["CommunityIncidentReference"] | null;
+            readonly created_by_name?: string | null;
         };
         CommunityActivityPage: {
             count: number;
@@ -7957,6 +8134,7 @@ export interface components {
             created_by: string;
             reason: string;
             reason_code: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `create` - create
@@ -8101,6 +8279,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ConditionBlockingIncident: {
             /** Format: uuid */
@@ -8310,6 +8489,17 @@ export interface components {
             blocker_kinds?: components["schemas"]["BlockerKindsEnum"][];
             is_active?: boolean;
         };
+        CreatedAdmin: {
+            username: string;
+            delivery: components["schemas"]["CredentialDeliveryEnum"];
+            temporary_password: string | null;
+        };
+        /**
+         * @description * `password` - password
+         *     * `invite` - invite
+         * @enum {string}
+         */
+        CredentialDeliveryEnum: "password" | "invite";
         Dashboard: {
             /** Format: date-time */
             cutoff: string;
@@ -8336,6 +8526,11 @@ export interface components {
          * @enum {string}
          */
         DecisionEnum: "keep" | "move" | "remove";
+        DefaultsResult: {
+            profiles: number;
+            catalogs: number;
+            parameters: number;
+        };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
@@ -8356,6 +8551,7 @@ export interface components {
             /** Format: uuid */
             readonly created_by: string | null;
             readonly expected_revision: number;
+            readonly created_by_name?: string | null;
         };
         DeliveryWriteRequest: {
             /** Format: uuid */
@@ -8410,6 +8606,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -8554,6 +8751,7 @@ export interface components {
             /** Format: uuid */
             readonly created_by: string;
             readonly completion_sequence: number | null;
+            readonly created_by_name?: string | null;
         };
         EvaluationCreateRequest: {
             /** Format: uuid */
@@ -8667,6 +8865,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @description Shared HTTP and sync body. The target-aware resolver validates the choice and text. */
         EvaluationVoidRequest: {
@@ -8735,7 +8934,7 @@ export interface components {
             readonly evidence: string;
             /** Format: uuid */
             readonly created_by: string | null;
-            readonly created_by_name: string | null;
+            readonly created_by_name?: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -8909,6 +9108,7 @@ export interface components {
             readonly server_received_at: string;
             readonly rules_version: string;
             readonly catalog_version: string;
+            readonly created_by_name?: string | null;
         };
         GenerateResult: {
             created: number;
@@ -8970,6 +9170,7 @@ export interface components {
             gps: unknown;
             payload: unknown;
             effects: unknown;
+            readonly author_name?: string | null;
         };
         HistoryResponse: {
             record: components["schemas"]["SearchHit"];
@@ -9076,6 +9277,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -9101,6 +9303,7 @@ export interface components {
             /** Format: date-time */
             readonly cleared_at: string | null;
             readonly clearance: components["schemas"]["InspectionClearanceRead"] | null;
+            readonly created_by_name?: string | null;
         };
         IncidentActionPermissions: {
             comment: boolean;
@@ -9170,6 +9373,8 @@ export interface components {
             readonly created_at: string;
             readonly policy_version: string;
             readonly author_display: string | null;
+            readonly owner_display?: string | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `report` - report
@@ -9192,6 +9397,7 @@ export interface components {
             verified_at: string | null;
             content_type: string | null;
             size_bytes: number | null;
+            filename?: string | null;
         };
         IncidentLinkedRecord: {
             kind: (components["schemas"]["IncidentLinkedRecordKindEnum"] | components["schemas"]["NullEnum"]) | null;
@@ -9327,6 +9533,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         IncidentTypeSnapshot: {
             /** Format: uuid */
@@ -9442,6 +9649,7 @@ export interface components {
             readonly reviewer: string;
             readonly reason: string;
             readonly evidence_ids: string[];
+            readonly reviewer_name?: string | null;
         };
         Intervention: {
             /** Format: uuid */
@@ -9462,6 +9670,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         InterventionRequestRequest: {
             /** Format: uuid */
@@ -9562,6 +9771,7 @@ export interface components {
             expected_revision: number;
             current_revision?: number;
             is_current?: boolean;
+            readonly created_by_name?: string | null;
         };
         LabCountOutcome: {
             count: components["schemas"]["LabCount"];
@@ -9659,6 +9869,7 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @enum {string} */
         LabIndependentQAStateEnum: "awaiting_second" | "awaiting_third" | "awaiting_selection" | "resolved" | "superseded" | "awaiting_configuration" | "awaiting_material";
@@ -9683,6 +9894,7 @@ export interface components {
             created_at: string;
             /** Format: uuid */
             created_by: string;
+            readonly created_by_name?: string | null;
         };
         /** @enum {string} */
         LabIndependentRoleEnum: "second" | "third";
@@ -9708,6 +9920,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         LabMethodDecisionRequest: {
             expected_revision: number;
@@ -9747,6 +9960,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `verify` - verify
@@ -9785,6 +9999,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         LabMethodWriteRequest: {
             code?: string;
@@ -9929,11 +10144,13 @@ export interface components {
             reading_id: string;
             /** Format: uuid */
             bag_id: string | null;
+            bag_code?: string | null;
             kind: components["schemas"]["LabReceiptKindEnum"];
             /** Format: date-time */
             created_at: string;
             /** Format: uuid */
             created_by: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag` - bag
@@ -9979,6 +10196,7 @@ export interface components {
             expected_revision: number;
             current_revision?: number;
             is_current?: boolean;
+            readonly created_by_name?: string | null;
         };
         LabRejectionOutcome: {
             rejection: components["schemas"]["LabRejection"];
@@ -10118,6 +10336,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         LocationWriteRequest: {
             /** @default 0 */
@@ -10148,6 +10367,10 @@ export interface components {
             label?: string;
         };
         LoginResponse: components["schemas"]["MobileLoginResponse"] | components["schemas"]["WebLoginResponse"];
+        LogoInputRequest: {
+            /** Format: binary */
+            logo: string;
+        };
         LogoUploadRequest: {
             expected_revision: number;
             /** Format: binary */
@@ -10212,6 +10435,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         LotPlacementOption: {
             /**
@@ -10293,6 +10517,7 @@ export interface components {
             piece_id: string | null;
             /** Format: uuid */
             unit_version_id: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `lot` - lot
@@ -10410,6 +10635,7 @@ export interface components {
             scope: components["schemas"]["MeScope"];
             organizations: components["schemas"]["MeOrganizationChoice"][];
             limits: components["schemas"]["MeLimits"];
+            is_platform_admin: boolean;
         };
         MeLimits: {
             void_reason_min_length: number;
@@ -10473,6 +10699,7 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly user: string;
+            readonly user_display_name?: string | null;
             readonly profiles: string[];
             readonly scope: components["schemas"]["MeScope"];
             readonly is_active: boolean;
@@ -10481,6 +10708,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         MembershipChangeRequest: {
             expected_revision: number;
@@ -10560,6 +10788,8 @@ export interface components {
             readonly voided_by: string | null;
             readonly void_reason: string;
             readonly void_reason_code: string;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /** @description One checklist line; `item_code` is the code of the catalog item. */
         MotorcycleCheck: {
@@ -10600,6 +10830,8 @@ export interface components {
             readonly void_reason: string;
             readonly void_reason_code: string;
             readonly metrics: components["schemas"]["MotorcycleMetrics"];
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         MotorcycleMetrics: {
             /** Format: uuid */
@@ -10680,6 +10912,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         NextDayTask: {
             /** Format: uuid */
@@ -10705,6 +10938,7 @@ export interface components {
             readonly quadrant_id: string | null;
             /** Format: uuid */
             readonly recipient_membership_id: string;
+            readonly recipient_name?: string | null;
             revision: number;
             /** Format: date-time */
             readonly created_at: string;
@@ -10971,6 +11205,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         OvitrapAdvisory: {
             schema_version: number;
@@ -11928,6 +12163,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["PlacementOption"][];
         };
+        PaginatedPlatformOrganizationList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["PlatformOrganization"][];
+        };
         PaginatedPointVersionList: {
             /** @example 123 */
             count: number;
@@ -12640,7 +12890,7 @@ export interface components {
             created_at: string;
             external_lab: components["schemas"]["PcrLabSummary"];
             notes: string;
-            author_name: string;
+            author_name?: string;
             samples: components["schemas"]["PcrSampleEntry"][];
             events: components["schemas"]["PcrEvent"][];
             results: components["schemas"]["PcrResult"][];
@@ -12684,7 +12934,7 @@ export interface components {
             occurred_at: string;
             /** Format: date-time */
             created_at: string;
-            author_name: string;
+            author_name?: string;
             carrier: string;
             tracking_number: string;
             has_evidence: boolean;
@@ -12747,7 +12997,7 @@ export interface components {
             id: string;
             content_type: string;
             size_bytes: number;
-            author_name: string;
+            author_name?: string;
             /** Format: date-time */
             created_at: string;
         };
@@ -12765,7 +13015,7 @@ export interface components {
             outcome: components["schemas"]["PcrOutcomeEnum"];
             serotype: string;
             ct_value: string | null;
-            author_name: string;
+            author_name?: string;
             /** Format: date-time */
             created_at: string;
             current: boolean;
@@ -12872,6 +13122,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitBundle: {
             /** Format: uuid */
@@ -12931,6 +13182,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitSuspensionWriteRequest: {
             reason: string;
@@ -12954,6 +13206,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitTypeWriteRequest: {
             code: string;
@@ -12991,6 +13244,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         PermitVersionAppendRequest: {
             /** Format: uuid */
@@ -13083,6 +13337,73 @@ export interface components {
          */
         PhaseEnum: "dispatch" | "receive";
         PlacementOption: components["schemas"]["QuadrantPlacementOption"] | components["schemas"]["LotPlacementOption"];
+        PlatformAdminUser: {
+            /** @description Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only. */
+            readonly username: string;
+            readonly first_name: string;
+            readonly last_name: string;
+            /**
+             * Email address
+             * Format: email
+             */
+            readonly email: string;
+            /**
+             * Active
+             * @description Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+             */
+            readonly is_active: boolean;
+        };
+        PlatformCenter: {
+            readonly code: string;
+            readonly name: string;
+            readonly is_active: boolean;
+        };
+        PlatformHistory: {
+            readonly action: components["schemas"]["PlatformHistoryActionEnum"];
+            /** Format: date-time */
+            readonly created_at: string;
+            readonly actor_name: string;
+            readonly reason: string;
+        };
+        /**
+         * @description * `organization.create` - Organization Create
+         *     * `organization.defaults_apply` - Organization Defaults Apply
+         *     * `organization.logo_upload` - Organization Logo Upload
+         *     * `organization.suspend` - Organization Suspend
+         *     * `organization.reactivate` - Organization Reactivate
+         *     * `center.create` - Center Create
+         *     * `admin.create` - Admin Create
+         *     * `platform_admin.grant` - Platform Admin Grant
+         * @enum {string}
+         */
+        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "admin.create" | "platform_admin.grant";
+        PlatformOrganization: {
+            readonly slug: string;
+            readonly name: string;
+            readonly country: string;
+            readonly timezone: string;
+            readonly is_active: boolean;
+            readonly users_count: number;
+            readonly centers_count: number;
+            readonly has_logo: boolean;
+            /** Format: date-time */
+            readonly created_at: string;
+        };
+        PlatformOrganizationDetail: {
+            slug: string;
+            name: string;
+            country: string;
+            timezone: string;
+            languages: string[];
+            epi_week: string;
+            is_active: boolean;
+            has_logo: boolean;
+            /** Format: date-time */
+            created_at: string;
+            centers: components["schemas"]["PlatformCenter"][];
+            admins: components["schemas"]["PlatformAdminUser"][];
+            history: components["schemas"]["PlatformHistory"][];
+        };
         PointPublicationRequest: {
             expected_revision: number;
             location: number[];
@@ -13114,7 +13435,7 @@ export interface components {
             readonly is_retired: boolean;
             /** Format: uuid */
             readonly created_by: string | null;
-            readonly created_by_name: string | null;
+            readonly created_by_name?: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -13244,6 +13565,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ProtocolTypeOption: {
             /** Format: uuid */
@@ -13268,6 +13590,25 @@ export interface components {
             required_fields?: components["schemas"]["RequiredFieldsEnum"][];
             /** Format: uuid */
             incident_type_id?: string | null;
+        };
+        ProvisionRequest: {
+            admin_first_name: string;
+            admin_last_name: string;
+            admin_username: string;
+            /** Format: email */
+            admin_email: string;
+            admin_delivery: components["schemas"]["CredentialDeliveryEnum"];
+            name: string;
+            slug: string;
+            country: string;
+            timezone: string;
+            epi_week: components["schemas"]["EpiWeekEnum"];
+            languages: components["schemas"]["LanguagesEnum"][];
+            centers: components["schemas"]["CenterInputRequest"][];
+        };
+        ProvisionResponse: {
+            organization: components["schemas"]["PlatformOrganizationDetail"];
+            admin: components["schemas"]["CreatedAdmin"];
         };
         /** @enum {string} */
         PublicationStateEnum: "outboxed" | "pending_outbox";
@@ -13302,6 +13643,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         QuadrantChange: {
             sequence: number;
@@ -13323,6 +13665,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -13415,7 +13758,7 @@ export interface components {
             readonly effective_from: string;
             /** Format: uuid */
             readonly created_by: string | null;
-            readonly created_by_name: string | null;
+            readonly created_by_name?: string | null;
             /** Format: date-time */
             readonly created_at: string;
             readonly point_resolutions: components["schemas"]["ExcludedPointResolution"][];
@@ -13497,6 +13840,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `bag_disposed` - bag_disposed
@@ -13504,6 +13848,9 @@ export interface components {
          * @enum {string}
          */
         ReasonEnum: "bag_disposed" | "paddle_reused";
+        ReasonRequest: {
+            reason: string;
+        };
         ReassignRequest: {
             expected_revision: number;
             /** Format: uuid */
@@ -13610,6 +13957,7 @@ export interface components {
             readonly created_at: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         ReceptionPolicyContext: {
             revision: number;
@@ -13829,6 +14177,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ReleaseBlocker: {
             reason: string;
@@ -13963,6 +14312,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -13984,6 +14334,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `active` - active
@@ -14026,6 +14377,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -14060,6 +14412,7 @@ export interface components {
             readonly effective_from: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name?: string | null;
         };
         /** @description Regulatory ids only: no courier, certification, reviewer, assignment or receipt ids. */
         ReleaseProvenance: {
@@ -14131,6 +14484,7 @@ export interface components {
             /** Format: uuid */
             readonly point: string;
             readonly point_code: string;
+            readonly ovitrap_code?: string;
             /** Format: uuid */
             readonly point_version: string;
             readonly old_location: unknown;
@@ -14164,6 +14518,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         RelocationDecision: {
             /** Format: uuid */
@@ -14183,6 +14538,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `approved` - approved
@@ -14271,6 +14627,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         RemovalResolutionRequestRequest: {
             expected_state: components["schemas"]["ExpectedStateEnum"];
@@ -14316,7 +14673,7 @@ export interface components {
             /** Format: uuid */
             readonly created_by: string | null;
             readonly stage: number;
-            readonly owner_display: string | null;
+            readonly owner_display?: string | null;
             readonly type_snapshot: components["schemas"]["IncidentTypeSnapshot"] | null;
             readonly origin: components["schemas"]["OriginEnum"];
             readonly linked_record: components["schemas"]["IncidentLinkedRecord"];
@@ -14324,6 +14681,7 @@ export interface components {
             readonly evidence: components["schemas"]["IncidentEvidence"][];
             readonly action_permissions: components["schemas"]["IncidentActionPermissions"];
             readonly action_prerequisites: components["schemas"]["IncidentActionPrerequisites"] | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `access` - Access
@@ -14429,6 +14787,8 @@ export interface components {
             /** Format: uuid */
             readonly document_reference: string | null;
             readonly notes: string;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /**
          * @description * `missing` - missing
@@ -14521,7 +14881,9 @@ export interface components {
             readonly created_at: string;
             readonly safety_disposition: components["schemas"]["ReviewSafetyDisposition"] | null;
             readonly incident_id: string | null;
+            readonly incident_code?: string | null;
             readonly effect_receipt: components["schemas"]["ReviewEffectReceipt"] | null;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `accept` - accept
@@ -14573,6 +14935,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ReviewEvaluation: {
             can_accept: boolean;
@@ -14614,6 +14977,7 @@ export interface components {
             /** Format: uuid */
             declared_void_target_uuid: string | null;
             approval_current: boolean | null;
+            readonly decided_by_name?: string | null;
         };
         /**
          * @description A review item for the supervisor's list: what was flagged, why (`code` + `params`) and who
@@ -14695,6 +15059,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ReviewState: {
             revision: number;
@@ -14752,6 +15117,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `signature` - signature
@@ -14862,6 +15228,8 @@ export interface components {
             readonly voided_by_username: string | null;
             readonly void_reason: string;
             readonly void_reason_code: string;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /** @description `effective_from` is a local calendar date (`YYYY-MM-DD`): the server resolves the instant. */
         RuleParameterVersionCreateRequest: {
@@ -15072,11 +15440,13 @@ export interface components {
             readonly code: string;
             /** Format: uuid */
             readonly block: string;
+            readonly block_code?: string;
             readonly current_version: components["schemas"]["PointVersion"] | null;
             /** Format: uuid */
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         SamplingPointBundle: {
             /** Format: uuid */
@@ -15202,6 +15572,8 @@ export interface components {
             readonly service_interval_km: number | null;
             readonly service_interval_days: number | null;
             readonly due_metric_provenance: unknown;
+            readonly created_by_name?: string | null;
+            readonly voided_by_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -15289,6 +15661,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         ShiftDecisionRequestRequest: {
             reason: string;
@@ -15531,6 +15904,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         SupplyAssignmentRead: {
             /** Format: uuid */
@@ -15906,6 +16280,7 @@ export interface components {
             params: {
                 [key: string]: unknown;
             };
+            readonly author_name?: string | null;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -15985,6 +16360,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         TransferAuthorization: {
             /** Format: uuid */
@@ -16003,7 +16379,7 @@ export interface components {
             /** Format: date-time */
             readonly valid_until: string;
             readonly reference: string;
-            readonly created_by_name: string | null;
+            readonly created_by_name?: string | null;
             readonly status: string;
             readonly revoked_at: unknown;
             readonly revocation_reason: string | null;
@@ -16056,6 +16432,7 @@ export interface components {
             readonly created_by: string | null;
             /** Format: date-time */
             readonly created_at: string;
+            readonly created_by_name?: string | null;
         };
         /**
          * @description * `prepared` - prepared
@@ -16105,6 +16482,7 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly lot_id: string;
+            readonly lot_code: string;
             /** Format: uuid */
             readonly location_id: string;
             /** Format: uuid */
@@ -16125,6 +16503,7 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly lot_id: string;
+            readonly lot_code: string;
             /** Format: uuid */
             readonly piece_id: string | null;
             /** Format: uuid */
@@ -24800,6 +25179,383 @@ export interface operations {
                     "image/jpeg": string;
                     "image/png": string;
                     "application/pdf": string;
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_availability_retrieve: {
+        parameters: {
+            query?: {
+                slug?: string;
+                username?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Availability"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_list: {
+        parameters: {
+            query?: {
+                /** @description Which field to use when ordering the results. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                /** @description A search term. */
+                search?: string;
+                /**
+                 * @description * `active` - active
+                 *     * `suspended` - suspended
+                 */
+                status?: "active" | "suspended";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedPlatformOrganizationList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProvisionRequest"];
+                "multipart/form-data": components["schemas"]["ProvisionRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ProvisionRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProvisionResponse"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_admins_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminInputRequest"];
+                "multipart/form-data": components["schemas"]["AdminInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["AdminInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CreatedAdmin"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_apply_defaults_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DefaultsResult"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_centers_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CenterInputRequest"];
+                "multipart/form-data": components["schemas"]["CenterInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["CenterInputRequest"];
+            };
+        };
+        responses: {
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformCenter"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_logo_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_logo_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LogoInputRequest"];
+                "multipart/form-data": components["schemas"]["LogoInputRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["LogoInputRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_reactivate_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    platform_organizations_suspend_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReasonRequest"];
+                "multipart/form-data": components["schemas"]["ReasonRequest"];
+                "application/x-www-form-urlencoded": components["schemas"]["ReasonRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PlatformOrganizationDetail"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

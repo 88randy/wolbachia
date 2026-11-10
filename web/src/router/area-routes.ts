@@ -15,6 +15,7 @@ import { labRoutes } from "../lab/routes";
 import { notificationRoutes } from "../notifications/routes";
 import { operationRoutes } from "../operations/routes";
 import { peopleRoutes } from "../people/routes";
+import { platformRoutes } from "../platform/routes";
 import { quadrantRoutes } from "../quadrants/routes";
 import { regulatoryRoutes } from "../regulatory/routes";
 import { releaseRoutes } from "../releases/routes";
@@ -39,5 +40,6 @@ export const areaRouteModules = [
   ...dashboardsRoutes,
   ...regulatoryRoutes,
   ...settingsRoutes,
+  ...platformRoutes,
   ...placeholderRoutes,
 ];

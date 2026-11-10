@@ -151,4 +151,6 @@ export const trainings: Record<keyof typeof Spanish, string> = {
   "trainings.mobile.revision": "Revision",
   "trainings.mobile.source": "Original record",
   "trainings.mobile.context": "Center and quadrant",
+  "trainings.state.configured": "Configured",
+  "trainings.facts.certificateCount": "Certificates: {count}",
 };

@@ -64,4 +64,5 @@ export const discrepancies = {
     "The transfer or its signed receipt is unavailable. Check the code and try again.",
   "discrepancies.correction.requirements":
     "The server checks the same destination, material and available received correction quantity. Linking it creates no additional credit.",
+  "discrepancies.history.piece": "Piece",
 } satisfies Record<keyof typeof Spanish, string>;

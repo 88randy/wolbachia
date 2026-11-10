@@ -9,6 +9,7 @@ from django.utils.dateparse import parse_datetime
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.author_names import AuthorNameField
 from core.serializers import OrgScopedModelSerializer
 from core.void_reason import VoidSerializer
 from ovitraps.payloads import StrictBooleanField, StrictPayloadSerializer
@@ -428,6 +429,7 @@ class NoticePolicyReadSerializer(OrgScopedModelSerializer):
     center_id = serializers.UUIDField(read_only=True)
     quadrant_id = serializers.UUIDField(read_only=True, allow_null=True)
     recipient_membership_id = serializers.UUIDField(read_only=True)
+    recipient_name = AuthorNameField("recipient_membership.user")
 
     class Meta:
         model = EvaluationNoticePolicyVersion
@@ -436,6 +438,7 @@ class NoticePolicyReadSerializer(OrgScopedModelSerializer):
             "center_id",
             "quadrant_id",
             "recipient_membership_id",
+            "recipient_name",
             "revision",
             "created_at",
         ]

@@ -4,6 +4,7 @@ import { receivedUnits } from "./transfer-reception";
 import { quantityText } from "./transfer-quantities";
 import type { TransferScope } from "./transfer-query";
 import type { useTransferReception } from "./use-transfer-reception";
+import { nameOrDash } from "../../lookups/use-reference-names";
 import styles from "../inventory.module.css";
 import { ReceptionMissingPhoto } from "./ReceptionMissingPhoto";
 export interface ReceptionLineProps {
@@ -16,7 +17,7 @@ export function ReceptionLine(props: ReceptionLineProps) {
   const { line, model } = props;
   return (
     <li className={styles.form}>
-      <p className={styles.mono}>{line.piece_id ?? line.lot_id}</p>
+      <p>{nameOrDash(line.lot_code)}</p>
       <p>
         {t("transfers.line.count", {
           expected: line.quantity,

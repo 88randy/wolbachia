@@ -17,6 +17,7 @@ One English name per domain term across backend, mobile and web. Spanish appears
 
 | Spanish | English name in code | Notes |
 | --- | --- | --- |
+| administrador de plataforma | platform admin | PlatformAdmin, is_platform_admin | Manages organizations; no organization data without a membership. |
 | envío UIEB | UiebShipment | Immutable technical source projection with cutoff and linked supersession. |
 | fuente de envío | ShipmentSource | Genuine selected Bag, WolbachiaSample or Lot identity; not a legal Annex VI template. |
 | solicitud de material | MaterialRequest | Actual recipient, lot, storage, unit, quantity and optional piece. |

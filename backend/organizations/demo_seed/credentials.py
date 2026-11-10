@@ -20,6 +20,10 @@ def credentials_path() -> Path:
 def _users_table() -> list[str]:
     lines = ["| Username | Profile | Password |", "| --- | --- | --- |"]
     lines += [f"| {u.username} | {u.profile} | {u.password} |" for u in people.DEMO_USERS]
+    platform = people.DEMO_PLATFORM_USER
+    lines.append(
+        f"| {platform.username} | platform admin (no organization) | {platform.password} |"
+    )
     return lines
 
 

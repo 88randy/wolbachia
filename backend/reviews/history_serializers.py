@@ -6,13 +6,15 @@ from drf_spectacular.extensions import OpenApiSerializerExtension
 from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 
+from core.author_names import AuthorNamesMixin
+
 
 class HistorySubjectSerializer(serializers.Serializer[Any]):
     center_id = serializers.UUIDField(allow_null=True)
     quadrant_id = serializers.UUIDField(allow_null=True)
 
 
-class ReviewHistoryEntrySerializer(serializers.Serializer[Any]):
+class ReviewHistoryEntrySerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     id = serializers.UUIDField()
     kind = serializers.ChoiceField(choices=["review_decision", "shift_validation"])
     review_item_id = serializers.UUIDField(allow_null=True)

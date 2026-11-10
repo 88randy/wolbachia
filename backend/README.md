@@ -22,6 +22,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | `config/` | Settings (`base`, `dev`, `test`, `prod`), URLs, WSGI/ASGI, Celery app |
 | `accounts/` | Shared `User` identity and authentication (#4); membership-private `Personnel`, protected RFC and durable `AccessLog` (#100); device sessions, bearer tokens and final-upload hook |
 | `organizations/` | `Organization`, `Profile`, `Membership`; services, selectors, `GET /me/`, `bootstrap_organization` |
+| `platform_admin/` | Platform role (`PlatformAdmin`), insert-only `PlatformAuditEntry`, `/api/v1/platform/` (the only cross-organization surface) and `create_platform_admin` |
 | `catalogs/` | `Catalog`, `CatalogItem`; item services, catalog snapshot, `/catalogs/...` and `/field/catalog/` (see its README) |
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
 | `field_sync/` | `FieldEvent` (insert-only), the event handler registry, the sync pipeline, `record.void`, `POST /field/sync/` (see its README and `docs/sync.md`) |
@@ -169,6 +170,23 @@ uv run python manage.py seed_organization_defaults --organization acme --apply  
 ```
 
 The seeded values come from the design brief and must be validated with the program entomologist; parameters the brief gives no value for have no version (`value: null`, "not configured") until an admin sets one.
+
+## Platform admins: organizations from the web
+
+A platform admin creates and configures organizations in the web app (area "Organizaciones"), so the
+Django admin is never needed. The only CLI step is the first platform admin (it asks for the
+password; nothing is passed as an argument):
+
+```bash
+uv run python manage.py create_platform_admin --username ops --email ops@example.com
+```
+
+The role is separate from organization profiles and grants NO organization data: without a
+membership the user sees only `/api/v1/platform/` (and `/me/` with `organization: null`,
+`is_platform_admin: true`). Every platform action appends an insert-only `PlatformAuditEntry`
+(a database trigger refuses updates and deletes). The endpoints reuse `bootstrap_organization`,
+`seed_default_profiles` and `seed_organization_defaults`, the same services as the commands above.
+See `docs/api-conventions.md` ("Platform administration").
 
 ## Demo data for local end-to-end testing (#358)
 

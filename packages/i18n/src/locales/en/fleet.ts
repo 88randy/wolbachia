@@ -148,4 +148,12 @@ export const fleet = {
   "fleet.create.invalidPlate": "The plate can have up to 20 characters.",
   "fleet.create.failure": "Could not register the motorcycle",
   "fleet.create.busy": "Saving…",
+  "fleet.history.record": "Record",
+  "fleet.history.openRecord": "View record",
+  "fleet.history.fieldReport": "Courier report",
+  "fleet.history.referenceShown": "Showing the selected record.",
+  "fleet.fuel.previousLoad": "View the previous load",
+  "fleet.fuel.receiptAttached": "Receipt attached",
+  "fleet.clear.evidenceItem": "Evidence {number}",
+  "fleet.clear.reviewedBy": "Reviewed by",
 } satisfies Record<keyof typeof Spanish, string>;

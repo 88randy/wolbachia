@@ -49,4 +49,6 @@ export const relocations: Record<keyof typeof source, string> = {
   "relocations.workspace.samePoint":
     "Compare the previous and proposed locations. The point code is retained.",
   "relocations.workspace.openSelected": "Review selected proposal",
+  "relocations.workspace.oldLocationPlain": "Previous location",
+  "relocations.workspace.newLocationPlain": "Proposed location",
 };

@@ -249,7 +249,9 @@ class NoticePolicyViewSet(PeopleViewSet):
         actor = actor_from_request(self.request)
         scope = current_scope(actor)
         rows: QuerySet[models.EvaluationNoticePolicyVersion] = (
-            models.EvaluationNoticePolicyVersion.objects.filter(organization=actor.organization)
+            models.EvaluationNoticePolicyVersion.objects.filter(
+                organization=actor.organization
+            ).select_related("recipient_membership__user")
         )
         for permission in (TRAINING_MANAGE, EVALUATION_READ):
             rows = selectors.scoped_facts(rows, scope, permission)

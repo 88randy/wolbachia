@@ -64,4 +64,5 @@ export const discrepancies = {
     "La transferencia o su recepción firmada no están disponibles. Revisa el código e intenta de nuevo.",
   "discrepancies.correction.requirements":
     "Se verifica el mismo destino, el material y la cantidad recibida disponible de la corrección. Vincularla no genera otro ingreso.",
+  "discrepancies.history.piece": "Pieza",
 } as const satisfies AreaCatalog<"discrepancies">;

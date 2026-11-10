@@ -8,7 +8,7 @@ export function DiscrepancyHistory({ record }: { record: Discrepancy }) {
   return (
     <Card title={t("discrepancies.history.title")}>
       {record.transfer.events.map((event) => (
-        <DiscrepancyEvent key={event.id} event={event} />
+        <DiscrepancyEvent key={event.id} event={event} lines={record.transfer.lines} />
       ))}
     </Card>
   );

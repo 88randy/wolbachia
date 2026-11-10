@@ -48,6 +48,7 @@ INSTALLED_APPS = [
     "notifications",
     "privacy.apps.PrivacyConfig",
     "releases.apps.ReleasesConfig",
+    "platform_admin.apps.PlatformAdminConfig",
 ]
 
 MIDDLEWARE = [
@@ -232,6 +233,8 @@ REST_FRAMEWORK = {
         "export": env("THROTTLE_EXPORT_RATE", default="10/hour"),
         "portal": env("THROTTLE_PORTAL_RATE", default="30/min"),
         "risk_import_upload": env("THROTTLE_RISK_IMPORT_UPLOAD_RATE", default="10/hour"),
+        "platform": env("THROTTLE_PLATFORM_RATE", default="120/min"),
+        "platform_write": env("THROTTLE_PLATFORM_WRITE_RATE", default="60/hour"),
     },
     # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a
     # client cannot dodge the anonymous throttle by rotating that header.
@@ -253,6 +256,7 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "CredentialDeliveryEnum": ["password", "invite"],
         "WolbachiaAttemptStatusEnum": ["valid", "invalid", "disputed"],
         "WolbachiaResultEnum": ["positive", "negative"],
         "PcrBatchStatusEnum": [
@@ -332,6 +336,7 @@ SPECTACULAR_SETTINGS = {
     "POSTPROCESSING_HOOKS": [
         "drf_spectacular.hooks.postprocess_schema_enums",
         "core.schema.add_error_envelope",
+        "core.schema_hooks.optional_author_names",
     ],
 }
 
