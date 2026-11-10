@@ -1,5 +1,14 @@
 # field_sync
 
+## Permit and release owner (#116)
+
+`releases` owns `release.record` schema1 and the typed `permits` producer1.
+Preparation retains the existing inventory arbiter through source/effect receipt
+insertion. Manual transit evidence may require source-bound review; original
+permit, requirements, training, schedule owner and genuine custody pins survive
+without operational effects. Acceptance rechecks current mandatory safety before
+the single existing inventory ledger debit. See releases/README.md and docs/sync.md.
+
 ## Own training eligibility (#101)
 
 The reserved eligibility section now has one typed producer (version1). It exposes

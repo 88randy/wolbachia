@@ -12,6 +12,12 @@ export function InventoryHome() {
     <section className={page.page}>
       <Card title={t("inventory.page.home")} headingLevel={1}>
         <nav aria-label={t("inventory.page.home")} className={page.actions}>
+          {can("transfer.read") && (
+            <Link to="/inventory/transfers">{t("transfers.page.title")}</Link>
+          )}
+          {can("discrepancy.read") && (
+            <Link to="/inventory/discrepancies">{t("discrepancies.page.title")}</Link>
+          )}
           {can("supply_type.read") && (
             <Link to="/inventory/supplies">{t("inventory.page.supplies")}</Link>
           )}

@@ -22,6 +22,7 @@ OVITRAP_EVENTS = frozenset(
 INCIDENT_EVENTS = frozenset({"incident.report", "emergency.accident"})
 TRANSFER_EVENTS = frozenset({"transfer.dispatch", "transfer.receive"})
 SUPPLY_EVENTS = frozenset({"supplies.receive", "supplies.reconcile"})
+RELEASE_EVENTS = frozenset({"release.record"})
 
 
 @dataclass(frozen=True)
@@ -42,7 +43,8 @@ def _allows_motorcycle(scope: EffectiveScope, permission: str, motorcycle: Motor
 
 def declared_upload_ids(event: FieldEvent) -> set[UUID]:
     if (
-        event.type not in OVITRAP_EVENTS | INCIDENT_EVENTS | TRANSFER_EVENTS | SUPPLY_EVENTS
+        event.type
+        not in OVITRAP_EVENTS | INCIDENT_EVENTS | TRANSFER_EVENTS | SUPPLY_EVENTS | RELEASE_EVENTS
         and event.type != "fuel.load"
     ):
         return set()
@@ -76,6 +78,15 @@ def _supply_upload_references(payload: dict[str, Any]) -> list[Any]:
 
 
 def _event_dimensions(event: FieldEvent) -> tuple[str | None, str | None]:
+    if event.type in RELEASE_EVENTS:
+        from releases.models import Permit
+
+        permit = Permit.objects.filter(
+            organization_id=event.organization_id, pk=event.payload.get("permit_id")
+        ).first()
+        if permit is None:
+            raise Http404
+        return str(permit.center_id), str(permit.quadrant_id)
     if event.type in INCIDENT_EVENTS:
         from incidents.selectors import resource_context
 
@@ -91,6 +102,10 @@ def _event_dimensions(event: FieldEvent) -> tuple[str | None, str | None]:
         if motorcycle is None:
             raise Http404
         return str(motorcycle.center_id) if motorcycle.center_id else None, None
+    return _ovitrap_event_dimensions(event)
+
+
+def _ovitrap_event_dimensions(event: FieldEvent) -> tuple[str, str]:
     if event.type not in OVITRAP_EVENTS:
         raise Http404
     try:
@@ -389,20 +404,16 @@ def _authorize_event_download(
     event = FieldEvent.objects.filter(pk=event_id, organization=actor.organization).first()
     if event is None:
         raise Http404
+    if event.type in RELEASE_EVENTS:
+        _authorize_release_download(scope, event)
+        return
     if event.type in SUPPLY_EVENTS:
         from inventory.allocations.evidence import authorize_source_download
 
         authorize_source_download(actor, event)
         return
     if event.type in TRANSFER_EVENTS:
-        from reviews.inspection import original_source_envelope
-        from reviews.scope import subject_allows, subject_facts
-
-        facts = subject_facts(actor.organization, original_source_envelope(event))
-        if not subject_allows(scope, "transfer.read", facts) or (
-            event.status == "in_review" and not subject_allows(scope, "review_item.read", facts)
-        ):
-            raise Http404
+        _authorize_transfer_source_download(actor, scope, event)
         return
     if event.type == "fuel.load":
         motorcycle = Motorcycle.objects.filter(
@@ -428,6 +439,14 @@ def _authorize_event_download(
 
 
 def has_event_upload_scope(scope: EffectiveScope, event: FieldEvent) -> bool:
+    if event.type in RELEASE_EVENTS:
+        from reviews.scope import subject_allows
+
+        facts = _release_event_subjects(event)
+        return all(
+            subject_allows(scope, permission, facts)
+            for permission in (FIELD_UPLOAD, FIELD_EVENT_SYNC)
+        )
     if event.type in SUPPLY_EVENTS:
         from inventory.allocations.permissions import SOURCE_PERMISSIONS
         from inventory.allocations.scope import allows_supply_vector
@@ -461,3 +480,36 @@ def has_event_upload_scope(scope: EffectiveScope, event: FieldEvent) -> bool:
     return scope.allows(FIELD_UPLOAD, center, quadrant) and scope.allows(
         FIELD_EVENT_SYNC, center, quadrant
     )
+
+
+def _release_event_subjects(event: FieldEvent) -> Any:  # noqa: ANN401 -- concrete SubjectFacts, imported locally to avoid model cycles
+    from releases.payloads import ReleasePayload
+    from reviews.scope import SubjectFacts, release_subjects
+
+    payload = ReleasePayload(data=event.payload)
+    if not payload.is_valid():
+        return SubjectFacts()
+    return release_subjects(event.organization, dict(payload.validated_data))
+
+
+def _authorize_release_download(scope: EffectiveScope, event: FieldEvent) -> None:
+    from reviews.scope import subject_allows
+
+    facts = _release_event_subjects(event)
+    if not subject_allows(scope, "release.read", facts) or (
+        event.status == "in_review" and not subject_allows(scope, "review_item.read", facts)
+    ):
+        raise Http404
+
+
+def _authorize_transfer_source_download(
+    actor: UploadActor, scope: EffectiveScope, event: FieldEvent
+) -> None:
+    from reviews.inspection import original_source_envelope
+    from reviews.scope import subject_allows, subject_facts
+
+    facts = subject_facts(actor.organization, original_source_envelope(event))
+    if not subject_allows(scope, "transfer.read", facts) or (
+        event.status == "in_review" and not subject_allows(scope, "review_item.read", facts)
+    ):
+        raise Http404

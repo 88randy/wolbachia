@@ -1,6 +1,6 @@
 """Scheduling projections and atomic courier feed writes; no device or external I/O."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import date
 from typing import Any, cast
 from uuid import UUID
@@ -11,7 +11,7 @@ from rest_framework import serializers
 
 from accounts.models import Device, User
 from core.snapshots import snapshot_hash
-from field_sync.envelope import BatchContext, EventEnvelope
+from field_sync.envelope import BatchContext, CourierContext, EventEnvelope
 from field_sync.models import FieldEvent
 from field_sync.producers import ProducerContext
 from field_sync.services import (
@@ -57,7 +57,7 @@ class AssignmentProducerSerializer(serializers.Serializer[Any]):
     revision = serializers.IntegerField(min_value=1)
     code = serializers.CharField(required=False)
     point = serializers.UUIDField(required=False)
-    action = serializers.ChoiceField(choices=("place", "check"), required=False)
+    action = serializers.ChoiceField(choices=("place", "check", "release"), required=False)
     date = serializers.DateField(required=False)
     category = serializers.ChoiceField(
         choices=("low", "medium", "high"), allow_null=True, required=False
@@ -168,7 +168,7 @@ def _change_input(row: dict[str, Any], action: str) -> ChangeInput:
     )
 
 
-def _append_change(batch: BatchContext, row: dict[str, Any], action: str) -> None:
+def _append_change(batch: BatchContext | CourierContext, row: dict[str, Any], action: str) -> None:
     append_courier_change(batch, _change_input(row, action))
 
 
@@ -217,7 +217,7 @@ def task_feed_rows(
 
 
 def append_task_changes(
-    batches: dict[UUID, BatchContext],
+    batches: Mapping[UUID, BatchContext | CourierContext],
     rows: list[dict[str, Any]],
     previous: dict[str, UUID | None] | None = None,
 ) -> None:

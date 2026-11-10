@@ -35,6 +35,12 @@ EXPECTED_COHORTS = {
     "regular-integration": {
         "tests/test_inventory_allocations_b_10.py",
         "tests/test_uploads_b_04.py",
+        "tests/test_permit_api_116.py",
+        "tests/test_release_guards_116.py",
+        "tests/test_release_stock_116.py",
+        "tests/test_release_uuid_116.py",
+        "tests/test_releases_b_20.py",
+        "tests/test_releases_concurrency_116.py",
     },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
@@ -132,8 +138,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 13
-        )  # Residual regular, ten migration owners and two complete ordinary modules.
+            validate_fragments(bundles, expected) == 19
+        )  # Residual regular, ten migration owners and eight complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -162,6 +168,7 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
     for absent in (
         "tests/test_uploads_b_04.py",
         "tests/test_inventory_allocations_migrations_107.py",
+        "tests/test_release_stock_116.py",
     ):
         with pytest.raises(ValueError, match="CI evidence"):
             partition_nodes([node for node in nodes if node.split("::")[0] != absent])

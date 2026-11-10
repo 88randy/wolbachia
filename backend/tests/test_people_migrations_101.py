@@ -19,6 +19,28 @@ from tests.people_support import (
     write_person,
 )
 
+# Explicit #116 additions removed with People and restored through its dependents.
+RELEASE_ADDITIVE_TRIGGERS = {
+    f"releases_{table}_guard"
+    for table in (
+        "permit",
+        "permittype",
+        "permitversion",
+        "permitsuspension",
+        "permitsuspensionnotice",
+        "releasedevice",
+        "releasedevicestatus",
+        "releaseschedule",
+        "release",
+    )
+} | {
+    "releases_release_source_guard",
+    "inventory_release_stock_complete",
+    "inventory_release_operation_guard",
+    "inventory_release_operation_complete",
+    "inventory_release_movement_complete",
+}
+
 
 def trigger_definitions():
     with connection.cursor() as cursor:
@@ -100,9 +122,15 @@ def test_people_upgrade_retains_legacy_and_raw_guards_preserve_real_private_chai
             "eligibilityassessmentreceipt",
             "peoplecommand",
         )
-        additions = {
-            f"people_{table}_{suffix}" for table in tables for suffix in ("guard", "complete_guard")
-        } | {"uploads_certification_parent_guard"}
+        additions = (
+            {
+                f"people_{table}_{suffix}"
+                for table in tables
+                for suffix in ("guard", "complete_guard")
+            }
+            | {"uploads_certification_parent_guard"}
+            | RELEASE_ADDITIVE_TRIGGERS
+        )
         assert set(upgraded) - set(baseline) == additions
         assert Training.objects.count() == Certification.objects.count() == 0
         assert EligibilityAssessmentReceipt.objects.count() == 0

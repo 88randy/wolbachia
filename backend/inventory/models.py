@@ -192,6 +192,15 @@ class StockOperation(InventoryRecord):
         on_delete=models.PROTECT,
         related_name="stock_operation",
     )
+    release = models.OneToOneField(
+        "releases.Release", null=True, on_delete=models.PROTECT, related_name="stock_operation"
+    )
+    release_receipt_line = models.ForeignKey(
+        "inventory.SupplyReceiptLine",
+        null=True,
+        on_delete=models.PROTECT,
+        related_name="release_operations",
+    )
     material_delivery = models.OneToOneField(
         "lab.DeliveryReceipt",
         null=True,
@@ -213,6 +222,7 @@ class StockOperation(InventoryRecord):
                 "lot_write_off",
                 "supply_compensation",
                 "paddle_return",
+                "release_record",
                 "material_delivery",
             )
         ],
@@ -230,6 +240,8 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
                         paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
                         material_delivery__isnull=True,
                     )
                     | models.Q(
@@ -242,6 +254,8 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=False,
                         supply_source__isnull=True,
                         paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
                         material_delivery__isnull=True,
                     )
                     | models.Q(
@@ -256,6 +270,8 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=False,
                         paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
                         material_delivery__isnull=True,
                     )
                     | models.Q(
@@ -264,6 +280,18 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
                         paddle_return__isnull=False,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
+                        material_delivery__isnull=True,
+                    )
+                    | models.Q(
+                        source_kind="release_record",
+                        admission__isnull=True,
+                        transfer_event__isnull=True,
+                        supply_source__isnull=True,
+                        paddle_return__isnull=True,
+                        release__isnull=False,
+                        release_receipt_line__isnull=False,
                         material_delivery__isnull=True,
                     )
                     | models.Q(
@@ -272,6 +300,8 @@ class StockOperation(InventoryRecord):
                         transfer_event__isnull=True,
                         supply_source__isnull=True,
                         paddle_return__isnull=True,
+                        release__isnull=True,
+                        release_receipt_line__isnull=True,
                         material_delivery__isnull=False,
                     )
                 ),

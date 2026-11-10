@@ -5,7 +5,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("inventory", "0009_paddle_return_guards"),
+        ("inventory", "0010_release_consumption"),
     ]
 
     operations = [

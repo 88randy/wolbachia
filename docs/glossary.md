@@ -81,8 +81,14 @@ Rules:
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
 | liberación | release | `/releases/`, `release` | Release of Wolbachia mosquitoes. Not an app release: app builds are `app-versions` (`/app-versions/`). |
-| dispositivo de liberación | release device | `/release-devices/`, `release_device` | |
-| permiso | permit | `/permits/`, `permit` | Authorization for a release zone; may expire (`PermitExpiredError`). |
+| dispositivo de liberación | release device | `/release-devices/`, `ReleaseDevice` | Immutable equipment identity, actual source lot/version and initial active status; equipment alone grants no release authority. |
+| estado de dispositivo de liberación | release device status | `/release-devices/{id}/status/`, `ReleaseDeviceStatus` | Authored append-only active/inactive/retired revision with expected_revision CAS; retirement is terminal. |
+| permiso | permit | `/permits/`, `Permit` | Fixed center/quadrant identity for regulatory release authority; validity and geometry belong to its versions. |
+| tipo de permiso | permit type | `/permit-types/`, `PermitType` | Immutable requirements snapshot with an explicitly configured positive `max_gps_accuracy_m`; no scientific default. |
+| versión de permiso | permit version | `/permits/{id}/versions/`, `PermitVersion` | Official number/authority, verified document image and authored review attestation, polygon and validity interval. |
+| suspensión de permiso | permit suspension | `/permits/{id}/suspend/`, `PermitSuspension` | Permanent append-only suspension for this permit identity; never a mutable validity flag. |
+| programación de liberación | release schedule | `/permits/{id}/schedule/`, `ReleaseSchedule` | Explicit permit-version binding to a real `ScheduledTask(action=release)` and its actual courier ownership. Risk categories never generate release authority. |
+| aviso de suspensión | permit suspension notice | `PermitSuspensionNotice` | Scoped recipient/suspension fact; `delivery_unavailable` records the absent transport rather than delivery. |
 
 ## Inventory and money-like control
 
