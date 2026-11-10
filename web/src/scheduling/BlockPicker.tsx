@@ -5,6 +5,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useApiClient } from "../api/ApiClientProvider";
 import { SearchField } from "../forms/SearchField";
 import { useSessionIdentity } from "../session/use-session-identity";
+import { Button } from "../ui/Button";
 import { blocksDirectoryOptions } from "./scheduling-queries";
 
 /** Pick blocks from a searchable list instead of typing codes. */
@@ -62,9 +63,31 @@ export function BlockPicker({
           </li>
         )}
       </ul>
-      <p className="m-0 text-xs text-ink-2" aria-live="polite">
-        {t("scheduling.intervention.selected", { count: selected.length })}
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="m-0 mr-auto text-xs text-ink-2" aria-live="polite">
+          {t("scheduling.intervention.selected", { count: selected.length })}
+        </p>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={shown.length === 0}
+          onClick={() => {
+            onChange([...new Set([...selected, ...shown.map((block) => block.id)])]);
+          }}
+        >
+          {t("scheduling.intervention.selectShown")}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={selected.length === 0}
+          onClick={() => {
+            onChange([]);
+          }}
+        >
+          {t("scheduling.intervention.clearSelected")}
+        </Button>
+      </div>
       {error && <p className="m-0 text-xs text-critical-fg">{error}</p>}
     </fieldset>
   );

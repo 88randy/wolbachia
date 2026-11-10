@@ -3,6 +3,8 @@ import { ApiError, unwrap } from "@wolbachia/api-client";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
+import { FormField, FormGrid } from "../components/templates/FormGrid";
+import { FormSection } from "../components/templates/FormSection";
 import { TextField } from "../forms/TextField";
 import { invalidateOrgScoped } from "../session/org-scoped-query";
 import { useSessionIdentity } from "../session/use-session-identity";
@@ -69,7 +71,7 @@ export function InterventionForm({ onDone }: { onDone: () => void }) {
   const serverError = create.error instanceof ApiError ? create.error : undefined;
   return (
     <form
-      className="flex flex-col gap-4"
+      className="flex flex-col gap-5"
       noValidate
       onSubmit={(event) => {
         event.preventDefault();
@@ -77,78 +79,100 @@ export function InterventionForm({ onDone }: { onDone: () => void }) {
         if (isValid) create.mutate();
       }}
     >
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="intervention-type" className="text-[13px] font-semibold text-ink">
-          {t("scheduling.intervention.type")}
-        </label>
-        <SelectMenu
-          id="intervention-type"
-          value={type}
-          onValueChange={setType}
-          placeholder={t("scheduling.intervention.typePlaceholder")}
-          invalid={isTried && type === ""}
-          options={types.map((item) => ({ value: item.id, label: item.label_es }))}
+      <FormSection title={t("scheduling.intervention.sectionWhat")}>
+        <FormGrid>
+          <FormField width="full">
+            <div className="flex flex-col gap-1.5">
+              <label htmlFor="intervention-type" className="text-[13px] font-semibold text-ink">
+                {t("scheduling.intervention.type")}
+              </label>
+              <SelectMenu
+                id="intervention-type"
+                value={type}
+                onValueChange={setType}
+                placeholder={t("scheduling.intervention.typePlaceholder")}
+                invalid={isTried && type === ""}
+                options={types.map((item) => ({ value: item.id, label: item.label_es }))}
+              />
+              {isTried && type === "" && <p className="m-0 text-xs text-critical-fg">{required}</p>}
+            </div>
+          </FormField>
+          {isOther && (
+            <FormField width="full">
+              <TextField
+                id="intervention-other"
+                label={t("scheduling.intervention.other")}
+                value={other}
+                error={missing(other)}
+                onChange={(event) => {
+                  setOther(event.target.value);
+                }}
+              />
+            </FormField>
+          )}
+          <FormField width="full">
+            <TextField
+              id="intervention-product"
+              label={t("scheduling.intervention.product")}
+              value={product}
+              maxLength={200}
+              error={missing(product)}
+              onChange={(event) => {
+                setProduct(event.target.value);
+              }}
+            />
+          </FormField>
+        </FormGrid>
+      </FormSection>
+      <FormSection title={t("scheduling.intervention.sectionWho")}>
+        <FormGrid>
+          <FormField width="full">
+            <TextField
+              id="intervention-source"
+              label={t("scheduling.intervention.institution")}
+              value={source}
+              maxLength={200}
+              error={missing(source)}
+              onChange={(event) => {
+                setSource(event.target.value);
+              }}
+            />
+          </FormField>
+          <FormField width="short">
+            <TextField
+              id="intervention-from"
+              type="date"
+              label={t("scheduling.intervention.from")}
+              value={from}
+              error={missing(from)}
+              onChange={(event) => {
+                setFrom(event.target.value);
+              }}
+            />
+          </FormField>
+          <FormField width="short">
+            <TextField
+              id="intervention-to"
+              type="date"
+              label={t("scheduling.intervention.to")}
+              value={to}
+              error={missing(to) ?? rangeError}
+              onChange={(event) => {
+                setTo(event.target.value);
+              }}
+            />
+          </FormField>
+        </FormGrid>
+      </FormSection>
+      <FormSection title={t("scheduling.intervention.sectionWhere")}>
+        <BlockPicker
+          selected={blocks}
+          onChange={setBlocks}
+          {...(isTried && blocks.length === 0
+            ? { error: t("scheduling.intervention.needBlocks") }
+            : {})}
         />
-        {isTried && type === "" && <p className="m-0 text-xs text-critical-fg">{required}</p>}
-      </div>
-      {isOther && (
-        <TextField
-          id="intervention-other"
-          label={t("scheduling.intervention.other")}
-          value={other}
-          error={missing(other)}
-          onChange={(event) => {
-            setOther(event.target.value);
-          }}
-        />
-      )}
-      <TextField
-        id="intervention-product"
-        label={t("scheduling.intervention.product")}
-        value={product}
-        maxLength={200}
-        error={missing(product)}
-        onChange={(event) => {
-          setProduct(event.target.value);
-        }}
-      />
-      <TextField
-        id="intervention-source"
-        label={t("scheduling.intervention.institution")}
-        value={source}
-        maxLength={200}
-        error={missing(source)}
-        onChange={(event) => {
-          setSource(event.target.value);
-        }}
-      />
-      <div className="grid gap-4 sm:grid-cols-2">
-        <TextField
-          id="intervention-from"
-          type="date"
-          label={t("scheduling.intervention.from")}
-          value={from}
-          error={missing(from)}
-          onChange={(event) => {
-            setFrom(event.target.value);
-          }}
-        />
-        <TextField
-          id="intervention-to"
-          type="date"
-          label={t("scheduling.intervention.to")}
-          value={to}
-          error={missing(to) ?? rangeError}
-          onChange={(event) => {
-            setTo(event.target.value);
-          }}
-        />
-      </div>
-      <BlockPicker
-        selected={blocks}
-        onChange={setBlocks}
-        {...(isTried && blocks.length === 0 ? { error: required } : {})}
-      />
+      </FormSection>
       {create.isError && (
         <InlineNotice tone="critical">
           <p>

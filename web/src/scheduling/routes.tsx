@@ -1,4 +1,5 @@
 import { createRoute } from "@tanstack/react-router";
+import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
@@ -14,6 +15,7 @@ import { W32Page } from "./W32Page";
 const planRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/scheduling/plan",
+  staticData: { crumb: "scheduling.plan.menu" },
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     requirePermission("scheduling", context.me, "schedule.read");
@@ -24,6 +26,7 @@ const planRoute = createRoute({
 const assignmentsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/scheduling/assignments",
+  staticData: { crumb: "scheduling.assign.title" },
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     requirePermission("scheduling", context.me, "schedule.read");
@@ -34,6 +37,7 @@ const assignmentsRoute = createRoute({
 const riskRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/scheduling/risk",
+  staticData: { crumb: "scheduling.risk.menu" },
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     requirePermission("scheduling", context.me, "schedule.read");
@@ -44,6 +48,7 @@ const riskRoute = createRoute({
 const riskImportRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/scheduling/risk/import",
+  staticData: { crumb: "scheduling.import.title" },
   beforeLoad: ({ context }) => {
     requirePermission("scheduling", context.me, "risk_import.apply");
   },
@@ -53,6 +58,7 @@ const riskImportRoute = createRoute({
 const interventionsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/scheduling/interventions",
+  staticData: { crumb: "scheduling.intervention.title" },
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     requirePermission("scheduling", context.me, "intervention.read");

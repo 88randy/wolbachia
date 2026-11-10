@@ -1,6 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Plus } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { useApiClient } from "../api/ApiClientProvider";
@@ -12,9 +10,9 @@ import { useTableUrlState } from "../data-table/use-table-url-state";
 import { useFormatCalendarDate, useFormatNumber } from "../format/use-formatters";
 import { useCan } from "../session/use-can";
 import { useSessionIdentity } from "../session/use-session-identity";
-import { Button } from "../ui/Button";
-import { Dialog } from "../ui/Dialog";
-import { InterventionForm } from "./InterventionForm";
+import { EmptyState } from "../ui/EmptyState";
+import { InfoHint } from "../ui/InfoHint";
+import { NewInterventionDialog } from "./NewInterventionDialog";
 import { interventionTypesOptions, interventionsOptions } from "./scheduling-queries";
 
 const PAGE_SIZE = 25;
@@ -36,10 +34,11 @@ export function W32Page() {
   const can = useCan();
   const formatDay = useFormatCalendarDate();
   const formatNumber = useFormatNumber();
-  const [isOpen, setIsOpen] = useState(false);
   const controller = useTableUrlState(TABLE);
   const query = useQuery(interventionsOptions(client, identity, controller.state.page, PAGE_SIZE));
   const types = useQuery(interventionTypesOptions(client, identity)).data ?? [];
+  const canCreate = can("intervention.create");
+  const isEmpty = query.isSuccess && query.data.count === 0;
   const typeName = (row: Row) => {
     const label = types.find((item) => item.id === row.type)?.label_es ?? row.type_code;
     return row.other_text ? `${label}: ${row.other_text}` : label;
@@ -67,36 +66,29 @@ export function W32Page() {
   return (
     <ListPage
       title={t("scheduling.intervention.title")}
-      description={t("scheduling.intervention.description")}
-      actions={
-        can("intervention.create") && (
-          <Dialog
-            open={isOpen}
-            onOpenChange={setIsOpen}
-            title={t("scheduling.intervention.new")}
-            description={t("scheduling.intervention.newHint")}
-            trigger={
-              <Button leadingIcon={<Plus aria-hidden="true" />}>
-                {t("scheduling.intervention.new")}
-              </Button>
-            }
-          >
-            <InterventionForm
-              onDone={() => {
-                setIsOpen(false);
-              }}
-            />
-          </Dialog>
-        )
+      description={
+        <>
+          {t("scheduling.intervention.description")}
+          <InfoHint text={t("scheduling.intervention.hint")} />
+        </>
       }
+      actions={canCreate && <NewInterventionDialog />}
     >
-      <DataTable
-        caption={t("scheduling.intervention.title")}
-        columns={columns}
-        controller={controller}
-        getRowId={(row) => row.id}
-        data={pageTableData(query, controller.state.page, PAGE_SIZE)}
-      />
+      {isEmpty ? (
+        <EmptyState
+          kind="noData"
+          message={`${t("scheduling.intervention.empty")}. ${t(canCreate ? "scheduling.intervention.emptyHelp" : "scheduling.intervention.emptyReadOnly")}`}
+          action={canCreate ? <NewInterventionDialog variant="secondary" /> : undefined}
+        />
+      ) : (
+        <DataTable
+          caption={t("scheduling.intervention.title")}
+          columns={columns}
+          controller={controller}
+          getRowId={(row) => row.id}
+          data={pageTableData(query, controller.state.page, PAGE_SIZE)}
+        />
+      )}
     </ListPage>
   );
 }
