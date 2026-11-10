@@ -1,0 +1,13 @@
+.captureFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, calc(var(--space-6) * 5)), 1fr));
+  gap: var(--space-2);
+  min-width: 0;
+  padding: 0;
+  margin: 0;
+  border: 0;
+}
+.captureFields legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+}

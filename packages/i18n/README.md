@@ -1,5 +1,10 @@
 # @wolbachia/i18n
 
+The `incidentTypes` (W64, #149) and `conditions` (W18, #154) areas cover explicit
+configuration, immutable history, observed readings, missing protocol/window
+states and manual recovery in both es-MX and en. No scientific limits, SLA values,
+recipient identities or notification-delivery claims are translated as defaults.
+
 Shared message catalogs (`es-MX` default, `en`) for `mobile/` and `web/`. Apps never hard-code user-facing text: they look it up by key. Issue: #17.
 
 Rule from `docs/api-conventions.md`: the API never returns user-facing text. It returns `code` + `params` and the client translates with this package. Exception: per-organization catalog item labels (`label_es`, `label_en`) are data.

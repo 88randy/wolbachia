@@ -1,5 +1,13 @@
 # web — Wolbachia back-office and public portal
 
+W64 (#149) adds `/settings/incident-types` under `incident.manage_type` with named
+eligible assignees, versioned configuration and immutable history. W18 (#154)
+adds `/inventory/lots/<code>/conditions` with authoritative daily reading windows,
+exact retained protocols, historical ranges and authorized blocking incidents.
+See [incident type configuration](src/settings/incident-types/README.md) and
+[biological monitoring](src/inventory/conditions/README.md) for contract boundaries,
+design differences and criterion-to-test ownership.
+
 Issue #160 adds the W30 review queue, W31 relocation decisions and W33 quadrant
 closure: `/operations/reviews`, `/operations/relocations`, and
 `/quadrants/<code>/closure`. See [operations](src/operations/README.md) for the

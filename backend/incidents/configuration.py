@@ -33,8 +33,8 @@ def eligible_owner(  # noqa: PLR0913 -- identity, tenant, paired scope and termi
     if member is None:
         return None
     scope = captured_scope(member)
-    if context is None and not _potential_center_scope(scope):
-        return None
+    if context is None:
+        return member if eligible_configuration_scope(scope, terminal=terminal) else None
     center = str(context.center_id) if context else None
     quadrant = str(context.quadrant_id) if context and context.quadrant_id else None
     if not all(scope.allows(code, center, quadrant) for code in (INCIDENT_READ, INCIDENT_CLOSE)):
@@ -42,6 +42,15 @@ def eligible_owner(  # noqa: PLR0913 -- identity, tenant, paired scope and termi
     if terminal and not scope.permissions >= ADMINISTRATION_PERMISSIONS:
         return None
     return member
+
+
+def eligible_configuration_scope(scope: EffectiveScope, *, terminal: bool = False) -> bool:
+    """Configuration options and writes share the exact current named-owner predicate."""
+    return (
+        _potential_center_scope(scope)
+        and scope.permissions >= {INCIDENT_READ, INCIDENT_CLOSE}
+        and (not terminal or scope.permissions >= ADMINISTRATION_PERMISSIONS)
+    )
 
 
 def _potential_center_scope(scope: EffectiveScope) -> bool:
@@ -166,13 +175,12 @@ def _validate_type(  # noqa: PLR0913 -- current identity, stable item and propos
 ) -> None:
     validate_unique_blocker_kinds(values.get("blocker_kinds", []))
     for name in ("supervisor_id", "coordinator_id"):
-        if (
-            values.get(name)
-            and not Membership.objects.filter(
-                organization=actor.organization, pk=values[name]
-            ).exists()
-        ):
+        if not values.get(name):
+            continue
+        if not Membership.objects.filter(organization=actor.organization, pk=values[name]).exists():
             raise Http404
+        if eligible_owner(values[name], actor.organization, None) is None:
+            raise IncidentConfigurationUnavailableError
     if item.is_other and (not values.get("is_active", True) or "label" in data or "icon" in data):
         raise IncidentConflictError("protected_other")
     if item.code == "emergency-accident" and values["severity"] != "critical":

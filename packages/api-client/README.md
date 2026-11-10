@@ -88,6 +88,13 @@ reading slots are required. Unknown protocols/safety data remain nondispatchable
 No transfer, stock writer, label or courier assignment contract is fabricated.
 See ../../backend/inventory/README.md for queries, codes and integration limits.
 
+#149 adds management-only named incident-type owner options, immutable versions
+and unconfigured catalog item discovery (including protected Other). #154 adds
+the exact lot condition-status frame: retained protocol, daily assessed slots and
+currently authorized unresolved incident links. Empty links never prove absence
+of a global hold. See ../../docs/api-conventions.md for permission and custody
+boundaries. Both artifacts remain generated from the owning backend apps.
+
 #270 adds paginated real movement provenance and action-scoped owner, placement
 and protocol incident-type version choices. Lot reads retain exact supply/location
 snapshots and admission identity; blocker/calendar-date facets execute server-side.

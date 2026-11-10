@@ -33,9 +33,17 @@ from inventory.masters import (
 from inventory.models import ConditionReading, LocationVersion, Lot, LotVersion, SupplyTypeVersion
 from inventory.option_selectors import owner_options, placement_options, protocol_type_options
 from inventory.schema import InventoryAutoSchema
-from inventory.selectors import latest_versions, location_movements, location_stock, lot_versions
+from inventory.selectors import (
+    condition_status,
+    latest_versions,
+    location_movements,
+    location_stock,
+    lot_versions,
+)
 from inventory.serializers import (
     ConditionSerializer,
+    ConditionStatusQuerySerializer,
+    ConditionStatusSerializer,
     ConditionWriteSerializer,
     ExplicitConditionWriteSerializer,
     InventoryRevisionSerializer,
@@ -333,6 +341,7 @@ class LotViewSet(InventoryVersionViewSet):
         "create": "lot.create",
         "partial_update": "lot.update",
         "conditions": "lot.read",
+        "condition_status": "lot.read",
         "create_condition": "condition.create",
     }
     code_lookup_field = "lot__code"
@@ -420,6 +429,22 @@ class LotViewSet(InventoryVersionViewSet):
             LotChange(command.actor, command.values, command.identifier, command.expected_revision)
         )
         return Response(LotSerializer(version, context=self.get_serializer_context()).data)
+
+    @extend_schema(
+        parameters=[ConditionStatusQuerySerializer],
+        responses=ConditionStatusSerializer,
+        filters=False,
+    )
+    @action(detail=True, methods=["get"], url_path="condition-status")
+    def condition_status(self, request: Request, pk: str | None = None) -> Response:
+        from inventory.transfers.custody import condition_target
+
+        query = ConditionStatusQuerySerializer(data=request.query_params.dict())
+        query.is_valid(raise_exception=True)
+        actor = actor_from_request(request)
+        location = query.validated_data.get("location_id")
+        target = condition_target(actor, (str(pk), str(location) if location else None), "lot.read")
+        return Response(ConditionStatusSerializer(condition_status(actor, target)).data)
 
     @extend_schema(
         parameters=nested_parameters(

@@ -4,12 +4,15 @@ from typing import Any
 from uuid import UUID
 
 from django.db.models import QuerySet
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from drf_spectacular.utils import OpenApiParameter, PolymorphicProxySerializer, extend_schema
 from rest_framework import filters, mixins, serializers, status, viewsets
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from catalogs.models import CatalogItem
 from core.filters import CodeLookupFilter
@@ -19,8 +22,9 @@ from fleet.serializers import FleetIncidentFilterSerializer
 from fleet.serializers import IncidentSerializer as FleetIncidentSerializer
 from fleet.views import IncidentViewSet as FleetIncidentViewSet
 from incidents.configuration import write_type
+from incidents.configuration_permissions import IncidentTypePermission
 from incidents.models import Incident, IncidentTypeVersion
-from incidents.option_selectors import context_options, owner_options
+from incidents.option_selectors import configuration_owner_options, context_options, owner_options
 from incidents.payloads import IncidentReportPayload
 from incidents.permissions import (
     INCIDENT_CLOSE,
@@ -29,7 +33,13 @@ from incidents.permissions import (
     INCIDENT_READ,
     INCIDENT_REASSIGN,
 )
-from incidents.selectors import latest_types, projected_incidents, scoped_incidents
+from incidents.selectors import (
+    latest_types,
+    projected_incidents,
+    scoped_incidents,
+    type_versions,
+    unconfigured_type_items,
+)
 from incidents.serializers import (
     CloseSerializer,
     CommentSerializer,
@@ -41,8 +51,13 @@ from incidents.serializers import (
     IncidentFilterSerializer,
     IncidentOptionQuerySerializer,
     IncidentOwnerOptionSerializer,
+    IncidentTypeConfigurationOwnerOptionSerializer,
+    IncidentTypeConfigurationOwnerQuerySerializer,
+    IncidentTypeHistorySerializer,
     IncidentTypeQuerySerializer,
     IncidentTypeSerializer,
+    IncidentTypeUnconfiguredItemSerializer,
+    IncidentTypeUnconfiguredQuerySerializer,
     IncidentVoidSerializer,
     ReassignSerializer,
     ReportedIncidentSerializer,
@@ -251,15 +266,27 @@ class IncidentViewSet(FleetIncidentViewSet, mixins.RetrieveModelMixin, mixins.Cr
         return self._decide(request, pk, IncidentVoidSerializer)
 
 
+class IncidentTypeOrderingFilter(filters.OrderingFilter):
+    def filter_queryset(  # noqa: PLR0913 -- DRF backend's request/queryset/view signature
+        self, request: Request, queryset: QuerySet[Any], view: APIView
+    ) -> QuerySet[Any]:
+        ordering = self.get_ordering(request, queryset, view) or []
+        return queryset.order_by("is_other", *ordering, "pk")
+
+
 class IncidentTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
     queryset = IncidentTypeVersion.objects.all()
     serializer_class = IncidentTypeSerializer
+    permission_classes = [IsAuthenticated, IncidentTypePermission]
     required_permissions = {
         "list": INCIDENT_READ,
         "create": INCIDENT_MANAGE_TYPE,
         "partial_update": INCIDENT_MANAGE_TYPE,
+        "owner_options": INCIDENT_MANAGE_TYPE,
+        "versions": INCIDENT_MANAGE_TYPE,
+        "unconfigured_items": INCIDENT_MANAGE_TYPE,
     }
-    filter_backends = [CodeLookupFilter, filters.OrderingFilter]
+    filter_backends = [CodeLookupFilter, IncidentTypeOrderingFilter]
     code_lookup_field = "code"
     ordering_fields = ["code", "created_at"]
     ordering = ["code", "id"]
@@ -287,6 +314,57 @@ class IncidentTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets
         return super().list(request, *args, **kwargs)
 
     @extend_schema(
+        parameters=[IncidentTypeConfigurationOwnerQuerySerializer],
+        responses=IncidentTypeConfigurationOwnerOptionSerializer(many=True),
+        filters=False,
+    )
+    @action(detail=False, methods=["get"], url_path="owner-options")
+    def owner_options(self, request: Request) -> Response:
+        query = IncidentTypeConfigurationOwnerQuerySerializer(
+            data={key: value for key, value in request.query_params.items() if key != "format"}
+        )
+        query.is_valid(raise_exception=True)
+        rows = configuration_owner_options(actor_from_request(request), query.validated_data)
+        return self.get_paginated_response(
+            IncidentTypeConfigurationOwnerOptionSerializer(
+                self.paginate_queryset(rows), many=True
+            ).data
+        )
+
+    @extend_schema(
+        parameters=[IncidentTypeUnconfiguredQuerySerializer],
+        responses=IncidentTypeUnconfiguredItemSerializer(many=True),
+        filters=False,
+    )
+    @action(detail=False, methods=["get"], url_path="unconfigured-items")
+    def unconfigured_items(self, request: Request) -> Response:
+        query = IncidentTypeUnconfiguredQuerySerializer(
+            data={key: value for key, value in request.query_params.items() if key != "format"}
+        )
+        query.is_valid(raise_exception=True)
+        rows = unconfigured_type_items(request.organization, query.validated_data.get("code"))  # type: ignore[attr-defined]
+        return self.get_paginated_response(
+            IncidentTypeUnconfiguredItemSerializer(self.paginate_queryset(rows), many=True).data
+        )
+
+    @extend_schema(
+        responses=IncidentTypeHistorySerializer(many=True),
+        filters=False,
+    )
+    @action(detail=True, methods=["get"])
+    def versions(self, request: Request, pk: str) -> Response:
+        try:
+            identifier = UUID(pk)
+        except ValueError:
+            raise Http404 from None
+        rows = type_versions(request.organization, identifier)  # type: ignore[attr-defined]
+        return self.get_paginated_response(
+            IncidentTypeHistorySerializer(
+                self.paginate_queryset(rows), many=True, context=self.get_serializer_context()
+            ).data
+        )
+
+    @extend_schema(
         request=CreateIncidentTypeSerializer,
         responses={201: IncidentTypeSerializer, 409: IncidentConflictResponseSerializer},
     )
@@ -294,7 +372,10 @@ class IncidentTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets
         payload = CreateIncidentTypeSerializer(data=request.data, context={"create": True})
         payload.is_valid(raise_exception=True)
         result = write_type(actor_from_request(request), payload.validated_data)
-        return Response(IncidentTypeSerializer(result).data, status=status.HTTP_201_CREATED)
+        return Response(
+            IncidentTypeSerializer(result, context=self.get_serializer_context()).data,
+            status=status.HTTP_201_CREATED,
+        )
 
     @extend_schema(
         request=TypeConfigurationSerializer,
@@ -311,4 +392,4 @@ class IncidentTypeViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets
         payload = TypeConfigurationSerializer(data=request.data)
         payload.is_valid(raise_exception=True)
         result = write_type(actor_from_request(request), payload.validated_data, UUID(pk))
-        return Response(IncidentTypeSerializer(result).data)
+        return Response(IncidentTypeSerializer(result, context=self.get_serializer_context()).data)

@@ -6,7 +6,9 @@ from django.db.models import CharField, Exists, F, OuterRef, Q, QuerySet, UUIDFi
 from django.db.models.functions import Coalesce, Concat, NullIf, Trim
 from django.http import Http404
 
+from field_sync.selectors import captured_scope, membership_snapshots
 from geography.models import Quadrant
+from incidents.configuration import eligible_configuration_scope
 from incidents.models import Incident
 from incidents.selectors import ResourceContext, require_context
 from organizations.models import Center, Membership, Profile
@@ -132,3 +134,33 @@ def owner_options(actor: UploadActor, incident: Incident, search: str) -> QueryS
         .filter(label__icontains=search)
         .order_by("label", "pk")
     )
+
+
+def configuration_owner_options(actor: UploadActor, values: dict[str, Any]) -> list[dict[str, Any]]:
+    """Resolve eligible names from one current membership/profile snapshot before paging."""
+    members = (
+        membership_snapshots(actor.organization)
+        .annotate(
+            label=Coalesce(
+                NullIf(Trim(Concat("user__first_name", Value(" "), "user__last_name")), Value("")),
+                "user__username",
+                output_field=CharField(),
+            )
+        )
+        .filter(label__icontains=values.get("search", ""))
+        .order_by("label", "pk")
+    )
+    if "membership_id" in values:
+        members = members.filter(pk=values["membership_id"])
+    rows = []
+    for member in members:
+        scope = captured_scope(member)
+        if eligible_configuration_scope(scope):
+            rows.append(
+                {
+                    "membership_id": member.pk,
+                    "label": str(member.label),
+                    "is_terminal_eligible": eligible_configuration_scope(scope, terminal=True),
+                }
+            )
+    return rows
