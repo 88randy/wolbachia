@@ -5,7 +5,8 @@ import { useFormatCalendarDate } from "../../format/use-formatters";
 import { useLanguage } from "../../i18n/use-language";
 import { StatusPill } from "../../ui/StatusPill";
 import { formatInventoryQuantity } from "../format-inventory-quantity";
-import { courierLabel, lotLabel, shortId } from "./allocation-labels";
+import { LabName } from "../../lab/LabName";
+import { courierLabel, lotLabel } from "./allocation-labels";
 import type { WriteOff } from "./allocation-query";
 
 interface Directories {
@@ -23,13 +24,13 @@ function RpbiPill({ isVerified }: { isVerified: boolean }) {
   );
 }
 
-function targetColumns(lots: Directories["lots"], bagText: string): Column[] {
+function targetColumns(lots: Directories["lots"]): Column[] {
   return [
     {
       id: "target",
       headerKey: "allocation.writeOff.fieldTarget",
       cell: (row) =>
-        row.kind === "lot" ? lotLabel(lots, row.lot_id) : `${bagText} ${shortId(row.bag_id)}`,
+        row.kind === "lot" ? lotLabel(lots, row.lot_id) : <LabName kind="bag" id={row.bag_id} />,
       link: (row) => (row.kind === "lot" ? { to: "/inventory/lots" } : undefined),
     },
     { id: "reason", headerKey: "allocation.field.reason", cell: (row) => row.reason_code },
@@ -37,10 +38,9 @@ function targetColumns(lots: Directories["lots"], bagText: string): Column[] {
 }
 
 export function useWriteOffColumns({ lots, people }: Directories) {
-  const { t } = useTranslation();
   const { language } = useLanguage();
   const formatDay = useFormatCalendarDate();
-  const [target, reason] = targetColumns(lots, t("allocation.writeOff.kindBag"));
+  const [target, reason] = targetColumns(lots);
   const quantity = (row: WriteOff) =>
     row.kind === "lot" ? formatInventoryQuantity(row.quantity, language) : "—";
   const columns: Column[] = [
