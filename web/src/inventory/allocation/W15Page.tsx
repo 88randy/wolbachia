@@ -4,6 +4,7 @@ import { useMe } from "../../session/use-me";
 import { can } from "../../session/can";
 import { useDocumentTitle } from "../../shell/use-document-title";
 import { ListPage } from "../../components/templates/ListPage";
+import { InfoHint } from "../../ui/InfoHint";
 import { InlineNotice } from "../../ui/InlineNotice";
 import { useInventoryContext } from "../use-inventory-context";
 import { AssignmentDateField } from "./AssignmentDateField";
@@ -22,6 +23,12 @@ export function W15Page() {
   return (
     <ListPage
       title={t("allocation.assignment.title")}
+      description={
+        <>
+          {t("allocation.assignment.description")}
+          <InfoHint text={t("allocation.assignment.hint")} />
+        </>
+      }
       actions={<AssignmentDateField date={route.date} onChange={route.setDate} />}
     >
       <AssignmentWorkspace
