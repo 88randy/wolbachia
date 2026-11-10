@@ -1,11 +1,8 @@
 import { useT, useLocale } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Badge } from "../../ui/Badge.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { StatusCard } from "../../ui/StatusCard.tsx";
 import { trainingDate } from "./presentation.ts";
 import type { EvaluationFeedback } from "./types.ts";
 import { EvaluationProvenance } from "./EvaluationProvenance.tsx";
-import { TrainingFact } from "./TrainingFact.tsx";
 
 const OUTCOME_KEYS = {
   pass: "trainings.mobile.pass",
@@ -18,25 +15,18 @@ interface Props {
   readonly timeZone: string;
 }
 export function EvaluationCard({ row, timeZone }: Props) {
-  const t = useT(),
-    locale = useLocale();
-  const current = row.current,
-    outcome = current?.outcome ?? "incomplete";
+  const t = useT();
+  const locale = useLocale();
+  const current = row.current;
+  const outcome = current?.outcome ?? "incomplete";
+  const date = current ? trainingDate(current.observed_at, locale, timeZone) : "";
   return (
-    <Card>
-      <Badge
-        tone={row.is_voided ? "neutral" : outcome === "pass" ? "success" : "warning"}
-        icon={row.is_voided ? "ban" : outcome === "pass" ? "check" : "alert"}
-        label={t(row.is_voided ? "trainings.mobile.voided" : OUTCOME_KEYS[outcome])}
-      />
-      {current ? (
-        <AppText isMonospace>{trainingDate(current.observed_at, locale, timeZone)}</AppText>
-      ) : null}
-      <TrainingFact label="trainings.mobile.revision" value={row.revision} />
-      <AppText variant="caption" isMonospace>
-        {row.id}
-      </AppText>
+    <StatusCard
+      title={date || t("courier.flow.training.evaluation")}
+      statusLabel={t(row.is_voided ? "trainings.mobile.voided" : OUTCOME_KEYS[outcome])}
+      tone={row.is_voided ? "info" : outcome === "pass" ? "success" : "warning"}
+    >
       <EvaluationProvenance row={row} />
-    </Card>
+    </StatusCard>
   );
 }

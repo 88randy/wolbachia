@@ -13,7 +13,9 @@ export function P22Screen() {
   const t = useT();
   return (
     <ScreenScaffold
-      header={<AppHeader title={t("mobile.fuel.title")} subtitle={t("courier.flow.fuel.subtitle")} />}
+      header={
+        <AppHeader title={t("mobile.fuel.title")} subtitle={t("courier.flow.fuel.subtitle")} />
+      }
       footer={<FuelFooter model={model} />}
     >
       <FuelFeedback model={model} />

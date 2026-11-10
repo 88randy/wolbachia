@@ -35,7 +35,11 @@ function TypeTile({ type, isSelected, disabled, onChoose }: TileProps) {
       className={`min-h-28 w-[48%] items-center justify-center gap-2 rounded-card border-2 p-3 active:opacity-80 ${frame}`}
     >
       <Icon color={color} size={36} strokeWidth={KIT_ICON_STROKE} />
-      <AppText variant="bodyStrong" className="text-center" style={{ color: isSelected ? color : undefined }}>
+      <AppText
+        variant="bodyStrong"
+        className="text-center"
+        style={{ color: isSelected ? color : undefined }}
+      >
         {type.label}
       </AppText>
       {isSelected ? (

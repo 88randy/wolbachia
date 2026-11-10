@@ -9,10 +9,8 @@ interface Props {
 export function TrainingFact({ label, value }: Props) {
   const t = useT();
   return value === null || value === undefined || value === "" ? null : (
-    <AppText variant="caption">
-      {t(label)}
-      {" · "}
-      {value}
+    <AppText variant="body" tone="secondary">
+      {`${t(label)}: ${String(value)}`}
     </AppText>
   );
 }

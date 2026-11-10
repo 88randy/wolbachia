@@ -38,9 +38,7 @@ export function FuelField(props: Props) {
           setBlurred(true);
         }}
       />
-      {errorKey === null ? null : (
-        <InfoNotice tone="danger" message={t(errorKey)} />
-      )}
+      {errorKey === null ? null : <InfoNotice tone="danger" message={t(errorKey)} />}
     </View>
   );
 }

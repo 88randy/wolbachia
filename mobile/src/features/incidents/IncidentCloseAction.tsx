@@ -14,5 +14,7 @@ export function IncidentCloseAction({ model, kind, closeShift }: Props) {
   const state = model.state;
   if (kind !== "accident" || state?.draft?.kind !== kind || !state.event || !closeShift)
     return null;
-  return <SecondaryButton icon={LogOut} label={t("mobile.incidents.safeClose")} onPress={closeShift} />;
+  return (
+    <SecondaryButton icon={LogOut} label={t("mobile.incidents.safeClose")} onPress={closeShift} />
+  );
 }
