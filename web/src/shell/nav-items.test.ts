@@ -17,6 +17,7 @@ describe("visibleNavGroups", () => {
             "motorcycle.read",
             "quadrant.read",
             "location.read",
+            "egg_count.read",
           ],
         }),
       ),
@@ -27,7 +28,7 @@ describe("visibleNavGroups", () => {
     const ids = idsOf(makeMe({ permissions: [] }));
 
     expect(ids).toContain("home");
-    expect(ids).toContain("lab");
+    expect(ids).not.toContain("lab");
     expect(ids).not.toContain("settings");
     expect(ids).not.toContain("inventory");
   });
