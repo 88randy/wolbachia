@@ -647,3 +647,12 @@ def test_foreign_physical_uuid_and_unknown_uuid_share_gps_review(monkeypatch):
             )
         outcomes.append((type(outcome.value), outcome.value.code, outcome.value.params))
     assert outcomes == [(EventNeedsReview, "ovitrap_gps_unusable", {})] * 2
+
+
+def test_code_qr_for_paddles_and_motorcycles() -> None:
+    from ovitraps.qr import parse_code_qr
+
+    assert parse_code_qr("wbf:1:motorcycle:M-03") == ("motorcycle", "M-03")
+    assert parse_code_qr("wbf:1:paddle:P-7") == ("paddle", "P-7")
+    with pytest.raises(ValueError):
+        parse_code_qr("wbf:1:lot:M-03")

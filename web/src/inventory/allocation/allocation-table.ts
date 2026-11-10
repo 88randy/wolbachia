@@ -13,7 +13,6 @@ const base = {
   defaultOrdering: "-created_at",
   sortableIds: ["created_at"],
   supportsVoided: false,
-  sortOptions: [{ value: "created_at", labelKey: "inventory.field.createdAt" }],
 } as const;
 
 export const RECONCILIATION_TABLE: TableQueryConfig = { ...base, filters: [date] };

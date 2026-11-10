@@ -1,0 +1,119 @@
+/* Physical label sizes (print units, not screen tokens). Labels print black on white in any theme. */
+.sheet {
+  --label-w: 50mm;
+  --label-h: 30mm;
+  --label-qr: 24mm;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--label-w));
+  gap: 2mm;
+  align-content: start;
+  padding: 4mm;
+  background: white;
+  color: black;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--color-line, #e3e7ee);
+  min-height: 40mm;
+}
+
+.sheet[data-size="small"] {
+  --label-w: 40mm;
+  --label-h: 25mm;
+  --label-qr: 19mm;
+}
+
+.sheet[data-size="large"] {
+  --label-w: 70mm;
+  --label-h: 40mm;
+  --label-qr: 32mm;
+}
+
+.label {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 2mm;
+  width: var(--label-w);
+  height: var(--label-h);
+  padding: 2mm;
+  border: 0.2mm dashed gray;
+  overflow: hidden;
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.qr {
+  flex: none;
+  width: var(--label-qr);
+  height: var(--label-qr);
+}
+
+.text {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.5mm;
+}
+
+.code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 4mm;
+  font-weight: 700;
+  line-height: 1.1;
+  overflow-wrap: anywhere;
+}
+
+.caption {
+  font-size: 2.8mm;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+.kind {
+  font-size: 2.4mm;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  max-height: 28rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 8mm;
+  }
+
+  :global(body) * {
+    visibility: hidden;
+  }
+
+  .printArea,
+  .printArea * {
+    visibility: visible;
+  }
+
+  .printArea {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+  }
+
+  .sheet {
+    padding: 0;
+    gap: 0;
+    box-shadow: none;
+    border-radius: 0;
+  }
+
+  .label {
+    border-color: black;
+  }
+}

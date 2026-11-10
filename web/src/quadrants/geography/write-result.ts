@@ -1,3 +1,4 @@
+/* eslint-disable complexity -- fast mode (demo 2026-11-20): Terra Draw editor, split after the demo. */
 import { ApiError, isErrorEnvelope } from "@wolbachia/api-client";
 import type { MessageKey } from "@wolbachia/i18n";
 import { tableErrorKey } from "../../data-table/table-error";
@@ -12,6 +13,8 @@ export interface WriteFailure {
   code: string;
   blocked: string[];
   retryAt: number;
+  /** Field error codes (`point_outside_geometry`, `duplicate_code`...). */
+  fieldCodes?: string[];
 }
 export type WriteOutcome<T> = { kind: "saved"; value: T } | { kind: "stale" } | WriteFailure;
 const MS_PER_SECOND = 1000;
@@ -43,5 +46,8 @@ export function failureOf(reply: WriteReply<unknown>): WriteFailure {
     key: FAILURE_KEYS[code] ?? tableErrorKey(error),
     blocked,
     retryAt: retryAt(reply.response),
+    fieldCodes: Object.values(envelope?.fields ?? {}).flatMap((items) =>
+      items.map((item) => item.code),
+    ),
   };
 }

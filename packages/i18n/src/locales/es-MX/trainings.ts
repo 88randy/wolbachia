@@ -7,6 +7,12 @@ export const trainings = {
   "trainings.field.code": "Código del curso",
   "trainings.field.name": "Nombre del curso",
   "trainings.field.validity": "Vigencia (segundos)",
+  "trainings.field.noneOption": "Sin cuadrante",
+  "trainings.field.pickPlaceholder": "Elige de la lista",
+  "trainings.field.otherAction": "Otra acción (especificar)",
+  "trainings.field.pickCourseFirst": "Primero elige el curso.",
+  "trainings.field.versionOption": "Versión {version}",
+  "trainings.action.release.record": "Registrar liberaciones",
   "trainings.field.actions": "Acciones habilitadas",
   "trainings.field.actionsHint":
     "Claves de acción configuradas, separadas por comas. No se asignan permisos al publicar un curso.",
@@ -16,8 +22,8 @@ export const trainings = {
   "trainings.field.center": "Centro",
   "trainings.field.quadrant": "Cuadrante (opcional)",
   "trainings.field.subject": "Persona",
-  "trainings.field.action": "Clave de la acción",
-  "trainings.field.at": "Instante de consulta (opcional)",
+  "trainings.field.action": "Acción",
+  "trainings.field.at": "Fecha y hora de consulta (opcional)",
   "trainings.field.trainingVersion": "Versión del curso",
   "trainings.field.requirementVersion": "Versión del requisito",
   "trainings.field.validFrom": "Inicio incluido",
@@ -64,8 +70,7 @@ export const trainings = {
   "trainings.course.unavailable":
     "El registro no está disponible en tu alcance. Revisa la referencia o solicita acceso a Administración.",
   "trainings.person.title": "Certificaciones por persona",
-  "trainings.person.lookupHint":
-    "Usa las referencias autorizadas de persona y contexto. El permiso de capacitación no permite buscar en el directorio de personal ni ver evaluaciones privadas.",
+  "trainings.person.lookupHint": "Elige a la persona y el centro para ver sus capacitaciones.",
   "trainings.person.inspect": "Consultar certificaciones y elegibilidad",
   "trainings.person.certificates": "Historial de certificaciones",
   "trainings.person.create": "Registrar certificación",

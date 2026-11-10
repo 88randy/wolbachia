@@ -213,6 +213,10 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
         INTERVENTION_CREATE,
         *READ_ONLY_CODES,
         *INVENTORY_ENTOMOLOGIST_CODES,
+        # Lab screens W37, W38 and W41: paddle list, UIEB shipments, material requests.
+        "egg_paddle.reuse",
+        "shipment.read",
+        "material_request.read",
         READING_READ,
         SCHEDULE_READ,
         RISK_IMPORT_APPLY,

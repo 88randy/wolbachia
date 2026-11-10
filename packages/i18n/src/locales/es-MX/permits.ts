@@ -58,6 +58,7 @@ export const permits = {
   "permits.blocker.permitSuspended": "El permiso está suspendido.",
   "permits.blocker.permitExpired": "El permiso está fuera de su vigencia.",
   "permits.blocker.permitUnavailable": "El permiso no tiene una versión oficial.",
+  "permits.blocker.deviceInactive": "El dispositivo de liberación no está activo.",
   "permits.blocker.other": "Condición no cumplida.",
   "permits.blocker.unblockedBy": "Lo resuelve: {role}",
   "permits.detail.back": "Permisos",

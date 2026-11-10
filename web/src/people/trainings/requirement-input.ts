@@ -48,12 +48,13 @@ function preservedRequirementPins(value: unknown): Record<string, string[]> {
   });
   return Object.fromEntries(entries);
 }
-export function requirementPins(value: unknown): string {
+export function requirementPins(value: unknown, label: (id: string) => string): string {
   if (!value || typeof value !== "object" || Array.isArray(value)) return "";
   return Object.entries(value)
-    .map(
-      ([training, versions]) =>
-        `${training}: ${Array.isArray(versions) ? versions.filter((version): version is string => typeof version === "string").join(", ") : ""}`,
+    .flatMap(([, versions]) =>
+      Array.isArray(versions)
+        ? versions.filter((version): version is string => typeof version === "string").map(label)
+        : [],
     )
     .join("; ");
 }

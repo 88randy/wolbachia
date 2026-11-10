@@ -1,7 +1,7 @@
 import { useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTranslation } from "react-i18next";
-import { Card } from "../../ui/Card";
+import { ListPage } from "../../components/templates/ListPage";
 import { StatusPill } from "../../ui/StatusPill";
 import { FilterBar } from "../../data-table/FilterBar";
 import { DataTable } from "../../data-table/DataTable";
@@ -16,7 +16,6 @@ import {
   discrepancyListOptions,
 } from "./discrepancy-query";
 import type { Discrepancy } from "./discrepancy-query";
-import styles from "../inventory.module.css";
 
 function useColumns(): DataTableColumn<Discrepancy>[] {
   const { t } = useTranslation();
@@ -53,18 +52,15 @@ export function DiscrepancyList() {
   const query = useQuery(discrepancyListOptions(scope, controller.state));
   const columns = useColumns();
   return (
-    <Card title={t("discrepancies.page.title")} headingLevel={1}>
-      <div className={styles.filters}>
-        <FilterBar controller={controller} />
-      </div>
+    <ListPage title={t("discrepancies.page.title")}>
+      <FilterBar controller={controller} />
       <DataTable
         caption={t("discrepancies.page.title")}
         columns={columns}
         controller={controller}
         getRowId={(row) => row.id}
-        embedded
         data={operationTableData(query, controller.state.page, DISCREPANCY_PAGE_SIZE)}
       />
-    </Card>
+    </ListPage>
   );
 }

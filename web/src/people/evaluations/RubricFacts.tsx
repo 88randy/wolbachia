@@ -14,10 +14,7 @@ export function RubricFacts({ version }: { version: RubricVersion }) {
   return (
     <dl className={styles.facts}>
       <dt>{t("evaluations.rubric.version")}</dt>
-      <dd>
-        {version.version}
-        <p>{version.id}</p>
-      </dd>
+      <dd>{version.version}</dd>
       <RubricWeights weights={rubric.weights} />
       <dt>{t("evaluations.rubric.threshold")}</dt>
       <dd>{rubric.threshold}</dd>

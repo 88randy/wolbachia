@@ -41,13 +41,17 @@ export const AREAS = [
     group: "operation",
     requiredPermissions: ["quadrant.read"],
   },
-  { id: "releases", path: "/releases", group: "operation", requiredPermissions: PENDING },
+  {
+    id: "releases",
+    path: "/releases",
+    group: "operation",
+    requiredPermissions: ["release.read", "permit.manage"],
+  },
   {
     id: "community",
     path: "/community",
     group: "operation",
-    requiredPermissions: PENDING,
-    hidden: true,
+    requiredPermissions: ["community_activity.read"],
   },
   {
     id: "inventory",
@@ -107,8 +111,13 @@ export const AREAS = [
     id: "regulatory",
     path: "/regulatory",
     group: "analysis",
-    requiredPermissions: PENDING,
-    hidden: true,
+    requiredPermissions: [
+      "transfer_authorization.read",
+      "export.run",
+      "arco_request.read",
+      "access_log.read",
+      "portal.manage",
+    ],
   },
   {
     id: "settings",
@@ -122,6 +131,7 @@ export const AREAS = [
       "organization.read",
       "role.read",
       "incident.manage_type",
+      "user.read",
     ],
   },
 ] as const;

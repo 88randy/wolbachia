@@ -2,6 +2,8 @@ import type { MessageKey } from "@wolbachia/i18n";
 import { AREAS } from "../router/areas";
 const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   shifts: "shift.page.title",
+  editor: "mapEditor.title",
+  users: "users.page.title",
   plan: "scheduling.plan.menu",
   live: "live.title",
   risk: "scheduling.risk.menu",
@@ -19,6 +21,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   bags: "labReception.page.title",
   "permit-types": "permits.types.title",
   permits: "permits.list.title",
+  devices: "releases.devices.title",
   trainings: "trainings.workspace.title",
   evaluations: "evaluations.page.title",
   reviews: "reviews.workspace.title",
@@ -27,6 +30,12 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   "write-offs": "allocation.lab.title",
   "egg-counts": "lab.count.title",
   "count-history": "lab.history.title",
+  "data-transfers": "regulatory.page.transfers",
+  exports: "regulatory.page.exports",
+  "arco-requests": "regulatory.page.arco",
+  "access-log": "regulatory.page.accessLog",
+  "export-receipts": "regulatory.access.tab.exports",
+  "portal-settings": "regulatory.page.portal",
   records: "shell.crumb.records",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
@@ -39,7 +48,9 @@ const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   reconciliations: "allocation.reconciliation.title",
   "write-offs": "allocation.writeOff.title",
 };
+const UUID = /^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i;
 function resourceKey(parts: string[], index: number): MessageKey | undefined {
+  if (UUID.test(parts[index] ?? "")) return "releases.detail.crumb";
   if (parts[0] !== "inventory") return RESOURCE_LABELS[parts[index] ?? ""];
   if (index === 1) return INVENTORY_LABELS[parts[index] ?? ""];
   return lotResourceKey(parts, index);
@@ -50,6 +61,8 @@ function lotResourceKey(parts: string[], index: number): MessageKey | undefined 
   if (index === 3 && parts[index] === "conditions") return "conditions.page.title";
   return undefined;
 }
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /** What the router knows about a path: its declared crumb label, and whether it is a route. */
 export interface CrumbSource {
   crumbOf: (path: string) => MessageKey | undefined;
@@ -58,7 +71,8 @@ export interface CrumbSource {
 
 /** Only known routes become ancestor links; human codes remain plain text. */
 export function breadcrumbsOf(pathname: string, source?: CrumbSource) {
-  const parts = pathname.split("/").filter(Boolean);
+  // Records without a human code (UUID routes) end the trail at their list.
+  const parts = pathname.split("/").filter((part) => part && !UUID_PATTERN.test(part));
   if (parts.length < 2) return [];
   return parts.map((part, index) => {
     const area = index === 0 ? AREAS.find((entry) => entry.path === `/${part}`) : undefined;

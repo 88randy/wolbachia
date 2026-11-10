@@ -5,9 +5,11 @@ from rest_framework.routers import SimpleRouter
 
 from privacy.views import (
     ArcoRequestViewSet,
+    ExportLogViewSet,
     ExportViewSet,
     PortalCoverageView,
     PortalHomeView,
+    PortalLogoView,
     PortalReleasesByWeekView,
     PortalSettingsViewSet,
     TransferAuthorizationViewSet,
@@ -16,6 +18,7 @@ from privacy.views import (
 router = SimpleRouter()
 router.register("data-transfers", TransferAuthorizationViewSet, basename="data-transfer")
 router.register("export", ExportViewSet, basename="export")
+router.register("export-log", ExportLogViewSet, basename="export-log")
 router.register("arco-requests", ArcoRequestViewSet, basename="arco-request")
 router.register("portal-settings", PortalSettingsViewSet, basename="portal-settings")
 
@@ -26,6 +29,7 @@ urlpatterns = [
         PortalReleasesByWeekView.as_view(),
         name="portal-releases-by-week",
     ),
+    path("portal/<slug:org_slug>/logo/", PortalLogoView.as_view(), name="portal-logo"),
     path("portal/<slug:org_slug>/coverage/", PortalCoverageView.as_view(), name="portal-coverage"),
     *router.urls,
 ]
