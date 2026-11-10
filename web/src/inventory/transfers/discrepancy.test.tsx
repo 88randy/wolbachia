@@ -38,6 +38,7 @@ function caseFixture(): Schemas["Discrepancy"] {
       {
         id: "own-hold",
         lot_id: "held-lot",
+        lot_code: "L-HELD",
         location_id: "destination",
         piece_id: null,
         resolution_id: null,

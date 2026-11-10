@@ -11,7 +11,10 @@ const COORDINATE_DIGITS = 5;
 export function locationText(value: unknown): string {
   if (typeof value !== "object" || value === null) return nameOrDash(null);
   const point = value as { coordinates?: unknown; lat?: unknown; lng?: unknown };
-  const [lng, lat] = Array.isArray(point.coordinates) ? point.coordinates : [point.lng, point.lat];
+  const pair: unknown[] = Array.isArray(point.coordinates)
+    ? (point.coordinates as unknown[])
+    : [point.lng, point.lat];
+  const [lng, lat] = pair;
   return typeof lat === "number" && typeof lng === "number"
     ? `${lat.toFixed(COORDINATE_DIGITS)}, ${lng.toFixed(COORDINATE_DIGITS)}`
     : nameOrDash(null);
@@ -37,7 +40,7 @@ export function relocationFields(
 ): [MessageKey, string][] {
   return [
     ["relocations.workspace.point", proposal.point_code],
-    ["relocations.workspace.ovitrap", proposal.ovitrap_code],
+    ["relocations.workspace.ovitrap", nameOrDash(proposal.ovitrap_code)],
     ["relocations.workspace.oldLocationPlain", locationText(proposal.old_location)],
     ["relocations.workspace.newLocationPlain", locationText(proposal.new_location)],
     [

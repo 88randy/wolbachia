@@ -2,7 +2,19 @@
 
 from typing import Any
 
-_OPTIONAL_LABELS = frozenset({"author_name", "reviewer_name", "decided_by_name"})
+_OPTIONAL_LABELS = frozenset(
+    {
+        "author_name",
+        "reviewer_name",
+        "decided_by_name",
+        "recipient_name",
+        "user_display_name",
+        "owner_display",
+        "incident_code",
+        "ovitrap_code",
+        "block_code",
+    }
+)
 
 
 def _is_optional_label(name: str) -> bool:
@@ -10,7 +22,7 @@ def _is_optional_label(name: str) -> bool:
 
 
 def optional_author_names(result: dict[str, Any], **kwargs: Any) -> dict[str, Any]:  # noqa: ANN401, ARG001 -- spectacular hook signature
-    """Mark the author-name labels (`created_by_name`...) as not required.
+    """Mark the display labels (`created_by_name`, `block_code`...) as not required.
 
     They are always sent, but making them optional in the contract keeps older clients and test
     fixtures valid; the id fields stay required.

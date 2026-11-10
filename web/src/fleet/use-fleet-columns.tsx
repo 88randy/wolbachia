@@ -34,7 +34,6 @@ function createdAtColumn(format: (date: string) => string): DataTableColumn<Moto
   };
 }
 export function useFleetColumns(): readonly DataTableColumn<Motorcycle>[] {
-  const { t } = useTranslation();
   const search = useSearch({ strict: false });
   const format = useFormatDateTime();
   const identity = useIdentityColumns();

@@ -7,6 +7,7 @@ export function ReviewDecisionEvidence({ decision }: { decision: Review["timelin
   const { t } = useTranslation();
   const format = useFormatDateTime();
   const receipt = decision.effect_receipt;
+  const evidenceCount = Array.isArray(decision.evidence_ids) ? decision.evidence_ids.length : 0;
   return (
     <>
       {receipt && (
@@ -17,9 +18,7 @@ export function ReviewDecisionEvidence({ decision }: { decision: Review["timelin
           })}
         </p>
       )}
-      {decision.evidence_ids.length > 0 && (
-        <p>{t("reviews.workspace.evidenceCount", { count: decision.evidence_ids.length })}</p>
-      )}
+      {evidenceCount > 0 && <p>{t("reviews.workspace.evidenceCount", { count: evidenceCount })}</p>}
     </>
   );
 }

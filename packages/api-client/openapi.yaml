@@ -18282,15 +18282,10 @@ components:
           type: string
           format: date-time
           readOnly: true
-        created_by_name:
-          type: string
-          readOnly: true
-          nullable: true
       required:
       - block
       - created_at
       - created_by
-      - created_by_name
       - effective_from
       - geometry
       - id
@@ -21198,14 +21193,9 @@ components:
           type: string
           format: date-time
           readOnly: true
-        created_by_name:
-          type: string
-          readOnly: true
-          nullable: true
       required:
       - created_at
       - created_by
-      - created_by_name
       - decision
       - evidence
       - id
@@ -22193,7 +22183,6 @@ components:
       - id
       - last_reminder_at
       - owner
-      - owner_display
       - policy_version
       - resolved_blocker_ids
       - revision
@@ -25427,7 +25416,6 @@ components:
       - revision
       - scope
       - user
-      - user_display_name
     MembershipChangeRequest:
       type: object
       properties:
@@ -26005,7 +25993,6 @@ components:
       - id
       - quadrant_id
       - recipient_membership_id
-      - recipient_name
       - revision
     NoticePolicyWriteRequest:
       type: object
@@ -30160,14 +30147,9 @@ components:
           type: string
           format: date-time
           readOnly: true
-        created_by_name:
-          type: string
-          readOnly: true
-          nullable: true
       required:
       - created_at
       - created_by
-      - created_by_name
       - effective_from
       - id
       - is_retired
@@ -30931,14 +30913,9 @@ components:
           items:
             $ref: '#/components/schemas/ExcludedPointResolution'
           readOnly: true
-        created_by_name:
-          type: string
-          readOnly: true
-          nullable: true
       required:
       - created_at
       - created_by
-      - created_by_name
       - effective_from
       - geometry
       - id
@@ -32724,7 +32701,6 @@ components:
       - old_location
       - other_text
       - ovitrap
-      - ovitrap_code
       - point
       - point_code
       - point_version
@@ -33151,7 +33127,6 @@ components:
       - id
       - linked_record
       - origin
-      - owner_display
       - owner_id
       - publication_state
       - quadrant
@@ -33587,7 +33562,6 @@ components:
       - evidence_ids
       - expected_revision
       - id
-      - incident_code
       - incident_id
       - is_terminal
       - kind
@@ -34941,7 +34915,6 @@ components:
           nullable: true
       required:
       - block
-      - block_code
       - code
       - created_at
       - created_by
