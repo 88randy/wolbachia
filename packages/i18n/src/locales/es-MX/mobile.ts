@@ -1187,7 +1187,7 @@ export const mobile = {
   "mobile.incidents.begin": "Iniciar reporte",
   "mobile.incidents.beginAccident": "Capturar accidente",
   "mobile.incidents.safeClose": "Continuar al cierre de jornada",
-  "mobile.incidents.callWorkContact": "Llamar al contacto laboral configurado",
+  "mobile.incidents.callWorkContact": "Llamar a mi supervisor",
   "mobile.incidents.dialerOpened":
     "Se abrió el teléfono. Esto no confirma una llamada ni que alguien recibió el aviso; depende del dispositivo y la red.",
   "mobile.incidents.dialerUnavailable":
@@ -1195,7 +1195,7 @@ export const mobile = {
   "mobile.incidents.contactMissing":
     "No hay un teléfono laboral validado disponible. No se configuró un número de emergencias para esta app.",
   "mobile.incidents.callFallback":
-    "Si necesitas ayuda inmediata, usa la app Teléfono del dispositivo y el contacto de emergencia que conozcas. La llamada depende del dispositivo y la red.",
+    "En una emergencia, llama también al 911.",
   "mobile.history.title": "Mi historial",
   "mobile.history.search": "Buscar código o referencia",
   "mobile.history.partial":

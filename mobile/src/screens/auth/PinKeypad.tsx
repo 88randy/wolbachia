@@ -6,8 +6,8 @@ import { PIN_KEY_ROWS } from "./pin-keypad-model.ts";
 import type { PinKeypadProps } from "./pin-keypad-model.ts";
 
 const styles = StyleSheet.create({
-  pad: { gap: spacing[1] },
-  row: { flexDirection: "row", gap: spacing[1] },
+  pad: { gap: spacing[1.5] },
+  row: { flexDirection: "row", gap: spacing[1.5] },
 });
 
 export function PinKeypad(props: PinKeypadProps) {
