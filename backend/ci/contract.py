@@ -5,7 +5,9 @@ import re
 from collections import Counter
 from typing import Any
 
-ORDINARY_PARTITIONS = frozenset({"regular-integration", "regular-lab"})
+ORDINARY_PARTITIONS = frozenset(
+    {"regular-integration", "regular-lab", "regular-lab-2", "regular-auth"}
+)
 MODULE_PARTITIONS = {
     "migrations-foundation": frozenset({"tests/test_inventory_migrations_105.py"}),
     "migrations-field": frozenset({"tests/test_geography_migrations_b_33.py"}),
@@ -45,10 +47,28 @@ MODULE_PARTITIONS = {
             "tests/test_lab_history_114.py",
             "tests/test_lab_policy_114.py",
             "tests/test_lab_reception_114.py",
+        }
+    ),
+    "regular-lab-2": frozenset(
+        {
             "tests/test_lab_recounts_114.py",
             "tests/test_lab_recounts_b_19.py",
             "tests/test_lab_samples_b_21.py",
             "tests/test_lab_shipment_samples_118.py",
+        }
+    ),
+    "regular-auth": frozenset(
+        {
+            "tests/test_token_services.py",
+            "tests/test_rule_services.py",
+            "tests/test_rule_api.py",
+            "tests/test_password_reset.py",
+            "tests/test_login.py",
+            "tests/test_device_admin.py",
+            "tests/test_refresh_logout.py",
+            "tests/test_bearer_authentication.py",
+            "tests/test_token_retention.py",
+            "tests/test_accounts_b_02.py",
         }
     ),
 }
