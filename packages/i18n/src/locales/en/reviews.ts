@@ -3,8 +3,8 @@ export const reviews = {
   "reviews.workspace.detail": "Original record and decisions",
   "reviews.workspace.ingest": "Original ingest outcome",
   "reviews.workspace.current": "Current decision",
-  "reviews.workspace.cause": "Review cause code",
-  "reviews.workspace.causeColumn": "Cause code",
+  "reviews.workspace.cause": "Review reason",
+  "reviews.workspace.causeColumn": "Reason",
   "reviews.workspace.ingestColumn": "Original ingest",
   "reviews.workspace.search": "Search events or courier",
   "reviews.workspace.inReview": "In review",
@@ -17,7 +17,7 @@ export const reviews = {
   "reviews.workspace.received": "Received at",
   "reviews.workspace.open": "Review event {id}",
   "reviews.workspace.listHint":
-    "All original review causes are visible by default. Decisions do not change the original ingest outcome. Filters and paging are applied by the server; no export is available.",
+    "All original review causes are visible by default. Decisions do not change the original ingest outcome. Filters and paging are applied by the server.",
   "reviews.workspace.immutable":
     "The original capture, evidence and ingest outcome remain unchanged. Decisions are appended below.",
   "reviews.workspace.safety":

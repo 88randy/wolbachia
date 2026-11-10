@@ -25,7 +25,7 @@ export const inventory = {
     "A transfer discrepancy hold remains. Authorized staff must review its resolution.",
   "inventory.action.discardProtocol": "Discard only protocol changes",
   "inventory.section.selected": "Configuration selected for the next save",
-  "inventory.section.currentRecord": "Current server record",
+  "inventory.section.currentRecord": "Current record",
   "inventory.field.revision": "Record revision",
   "inventory.section.current": "Available current configuration",
   "inventory.field.expiryFromInstant": "Expiry from (instant with time zone)",
@@ -38,7 +38,7 @@ export const inventory = {
     "The next save will adopt the displayed supply version and its protocol. An absent protocol will also be retained explicitly.",
   "inventory.option.selected": "Retained value",
   "inventory.page.home": "Inventory",
-  "inventory.page.supplies": "Supply catalog",
+  "inventory.page.supplies": "Supplies",
   "inventory.page.lots": "Lots",
   "inventory.page.locations": "Locations",
   "inventory.page.newLot": "New lot",
@@ -54,7 +54,7 @@ export const inventory = {
   "inventory.action.requirements": "View dispatch requirements",
   "inventory.action.adopt": "Adopt current supply configuration",
   "inventory.action.reconcile": "Check the saved record",
-  "inventory.state.saved": "Saved on the server",
+  "inventory.state.saved": "Saved",
   "inventory.state.conflict":
     "The record changed. Your input and reviewed revision are preserved. Review the current record before saving again.",
   "inventory.state.uncertain":

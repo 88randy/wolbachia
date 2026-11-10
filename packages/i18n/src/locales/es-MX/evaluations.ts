@@ -10,7 +10,7 @@ export const evaluations = {
   "evaluations.page.people": "Personal",
   "evaluations.page.trainings": "Capacitaciones",
   "evaluations.page.hint":
-    "Registra observaciones y consulta resultados con su rúbrica original. El servidor calcula el resultado; una evaluación no certifica una capacitación.",
+    "Registra observaciones y consulta resultados con su rúbrica original. El resultado se calcula automáticamente; una evaluación no certifica una capacitación.",
   "evaluations.page.denied":
     "No tienes acceso a este contexto. Pide a administración que revise tus permisos y alcance.",
   "evaluations.page.private":
@@ -47,9 +47,9 @@ export const evaluations = {
     "Puntajes normalizados de 0 a 100. Un campo sin contestar queda incompleto; no se redistribuye su peso.",
   "evaluations.form.blocked":
     "Selecciona una rúbrica configurada y un contexto permitido. Administración puede revisar la configuración y el alcance.",
-  "evaluations.field.subject": "Persona (UUID)",
-  "evaluations.field.center": "Centro (UUID)",
-  "evaluations.field.quadrant": "Cuadrante aplicable (UUID, opcional)",
+  "evaluations.field.subject": "Persona",
+  "evaluations.field.center": "Centro",
+  "evaluations.field.quadrant": "Cuadrante (opcional)",
   "evaluations.field.observed": "Fecha de observación con zona horaria",
   "evaluations.field.instantHint":
     "Usa una fecha ISO 8601 con Z o desfase explícito, por ejemplo 2026-11-09T12:00:00-06:00.",
@@ -59,20 +59,20 @@ export const evaluations = {
   "evaluations.field.unanswered": "Sin contestar",
   "evaluations.field.yes": "Cumple",
   "evaluations.field.no": "Falla crítica",
-  "evaluations.result.title": "Resultado del servidor",
+  "evaluations.result.title": "Resultado",
   "evaluations.result.score": "Puntaje calculado",
   "evaluations.result.pass": "Aprobada",
   "evaluations.result.low": "Resultado bajo",
   "evaluations.result.incomplete": "Incompleta",
   "evaluations.result.criticalFailure": "Falla crítica de seguridad",
-  "evaluations.result.saved": "El servidor registró la evaluación.",
-  "evaluations.result.sequence": "Secuencia de terminación del servidor",
+  "evaluations.result.saved": "Evaluación registrada.",
+  "evaluations.result.sequence": "Secuencia de terminación",
   "evaluations.history.title": "Historial de evaluaciones",
   "evaluations.history.attempts": "Intentos conservados",
   "evaluations.history.open": "Consultar intentos",
-  "evaluations.history.id": "Evaluación (UUID)",
+  "evaluations.history.id": "Evaluación",
   "evaluations.history.revision": "Revisión",
-  "evaluations.history.author": "Autor (UUID)",
+  "evaluations.history.author": "Autor",
   "evaluations.history.recorded": "Registrada",
   "evaluations.history.reason": "Motivo de corrección o anulación",
   "evaluations.history.voided": "Anulada",
@@ -80,16 +80,16 @@ export const evaluations = {
   "evaluations.history.unavailable": "No disponible en esta respuesta",
   "evaluations.history.correction": "Corregir o anular",
   "evaluations.history.correctionGap":
-    "La API no expone la secuencia global actual necesaria para corregir o anular con seguridad. Administración debe solicitar esa interfaz; el historial se conserva.",
+    "Esta información todavía no está disponible. Administración debe solicitar esa interfaz; el historial se conserva.",
   "evaluations.notice.title": "Aviso a recursos humanos",
   "evaluations.notice.policies": "Versiones de configuración del aviso",
-  "evaluations.notice.policyId": "Configuración del aviso (UUID)",
-  "evaluations.notice.recipient": "Membresía destinataria registrada (UUID)",
+  "evaluations.notice.policyId": "Configuración del aviso",
+  "evaluations.notice.recipient": "Destinatario",
   "evaluations.notice.noQuadrant": "Sin cuadrante aplicable",
   "evaluations.notice.historyHint":
     "Versiones conservadas para este alcance y filtros. Una versión anterior no demuestra que el destinatario siga activo ni que se haya publicado o entregado un aviso.",
   "evaluations.notice.unconfigured":
     "No hay configuración de destinatario visible para este contexto y filtros. Administración debe configurar o revisar una membresía destinataria activa; la entrega del aviso no está confirmada.",
   "evaluations.notice.gap":
-    "El servidor conserva la causa al tercer resultado adverso consecutivo. Este contrato todavía no permite consultar el recibo ni el estado de publicación o entrega. Administración debe revisar la configuración y el canal; guardar una evaluación no confirma el envío.",
+    "Se registra la causa al tercer resultado adverso consecutivo. Administración debe revisar la configuración y el canal; guardar una evaluación no confirma el envío.",
 } as const satisfies AreaCatalog<"evaluations">;

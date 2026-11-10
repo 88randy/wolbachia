@@ -28,12 +28,14 @@ import { catalogs } from "./catalogs.ts";
  * `../en` must provide the same keys. One file per area; see the package README.
  */
 import { fleet } from "./fleet.ts";
+import { hub } from "./hub.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
 import { mobile } from "./mobile.ts";
 import { courier } from "./courier.ts";
 import { field } from "./field.ts";
+import { courierFlow } from "./courierFlow.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
 import { rules } from "./rules.ts";
@@ -71,11 +73,13 @@ export const esMX = {
   ...geography,
   ...catalogs,
   ...fleet,
+  ...hub,
   ...common,
   ...errors,
   ...mobile,
   ...courier,
   ...field,
+  ...courierFlow,
   ...shell,
   ...states,
   ...auth,

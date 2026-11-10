@@ -90,8 +90,8 @@ export const fleet = {
   "fleet.fuel.full": "Full refill",
   "fleet.fuel.partial": "Partial refill",
   "fleet.fuel.deviceTime": "Capture time",
-  "fleet.fuel.serverTime": "Server receipt time",
-  "fleet.fuel.rules": "Rules / catalog snapshots",
+  "fleet.fuel.serverTime": "Received at",
+  "fleet.fuel.rules": "Rules version",
   "fleet.letter.date": "Issued at",
   "fleet.page.title": "Motorcycles",
   "fleet.page.gaps":

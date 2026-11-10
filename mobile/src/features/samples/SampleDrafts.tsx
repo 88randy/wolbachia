@@ -1,19 +1,19 @@
+import { FileText } from "lucide-react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
+import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import type { SampleViewModel } from "./view-model.ts";
 
 export function SampleDrafts({ model }: { readonly model: SampleViewModel }) {
   const t = useT();
   if (model.hasDraft || model.drafts.length === 0) return null;
   return (
-    <Card>
-      <AppText variant="bodyStrong">{t("mobile.sample.savedCaptures")}</AppText>
+    <>
+      <SectionTitle title={t("mobile.sample.savedCaptures")} />
       {model.drafts.map((draft) => (
-        <Button
+        <SecondaryButton
           key={draft.id}
-          variant="outline"
+          icon={FileText}
           label={draft.label}
           disabled={model.isBusy}
           onPress={() => {
@@ -21,6 +21,6 @@ export function SampleDrafts({ model }: { readonly model: SampleViewModel }) {
           }}
         />
       ))}
-    </Card>
+    </>
   );
 }

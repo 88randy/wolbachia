@@ -3,8 +3,8 @@ export const reviews = {
   "reviews.workspace.detail": "Registro original y decisiones",
   "reviews.workspace.ingest": "Resultado original de recepción",
   "reviews.workspace.current": "Decisión actual",
-  "reviews.workspace.cause": "Código del motivo de revisión",
-  "reviews.workspace.causeColumn": "Código del motivo",
+  "reviews.workspace.cause": "Motivo de revisión",
+  "reviews.workspace.causeColumn": "Motivo",
   "reviews.workspace.ingestColumn": "Recepción original",
   "reviews.workspace.search": "Buscar eventos o repartidor",
   "reviews.workspace.inReview": "En revisión",
@@ -17,7 +17,7 @@ export const reviews = {
   "reviews.workspace.received": "Recibido el",
   "reviews.workspace.open": "Revisar evento {id}",
   "reviews.workspace.listHint":
-    "Se muestran todos los motivos originales de revisión. Las decisiones no cambian el resultado original de recepción. El servidor aplica filtros y paginación; no hay exportación disponible.",
+    "Se muestran todos los motivos originales de revisión. Las decisiones no cambian el resultado original de recepción.",
   "reviews.workspace.immutable":
     "La captura, evidencia y recepción originales se conservan. Las decisiones se agregan abajo.",
   "reviews.workspace.safety":
@@ -47,7 +47,7 @@ export const reviews = {
   "reviews.workspace.denied":
     "Esta vista requiere permiso de lectura y alcance explícito de centros y cuadrantes. Solicita la revisión del acceso a un administrador de la organización.",
   "reviews.workspace.consequence":
-    "El servidor volverá a comprobar la evidencia original, la autoridad vigente y los requisitos obligatorios de seguridad antes de aplicar esta decisión inmutable.",
+    "Antes de aplicar esta decisión, que no se puede deshacer, se comprobarán la evidencia original, la autoridad vigente y los requisitos obligatorios de seguridad.",
   "reviews.workspace.operations": "Operación",
   "reviews.workspace.closeDetail": "Cerrar detalle de revisión",
 } as const;
