@@ -1,8 +1,7 @@
-import { View } from "react-native";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { OutboxEvent } from "../../outbox/outbox-event.ts";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import type { IncidentState } from "./types.ts";
 
 function deliveryKey(event: OutboxEvent): MessageKey {
@@ -18,16 +17,15 @@ export function IncidentStatus({ state }: { readonly state: IncidentState }) {
   if (!state.event) return null;
   const isReceived = state.event.status === "sent";
   return (
-    <View accessibilityLiveRegion="polite">
-      <Notice
-        tone={isReceived ? "info" : "warning"}
-        icon={isReceived ? "cloudOk" : "clock"}
+    <>
+      <InfoNotice
+        tone={isReceived ? "success" : state.event.status === "rejected" ? "danger" : "info"}
         message={t(deliveryKey(state.event))}
       />
       {state.evidencePending ? (
-        <Notice tone="warning" icon="cloudUp" message={t("mobile.incidents.evidencePending")} />
+        <InfoNotice tone="warning" message={t("mobile.incidents.evidencePending")} />
       ) : null}
-      <Notice tone="info" icon="alert" message={t("mobile.incidents.noDeliveryPromise")} />
-    </View>
+      <InfoNotice tone="info" message={t("mobile.incidents.noDeliveryPromise")} />
+    </>
   );
 }

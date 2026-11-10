@@ -1,8 +1,8 @@
+import { Inbox } from "lucide-react-native";
+import type { MessageKey } from "@wolbachia/i18n";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { Card } from "../../ui/Card.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import type { SampleViewModel } from "./view-model.ts";
 
 const STATUS_KEYS = {
@@ -11,6 +11,7 @@ const STATUS_KEYS = {
   in_review: "mobile.sample.inReview",
   critical_rejected: "mobile.sample.rejected",
 } as const;
+
 export function SampleStatus({ model }: { readonly model: SampleViewModel }) {
   const t = useT();
   if (model.status === "draft") return null;
@@ -20,17 +21,15 @@ export function SampleStatus({ model }: { readonly model: SampleViewModel }) {
     model.reviewedKey,
   ].filter((key): key is MessageKey => key !== null);
   return (
-    <Card isCritical={model.status === "critical_rejected"}>
-      <Notice
-        tone={model.status === "critical_rejected" ? "critical" : "info"}
-        icon={model.status === "phone_saved" ? "phone" : "cloudOk"}
+    <>
+      <InfoNotice
+        tone={model.status === "critical_rejected" ? "danger" : "success"}
         message={t(STATUS_KEYS[model.status])}
       />
       {keys.map((key) => (
-        <AppText key={key}>{t(key)}</AppText>
+        <InfoNotice key={key} tone="info" message={t(key)} />
       ))}
-      <Button variant="outline" label={t("mobile.sample.inbox")} onPress={model.openInbox} />
-    </Card>
+      <SecondaryButton icon={Inbox} label={t("mobile.sample.inbox")} onPress={model.openInbox} />
+    </>
   );
 }
-import type { MessageKey } from "@wolbachia/i18n";

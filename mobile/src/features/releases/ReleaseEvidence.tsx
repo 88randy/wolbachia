@@ -1,15 +1,12 @@
-import { Image } from "react-native";
+import { Image, View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Card } from "../../ui/Card.tsx";
+import { SectionTitle } from "../../ui/SectionTitle.tsx";
 import { ReleaseEvidenceActions } from "./ReleaseEvidenceActions.tsx";
-import { createReleaseStyles } from "./styles.ts";
 import type { ReleaseViewModel } from "./view-model.ts";
 
 export function ReleaseEvidence({ model }: { readonly model: ReleaseViewModel }) {
   const t = useT();
-  const styles = useStyles(createReleaseStyles);
   const disabled = model.isBusy || !model.canEdit || model.status !== "draft";
   const hint =
     model.requiresEvidence === null
@@ -18,18 +15,19 @@ export function ReleaseEvidence({ model }: { readonly model: ReleaseViewModel })
         ? "mobile.release.evidenceRequired"
         : "mobile.release.evidenceOptional";
   return (
-    <Card>
-      <AppText variant="button">{t("mobile.release.evidence")}</AppText>
-      <AppText>{t(hint)}</AppText>
-      <AppText isMonospace>{model.evidenceCount}</AppText>
+    <>
+      <SectionTitle title={t("courier.flow.release.photoTitle")} />
+      <AppText variant="body">{t(hint)}</AppText>
       {model.photoUri ? (
-        <Image
-          source={{ uri: model.photoUri }}
-          style={styles.photo}
-          accessibilityLabel={t("mobile.release.photoPreview")}
-        />
+        <View className="overflow-hidden rounded-card bg-surface-muted">
+          <Image
+            source={{ uri: model.photoUri }}
+            className="aspect-square w-full"
+            accessibilityLabel={t("mobile.release.photoPreview")}
+          />
+        </View>
       ) : null}
       <ReleaseEvidenceActions model={model} disabled={disabled} />
-    </Card>
+    </>
   );
 }
