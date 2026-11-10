@@ -1862,3 +1862,19 @@ no endpoint returns organization business data. `X-Organization` is never used t
 `/me/` adds `is_platform_admin`. A platform admin with no membership gets `200` with
 `organization: null`, `organizations: []` and no permissions (instead of `403`); a named
 `X-Organization` is still refused.
+
+### Temporary passwords, revocation and suspension (security review of the platform)
+
+- A `password` delivery sets `User.must_change_password` and `temporary_password_expires_at`
+  (`PLATFORM_TEMPORARY_PASSWORD_HOURS`, default 72). Sign-in works until expiry (afterwards it is
+  `401 invalid_credentials`); `/me/` reports `must_change_password: true` and every other API call
+  answers `403 password_change_required` except `/me/`, `/auth/logout/` and
+  `POST /auth/password-change/ {current_password, new_password}` (session only, throttled
+  `password_change`, 10/hour; `204`; keeps the web session, revokes device sessions). A password
+  reset also clears the flag.
+- `PlatformAuditEntry` also refuses `TRUNCATE` (statement trigger).
+- `manage.py revoke_platform_admin --username <u>` deactivates the role and appends
+  `platform_admin.revoke`.
+- Suspending an organization also revokes its device sessions (`membership_inactive`) and ends
+  its members' web sessions right away; the acting platform admin keeps their session.
+

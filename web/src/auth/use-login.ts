@@ -22,7 +22,12 @@ async function continueAfterLogin(
   router: RegisteredRouter,
 ): Promise<void> {
   const target = safeRedirect(requestedTarget);
-  if (isPlatformOnly(me)) {
+  if (me.must_change_password) {
+    await router.navigate({
+      to: "/change-password",
+      search: target === "/" ? {} : { redirect: target },
+    });
+  } else if (isPlatformOnly(me)) {
     await router.navigate({ to: PLATFORM_HOME });
   } else if (me.organization === null) {
     const search = target === "/" ? {} : { redirect: target };

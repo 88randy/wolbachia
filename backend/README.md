@@ -179,6 +179,7 @@ password; nothing is passed as an argument):
 
 ```bash
 uv run python manage.py create_platform_admin --username ops --email ops@example.com
+uv run python manage.py revoke_platform_admin --username ops   # audited
 ```
 
 The role is separate from organization profiles and grants NO organization data: without a

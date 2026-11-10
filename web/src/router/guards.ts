@@ -11,6 +11,7 @@ import { isPlatformOnly, PLATFORM_HOME } from "../session/platform";
 import type { RouterContext } from "./router-context";
 
 const HOME = "/";
+const CHANGE_PASSWORD = "/change-password";
 
 /** Thrown by an area's guard when the user lacks its permission; the area renders "no permission". */
 export class ForbiddenError extends Error {
@@ -55,14 +56,29 @@ function signIn(args: GuardArgs, notice?: "no-membership"): never {
  * sign in, remembering where they were going. Used by every route behind the session.
  */
 export async function requireSession(args: GuardArgs): Promise<Me> {
+  let me: Me;
   try {
-    return await loadMe(args.context.queryClient, args.context.client);
+    me = await loadMe(args.context.queryClient, args.context.client);
   } catch (error) {
     if (!(error instanceof ApiError)) throw error;
     if (error.status === 401) return signIn(args);
     if (error.code === NO_ACTIVE_MEMBERSHIP) return signIn(args, "no-membership");
     throw error;
   }
+  // A temporary password must be replaced first; the API refuses everything else meanwhile.
+  if (me.must_change_password && !args.location.href.startsWith(CHANGE_PASSWORD)) {
+    const target = args.location.href;
+    return leaveFor(
+      redirect({ to: CHANGE_PASSWORD, search: target === HOME ? {} : { redirect: target } }),
+    );
+  }
+  return me;
+}
+
+/** The change-password screen: a session is needed, and only while a change is pending. */
+export async function requirePasswordChange(args: GuardArgs): Promise<void> {
+  const me = await requireSession(args);
+  if (!me.must_change_password) leaveFor(redirect({ to: HOME }));
 }
 
 /** Like `requireSession`, and a user who still has to choose an organization goes to do so. */
