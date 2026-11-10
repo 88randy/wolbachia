@@ -4,6 +4,7 @@ import { readText } from "../../db/sql.ts";
 import type { SqlExecutor, SqlRow, SqlStatement } from "../../db/sql.ts";
 import type { ProjectionChange } from "../day/types.ts";
 import { isRecord, parseChanges } from "../day/assignment-parser.ts";
+import { UUID_PATTERN } from "../ovitrap-check/domain.ts";
 import { readCaptureContext } from "../ovitrap-lifecycle/capture-context-contract.ts";
 import type { CaptureTransportHandle } from "../ovitrap-lifecycle/capture-context-contract.ts";
 import { CURRENT_CAPTURE_CONTEXT } from "../ovitrap-lifecycle/context-sql.ts";
@@ -126,17 +127,31 @@ function changedRecord(kind: ReleaseKind, envelope: ProjectionChange): ReleaseRe
     return null;
   }
 }
+function changeStatement(kind: ReleaseKind, envelope: ProjectionChange): SqlStatement {
+  readUuid(envelope.resource_id);
+  readPositiveInteger(envelope.sequence);
+  return cachedStatement(
+    envelope.resource_id,
+    { kind, sequence: envelope.sequence, record: changedRecord(kind, envelope) },
+    false,
+  );
+}
+/** Assignments are shared with older day consumers; only real release bodies can grant authority. */
+function assignmentChange(envelope: ProjectionChange): SqlStatement[] {
+  const isRelease = isRecord(envelope.data) && envelope.data.action === "release";
+  if (isRelease && envelope.resource_type !== "task") throw new CourierContractError("envelope");
+  if (envelope.resource_type === "quadrant_assignment") return [];
+  if (isRelease || (envelope.resource_type === "task" && envelope.action === "remove"))
+    return [changeStatement("task", envelope)];
+  if (!UUID_PATTERN.test(envelope.resource_id)) return [];
+  return [changeStatement("task", { ...envelope, data: null })];
+}
 function sectionChanges(body: unknown, section: string, kind: ReleaseKind): SqlStatement[] {
   return parseChanges(readRecord(body)[section]).flatMap((envelope) => {
+    if (kind === "task") return assignmentChange(envelope);
     const resourceType = kind === "eligibility" ? "training_eligibility" : kind;
-    if (envelope.resource_type === "quadrant_assignment" && kind === "task") return [];
     if (envelope.resource_type !== resourceType) throw new CourierContractError("envelope");
-    readUuid(envelope.resource_id);
-    readPositiveInteger(envelope.sequence);
-    const record = changedRecord(kind, envelope);
-    return [
-      cachedStatement(envelope.resource_id, { kind, sequence: envelope.sequence, record }, false),
-    ];
+    return [changeStatement(kind, envelope)];
   });
 }
 export function releaseChangeStatements(

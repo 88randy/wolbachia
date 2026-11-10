@@ -13,21 +13,21 @@ function previewGates(input) {
       return {
         name,
         state: "fail",
-        detailKey: "mobile.release.detail.trainingBlocked",
+        detailKey: "mobile.release.detailTrainingBlocked",
         contact: "supervisor",
       };
     if (name === "lot" && input.evidenceCount === 0)
       return {
         name,
         state: "fail",
-        detailKey: "mobile.release.detail.evidenceRequired",
+        detailKey: "mobile.release.detailEvidenceRequired",
         contact: "supervisor",
       };
     if (name === "lot" && !input.isQuantityValid)
       return {
         name,
         state: "fail",
-        detailKey: "mobile.release.detail.quantityInvalid",
+        detailKey: "mobile.release.detailQuantityInvalid",
         contact: "supervisor",
       };
     return { name, state: "pass", contact: name === "gps" ? "courier" : "supervisor" };

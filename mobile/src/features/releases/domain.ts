@@ -31,12 +31,12 @@ function interval(start: string | null, end: string | null, now: Date): boolean 
 }
 function permitGate(input: CachedReleaseInput): ReleaseGate {
   if (!input.permit?.permit_version_id)
-    return unavailable("permit", "mobile.release.detail.permitUnavailable");
+    return unavailable("permit", "mobile.release.detailPermitUnavailable");
   if (input.permit.blocked_by.length)
     return {
       name: "permit",
       state: "fail",
-      detailKey: "mobile.release.detail.permitBlocked",
+      detailKey: "mobile.release.detailPermitBlocked",
       contact: "supervisor",
     };
   return interval(input.permit.valid_from, input.permit.valid_to, input.now)
@@ -44,7 +44,7 @@ function permitGate(input: CachedReleaseInput): ReleaseGate {
     : {
         name: "permit",
         state: "fail",
-        detailKey: "mobile.release.detail.permitExpired",
+        detailKey: "mobile.release.detailPermitExpired",
         contact: "supervisor",
       };
 }
@@ -56,13 +56,13 @@ function trainingGate(input: CachedReleaseInput): ReleaseGate {
     !eligibility.requirement_version_id ||
     !eligibility.assessment_receipt
   )
-    return unavailable("training", "mobile.release.detail.trainingUnavailable");
+    return unavailable("training", "mobile.release.detailTrainingUnavailable");
   return qualifiedTraining(eligibility, input)
     ? { name: "training", state: "pass", contact: "supervisor" }
     : {
         name: "training",
         state: "fail",
-        detailKey: "mobile.release.detail.trainingBlocked",
+        detailKey: "mobile.release.detailTrainingBlocked",
         contact: "supervisor",
       };
 }
@@ -114,28 +114,28 @@ function accuracyLimit(requirements: unknown): number | null {
 function gpsGate(input: CachedReleaseInput): ReleaseGate {
   const gps = input.gps,
     limit = accuracyLimit(input.permit?.requirements);
-  if (!usableGps(gps)) return unavailable("gps", "mobile.release.detail.gpsUnavailable");
-  if (limit === null) return unavailable("gps", "mobile.release.detail.configurationUnavailable");
+  if (!usableGps(gps)) return unavailable("gps", "mobile.release.detailGpsUnavailable");
+  if (limit === null) return unavailable("gps", "mobile.release.detailConfigurationUnavailable");
   return gps.accuracy_m <= limit
     ? { name: "gps", state: "pass", contact: "courier" }
     : {
         name: "gps",
         state: "fail",
-        detailKey: "mobile.release.detail.gpsAccuracy",
+        detailKey: "mobile.release.detailGpsAccuracy",
         contact: "courier",
       };
 }
 function zoneGate(input: CachedReleaseInput): ReleaseGate {
   if (!input.gps || !isCoordinates(input.gps.lat, input.gps.lng))
-    return unavailable("zone", "mobile.release.detail.zoneUnavailable");
+    return unavailable("zone", "mobile.release.detailZoneUnavailable");
   const covered = permitCovers(input.permit?.geometry, [input.gps.lng, input.gps.lat]);
-  if (covered === null) return unavailable("zone", "mobile.release.detail.zoneUnavailable");
+  if (covered === null) return unavailable("zone", "mobile.release.detailZoneUnavailable");
   return covered
     ? { name: "zone", state: "pass", contact: "supervisor" }
     : {
         name: "zone",
         state: "fail",
-        detailKey: "mobile.release.detail.zoneOutside",
+        detailKey: "mobile.release.detailZoneOutside",
         contact: "supervisor",
       };
 }
@@ -144,14 +144,14 @@ export function cachedReleaseGates(input: CachedReleaseInput): readonly ReleaseG
   return [
     permitGate(input),
     zoneGate(input),
-    unavailable("lot", "mobile.release.detail.lotUnavailable"),
+    unavailable("lot", "mobile.release.detailLotUnavailable"),
     trainingGate(input),
-    unavailable("schedule", "mobile.release.detail.scheduleUnavailable"),
+    unavailable("schedule", "mobile.release.detailScheduleUnavailable"),
     gpsGate(input),
-    unavailable("device", "mobile.release.detail.deviceUnavailable"),
+    unavailable("device", "mobile.release.detailDeviceUnavailable"),
     input.isConfigured
       ? { name: "configuration", state: "pass", contact: "admin" }
-      : unavailable("configuration", "mobile.release.detail.configurationUnavailable"),
+      : unavailable("configuration", "mobile.release.detailConfigurationUnavailable"),
   ];
 }
 export function canSaveRelease(gates: readonly ReleaseGate[]): boolean {
@@ -252,7 +252,7 @@ function baseReleaseGates(input: ReleaseGateInput): readonly ReleaseGate[] {
 function declaredTraining(input: ReleaseGateInput): ReleaseGate | null {
   const original = input.draft.pins,
     current = input.current;
-  if (current === null) return unavailable("training", "mobile.release.detail.trainingUnavailable");
+  if (current === null) return unavailable("training", "mobile.release.detailTrainingUnavailable");
   const pins = [original, current];
   const valid = pins.every(
     ({ eligibility, task }) =>
@@ -260,7 +260,7 @@ function declaredTraining(input: ReleaseGateInput): ReleaseGate | null {
       eligibility.organization_id === original.eligibility.organization_id &&
       eligibility.training_version_ids.includes(input.draft.trainingVersionId),
   );
-  return valid ? null : failed("training", "mobile.release.detail.trainingPinInvalid");
+  return valid ? null : failed("training", "mobile.release.detailTrainingPinInvalid");
 }
 function sameDevice(original: ReleasePins["device"], current: ReleasePins["device"]): boolean {
   return (
@@ -274,13 +274,13 @@ function sameDevice(original: ReleasePins["device"], current: ReleasePins["devic
 function matchingDevice(input: ReleaseGateInput): ReleaseGate {
   const original = input.draft.pins.device,
     current = input.current?.device;
-  if (!current) return unavailable("device", "mobile.release.detail.deviceUnavailable");
+  if (!current) return unavailable("device", "mobile.release.detailDeviceUnavailable");
   if (original.status !== "active" || current.status !== "active")
-    return failed("device", "mobile.release.detail.deviceBlocked");
+    return failed("device", "mobile.release.detailDeviceBlocked");
   return sameDevice(original, current) &&
     atOrBefore(original.created_at, new Date(input.draft.deviceTime))
     ? passed("device")
-    : failed("device", "mobile.release.detail.pinsChanged");
+    : failed("device", "mobile.release.detailPinsChanged");
 }
 function taskBinding(pins: ReleasePins, capture: Date): boolean {
   const { task, permit } = pins;
@@ -297,7 +297,7 @@ function taskBinding(pins: ReleasePins, capture: Date): boolean {
 function matchingTask(input: ReleaseGateInput): ReleaseGate {
   const original = input.draft.pins,
     current = input.current;
-  if (!current) return unavailable("schedule", "mobile.release.detail.scheduleUnavailable");
+  if (!current) return unavailable("schedule", "mobile.release.detailScheduleUnavailable");
   const capture = new Date(input.draft.deviceTime);
   const day = captureLocalDate(input.draft.deviceTime, input.draft.timezone);
   const same = sameTask({ original, current, day });
@@ -306,7 +306,7 @@ function matchingTask(input: ReleaseGateInput): ReleaseGate {
     taskBinding(original, capture) &&
     taskBinding(current, capture)
     ? passed("schedule")
-    : failed("schedule", "mobile.release.detail.scheduleBlocked");
+    : failed("schedule", "mobile.release.detailScheduleBlocked");
 }
 function sameTask(input: {
   readonly original: ReleasePins;
@@ -389,14 +389,14 @@ function stockFits(input: ReleaseGateInput): boolean {
 function lotPrerequisite(input: ReleaseGateInput): ReleaseGate {
   const original = input.draft.pins,
     current = input.current;
-  if (!current) return unavailable("lot", "mobile.release.detail.lotUnavailable");
-  if (!matchingCustody(input)) return failed("lot", "mobile.release.detail.pinsChanged");
+  if (!current) return unavailable("lot", "mobile.release.detailLotUnavailable");
+  if (!matchingCustody(input)) return failed("lot", "mobile.release.detailPinsChanged");
   if (!lotPolicyReady(original.custody, current.custody))
-    return failed("lot", "mobile.release.detail.lotBlocked");
-  if (!lotUnexpired(input)) return failed("lot", "mobile.release.detail.lotExpired");
+    return failed("lot", "mobile.release.detailLotBlocked");
+  if (!lotUnexpired(input)) return failed("lot", "mobile.release.detailLotExpired");
   if (!hasReleaseEvidence(input.draft))
-    return failed("lot", "mobile.release.detail.evidenceRequired");
-  if (!stockFits(input)) return failed("lot", "mobile.release.detail.stockUnavailable");
+    return failed("lot", "mobile.release.detailEvidenceRequired");
+  if (!stockFits(input)) return failed("lot", "mobile.release.detailStockUnavailable");
   return passed("lot");
 }
 function matchingCustody(input: ReleaseGateInput): boolean {
@@ -437,9 +437,9 @@ export function releaseGates(input: ReleaseGateInput): readonly ReleaseGate[] {
   const training = declaredTraining(input);
   if (training !== null) replacements.training = training;
   if (input.current !== null && !samePermit(input.draft.pins, input.current))
-    replacements.permit = failed("permit", "mobile.release.detail.pinsChanged");
+    replacements.permit = failed("permit", "mobile.release.detailPinsChanged");
   if (quantityUnits(input.draft.quantity) === null || quantityUnits(input.draft.quantity) === 0n)
-    replacements.lot = failed("lot", "mobile.release.detail.quantityInvalid");
+    replacements.lot = failed("lot", "mobile.release.detailQuantityInvalid");
   return baseReleaseGates(input).map((gate) => replacements[gate.name] ?? gate);
 }
 function requireReleaseDraft(draft: ReleaseDraft): void {

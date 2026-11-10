@@ -10,12 +10,17 @@ interface Props {
   readonly disabled: boolean;
   readonly onSelect: (id: string) => void;
 }
+const CHOICE_KEYS = {
+  task: { title: "mobile.release.chooseTask", empty: "mobile.release.emptyTask" },
+  device: { title: "mobile.release.chooseDevice", empty: "mobile.release.emptyDevice" },
+} as const;
 /** Options are exact downloaded identities; a printed code never substitutes for a source binding. */
 export function ReleaseChoiceList(props: Props) {
   const t = useT();
+  const keys = CHOICE_KEYS[props.kind];
   return (
     <Card>
-      <AppText variant="button">{t(`mobile.release.choose.${props.kind}`)}</AppText>
+      <AppText variant="button">{t(keys.title)}</AppText>
       {props.options.length ? (
         props.options.map((option) => (
           <ReleaseChoiceOption
@@ -27,7 +32,7 @@ export function ReleaseChoiceList(props: Props) {
           />
         ))
       ) : (
-        <AppText>{t(`mobile.release.empty.${props.kind}`)}</AppText>
+        <AppText>{t(keys.empty)}</AppText>
       )}
       <AppText variant="caption">{t("mobile.release.selectionHint")}</AppText>
     </Card>

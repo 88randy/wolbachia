@@ -49,7 +49,7 @@ Phone-saved, server-received and later-reviewed outcomes are separate.
 | Criterion | Test |
 | --- | --- |
 | Gate matrix, decimal limits, original/current safety and no bypass | `release-domain.test.ts` |
-| Transactional bootstrap readiness, delta floors, ownership and original-source guard | `release-projections.test.ts` |
+| Transactional bootstrap readiness, shared assignment compatibility, delta floors, ownership and original-source guard | `release-projections.test.ts` |
 | Retained owner drafts, immutable pins, raw CAS, atomic supersession and cold SQLite reopen | `release-store.test.ts` |
 | Offline Save/evidence, generated-client retry, suspension, reservations, camera lock/revocation, review after close and transport ordering | `m-10.test.ts` |
 | Actual QR/manual routing with no unrelated capture mutation | `m-07-source.test.ts` |

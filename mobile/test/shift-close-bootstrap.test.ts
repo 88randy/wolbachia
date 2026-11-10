@@ -3,6 +3,7 @@ import { test } from "node:test";
 import { mkdtempSync, realpathSync, rmSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { tmpdir } from "node:os";
+import type { Schemas } from "@wolbachia/api-client";
 import { DayBundleService } from "../src/features/day/bundle-service.ts";
 import type { BundleResult } from "../src/features/day/bundle-service.ts";
 import { DayStore } from "../src/features/day/store.ts";
@@ -54,12 +55,22 @@ const SUPPLY = {
   ],
 };
 
+/** Explicit empty current sections settle readiness without granting any release capture. */
+function currentBundle() {
+  const releaseSections: Pick<Schemas["Bootstrap"], "permits" | "eligibility" | "assignments"> = {
+    permits: [],
+    eligibility: [],
+    assignments: [],
+  };
+  return { ...projectionBundle(), ...releaseSections };
+}
+
 void test("an upgraded supply consumer requires a complete bootstrap across failure and reopen without losing its closing draft", async () => {
   const root = realpathSync(tmpdir());
   const directory = mkdtempSync(join(root, "wolbachia-143-bootstrap-"));
   const path = join(directory, "phone.sqlite");
   let phone = await openTestDatabase(path);
-  const previousBundle = projectionBundle();
+  const previousBundle = currentBundle();
   Reflect.deleteProperty(previousBundle, "supplies");
   let response: BundleResult | Error = { kind: "bundle", body: previousBundle };
   let uuidSequence = 0;
@@ -105,6 +116,11 @@ void test("an upgraded supply consumer requires a complete bootstrap across fail
     ]);
     // The previous consumer retained a valid cursor/context but did not materialize supplies.
     await bundle().refresh();
+    assert.equal(
+      await store().needsReleaseBootstrap(),
+      false,
+      "the explicit current release section settles its own readiness",
+    );
     await new OutboxRepository(phone.executor, () => PROJECTION_NOW).enqueue(
       makeEnvelope({
         type: "shift.open",
@@ -126,7 +142,7 @@ void test("an upgraded supply consumer requires a complete bootstrap across fail
     await assert.rejects(bundle().refresh(), /offline/);
     response = {
       kind: "bundle",
-      body: { ...projectionBundle(), supplies: [{ ...SUPPLY, receipts: null }] },
+      body: { ...currentBundle(), supplies: [{ ...SUPPLY, receipts: null }] },
     };
     await assert.rejects(bundle().refresh(), /courier body contract/);
     await bundle().applyProjectionChanges(projectionChanges({ supplies: [] }));
@@ -137,7 +153,7 @@ void test("an upgraded supply consumer requires a complete bootstrap across fail
     );
     response = {
       kind: "bundle",
-      body: { ...projectionBundle(), cursor: "supplies-recovered", supplies: [SUPPLY] },
+      body: { ...currentBundle(), cursor: "supplies-recovered", supplies: [SUPPLY] },
     };
     await phone.executor.query(
       "CREATE TRIGGER fail_supply_cursor BEFORE INSERT ON kv WHEN NEW.key='sync_cursor' BEGIN SELECT RAISE(ABORT,'write failed'); END",
@@ -164,8 +180,10 @@ void test("an upgraded supply consumer requires a complete bootstrap across fail
     assert.deepEqual(etags, [null, null, null, null, null, null, "opaque-bundle"]);
     await store().revoke();
     assert.equal(await store().needsBootstrap(), true);
-    response = { kind: "bundle", body: { ...projectionBundle(), supplies: [] } };
+    assert.equal(await store().needsReleaseBootstrap(), true);
+    response = { kind: "bundle", body: { ...currentBundle(), supplies: [] } };
     await bundle().refresh();
+    assert.equal(await store().needsReleaseBootstrap(), false);
     assert.equal(
       await store().needsBootstrap(),
       false,

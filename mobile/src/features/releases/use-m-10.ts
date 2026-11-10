@@ -156,7 +156,7 @@ function quantityError(snapshot: ReleaseEditorSnapshot): MessageKey | null {
   const draft = snapshot.state?.draft;
   if (!draft || snapshot.touchedId !== draft.eventId) return null;
   const quantity = quantityUnits(draft.quantity);
-  return quantity === null || quantity === 0n ? "mobile.release.detail.quantityInvalid" : null;
+  return quantity === null || quantity === 0n ? "mobile.release.detailQuantityInvalid" : null;
 }
 function useReleaseNavigation() {
   const { push } = useNavigation();

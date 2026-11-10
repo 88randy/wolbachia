@@ -246,3 +246,54 @@ void test("release projection read and raw write guard close on profile/session/
   await db.runAtomically(clearReleaseProjection);
   assert.equal(await needsReleaseBootstrap(db), true);
 });
+
+void test("ordinary assignment deltas keep the existing day consumer usable without creating release authority", async () => {
+  const { db, store, handle } = await setup();
+  await db.runAtomically(releaseBundleStatements(body(), handle));
+  const ordinary = ["assignments", "assignment", "task"].map((resourceType, index) => {
+    const record = { ...task(), id: `task-${String(index + 1)}`, action: "check", revision: 2 };
+    return change(resourceType, record, index + 20);
+  });
+  await store.applyChanges(projectionChanges({ assignments: ordinary }), handle);
+  const current = await store.captureTransport(PROJECTION_IDENTITY, () => true);
+  assert.ok(current);
+  assert.deepEqual((await readReleaseProjection(db, current)).tasks, [task()]);
+  assert.deepEqual((await store.read()).tasks.map(({ task: row }) => row.id).sort(), [
+    "task-1",
+    "task-2",
+    "task-3",
+  ]);
+});
+
+void test("an unrelated change for a real release task invalidates its authority while genuine release envelopes remain strict", async () => {
+  const { db, handle } = await setup();
+  await db.runAtomically(releaseBundleStatements(body(), handle));
+  const record = { ...task(), action: "check" };
+  const unrelated = change("assignment", record, 30);
+  await db.runAtomically(
+    releaseChangeStatements(projectionChanges({ assignments: [unrelated] }), handle),
+  );
+  assert.deepEqual((await readReleaseProjection(db, handle)).tasks, []);
+  await db.runAtomically(
+    releaseChangeStatements(
+      projectionChanges({ assignments: [change("task", task(), 29)] }),
+      handle,
+    ),
+  );
+  assert.deepEqual(
+    (await readReleaseProjection(db, handle)).tasks,
+    [],
+    "an older release delta cannot restore invalidated authority",
+  );
+  for (const malformed of [
+    change("assignment", task(), 31),
+    change("quadrant_assignment", task(), 31),
+    { ...change("task", task(), 31), sequence: 0 },
+    { ...change("task", task(), 31), resource_id: "task-legacy" },
+    { ...change("task", task(), 31), resource_id: id(99) },
+    { ...change("task", task(), 31), action: "remove", resource_id: "task-legacy", data: {} },
+  ])
+    assert.throws(() =>
+      releaseChangeStatements(projectionChanges({ assignments: [malformed] }), handle),
+    );
+});

@@ -179,7 +179,7 @@ function assertBlocked({
   assert.ok(texts(footer).includes(messages[locale]["mobile.release.noBypass"]));
   assert.ok(texts(footer).includes(messages[locale]["mobile.release.reportSupervisor"]));
   const gates = render(`${FEATURE}ReleaseGates.tsx`, "ReleaseGates", { gates: capture.gates });
-  assert.ok(texts(gates).includes(messages[locale]["mobile.release.contact.supervisor"]));
+  assert.ok(texts(gates).includes(messages[locale]["mobile.release.contactSupervisor"]));
   assert.ok(texts(gates).includes(messages[locale]["mobile.release.noBypass"]));
 }
 
@@ -229,7 +229,7 @@ void test("P18 local read failure keeps retry and all partial blockers visible w
   );
   const calls: string[] = [];
   const unavailable = model({
-    errorKey: "mobile.release.detail.contractUnavailable",
+    errorKey: "mobile.release.detailContractUnavailable",
     gates: [],
     canEdit: false,
     canSave: false,
@@ -238,9 +238,9 @@ void test("P18 local read failure keeps retry and all partial blockers visible w
     },
   });
   const partial = render(`${FEATURE}ReleaseContent.tsx`, "ReleaseContent", { model: unavailable });
-  assert.ok(texts(partial).includes(messages.en["mobile.release.detail.contractUnavailable"]));
-  assert.ok(texts(partial).includes(messages.en["mobile.release.gate.lot"]));
-  assert.ok(texts(partial).includes(messages.en["mobile.release.gate.device"]));
+  assert.ok(texts(partial).includes(messages.en["mobile.release.detailContractUnavailable"]));
+  assert.ok(texts(partial).includes(messages.en["mobile.release.gateLot"]));
+  assert.ok(texts(partial).includes(messages.en["mobile.release.gateDevice"]));
   assert.equal(partial.find((node) => node.type === "TextInput")?.props.editable, false);
   press(presses(partial)[0]);
   assert.deepEqual(calls, ["retry"]);
