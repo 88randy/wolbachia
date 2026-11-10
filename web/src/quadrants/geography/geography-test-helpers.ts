@@ -31,6 +31,7 @@ export function version(revision = 1): Schemas["QuadrantVersion"] {
     effective_from: CREATED_AT,
     created_at: CREATED_AT,
     created_by: null,
+    created_by_name: null,
     point_resolutions: [],
   };
 }
@@ -60,6 +61,7 @@ export function point(): Schemas["SamplingPoint"] {
       effective_from: CREATED_AT,
       created_at: CREATED_AT,
       created_by: null,
+      created_by_name: null,
     },
   };
 }

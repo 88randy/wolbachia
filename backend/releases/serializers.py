@@ -212,6 +212,9 @@ class PermitSerializer(OrgScopedModelSerializer):
 
 
 class ReleaseDeviceSerializer(OrgScopedModelSerializer):
+    center_code = serializers.CharField(source="center.code", read_only=True)
+    quadrant_code = serializers.CharField(source="quadrant.code", read_only=True)
+    source_lot_code = serializers.CharField(source="source_lot.code", read_only=True)
     status = serializers.SerializerMethodField()
     revision = serializers.SerializerMethodField()
     blocked_by = serializers.SerializerMethodField()
@@ -234,8 +237,11 @@ class ReleaseDeviceSerializer(OrgScopedModelSerializer):
             "id",
             "code",
             "center",
+            "center_code",
             "quadrant",
+            "quadrant_code",
             "source_lot",
+            "source_lot_code",
             "source_lot_version",
             "status",
             "revision",
@@ -281,6 +287,12 @@ class ReleaseProvenanceSerializer(serializers.Serializer[Any]):
 
 
 class ReleaseSerializer(OrgScopedModelSerializer):
+    permit_code = serializers.CharField(source="permit_version.permit.code", read_only=True)
+    quadrant_code = serializers.CharField(
+        source="permit_version.permit.quadrant.code", read_only=True
+    )
+    lot_code = serializers.CharField(source="lot.code", read_only=True)
+    release_device_code = serializers.CharField(source="release_device.code", read_only=True)
     provenance = ReleaseProvenanceSerializer(read_only=True)
     blocked_by = ReleaseBlockerSerializer(many=True, read_only=True, default=list)
 
@@ -290,8 +302,12 @@ class ReleaseSerializer(OrgScopedModelSerializer):
             "id",
             "declared_event_id",
             "permit_version",
+            "permit_code",
+            "quadrant_code",
             "lot",
+            "lot_code",
             "release_device",
+            "release_device_code",
             "training_version",
             "schedule_task",
             "quantity",

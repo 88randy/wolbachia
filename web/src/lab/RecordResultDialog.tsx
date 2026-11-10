@@ -1,8 +1,8 @@
 import { unwrap } from "@wolbachia/api-client";
 import type { Schemas } from "@wolbachia/api-client";
-import { ClipboardCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { LabChoiceDialog } from "./LabChoiceDialog";
+import type { DialogControl } from "./dialog-control";
 import type { SampleRow } from "./lab-lists";
 import { useLabAction } from "./use-lab-action";
 import { useLabScope } from "./use-lab-scope";
@@ -37,17 +37,17 @@ function useRecord(sample: SampleRow) {
 }
 
 /** Records one attempt; after an invalid attempt the new one is linked as its repeat. */
-export function RecordResultDialog({ sample }: { sample: SampleRow }) {
+export function RecordResultDialog({ sample, ...props }: { sample: SampleRow } & DialogControl) {
   const { t } = useTranslation();
   const action = useRecord(sample);
   const isRepeat = sample.result_status === "invalid";
   return (
     <LabChoiceDialog
       id={"outcome-" + sample.id}
-      title={t("lab.results.recordTitle")}
+      title={t(isRepeat ? "lab.results.repeat" : "lab.results.recordTitle")}
       description={t("lab.results.recordHint")}
-      triggerLabel={t(isRepeat ? "lab.results.repeat" : "lab.results.record")}
-      icon={ClipboardCheck}
+      open={props.open}
+      onOpenChange={props.onOpenChange}
       fieldLabel={t("lab.results.outcome")}
       submitLabel={t("lab.results.save")}
       options={OUTCOMES.map((value) => ({ value, label: t(`lab.results.outcome.${value}`) }))}

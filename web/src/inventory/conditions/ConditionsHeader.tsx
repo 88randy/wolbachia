@@ -1,11 +1,12 @@
 import { Link, useSearch } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { Card } from "../../ui/Card";
 import { Button } from "../../ui/Button";
 import type { InventoryReadContext } from "../inventory-read-context";
-import styles from "../inventory.module.css";
 import { conditionReturnSearch } from "./condition-return-search";
-export function ConditionsHeader({
+
+/** Back to the lot and refresh: the page actions of the conditions detail. */
+export function ConditionsActions({
   code,
   context,
   onReview,
@@ -17,15 +18,19 @@ export function ConditionsHeader({
   const { t } = useTranslation();
   const search = conditionReturnSearch(context, useSearch({ strict: false }));
   return (
-    <Card title={`${t("conditions.page.title")} · ${code}`} headingLevel={1}>
-      <div className={styles.actions}>
-        <Link to="/inventory/lots/$code" params={{ code }} search={search}>
-          {t("conditions.action.lot")}
-        </Link>
-        <Button variant="secondary" onClick={onReview}>
-          {t("common.actions.retry")}
-        </Button>
-      </div>
-    </Card>
+    <>
+      <Link
+        to="/inventory/lots/$code"
+        params={{ code }}
+        search={search}
+        className="inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-action"
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        {t("conditions.action.lot")}
+      </Link>
+      <Button variant="secondary" onClick={onReview}>
+        {t("common.actions.retry")}
+      </Button>
+    </>
   );
 }

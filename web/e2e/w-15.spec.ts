@@ -64,6 +64,7 @@ function initialVersion(): Schemas["QuadrantVersion"] {
     effective_from: CREATED_AT,
     created_at: CREATED_AT,
     created_by: null,
+    created_by_name: null,
     point_resolutions: [],
   };
 }
@@ -83,6 +84,7 @@ function samplingPoint(code = "OV-010", id = POINT_ID): Schemas["SamplingPoint"]
       effective_from: CREATED_AT,
       created_at: CREATED_AT,
       created_by: null,
+      created_by_name: null,
     },
   };
 }

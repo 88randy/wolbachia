@@ -1,9 +1,13 @@
+import { regulatory } from "./regulatory.ts";
+import { portal } from "./portal.ts";
 import { notifications } from "./notifications.ts";
 import { transfers } from "./transfers.ts";
 import { allocation } from "./allocation.ts";
 import { permitDocument } from "./permitDocument.ts";
 import { permits } from "./permits.ts";
 import { pcr } from "./pcr.ts";
+import { releases } from "./releases.ts";
+import { community } from "./community.ts";
 import { transferEvidence } from "./transferEvidence.ts";
 
 import { trainings } from "./trainings.ts";
@@ -31,6 +35,7 @@ import { catalogs } from "./catalogs.ts";
 import type { MessageKey } from "../es-MX/index.ts";
 import { fleet } from "./fleet.ts";
 import { hub } from "./hub.ts";
+import { perm } from "./perm.ts";
 import { auth } from "./auth.ts";
 import { common } from "./common.ts";
 import { errors } from "./errors.ts";
@@ -40,6 +45,9 @@ import { field } from "./field.ts";
 import { courierFlow } from "./courierFlow.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
+import { mapEditor } from "./mapEditor.ts";
+import { mapPicker } from "./mapPicker.ts";
+import { users } from "./users.ts";
 import { rules } from "./rules.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
@@ -58,10 +66,14 @@ export const en: Record<MessageKey, string> = {
   ...permitDocument,
   ...permits,
   ...pcr,
+  ...releases,
+  ...community,
 
   ...trainings,
   ...evaluations,
   ...lab,
+  ...regulatory,
+  ...portal,
   ...shift,
   ...scheduling,
   ...live,
@@ -80,6 +92,7 @@ export const en: Record<MessageKey, string> = {
   ...catalogs,
   ...fleet,
   ...hub,
+  ...perm,
   ...common,
   ...errors,
   ...mobile,
@@ -92,6 +105,9 @@ export const en: Record<MessageKey, string> = {
   ...sync,
   ...table,
   ...phones,
+  ...mapEditor,
+  ...mapPicker,
+  ...users,
   ...rules,
   ...voiding,
 };

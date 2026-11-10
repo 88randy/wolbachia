@@ -1,3 +1,4 @@
+import type { OverflowAction } from "../components/templates/OverflowMenu";
 import type { MessageKey } from "@wolbachia/i18n";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
@@ -170,6 +171,10 @@ export interface TablePresentation<Row> {
   groupOf?: (row: Row) => { id: string; label: string };
   renderDetail?: (row: Row) => ReactNode;
   rowActions?: (row: Row) => ReactNode;
+  /** Row actions in a "⋯" menu (last column). Prefer this over a column of text links. */
+  rowMenu?: (row: Row) => readonly OverflowAction[];
+  /** Clicking anywhere on the row opens this (the record's detail). Keyboard users use the code link. */
+  rowLink?: (row: Row) => LinkProps | undefined;
   density?: "comfortable" | "compact";
   onDensityChange?: (density: "comfortable" | "compact") => void;
 }

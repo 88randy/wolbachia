@@ -81,12 +81,7 @@ function identityColumns(context: Context): Column[] {
 const unitColumn: Column = {
   id: "unit",
   headerKey: "inventory.field.unit",
-  cell: (row) => (
-    <>
-      {row.unit}
-      {"unit_version_id" in row && <small>{row.unit_version_id}</small>}
-    </>
-  ),
+  cell: (row) => row.unit,
 };
 const sourceLabels: Record<string, MessageKey> = {
   lot_admission: "inventory.option.admission",
@@ -104,10 +99,6 @@ function TransferFacts({
   return (
     <p>
       {t("inventory.source.transfer")}: {transfer.code}
-      <br />
-      {t("inventory.source.transferId")}: <span>{transfer.id}</span>
-      <br />
-      {t("inventory.source.transferEvent")}: <span>{transfer.event_id}</span>
     </p>
   );
 }
@@ -116,18 +107,12 @@ function sourceValue(row: StockRow, t: Context["t"]) {
   return (
     <>
       {t(sourceLabels[row.source_kind] ?? "inventory.source.unknown")}
-      <p>{row.source_id}</p>
       {row.source_transfer && <TransferFacts transfer={row.source_transfer} t={t} />}
     </>
   );
 }
 function provenanceColumns({ t, format }: Context): Column[] {
   return [
-    {
-      id: "movement",
-      headerKey: "inventory.field.movementId",
-      cell: (row) => ("id" in row ? row.id : null),
-    },
     {
       id: "source",
       headerKey: "inventory.field.source",
@@ -137,12 +122,6 @@ function provenanceColumns({ t, format }: Context): Column[] {
       id: "created_at",
       headerKey: "inventory.field.createdAt",
       cell: (row) => ("created_at" in row ? format(row.created_at) : null),
-    },
-    {
-      id: "author",
-      headerKey: "inventory.field.author",
-      cell: (row) =>
-        "created_by" in row ? (row.created_by ?? t("inventory.option.unknownAuthor")) : null,
     },
   ];
 }

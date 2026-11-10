@@ -68,3 +68,45 @@ export const LOCATION_LOOKUP: LookupSource = {
     return page.results.map((location) => optionOf(location.id, location.code, location.name));
   },
 };
+
+const LOCAL_PAGE = 100;
+
+function matches(label: string, search: string): boolean {
+  return label.toLowerCase().includes(search.trim().toLowerCase());
+}
+
+/** Active operational personnel by name. The endpoint has no search, so the page is filtered here. */
+export const PERSON_LOOKUP: LookupSource = {
+  id: "people",
+  permission: "user.operational_read",
+  fetch: async (client, search, signal) => {
+    const page = unwrap(
+      await client.GET("/api/v1/users/operational/", {
+        params: { query: { page_size: LOCAL_PAGE, is_active: true } },
+        signal,
+      }),
+    );
+    return page.results
+      .map((person) => ({ value: person.id, label: person.display_name }))
+      .filter((option) => matches(option.label, search))
+      .slice(0, PAGE);
+  },
+};
+
+/** Quadrants by code. The endpoint has no search, so the page is filtered here. */
+export const QUADRANT_LOOKUP: LookupSource = {
+  id: "quadrants",
+  permission: "quadrant.read",
+  fetch: async (client, search, signal) => {
+    const page = unwrap(
+      await client.GET("/api/v1/quadrants/", {
+        params: { query: { page_size: LOCAL_PAGE } },
+        signal,
+      }),
+    );
+    return page.results
+      .map((quadrant) => ({ value: quadrant.id, label: quadrant.code }))
+      .filter((option) => matches(option.label, search))
+      .slice(0, PAGE);
+  },
+};

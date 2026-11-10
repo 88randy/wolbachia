@@ -2,19 +2,17 @@ import type { DataTableColumn } from "../../data-table/table-types";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { useTranslation } from "react-i18next";
 import type { Certificate } from "./training-query";
-const ID_COLUMNS: DataTableColumn<Certificate>[] = [
-  { id: "id", headerKey: "trainings.field.certificate", cell: (row) => row.id },
-  {
-    id: "training_version_id",
-    headerKey: "trainings.field.trainingVersion",
-    cell: (row) => row.training_version_id,
-  },
-];
+import { useTrainingLabels } from "./use-training-labels";
 export function useCertificateColumns(): DataTableColumn<Certificate>[] {
   const { t } = useTranslation();
   const format = useFormatDateTime();
+  const labels = useTrainingLabels();
   return [
-    ...ID_COLUMNS,
+    {
+      id: "training_version_id",
+      headerKey: "trainings.field.trainingVersion",
+      cell: (row) => labels.version(row.training_version_id),
+    },
     {
       id: "valid_from",
       headerKey: "trainings.field.validFrom",

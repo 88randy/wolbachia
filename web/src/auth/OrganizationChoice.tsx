@@ -36,6 +36,7 @@ export function OrganizationChoice({
       <ServiceFailureAlert id="organization-alert" ref={alertRef} failure={failure} />
       <OrganizationOptions organizations={organizations} chosen={chosen} onChoose={setChosen} />
       <SubmitButton
+        block
         label={t("auth.organization.submit")}
         busyLabel={t("auth.login.submitting")}
         isBusy={isBusy}

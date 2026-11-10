@@ -3,7 +3,7 @@
 from collections.abc import Mapping
 from typing import Any
 
-from django.db.models import QuerySet
+from django.db.models import F, QuerySet
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
 from django.views.decorators.debug import sensitive_variables
@@ -40,6 +40,7 @@ from accounts.personnel_services import (
 from core.pagination import StreamCursorPagination
 from core.table_filters import TableOrderingFilter, TableSearchFilter
 from core.views import OrgScopedViewSetMixin
+from privacy.names import person_name
 from uploads.access import actor_from_request
 
 
@@ -167,7 +168,10 @@ class AccessLogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.Ge
         if getattr(self, "swagger_fake_view", False):
             return AccessLog.objects.none()
         rows = scoped_access_log(self.request.membership)  # type: ignore[attr-defined]
-        return filter_access_log(rows, self.request.query_params)
+        rows = filter_access_log(rows, self.request.query_params)
+        return rows.annotate(
+            actor_name=person_name("created_by_id"), target_name=F("target__display_name")
+        )
 
     @extend_schema(parameters=[AccessLogFilterSerializer], responses=AccessLogSerializer(many=True))
     def list(self, request: Request, *args: object, **kwargs: object) -> Response:

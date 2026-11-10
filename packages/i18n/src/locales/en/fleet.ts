@@ -121,6 +121,8 @@ export const fleet = {
   "fleet.gap.insufficient": "Insufficient data",
   "fleet.summary.unknown": "No data",
   "fleet.summary.system": "System / no author reference",
+  "fleet.summary.metrics": "Mileage and service",
+  "fleet.summary.openService": "View service",
   "fleet.summary.createdAt": "Created at",
   "fleet.summary.createdBy": "Creator reference",
   "fleet.summary.voidedAt": "Voided at",

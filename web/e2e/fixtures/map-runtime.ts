@@ -18,6 +18,7 @@ const QUADRANT: Schemas["Quadrant"] = {
     effective_from: CREATED_AT,
     created_at: CREATED_AT,
     created_by: null,
+    created_by_name: null,
     point_resolutions: [],
     geometry: {
       type: "Polygon",

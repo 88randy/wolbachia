@@ -3,10 +3,13 @@
 from datetime import timedelta
 from typing import Any
 
+from django.db.models import Q
 from django.http import Http404, HttpResponse
+from django.utils.dateparse import parse_datetime
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.types import OpenApiTypes
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -23,7 +26,8 @@ from core.views import OrgScopedViewSetMixin
 from organizations.models import Membership, Organization
 from privacy import portal
 from privacy.exports import ExportRequest, build_export, to_csv, to_xlsx
-from privacy.models import ArcoRequest, DataTransferAuthorization, PortalSettings
+from privacy.models import ArcoRequest, DataTransferAuthorization, ExportLog, PortalSettings
+from privacy.names import person_name, with_actor_name
 from privacy.permissions import (
     ARCO_MANAGE,
     ARCO_READ,
@@ -37,6 +41,7 @@ from privacy.serializers import (
     ArcoRequestSerializer,
     ArcoResolveSerializer,
     ArcoUpdateSerializer,
+    ExportLogSerializer,
     ExportQuerySerializer,
     PortalSettingsSerializer,
     TransferAuthorizationCreateSerializer,
@@ -65,8 +70,10 @@ class TransferAuthorizationViewSet(
 ):
     """W59: authorizations for personal data leaving the platform; revoke, never edit."""
 
-    queryset = DataTransferAuthorization.objects.select_related("revocation").order_by(
-        "-created_at", "-id"
+    queryset = (
+        DataTransferAuthorization.objects.select_related("revocation", "center", "quadrant")
+        .annotate(created_by_name=person_name("created_by_id"))
+        .order_by("-created_at", "-id")
     )
     serializer_class = TransferAuthorizationSerializer
     pagination_class = StreamCursorPagination
@@ -77,6 +84,37 @@ class TransferAuthorizationViewSet(
         "create": TRANSFER_AUTHORIZATION_MANAGE,
         "revoke": TRANSFER_AUTHORIZATION_MANAGE,
     }
+
+    def get_queryset(self) -> Any:  # noqa: ANN401
+        rows = super().get_queryset()
+        params = self.request.query_params
+        search = (params.get("search") or "").strip()
+        if search:
+            rows = rows.filter(
+                Q(recipient_institution__icontains=search) | Q(reference__icontains=search)
+            )
+        now = server_now()
+        wanted = params.get("status")
+        if wanted == "revoked":
+            rows = rows.filter(revocation__isnull=False)
+        elif wanted == "expired":
+            rows = rows.filter(revocation__isnull=True, valid_until__lte=now)
+        elif wanted == "scheduled":
+            rows = rows.filter(revocation__isnull=True, valid_from__gt=now, valid_until__gt=now)
+        elif wanted == "active":
+            rows = rows.filter(revocation__isnull=True, valid_from__lte=now, valid_until__gt=now)
+        return rows
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("search", str, description="Institution or reference contains."),
+            OpenApiParameter(
+                "status", str, enum=["active", "scheduled", "expired", "revoked"], required=False
+            ),
+        ]
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
         request=TransferAuthorizationCreateSerializer,
@@ -175,13 +213,33 @@ class ArcoRequestViewSet(
     }
 
     def get_queryset(self) -> Any:  # noqa: ANN401
-        rows = super().get_queryset().order_by("-received_on", "-id")
+        rows = (
+            super()
+            .get_queryset()
+            .annotate(owner_name=person_name("owner_id"))
+            .order_by("-received_on", "-id")
+        )
         params = self.request.query_params
         if params.get("status") in ArcoRequest.Status.values:
             rows = rows.filter(status=params["status"])
         if params.get("request_type") in ArcoRequest.Kind.values:
             rows = rows.filter(request_type=params["request_type"])
+        search = (params.get("search") or "").strip()
+        if search:
+            rows = rows.filter(requester_reference__icontains=search)
         return rows
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("search", str, description="Requester reference contains."),
+            OpenApiParameter("status", str, enum=list(ArcoRequest.Status.values), required=False),
+            OpenApiParameter(
+                "request_type", str, enum=list(ArcoRequest.Kind.values), required=False
+            ),
+        ]
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     def _owner(self, owner_id: Any) -> User | None:  # noqa: ANN401
         if owner_id is None:
@@ -242,6 +300,36 @@ class ArcoRequestViewSet(
         return Response(ArcoRequestSerializer(item).data)
 
 
+class ExportLogViewSet(OrgScopedViewSetMixin, mixins.ListModelMixin, viewsets.GenericViewSet):
+    """W60, second tab: receipts of the official exports (filters only, never row values)."""
+
+    queryset = ExportLog.objects.all()
+    serializer_class = ExportLogSerializer
+    pagination_class = StreamCursorPagination
+    http_method_names = ["get", "head", "options"]
+    required_permissions = {"list": "access_log.read"}
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("created_after", OpenApiTypes.DATETIME, required=False),
+            OpenApiParameter("created_before", OpenApiTypes.DATETIME, required=False),
+        ]
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
+
+    def get_queryset(self) -> Any:  # noqa: ANN401
+        rows = with_actor_name(super().get_queryset()).order_by("-created_at", "-id")
+        for key, lookup in (
+            ("created_after", "created_at__gte"),
+            ("created_before", "created_at__lt"),
+        ):
+            value = parse_datetime(self.request.query_params.get(key) or "")
+            if value is not None:
+                rows = rows.filter(**{lookup: value})
+        return rows
+
+
 class PortalSettingsViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
     """Admin switch of the public portal: enabled or not, and which indicators."""
 
@@ -299,7 +387,15 @@ class PortalHomeView(PortalView):
         summary = [code for code in enabled if code in portal.SUMMARY_INDICATORS]
         return self._respond(
             {
-                "organization": {"name": organization.name, "slug": organization.slug},
+                "organization": {
+                    "name": organization.name,
+                    "slug": organization.slug,
+                    "logo_url": (
+                        f"/api/v1/portal/{organization.slug}/logo/"
+                        if organization.logo_content
+                        else None
+                    ),
+                },
                 "enabled_indicators": enabled,
                 "indicators": portal.indicators(organization, summary),
             }
@@ -322,3 +418,17 @@ class PortalCoverageView(PortalView):
         if "coverage" not in enabled:
             raise Http404
         return self._respond(portal.coverage(organization))
+
+
+class PortalLogoView(PortalView):
+    """The public face of the organization: its own logo, only when the portal is on."""
+
+    @extend_schema(responses={(200, "image/png"): OpenApiTypes.BINARY})
+    def get(self, request: Request, org_slug: str) -> HttpResponse:
+        organization, _enabled = self._context(org_slug)
+        if not organization.logo_content:
+            raise Http404
+        response = HttpResponse(bytes(organization.logo_content), content_type="image/png")
+        response["Cache-Control"] = "public, max-age=300"
+        response["X-Content-Type-Options"] = "nosniff"
+        return response

@@ -5,10 +5,6 @@ export function OrganizationRevision({ controller }: { controller: OrganizationF
   const { t } = useTranslation();
   return (
     <div>
-      <p>
-        {t("orgAdmin.revision.current")}
-        {controller.settings.revision}
-      </p>
       {controller.writer.error && (
         <>
           <p role="alert">{t(controller.writer.error)}</p>
