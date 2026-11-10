@@ -13,6 +13,7 @@ describe("visibleNavGroups", () => {
         makeMe({
           permissions: [
             "incident.read",
+            "notification.read",
             "review_item.read",
             "rule_parameter.read",
             "motorcycle.read",
@@ -24,7 +25,7 @@ describe("visibleNavGroups", () => {
           ],
         }),
       ),
-    ).toHaveLength(13);
+    ).toHaveLength(14);
   });
 
   test("a user with no permissions sees Home and pending areas, not Settings or Inventory", () => {

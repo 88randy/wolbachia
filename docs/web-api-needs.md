@@ -28,9 +28,9 @@ This is a proposal, used as input for the OpenAPI + `packages/api-client` issue.
 | GET | /home/summary/ | attention items per profile, critical band, cards with counts + link filters | internal | W2 |
 | GET | /search/?q= | results grouped by type, with `voided` flag; nothing from other orgs | internal | W3 |
 | GET | /records/{type}/{code}/history/ | unified timeline of an object (readings, relocations, incidents, voids) | internal | W4 |
-| GET | /notifications/ | paged, unread first, grouped by type | internal | W5 |
+| GET | /notifications/ | signed cursor pages, unread first, typed safe object references and unread total; [implemented contract](notifications.md) (#150) | notification.read | W5 |
 | POST | /notifications/{id}/read/ · /notifications/read-all/ | 204 | internal | W5 |
-| GET/PUT | /me/notification-preferences/ | channel per type (in-app, email, both) | internal | W5 |
+| GET/PATCH | /me/notification-preferences/ | per-type in-app/email preferences with required-channel policy; PATCH requires notification_preference.update | notification.read | W5 |
 
 ## Incidents
 

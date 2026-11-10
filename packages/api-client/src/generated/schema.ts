@@ -2926,6 +2926,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/me/notification-preferences/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["me_notification_preferences_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        patch: operations["me_notification_preferences_partial_update"];
+        trace?: never;
+    };
     "/api/v1/memberships/": {
         parameters: {
             query?: never;
@@ -3273,6 +3309,84 @@ export interface paths {
          *     `APIView`s do not have.
          */
         post: operations["motorcycles_void_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["notifications_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{id}/read/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["notifications_read_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["notifications_read_all_create"];
         delete?: never;
         options?: never;
         head?: never;
@@ -9090,6 +9204,90 @@ export interface components {
             recipient_membership_id: string;
             reroute_cause_ids?: string[];
         };
+        /**
+         * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+         *
+         *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+         *     never link a record to another organization's data. Relations to models that are not
+         *     org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+         *     build with `ImproperlyConfigured`.
+         */
+        Notification: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly kind: components["schemas"]["NotificationKindEnum"];
+            readonly code: components["schemas"]["NotificationCodeEnum"];
+            readonly params: {
+                [key: string]: unknown;
+            };
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly read_at: string | null;
+            readonly object_ref: components["schemas"]["NotificationObjectReference"] | null;
+        };
+        /**
+         * @description * `incident.created` - incident.created
+         *     * `incident.comment` - incident.comment
+         *     * `incident.reassigned` - incident.reassigned
+         *     * `incident.severity_changed` - incident.severity_changed
+         *     * `incident.closed` - incident.closed
+         *     * `incident.escalated` - incident.escalated
+         *     * `incident.critical_source` - incident.critical_source
+         *     * `incident.critical_review` - incident.critical_review
+         *     * `incident.severe_fault` - incident.severe_fault
+         *     * `training.certification_expired` - training.certification_expired
+         *     * `training.third_adverse` - training.third_adverse
+         *     * `notification.system` - notification.system
+         * @enum {string}
+         */
+        NotificationCodeEnum: "incident.created" | "incident.comment" | "incident.reassigned" | "incident.severity_changed" | "incident.closed" | "incident.escalated" | "incident.critical_source" | "incident.critical_review" | "incident.severe_fault" | "training.certification_expired" | "training.third_adverse" | "notification.system";
+        /**
+         * @description * `critical` - Critical
+         *     * `incident` - Incident
+         *     * `training` - Training
+         *     * `system` - System
+         * @enum {string}
+         */
+        NotificationKindEnum: "critical" | "incident" | "training" | "system";
+        /**
+         * @description * `incident` - incident
+         *     * `motorcycle` - motorcycle
+         *     * `review_item` - review_item
+         * @enum {string}
+         */
+        NotificationObjectKindEnum: "incident" | "motorcycle" | "review_item";
+        NotificationObjectReference: {
+            kind: components["schemas"]["NotificationObjectKindEnum"];
+            available: boolean;
+            /** Format: uuid */
+            id: string | null;
+            code: string | null;
+            is_voided: boolean | null;
+        };
+        NotificationPage: {
+            results: components["schemas"]["Notification"][];
+            /** Format: uri */
+            next: string | null;
+            /** Format: uri */
+            previous: string | null;
+            unread_total: number;
+        };
+        NotificationPreference: {
+            kind: components["schemas"]["NotificationKindEnum"];
+            in_app: boolean;
+            email: boolean;
+            required_in_app: boolean;
+            required_email: boolean;
+        };
+        NotificationPreferencePatchRequest: {
+            kind: components["schemas"]["NotificationKindEnum"];
+            in_app?: boolean;
+            email?: boolean;
+        };
+        NotificationPreferences: {
+            preferences: components["schemas"]["NotificationPreference"][];
+        };
         NotificationProjection: {
             /** Format: uuid */
             id: string;
@@ -10659,6 +10857,9 @@ export interface components {
             /** Format: uuid */
             center?: string | null;
         };
+        PatchedNotificationPreferencesPatchRequest: {
+            preferences?: components["schemas"]["NotificationPreferencePatchRequest"][];
+        };
         PatchedOrganizationUpdateRequest: {
             expected_revision?: number;
             name?: string;
@@ -11681,7 +11882,7 @@ export interface components {
             readonly device_time: string;
             /** Format: date-time */
             readonly server_received_at: string;
-            readonly provenance: unknown;
+            readonly provenance: components["schemas"]["ReleaseProvenance"];
             readonly blocked_by: components["schemas"]["ReleaseBlocker"][];
             /** Format: uuid */
             readonly created_by: string | null;
@@ -11784,6 +11985,23 @@ export interface components {
         ReleaseOutcome: {
             release: components["schemas"]["SupplyRelease"];
         };
+        /** @description Regulatory ids only: no courier, certification, reviewer, assignment or receipt ids. */
+        ReleaseProvenance: {
+            /** Format: uuid */
+            readonly permit_version: string;
+            /** Format: uuid */
+            readonly current_permit_version: string;
+            /** Format: uuid */
+            readonly permit_type: string;
+            /** Format: uuid */
+            readonly official_document: string;
+            /** Format: uuid */
+            readonly source_lot_version: string;
+            readonly rules_version: string;
+            readonly catalog_version: string;
+            readonly schedule: components["schemas"]["ReleaseScheduleProvenance"];
+            readonly stock: components["schemas"]["ReleaseStockProvenance"];
+        };
         ReleaseSchedule: {
             /** Format: uuid */
             task_id: string;
@@ -11794,6 +12012,12 @@ export interface components {
             /** Format: uuid */
             courier_id: string;
         };
+        ReleaseScheduleProvenance: {
+            /** Format: uuid */
+            readonly task_id: string;
+            /** Format: uuid */
+            readonly permit_version_id: string;
+        };
         ReleaseScheduleWriteRequest: {
             /** Format: uuid */
             point_id: string;
@@ -11802,6 +12026,16 @@ export interface components {
             /** Format: date */
             due_date: string;
             expected_revision: number;
+        };
+        ReleaseStockProvenance: {
+            /** Format: uuid */
+            readonly unit_version_id: string;
+            /** Format: uuid */
+            readonly lot_version_id: string;
+            /** Format: uuid */
+            readonly transit_policy_id: string;
+            readonly transit_mode: string;
+            readonly quantity: string;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -19121,6 +19355,72 @@ export interface operations {
             };
         };
     };
+    me_notification_preferences_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    me_notification_preferences_partial_update: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["PatchedNotificationPreferencesPatchRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPreferences"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
     memberships_list: {
         parameters: {
             query?: {
@@ -19753,6 +20053,114 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["Motorcycle"];
                 };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    notifications_list: {
+        parameters: {
+            query?: {
+                cursor?: string;
+                /**
+                 * @description * `critical` - Critical
+                 *     * `incident` - Incident
+                 *     * `training` - Training
+                 *     * `system` - System
+                 */
+                kind?: "critical" | "incident" | "training" | "system";
+                page_size?: number;
+                /**
+                 * @description * `true` - true
+                 *     * `false` - false
+                 */
+                unread?: "true" | "false";
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPage"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    notifications_read_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    notifications_read_all_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
             default: {

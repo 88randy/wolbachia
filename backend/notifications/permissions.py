@@ -1,0 +1,3 @@
+NOTIFICATION_READ = "notification.read"
+PREFERENCE_UPDATE = "notification_preference.update"
+INTERNAL_CODES = (NOTIFICATION_READ, PREFERENCE_UPDATE)

@@ -199,7 +199,7 @@ def test_release_handler_requires_the_plan_to_pin_the_actual_capture_permit_vers
             "type_id": original.type_id,
             "number": "Official successor to original plan",
             "authority": original.authority,
-            "official_document_id": verified_upload(context.actor),
+            "official_document_id": verified_upload(context.actor, "application/pdf"),
             "document_attestation": "Reviewed official successor regulation and geometry",
             "geometry": original.geometry,
             "valid_from": original.valid_from,

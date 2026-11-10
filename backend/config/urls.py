@@ -19,6 +19,7 @@ api_v1_patterns: list[URLPattern | URLResolver] = [
     path("", include("catalogs.urls")),
     path("", include("community.urls")),
     path("", include("people.urls")),
+    path("", include("notifications.urls")),
     path("", include("releases.urls")),
     path("", include("rules.urls")),
     path("", include("field_sync.urls")),

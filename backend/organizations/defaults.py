@@ -51,6 +51,7 @@ from inventory.transfers.permissions import WAREHOUSE_CODES as TRANSFER_WAREHOUS
 from lab.permissions import ADMIN_CODES as LAB_ADMIN_CODES
 from lab.permissions import COUNT_VOID
 from lab.permissions import ENTOMOLOGIST_CODES as LAB_ENTOMOLOGIST_CODES
+from notifications.permissions import INTERNAL_CODES as NOTIFICATION_CODES
 from organizations.models import Organization, Profile
 from ovitraps.permissions import (
     OVITRAP_REMOVAL_RESOLVE,
@@ -81,9 +82,16 @@ from uploads.limits import FIELD_UPLOAD
 
 # Codes granted by default. Every internal profile reads the catalogs and the current rule values
 # (the field snapshots need them); only admin edits them and reads the version history.
-READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
+READ_ONLY_CODES = (
+    CATALOG_READ,
+    RULE_PARAMETER_READ,
+    "organization.read",
+    "center.read",
+    *NOTIFICATION_CODES,
+)
 ADMIN_CODES = (
     *ADMIN_PERSONNEL_PERMISSION_CODES,
+    *NOTIFICATION_CODES,
     PERMIT_MANAGE,
     PERMIT_SUSPEND,
     RELEASE_READ,
