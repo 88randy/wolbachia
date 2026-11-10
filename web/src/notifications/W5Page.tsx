@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { useDocumentTitle } from "../shell/use-document-title";
 import { InlineNotice } from "../ui/InlineNotice";
+import { useDisplaySettled } from "../session/use-visible-session-state";
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { NotificationTray } from "./NotificationTray";
 import { NotificationPreferences } from "./NotificationPreferences";
@@ -10,9 +11,10 @@ export function W5Page() {
   const { t } = useTranslation();
   const scope = useNotificationScope();
   useDocumentTitle(t("notifications.page.title"));
+  const isSettled = useDisplaySettled(scope.identity.isSettled);
   if (!scope.isAllowed)
     return <InlineNotice tone="warning">{t("notifications.page.denied")}</InlineNotice>;
-  if (!scope.identity.isSettled) return <CardSkeleton />;
+  if (!isSettled) return <CardSkeleton />;
   return (
     <section className={page.page} key={notificationOwner(scope)}>
       <h1 className={page.title}>{t("notifications.page.title")}</h1>

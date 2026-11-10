@@ -14,6 +14,8 @@ import {
   bumpEpoch,
   currentRevision,
   isSessionKnown,
+  isVerifyingOnly,
+  sessionState,
   setSessionState,
   setSignedOut,
 } from "./session-revision";
@@ -105,7 +107,9 @@ export function begin(queryClient: QueryClient, kind: BeginKind): Token {
     void leaveKnown(queryClient);
     setSessionState("reconciling");
   } else if (kind === "verify") {
-    setSessionState("reconciling");
+    // A check on top of a `known` tab (or of another check) changes nothing; on top of a leave it
+    // stays a leave.
+    setSessionState("reconciling", sessionState() === "known" || isVerifyingOnly());
   }
   latestOperation += 1; // a verify or a passive begin takes a new identity but clears nothing
   return { epoch: currentRevision(), operation: latestOperation };
