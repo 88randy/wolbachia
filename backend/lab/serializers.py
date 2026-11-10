@@ -7,6 +7,7 @@ from drf_spectacular.utils import extend_schema_field
 from rest_framework import serializers
 from rest_framework.exceptions import ErrorDetail
 
+from core.author_names import AuthorNamesMixin
 from core.filters import CodeQuerySerializer
 from core.serializers import OrgScopedModelSerializer
 from lab.models import (
@@ -351,7 +352,7 @@ class LabMaterialSerializer(serializers.Serializer[Any]):
     reason = serializers.ChoiceField(choices=["bag_disposed", "paddle_reused"], allow_null=True)
 
 
-class LabCountSerializer(serializers.Serializer[Any]):
+class LabCountSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
@@ -374,7 +375,7 @@ class LabCountSerializer(serializers.Serializer[Any]):
     is_current = serializers.BooleanField(required=False)
 
 
-class LabRejectionSerializer(serializers.Serializer[Any]):
+class LabRejectionSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     material = LabMaterialSerializer(required=False)
     id = serializers.UUIDField()
     bag_id = serializers.UUIDField()
@@ -413,10 +414,11 @@ class LabVoidOutcomeSerializer(serializers.Serializer[Any]):
     queue_snapshot = LabQueueSnapshotSerializer()
 
 
-class LabReceiptSerializer(serializers.Serializer[Any]):
+class LabReceiptSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     id = serializers.UUIDField()
     reading_id = serializers.UUIDField()
     bag_id = serializers.UUIDField(allow_null=True)
+    bag_code = serializers.CharField(allow_null=True, required=False)
     kind = serializers.ChoiceField(choices=["bag", "no_paddle"])
     created_at = serializers.DateTimeField()
     created_by = serializers.UUIDField()
@@ -488,7 +490,7 @@ class LabVoidContextSerializer(serializers.Serializer[Any]):
     blocked_by = serializers.ListField(child=serializers.DictField())
 
 
-class LabIndependentCandidateSerializer(serializers.Serializer[Any]):
+class LabIndependentCandidateSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     candidate_kind = serializers.ChoiceField(choices=["first", "second", "third"])
     id = serializers.UUIDField()
     value = serializers.IntegerField(min_value=0, max_value=MAX_OBSERVATION)
@@ -503,7 +505,7 @@ class LabIndependentCandidateSerializer(serializers.Serializer[Any]):
     created_by = serializers.UUIDField()
 
 
-class LabIndependentResolutionSerializer(serializers.Serializer[Any]):
+class LabIndependentResolutionSerializer(AuthorNamesMixin, serializers.Serializer[Any]):
     id = serializers.UUIDField()
     candidate_kind = serializers.ChoiceField(choices=["first", "second", "third"])
     final_attempt_id = serializers.UUIDField()

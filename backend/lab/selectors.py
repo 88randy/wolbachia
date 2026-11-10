@@ -101,7 +101,7 @@ def reception_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[BagRe
             if key in values and key != "method"
         }
     )
-    return rows.order_by(values.get("ordering", "-created_at"), "id")
+    return rows.select_related("bag").order_by(values.get("ordering", "-created_at"), "id")
 
 
 def discrepancy_rows(actor: UploadActor, values: dict[str, Any]) -> QuerySet[ReceptionDiscrepancy]:

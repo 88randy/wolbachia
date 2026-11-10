@@ -2,7 +2,7 @@
 
 from collections.abc import Mapping
 from functools import cached_property
-from typing import Any, Literal
+from typing import Any, Literal, cast
 from uuid import UUID
 
 from drf_spectacular.utils import extend_schema_field
@@ -64,6 +64,7 @@ class IncidentEvidenceSerializer(serializers.Serializer[Any]):
     verified_at = serializers.DateTimeField(allow_null=True)
     content_type = serializers.CharField(allow_null=True)
     size_bytes = serializers.IntegerField(allow_null=True)
+    filename = serializers.CharField(allow_null=True, required=False)
 
 
 class IncidentActionPermissionsSerializer(serializers.Serializer[Any]):
@@ -97,6 +98,15 @@ class IncidentConflictResponseSerializer(serializers.Serializer[Any]):
 
 class IncidentEventSerializer(OrgScopedModelSerializer):
     author_display = serializers.SerializerMethodField()
+    owner_display = serializers.SerializerMethodField()
+
+    def get_owner_display(self, obj: IncidentEvent) -> str | None:
+        from incidents.workspace_projection import display_label
+
+        labels: dict[Any, str] = cast(dict[str, Any], self.context).setdefault("_owner_labels", {})
+        if obj.owner_id not in labels:
+            labels[obj.owner_id] = display_label(obj.owner)
+        return labels[obj.owner_id]
 
     def get_author_display(self, obj: IncidentEvent) -> str | None:
         from incidents.workspace_projection import event_author_display
@@ -124,6 +134,7 @@ class IncidentEventSerializer(OrgScopedModelSerializer):
             "created_at",
             "policy_version",
             "author_display",
+            "owner_display",
         ]
         read_only_fields = fields
 

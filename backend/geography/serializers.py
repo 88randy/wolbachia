@@ -196,6 +196,7 @@ class BlockSerializer(OrgScopedModelSerializer):
 
 class SamplingPointSerializer(OrgScopedModelSerializer):
     current_version = serializers.SerializerMethodField()
+    block_code = serializers.CharField(source="block.code", read_only=True)
 
     @extend_schema_field(PointVersionSerializer(allow_null=True))
     def get_current_version(self, point: SamplingPoint) -> dict[str, Any] | None:
@@ -211,7 +212,15 @@ class SamplingPointSerializer(OrgScopedModelSerializer):
 
     class Meta:
         model = SamplingPoint
-        fields = ["id", "code", "block", "current_version", "created_by", "created_at"]
+        fields = [
+            "id",
+            "code",
+            "block",
+            "block_code",
+            "current_version",
+            "created_by",
+            "created_at",
+        ]
         read_only_fields = fields
 
 
