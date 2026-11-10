@@ -103,6 +103,9 @@ class FieldSyncViewSet(FinalUploadMixin, OrgScopedViewSetMixin, viewsets.Generic
             is_final_upload=final,
             observed_session_id=session.pk,
             observed_pair_id=self._observed_pair(request),
+            publication_authenticated=isinstance(
+                request.successful_authenticator, DeviceBearerAuthentication
+            ),
         )
         envelopes = self._envelopes(data)
         self._prepared_sync = PreparedSyncRequest(
@@ -200,6 +203,15 @@ class FieldBootstrapViewSet(OrgScopedViewSetMixin, viewsets.GenericViewSet):
             device=session.device,
             sent_at=now,
             received_at=now,
+            observed_session_id=session.pk
+            if isinstance(request.successful_authenticator, DeviceBearerAuthentication)
+            else None,
+            observed_pair_id=FieldSyncViewSet._observed_pair(request)
+            if isinstance(request.successful_authenticator, DeviceBearerAuthentication)
+            else None,
+            publication_authenticated=isinstance(
+                request.successful_authenticator, DeviceBearerAuthentication
+            ),
         )
         bundle = bootstrap_bundle(batch)
         version = str(bundle["bundle_version"])

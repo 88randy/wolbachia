@@ -16,6 +16,7 @@ MODULE_PARTITIONS = {
     "migrations-community": frozenset({"tests/test_community_migrations_127.py"}),
     "migrations-supplies": frozenset({"tests/test_inventory_allocations_migrations_107.py"}),
     "migrations-session-audit": frozenset({"tests/test_session_audit_migrations_181.py"}),
+    "migrations-people": frozenset({"tests/test_people_migrations_101.py"}),
     INTEGRATION_PARTITION: frozenset(
         {"tests/test_inventory_allocations_b_10.py", "tests/test_uploads_b_04.py"}
     ),

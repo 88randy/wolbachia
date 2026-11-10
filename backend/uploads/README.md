@@ -1,5 +1,16 @@
 # Private evidence (B-04 / #102)
 
+## Certification evidence (#101)
+
+One additional concrete AttachmentLink parent is Certification. Keep every prior
+parent unchanged. Stage, PUT and finalize verified unbound JPEG/PNG bytes outside
+domain locks; the real certification writer then consumes owned/device-matching
+declared uploads with training.manage AND field.upload for its whole context.
+Certification/final binding/exact command commit atomically. A certificate target
+can be retried only after that real fact exists, without another upload system.
+Download uses current training.manage before and after unlocked I/O. Operational
+training.read and a past issue/verification do not grant private proof access.
+
 ## Review integration (#113)
 
 AttachmentLink has FOUR nullable parents with EXACTLY ONE required: field_event,

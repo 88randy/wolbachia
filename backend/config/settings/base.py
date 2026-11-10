@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     "inventory",
     "lab.apps.LabConfig",
     "community.apps.CommunityConfig",
+    "people.apps.PeopleConfig",
 ]
 
 MIDDLEWARE = [
@@ -234,6 +235,10 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "OutcomeEnum": ["recovered_later", "written_off"],
+        "EvaluationOutcomeEnum": ["incomplete", "pass", "low", "critical_failure"],
+        "ResourceTypeEnum": ["quadrant", "block"],
+        "EligibilityResourceTypeEnum": ["training_eligibility"],
         "ModeEnum": ["none", "selected", "all"],
         "OriginEnum": [
             "field_event",
@@ -294,6 +299,10 @@ CELERY_BROKER_URL = REDIS_URL
 CELERY_TASK_TRACK_STARTED = True
 CELERY_TIMEZONE = "UTC"
 CELERY_BEAT_SCHEDULE = {
+    "maintain-training-notices": {
+        "task": "people.tasks.maintain_training_notices",
+        "schedule": 300.0,
+    },
     "recover-lab-reception-incidents": {
         "task": "lab.tasks.recover_reception_incidents",
         "schedule": 60.0,

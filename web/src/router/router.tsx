@@ -1,5 +1,9 @@
 import { W6Page } from "../incidents/W6Page";
 import { W7Page } from "../incidents/W7Page";
+import { OperationsHome } from "../operations/OperationsHome";
+import { W30Page } from "../operations/reviews/W30Page";
+import { W31Page } from "../operations/relocations/W31Page";
+import { W33Page } from "../operations/closure/W33Page";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
@@ -113,11 +117,13 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
         ? W6Page
         : area.id === "settings"
           ? SettingsPage
-          : area.id === "fleet"
-            ? FleetHome
-            : area.id === "quadrants"
-              ? W22Page
-              : () => <AreaPlaceholder areaId={area.id} />,
+          : area.id === "operations"
+            ? OperationsHome
+            : area.id === "fleet"
+              ? FleetHome
+              : area.id === "quadrants"
+                ? W22Page
+                : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
@@ -130,6 +136,41 @@ const incidentRoute = createRoute({
     requirePermission("incidents", context.me, "incident.read");
   },
   component: W7Page,
+  errorComponent: AreaErrorState,
+});
+
+const reviewsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/operations/reviews",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("operations", context.me, "review_item.read");
+  },
+  component: W30Page,
+  errorComponent: AreaErrorState,
+});
+const relocationsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/operations/relocations",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("operations", context.me, "relocation.read");
+  },
+  component: W31Page,
+  errorComponent: AreaErrorState,
+});
+const quadrantClosureRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/quadrants/$code/closure",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("quadrants", context.me, "quadrant.read");
+    requirePermission("quadrants", context.me, "quadrant.close");
+  },
+  component: function QuadrantClosureRoute() {
+    const { code } = quadrantClosureRoute.useParams();
+    return <W33Page code={code} />;
+  },
   errorComponent: AreaErrorState,
 });
 
@@ -304,6 +345,9 @@ const routeTree = rootRoute.addChildren([
     inventoryLayout.addChildren([inventoryHomeRoute, ...inventoryRoutes]),
     quadrantVersionsRoute,
     incidentRoute,
+    reviewsRoute,
+    relocationsRoute,
+    quadrantClosureRoute,
     catalogsRoute,
     catalogRoute,
     motorcyclesRoute,

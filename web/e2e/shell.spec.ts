@@ -15,7 +15,12 @@ const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"];
 // The shell is behind the session guard: every test here runs as a signed-in user with the mocked
 // API (the sign-in flows themselves are in auth.spec.ts).
 test.beforeEach(async ({ page }) => {
-  await mockApi(page);
+  await mockApi(page, {
+    me: makeMe({
+      permissions: ["review_item.read"],
+      scope: { centers: { mode: "all", ids: [] }, quadrants: { mode: "all", ids: [] } },
+    }),
+  });
 });
 
 async function openShell(page: Page, preferences: Record<string, string> = {}) {
@@ -81,7 +86,7 @@ test.describe("startup", () => {
     });
     page.on("pageerror", (error) => problems.push(error.message));
 
-    // The Fleet area needs `motorcycle.read` (#156); the default mocked user has no permissions.
+    // This startup case needs only the Fleet area's exact read grant (#156).
     await mockApi(page, { me: makeMe({ permissions: ["motorcycle.read"] }) });
     await openShell(page);
     await page.getByRole("link", { name: "Flota" }).click();
@@ -152,7 +157,9 @@ test.describe("keyboard", () => {
     await expect(page.getByRole("link", { name: "Supervisión" })).toBeFocused();
     await page.keyboard.press("Enter");
 
-    await expect(page.getByRole("heading", { level: 1, name: "Supervisión" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Operación", exact: true }),
+    ).toBeVisible();
   });
 
   test("the focus ring is visible on a sidebar link", async ({ page }) => {
