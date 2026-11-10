@@ -332,9 +332,13 @@ def build_changes(batch: BatchContext, cursor: ChangesCursor, ctx: ProducerConte
         sample_capture_snapshot,
     )
     from people.projections import rebind_eligibility
+    from releases.capture_projections import prepare_release_capture
 
     # This batch can have just changed a genuine sample source; publish its new facts.
-    ctx = rebind_eligibility(prepare_sample_capture(bound_sample_capture(ctx)))
+    # Own release.record / sample events of this batch change the facts both captures publish.
+    ctx = rebind_eligibility(
+        ctx, prepare_sample_capture(prepare_release_capture(bound_sample_capture(ctx)))
+    )
     page = list_courier_reviews(batch.organization, batch.user, cursor.sequence)
     rows, has_more = list_courier_changes(
         replace(ctx, permission=FIELD_BOOTSTRAP), cursor.change_sequence

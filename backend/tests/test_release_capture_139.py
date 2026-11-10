@@ -176,3 +176,24 @@ def test_single_ledger_consumption_changes_exact_downloaded_stock_and_task_compl
     assert custody["available_quantity"] == "8.000000"
     assert custody["accounted_release_event_ids"] == [context.capture["id"]]
     assert consumed["tasks"][0]["is_completed"]
+
+
+def test_own_release_record_returns_a_cursor_the_next_sync_accepts(release_context):
+    context = release_context
+    first, _original = downloaded(context)
+    ingested = context.phone.sync([context.capture], cursor=first.data["cursor"])
+    assert ingested.status_code == 200, ingested.data
+    pulled = context.phone.sync([], cursor=ingested.data["changes"]["cursor"])
+    assert pulled.status_code == 200, pulled.data
+
+
+def test_rebinding_eligibility_rejects_a_tampered_prepared_frame(release_context):
+    from people.projections import rebind_eligibility
+
+    before = replace(
+        capture_context(release_context),
+        eligibility_payloads=(),
+        eligibility_frame=("x", "y", "z", "w"),
+    )
+    with pytest.raises(ImproperlyConfigured):
+        rebind_eligibility(before, before)
