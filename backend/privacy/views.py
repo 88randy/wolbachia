@@ -3,10 +3,11 @@
 from datetime import timedelta
 from typing import Any
 
+from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.utils.decorators import method_decorator
 from django.views.decorators.cache import never_cache
-from drf_spectacular.utils import OpenApiResponse, extend_schema
+from drf_spectacular.utils import OpenApiParameter, OpenApiResponse, extend_schema
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
@@ -81,6 +82,37 @@ class TransferAuthorizationViewSet(
         "create": TRANSFER_AUTHORIZATION_MANAGE,
         "revoke": TRANSFER_AUTHORIZATION_MANAGE,
     }
+
+    def get_queryset(self) -> Any:  # noqa: ANN401
+        rows = super().get_queryset()
+        params = self.request.query_params
+        search = (params.get("search") or "").strip()
+        if search:
+            rows = rows.filter(
+                Q(recipient_institution__icontains=search) | Q(reference__icontains=search)
+            )
+        now = server_now()
+        wanted = params.get("status")
+        if wanted == "revoked":
+            rows = rows.filter(revocation__isnull=False)
+        elif wanted == "expired":
+            rows = rows.filter(revocation__isnull=True, valid_until__lte=now)
+        elif wanted == "scheduled":
+            rows = rows.filter(revocation__isnull=True, valid_from__gt=now, valid_until__gt=now)
+        elif wanted == "active":
+            rows = rows.filter(revocation__isnull=True, valid_from__lte=now, valid_until__gt=now)
+        return rows
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("search", str, description="Institution or reference contains."),
+            OpenApiParameter(
+                "status", str, enum=["active", "scheduled", "expired", "revoked"], required=False
+            ),
+        ]
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     @extend_schema(
         request=TransferAuthorizationCreateSerializer,
@@ -190,7 +222,22 @@ class ArcoRequestViewSet(
             rows = rows.filter(status=params["status"])
         if params.get("request_type") in ArcoRequest.Kind.values:
             rows = rows.filter(request_type=params["request_type"])
+        search = (params.get("search") or "").strip()
+        if search:
+            rows = rows.filter(requester_reference__icontains=search)
         return rows
+
+    @extend_schema(
+        parameters=[
+            OpenApiParameter("search", str, description="Requester reference contains."),
+            OpenApiParameter("status", str, enum=list(ArcoRequest.Status.values), required=False),
+            OpenApiParameter(
+                "request_type", str, enum=list(ArcoRequest.Kind.values), required=False
+            ),
+        ]
+    )
+    def list(self, request: Request, *args: object, **kwargs: object) -> Response:
+        return super().list(request, *args, **kwargs)
 
     def _owner(self, owner_id: Any) -> User | None:  # noqa: ANN401
         if owner_id is None:

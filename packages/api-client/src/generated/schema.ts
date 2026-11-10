@@ -15588,6 +15588,10 @@ export interface operations {
             query?: {
                 /** @description The pagination cursor value. */
                 cursor?: string;
+                request_type?: "access" | "cancellation" | "opposition" | "rectification";
+                /** @description Requester reference contains. */
+                search?: string;
+                status?: "in_progress" | "received" | "rejected" | "resolved";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -17351,6 +17355,9 @@ export interface operations {
             query?: {
                 /** @description The pagination cursor value. */
                 cursor?: string;
+                /** @description Institution or reference contains. */
+                search?: string;
+                status?: "active" | "expired" | "revoked" | "scheduled";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */

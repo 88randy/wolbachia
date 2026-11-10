@@ -314,6 +314,29 @@ paths:
         description: The pagination cursor value.
         schema:
           type: string
+      - in: query
+        name: request_type
+        schema:
+          type: string
+          enum:
+          - access
+          - cancellation
+          - opposition
+          - rectification
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Requester reference contains.
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - in_progress
+          - received
+          - rejected
+          - resolved
       tags:
       - arco-requests
       security:
@@ -2597,6 +2620,20 @@ paths:
         description: The pagination cursor value.
         schema:
           type: string
+      - in: query
+        name: search
+        schema:
+          type: string
+        description: Institution or reference contains.
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - active
+          - expired
+          - revoked
+          - scheduled
       tags:
       - data-transfers
       security:
