@@ -3,8 +3,9 @@
   display: flex;
   flex-direction: column;
   min-width: 0;
+  overflow: hidden;
   border: 1px solid var(--color-border-soft);
-  border-radius: var(--radius-card);
+  border-radius: var(--radius-lg);
   background: var(--color-surface);
   isolation: isolate;
 }
@@ -74,7 +75,6 @@
 .end {
   text-align: end;
   font-variant-numeric: var(--font-variant-numeric);
-  font-family: var(--font-family-mono);
 }
 
 .selectCell {
@@ -97,7 +97,7 @@
 
 .link,
 .cell a {
-  color: inherit;
+  color: var(--color-action-strong);
   font-weight: 600;
   text-decoration: none;
   text-underline-offset: var(--space-0-5);
@@ -152,7 +152,8 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--space-1);
-  padding: var(--space-1) var(--space-1-5);
+  padding: var(--space-1) var(--space-2);
+  border-top: 1px solid var(--color-border-soft);
   color: var(--color-text-secondary);
   font-size: var(--web-type-label-small-font-size);
 }
@@ -176,20 +177,23 @@
 .state {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   gap: var(--space-1);
-  padding: var(--space-3) var(--space-2);
+  padding: var(--space-5) var(--space-2);
+  text-align: center;
 }
 
 .stateTitle {
   margin: 0;
-  font-weight: 700;
+  color: var(--color-text-primary);
+  font-weight: 600;
   font-size: var(--web-type-body-font-size);
 }
 
 .stateActions {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: var(--space-1);
 }
 
@@ -209,9 +213,9 @@
 
 .skeletonRow {
   height: var(--space-1-5);
-  margin: var(--space-1-5) var(--space-2);
+  margin: var(--space-2) var(--space-2);
   border-radius: var(--radius-xs);
-  background: var(--color-border-soft);
+  background: var(--color-surface-muted);
 }
 
 .selectionBar {
@@ -236,11 +240,10 @@
   position: sticky;
   top: 0;
   z-index: 2;
+  height: var(--web-control-lg);
   background: var(--color-surface-muted);
-  font-family: var(--font-family-mono);
-  letter-spacing: var(--web-type-mono-letter-spacing);
-  text-transform: uppercase;
-  font-weight: 500;
+  border-bottom-color: var(--color-border-soft);
+  font-weight: 600;
 }
 .cell:first-child,
 .head:first-child {
@@ -257,15 +260,14 @@
   background: var(--color-surface-muted);
 }
 .cell {
-  padding-block: var(--space-1);
+  padding-block: var(--space-1-5);
+  transition: background-color var(--web-motion-fast) var(--web-motion-easing);
 }
 .wrap[data-density="compact"] .cell {
   padding-block: var(--space-0-5);
 }
 .badge {
-  font-family: var(--font-family-mono);
-  text-transform: uppercase;
-  font-weight: 500;
+  font-weight: 600;
 }
 .groupRow th {
   padding: var(--space-1) var(--space-1-5);
