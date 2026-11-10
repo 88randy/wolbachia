@@ -1,5 +1,5 @@
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { Notice } from "../../ui/Notice.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { SampleBlockers } from "./SampleBlockers.tsx";
 import { SampleDrafts } from "./SampleDrafts.tsx";
 import { SampleFeedback } from "./SampleFeedback.tsx";
@@ -28,7 +28,7 @@ export function SampleContent({ model }: { readonly model: SampleViewModel }) {
       {model.hasDraft ? (
         <SampleFields model={model} />
       ) : (
-        <Notice tone="info" icon="clock" message={t("mobile.sample.beginHint")} />
+        <InfoNotice tone="info" message={t("mobile.sample.beginHint")} />
       )}
       {model.hasDraft ? <SampleLocation model={model} /> : null}
       {model.hasDraft ? <SamplePhoto model={model} /> : null}

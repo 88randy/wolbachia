@@ -1,0 +1,46 @@
+/** Mexican Spanish messages of the secondary courier flows (release, samples, fuel, problems, community). */
+import type { AreaCatalog } from "../area.ts";
+
+export const courierFlow = {
+  "courier.flow.release.subtitle": "Liberar mosquitos",
+  "courier.flow.release.gatesTitle": "Lo que ya revisamos",
+  "courier.flow.release.gateOk": "Listo",
+  "courier.flow.release.gateFail": "No cumple",
+  "courier.flow.release.gateUnknown": "Falta información",
+  "courier.flow.release.blockedTitle": "No puedes liberar todavía",
+  "courier.flow.release.blockedBody":
+    "Algo falta. Abajo ves qué es y quién lo puede arreglar. Avísale a tu supervisor.",
+  "courier.flow.release.sachets": "Sobres a liberar",
+  "courier.flow.release.photoTitle": "Foto de la liberación",
+  "courier.flow.release.done": "Listo",
+  "courier.flow.sample.subtitle": "Recolectar muestra",
+  "courier.flow.sample.done": "Listo",
+  "courier.flow.fuel.subtitle": "Carga de gasolina",
+  "courier.flow.fuel.begin": "Registrar carga",
+  "courier.flow.fuel.done": "Listo",
+  "courier.flow.incident.subtitle": "¿Qué pasó?",
+  "courier.flow.incident.whatHappened": "Elige lo que pasó",
+  "courier.flow.incident.send": "Enviar reporte",
+  "courier.flow.training.certificate": "Capacitación",
+  "courier.flow.training.evaluation": "Evaluación",
+  "courier.flow.community.tile": "Actividad comunitaria",
+  "courier.flow.community.title": "Actividad comunitaria",
+  "courier.flow.community.subtitle": "Registra una plática o visita",
+  "courier.flow.community.typeTitle": "¿Qué hiciste?",
+  "courier.flow.community.noTypes": "Todavía no hay tipos de actividad. Avisa a tu supervisor.",
+  "courier.flow.community.otherLabel": "¿Cuál otra actividad?",
+  "courier.flow.community.zoneTitle": "¿En qué manzana?",
+  "courier.flow.community.noZones": "No tienes manzanas asignadas para registrar actividades.",
+  "courier.flow.community.attendance": "Personas que asistieron",
+  "courier.flow.community.agreementsTitle": "Acuerdos (opcional)",
+  "courier.flow.community.privacyHint": "No escribas nombres ni datos de las personas.",
+  "courier.flow.community.send": "Registrar actividad",
+  "courier.flow.community.needsSignal":
+    "Para registrar una actividad necesitas señal. Conéctate y vuelve a intentar.",
+  "courier.flow.community.sendFailed":
+    "No se pudo registrar. Tus datos siguen aquí; intenta de nuevo con señal.",
+  "courier.flow.community.doneTitle": "Actividad registrada",
+  "courier.flow.community.doneBody": "La oficina ya la recibió. Buen trabajo.",
+  "courier.flow.community.back": "Volver a mi día",
+  "courier.flow.community.another": "Registrar otra",
+} as const satisfies AreaCatalog<"courier">;

@@ -63,7 +63,18 @@ export const AREAS = [
     id: "lab",
     path: "/lab",
     group: "resources",
-    requiredPermissions: ["egg_count.create", "egg_count.read", "bag.receive", "bag.dispose"],
+    requiredPermissions: [
+      "egg_count.create",
+      "egg_count.read",
+      "bag.receive",
+      "bag.dispose",
+      "recount.create",
+      "recount.adjudicate",
+      "egg_paddle.reuse",
+      "shipment.read",
+      "sample.read",
+      "material_request.read",
+    ],
   },
   {
     id: "people",
@@ -80,8 +91,11 @@ export const AREAS = [
     id: "dashboards",
     path: "/dashboards",
     group: "analysis",
-    requiredPermissions: PENDING,
-    hidden: true,
+    requiredPermissions: [
+      "analytics.operations.read",
+      "analytics.entomology.read",
+      "analytics.wolbachia.read",
+    ],
   },
   {
     id: "regulatory",

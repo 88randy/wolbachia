@@ -1,39 +1,37 @@
+import { ArrowLeft, RotateCw } from "lucide-react-native";
 import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useStyles } from "../../theme/ThemeProvider.tsx";
-import { AppText } from "../../ui/AppText.tsx";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
+import { SecondaryButton } from "../../ui/SecondaryButton.tsx";
 import { TextField } from "../../ui/TextField.tsx";
-import { Notice } from "../../ui/Notice.tsx";
-import { Button } from "../../ui/Button.tsx";
-import { createHistoryStyles } from "./styles.ts";
 import type { useHistory } from "./use-history.ts";
 
 export function HistoryHeader({ model }: { readonly model: ReturnType<typeof useHistory> }) {
-  const t = useT(),
-    styles = useStyles(createHistoryStyles);
+  const t = useT();
   return (
-    <View style={styles.section}>
-      <AppText>{t("mobile.history.search")}</AppText>
+    <View className="gap-3 pb-1">
       <TextField
         label={t("mobile.history.search")}
+        placeholder={t("mobile.history.search")}
         value={model.search}
         onChangeText={model.setSearch}
         autoCapitalize="none"
       />
-      <Notice tone="info" icon="search" message={t("mobile.history.partial")} />
-      {model.hasError ? (
-        <Notice tone="warning" icon="alert" message={t("mobile.history.failed")} />
+      {model.hasError ? <InfoNotice tone="warning" message={t("mobile.history.failed")} /> : null}
+      {model.isSelected ? (
+        <SecondaryButton
+          icon={ArrowLeft}
+          label={t("mobile.history.allShifts")}
+          onPress={model.backToGroups}
+        />
       ) : null}
-      <Button
-        variant="outline"
+      <SecondaryButton
+        icon={RotateCw}
         label={t("mobile.history.refresh")}
         onPress={() => {
           void model.refresh();
         }}
       />
-      {model.isSelected ? (
-        <Button variant="text" label={t("mobile.history.allShifts")} onPress={model.backToGroups} />
-      ) : null}
     </View>
   );
 }

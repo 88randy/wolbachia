@@ -32,7 +32,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.nav.fleet": "Fleet",
   "shell.nav.lab": "Laboratory",
   "shell.nav.people": "People",
-  "shell.nav.dashboards": "Dashboards",
+  "shell.nav.dashboards": "Analysis",
   "shell.nav.regulatory": "Regulatory",
   "shell.nav.settings": "Settings",
 

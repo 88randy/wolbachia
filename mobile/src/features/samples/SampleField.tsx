@@ -18,7 +18,6 @@ export function SampleField(props: Props) {
   const hint = t(props.errorKey ?? props.hintKey);
   return (
     <>
-      <AppText>{t(props.labelKey)}</AppText>
       <TextField
         label={t(props.labelKey)}
         value={props.value}
@@ -29,7 +28,7 @@ export function SampleField(props: Props) {
         accessibilityState={{ disabled: props.disabled }}
         accessibilityHint={hint}
       />
-      <AppText variant="caption" accessibilityLiveRegion="polite">
+      <AppText variant="caption" tone="secondary" accessibilityLiveRegion="polite">
         {hint}
       </AppText>
     </>

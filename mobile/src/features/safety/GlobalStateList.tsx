@@ -1,21 +1,13 @@
-import { StyleSheet, View } from "react-native";
-import { spacing } from "@wolbachia/tokens";
+import { View } from "react-native";
 
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { AppText } from "../../ui/AppText.tsx";
-import { Notice } from "../../ui/Notice.tsx";
-import type { IconName } from "../../ui/icon-paths.ts";
+import { InfoNotice } from "../../ui/InfoNotice.tsx";
 import { causeKey, levelKey, nextKey } from "./copy.ts";
-import type { BlockingLevel, GlobalState } from "./global-state.ts";
+import type { GlobalState } from "./global-state.ts";
 
 const MAX_SHOWN = 2;
-const TONES = { blocking: "critical", warning: "warning", info: "info" } as const;
-const ICONS: Readonly<Record<BlockingLevel, IconName>> = {
-  blocking: "ban",
-  warning: "alert",
-  info: "clock",
-};
-const styles = StyleSheet.create({ list: { gap: spacing[1], padding: spacing[1] } });
+const TONES = { blocking: "danger", warning: "warning", info: "info" } as const;
 
 function stateMessage(state: GlobalState, isCalm: boolean, t: ReturnType<typeof useT>): string {
   const level = isCalm ? [] : [t(levelKey(state.level)) + "."];
@@ -37,12 +29,11 @@ export function GlobalStateList({
   const t = useT();
   if (states.length === 0) return null;
   return (
-    <View style={styles.list}>
+    <View className="gap-2 p-2">
       {states.slice(0, MAX_SHOWN).map((state) => (
-        <Notice
+        <InfoNotice
           key={state.cause}
           tone={isCalm ? "info" : TONES[state.level]}
-          icon={isCalm ? "clock" : ICONS[state.level]}
           message={stateMessage(state, isCalm, t)}
         />
       ))}

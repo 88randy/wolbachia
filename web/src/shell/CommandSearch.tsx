@@ -21,7 +21,7 @@ export function CommandSearch({ actions, onClose, query, onQueryChange }: Comman
         value={query}
         onValueChange={onQueryChange}
       />
-      <CommandItems actions={actions} onClose={onClose} />
+      <CommandItems actions={actions} onClose={onClose} query={query} />
     </Command>
   );
 }
