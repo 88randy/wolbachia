@@ -5,9 +5,10 @@ import { useFormatDateTime } from "../format/use-format-date-time";
 import { useLanguage } from "../i18n/use-language";
 import { StatusPill } from "../ui/StatusPill";
 import type { Tone } from "../ui/tone";
+import { LabName } from "./LabName";
 import type { MaterialRow, PaddleRow, RecountRow, SampleRow, ShipmentRow } from "./lab-lists";
 
-const RECOUNT_TONE: Record<RecountRow["state"], Tone> = {
+export const RECOUNT_TONE: Record<RecountRow["state"], Tone> = {
   awaiting_second: "warning",
   awaiting_third: "warning",
   awaiting_selection: "warning",
@@ -16,30 +17,40 @@ const RECOUNT_TONE: Record<RecountRow["state"], Tone> = {
   awaiting_configuration: "critical",
   awaiting_material: "critical",
 };
-const RESULT_TONE: Record<SampleRow["result_status"], Tone> = {
+export const RESULT_TONE: Record<SampleRow["result_status"], Tone> = {
   missing: "neutral",
   invalid: "warning",
   disputed: "critical",
   positive: "success",
   negative: "info",
 };
+
 function date(format: (iso: string) => string, iso: string) {
   return <time dateTime={iso}>{format(iso)}</time>;
 }
 
-export function useRecountColumns(): DataTableColumn<RecountRow>[] {
+export function RecountState({ state }: { state: RecountRow["state"] }) {
   const { t } = useTranslation();
+  return (
+    <StatusPill tone={RECOUNT_TONE[state]}>
+      {t(`lab.recounts.state.${state}` as MessageKey)}
+    </StatusPill>
+  );
+}
+
+export function ResultState({ status }: { status: SampleRow["result_status"] }) {
+  const { t } = useTranslation();
+  return (
+    <StatusPill tone={RESULT_TONE[status]}>
+      {t(`lab.results.status.${status}` as MessageKey)}
+    </StatusPill>
+  );
+}
+
+export function useRecountColumns(): DataTableColumn<RecountRow>[] {
   return [
     { id: "bag_code", headerKey: "lab.col.bag", cell: (row) => row.bag_code },
-    {
-      id: "state",
-      headerKey: "lab.col.state",
-      cell: (row) => (
-        <StatusPill tone={RECOUNT_TONE[row.state]}>
-          {t(`lab.recounts.state.${row.state}` as MessageKey)}
-        </StatusPill>
-      ),
-    },
+    { id: "state", headerKey: "lab.col.state", cell: (row) => <RecountState state={row.state} /> },
   ];
 }
 
@@ -47,29 +58,16 @@ export function usePaddleColumns(): DataTableColumn<PaddleRow>[] {
   const format = useFormatDateTime();
   return [
     { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
-    { id: "revision", headerKey: "lab.col.revision", align: "end", cell: (row) => row.revision },
+    {
+      id: "location",
+      headerKey: "lab.col.location",
+      cell: (row) => <LabName kind="location" id={row.location_id} />,
+    },
     {
       id: "created_at",
       headerKey: "lab.paddles.created",
       cell: (row) => date(format, row.created_at),
     },
-  ];
-}
-
-export function useShipmentColumns(): DataTableColumn<ShipmentRow>[] {
-  const format = useFormatDateTime();
-  const { language } = useLanguage();
-  return [
-    { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
-    { id: "recipient", headerKey: "lab.col.recipient", cell: (row) => row.recipient_institution },
-    { id: "cutoff", headerKey: "lab.col.cutoff", cell: (row) => date(format, row.cutoff) },
-    {
-      id: "samples",
-      headerKey: "lab.shipments.samples",
-      align: "end",
-      cell: (row) => new Intl.NumberFormat(language).format(row.source_snapshot.length),
-    },
-    ...useShipmentStatusColumns(),
   ];
 }
 
@@ -94,31 +92,20 @@ function useShipmentStatusColumns(): DataTableColumn<ShipmentRow>[] {
   ];
 }
 
-export function useSampleColumns(): DataTableColumn<SampleRow>[] {
-  const { t } = useTranslation();
+export function useShipmentColumns(): DataTableColumn<ShipmentRow>[] {
   const format = useFormatDateTime();
+  const { language } = useLanguage();
   return [
     { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
+    { id: "recipient", headerKey: "lab.col.recipient", cell: (row) => row.recipient_institution },
+    { id: "cutoff", headerKey: "lab.col.cutoff", cell: (row) => date(format, row.cutoff) },
     {
-      id: "received",
-      headerKey: "lab.col.received",
-      cell: (row) =>
-        row.receipt ? (
-          date(format, row.receipt.created_at)
-        ) : (
-          <StatusPill tone="warning">{t("lab.no")}</StatusPill>
-        ),
+      id: "samples",
+      headerKey: "lab.shipments.samples",
+      align: "end",
+      cell: (row) => new Intl.NumberFormat(language).format(row.source_snapshot.length),
     },
-    {
-      id: "result",
-      headerKey: "lab.col.result",
-      cell: (row) => (
-        <StatusPill tone={RESULT_TONE[row.result_status]}>
-          {t(`lab.results.status.${row.result_status}` as MessageKey)}
-        </StatusPill>
-      ),
-    },
-    ...useSampleTailColumns(),
+    ...useShipmentStatusColumns(),
   ];
 }
 
@@ -135,7 +122,47 @@ function useSampleTailColumns(): DataTableColumn<SampleRow>[] {
   ];
 }
 
-function MaterialNotice({ row }: { row: MaterialRow }) {
+function useSampleWhereColumns(): DataTableColumn<SampleRow>[] {
+  return [
+    {
+      id: "center",
+      headerKey: "lab.col.center",
+      cell: (row) => <LabName kind="center" id={row.center_id} />,
+    },
+    {
+      id: "quadrant",
+      headerKey: "lab.col.quadrant",
+      cell: (row) => <LabName kind="quadrant" id={row.quadrant_id} />,
+    },
+  ];
+}
+
+export function useSampleColumns(): DataTableColumn<SampleRow>[] {
+  const { t } = useTranslation();
+  const format = useFormatDateTime();
+  return [
+    { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
+    ...useSampleWhereColumns(),
+    {
+      id: "received",
+      headerKey: "lab.col.received",
+      cell: (row) =>
+        row.receipt ? (
+          date(format, row.receipt.created_at)
+        ) : (
+          <StatusPill tone="warning">{t("lab.no")}</StatusPill>
+        ),
+    },
+    {
+      id: "result",
+      headerKey: "lab.col.result",
+      cell: (row) => <ResultState status={row.result_status} />,
+    },
+    ...useSampleTailColumns(),
+  ];
+}
+
+export function MaterialNotice({ row }: { row: MaterialRow }) {
   const { t } = useTranslation();
   return row.notifications.length > 0 ? (
     <StatusPill tone="success">{t("lab.materials.noticeDone")}</StatusPill>
@@ -144,7 +171,7 @@ function MaterialNotice({ row }: { row: MaterialRow }) {
   );
 }
 
-function MaterialDelivery({ row }: { row: MaterialRow }) {
+export function MaterialDelivery({ row }: { row: MaterialRow }) {
   const { t } = useTranslation();
   if (row.is_voided) return <StatusPill tone="neutral">{t("lab.materials.voided")}</StatusPill>;
   if (row.delivery_id)
@@ -159,6 +186,11 @@ export function useMaterialColumns(): DataTableColumn<MaterialRow>[] {
   return [
     { id: "code", headerKey: "lab.col.code", cell: (row) => row.code },
     { id: "recipient", headerKey: "lab.col.recipient", cell: (row) => row.recipient_institution },
+    {
+      id: "location",
+      headerKey: "lab.col.location",
+      cell: (row) => <LabName kind="location" id={row.location_id} />,
+    },
     {
       id: "quantity",
       headerKey: "lab.col.quantity",

@@ -1,10 +1,7 @@
-import { useTranslation } from "react-i18next";
-import { MapPolygonPicker } from "../../map-picker/MapPolygonPicker";
-import { InlineNotice } from "../../ui/InlineNotice";
-import { parsePolygon } from "./permit-geometry";
 import { PermitChoiceField } from "./PermitChoiceField";
 import { PermitDocumentSection } from "./PermitDocumentSection";
 import { PermitTextFields } from "./PermitTextFields";
+import { ZoneField } from "./ZoneField";
 import type { usePermitForm } from "./use-permit-form";
 
 interface Props {
@@ -15,8 +12,6 @@ interface Props {
 
 /** Fields of the permit form (presentational: all state comes from `usePermitForm`). */
 export function PermitFormFields({ form, isVersion }: Props) {
-  const { t } = useTranslation();
-  const geometryError = form.errors.geometry;
   return (
     <>
       {!isVersion && <PermitTextFields form={form} names={["code"]} />}
@@ -25,16 +20,7 @@ export function PermitFormFields({ form, isVersion }: Props) {
       <PermitTextFields form={form} names={["number", "authority"]} />
       <PermitDocumentSection form={form} />
       <PermitTextFields form={form} names={["attestation"]} />
-      <MapPolygonPicker
-        label={t("permits.form.geometry")}
-        value={parsePolygon(form.draft.geometry)}
-        onChange={(polygon) => {
-          form.change("geometry", polygon ? JSON.stringify(polygon) : "");
-        }}
-      />
-      {geometryError !== undefined && (
-        <InlineNotice tone="critical">{t(geometryError)}</InlineNotice>
-      )}
+      <ZoneField form={form} />
       <PermitTextFields form={form} names={["validFrom", "validTo"]} />
     </>
   );

@@ -1645,6 +1645,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/export-log/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description W60, second tab: receipts of the official exports (filters only, never row values). */
+        get: operations["export_log_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/field/bootstrap/": {
         parameters: {
             query?: never;
@@ -4177,6 +4194,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/portal/{org_slug}/logo/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description The public face of the organization: its own logo, only when the portal is on. */
+        get: operations["portal_logo_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/portal/{org_slug}/releases-by-week/": {
         parameters: {
             query?: never;
@@ -6525,8 +6559,10 @@ export interface components {
             readonly id: string;
             /** Format: uuid */
             readonly actor_id: string;
+            readonly actor_name: string | null;
             /** Format: uuid */
             readonly target_id: string | null;
+            readonly target_name: string | null;
             /** Format: uuid */
             readonly center_id: string;
             /** Format: uuid */
@@ -6647,6 +6683,7 @@ export interface components {
             readonly status: components["schemas"]["ArcoStatusEnum"];
             /** Format: uuid */
             readonly owner_id: string | null;
+            readonly owner_name: string | null;
             readonly resolution_note: string;
             /** Format: date-time */
             readonly resolved_at: string | null;
@@ -8210,6 +8247,21 @@ export interface components {
             humidity_pct: string;
             /** Format: uuid */
             location_id: string;
+        };
+        ExportLog: {
+            /** Format: uuid */
+            readonly id: string;
+            readonly dataset: string;
+            /** Format: date */
+            readonly date_from: string;
+            /** Format: date */
+            readonly date_to: string;
+            readonly recipient_institution: string;
+            readonly row_count: number;
+            readonly rfc_rows_released: number;
+            readonly actor_name: string | null;
+            /** Format: date-time */
+            readonly created_at: string;
         };
         ExtraObservation: {
             kind: components["schemas"]["ExtraObservationKindEnum"];
@@ -10762,6 +10814,19 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["EvaluationRead"][];
         };
+        PaginatedExportLogList: {
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cD00ODY%3D"
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?cursor=cj0xJnA9NDg3
+             */
+            previous?: string | null;
+            results: components["schemas"]["ExportLog"][];
+        };
         PaginatedFuelLoadList: {
             /** @example 123 */
             count: number;
@@ -12899,10 +12964,14 @@ export interface components {
             readonly declared_event_id: string;
             /** Format: uuid */
             readonly permit_version: string;
+            readonly permit_code: string;
+            readonly quadrant_code: string;
             /** Format: uuid */
             readonly lot: string;
+            readonly lot_code: string;
             /** Format: uuid */
             readonly release_device: string;
+            readonly release_device_code: string;
             /** Format: uuid */
             readonly training_version: string;
             /** Format: uuid */
@@ -13038,10 +13107,13 @@ export interface components {
             readonly code: string;
             /** Format: uuid */
             readonly center: string;
+            readonly center_code: string;
             /** Format: uuid */
             readonly quadrant: string;
+            readonly quadrant_code: string;
             /** Format: uuid */
             readonly source_lot: string;
+            readonly source_lot_code: string;
             /** Format: uuid */
             readonly source_lot_version: string;
             readonly status: string;
@@ -15073,13 +15145,16 @@ export interface components {
             readonly fields: unknown;
             /** Format: uuid */
             readonly center_id: string;
+            readonly center_name: string;
             /** Format: uuid */
             readonly quadrant_id: string | null;
+            readonly quadrant_code: string;
             /** Format: date-time */
             readonly valid_from: string;
             /** Format: date-time */
             readonly valid_until: string;
             readonly reference: string;
+            readonly created_by_name: string | null;
             readonly status: string;
             readonly revoked_at: unknown;
             readonly revocation_reason: string | null;
@@ -15662,6 +15737,10 @@ export interface operations {
             query?: {
                 /** @description The pagination cursor value. */
                 cursor?: string;
+                request_type?: "access" | "cancellation" | "opposition" | "rectification";
+                /** @description Requester reference contains. */
+                search?: string;
+                status?: "in_progress" | "received" | "rejected" | "resolved";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -17425,6 +17504,9 @@ export interface operations {
             query?: {
                 /** @description The pagination cursor value. */
                 cursor?: string;
+                /** @description Institution or reference contains. */
+                search?: string;
+                status?: "active" | "expired" | "revoked" | "scheduled";
             };
             header?: {
                 /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
@@ -18660,6 +18742,42 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    export_log_list: {
+        parameters: {
+            query?: {
+                created_after?: string;
+                created_before?: string;
+                /** @description The pagination cursor value. */
+                cursor?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedExportLogList"];
+                };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
             default: {
@@ -23111,6 +23229,36 @@ export interface operations {
                     "application/json": {
                         [key: string]: unknown;
                     };
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    portal_logo_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                org_slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "image/png": string;
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

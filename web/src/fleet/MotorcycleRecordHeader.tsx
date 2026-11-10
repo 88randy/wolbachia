@@ -1,24 +1,36 @@
+import { Link } from "@tanstack/react-router";
+import { ArrowLeft } from "lucide-react";
 import { useTranslation } from "react-i18next";
+import { InlineNotice } from "../ui/InlineNotice";
+import { Button } from "../ui/Button";
 import { blockedReasonKey } from "./motorcycle-status";
-import styles from "./fleet.module.css";
-import { Card } from "../ui/Card";
 import type { Motorcycle } from "./fleet-query";
 import { FleetRecordFeedback } from "./FleetRecordFeedback";
 import { MotorcycleActions } from "./MotorcycleActions";
-import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
-import { Button } from "../ui/Button";
-interface Props {
+
+export interface HeaderProps {
   motorcycle: Motorcycle;
   error: unknown;
   onRetry: () => void;
   isRefreshing: boolean;
 }
-function HeaderActions({ motorcycle, error, onRetry, isRefreshing }: Props) {
+
+/** Back to the list and refresh; the status pill and the record actions sit beside them. */
+export function MotorcycleHeaderActions(
+  props: HeaderProps & { listSearch: Record<string, string> },
+) {
+  const { motorcycle, error, onRetry, isRefreshing, listSearch } = props;
   const { t } = useTranslation();
-  const isVerified = error === null && !isRefreshing;
   return (
-    <div className={styles.actions}>
-      {isVerified && <MotorcycleStatusBadge motorcycle={motorcycle} compact />}
+    <>
+      <Link
+        to="/fleet/motorcycles"
+        search={listSearch}
+        className="inline-flex min-h-8 items-center gap-1 text-sm font-semibold text-action"
+      >
+        <ArrowLeft aria-hidden="true" className="size-4" />
+        {t("fleet.record.back")}
+      </Link>
       <Button
         id={`fleet-record-refresh-${motorcycle.id}`}
         variant="secondary"
@@ -27,24 +39,23 @@ function HeaderActions({ motorcycle, error, onRetry, isRefreshing }: Props) {
       >
         {t("fleet.action.refresh")}
       </Button>
-    </div>
+      <MotorcycleActions motorcycle={motorcycle} isUnverified={error !== null || isRefreshing} />
+    </>
   );
 }
-/** Keep readiness and actions tied to the same verified record, including during refresh. */
-export function MotorcycleRecordHeader(props: Props) {
-  const { motorcycle, error, onRetry, isRefreshing } = props;
+
+/** Keep readiness tied to the same verified record, including during refresh. */
+export function MotorcycleNotices({ motorcycle, error, onRetry, isRefreshing }: HeaderProps) {
   const { t } = useTranslation();
   const isVerified = error === null && !isRefreshing;
   return (
-    <Card title={<span className={styles.code}>{motorcycle.code}</span>} headingLevel={1}>
-      <HeaderActions {...props} />
+    <>
       {isVerified && motorcycle.is_blocked && (
-        <p className={styles.hint}>
-          <span>{t("fleet.status.blocked")}</span> · {t(blockedReasonKey(motorcycle))}
-        </p>
+        <InlineNotice tone="warning">
+          {t("fleet.status.blocked")} · {t(blockedReasonKey(motorcycle))}
+        </InlineNotice>
       )}
       <FleetRecordFeedback error={error} onRetry={onRetry} isRefreshing={isRefreshing} />
-      <MotorcycleActions motorcycle={motorcycle} isUnverified={error !== null || isRefreshing} />
-    </Card>
+    </>
   );
 }

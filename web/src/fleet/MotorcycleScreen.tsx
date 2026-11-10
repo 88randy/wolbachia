@@ -1,8 +1,4 @@
-import { Link } from "@tanstack/react-router";
-import { useTranslation } from "react-i18next";
-import { useDocumentTitle } from "../shell/use-document-title";
-import page from "../styles/page.module.css";
-import { classNames } from "../styles/class-names";
+import { DetailPage } from "../components/templates/DetailPage";
 import type { MotorcycleDetail } from "./fleet-query";
 import type { FleetRecordScope } from "./use-fleet-scope";
 import { FleetTabs } from "./FleetTabs";
@@ -11,9 +7,11 @@ import { canFleetAction } from "./use-fleet-scope";
 import type { useFleetOperations } from "./use-fleet-operations";
 import { FleetRecordOperations } from "./FleetRecordOperations";
 import { MotorcycleSummary } from "./MotorcycleSummary";
-import { MotorcycleRecordHeader } from "./MotorcycleRecordHeader";
+import { MotorcycleHeaderActions, MotorcycleNotices } from "./MotorcycleRecordHeader";
+import { MotorcycleStatusBadge } from "./MotorcycleStatusBadge";
 import { useFleetTabs } from "./use-fleet-tabs";
-import styles from "./fleet.module.css";
+import type { FleetTab } from "./use-fleet-tabs";
+
 interface Props {
   motorcycle: MotorcycleDetail;
   scope: FleetRecordScope;
@@ -33,32 +31,44 @@ function historyActions(props: Props) {
     onClear: props.operations.openClear,
   };
 }
-export function MotorcycleScreen(props: Props) {
-  const { t } = useTranslation();
-  const tabs = useFleetTabs();
-  useDocumentTitle(props.motorcycle.code);
+function MotorcycleBody({ screen, tab }: { screen: Props; tab: FleetTab }) {
+  if (tab === "summary") return <MotorcycleSummary motorcycle={screen.motorcycle} />;
   return (
-    <section className={classNames(page.page, styles.content)}>
-      <Link to="/fleet/motorcycles" search={tabs.listSearch}>
-        {t("fleet.record.back")}
-      </Link>
-      <MotorcycleRecordHeader {...props} />
-      <FleetRecordOperations
-        motorcycle={props.motorcycle}
-        scope={props.scope}
-        operations={props.operations}
-      />
-      <FleetTabs code={props.motorcycle.code} />
-      {tabs.tab === "summary" ? (
-        <MotorcycleSummary motorcycle={props.motorcycle} />
-      ) : (
-        <FleetHistory
-          key={`${props.scope.context}|${props.motorcycle.id}|${tabs.tab}`}
-          motorcycle={props.motorcycle.id}
-          tab={tabs.tab}
-          actions={historyActions(props)}
-        />
-      )}
-    </section>
+    <FleetHistory
+      key={`${screen.scope.context}|${screen.motorcycle.id}|${tab}`}
+      motorcycle={screen.motorcycle.id}
+      tab={tab}
+      actions={historyActions(screen)}
+    />
+  );
+}
+/** W21: the motorcycle detail page. Tabs live in the URL; every history tab is a server table. */
+export function MotorcycleScreen(props: Props) {
+  const tabs = useFleetTabs();
+  const { motorcycle, error, isRefreshing } = props;
+  return (
+    <DetailPage
+      code={motorcycle.plate || undefined}
+      title={motorcycle.code}
+      status={
+        error === null && !isRefreshing ? (
+          <MotorcycleStatusBadge motorcycle={motorcycle} compact />
+        ) : undefined
+      }
+      actions={
+        <>
+          <MotorcycleHeaderActions {...props} listSearch={tabs.listSearch} />
+          <FleetRecordOperations
+            motorcycle={motorcycle}
+            scope={props.scope}
+            operations={props.operations}
+          />
+        </>
+      }
+      notices={<MotorcycleNotices {...props} />}
+    >
+      <FleetTabs code={motorcycle.code} />
+      <MotorcycleBody screen={props} tab={tabs.tab} />
+    </DetailPage>
   );
 }

@@ -15,3 +15,17 @@ def parse_qr(value: str) -> tuple[str, UUID]:
     if match is None or not value.isascii():
         raise ValueError("Invalid QR identity.")
     return match[1], UUID(match[2])
+
+
+# Labels of things with a stable human code (W19): the payload carries the code, not a UUID.
+CODE_QR_PATTERN = re.compile(
+    r"wbf:1:(paddle|motorcycle):([A-Za-z0-9][A-Za-z0-9._-]{0,49})", re.ASCII
+)
+
+
+def parse_code_qr(value: str) -> tuple[str, str]:
+    """Return the kind and human code of a paddle or motorcycle label."""
+    match = CODE_QR_PATTERN.fullmatch(value)
+    if match is None:
+        raise ValueError("Invalid QR identity.")
+    return match[1], match[2]

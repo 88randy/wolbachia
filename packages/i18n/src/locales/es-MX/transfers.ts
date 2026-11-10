@@ -11,6 +11,7 @@ export const transfers = {
   "transfers.page.readError":
     "No se pudo consultar la transferencia. Reintenta para revisar su estado actual.",
   "transfers.field.code": "Transferencia",
+  "transfers.field.route": "Ruta",
   "transfers.field.origin": "Ubicación de origen",
   "transfers.field.destination": "Ubicación de destino",
   "transfers.state.prepared": "Preparada",

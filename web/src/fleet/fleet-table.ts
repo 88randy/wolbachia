@@ -14,6 +14,7 @@ export const FLEET_TABLE: TableQueryConfig = {
       kind: "select",
       key: "is_blocked",
       labelKey: "fleet.column.status",
+      presentation: "segmented",
       options: [
         { value: "false", labelKey: "fleet.status.available" },
         { value: "true", labelKey: "fleet.status.blocked" },

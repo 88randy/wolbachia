@@ -4,6 +4,7 @@ import type { LifecycleSourceTurn } from "../ovitrap-lifecycle/types.ts";
 import { LifecycleGateError } from "../ovitrap-lifecycle/action-error-key.ts";
 import { SupplyProjectionUnavailable } from "../supply-receipt/projection-types.ts";
 import { RemoteSessionEnded } from "../../auth/session-requests.ts";
+import { codeScannerRoute } from "./code-route.ts";
 import { resolveScanner } from "./domain.ts";
 import type { ScannerInput, ScannerResult } from "./domain.ts";
 import type { ScannerResource } from "./resource-source.ts";
@@ -46,6 +47,8 @@ export class ScannerService {
     }
   }
   async open({ input, eventId, isCurrent }: OpenInput): Promise<ScannerDestination> {
+    const coded = codeScannerRoute(input);
+    if (coded) return coded;
     const sample = await this.#deps.sample?.(input, isCurrent);
     if (sample) return sample;
     const result = await this.resolve(input);

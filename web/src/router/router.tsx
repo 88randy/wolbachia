@@ -1,5 +1,6 @@
 import { createRoute, createRouter } from "@tanstack/react-router";
 import type { RouterHistory } from "@tanstack/react-router";
+import { portalRoutes } from "../portal/routes";
 import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
 import { LoginPage } from "../auth/LoginPage";
 import { LegacyResetPasswordPage } from "../auth/LegacyResetPasswordPage";
@@ -73,6 +74,7 @@ const routeTree = rootRoute.addChildren([
   resetPasswordRoute,
   legacyResetPasswordRoute,
   selectOrganizationRoute,
+  ...portalRoutes,
   authenticatedRoute.addChildren([...areaRouteModules, notFoundRoute]),
 ]);
 

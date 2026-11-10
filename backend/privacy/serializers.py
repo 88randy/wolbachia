@@ -5,13 +5,16 @@ from typing import Any
 from rest_framework import serializers
 
 from core.time import server_now
-from privacy.models import ArcoRequest, DataTransferAuthorization, PortalSettings
+from privacy.models import ArcoRequest, DataTransferAuthorization, ExportLog, PortalSettings
 from privacy.portal import PORTAL_INDICATORS
 
 
 class TransferAuthorizationSerializer(serializers.ModelSerializer[DataTransferAuthorization]):
     center_id = serializers.UUIDField(read_only=True)
+    center_name = serializers.CharField(source="center.name", read_only=True)
     quadrant_id = serializers.UUIDField(read_only=True, allow_null=True)
+    quadrant_code = serializers.CharField(source="quadrant.code", read_only=True, default=None)
+    created_by_name = serializers.CharField(read_only=True, allow_null=True, default=None)
     status = serializers.SerializerMethodField()
     revoked_at = serializers.SerializerMethodField()
     revocation_reason = serializers.SerializerMethodField()
@@ -24,10 +27,13 @@ class TransferAuthorizationSerializer(serializers.ModelSerializer[DataTransferAu
             "purpose",
             "fields",
             "center_id",
+            "center_name",
             "quadrant_id",
+            "quadrant_code",
             "valid_from",
             "valid_until",
             "reference",
+            "created_by_name",
             "status",
             "revoked_at",
             "revocation_reason",
@@ -70,6 +76,7 @@ class TransferRevocationSerializer(serializers.Serializer[Any]):
 
 class ArcoRequestSerializer(serializers.ModelSerializer[ArcoRequest]):
     owner_id = serializers.UUIDField(read_only=True, allow_null=True)
+    owner_name = serializers.CharField(read_only=True, allow_null=True, default=None)
     remaining_days = serializers.SerializerMethodField()
 
     class Meta:
@@ -82,6 +89,7 @@ class ArcoRequestSerializer(serializers.ModelSerializer[ArcoRequest]):
             "due_on",
             "status",
             "owner_id",
+            "owner_name",
             "resolution_note",
             "resolved_at",
             "remaining_days",
@@ -136,3 +144,22 @@ class PortalSettingsSerializer(serializers.ModelSerializer[PortalSettings]):
         model = PortalSettings
         fields = ["enabled", "indicators", "updated_at"]
         read_only_fields = ["updated_at"]
+
+
+class ExportLogSerializer(serializers.ModelSerializer[ExportLog]):
+    actor_name = serializers.CharField(read_only=True, allow_null=True, default=None)
+
+    class Meta:
+        model = ExportLog
+        fields = [
+            "id",
+            "dataset",
+            "date_from",
+            "date_to",
+            "recipient_institution",
+            "row_count",
+            "rfc_rows_released",
+            "actor_name",
+            "created_at",
+        ]
+        read_only_fields = fields

@@ -27,6 +27,7 @@ const BLOCKER_KEYS: Record<string, MessageKey> = {
   permit_suspended: "permits.blocker.permitSuspended",
   permit_expired: "permits.blocker.permitExpired",
   permit_unavailable: "permits.blocker.permitUnavailable",
+  release_device_inactive: "permits.blocker.deviceInactive",
 };
 
 /** Backend blocker reason to its catalog text; an unknown reason gets the generic text. */
