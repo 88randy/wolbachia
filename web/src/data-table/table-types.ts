@@ -1,6 +1,7 @@
 import type { MessageKey } from "@wolbachia/i18n";
 import type { LinkProps } from "@tanstack/react-router";
 import type { ReactNode } from "react";
+import type { LookupSource } from "../lookups/lookup-sources";
 
 /** One option of a `select` filter. `value` is what goes in the URL and to the API. */
 export interface FilterOption {
@@ -28,10 +29,11 @@ export interface SelectFilter extends FilterBase {
  * - `search` (default for the key `search`, or the first plain text filter): the live search box;
  * - `text`: a live text box inside "Filtros";
  * - `date-from` / `date-to`: the two ends of ONE calendar range picker inside "Filtros";
+ * - `lookup`: a searchable picker inside "Filtros" (needs `lookup`); names shown, id in the URL;
  * - `hidden`: URL only (ids from links such as a number that opens a filtered list). It is never
  *   typed by the user and its chip shows the filter name, never the raw id.
  */
-export type TextFilterInput = "search" | "text" | "date-from" | "date-to" | "hidden";
+export type TextFilterInput = "search" | "text" | "date-from" | "date-to" | "lookup" | "hidden";
 
 export interface TextFilter extends FilterBase {
   kind: "text";
@@ -41,6 +43,8 @@ export interface TextFilter extends FilterBase {
   input?: TextFilterInput;
   /** Date range ends: `date` sends `YYYY-MM-DD`; `datetime` sends local midnight with offset. */
   dateFormat?: "date" | "datetime";
+  /** Options of a `lookup` filter (see `web/src/lookups/lookup-sources.ts`). */
+  lookup?: LookupSource;
 }
 
 export type FilterDefinition = SelectFilter | TextFilter;

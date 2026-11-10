@@ -12,8 +12,14 @@ export interface FilterLayout {
   dateRange: { from: TextFilter; to: TextFilter } | undefined;
 }
 
-function inputOf(filter: TextFilter): NonNullable<TextFilter["input"]> | undefined {
-  return filter.input ?? (filter.key === "search" ? "search" : undefined);
+/** UUID-sized text filters without a picker are ids: URL-only, never typed (36 = UUID length). */
+const ID_LENGTH = 36;
+
+/** The effective place of a text filter, with the defaults applied. */
+export function inputOf(filter: TextFilter): NonNullable<TextFilter["input"]> | undefined {
+  if (filter.input) return filter.input;
+  if (filter.key === "search") return "search";
+  return filter.maxLength === ID_LENGTH ? "hidden" : undefined;
 }
 
 /** Splits the filters of a list into toolbar search, quick tabs, panel controls and date range. */
@@ -32,7 +38,7 @@ export function filterLayoutOf(config: TableQueryConfig): FilterLayout {
     if (filter === search || filter === quick) return false;
     if (filter.kind === "select") return true;
     const input = inputOf(filter);
-    return input === undefined || input === "text";
+    return input === undefined || input === "text" || (input === "lookup" && !!filter.lookup);
   });
   return { search, quick, panel, dateRange: from && to ? { from, to } : undefined };
 }

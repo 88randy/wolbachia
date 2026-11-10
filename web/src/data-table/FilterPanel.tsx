@@ -1,4 +1,5 @@
 import { FilterDateRange } from "./FilterDateRange";
+import { FilterLookup } from "./FilterLookup";
 import { FilterPanelText } from "./FilterPanelText";
 import { FilterSelect } from "./FilterSelect";
 import type { FilterLayout } from "./filter-layout";
@@ -33,6 +34,15 @@ export function FilterPanel({
           controller.setFilter(filter.key, next);
         };
         const value = state.filters[filter.key];
+        if (filter.kind === "text" && filter.input === "lookup" && filter.lookup)
+          return (
+            <FilterLookup
+              key={filter.key}
+              filter={{ ...filter, lookup: filter.lookup }}
+              value={value}
+              onChange={onChange}
+            />
+          );
         return filter.kind === "select" ? (
           <FilterSelect key={filter.key} filter={filter} value={value} onChange={onChange} />
         ) : (

@@ -1,3 +1,5 @@
+import { CENTER_LOOKUP, LOCATION_LOOKUP, SUPPLY_LOOKUP } from "../lookups/lookup-sources";
+import type { LookupSource } from "../lookups/lookup-sources";
 import type { MessageKey } from "@wolbachia/i18n";
 import type {
   FilterDefinition,
@@ -26,6 +28,14 @@ const hidden = (key: string, labelKey: MessageKey): FilterDefinition => ({
   kind: "text",
   maxLength: 200,
   input: "hidden",
+});
+const pick = (key: string, labelKey: MessageKey, lookup: LookupSource): FilterDefinition => ({
+  key,
+  labelKey,
+  kind: "text",
+  maxLength: 36,
+  input: "lookup",
+  lookup,
 });
 const select = (
   key: string,
@@ -77,9 +87,9 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
     sortOptions: [...base.sortOptions, { value: "expiry", labelKey: "inventory.field.expiry" }],
     filters: [
       text("search", "inventory.field.search"),
-      text("supply", "inventory.field.supply"),
-      text("location", "inventory.field.location"),
-      text("center", "inventory.field.center"),
+      pick("supply", "inventory.field.supply", SUPPLY_LOOKUP),
+      pick("location", "inventory.field.location", LOCATION_LOOKUP),
+      pick("center", "inventory.field.center", CENTER_LOOKUP),
       select("status", "inventory.field.status", [
         ["draft", "inventory.status.draft"],
         ["blocked", "inventory.status.blocked"],
@@ -96,7 +106,7 @@ export const INVENTORY_TABLES: Record<InventoryKind, TableQueryConfig> = {
     ...base,
     filters: [
       text("search", "inventory.field.search"),
-      text("center", "inventory.field.center"),
+      pick("center", "inventory.field.center", CENTER_LOOKUP),
       select("kind", "inventory.field.kind", [
         ["biofactory", "inventory.option.biofactory"],
         ["warehouse", "inventory.option.warehouse"],
@@ -114,7 +124,10 @@ export const STOCK_TABLE: TableQueryConfig = {
     { value: "lot__code", labelKey: "inventory.field.code" },
     { value: "piece_id", labelKey: "inventory.field.piece" },
   ],
-  filters: [text("lot", "inventory.field.code"), text("supply", "inventory.field.supply")],
+  filters: [
+    text("lot", "inventory.field.code"),
+    pick("supply", "inventory.field.supply", SUPPLY_LOOKUP),
+  ],
 };
 export const MOVEMENT_TABLE: TableQueryConfig = {
   ...base,

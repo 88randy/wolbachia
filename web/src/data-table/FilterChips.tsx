@@ -1,7 +1,10 @@
 import type { TFunction } from "i18next";
 import { useTranslation } from "react-i18next";
 import { useLanguage } from "../i18n/use-language";
+import type { LookupSource } from "../lookups/lookup-sources";
 import { FilterChip } from "./FilterChip";
+import { inputOf } from "./filter-layout";
+import { LookupChip } from "./LookupChip";
 import { dayLabel } from "./filter-dates";
 import type { FilterDefinition, TableController } from "./table-types";
 
@@ -10,6 +13,8 @@ interface Chip {
   name: string;
   value: string;
   onRemove?: () => void;
+  lookup?: LookupSource;
+  raw?: string;
 }
 
 function chipValue(
@@ -21,7 +26,8 @@ function chipValue(
     const option = filter.options.find((candidate) => candidate.value === value);
     return option === undefined ? value : t(option.labelKey);
   }
-  if (filter.input === "hidden") return t("table.filters.applied");
+  const input = inputOf(filter);
+  if (input === "hidden" || input === "lookup") return t("table.filters.applied");
   if (filter.input === "date-from" || filter.input === "date-to")
     return dayLabel(
       value,
@@ -47,6 +53,8 @@ function useChips(controller: TableController): Chip[] {
           onRemove: () => {
             controller.setFilter(filter.key, undefined);
           },
+          ...(filter.kind === "text" && filter.input === "lookup" ? { lookup: filter.lookup } : {}),
+          raw: value,
         },
       ];
     if (filter.kind === "select" && filter.defaultValue !== undefined) {
@@ -71,7 +79,17 @@ export function FilterChips({ controller }: { controller: TableController }) {
       >
         {chips.map((chip) => (
           <li key={chip.id}>
-            <FilterChip name={chip.name} value={chip.value} onRemove={chip.onRemove} />
+            {chip.lookup && chip.raw ? (
+              <LookupChip
+                name={chip.name}
+                source={chip.lookup}
+                value={chip.raw}
+                fallback={chip.value}
+                onRemove={chip.onRemove}
+              />
+            ) : (
+              <FilterChip name={chip.name} value={chip.value} onRemove={chip.onRemove} />
+            )}
           </li>
         ))}
         {voided && (

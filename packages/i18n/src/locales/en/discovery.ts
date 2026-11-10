@@ -25,7 +25,8 @@ export const discovery: Record<keyof typeof spanish, string> = {
   "discovery.card.couriers_in_field.title": "Couriers in the field",
   "discovery.card.couriers_in_field.description": "Shifts open right now.",
   "discovery.search.title": "Search records",
-  "discovery.search.description": "Search by code: incidents, motorcycles, quadrants, sampling points and shipments.",
+  "discovery.search.description":
+    "Search by code: incidents, motorcycles, quadrants, sampling points and shipments.",
   "discovery.search.label": "Code",
   "discovery.search.placeholder": "Type or scan a code",
   "discovery.search.includeVoided": "Include voided",

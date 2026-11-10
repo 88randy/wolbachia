@@ -21,6 +21,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   "write-offs": "allocation.lab.title",
   "egg-counts": "lab.count.title",
   "count-history": "lab.history.title",
+  records: "shell.crumb.records",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   transfers: "transfers.page.title",
@@ -43,19 +44,27 @@ function lotResourceKey(parts: string[], index: number): MessageKey | undefined 
   if (index === 3 && parts[index] === "conditions") return "conditions.page.title";
   return undefined;
 }
+/** What the router knows about a path: its declared crumb label, and whether it is a route. */
+export interface CrumbSource {
+  crumbOf: (path: string) => MessageKey | undefined;
+  isRoute: (path: string) => boolean;
+}
+
 /** Only known routes become ancestor links; human codes remain plain text. */
-export function breadcrumbsOf(pathname: string) {
+export function breadcrumbsOf(pathname: string, source?: CrumbSource) {
   const parts = pathname.split("/").filter(Boolean);
   if (parts.length < 2) return [];
   return parts.map((part, index) => {
     const area = index === 0 ? AREAS.find((entry) => entry.path === `/${part}`) : undefined;
-    const key = area ? (`shell.nav.${area.id}` as MessageKey) : resourceKey(parts, index);
     const path = `/${parts.slice(0, index + 1).join("/")}`;
+    const key = area
+      ? (`shell.nav.${area.id}` as MessageKey)
+      : (resourceKey(parts, index) ?? source?.crumbOf(path));
     return {
       path,
       label: part,
       key,
-      isLinked: key !== undefined && part !== "versions",
+      isLinked: key !== undefined && part !== "versions" && (source?.isRoute(path) ?? true),
       isCurrent: index === parts.length - 1,
     };
   });
