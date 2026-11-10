@@ -8,6 +8,7 @@ export const ui: Record<keyof typeof esMX, string> = {
   "ui.actions.review": "Review",
   "ui.actions.dismiss": "Dismiss notice",
   "ui.states.refreshing": "Updating…",
+  "ui.states.noValue": "No value",
   "ui.states.noData": "There are no records yet. Create the first one to get started.",
   "ui.states.noResults": "No records match these filters. Clear them to see more records.",
   "ui.states.loadError": "We could not load this section. Retry to refresh it.",

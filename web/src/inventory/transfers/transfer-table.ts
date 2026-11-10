@@ -25,7 +25,21 @@ export const TRANSFER_TABLE: TableQueryConfig = {
         { value: "resolved", labelKey: "transfers.state.resolved" },
       ],
     },
-    { key: "created_at_from", labelKey: "transfers.field.from", kind: "text", maxLength: 50 },
-    { key: "created_at_before", labelKey: "transfers.field.before", kind: "text", maxLength: 50 },
+    {
+      key: "created_at_from",
+      labelKey: "transfers.field.from",
+      kind: "text",
+      maxLength: 50,
+      input: "date-from",
+      dateFormat: "datetime",
+    },
+    {
+      key: "created_at_before",
+      labelKey: "transfers.field.before",
+      kind: "text",
+      maxLength: 50,
+      input: "date-to",
+      dateFormat: "datetime",
+    },
   ],
 };

@@ -19,7 +19,13 @@ export const DISCREPANCY_TABLE: TableQueryConfig = {
     { value: "code", labelKey: "discrepancies.field.code" },
   ],
   filters: [
-    { kind: "text", key: "transfer", labelKey: "discrepancies.field.transfer", maxLength: 36 },
+    {
+      kind: "text",
+      key: "transfer",
+      labelKey: "discrepancies.field.transfer",
+      maxLength: 36,
+      input: "hidden",
+    },
     { kind: "text", key: "code", labelKey: "discrepancies.field.code", maxLength: 120 },
     { kind: "text", key: "search", labelKey: "discrepancies.field.search", maxLength: 200 },
     {

@@ -4,6 +4,7 @@ import { useMe } from "../../session/use-me";
 import { isReadOnlyProfile } from "./use-w-03";
 import type { Profile } from "./use-w-03";
 import { PermissionCell } from "./PermissionCell";
+import styles from "./organization.module.css";
 interface Props {
   profile: Profile;
   codes: string[];
@@ -14,7 +15,7 @@ export function PermissionCells({ profile, codes, onEdit }: Props) {
   const canEdit = useMe().permissions.includes(ROLE_UPDATE) && !isReadOnlyProfile(profile);
   const label = i18n.language === "en" ? profile.label_en : profile.label_es;
   return (
-    <div className="flex max-w-[880px] flex-wrap gap-1.5">
+    <div className={styles.grants}>
       {codes.map((permission) => (
         <PermissionCell
           key={permission}
@@ -26,7 +27,7 @@ export function PermissionCells({ profile, codes, onEdit }: Props) {
           onEdit={onEdit}
         />
       ))}
-      {!canEdit && <p className="m-0 w-full text-xs text-ink-2">{t("orgAdmin.roles.readOnly")}</p>}
+      {!canEdit && <p>{t("orgAdmin.roles.readOnly")}</p>}
     </div>
   );
 }

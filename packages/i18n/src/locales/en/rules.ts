@@ -31,8 +31,6 @@ export const rules: Record<keyof typeof source, string> = {
   "rules.param.sessionIdle": "Inactivity that ends the session",
   "rules.param.reminderBeforeEnd": "Reminder before the shift ends",
   "rules.param.maxPaddleReuses": "Maximum egg paddle reuses",
-  "rules.param.dailyTaskTarget": "Daily task target",
-  "rules.param.maxGpsAccuracy": "Minimum GPS accuracy",
   "rules.param.revisitInterval": "Revisit interval",
 
   // Units of the API (`m`, `km_h`...). Written out, so no number needs plural agreement.

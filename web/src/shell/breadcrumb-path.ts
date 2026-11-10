@@ -29,6 +29,7 @@ const RESOURCE_LABELS: Readonly<Record<string, MessageKey>> = {
   "write-offs": "allocation.lab.title",
   "egg-counts": "lab.count.title",
   "count-history": "lab.history.title",
+  records: "shell.crumb.records",
 };
 const INVENTORY_LABELS: Readonly<Record<string, MessageKey>> = {
   transfers: "transfers.page.title",
@@ -52,24 +53,29 @@ function lotResourceKey(parts: string[], index: number): MessageKey | undefined 
   return undefined;
 }
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** What the router knows about a path: its declared crumb label, and whether it is a route. */
+export interface CrumbSource {
+  crumbOf: (path: string) => MessageKey | undefined;
+  isRoute: (path: string) => boolean;
+}
+
 /** Only known routes become ancestor links; human codes remain plain text. */
-export function breadcrumbsOf(pathname: string) {
+export function breadcrumbsOf(pathname: string, source?: CrumbSource) {
   // Records without a human code (UUID routes) end the trail at their list.
-  const parts = pathname
-    .split("/")
-    .filter((part) => part && !UUID_PATTERN.test(part))
-    // A catalog tab slug is a technical name; the tab already names the catalog.
-    .filter((_part, index, all) => !(index === 2 && all[1] === "catalogs"));
+  const parts = pathname.split("/").filter((part) => part && !UUID_PATTERN.test(part));
   if (parts.length < 2) return [];
   return parts.map((part, index) => {
     const area = index === 0 ? AREAS.find((entry) => entry.path === `/${part}`) : undefined;
-    const key = area ? (`shell.nav.${area.id}` as MessageKey) : resourceKey(parts, index);
     const path = `/${parts.slice(0, index + 1).join("/")}`;
+    const key = area
+      ? (`shell.nav.${area.id}` as MessageKey)
+      : (resourceKey(parts, index) ?? source?.crumbOf(path));
     return {
       path,
       label: part,
       key,
-      isLinked: key !== undefined && part !== "versions",
+      isLinked: key !== undefined && part !== "versions" && (source?.isRoute(path) ?? true),
       isCurrent: index === parts.length - 1,
     };
   });

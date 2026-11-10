@@ -33,13 +33,13 @@ organization timezone. Coded field errors retain input. Ambiguous results freeze
 resubmission for manual history review; no write replays after reauthentication.
 Condition readings remain immutable: this contract exposes no void writer.
 
-| Criterion | Owning proof |
-| --- | --- |
-| Exact retained range, global breach link, distinct server windows | `conditions.test.tsx` |
-| Coded capture errors and exact aware timestamp payload | `conditions.test.tsx` |
-| Missing configuration, forbidden capture, opaque code lookup | `conditions.test.tsx` |
-| Context change drops a delayed old result | `conditions.test.tsx` |
-| Cookie/CSRF/org wiring, keyboard capture/chart, es-MX/en, light/dark, 320px +30% and axe | `e2e/w-12.spec.ts` |
+| Criterion                                                                                | Owning proof          |
+| ---------------------------------------------------------------------------------------- | --------------------- |
+| Exact retained range, global breach link, distinct server windows                        | `conditions.test.tsx` |
+| Coded capture errors and exact aware timestamp payload                                   | `conditions.test.tsx` |
+| Missing configuration, forbidden capture, opaque code lookup                             | `conditions.test.tsx` |
+| Context change drops a delayed old result                                                | `conditions.test.tsx` |
+| Cookie/CSRF/org wiring, keyboard capture/chart, es-MX/en, light/dark, 320px +30% and axe | `e2e/w-12.spec.ts`    |
 
 Backend authorization, retained protocol evaluation and redaction are independently
 covered in `backend/tests/test_inventory_condition_status.py`. Browser fixture

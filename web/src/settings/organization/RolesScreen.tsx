@@ -3,16 +3,15 @@ import { useTranslation } from "react-i18next";
 import { useDocumentTitle } from "../../shell/use-document-title";
 import { RolesTable } from "./RolesTable";
 import { MembershipsTable } from "./MembershipsTable";
-import { PageFrame } from "../../components/templates/PageFrame";
-import { PageHeader } from "../../components/templates/PageHeader";
+import styles from "./organization.module.css";
 export function RolesScreen() {
   const { t } = useTranslation();
   useDocumentTitle(t("orgAdmin.roles.title"));
   const view = useSearch({ strict: false })["view"];
   return (
-    <PageFrame>
-      <PageHeader title={t("orgAdmin.roles.title")} description={t("orgAdmin.roles.hint")} />
+    <section className={styles.page}>
+      <h1>{t("orgAdmin.roles.title")}</h1>
       {view === "memberships" ? <MembershipsTable /> : <RolesTable />}
-    </PageFrame>
+    </section>
   );
 }

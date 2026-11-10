@@ -63,19 +63,19 @@ There is no geography export operation in OpenAPI, so no export is offered.
 
 ## Acceptance-to-test map
 
-| Criterion | Cheapest proof |
-| --- | --- |
-| R2: every excluded point resolved before publish | `w-15.test.tsx`; pure validation in `geometry.test.ts` |
-| Block proposal, four fixed codes, partial/lost-response recovery, definitive 401 manual retry and spacing codes | `w-15-blocks.test.tsx` |
-| Geometry/stale revision recovery, unknown blockers, Retry-After | `w-15.test.tsx`, `w-15-recovery.test.tsx` |
-| History, keyboard map/form parity at 1280/1440, dialog focus return | `w-15-accessibility.test.tsx`, independent history paging in recovery tests |
-| Explicit grants, denied/unknown/foreign deep links, scope clearing | `w-15-access.test.tsx`, router area-access tests |
-| Retirement evidence without accidental publication; permitted geometry survives scope changes | `w-15-retention.test.tsx` |
-| Retained draft and explicit retry after reauthentication, with unchanged or refreshed permitted scope | `w-15-session.test.tsx` |
-| Bilingual light/dark axe checks | `w-15-accessibility.test.tsx` |
-| Add then undo restores the exact exterior and holes | `drawing-controls.test.tsx` |
-| Tile configuration and strict build CSP | `map-security.test.ts` |
-| Real browser R2, focus/reflow at 320 and +30% text, including delayed compact resize notification (#232) | `web/e2e/w-15.spec.ts` |
+| Criterion                                                                                                       | Cheapest proof                                                              |
+| --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| R2: every excluded point resolved before publish                                                                | `w-15.test.tsx`; pure validation in `geometry.test.ts`                      |
+| Block proposal, four fixed codes, partial/lost-response recovery, definitive 401 manual retry and spacing codes | `w-15-blocks.test.tsx`                                                      |
+| Geometry/stale revision recovery, unknown blockers, Retry-After                                                 | `w-15.test.tsx`, `w-15-recovery.test.tsx`                                   |
+| History, keyboard map/form parity at 1280/1440, dialog focus return                                             | `w-15-accessibility.test.tsx`, independent history paging in recovery tests |
+| Explicit grants, denied/unknown/foreign deep links, scope clearing                                              | `w-15-access.test.tsx`, router area-access tests                            |
+| Retirement evidence without accidental publication; permitted geometry survives scope changes                   | `w-15-retention.test.tsx`                                                   |
+| Retained draft and explicit retry after reauthentication, with unchanged or refreshed permitted scope           | `w-15-session.test.tsx`                                                     |
+| Bilingual light/dark axe checks                                                                                 | `w-15-accessibility.test.tsx`                                               |
+| Add then undo restores the exact exterior and holes                                                             | `drawing-controls.test.tsx`                                                 |
+| Tile configuration and strict build CSP                                                                         | `map-security.test.ts`                                                      |
+| Real browser R2, focus/reflow at 320 and +30% text, including delayed compact resize notification (#232)        | `web/e2e/w-15.spec.ts`                                                      |
 
 jsdom checks behavior, not physical layout, rendered contrast or WebGL. Docker,
 Playwright and real browser manual focus/contrast/visual checks remain separate
@@ -105,12 +105,12 @@ The [official v5-to-v6 guide](https://maplibre.org/maplibre-gl-js/docs/guides/v5
 and [6.0.0 release](https://github.com/maplibre/maplibre-gl-js/releases/tag/v6.0.0)
 were checked alongside the installed sources:
 
-| Major-version change | Application integration |
-| --- | --- |
-| ESM only; no default export or CommonJS entry | Vite handles the ESM package; the maintained React adapter imports its module namespace. No CDN/script-tag build or `require()` is used. |
-| Explicit worker URL for bundlers; worker imports a shared ESM file | `MapCanvas` imports `maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url` and supplies the adapter's public `workerUrl` prop. Vite emits a bundled same-origin worker asset, including shared dependencies; bare `?url` would leave the sibling chunk unresolved. The existing CSP stays unchanged. |
-| WebGL2 required; `map.transform` removed and camera API changed | `useMapDisplay` checks WebGL2 availability before mounting. GPU/style errors still select the coordinate fallback. The adapter is upgraded rather than patched with an application shim. |
-| Event classes/types, GeoJSON setData signature and stricter style typing | Existing click coordinates, GeoJSON layers, raster/style configuration and public adapter props remain the app boundary. Typecheck, production build and focused integration checks cover this wiring. |
+| Major-version change                                                     | Application integration                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ESM only; no default export or CommonJS entry                            | Vite handles the ESM package; the maintained React adapter imports its module namespace. No CDN/script-tag build or `require()` is used.                                                                                                                                                           |
+| Explicit worker URL for bundlers; worker imports a shared ESM file       | `MapCanvas` imports `maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url` and supplies the adapter's public `workerUrl` prop. Vite emits a bundled same-origin worker asset, including shared dependencies; bare `?url` would leave the sibling chunk unresolved. The existing CSP stays unchanged. |
+| WebGL2 required; `map.transform` removed and camera API changed          | `useMapDisplay` checks WebGL2 availability before mounting. GPU/style errors still select the coordinate fallback. The adapter is upgraded rather than patched with an application shim.                                                                                                           |
+| Event classes/types, GeoJSON setData signature and stricter style typing | Existing click coordinates, GeoJSON layers, raster/style configuration and public adapter props remain the app boundary. Typecheck, production build and focused integration checks cover this wiring.                                                                                             |
 
 `react-map-gl` is pinned to **8.1.3** (MIT). The old 8.0.4 implementation directly
 read the removed `map.transform`; peer metadata alone would not prove support.

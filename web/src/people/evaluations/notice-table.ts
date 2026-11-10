@@ -7,8 +7,20 @@ export const NOTICE_TABLE: TableQueryConfig = {
   supportsVoided: false,
   sortableIds: ["created_at", "id"],
   filters: [
-    { kind: "text", key: "center", labelKey: "evaluations.field.center", maxLength: 36 },
-    { kind: "text", key: "quadrant", labelKey: "evaluations.field.quadrant", maxLength: 36 },
+    {
+      kind: "text",
+      key: "center",
+      labelKey: "evaluations.field.center",
+      maxLength: 36,
+      input: "hidden",
+    },
+    {
+      kind: "text",
+      key: "quadrant",
+      labelKey: "evaluations.field.quadrant",
+      maxLength: 36,
+      input: "hidden",
+    },
   ],
 };
 export const NOTICE_SCOPE = { prefix: "notice_" };

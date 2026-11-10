@@ -1,4 +1,5 @@
 import { createRoute, redirect } from "@tanstack/react-router";
+import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { W33Page } from "../operations/closure/W33Page";
 import { areaListHomeRoute } from "../router/area-route";
@@ -46,6 +47,7 @@ const quadrantClosureRoute = createRoute({
 const legacyQuadrantsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/operations/quadrants",
+  staticData: { crumb: "shell.nav.quadrants" },
   beforeLoad: () => {
     // eslint-disable-next-line @typescript-eslint/only-throw-error -- router redirects are thrown by design.
     throw redirect({ to: "/quadrants", replace: true });

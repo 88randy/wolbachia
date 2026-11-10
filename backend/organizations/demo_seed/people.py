@@ -23,11 +23,12 @@ from organizations.services import (
 )
 
 DEMO_SLUG = "demo"
+DEMO_TIMEZONE = "America/Merida"
 DEMO_ORGANIZATION = OrganizationSpec(
     name="Programa Wolbachia Mérida",
     slug=DEMO_SLUG,
     country="MX",
-    timezone="America/Merida",
+    timezone=DEMO_TIMEZONE,
     languages=("es-MX", "en"),
 )
 CENTER_CODES = (

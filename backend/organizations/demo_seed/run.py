@@ -7,19 +7,18 @@ from django.core.management.base import CommandError
 
 from geography.models import Quadrant
 from organizations.demo_seed import (
+    custody_history,
     field,
     geography,
     history,
     incidents_history,
-    inventory,
     lab_history,
     operations,
     people,
     personnel,
-    releases,
     samples_history,
-    training,
 )
+from organizations.demo_seed.resilience import release_stale_sessions, retrying
 from organizations.models import Center, Membership, Organization
 from uploads.access import UploadActor
 
@@ -47,14 +46,16 @@ def require_local_settings() -> None:
 def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     """Build or complete the whole demo dataset (writes many tables)."""
     require_local_settings()
-    organization = people.ensure_organization()
-    users = people.ensure_users(organization, reset_passwords)
+    with custody_history.frozen_clock(custody_history.history_start()):
+        organization = people.ensure_organization()
+        users = people.ensure_users(organization, reset_passwords)
     members = {username: member for username, (_user, member) in users.items()}
     admin = members["demo-admin"]
     centers: dict[str, Center] = {
         center.code: center for center in people.ensure_centers(organization, admin.user)
     }
-    quadrants = geography.ensure_geography(centers, admin)
+    with custody_history.frozen_clock(custody_history.history_start()):
+        quadrants = retrying(lambda: geography.ensure_geography(centers, admin))
     personnel.ensure_personnel(organization, members, list(centers.values()))
     operations.ensure_incident_types(
         organization,
@@ -62,43 +63,21 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
         {"supervisor": members["demo-supervisor"], "coordinator": members["demo-coordinator"]},
     )
     operations.ensure_motorcycles(organization, centers, admin)
-    operations.ensure_assignments(quadrants, members, admin)
+    with custody_history.frozen_clock(custody_history.history_start()):
+        retrying(lambda: operations.ensure_assignments(quadrants, members, admin))
     device = field.ensure_device(organization)
     catalog = field.catalog_for(organization, members["demo-courier-1"].user)
-    history.ensure_history(organization, members, device, catalog)
-    operations.ensure_schedule(organization, admin)
-    ovitraps = field.ensure_ovitraps(organization, members["demo-courier-1"].user)
-    _seed_stock_and_releases(organization, members, quadrants)
-    samples_history.ensure_samples(organization, members, device, catalog)
-    incidents_history.ensure_incidents(organization, members, quadrants)
-    lab_history.ensure_lab_history(
-        organization, UploadActor(members["demo-entomologist"].user, organization)
-    )
-    return DemoResult(organization, members, quadrants, ovitraps)
-
-
-def _seed_stock_and_releases(
-    organization: Organization, members: dict[str, Membership], quadrants: dict[str, Quadrant]
-) -> None:
-    actor = UploadActor(members["demo-admin"].user, organization)
-    home = quadrants[inventory.HOME_QUADRANT]
-    stock = inventory.ensure_stock(actor, home, members["demo-warehouse"])
-    inventory.ensure_transit_policies(actor)
-    inventory.ensure_courier_plan(actor, members["demo-courier-1"], stock)
-    for name in people.COURIER_USERNAMES[1:]:
-        inventory.ensure_courier_plan(actor, members[name], stock, biological=False)
-    permit = releases.ensure_permit(organization, actor, home)
-    for number in range(2, 7):
-        code = f"PERMIT-MER-{number:02d}"
-        releases.ensure_permit(organization, actor, quadrants[f"Q-MER-{number:02d}"], code)
-    training.ensure_release_points(actor, range(2, 7))
-    for number in range(2, 7):
-        lot = inventory.ensure_quadrant_lot(
-            actor, quadrants[f"Q-MER-{number:02d}"], members["demo-warehouse"], number
+    release_stale_sessions()
+    retrying(lambda: history.ensure_history(organization, members, device, catalog))
+    retrying(lambda: operations.ensure_schedule(organization, admin))
+    ovitraps = retrying(lambda: field.ensure_ovitraps(organization, members["demo-courier-1"].user))
+    retrying(
+        lambda: custody_history.ensure_stock_and_releases(
+            organization, members, quadrants, catalog["version"], device
         )
-        code = f"RD-MER-{number:02d}"
-        releases.ensure_release_device(organization, actor, lot, code)
-    releases.ensure_release_device(organization, actor, stock.lots["S-MER-WOLB"])
-    couriers = [members[name] for name in people.COURIER_USERNAMES]
-    training.ensure_certifications(actor, home, couriers)
-    training.ensure_release_task(actor, permit, couriers[0])
+    )
+    retrying(lambda: samples_history.ensure_samples(organization, members, device, catalog))
+    retrying(lambda: incidents_history.ensure_incidents(organization, members, quadrants))
+    entomologist = UploadActor(members["demo-entomologist"].user, organization)
+    lab_history.ensure_lab_history(organization, entomologist)
+    return DemoResult(organization, members, quadrants, ovitraps)
