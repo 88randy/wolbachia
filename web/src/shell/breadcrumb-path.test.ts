@@ -4,6 +4,8 @@ import { createMemoryHistory } from "@tanstack/react-router";
 import type { ApiClient } from "@wolbachia/api-client";
 import { AREAS } from "../router/areas";
 import { createAppRouter } from "../router/router";
+import type { MessageKey } from "@wolbachia/i18n";
+import "../router/crumb";
 import { breadcrumbsOf } from "./breadcrumb-path";
 
 test("inventory ancestors and new-lot are translated while real record codes stay literal", () => {
@@ -37,10 +39,16 @@ test("every static segment of a registered route has a breadcrumb label", () => 
     queryClient: new QueryClient(),
     history: createMemoryHistory(),
   });
+  const routes: Record<string, { options: { staticData?: { crumb?: MessageKey } } }> =
+    router.routesByPath;
+  const source = {
+    crumbOf: (path: string) => routes[path]?.options.staticData?.crumb,
+    isRoute: (path: string) => path in routes,
+  };
   const unlabeled = Object.keys(router.routesByPath).flatMap((path) => {
     const parts = path.split("/").filter(Boolean);
     if (!AREAS.some((area) => area.path === `/${parts[0] ?? ""}`)) return [];
-    return breadcrumbsOf(path)
+    return breadcrumbsOf(path, source)
       .filter((entry, index) => !parts[index]?.startsWith("$") && entry.key === undefined)
       .map((entry) => `${path} -> ${entry.label}`);
   });

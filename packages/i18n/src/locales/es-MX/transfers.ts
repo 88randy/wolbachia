@@ -1,7 +1,7 @@
 import type { AreaCatalog } from "../area.ts";
 export const transfers = {
-  "transfers.field.from": "Creada desde (instante con zona horaria)",
-  "transfers.field.before": "Creada antes de (instante con zona horaria)",
+  "transfers.field.from": "Creada desde",
+  "transfers.field.before": "Creada antes de",
   "transfers.write.review": "Revisar estado actual y editar el borrador",
   "transfers.page.title": "Transferencias",
   "transfers.page.preparedOnly":

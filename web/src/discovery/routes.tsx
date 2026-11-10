@@ -1,4 +1,5 @@
 import { createRoute } from "@tanstack/react-router";
+import "../router/crumb";
 import { tableSearchSchema } from "../data-table/table-search-schema";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
@@ -11,6 +12,7 @@ const HOME_READ = "home.read";
 const searchRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/search",
+  staticData: { crumb: "discovery.search.title" },
   validateSearch: tableSearchSchema,
   beforeLoad: ({ context }) => {
     requirePermission("home", context.me, HOME_READ);

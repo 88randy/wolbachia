@@ -13,7 +13,7 @@ from PIL import Image
 
 from geography.models import Block, PointVersion, Quadrant, SamplingPoint
 from organizations.demo_seed.field import NAMESPACE
-from organizations.models import Membership
+from organizations.models import Membership, Organization
 from people.models import ActionTrainingRequirementVersion, Certification, Training, TrainingVersion
 from people.permissions import PeopleContext
 from people.services import PeopleWrite, write_people
@@ -111,7 +111,10 @@ def _ensure_requirement(
 def _ensure_certification(actor: UploadActor, course: Course, courier: Membership) -> None:
     context, version = course.context, course.version
     if Certification.objects.filter(
-        organization=actor.organization, subject_id=courier.user_id, training_version=version
+        organization=actor.organization,
+        subject_id=courier.user_id,
+        training_version=version,
+        **context.lookups(),
     ).exists():
         return
     values = {
@@ -179,6 +182,13 @@ def ensure_release_task(actor: UploadActor, permit: Permit, courier: Membership)
         "expected_revision": permit_revision(permit),
     }
     schedule_release(actor, permit.pk, values)
+
+
+def course_version(organization: Organization) -> TrainingVersion:
+    """The release course version the demo certifies couriers for."""
+    return TrainingVersion.objects.filter(
+        organization=organization, training__code=COURSE_CODE
+    ).latest("created_at")
 
 
 def ensure_release_points(actor: UploadActor, quadrant_numbers: range) -> None:
