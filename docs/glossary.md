@@ -98,6 +98,9 @@ Ovitrap/client UUID. Stock is a physical quantity, never financial valuation.
 
 | Spanish | English name in code | API / field form | Notes |
 | --- | --- | --- | --- |
+| expediente de personal | personnel | `Personnel`, `personnel_id` | Organization-private work context and protected RFC for one Membership; the shared User remains separate. |
+| recibo de acceso | access log | `AccessLog`, `/access-log/` | Append-only actor/action/target/context/time/origin/result receipt; no RFC or contact content. |
+| sobre cifrado de RFC | RFC envelope | `RfcEnvelope` | AES-256-GCM ciphertext, nonce, externally wrapped data key and actual wrapping-key identity; separate organization-keyed duplicate fingerprint. |
 | repartidor | courier | `courier` | The field user of the mobile app. Not "worker", "delivery worker" or "field user". |
 | entomólogo | entomologist | `entomologist` | Counts eggs in the web. |
 | promotor | community promoter | `community_promoter` | Short form in UI profile codes: PRO. |

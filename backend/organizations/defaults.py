@@ -9,7 +9,11 @@ from dataclasses import dataclass
 
 from django.db import transaction
 
-from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
+from accounts.permissions import (
+    ADMIN_AUTH_PERMISSION_CODES,
+    ADMIN_PERSONNEL_PERMISSION_CODES,
+    USER_OPERATIONAL_READ,
+)
 from catalogs.permissions import (
     CATALOG_ITEM_ACTIVATE,
     CATALOG_ITEM_CREATE,
@@ -78,6 +82,7 @@ from uploads.limits import FIELD_UPLOAD
 # (the field snapshots need them); only admin edits them and reads the version history.
 READ_ONLY_CODES = (CATALOG_READ, RULE_PARAMETER_READ, "organization.read", "center.read")
 ADMIN_CODES = (
+    *ADMIN_PERSONNEL_PERMISSION_CODES,
     *PEOPLE_ADMIN_CODES,
     "community_activity.read",
     "community_activity.create",
@@ -139,6 +144,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    USER_OPERATIONAL_READ,
     TRAINING_READ,
     "community_activity.read",
     "community_activity.void",
@@ -192,6 +198,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     ),
     "admin": ADMIN_CODES,
     "coordinator": (
+        USER_OPERATIONAL_READ,
         TRAINING_READ,
         "community_activity.read",
         "community_activity.void",

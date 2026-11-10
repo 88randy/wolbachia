@@ -19,6 +19,19 @@ async function typedCalls() {
   const health = await client.GET("/api/v1/health/");
   const data = unwrap(me);
 
+  // Personnel writes accept omitted work contact, including a minimal CAS patch.
+  await client.POST("/api/v1/users/", {
+    body: {
+      username: "synthetic-employee",
+      display_name: "Synthetic employee",
+      center_id: "synthetic-center-id",
+    },
+  });
+  await client.PATCH("/api/v1/users/{id}/", {
+    params: { path: { id: "synthetic-user-id" } },
+    body: { expected_revision: 1, display_name: "Synthetic renamed employee" },
+  });
+
   // @ts-expect-error unknown path
   await client.GET("/api/v1/nope/");
   // @ts-expect-error /me/ has no POST

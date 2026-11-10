@@ -2,6 +2,85 @@
 
 Users and authentication (issue #4): login, token pairs, device sessions, revocation, password reset. Read [`../README.md`](../README.md#authentication-4) and the rows "Auth endpoints", "Tokens", "Devices and revocation" of [`docs/api-conventions.md`](../../docs/api-conventions.md) first.
 
+## Personnel administration and protected RFC (#100 / B02)
+
+`Personnel` belongs to one Membership and stores organization-private work context,
+display name, work contact and the protected RFC envelope. It never edits the
+shared User's credentials, global activity or other organizations' files.
+`/users/{id}/` uses the **User UUID**; `personnel_id` identifies the private file
+and `membership_id` identifies its organization membership.
+
+| Route | Permission and behavior |
+| --- | --- |
+| `GET /users/`, `GET /users/{id}/` | `user.read`; no RFC value or cryptographic metadata. |
+| `POST /users/` | `user.create`; supply an existing same-organization `membership_id` OR an unused `username`, plus `display_name`, `center_id` and optional `quadrant_id`, work contact and write-only `rfc`. |
+| `PATCH /users/{id}/` | `user.update`; `expected_revision` is required. Identity/membership cannot change; old and proposed contexts both require authority. |
+| `POST /users/{id}/deactivate/` | `user.deactivate`; `expected_revision` is required. End this membership and its device sessions atomically. |
+| `POST /users/{id}/reveal-rfc/` | Independent `user.reveal_rfc`; no body, `{rfc}` reply with `Cache-Control: no-store`. |
+| `GET /users/operational/` | `user.operational_read`; limited work projection described below. |
+| `GET /access-log/` | `access_log.read`; cursor-paged immutable receipts under current scope. |
+
+A new username creates an identity with an unusable password and a membership
+with no profiles and default-deny scope. This is not an invitation or credential
+delivery flow. Existing identities can only be selected through a membership in
+the active organization; role/scope grants stay in the membership API. Foreign
+membership, center, quadrant and out-of-scope target references answer opaque404.
+One paired action/center/applicable-quadrant grant must cover each target. Admin
+lists use page-number paging, `center`, `quadrant`, `is_active`, work-field search
+and `display_name`/`created_at` ordering with a stable id tie.
+
+Deactivation uses sorted User -> Device -> DeviceSession -> TokenPair locks before
+Organization arbitration, sharing the existing last-administrator guard with
+role and membership removal. It also withdraws already-revoked sessions' pending
+final uploads. Other-organization membership/sessions, business authors and
+original FieldEvents remain. Login rechecks current membership under the same
+User lock, closing a login prepared before deactivation. Contention is retryable
+429 `administration_in_progress`; stale CAS is409 `stale_revision`.
+
+The operational projection exposes only User UUID, display name, current profiles,
+center/applicable quadrant, membership activity, work contact, training summaries
+and device id/label. Training rows additionally require current `training.read`
+for their real context. It excludes RFC presence/value/envelope, identity
+credentials, evaluations and issuer/evidence details. Supervisor/coordinator
+defaults receive only `user.operational_read`; permission codes and current paired
+scope, rather than profile names, enforce access. Regulatory permissions confer
+no general personnel access.
+
+`AccessLog` records actor, organization, private target UUID, action, original
+center/quadrant, revision, server time, closed origin and result. Creation, update,
+deactivation, reveal and rotation append receipts. There is no free-form origin,
+request body, URL, RFC or contact data in the log. Reveal decrypts outside row
+locks, then freshly checks identity, permission, context and unchanged revision
+under locks. Its success receipt commits in a durable transaction **before**
+plaintext is returned; an enclosing transaction is refused. Key/ciphertext,
+authorization, revision, storage or commit failure returns no plaintext.
+
+### External key configuration
+
+| Setting | Purpose |
+| --- | --- |
+| `RFC_KMS_REGION` | AWS region for the KMS client. |
+| `RFC_KMS_KEY_ID` | Symmetric KMS encryption key used by `GenerateDataKey` (`AES_256`). |
+| `RFC_KMS_HMAC_KEY_ID` | Stable KMS HMAC key for `GenerateMac` (`HMAC_SHA_256`). |
+
+All default to blank, making RFC operations fail closed with 503
+`rfc_key_unavailable`. Credentials come from the deployment's standard AWS
+identity; no application key material is configured in the repository. KMS
+receives UUID/purpose context, never RFC plaintext. A generated 256-bit data key
+and random 96-bit nonce encrypt locally with AES-256-GCM; authenticated data binds
+organization and personnel UUIDs. Store ciphertext, nonce, wrapped data key and
+the actual returned KMS KeyId. KMS-derived organization keys feed a local
+HMAC-SHA256 of the normalized RFC; a database constraint prevents same-org
+duplicates without creating cross-organization matches.
+
+Internal `rotate_personnel_rfc` uses current `user.reveal_rfc`, CAS and a rotation
+receipt. It decrypts using the retained old KeyId and encrypts with the current
+wrapping key outside locks, preserving the duplicate fingerprint. Keep the HMAC
+key stable across wrapping-key rotation; a changed fingerprint is refused. HMAC
+key replacement requires a separately coordinated reindex. **[ASSUMPTION]** Real
+external key custody, IAM policy and availability remain deployment verification.
+No new FieldEvent, sync result code or client screen is introduced.
+
 ## Device table queries (#224)
 
 `GET /devices/` searches label, serial, app_version and last_user.username;

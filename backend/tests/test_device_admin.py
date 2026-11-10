@@ -12,7 +12,7 @@ from accounts.models import Device, RevokeReason, User
 from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
 from accounts.services import DeviceInfo, start_device_session
 from organizations.defaults import DEFAULT_PROFILE_PERMISSIONS
-from organizations.models import Organization, Profile
+from organizations.models import Membership, Organization, Profile, all_scope
 from organizations.services import (
     AdminSpec,
     OrganizationSpec,
@@ -30,12 +30,16 @@ ME = "/api/v1/me/"
 def admin_client(
     api_client: APIClient, org: Organization, make_member: MemberFactory, *codes: str
 ) -> APIClient:
-    user, _ = make_member(org, codes or ADMIN_AUTH_PERMISSION_CODES)
+    user, membership = make_member(org, codes or ADMIN_AUTH_PERMISSION_CODES)
+    membership.scope = all_scope()
+    membership.save(update_fields=["scope"])
+    membership.profiles.update(scope=all_scope())
     api_client.force_authenticate(user)
     return api_client
 
 
 def phone_session(user: User, org: Organization, device_id: uuid.UUID | None = None):
+    Membership.objects.get_or_create(user=user, organization=org)
     return start_device_session(user, org, DeviceInfo(device_id=device_id or uuid.uuid4()))
 
 
@@ -423,14 +427,14 @@ def test_an_unknown_user_is_404(
     assert client.post(f"/api/v1/users/{user_id}/revoke-device-sessions/").status_code == 404
 
 
-def test_the_users_endpoint_exposes_nothing_else(
+def test_session_revocation_permission_does_not_grant_personnel_reads(
     api_client: APIClient, org_a: Organization, make_member: MemberFactory
 ) -> None:
     courier, _ = make_member(org_a, [])
-    client = admin_client(api_client, org_a, make_member)
+    client = admin_client(api_client, org_a, make_member, "user.revoke_device_sessions")
 
-    assert client.get("/api/v1/users/").status_code == 404
-    assert client.get(f"/api/v1/users/{courier.pk}/").status_code == 404
+    assert client.get("/api/v1/users/").status_code == 403
+    assert client.get(f"/api/v1/users/{courier.pk}/").status_code == 403
     assert client.get(revoke_url(courier)).status_code == 405
 
 

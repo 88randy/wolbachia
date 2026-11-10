@@ -4,6 +4,16 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#100 adds page-number `/users/` personnel administration and the limited
+`/users/operational/` projection, plus cursor `/access-log/`. User detail/action
+paths use the shared User UUID; `personnel_id` and `membership_id` remain distinct.
+Create selects an existing same-org membership or an unused username with no
+password/profile/scope grant. PATCH/deactivate take `expected_revision`;
+`reveal-rfc` has its own permission and returns `{rfc}` only after a durable
+receipt, with no-store. Normal and operational reads expose no RFC envelope or
+evaluations. RFC values must never enter client caches or logs. See
+[accounts](../../backend/accounts/README.md#personnel-administration-and-protected-rfc-100--b02).
+
 #101 adds training/requirement versions, evidence-backed certifications,
 evaluation rubrics/attempts/revisions/voids, pending notice-policy routing and
 qualification reads. Commands use immutable UUID receipts plus CAS; private

@@ -20,7 +20,7 @@ Django + DRF API shared by the mobile app and the web (single API under `/api/v1
 | Path | What lives there |
 | --- | --- |
 | `config/` | Settings (`base`, `dev`, `test`, `prod`), URLs, WSGI/ASGI, Celery app |
-| `accounts/` | Custom `User` (UUID pk); authentication (#4): login, refresh, logout, password reset, `Device`, `DeviceSession`, bearer authentication, throttles, lockout, final-upload hook |
+| `accounts/` | Shared `User` identity and authentication (#4); membership-private `Personnel`, protected RFC and durable `AccessLog` (#100); device sessions, bearer tokens and final-upload hook |
 | `organizations/` | `Organization`, `Profile`, `Membership`; services, selectors, `GET /me/`, `bootstrap_organization` |
 | `catalogs/` | `Catalog`, `CatalogItem`; item services, catalog snapshot, `/catalogs/...` and `/field/catalog/` (see its README) |
 | `rules/` | `RuleParameter`, immutable `RuleParameterVersion`; value-in-force selectors, rules snapshot, `/rule-parameters/...` and `/field/rules/` (see its README) |
@@ -202,6 +202,15 @@ Contract: [`docs/api-conventions.md`](../docs/api-conventions.md) (rows "Auth en
 | `EMAIL_URL` | `consolemail://` (required in prod) | django-environ email URL, e.g. `smtp://user:pass@host:587` [PENDING provider] |
 | `DEFAULT_FROM_EMAIL`, `WEB_BASE_URL` | local defaults (required in prod) | Sender and web origin used to build the reset link |
 | `WEB_PASSWORD_RESET_PATH` | `/reset-password` | Web route that receives the link: `<WEB_BASE_URL><path>#uid=<uid>&token=<token>`, secret in the fragment, never in path or query (#58) [ASSUMPTION: agree with W1] |
+
+## Personnel administration (#100)
+
+Personnel administration (#100) is documented in
+[accounts](accounts/README.md#personnel-administration-and-protected-rfc-100--b02).
+Its RFC key settings are `RFC_KMS_REGION`, `RFC_KMS_KEY_ID` and
+`RFC_KMS_HMAC_KEY_ID` (all default blank/fail closed). AWS deployment identity
+provides credentials; actual key custody/IAM still requires external verification.
+It adds no FieldEvent or sync result code.
 
 ## Field sync (#5)
 

@@ -13,6 +13,12 @@ from ._env import BASE_DIR, load_dotenv
 load_dotenv()  # optional backend/.env (untracked); real environment variables always win
 env = environ.Env()
 
+# External key identities only; credentials come from the deployment's AWS identity.
+# Missing configuration leaves protected RFC operations unavailable.
+RFC_KMS_KEY_ID = env("RFC_KMS_KEY_ID", default="")
+RFC_KMS_HMAC_KEY_ID = env("RFC_KMS_HMAC_KEY_ID", default="")
+RFC_KMS_REGION = env("RFC_KMS_REGION", default="")
+
 DEBUG = False
 
 INSTALLED_APPS = [
