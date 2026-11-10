@@ -11,6 +11,14 @@ from ci.contract import PARTITION_NAMES, require, validate_fragment
 from ci.coverage_data import read_coverage
 from ci.evidence import BACKEND, coverage_sources, current_identity, digest, read_json, write_json
 
+PYTEST_PREFIX = (
+    sys.executable,
+    "-m",
+    "pytest",
+    "-W",
+    "error::coverage.exceptions.CoverageWarning",
+)
+
 
 def run_child(command: tuple[str, ...], receipt: Path, log: Path | None = None) -> int:
     with log.open("w", encoding="utf-8") if log else nullcontext(None) as stream:
@@ -36,9 +44,7 @@ def main() -> int:
     os.environ["BACKEND_CI_OUTPUT"] = str(output)
     os.environ["COVERAGE_FILE"] = str(BACKEND / ".coverage")
     command = (
-        sys.executable,
-        "-m",
-        "pytest",
+        *PYTEST_PREFIX,
         "-p",
         "ci.pytest_plugin",
         "--cov",

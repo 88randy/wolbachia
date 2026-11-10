@@ -34,7 +34,8 @@ from accounts.revocation import (
 )
 from accounts.token_pairs import IssuedTokens, issue_pair
 from core.time import server_now
-from organizations.models import Organization
+from organizations.exceptions import NoActiveMembershipError
+from organizations.models import Membership, Organization
 
 
 def create_user_without_password(username: str, email: str) -> User:
@@ -181,6 +182,12 @@ def start_device_session(user: User, organization: Organization, info: DeviceInf
     """
     with transaction.atomic():
         _lock_authenticated_user(user)
+        # Membership resolution before credentials/session creation can become stale.
+        # Personnel deactivation holds this same User lock until its revocation commits.
+        if not Membership.objects.filter(
+            user=user, organization=organization, is_active=True, organization__is_active=True
+        ).exists():
+            raise NoActiveMembershipError
         device = _register_device(user, organization, info)
         superseded = revoke_active(
             DeviceSession.objects.filter(user=user, device=device),

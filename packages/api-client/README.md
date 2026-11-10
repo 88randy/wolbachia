@@ -10,6 +10,16 @@ only their own persisted fact; sample.read separately authorizes full attempts,
 selected valid binary result and analytical eligibility. Null invalid/disputed/
 missing outcomes never mean negative. See [samples](../../backend/lab/samples/README.md).
 
+#100 adds page-number `/users/` personnel administration and the limited
+`/users/operational/` projection, plus cursor `/access-log/`. User detail/action
+paths use the shared User UUID; `personnel_id` and `membership_id` remain distinct.
+Create selects an existing same-org membership or an unused username with no
+password/profile/scope grant. PATCH/deactivate take `expected_revision`;
+`reveal-rfc` has its own permission and returns `{rfc}` only after a durable
+receipt, with no-store. Normal and operational reads expose no RFC envelope or
+evaluations. RFC values must never enter client caches or logs. See
+[accounts](../../backend/accounts/README.md#personnel-administration-and-protected-rfc-100--b02).
+
 #150 adds the owned notification inbox, signed cursor pages and unread totals,
 idempotent read/read-all actions, and per-type in-app/email preferences with
 required-channel policy. Object references are reauthorized on each read and

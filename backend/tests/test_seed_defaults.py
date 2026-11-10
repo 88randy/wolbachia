@@ -6,7 +6,11 @@ import pytest
 from django.core.management import CommandError, call_command
 from django.utils import timezone
 
-from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
+from accounts.permissions import (
+    ADMIN_AUTH_PERMISSION_CODES,
+    ADMIN_PERSONNEL_PERMISSION_CODES,
+    USER_OPERATIONAL_READ,
+)
 from catalogs import permissions as catalog_codes
 from catalogs.models import Catalog, CatalogItem
 from catalogs.seeds import DEFAULT_CATALOG_SEEDS
@@ -289,6 +293,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         FIELD_UPLOAD,
     }
     assert by_slug["supervisor"] == {
+        USER_OPERATIONAL_READ,
         "release.read",
         "training.read",
         "community_activity.read",
@@ -381,6 +386,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "condition.create",
     }
     assert by_slug["coordinator"] == {
+        USER_OPERATIONAL_READ,
         "release.read",
         "training.read",
         "community_activity.read",
@@ -405,6 +411,7 @@ def test_default_profiles_get_the_permission_codes_of_the_plan() -> None:
         "sample.read",
         "sample.receive",
         "sample.result_create",
+        *ADMIN_PERSONNEL_PERMISSION_CODES,
         "notification.read",
         "notification_preference.update",
         "permit.manage",

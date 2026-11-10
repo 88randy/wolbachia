@@ -82,6 +82,7 @@ def test_start_session_stores_only_digests_of_the_tokens(org_a: Organization) ->
 
 def test_start_session_registers_the_device_in_the_organization(org_a: Organization) -> None:
     user = UserFactory()
+    MembershipFactory(user=user, organization=org_a)
     device_id = uuid.uuid4()
 
     start_device_session(
@@ -96,9 +97,11 @@ def test_start_session_registers_the_device_in_the_organization(org_a: Organizat
 
 def test_a_second_login_updates_the_device_and_keeps_blank_fields(org_a: Organization) -> None:
     user, device_id = UserFactory(), uuid.uuid4()
+    MembershipFactory(user=user, organization=org_a)
     start_device_session(user, org_a, DeviceInfo(device_id=device_id, label="Moto 1"))
 
     other = UserFactory()
+    MembershipFactory(user=other, organization=org_a)
     start_device_session(other, org_a, DeviceInfo(device_id=device_id, app_version="2.0"))
 
     device = Device.objects.get(pk=device_id)

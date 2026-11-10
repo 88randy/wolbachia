@@ -83,6 +83,93 @@ an active sample blocks upstream Reading/Release void. Correction must preserve
 these genuine dependents. Every sample source-void reason needs normalized free
 text of at least10 visible and at most1000 stored characters for every code.
 
+## Personnel administration and protected RFC (#100 / B02)
+
+`/users/` is an organization-private Personnel directory linked to shared User
+identities through Membership. Detail/action `{id}` is the **User UUID**;
+`personnel_id` is the private file UUID and `membership_id` is its organization
+membership UUID. The active organization comes from authenticated membership,
+using the existing session-cookie/CSRF or pinned DeviceBearer contract.
+
+| Request | Required action |
+| --- | --- |
+| `GET /users/`, `GET /users/{id}/` | `user.read` |
+| `POST /users/` | `user.create` |
+| `PATCH /users/{id}/` | `user.update` |
+| `POST /users/{id}/deactivate/` | `user.deactivate` |
+| `POST /users/{id}/reveal-rfc/` | `user.reveal_rfc` |
+| `GET /users/operational/` | `user.operational_read` |
+| `GET /access-log/` | `access_log.read` |
+
+Every action defaults deny and requires one paired grant covering the real center
+and applicable quadrant. Foreign references and scoped-out targets are opaque404.
+Create takes exactly one of existing same-org `membership_id` or unused `username`,
+with `display_name`, `center_id`, optional nullable `quadrant_id`, `work_email`,
+`work_phone` and write-only `rfc`. A new username creates an unusable-password User
+and a no-profile/default-deny Membership; it cannot attach a foreign shared
+identity. Role/scope delegation remains in the membership API. PATCH requires
+`expected_revision`, cannot change username/membership and authorizes both old and
+new contexts. Attaching an existing membership without a Personnel file requires
+an explicit action grant with `all` centers and `all` quadrants. Personnel
+mutations also require authority over the membership's whole effective scope;
+the supplied work center cannot narrow that scope. Deactivate takes
+`{expected_revision}`. Stale CAS returns409
+`stale_revision`; organization/account contention returns429
+`administration_in_progress` with `Retry-After: 1`.
+
+Admin list filtering is server-side: `center`, `quadrant`, `is_active`, work-field
+`search`, and comma-separated `ordering` from `display_name`, `created_at` (minus
+for descending), with an ascending id tie. Paging uses `page`/`page_size`; scope
+precedes count and paging. Normal reads contain work fields, identity references,
+revision, membership activity and `has_rfc`, never the RFC or envelope. The
+separate operational response exposes only User UUID, display name, profiles,
+center/quadrant, membership activity, work contact, device id/label and training
+code/validity/revocation summaries. Training additionally requires current
+`training.read` for its real context. It exposes no RFC presence, identity
+credentials, evaluation, issuer or evidence details. Regulatory case permissions
+grant no personnel-directory access.
+
+Reveal has no request body and returns `{rfc}` with `Cache-Control: no-store`.
+External decrypt occurs outside row locks. Fresh account/permission/context and
+unchanged revision checks then precede a durable AccessLog commit; only after
+commit may plaintext leave the service. It refuses an enclosing transaction and
+fails closed on key/ciphertext, permission, revision, storage or commit failure.
+Missing key configuration or unavailable/corrupt cryptographic material returns
+503 `rfc_key_unavailable`. Logs never contain RFC, envelope, contact content,
+request bodies, URLs or caller-supplied origin text.
+
+Protected RFC requests add per-user `ScopedRateThrottle` budgets to the global
+API limits: reveal uses `THROTTLE_RFC_REVEAL_RATE` (default `30/hour`) and create
+or PATCH bodies containing `rfc` share `THROTTLE_RFC_WRITE_RATE` (default
+`10/hour`). Budgets span targets, organizations, sessions and client addresses;
+authorized attempts consume them even when subsequent validation or duplicate
+checking rejects the write. Writes without `rfc` do not consume the RFC write
+budget. Exhaustion returns429 `throttled` with `Retry-After` before the operation
+runs.
+
+Every normalized RFC duplicate rejection appends an immutable AccessLog receipt
+with result `rfc_rejected`. The rejected RFC, fingerprint and matching file are
+never logged. A rejected create retains action/actor/context with a null target
+because no Personnel file was created. The field error is `rfc: duplicate` only
+when the caller's current `user.reveal_rfc` grant covers the attempted context;
+other callers receive `rfc: rejected`.
+
+`/access-log/` is cursor-paged under current scope and returns immutable actor,
+private target UUID, action, original center/quadrant, revision, server timestamp,
+closed origin and result. Create/update/deactivate/reveal/rotation append receipts.
+Deactivation atomically ends only the selected Membership and its scoped device
+sessions, withdraws pending final uploads and shares the existing last-admin and
+terminal-owner guards. Shared User activity, other-org membership/sessions and
+historical FieldEvent authors/status/clocks remain. Login rechecks membership
+under the same User lock. No sync family or result-code change is introduced.
+
+RFC uses AES-256-GCM envelope encryption with random data keys/nonces, authenticated
+org/personnel context, retained external wrapping KeyId and separate org-keyed
+HMAC duplicate identity. Wrapping-key rotation uses the internal CAS service and
+retains duplicate identity; the HMAC key must remain stable. External key custody
+and IAM are **[ASSUMPTION]** deployment verification. Configuration and rotation
+details: [accounts](../backend/accounts/README.md#external-key-configuration).
+
 ## Notification inbox and preferences (#150)
 
 The owned `/notifications/` cursor stream, idempotent read/read-all actions and

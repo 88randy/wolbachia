@@ -9,7 +9,11 @@ from dataclasses import dataclass
 
 from django.db import transaction
 
-from accounts.permissions import ADMIN_AUTH_PERMISSION_CODES
+from accounts.permissions import (
+    ADMIN_AUTH_PERMISSION_CODES,
+    ADMIN_PERSONNEL_PERMISSION_CODES,
+    USER_OPERATIONAL_READ,
+)
 from catalogs.permissions import (
     CATALOG_ITEM_ACTIVATE,
     CATALOG_ITEM_CREATE,
@@ -86,6 +90,7 @@ READ_ONLY_CODES = (
     *NOTIFICATION_CODES,
 )
 ADMIN_CODES = (
+    *ADMIN_PERSONNEL_PERMISSION_CODES,
     *NOTIFICATION_CODES,
     PERMIT_MANAGE,
     PERMIT_SUSPEND,
@@ -153,6 +158,7 @@ COURIER_CODES = (
 )  # the phone syncs (#5)
 # Supervisors read the review items (#5) and the shifts (#68).
 SUPERVISOR_CODES = (
+    USER_OPERATIONAL_READ,
     RELEASE_READ,
     TRAINING_READ,
     "community_activity.read",
@@ -207,6 +213,7 @@ DEFAULT_PROFILE_PERMISSIONS: Mapping[str, tuple[str, ...]] = {
     ),
     "admin": ADMIN_CODES,
     "coordinator": (
+        USER_OPERATIONAL_READ,
         RELEASE_READ,
         TRAINING_READ,
         "community_activity.read",
