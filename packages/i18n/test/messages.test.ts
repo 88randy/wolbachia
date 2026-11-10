@@ -88,6 +88,7 @@ const ALLOWED_PLACEHOLDERS: readonly (readonly [string, readonly string[]])[] = 
   ["mobile.lifecycle.sourceVoided", ["at"]],
   ["mobile.login.throttled", ["minutes"]],
   ["mobile.login.version", ["version"]],
+  ["mobile.map.zone", ["name"]],
   ["mobile.speedLock.limit", ["limit"]],
   ["mobile.speedLock.speed", ["speed"]],
   ["mobile.unlock.greeting", ["name"]],
