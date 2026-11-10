@@ -1,5 +1,7 @@
 import {
+  Bell,
   Building2,
+  Contact,
   ListChecks,
   ShieldAlert,
   SlidersHorizontal,
@@ -23,6 +25,14 @@ export function SettingsPage() {
       link: { to: "/settings/organization" },
       title: t("orgAdmin.organization.title"),
       description: t("refresh.settings.organization"),
+    },
+    {
+      id: "users",
+      permission: "user.read",
+      icon: Contact,
+      link: { to: "/settings/users" },
+      title: t("users.page.title"),
+      description: t("users.hub.description"),
     },
     {
       id: "roles",
@@ -63,6 +73,14 @@ export function SettingsPage() {
       link: { to: "/settings/incident-types" },
       title: t("incidentTypes.page.title"),
       description: t("hub.settings.incidentTypes"),
+    },
+    {
+      id: "notifications",
+      permission: "notification.read",
+      icon: Bell,
+      link: { to: "/notifications" },
+      title: t("users.hub.notifications"),
+      description: t("users.hub.notificationsDescription"),
     },
   ];
   return (
