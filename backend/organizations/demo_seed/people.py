@@ -78,6 +78,11 @@ DEMO_USERS = (
     DemoUser("demo-regulatory", "regulatory", "Regina", "Cervera Ortiz", "Demo-Regul-Local-2026"),
     DemoUser("demo-government", "government", "Gael", "Herrera Sosa", "Demo-Govern-Local-2026"),
 )
+# Platform admin: manages organizations from the web and has NO membership, so it sees no
+# organization data. DEV-ONLY password like the others.
+DEMO_PLATFORM_USER = DemoUser(
+    "demo-platform", "platform", "Patricia", "Pech Novelo", "Demo-Platform-Local-2026"
+)
 COURIER_USERNAMES = tuple(user.username for user in DEMO_USERS if user.profile == "courier")
 
 
@@ -147,6 +152,15 @@ def _ensure_member(user: User, profile: Profile, admin: User) -> None:
             scope=normalize_scope(all_scope()),
         ),
     )
+
+
+def ensure_platform_admin(reset_passwords: bool) -> User:
+    """The demo platform admin, without any membership (writes User, PlatformAdmin)."""
+    from platform_admin.services import grant_platform_admin
+
+    user = _ensure_user(DEMO_PLATFORM_USER, reset_passwords)
+    grant_platform_admin(user)
+    return user
 
 
 def ensure_users(

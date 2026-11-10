@@ -44,6 +44,7 @@ class OrganizationSpec:
     country: str
     timezone: str
     languages: tuple[str, ...] = (DEFAULT_LANGUAGE,)
+    epi_week: str = "iso"
 
 
 @dataclass(frozen=True)
@@ -105,6 +106,7 @@ def create_organization(spec: OrganizationSpec) -> Organization:
         country=spec.country,
         timezone=spec.timezone,
         languages=list(spec.languages),
+        epi_week=spec.epi_week,
     )
     organization.full_clean()
     with transaction.atomic():
