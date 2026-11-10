@@ -62,7 +62,7 @@ function currentBundle() {
     eligibility: [],
     assignments: [],
   };
-  return { ...projectionBundle(), ...releaseSections };
+  return { ...projectionBundle(), ...releaseSections, sample_capture: null };
 }
 
 void test("an upgraded supply consumer requires a complete bootstrap across failure and reopen without losing its closing draft", async () => {

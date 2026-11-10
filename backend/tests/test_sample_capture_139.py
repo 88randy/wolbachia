@@ -43,7 +43,8 @@ def sample_context(samples_context):
         for code in [*context.field.profile.permission_codes, "field.bootstrap"]
         if code not in {"lab_method.read", "sample.read"}
     ]
-    context.field.profile.save(update_fields=["permission_codes"])
+    context.field.profile.revision += 1
+    context.field.profile.save(update_fields=["permission_codes", "revision"])
     audit_current_membership(context.field.membership)
     return context
 
