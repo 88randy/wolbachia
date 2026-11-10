@@ -129,7 +129,7 @@ export const permits: Record<keyof typeof source, string> = {
   "permits.form.number": "Official number",
   "permits.form.authority": "Issuing authority",
   "permits.form.attestation": "Attestation: who verified the document and how",
-  "permits.form.geometry": "Official zone (GeoJSON Polygon)",
+  "permits.form.geometry": "Official permit zone",
   "permits.form.geometryHint":
     "Paste the polygon from the official document, with the same first and last vertex and [longitude, latitude] pairs.",
   "permits.form.validFrom": "Valid from",

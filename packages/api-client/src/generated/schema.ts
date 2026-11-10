@@ -6961,6 +6961,7 @@ export interface components {
             readonly effective_from: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -8147,6 +8148,7 @@ export interface components {
             readonly evidence: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -12207,6 +12209,7 @@ export interface components {
             readonly is_retired: boolean;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name: string | null;
             /** Format: date-time */
             readonly created_at: string;
         };
@@ -12507,6 +12510,7 @@ export interface components {
             readonly effective_from: string;
             /** Format: uuid */
             readonly created_by: string | null;
+            readonly created_by_name: string | null;
             /** Format: date-time */
             readonly created_at: string;
             readonly point_resolutions: components["schemas"]["ExcludedPointResolution"][];

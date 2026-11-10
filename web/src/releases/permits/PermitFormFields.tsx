@@ -1,5 +1,7 @@
 import { useTranslation } from "react-i18next";
-import { GeometryField } from "./GeometryField";
+import { MapPolygonPicker } from "../../map-picker/MapPolygonPicker";
+import { InlineNotice } from "../../ui/InlineNotice";
+import { parsePolygon } from "./permit-geometry";
 import { PermitChoiceField } from "./PermitChoiceField";
 import { PermitDocumentSection } from "./PermitDocumentSection";
 import { PermitTextFields } from "./PermitTextFields";
@@ -23,15 +25,16 @@ export function PermitFormFields({ form, isVersion }: Props) {
       <PermitTextFields form={form} names={["number", "authority"]} />
       <PermitDocumentSection form={form} />
       <PermitTextFields form={form} names={["attestation"]} />
-      <GeometryField
+      <MapPolygonPicker
         label={t("permits.form.geometry")}
-        hint={t("permits.form.geometryHint")}
-        value={form.draft.geometry}
-        error={geometryError === undefined ? undefined : t(geometryError)}
-        onChange={(value) => {
-          form.change("geometry", value);
+        value={parsePolygon(form.draft.geometry)}
+        onChange={(polygon) => {
+          form.change("geometry", polygon ? JSON.stringify(polygon) : "");
         }}
       />
+      {geometryError !== undefined && (
+        <InlineNotice tone="critical">{t(geometryError)}</InlineNotice>
+      )}
       <PermitTextFields form={form} names={["validFrom", "validTo"]} />
     </>
   );

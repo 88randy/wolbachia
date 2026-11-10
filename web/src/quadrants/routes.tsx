@@ -23,10 +23,15 @@ const quadrantVersionsRoute = createRoute({
 const mapEditorRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/quadrants/editor",
+  validateSearch: (search: Record<string, unknown>): { tool?: "quadrant" } =>
+    search["tool"] === "quadrant" ? { tool: "quadrant" } : {},
   beforeLoad: ({ context }) => {
     requirePermission("quadrants", context.me, "quadrant.read");
   },
-  component: W23MapEditorPage,
+  component: function MapEditorRoute() {
+    const { tool } = mapEditorRoute.useSearch();
+    return <W23MapEditorPage startTool={tool} />;
+  },
   errorComponent: AreaErrorState,
 });
 const quadrantClosureRoute = createRoute({

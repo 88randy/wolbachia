@@ -105,6 +105,7 @@ export const inventory = {
   "inventory.field.center": "Centro",
   "inventory.field.quadrant": "Cuadrante",
   "inventory.field.owner": "Responsable",
+  "inventory.field.place": "Lugar en el mapa",
   "inventory.field.longitude": "Longitud",
   "inventory.field.latitude": "Latitud",
   "inventory.field.isInsecticideFree": "Libre de insecticida",

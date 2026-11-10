@@ -102,6 +102,7 @@ export const inventory = {
   "inventory.field.center": "Center",
   "inventory.field.quadrant": "Quadrant",
   "inventory.field.owner": "Responsible member",
+  "inventory.field.place": "Place on the map",
   "inventory.field.longitude": "Longitude",
   "inventory.field.latitude": "Latitude",
   "inventory.field.isInsecticideFree": "Insecticide-free",

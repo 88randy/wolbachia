@@ -20,7 +20,7 @@ export function ResolutionHistory({ version }: { version: Schemas["QuadrantVersi
           {" · "}
           {resolution.evidence}
           {" · "}
-          {resolution.created_by ?? t("geography.status.unknown")}
+          {resolution.created_by_name ?? t("geography.status.unknown")}
         </p>
       ))}
     </details>

@@ -127,7 +127,7 @@ export const permits = {
   "permits.form.number": "Número oficial",
   "permits.form.authority": "Autoridad que lo emite",
   "permits.form.attestation": "Constancia: quién verificó el documento y cómo",
-  "permits.form.geometry": "Zona oficial (GeoJSON Polygon)",
+  "permits.form.geometry": "Zona oficial del permiso",
   "permits.form.geometryHint":
     "Pega el polígono del documento oficial, con el primer y el último vértice iguales y pares [longitud, latitud].",
   "permits.form.validFrom": "Vigente desde",
