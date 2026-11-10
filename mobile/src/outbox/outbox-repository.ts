@@ -69,7 +69,17 @@ function insertParams(event: FieldEventEnvelope, updatedAt: string): SqlValue[] 
 
 /** Reuse the existing outbox insertion for an atomic void-plus-replacement capture. */
 export function eventInsertStatement(event: FieldEventEnvelope, updatedAt: string): SqlStatement {
-  return { sql: COLUMNS_SQL, params: insertParams(event, updatedAt) };
+  const params = insertParams(event, updatedAt);
+  if (!event.shift_id || ["shift.open", "shift.close", "record.void"].includes(event.type))
+    return { sql: COLUMNS_SQL, params };
+  // The actual insertion arbitrates in-flight captures against local closure, including rejected closes.
+  return {
+    sql: COLUMNS_SQL.replace(
+      "VALUES (?,",
+      "VALUES ((SELECT ? WHERE NOT EXISTS (SELECT 1 FROM outbox_event WHERE type='shift.close' AND shift_id=?)),",
+    ),
+    params: [params[0] ?? null, event.shift_id, ...params.slice(1)],
+  };
 }
 
 /**
@@ -146,7 +156,7 @@ export class OutboxRepository {
         ? {
             sql: "SELECT MIN(retry_at) AS retry_at FROM outbox_event WHERE local_status = 'pending' AND retry_at IS NOT NULL",
           }
-        : eligibleRetry(selection);
+        : eligibleRetry(selection, this.#now().toISOString());
     const [row] = await this.#db.query(statement.sql, statement.params);
     const retryAt = row?.retry_at;
     return typeof retryAt === "string"

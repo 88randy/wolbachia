@@ -1,3 +1,5 @@
+import { createShiftClose } from "../features/shift-close/create-shift-close.ts";
+import type { ShiftCloseService } from "../features/shift-close/service.ts";
 import { createOvitrapLifecycle } from "../features/ovitrap-lifecycle/create-ovitrap-lifecycle.ts";
 import type { LifecycleService } from "../features/ovitrap-lifecycle/service.ts";
 import type { SqlExecutor } from "../db/sql.ts";
@@ -32,15 +34,22 @@ import { attachmentSyncHooks } from "../attachments/sync-hooks.ts";
 import type { Attachments } from "../attachments/create-attachments.ts";
 import { createNativePhotoAcquisition } from "../attachments/native-photo-acquisition.ts";
 import { acceptedEvidenceOwner } from "../attachments/accepted-owner.ts";
+import { createSupplyReceipt } from "../features/supply-receipt/create-supply-receipt.ts";
+import type { SupplyReceiptService } from "../features/supply-receipt/service.ts";
+import { createFuel } from "../features/fuel/create-fuel.ts";
+import type { FuelService } from "../features/fuel/service.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
   readonly attachments: Attachments;
+  readonly supplyReceipt: SupplyReceiptService;
+  readonly fuel: FuelService;
   readonly day: DayService;
   readonly auth: AuthController;
   readonly ovitrapCheck: OvitrapService;
   readonly ovitrapLifecycle: LifecycleService;
   readonly shiftOpen: ShiftOpenService;
+  readonly shiftClose: ShiftCloseService;
   readonly kv: KvStore;
   readonly outbox: OutboxRepository;
   readonly engine: SyncEngine;
@@ -69,11 +78,8 @@ export async function createServices(): Promise<AppServices> {
     requests: () => requests,
     getCaptureIdentity: () => captureIdentity(acceptedAuth, credentials, deviceId),
   });
-  const {
-    auth,
-    credentials: tokens,
-    requests,
-  } = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  const runtime = await createRuntimeAuth({ db, kv, server, credentials, deviceId }, bundle);
+  const { auth, credentials: tokens, requests } = runtime;
   acceptedAuth = auth;
   const attachments = createAttachments({ db, auth, tokens, deviceId, requests });
   const shared = { kv, outbox, server, deviceId, tokens, requests, auth, attachments };
@@ -81,9 +87,10 @@ export async function createServices(): Promise<AppServices> {
   const day = createDay(db, bundle);
   const shiftOpen = createShiftOpen({ db, engine, tokens, requests, uuid: randomUUID });
   const evidence = createNativePhotoAcquisition(() => auth.getSnapshot().phase === "unlocked");
-  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence };
+  const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
-  return { ...shared, ...captures, engine, shiftOpen, day };
+  const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId });
+  return { ...shared, ...captures, engine, shiftOpen, day, ...forms };
 }
 function captureIdentity(
   auth: AuthController | null,
@@ -110,6 +117,14 @@ function createCaptures(
       location: day.location,
       selectTask: (id, expected, admission) => day.select(id, expected, admission),
     }),
+  };
+}
+
+function createLocalForms(input: Parameters<typeof createShiftClose>[0]) {
+  return {
+    shiftClose: createShiftClose(input),
+    supplyReceipt: createSupplyReceipt(input),
+    fuel: createFuel(input),
   };
 }
 

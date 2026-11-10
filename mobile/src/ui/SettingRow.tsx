@@ -14,16 +14,17 @@ const createStyles = (theme: Theme) =>
     row: {
       minHeight: MIN_HEIGHT,
       flexDirection: "row",
+      flexWrap: "wrap",
       alignItems: "center",
       gap: spacing[1.5],
-      paddingHorizontal: spacing[2] - 2,
-      paddingVertical: spacing[1],
+      padding: spacing[2],
       backgroundColor: theme.color.surface,
       borderWidth: 1,
-      borderColor: theme.color.border.default,
-      borderRadius: radius.md,
+      borderColor: theme.color.border.soft,
+      borderRadius: radius.card,
     },
-    text: { flex: 1 },
+    text: { flexGrow: 1, flexBasis: spacing[6] * 3 },
+    control: { maxWidth: "100%", flexShrink: 1 },
   });
 
 interface SettingRowProps {
@@ -45,7 +46,7 @@ export function SettingRow({ title, hint, control }: SettingRowProps) {
           </AppText>
         )}
       </View>
-      {control}
+      <View style={styles.control}>{control}</View>
     </View>
   );
 }

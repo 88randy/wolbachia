@@ -1,10 +1,10 @@
-import type { ComponentPropsWithoutRef, ReactNode } from "react";
+import type { ComponentPropsWithRef, ReactNode } from "react";
 import { ButtonContent } from "./ButtonContent";
 import { getButtonState } from "./button-state";
 import { guardButtonClick } from "./guard-button-click";
 import { classNames } from "../styles/class-names";
 import styles from "../styles/button.module.css";
-export interface ButtonProps extends ComponentPropsWithoutRef<"button"> {
+export interface ButtonProps extends ComponentPropsWithRef<"button"> {
   variant?: "primary" | "secondary" | "tertiary" | "ghost";
   size?: "sm" | "md" | "lg" | "xl";
   leadingIcon?: ReactNode;

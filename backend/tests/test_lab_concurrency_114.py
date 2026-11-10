@@ -14,6 +14,7 @@ from lab.exceptions import LabInProgressError
 from lab.models import EggCountAttempt, RecountRequest
 from organizations.models import all_scope
 from tests.lab_support import capture_bag, count_input, lab_context, receive
+from tests.test_lab_recounts_b_19 import allocation as allocation
 from uploads.access import UploadActor
 
 
@@ -33,6 +34,86 @@ def run_source_void(field, capture):
         return ingest(field, capture)
     finally:
         close_old_connections()
+
+
+@pytest.mark.django_db(transaction=True)
+@pytest.mark.parametrize("allocation", ["piece"], indirect=True)
+@pytest.mark.parametrize("winner_kind", ["correction", "reuse"])
+def test_result_correction_and_reuse_keep_one_physical_winner_and_atomic_evidence(
+    allocation, make_member, monkeypatch, void_catalog, winner_kind
+):
+    from inventory.models import StockMovement, StockOperation
+    from lab.access import LabTarget
+    from lab.commands import LabCommandInput
+    from lab.corrections import void_result
+    from lab.independent_qa.paddles import append_paddle_return
+    from lab.models import LabResultVoid, PaddleReuse
+    from tests.test_lab_recounts_b_19 import prepared_physical_reuse
+    from uploads.models import AttachmentLink
+
+    physical = prepared_physical_reuse(allocation, make_member, monkeypatch)
+    actor = physical.context.actor
+    correction = LabCommandInput(
+        "void_count",
+        LabTarget("count", physical.first.pk),
+        uuid4(),
+        {
+            "expected_revision": 1,
+            "reason_code": "other",
+            "reason": "A real correction and wash cannot both replace the same physical frame",
+        },
+    )
+    operations, movements = StockOperation.objects.count(), StockMovement.objects.count()
+    entered, release = threading.Event(), threading.Event()
+    owner = void_result if winner_kind == "correction" else append_paddle_return
+
+    def held_winner(*args):
+        result = owner(*args)
+        entered.set()
+        assert release.wait(10)
+        return result
+
+    target = (
+        "lab.corrections.void_result"
+        if winner_kind == "correction"
+        else "lab.independent_qa.paddles.append_paddle_return"
+    )
+    winning, losing = (
+        (correction, physical.request)
+        if winner_kind == "correction"
+        else (physical.request, correction)
+    )
+    with monkeypatch.context() as race:
+        race.setattr(target, held_winner)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            winner = pool.submit(run_counter, actor, winning)
+            try:
+                assert entered.wait(10)
+                with pytest.raises(LabInProgressError):
+                    execute_lab_command(actor, losing)
+            finally:
+                release.set()
+            result = winner.result()
+    assert result.status == (200 if winner_kind == "correction" else 201)
+    retry = execute_lab_command(actor, losing)
+    assert (retry.status, retry.body["code"]) == (
+        409,
+        "lab_paddle_result_unavailable"
+        if winner_kind == "correction"
+        else "lab_material_dependency",
+    )
+    reused = winner_kind == "reuse"
+    assert PaddleReuse.objects.count() == int(reused)
+    assert LabResultVoid.objects.count() == int(not reused)
+    assert StockOperation.objects.count() == operations + int(reused)
+    assert StockMovement.objects.count() == movements + int(reused)
+    assert (
+        AttachmentLink.objects.filter(
+            upload__public_id__in=physical.request.values["evidence_ids"]
+        ).exists()
+        is reused
+    )
+    assert execute_lab_command(actor, winning).body == result.body
 
 
 def mixed_void_batch(context, blocked_capture, code):
@@ -103,10 +184,59 @@ def test_two_counters_have_one_committed_winner_and_retry_observes_current_revis
     assert (retry.status, retry.body["code"]) == (409, "lab_state_conflict")
     assert EggCountAttempt.objects.count() == RecountRequest.objects.count() == 1
     assert HistoryPublicationReceipt.objects.filter(cause_kind="lab_count").count() == 1
+    from lab.access import LabTarget
+    from lab.commands import LabCommandInput
+    from lab.independent_qa.services import claim_request
+    from lab.models import RecountClaim
+    from tests.lab_support import actor_with_codes
+    from tests.test_lab_recounts_b_19 import configure_qa, qa_command
+
+    configure_qa(context)
+    first_independent = actor_with_codes(context, make_member, ["recount.create"])
+    competing_independent = actor_with_codes(context, make_member, ["recount.create"])
+    obligation = RecountRequest.objects.get()
+    claim = LabCommandInput(
+        "recount_claim",
+        LabTarget("recount", obligation.pk),
+        uuid4(),
+        {"expected_revision": 0, "role": "second"},
+    )
+    entered.clear()
+    release.clear()
+
+    def held_claim(*args):
+        outcome = claim_request(*args)
+        entered.set()
+        assert release.wait(10)
+        return outcome
+
+    with monkeypatch.context() as claiming:
+        claiming.setattr("lab.independent_qa.services.claim_request", held_claim)
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            winner = pool.submit(run_counter, first_independent, claim)
+            try:
+                assert entered.wait(10)
+                with pytest.raises(LabInProgressError):
+                    execute_lab_command(competing_independent, replace(claim, command_id=uuid4()))
+            finally:
+                release.set()
+            claimed = winner.result()
+    assert claimed.status == 201
+    assert execute_lab_command(first_independent, claim).body == claimed.body
+    _, rival_retry = qa_command(
+        competing_independent,
+        obligation,
+        "recount_claim",
+        {"expected_revision": 1, "role": "second"},
+    )
+    assert (rival_retry.status, rival_retry.body["code"]) == (409, "lab_recount_claimed")
+    assert RecountClaim.objects.count() == 1
 
 
 @pytest.mark.django_db
-def test_lost_reply_replays_exact_saved_next_and_reauthorizes_every_saved_subject(monkeypatch):
+def test_lost_reply_replays_exact_saved_next_and_reauthorizes_every_saved_subject(
+    monkeypatch, make_member
+):
     from types import SimpleNamespace
 
     from django.http import Http404
@@ -156,6 +286,66 @@ def test_lost_reply_replays_exact_saved_next_and_reauthorizes_every_saved_subjec
     assert replay.replayed is True
     assert replay.body == committed.body
     assert EggCountAttempt.objects.count() == 2
+    from lab.models import RecountAttempt
+    from tests.lab_support import actor_with_codes
+    from tests.test_lab_recounts_b_19 import configure_qa, qa_command
+
+    qa_method = configure_qa(context)
+    qa_first = capture_bag(context, "REPLAY-QA-FIRST", new_source=True, has_eggs=False)
+    qa_next = capture_bag(other, "REPLAY-QA-NEXT", new_source=True, has_eggs=False)
+    for target in (qa_first, qa_next):
+        receive(context, target)
+        assert execute_lab_command(context.actor, count_input(context, target, 100)).status == 201
+    first_request = RecountRequest.objects.get(count__bag=qa_first)
+    next_request = RecountRequest.objects.get(count__bag=qa_next)
+    independent = actor_with_codes(context, make_member, ["recount.create"])
+    for target in (first_request, next_request):
+        _, claim = qa_command(
+            independent, target, "recount_claim", {"expected_revision": 0, "role": "second"}
+        )
+        assert claim.status == 201
+        observation, completed = qa_command(
+            independent,
+            target,
+            "recount",
+            {
+                "request_id": target.pk,
+                "expected_revision": 1,
+                "expected_result_revision": 1,
+                "value": 105,
+                "confirmed_implausible": False,
+                "method_version": qa_method.pk,
+            },
+        )
+        assert completed.status == 201
+        if target.pk == first_request.pk:
+            saved_observation, saved_response = observation, completed.body
+            assert saved_response["next_recount"]["id"] == str(next_request.pk)
+    decide_method(
+        context.actor,
+        qa_method.pk,
+        {
+            "expected_revision": 1,
+            "decision": "withdraw",
+            "reference": "Synthetic later QA procedure withdrawal",
+        },
+    )
+    replayed = execute_lab_command(independent, saved_observation)
+    assert replayed.replayed
+    assert replayed.body == saved_response
+    assert RecountAttempt.objects.count() == 2
+    independent_member = independent.user.memberships.get(organization=context.actor.organization)
+    independent_member.scope = {
+        "centers": {"mode": "all", "ids": []},
+        "quadrants": {"mode": "selected", "ids": [str(context.field.point.block.quadrant_id)]},
+    }
+    independent_member.save(update_fields=["scope"])
+    with pytest.raises(Http404):
+        execute_lab_command(independent, saved_observation)
+    assert (
+        LabCommandResult.objects.get(command__command_id=saved_observation.command_id).body
+        == saved_response
+    )
     changed = replace(request, values={**request.values, "value": 1})
     from lab.exceptions import LabConflictError
 

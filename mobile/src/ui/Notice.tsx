@@ -14,22 +14,18 @@ const createStyles = (theme: Theme) =>
     notice: {
       flexDirection: "row",
       gap: spacing[1.5],
-      padding: spacing[1.5],
-      borderRadius: radius.md,
-      borderWidth: 1,
+      padding: spacing[2],
+      borderRadius: radius.inner,
       alignItems: "flex-start",
     },
     info: {
       backgroundColor: theme.color.status.info.bg,
-      borderColor: theme.color.status.info.fg,
     },
     warning: {
       backgroundColor: theme.color.status.warning.bg,
-      borderColor: theme.color.status.warning.fg,
     },
     critical: {
       backgroundColor: theme.color.status.critical.bg,
-      borderColor: theme.color.status.critical.fg,
     },
     text: { flex: 1 },
   });

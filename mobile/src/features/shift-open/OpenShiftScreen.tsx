@@ -1,4 +1,5 @@
-import { ScrollView, View } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
+import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { SaveFeedback } from "./SaveFeedback.tsx";
@@ -33,7 +34,7 @@ export function OpenShiftScreen() {
   return (
     <View style={styles.root}>
       <ScreenHeader title={t("mobile.shiftOpen.start")} />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <SaveFeedback model={model} />
         {stepScreen(model)}
         {model.state?.opening ? null : (
@@ -45,7 +46,7 @@ export function OpenShiftScreen() {
             }}
           />
         )}
-      </ScrollView>
+      </AppScrollView>
     </View>
   );
 }

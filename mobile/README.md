@@ -1,5 +1,24 @@
 # mobile
 
+## M11 fuel capture (#140)
+
+P22 captures fuel offline for the current shift's fixed motorcycle. Durable raw
+fields survive receipt retake, failed storage and restart; Save shares the existing
+outbox/private file journal. Pending receipts and later server/review outcomes stay
+distinct. Unknown comparable history remains insufficient data. See the
+[feature contract and criterion map](src/features/fuel/README.md). Physical
+camera/force-stop/TalkBack/API qualification remains UNRUN.
+
+## M05 courier supplies (#134)
+
+P8 is reachable from the open-shift home. It retains original released lines and
+declared units, validates discrepancies and adopts a raster signature before atomic
+local save. The existing outbox/file journal owns all retry work. Phone-saved,
+signature pending, server ingest and later review outcomes remain separate.
+See [feature contract, test map and limitations](src/features/supply-receipt/README.md).
+Native/API/TalkBack and MO01 qualification remain UNRUN; no phone installation or
+deployment is part of this change.
+
 React Native (Android) app for the courier. Offline-first: the phone is the local source of truth and sends idempotent event batches to the backend.
 
 > Status: shell/outbox/sync (#6) and home/open shift P3-P7 (#133). Day list/offline map/navigation P9-P10 (#135) is aligned to scheduling assignments v2 (#109); native/device qualification is pending. P1/P2 login and local unlock are #7 (decision 116); supply reception P8 is #134. Normal production opening is gated on the missing B-13 map manifest. See decision 100 below.
@@ -764,6 +783,91 @@ pass 214/214 and i18n tests pass 13/13. An earlier simultaneous verification run
 exhausted process memory; the required mobile command passes when run separately.
 No npm ci/install, Docker, Playwright or Expo build was run for this review.
 
+## Shared mobile visual refresh (#203)
+
+Decision 159 records this refresh. Home shows one delivery-status line and one
+actionable blocker, without repeating a pending-receipt warning after server
+receipt. PIN unlock uses the profile first name or a neutral greeting when empty.
+`test/visual-refresh.test.ts` covers both phone-review regressions.
+
+The shared UI follows #202 / decision 123: cool canvas, surface headers, 20 dp
+cards with soft token borders and cheap Android elevation, tinted icon/text pills,
+Inter prose and JetBrains Mono data. The old navy header and flatter board styling
+in `design/mobile` are historical; #203 takes precedence. Screen workflows,
+map styling, API contracts and token values are unchanged.
+
+- `AppText` adds `code` / `status` variants and `isMonospace` for dates, times,
+  quantities and identifiers without changing their existing size. Numbers and
+  overlines also use mono; badges are uppercase mono. Two JetBrains Mono weights
+  are bundled as local TTF assets through the same Expo font mechanism as Inter.
+  Direct per-weight imports add about 230 KB to the exported font assets, with no
+  runtime download. A failed font load still falls back instead of blocking boot.
+- Shared cards, buttons, fields, rows, notices and headers consume existing tokens.
+  Inputs keep visible external labels, use a focused border and select mono for
+  numeric keyboards. Disabled button text retains its contrasting secondary role.
+  Headers, rows and pills wrap; touch controls retain at least 48 dp targets.
+  No text receives a fixed height or `numberOfLines`.
+- `BottomActions` centralizes the full-width thumb-zone surface and bottom safe
+  area for the existing login, unlock and inbox actions.
+- `AppScrollView` / `AppFlatList` centralize visible native thin indicators in
+  both directions. Native Android controls the indicator color; the iOS
+  `indicatorStyle` follows the resolved light/dark theme. ESLint rejects direct
+  ScrollView/FlatList imports outside these wrappers, and rejects React Native
+  Alert, including alias/namespace/default-import escape routes. No native dialog
+  is introduced; existing in-app sheets and inline notices remain the feedback UI.
+- Appearance follows live system changes by default. Existing saved Light/Dark
+  choices keep their meaning. Settings offers System, Light and Dark; choosing
+  System restores live following without changing the stored language or data.
+
+### Review preview and evidence
+
+In a build with `EXPO_PUBLIC_DEV_TOOLS=1`, open Settings → developer tools →
+Style preview. The route is guarded by the same flag. Preview examples never
+read services, write storage, enqueue events or contact a server; the theme
+toggle is local to the preview. It includes fields, disabled state with a reason,
+all status tones, loading skeletons, empty and partial-error examples, and retry.
+
+[`preview/README.md`](preview/README.md) documents the repeatable browser harness.
+It renders the actual mobile components through React Native Web 0.21.4, using
+local font assets. Captures are explicitly labeled **browser renderer**; 130%
+is a browser approximation, not native Android qualification. Chrome DevTools
+returned inline captures for light/dark and the large-text examples, but its
+configured workspace roots denied saving PNGs in this worktree. No alternate
+filesystem path was used to bypass that restriction.
+
+Observed browser evidence is recorded in [`preview/evidence.json`](preview/evidence.json).
+Both themes, both locales and 130% text fit the 360 dp frame without horizontal
+overflow; checked controls measured 48/56 px (inputs expand with large text),
+local fonts loaded, switching appearance retained field contents and retry
+changed only the example. The browser SVG adapter emits two warnings for native
+decorative accessibility props. Browser evidence does not prove outdoor contrast
+perception, native layout, TalkBack, safe areas, keyboard avoidance or low-end
+performance. Those checks and owner visual approval remain **UNVERIFIED / required
+before merge**, together with CI's actual debug APK build.
+
+### Acceptance map
+
+| Criterion | Evidence |
+| --- | --- |
+| Follow system, preserve explicit settings | `test/visual-refresh.test.ts`: live-system changes vs stored Light/Dark and unknown fallback |
+| Mono data and sans prose | Same file: public typography contracts; Android JS export lists four Inter and two JetBrains Mono TTF assets |
+| Shared cards, statuses, fields, rows, bottom actions | Actual component browser preview in light/dark; all status tones have icon plus text; owner approval pending |
+| Outdoor targets and 130% wrapping | Browser measurements / scaled examples; no fixed text height or truncation; Android/TalkBack pending |
+| No native Alert, consistent indicators | ESLint negative probes for aliased, namespace and default imports; all current scroll regions use shared wrappers |
+| Existing behavior preserved | Full mobile tests with `--test-concurrency=1`, lint, formatting, typecheck; no API/data model changes |
+| Android build and final visuals | JS Android export verified locally; actual APK builds only in CI; owner/device approval pending |
+
+Dependencies: `@expo-google-fonts/jetbrains-mono` 0.4.1 (Expo-maintained,
+MIT/OFL-1.1, per-weight local assets) matches the existing Inter integration and
+avoids copying font binaries/licenses into app code. `react-native-web` 0.21.4
+(MIT, root **devDependency only**, React 18/19 peers) provides an honest renderer
+when a phone/emulator is unavailable; the Android entry never imports it.
+The harness reuses the existing Vite installation and adds no browser library
+to mobile production code. Verified references:
+[Expo fonts](https://docs.expo.dev/versions/latest/sdk/font/),
+[Expo Google Fonts](https://github.com/expo/google-fonts),
+[RN Web installation/compatibility](https://necolas.github.io/react-native-web/docs/installation/).
+
 
 ## Session-data cleanup recovery (#222)
 
@@ -899,3 +1003,13 @@ Attachments instance serves the canonical composition; lifecycle adoption/native
 camera253 and126 feedback are still missing. Current completion/point/bootstrap,
 attachment invalidation and M09 assignment/physical receipt authority share their
 existing transactions. This is partial preparation, not full138/native acceptance.
+
+
+## P26/P27 close shift (#143)
+
+See [shift-close/README.md](src/features/shift-close/README.md) for retained close drafts,
+receipt-backed return/shrinkage, local capture/location shutdown, truthful receipt/review
+states and the criterion-to-test map. P3 restores P26/P27 alongside P8 supply receipt.
+Closure consumes #134's canonical downloaded receipt/frame data; missing reception/usage
+facts stay unavailable. Supply bootstrap readiness also recovers older valid cursors/ETags before
+acknowledging the new supply projection. Native/API/accessibility qualification remains pending.

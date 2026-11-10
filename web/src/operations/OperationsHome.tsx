@@ -10,9 +10,15 @@ export function OperationsHome() {
   return (
     <>
       <AreaPlaceholder areaId="operations" />
-      {can("shift.read") && <div className={page.page}><Card title={t("shift.page.title")}>
-        <Link to="/operations/shifts" search={{ status: "closed" }}>{t("shift.page.title")}</Link>
-      </Card></div>}
+      {can("shift.read") && (
+        <div className={page.page}>
+          <Card title={t("shift.page.title")}>
+            <Link to="/operations/shifts" search={{ status: "closed" }}>
+              {t("shift.page.title")}
+            </Link>
+          </Card>
+        </div>
+      )}
     </>
   );
 }

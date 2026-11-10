@@ -13,7 +13,7 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue>({ theme: lightTheme, scheme: "light" });
 
 interface ThemeProviderProps {
-  /** Light is the default; dark is a person's choice in Settings. */
+  /** Resolved appearance: live system scheme unless Settings has an explicit choice. */
   readonly scheme: ColorScheme;
   readonly children: ReactNode;
 }

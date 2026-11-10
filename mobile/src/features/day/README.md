@@ -1,5 +1,43 @@
 # Day projections and task locations
 
+## Fuel capture context (#140)
+
+`withFuelContext` reuses the same short projection writer and downloaded paired
+capture context. Its original raw context/profile guard pins owner, session,
+scope/authority revisions and `field_event.sync`; upload permission is separate.
+The operational shift pins the motorcycle code. This reader neither invents a
+motorcycle-to-center mapping nor adds a fuel baseline producer. Exact B05 shift
+and B04 parent authority are still rechecked by the server.
+
+## Courier supply projection (#134)
+
+The same DayStore transaction also publishes the actual `supplies` section into
+private KV cache rows. Full replacement binds readiness to the proven owner,
+session and capture scope revision; a missing section, legacy ETag/cursor or delta
+cannot hydrate this new consumer. Production refresh omits its ETag until a full
+body commits. Recovery suspends readiness, and revocation removes only these
+downloaded rows. Authored receipt drafts, evidence and outbox events remain owned
+by their existing local writers.
+
+Supply deltas use the canonical sequence and opaque resource version. A valid
+envelope with an unreadable body invalidates that assignment; older deltas cannot
+restore it. Invalid envelopes reject the whole transaction. Generated B10 DTOs
+retain decimal text and exact assignment/release/receipt UUIDs. Current projection
+replacement never rewrites a draft's captured original plan.
+
+`withSupplyAssignments` shares the existing short projection gate and original
+transport identity. It requires current owner/session/capture readiness, own
+assignment identity, an explicit paired sync grant, and current session-profile
+receive/upload codes. It returns a SQL predicate comparing all raw source rows;
+the receipt writer must assert that predicate inside its atomic draft/outbox write.
+The current backend context does not expose per-action grant pairs, human lot codes
+or unit labels. These are not reconstructed from display data; the server remains
+the final authority for each received source and its current receive/upload scope.
+
+`supply-projections.test.ts` owns strict custody parsing, new-consumer hydration,
+malformed delta invalidation, action-code denial and stale original-source CAS.
+These ordinary SQLite tests do not establish native cold-start or device evidence.
+
 `DayStore` owns downloaded day projections. Bootstrap replaces its sampling-point
 cache in the same SQLite transaction as assignments, manifests, metadata and the
 cursor. Deltas use the existing bundle/sync writer gate and transaction. Revoking
@@ -80,6 +118,18 @@ replacement and resets prior sequence/version floors. A malformed change
 envelope rejects the existing sync transaction and does not advance its cursor.
 
 ## Upgrade readiness
+
+M14's supply consumer uses a positive `day_supplies_bootstrap_ready` KV marker;
+absence means pending, including previously hydrated installations with valid
+ETags/cursors. Production's existing private-identity consumer therefore requests
+a full body without ETag until a validated `supplies` array (including an empty
+one), its projections, readiness and cursor commit in the same DayStore transaction.
+Missing/malformed sections, unexpected304, offline errors, failed writes, deltas
+and restart cannot establish readiness. Revoke removes the marker with downloaded
+supplies, preserving authored closing drafts and outbox/evidence. Legacy day-only
+callers keep their prior readiness policy. No migration, released SQL1–16 change,
+historical adoption or second writer is introduced. The single file-backed
+`shift-close-bootstrap.test.ts` upgrade journey owns this regression.
 
 An old database may retain a valid bundle ETag and sync cursor while migration 9
 creates an empty point cache. Neither a conditional 304 nor valid-cursor delta

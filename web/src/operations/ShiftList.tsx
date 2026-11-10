@@ -27,8 +27,13 @@ export function ShiftList() {
       <h1 className={page.title}>{t("shift.page.title")}</h1>
       <p className={page.body}>{t("shift.page.listHint")}</p>
       <FilterBar controller={controller} />
-      <DataTable caption={t("shift.page.title")} columns={columns} getRowId={getId}
-        controller={controller} data={pageTableData(query, controller.state.page, SHIFT_PAGE_SIZE)} />
+      <DataTable
+        caption={t("shift.page.title")}
+        columns={columns}
+        getRowId={getId}
+        controller={controller}
+        data={pageTableData(query, controller.state.page, SHIFT_PAGE_SIZE)}
+      />
     </section>
   );
 }

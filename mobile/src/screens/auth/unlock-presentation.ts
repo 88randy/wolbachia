@@ -10,3 +10,17 @@ export function pinPrompt(phase: AuthSnapshot["phase"], hasConfirmation: boolean
 export function pinErrorKey(remaining: number): MessageKey {
   return remaining === 1 ? "mobile.unlock.wrongPinLast" : "mobile.unlock.wrongPin";
 }
+
+/** Heading for the current unlock step. */
+export function unlockTitle(snapshot: {
+  readonly phase: AuthSnapshot["phase"];
+  readonly isPasswordRequired: boolean;
+  readonly profile: { readonly firstName: string } | null;
+}): MessageKey {
+  if (snapshot.isPasswordRequired && snapshot.phase !== "createPin")
+    return "mobile.unlock.passwordTitle";
+  if (snapshot.phase === "createPin") return "mobile.unlock.createTitle";
+  return snapshot.profile?.firstName.trim()
+    ? "mobile.unlock.greeting"
+    : "mobile.unlock.greetingNeutral";
+}

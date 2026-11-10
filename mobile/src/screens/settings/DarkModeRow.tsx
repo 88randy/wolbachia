@@ -1,28 +1,35 @@
-import { Switch } from "react-native";
+import { spacing } from "@wolbachia/tokens";
+import { StyleSheet, View } from "react-native";
 
 import { usePreferences } from "../../app/PreferencesProvider.tsx";
+import type { ThemePreference } from "../../app/preferences.ts";
 import { useT } from "../../i18n/I18nProvider.tsx";
-import { useTheme } from "../../theme/ThemeProvider.tsx";
 import { SettingRow } from "../../ui/SettingRow.tsx";
+import { ThemeChoice } from "../../ui/ThemeChoice.tsx";
+
+const PREFERENCES: readonly ThemePreference[] = ["system", "light", "dark"];
+const styles = StyleSheet.create({ choices: { gap: spacing[1] } });
 
 export function DarkModeRow() {
   const t = useT();
-  const { theme } = useTheme();
   const { scheme, setScheme } = usePreferences();
   return (
     <SettingRow
       title={t("mobile.settings.darkMode")}
-      hint={t("mobile.settings.darkModeHint")}
+      hint={t("mobile.preview.themeHint")}
       control={
-        <Switch
-          accessibilityLabel={t("mobile.settings.darkMode")}
-          value={scheme === "dark"}
-          onValueChange={(isDark) => {
-            setScheme(isDark ? "dark" : "light");
-          }}
-          trackColor={{ false: theme.color.border.strong, true: theme.color.action }}
-          thumbColor={theme.color.surface}
-        />
+        <View style={styles.choices}>
+          {PREFERENCES.map((choice) => (
+            <ThemeChoice
+              key={choice}
+              choice={choice}
+              isSelected={scheme === choice}
+              onPress={() => {
+                setScheme(choice);
+              }}
+            />
+          ))}
+        </View>
       }
     />
   );

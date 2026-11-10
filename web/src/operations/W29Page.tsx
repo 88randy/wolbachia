@@ -11,5 +11,10 @@ export function W29Page() {
   const can = useCan();
   if (!can("shift.read")) return <NoPermissionState areaId="operations" />;
   if (!id || !/^[0-9a-f]{8}(-[0-9a-f]{4}){3}-[0-9a-f]{12}$/i.test(id)) return <NotFoundState />;
-  return <ShiftRecord key={[identity.userId, identity.organizationSlug, identity.authorization, id].join(":")} id={id} />;
+  return (
+    <ShiftRecord
+      key={[identity.userId, identity.organizationSlug, identity.authorization, id].join(":")}
+      id={id}
+    />
+  );
 }

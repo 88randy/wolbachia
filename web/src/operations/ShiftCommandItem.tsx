@@ -10,12 +10,17 @@ export function ShiftCommandItem({ onClose }: { onClose: (isNavigation?: boolean
   if (!can("shift.read")) return null;
   return (
     <Command.Group heading={t("shift.page.title")}>
-      <Command.Item value={t("shift.page.title")} onSelect={() => {
-        onClose(true);
-        void navigate({ to: "/operations/shifts", search: { status: "closed" } }).then(() => {
-          document.getElementById(MAIN_ID)?.focus();
-        });
-      }}>{t("shift.page.title")}</Command.Item>
+      <Command.Item
+        value={t("shift.page.title")}
+        onSelect={() => {
+          onClose(true);
+          void navigate({ to: "/operations/shifts", search: { status: "closed" } }).then(() => {
+            document.getElementById(MAIN_ID)?.focus();
+          });
+        }}
+      >
+        {t("shift.page.title")}
+      </Command.Item>
     </Command.Group>
   );
 }

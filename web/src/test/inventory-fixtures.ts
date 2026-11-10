@@ -116,3 +116,28 @@ export function inventoryLot(overrides: Partial<Schemas["Lot"]> = {}): Schemas["
 export function inventoryPage<T>(results: T[], count = results.length) {
   return { count, next: null, previous: null, results };
 }
+export function inventoryMovement(
+  overrides: Partial<Schemas["Movement"]> = {},
+): Schemas["Movement"] {
+  return {
+    id: "00000000-0000-4000-8000-000000000012",
+    operation_id: INVENTORY_OPERATION,
+    line_number: 1,
+    lot_id: INVENTORY_LOT,
+    lot_code: "LOT-01",
+    supply_id: INVENTORY_SUPPLY,
+    location_id: INVENTORY_LOCATION,
+    location_code: "LOC-01",
+    piece_id: null,
+    quantity: "2",
+    unit: "piece",
+    unit_version_id: inventorySupply().version,
+    source_kind: "lot_admission",
+    source_id: INVENTORY_ADMISSION,
+    source_transfer: null,
+    source_supply: null,
+    created_at: INVENTORY_TIME,
+    created_by: null,
+    ...overrides,
+  };
+}

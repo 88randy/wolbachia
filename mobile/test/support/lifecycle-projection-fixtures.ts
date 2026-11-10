@@ -43,6 +43,7 @@ export function projectionBundle() {
     assignments: [],
     map_manifests: [],
     history: [],
+    supplies: [],
     sampling_points: [PROJECTION_POINT],
     ovitraps: [PROJECTION_TRAP],
     quadrants: [

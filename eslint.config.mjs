@@ -17,6 +17,7 @@ const TEST_FILES = [
   "**/*.spec.{ts,tsx}",
   "**/__tests__/**",
   "web/harness/**",
+  "mobile/preview/**",
 ];
 const WEB = "web/**";
 const MOBILE = "mobile/**";
@@ -38,11 +39,11 @@ const HTTP_CLIENT_MODULES = [
 
 // `no-restricted-imports` is not merged across config blocks (the last block wins),
 // so each scope builds its complete option object here.
-function restrictedImports(forbiddenGroups = []) {
+function restrictedImports(forbiddenGroups = [], additionalPaths = []) {
   return [
     "error",
     {
-      paths: HTTP_CLIENT_MODULES,
+      paths: [...HTTP_CLIENT_MODULES, ...additionalPaths],
       patterns: forbiddenGroups,
     },
   ];
@@ -172,7 +173,13 @@ export default defineConfig([
   {
     files: [`${MOBILE}/*.{ts,tsx,js,jsx,mjs}`],
     rules: {
-      "no-restricted-imports": restrictedImports(NO_CROSS_APP_IMPORT("mobile", "web")),
+      "no-restricted-imports": restrictedImports(NO_CROSS_APP_IMPORT("mobile", "web"), [
+        {
+          name: "react-native",
+          importNames: ["Alert", "default", "ScrollView", "FlatList"],
+          message: "Use in-app feedback and shared AppScrollView/AppFlatList indicators (#203).",
+        },
+      ]),
     },
   },
   {
@@ -182,6 +189,25 @@ export default defineConfig([
       "react-native/no-inline-styles": "error",
       "react-native/no-color-literals": "error",
     },
+  },
+
+  {
+    files: ["mobile/src/ui/AppScrollView.tsx", "mobile/src/ui/AppFlatList.tsx"],
+    rules: {
+      "no-restricted-imports": restrictedImports(NO_CROSS_APP_IMPORT("mobile", "web"), [
+        {
+          name: "react-native",
+          importNames: ["Alert", "default"],
+          message: "Use in-app feedback, never native dialogs.",
+        },
+      ]),
+    },
+  },
+
+  {
+    files: ["mobile/preview/*.{jsx,mjs}"],
+    languageOptions: { globals: { ...globals.browser, ...globals.node } },
+    rules: { "react/prop-types": "off" },
   },
 
   // User-facing text in JSX must come from i18n keys (packages/i18n), never literals.

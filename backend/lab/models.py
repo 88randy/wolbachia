@@ -147,6 +147,8 @@ class LabMethodVersion(LabFact):
     content_hash = models.CharField(max_length=64)
     supports_viability = models.BooleanField()
     supports_rejection = models.BooleanField()
+    supports_independent_qa = models.BooleanField(default=False)
+    supports_paddle_reuse = models.BooleanField(default=False)
 
     class Meta(LabFact.Meta):
         ordering = ["-revision"]
@@ -383,3 +385,19 @@ class DailyRecountSampleMember(LabSystemFact):
             *LabSystemFact.Meta.constraints,
             models.UniqueConstraint(fields=["sample", "count"], name="lab_sample_member_once"),
         ]
+
+
+# Register concrete independent facts after their shared bases and original owners.
+from lab.independent_qa.models import (  # noqa: E402, I001 -- register same-app models after their shared bases.
+    EggPaddle as EggPaddle,
+    LabBlindObservation as LabBlindObservation,
+    LabNumericDisclosure as LabNumericDisclosure,
+    LabQAPolicyVersion as LabQAPolicyVersion,
+    PaddleBagBinding as PaddleBagBinding,
+    PaddleReuse as PaddleReuse,
+    RecountAttempt as RecountAttempt,
+    RecountClaim as RecountClaim,
+    RecountIndependenceAttestation as RecountIndependenceAttestation,
+    RecountResolution as RecountResolution,
+    RecountRevision as RecountRevision,
+)

@@ -22,7 +22,9 @@ export function validationState(shift: ShiftDetail) {
   return "pending";
 }
 export function canDecide(shift: ShiftDetail, kind: DecisionKind): boolean {
-  return shift.status === "closed" && (kind === "observe" || shift.validation.blockers.length === 0);
+  return (
+    shift.status === "closed" && (kind === "observe" || shift.validation.blockers.length === 0)
+  );
 }
 const BLOCKER_KEYS: Readonly<Record<string, MessageKey>> = {
   shift_not_closed: "shift.blocker.open",

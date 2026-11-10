@@ -75,8 +75,21 @@ location_version and admission_id, Protocol.incident_type and Location.owner_lab
 Lot labels require lot.read; current Location data still requires location.read.
 Lot lists add current blocked_by facets and organization-local expiry_from_date /
 expiry_before_date boundaries. See api-conventions.md for precise query modes,
-write-payload mapping, errors and retained grants. Transfer/dispatch/reception rows
-above remain #106/#107 plans, not implemented #270 operations.
+write-payload mapping, errors and retained grants. The #106 signed facility transfer
+backend is now canonical; the earlier transfer rows in this proposal table are
+not authoritative wire definitions or implemented #293 web screens. W12–W14
+consumption belongs to #152 and courier assignment/reconciliation remains #107.
+
+#293 consumes the actual #106 lot GET list/detail custody_location query and
+safety_location_id, original admission pins/quantity, and the four movement
+source kinds with nullable source_transfer. Its contextual lot view is readonly
+and grants no write. #292's exact lot_code query belongs only to the location
+movements GET and permits historical-code filtering at zero balance without a
+current-lot lookup. Existing explicit UUID/operation filters retain their separate
+meaning and intersect. No extra API, source/detail fetch, transfer/condition
+command or permission is required for these W9–W11 consumers. W18 remains #154:
+its future explicit condition body must use the real location_id rather than
+mistaking page read context for capture authority.
 
 ## Fleet
 

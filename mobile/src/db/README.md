@@ -1,5 +1,21 @@
 # Database startup and schema lineage (#266)
 
+## Additive fuel schema18 (#140)
+
+Schema18 retains owner-bound fuel drafts after unchanged SQL1–17, including
+no-photo local origins. One unfinished draft per owner/shift is allowed. Saved
+captures, pinned motorcycle/currency/shift identity and evidence are retained.
+The existing structural lineage reader derives this prefix from the actual
+migration registry; no reset, backfill or historical schema rewrite is introduced.
+
+## Additive receipt schema17 (#134)
+
+Schema17 appends retained owner-bound receipt drafts after unchanged SQL1–16.
+A unique owner/release index prevents parallel starts. Owner/identity cannot be
+rewritten; a saved draft cannot be edited or removed. Shared owner admission also
+checks no-file receipt origins, and local-record detection protects those drafts.
+The existing outbox and attachment tables remain the only transport journals.
+
 Read mobile/README.md and engineering-rules.md first. Encryption/key validation
 remains in encrypted-database.ts. After it returns, open-database.ts delegates to
 prepare-database.ts: structural preflight, existing WAL/FULL, then migrate. Public

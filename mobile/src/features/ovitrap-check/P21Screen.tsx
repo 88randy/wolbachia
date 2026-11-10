@@ -1,4 +1,5 @@
-import { ScrollView, View } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
+import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useNavigation } from "../../navigation/NavigationProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
@@ -16,11 +17,11 @@ export function P21Screen({ target }: { readonly target: "ovitrap" | "bag" }) {
   return (
     <View style={styles.root}>
       <ScreenHeader largeTargets title={t("mobile.ovitrap.invalid")} />
-      <ScrollView contentContainerStyle={styles.content}>
+      <AppScrollView contentContainerStyle={styles.content}>
         <Notice tone="warning" icon="alert" message={t("mobile.ovitrap.invalidHint")} />
         <ShiftAction label={t("mobile.ovitrap.retry")} onPress={retry} />
         <ShiftAction label={t("mobile.ovitrap.manual")} onPress={retry} />
-      </ScrollView>
+      </AppScrollView>
     </View>
   );
 }

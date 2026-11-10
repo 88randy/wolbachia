@@ -1,4 +1,5 @@
-import { ScrollView, View } from "react-native";
+import { AppScrollView } from "../../ui/AppScrollView.tsx";
+import { View } from "react-native";
 import { useT } from "../../i18n/I18nProvider.tsx";
 import { useStyles } from "../../theme/ThemeProvider.tsx";
 import { ScreenHeader } from "../../ui/ScreenHeader.tsx";
@@ -22,13 +23,13 @@ export function LifecycleScreen(input: StartInput) {
         title={t(KIND_LABEL[draft?.kind ?? input.kind])}
         subtitle={draft?.point.code}
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <AppScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {model.errorKey ? (
           <Notice tone="critical" icon="alert" message={t(model.errorKey)} />
         ) : null}
         <LifecycleControls model={model} input={input} />
         <LifecycleBody model={model} />
-      </ScrollView>
+      </AppScrollView>
       {draft && !model.state?.event ? (
         <LifecycleFooter key={draft.eventId} model={model} draft={draft} />
       ) : null}

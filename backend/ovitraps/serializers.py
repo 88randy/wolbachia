@@ -207,19 +207,24 @@ class BagSerializer(ProvenanceSerializer):
     def get_lab(self, instance: Bag) -> dict[str, Any] | None:
         from lab.access import scoped_bags
         from lab.permissions import BAG_RECEIVE, COUNT_READ
-        from lab.selectors import bag_lab_projection
+        from lab.selectors import published_bag_lab_projection
         from uploads.access import actor_from_request
 
         request = self.context.get("request")
         if request is None:
             return None
         actor = actor_from_request(request)
-        if not any(
-            scoped_bags(actor, code).filter(pk=instance.pk).exists()
-            for code in (BAG_RECEIVE, COUNT_READ)
-        ):
+        permission = next(
+            (
+                code
+                for code in (BAG_RECEIVE, COUNT_READ)
+                if scoped_bags(actor, code).filter(pk=instance.pk).exists()
+            ),
+            None,
+        )
+        if permission is None:
             return None
-        return bag_lab_projection(instance)
+        return published_bag_lab_projection(actor, instance, permission)
 
     class Meta:
         model = Bag

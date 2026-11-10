@@ -22,14 +22,17 @@ Only packages/api-client is used:
 The contract has no human shift code. The detail route temporarily uses the real
 UUID (/operations/shifts/{id}); displayed courier/author UUIDs are labeled as
 references. No names, point identities, totals or record links are synthesized.
-See decision160.
+See decision 165.
 
 ## Session and command rule
 
 Queries use orgScopedQueryOptions. The record subtree remounts on user,
 organization, authorization context or target changes. A denied detail read
 (403/404) removes private facts and drafts; transient errors retain readable facts
-with writes blocked. Current Me permissions also withhold the screen/actions.
+with writes blocked. Denied reads replace the cached private snapshot with an
+explicit unavailable result, so a later transient failure cannot resurrect it.
+The central session error path still handles lost membership. Current Me
+permissions also withhold the screen/actions.
 
 Each explicit command freezes its target, kind, reason and reviewed revision.
 A synchronous owner prevents duplicate activation. SessionGuard fences requests
@@ -81,9 +84,15 @@ No backend changes, API generation, new dependencies or grants are included.
 | Session/permission safety | readonly/revoked permissions, identity switch, same-identity epoch retirement, late owner, GET403/404 redaction | deterministic deferred replies |
 | Unknown outcome | one pending command, no replay; pre-failure read cannot unlock | no real transport certification |
 | Partial/error state | failed refresh keeps facts with writes blocked | denied reads redact |
-| Bilingual/accessibility | shared catalog tests; axe cases in light/dark and labeled forms/regions | browser layout, contrast and real focus trap unverified |
+| Bilingual/accessibility | shared catalog tests; semantic axe, labeled forms, Cancel focus; browser journey in `web/e2e/shifts.spec.ts` | synthetic API only |
 
-Vitest, typecheck, ESLint, Prettier and browser verification need installed
-dependencies. This worktree's npm ci was blocked by EPERM creating
-node_modules/@vis.gl/react-maplibre/node_modules. No installation workaround was
-attempted. The shared i18n Node tests can run without those dependencies.
+The focused Vitest command is:
+
+```sh
+npm test -w @wolbachia/web -- src/operations/W29Page.test.tsx src/operations/shift-validation.test.ts --maxWorkers=1
+```
+
+The W29 browser journey is `web/e2e/shifts.spec.ts`, run with one worker. It checks
+both themes/languages, 320 px, keyboard dialogs, error draft retention, real
+server-fixture history and expanded text. Browser fixtures are synthetic; they
+do not qualify real API transport, backend concurrency or the unavailable map/W4.

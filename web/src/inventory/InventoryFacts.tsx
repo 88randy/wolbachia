@@ -5,6 +5,7 @@ import { fieldKeys } from "./inventory-fields";
 import { ProtocolFacts } from "./ProtocolFacts";
 import styles from "./inventory.module.css";
 import type { MessageKey } from "@wolbachia/i18n";
+import { useInventoryContext } from "./use-inventory-context";
 const enumKeys: Record<string, MessageKey> = {
   warehouse: "inventory.option.warehouse",
   biofactory: "inventory.option.biofactory",
@@ -44,11 +45,14 @@ function ScalarFact({ name, value }: { name: string; value: string }) {
 /** Read access exposes returned facts even when configuration controls are unavailable. */
 export function InventoryFacts({ record }: { record: InventoryRecord }) {
   const { t } = useTranslation();
+  const custody =
+    useInventoryContext().readContext.mode === "custody" && "supply_version" in record;
   const values = Object.entries(inventoryValuesOf(record)).filter(
     ([key]) => fieldKeys[key] && !identities.has(key),
   );
   return (
     <>
+      {custody && <p>{t("inventory.context.admissionPins")}</p>}
       <dl className={styles.summary}>
         {values.map(([name, value]) => (
           <ScalarFact key={name} name={name} value={value} />

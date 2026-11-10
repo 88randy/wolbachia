@@ -396,3 +396,9 @@ commands require a reason and the reviewed revision; validation history remains
 separate from the open/closed lifecycle. See [operations README](src/operations/README.md)
 for session/command fences, criterion tests, route exception and the unavailable
 summary, GPS/map and per-point W4 API projections. No backend contract is changed.
+### Incident workspace (W6/W7, #33)
+
+`/incidents` and `/incidents/<code>` consume the generated reported facade,
+server-paged named metadata, immutable thread and revisioned commands. See
+[`src/incidents/README.md`](src/incidents/README.md) for session boundaries,
+evidence, criterion-to-test ownership and the remaining W4 integration.

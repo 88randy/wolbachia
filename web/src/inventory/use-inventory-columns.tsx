@@ -10,12 +10,14 @@ import { formatInventoryQuantity } from "./format-inventory-quantity";
 import { useLanguage } from "../i18n/use-language";
 import { useCan } from "../session/use-can";
 import { useSearch } from "@tanstack/react-router";
+import { useInventoryContext } from "./use-inventory-context";
 type Column = DataTableColumn<InventoryRecord>;
 type Context = {
   t: (key: MessageKey) => string;
   format: ReturnType<typeof useFormatDateTime>;
   language: ReturnType<typeof useLanguage>["language"];
   canReadLocation: boolean;
+  custody: boolean;
 };
 function identityColumns(kind: InventoryKind, search: Record<string, string>): Column[] {
   return [
@@ -50,17 +52,21 @@ function statusColumn(t: Context["t"]): Column {
     },
   };
 }
-function lotQuantity({ language, t, canReadLocation }: Context): Column {
+function lotQuantity({ language, t, canReadLocation, custody }: Context): Column {
   return {
     id: "quantity",
-    headerKey: "inventory.field.quantity",
+    headerKey: custody ? "inventory.field.admissionQuantity" : "inventory.field.quantity",
     align: "end",
     cell: (row) =>
       "quantity" in row && row.quantity
         ? formatInventoryQuantity(row.quantity, language)
         : t("inventory.state.unconfigured"),
     link: (row) =>
-      "admission_id" in row && row.admission_id && row.location_version && canReadLocation
+      !custody &&
+      "admission_id" in row &&
+      row.admission_id &&
+      row.location_version &&
+      canReadLocation
         ? {
             to: "/inventory/locations/$code",
             params: { code: row.location_version.code },
@@ -131,13 +137,15 @@ export function useInventoryColumns(kind: InventoryKind): Column[] {
   const format = useFormatDateTime();
   const { language } = useLanguage();
   const canReadLocation = useCan()("location.read");
+  const custody = useInventoryContext().readContext.mode === "custody";
   const search = Object.fromEntries(
     Object.entries(useSearch({ strict: false })).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",
     ),
   );
   const columns = identityColumns(kind, search);
-  if (kind === "lots") return [...columns, ...lotColumns({ t, format, language, canReadLocation })];
+  if (kind === "lots")
+    return [...columns, ...lotColumns({ t, format, language, canReadLocation, custody })];
   if (kind === "locations") return [...columns, ...locationColumns(t)];
   return [
     ...columns,

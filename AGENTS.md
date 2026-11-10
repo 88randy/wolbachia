@@ -23,6 +23,8 @@ Skills named in those files are optional Claude plugins; ignore them and follow 
 
 ## Codex-specific notes
 
+- **Speed rules (2026-11-09):** follow the risk-based review in `CLAUDE.md` (max 2 adversarial rounds on high-risk PRs, one review otherwise). Do NOT produce SHA freezes, manifests, evidence packets or long logs; the PR body (criterion → test) and CI are the evidence. Keep PRs small and independent.
+
 - Work only inside the current worktree. One issue = one branch = one PR; do not touch files outside the issue's scope.
 - Never use host port 5432 (another project's Postgres). Use the compose project and port the task prompt gives you.
 - No secrets, `.env` files, keys or real personal data, ever.

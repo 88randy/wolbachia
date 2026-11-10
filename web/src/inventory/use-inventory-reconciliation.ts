@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useSessionGuard } from "../session/use-session-guard";
 import { reportSessionError } from "../session/session-events";
 import { useInventoryContext } from "./use-inventory-context";
-import { inventoryRecordOptions, invalidateInventory } from "./inventory-query";
+import { inventoryReconciliationOptions, invalidateInventory } from "./inventory-query";
 import { matchesInventoryAttempt } from "./inventory-reconciliation";
 import type { InventoryKind, InventoryRecord } from "./inventory-links";
 import type { RetainedDraft, RetainedAttempt } from "./use-inventory-draft";
@@ -11,11 +11,17 @@ function checkableAttempt(
   attempt: RetainedAttempt | undefined,
   scope: ReturnType<typeof useInventoryContext>,
 ): attempt is RetainedAttempt {
-  return attempt !== undefined && scope.identity.isSettled && attempt.base === scope.base;
+  return (
+    attempt !== undefined &&
+    scope.identity.isSettled &&
+    attempt.base === scope.base &&
+    scope.readContext.mode === "admission" &&
+    scope.isCurrentRead()
+  );
 }
 export function useInventoryReconciliation(
   kind: InventoryKind,
-  onConfirmed: (record: InventoryRecord) => void,
+  onConfirmed: (record: InventoryRecord, attempt: RetainedAttempt) => void,
 ) {
   const scope = useInventoryContext();
   const cache = useQueryClient();
@@ -28,11 +34,12 @@ export function useInventoryReconciliation(
     busy.current = true;
     setChecking(true);
     const guard = begin();
+    const isCurrent = () => !guard.isStale() && scope.isCurrentRead();
     try {
       const current = await readDraft(scope, cache, { kind, attempt });
-      if (guard.isStale() || !matchesInventoryAttempt(attempt, current, scope.base)) return;
+      if (!isCurrent() || !matchesInventoryAttempt(attempt, current, scope.base)) return;
       await invalidateInventory(cache);
-      if (!guard.isStale()) onConfirmed(current);
+      if (isCurrent()) onConfirmed(current, attempt);
     } catch (error) {
       if (!guard.isStale()) reportSessionError(error, cache);
     } finally {
@@ -48,7 +55,7 @@ function readDraft(
   target: { kind: InventoryKind; attempt: RetainedAttempt },
 ) {
   return cache.query({
-    ...inventoryRecordOptions(scope, target.kind, target.attempt.command.body.code),
+    ...inventoryReconciliationOptions(scope, target.kind, target.attempt.command.body.code),
     staleTime: 0,
     retry: false,
   });

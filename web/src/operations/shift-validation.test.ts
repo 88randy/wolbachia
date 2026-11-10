@@ -18,14 +18,18 @@ test("lifecycle and approval freshness remain independent", () => {
   expect(validationState(shiftDetail({ validation: observed }))).toBe("observed");
   const approved = { ...observed, kind: "approve" as const, approval_current: true };
   expect(validationState(shiftDetail({ validation: approved }))).toBe("approved");
-  expect(validationState(shiftDetail({ validation: { ...approved, approval_current: false } }))).toBe("outdated");
+  expect(
+    validationState(shiftDetail({ validation: { ...approved, approval_current: false } })),
+  ).toBe("outdated");
 });
 
 test("open shifts block both actions while safety blockers only block approval", () => {
   const open = shiftDetail({ status: "open" });
   expect(canDecide(open, "approve")).toBe(false);
   expect(canDecide(open, "observe")).toBe(false);
-  const blocked = shiftDetail({ validation: { ...open.validation, blockers: ["motorcycle_safety_hold"] } });
+  const blocked = shiftDetail({
+    validation: { ...open.validation, blockers: ["motorcycle_safety_hold"] },
+  });
   expect(canDecide(blocked, "approve")).toBe(false);
   expect(canDecide(blocked, "observe")).toBe(true);
 });

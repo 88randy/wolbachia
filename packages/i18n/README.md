@@ -117,3 +117,6 @@ the capture/signature; no text claims physical use or warehouse credit was appli
 Issue #34 adds the shift area in both locales for W29, real validation/blocker
 states, reason requirements and explicit summary/GPS/per-point-history gaps.
 shift.field.reasonHint uses min/max from the existing Me reason limits.
+Issue #33 adds `incidents` workspace, state, severity, origin, event and evidence
+messages in both locales. Its explicit placeholders are listed in
+`test/messages.test.ts`; identifiers in API enums map to catalog keys in the web.

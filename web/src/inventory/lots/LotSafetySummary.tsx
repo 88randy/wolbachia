@@ -9,6 +9,7 @@ import { fieldKeys, blockerKeys } from "../inventory-fields";
 import styles from "../inventory.module.css";
 import { ProtocolFacts } from "../ProtocolFacts";
 import { lotProtocolOf } from "../inventory-protocol";
+import { useInventoryContext } from "../use-inventory-context";
 type Lot = Schemas["Lot"];
 function Requirements({ lot }: { lot: Lot }) {
   const { t } = useTranslation();
@@ -49,6 +50,17 @@ function DispatchRequirements({ lot }: { lot: Lot }) {
     </>
   );
 }
+function CustodyFacts() {
+  const { t } = useTranslation();
+  const custody = useInventoryContext().readContext.mode === "custody";
+  return custody ? (
+    <>
+      <p>{t("inventory.context.readonly")}</p>
+      <p>{t("inventory.context.safety")}</p>
+      <p>{t("inventory.context.balance")}</p>
+    </>
+  ) : null;
+}
 export function LotSafetySummary({ lot }: { lot: Lot }) {
   const { t } = useTranslation();
   const format = useFormatDateTime();
@@ -56,9 +68,12 @@ export function LotSafetySummary({ lot }: { lot: Lot }) {
   return (
     <Card title={t("inventory.section.safety")}>
       <div className={styles.notes}>
-        <StatusPill tone={lot.status === "available" ? "success" : "warning"}>
-          {t(`inventory.status.${lot.status}`)}
-        </StatusPill>
+        <CustodyFacts />
+        <div className={styles.safetyStatus}>
+          <StatusPill tone={lot.status === "available" ? "success" : "warning"}>
+            {t(`inventory.status.${lot.status}`)}
+          </StatusPill>
+        </div>
         <p>
           {t("inventory.field.expiry")}:{" "}
           {lot.expiry ? format(lot.expiry) : t("inventory.state.unconfigured")}

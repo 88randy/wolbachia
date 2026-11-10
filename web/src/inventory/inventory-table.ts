@@ -113,7 +113,9 @@ export const MOVEMENT_TABLE: TableQueryConfig = {
     { value: "quantity", labelKey: "inventory.field.movementQuantity" },
   ],
   filters: [
-    ...STOCK_TABLE.filters,
+    text("lot", "inventory.field.linkedLot"),
+    ...STOCK_TABLE.filters.filter((filter) => filter.key !== "lot"),
+    text("lot_code", "inventory.field.code"),
     text("operation", "inventory.field.operation"),
     text("piece", "inventory.field.piece"),
     text("unit", "inventory.field.unit"),
