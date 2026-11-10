@@ -25,6 +25,8 @@ export const inventory = {
     "A transfer discrepancy hold remains. Authorized staff must review its resolution.",
   "inventory.action.discardProtocol": "Discard only protocol changes",
   "inventory.section.selected": "Configuration selected for the next save",
+  "inventory.section.edit": "Edit details",
+  "inventory.section.details": "Details",
   "inventory.section.currentRecord": "Current record",
   "inventory.field.revision": "Record revision",
   "inventory.section.current": "Available current configuration",

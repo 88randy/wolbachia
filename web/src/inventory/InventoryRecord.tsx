@@ -1,10 +1,12 @@
-import { Link, useSearch } from "@tanstack/react-router";
+import { RefreshCw } from "lucide-react";
+import { DetailPage } from "../components/templates/DetailPage";
+import { DetailSection } from "../components/templates/DetailSection";
+import { useSearch } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useContext, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
 import { ApiError } from "@wolbachia/api-client";
-import { Card } from "../ui/Card";
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { ErrorState } from "../ui/ErrorState";
 import { Button } from "../ui/Button";
@@ -21,8 +23,6 @@ import { useInventoryWrite } from "./use-inventory-write";
 import { LotSafetySummary } from "./lots/LotSafetySummary";
 import { LocationStock } from "./locations/LocationStock";
 import type { InventoryKind, InventoryRecord as RecordValue } from "./inventory-links";
-import page from "../styles/page.module.css";
-import styles from "./inventory.module.css";
 import { InventoryDraftMemory } from "./use-inventory-draft";
 import { InventoryFacts } from "./InventoryFacts";
 import { InventoryContextNotice } from "./InventoryContextNotice";
@@ -118,19 +118,6 @@ interface ContentProps {
   model: ReturnType<typeof useRecord>;
   record: RecordValue;
 }
-function RecordBack({ kind }: { kind: InventoryKind }) {
-  const { t } = useTranslation();
-  const search = Object.fromEntries(
-    Object.entries(useSearch({ strict: false })).filter(
-      (entry): entry is [string, string] => typeof entry[1] === "string",
-    ),
-  );
-  return (
-    <Link to={lists[kind]} search={search}>
-      {t("inventory.action.back")}
-    </Link>
-  );
-}
 function RecordEditor({ kind, model, record, onSaved }: ContentProps & { onSaved: () => void }) {
   if (!model.editable) return <InventoryFacts record={record} />;
   return (
@@ -148,44 +135,61 @@ function RecordContent(props: ContentProps) {
   const refresh = () => {
     void props.model.query.refetch();
   };
+  const listSearch = Object.fromEntries(
+    Object.entries(useSearch({ strict: false })).filter(
+      (entry): entry is [string, string] => typeof entry[1] === "string",
+    ),
+  );
   const accepted = () => {
     setSaved(true);
   };
   return (
-    <section className={[page.page, styles.content].join(" ")}>
-      <Card title={props.record.code} headingLevel={1}>
-        <div className={styles.actions}>
-          <RecordBack kind={props.kind} />
-          <RefreshAction refresh={refresh} />
-        </div>
-        <p role="status">{saved ? t("inventory.state.saved") : ""}</p>
-        <RecordFacts record={props.record} />
-        <RecordEditor {...props} onSaved={accepted} />
-        {!props.model.readonly && (
+    <DetailPage
+      title={props.record.code}
+      subtitle={subtitleOf(props.record)}
+      back={{
+        label: t("inventory.action.back"),
+        link: { to: lists[props.kind], search: listSearch },
+      }}
+      actions={
+        !props.model.readonly && (
           <RetireSupply
             record={props.record}
             verifying={props.model.query.isFetching}
             refresh={refresh}
           />
-        )}
-      </Card>
-    </section>
+        )
+      }
+      moreActions={[
+        {
+          id: "refresh",
+          label: t("inventory.action.refresh"),
+          icon: <RefreshCw aria-hidden="true" className="size-4" />,
+          onSelect: refresh,
+        },
+      ]}
+    >
+      <p role="status" className="sr-only">
+        {saved ? t("inventory.state.saved") : ""}
+      </p>
+      <RecordFacts record={props.record} />
+      <DetailSection
+        title={t(props.model.editable ? "inventory.section.edit" : "inventory.section.details")}
+      >
+        <RecordEditor {...props} onSaved={accepted} />
+      </DetailSection>
+    </DetailPage>
   );
 }
-function RefreshAction({ refresh }: { refresh: () => void }) {
-  const { t } = useTranslation();
-  return (
-    <Button variant="secondary" onClick={refresh}>
-      {t("inventory.action.refresh")}
-    </Button>
-  );
+function subtitleOf(record: RecordValue): string | undefined {
+  if ("label" in record && record.label) return record.label;
+  if ("name" in record && record.name) return record.name;
+  return undefined;
 }
 function RecordFacts({ record }: { record: RecordValue }) {
   return (
     <>
       {"supply_version" in record && <LotSafetySummary lot={record} />}
-      {"label" in record && <p>{record.label}</p>}
-      {"name" in record && <p>{record.name}</p>}
       {"geometry" in record && <LocationStock location={record} />}
     </>
   );

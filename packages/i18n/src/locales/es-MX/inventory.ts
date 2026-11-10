@@ -26,6 +26,8 @@ export const inventory = {
     "Hay una retención por discrepancia de transferencia. El personal autorizado debe revisar su resolución.",
   "inventory.action.discardProtocol": "Descartar sólo los cambios de protocolo",
   "inventory.section.selected": "Configuración elegida para el próximo guardado",
+  "inventory.section.edit": "Editar datos",
+  "inventory.section.details": "Datos",
   "inventory.section.currentRecord": "Registro actual",
   "inventory.field.revision": "Revisión del registro",
   "inventory.section.current": "Configuración actual disponible",
