@@ -80,7 +80,21 @@ class Migration(migrations.Migration):
             field=models.BooleanField(default=False),
         ),
         migrations.RunSQL(DROP_LEGACY_GUARD, RESTORE_LEGACY_GUARD),
-        migrations.RemoveConstraint("wolbachiasample", "lab_sample_org_code"),
+        migrations.RunSQL(
+            "ALTER TABLE lab_wolbachiasample RENAME CONSTRAINT "
+            "lab_sample_org_code TO lab_wolbachia_sample_code;",
+            "ALTER TABLE lab_wolbachiasample RENAME CONSTRAINT "
+            "lab_wolbachia_sample_code TO lab_sample_org_code;",
+            state_operations=[
+                migrations.RemoveConstraint("wolbachiasample", "lab_sample_org_code"),
+                migrations.AddConstraint(
+                    model_name="wolbachiasample",
+                    constraint=models.UniqueConstraint(
+                        fields=("organization", "code"), name="lab_wolbachia_sample_code"
+                    ),
+                ),
+            ],
+        ),
         migrations.RemoveConstraint("wolbachiasample", "lab_sample_exact_source"),
         migrations.RenameField("wolbachiasample", "location", "legacy_location"),
         migrations.AddField(
@@ -139,17 +153,31 @@ class Migration(migrations.Migration):
             ),
         ),
         migrations.RunSQL(RETAIN_LEGACY_IDENTITIES, migrations.RunSQL.noop),
-        migrations.AlterField(
-            "wolbachiasample",
-            "center",
-            models.ForeignKey(
-                on_delete=django.db.models.deletion.PROTECT,
-                related_name="+",
-                to="organizations.center",
-            ),
+        migrations.RunSQL(
+            "ALTER TABLE lab_wolbachiasample "
+            "ALTER COLUMN center_id SET NOT NULL, "
+            "ALTER COLUMN device_time SET NOT NULL, "
+            "ALTER COLUMN server_received_at SET NOT NULL;",
+            "ALTER TABLE lab_wolbachiasample "
+            "ALTER COLUMN center_id DROP NOT NULL, "
+            "ALTER COLUMN device_time DROP NOT NULL, "
+            "ALTER COLUMN server_received_at DROP NOT NULL;",
+            state_operations=[
+                migrations.AlterField(
+                    "wolbachiasample",
+                    "center",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.PROTECT,
+                        related_name="+",
+                        to="organizations.center",
+                    ),
+                ),
+                migrations.AlterField("wolbachiasample", "device_time", models.DateTimeField()),
+                migrations.AlterField(
+                    "wolbachiasample", "server_received_at", models.DateTimeField()
+                ),
+            ],
         ),
-        migrations.AlterField("wolbachiasample", "device_time", models.DateTimeField()),
-        migrations.AlterField("wolbachiasample", "server_received_at", models.DateTimeField()),
         migrations.RemoveField("wolbachiasample", "origin"),
         migrations.RemoveField("wolbachiasample", "collector"),
         migrations.RemoveField("wolbachiasample", "legacy_location"),
@@ -386,12 +414,6 @@ class Migration(migrations.Migration):
                     ),
                 ],
             },
-        ),
-        migrations.AddConstraint(
-            model_name="wolbachiasample",
-            constraint=models.UniqueConstraint(
-                fields=("organization", "code"), name="lab_wolbachia_sample_code"
-            ),
         ),
         migrations.AddConstraint(
             model_name="wolbachiasample",

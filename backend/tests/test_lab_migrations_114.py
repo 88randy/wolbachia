@@ -10,7 +10,7 @@ from django.db.migrations.loader import MigrationLoader
 
 from lab.commands import execute_lab_command
 from lab.models import EggCountAttempt, LabCommand, LabMethod, LabMethodVersion, LabResultRevision
-from tests.lab_support import capture_bag, count_input, lab_context, receive
+from tests.lab_support import capture_bag, count_input, lab_context, receive, synthetic_method
 from tests.test_geography_decisions_b_33 import field as geography_field_fixture
 from tests.test_lab_recounts_b_19 import allocation as allocation
 
@@ -436,6 +436,14 @@ def assert_legacy_sample_upgrade_retains_issued_shipment(context, bag, method):
 
 
 @pytest.mark.django_db(transaction=True)
+def test_sample_upgrade_retains_issued_shipments_and_refuses_populated_reverse(monkeypatch):
+    context = lab_context(monkeypatch)
+    bag = capture_bag(context)
+    method = synthetic_method(context)
+    assert_legacy_sample_upgrade_retains_issued_shipment(context, bag, method)
+
+
+@pytest.mark.django_db(transaction=True)
 def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_audit(
     monkeypatch, field, make_member
 ):
@@ -596,7 +604,6 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
         ]
-        assert_legacy_sample_upgrade_retains_issued_shipment(context, bag, qa_method)
     finally:
         executor = MigrationExecutor(connection)
         plan = executor.migration_plan(leaves)
@@ -606,7 +613,10 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
 @pytest.mark.django_db(transaction=True)
 @pytest.mark.parametrize("allocation", ["piece"], indirect=True)
 def test_raw_lab_bypasses_cannot_mutate_fork_cross_tenant_or_commit_incomplete(
-    monkeypatch, org_b, make_member, allocation
+    monkeypatch,
+    org_b,
+    make_member,
+    allocation,  # noqa: F811 -- pytest injects the imported fixture.
 ):
     from django.apps import apps
 
