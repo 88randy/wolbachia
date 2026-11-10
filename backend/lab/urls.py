@@ -2,6 +2,7 @@ from django.urls import include, path
 from rest_framework.routers import SimpleRouter
 
 from lab.independent_qa.views import EggPaddleViewSet, LabQAPolicyViewSet, RecountViewSet
+from lab.pcr.views import ExternalLabViewSet, PcrBatchViewSet
 from lab.shipments.views import MaterialRequestViewSet, UiebShipmentViewSet
 from lab.views import (
     EggCountViewSet,
@@ -31,5 +32,7 @@ router.register(
     ReceptionPolicyViewSet,
     basename="lab-reception-incident-policy",
 )
+router.register("external-labs", ExternalLabViewSet, basename="external-lab")
+router.register("pcr-batches", PcrBatchViewSet, basename="pcr-batch")
 router.register("recount-requests", RecountRequestViewSet, basename="recount-request")
 urlpatterns = [path("", include("lab.samples.urls")), *router.urls]

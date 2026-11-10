@@ -4392,6 +4392,194 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/external-labs/:
+    get:
+      operationId: external_labs_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: active
+        schema:
+          type: boolean
+          nullable: true
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - external-labs
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedExternalLabList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: external_labs_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - external-labs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExternalLabRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLab'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/external-labs/{id}/:
+    get:
+      operationId: external_labs_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this external lab.
+        required: true
+      tags:
+      - external-labs
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLab'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    patch:
+      operationId: external_labs_partial_update
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this external lab.
+        required: true
+      tags:
+      - external-labs
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedExternalLabUpdateRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExternalLab'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/field/bootstrap/:
     get:
       operationId: field_bootstrap_list
@@ -10145,6 +10333,945 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OvitrapHistory'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/:
+    get:
+      operationId: pcr_batches_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: external_lab
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: search
+        schema:
+          type: string
+          maxLength: 100
+      - in: query
+        name: shipped_from
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: shipped_to
+        schema:
+          type: string
+          format: date
+      - in: query
+        name: status
+        schema:
+          enum:
+          - preparing
+          - ready_to_ship
+          - shipped
+          - received_by_lab
+          - results_received
+          - closed
+          - voided
+          type: string
+          minLength: 1
+        description: |-
+          * `preparing` - preparing
+          * `ready_to_ship` - ready_to_ship
+          * `shipped` - shipped
+          * `received_by_lab` - received_by_lab
+          * `results_received` - results_received
+          * `closed` - closed
+          * `voided` - voided
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPcrBatchPageList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: pcr_batches_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrBatchCreateRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/:
+    get:
+      operationId: pcr_batches_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/close/:
+    post:
+      operationId: pcr_batches_close_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrStepRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/events/{event_id}/evidence/:
+    get:
+      operationId: pcr_batches_events_evidence_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: event_id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F-]{36}$
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/ready/:
+    post:
+      operationId: pcr_batches_ready_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrStepRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/receive/:
+    post:
+      operationId: pcr_batches_receive_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrStepRequest'
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/reports/:
+    post:
+      operationId: pcr_batches_reports_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrReportRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/reports/{report_id}/file/:
+    get:
+      operationId: pcr_batches_reports_file_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      - in: path
+        name: report_id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F-]{36}$
+        required: true
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/results/:
+    post:
+      operationId: pcr_batches_results_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrResultsRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/results-preview/:
+    post:
+      operationId: pcr_batches_results_preview_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrResultsPreviewRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrPreview'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/results-template/:
+    get:
+      operationId: pcr_batches_results_template_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            text/csv:
+              schema:
+                type: string
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/results/{result_id}/void/:
+    post:
+      operationId: pcr_batches_results_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      - in: path
+        name: result_id
+        schema:
+          type: string
+          pattern: ^[0-9a-fA-F-]{36}$
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/ship/:
+    post:
+      operationId: pcr_batches_ship_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrShipRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/undo/:
+    post:
+      operationId: pcr_batches_undo_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/{id}/void/:
+    post:
+      operationId: pcr_batches_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this pcr batch.
+        required: true
+      tags:
+      - pcr-batches
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PcrReasonRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrBatchDetail'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/eligible-samples/:
+    get:
+      operationId: pcr_batches_eligible_samples_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: epi_week
+        schema:
+          type: string
+          maxLength: 10
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      - in: query
+        name: search
+        schema:
+          type: string
+          maxLength: 100
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPcrSampleEntryList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/pcr-batches/summary/:
+    get:
+      operationId: pcr_batches_summary_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - pcr-batches
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PcrSummary'
           description: ''
         default:
           description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
@@ -20922,6 +22049,50 @@ components:
       - humidity_pct
       - location_id
       - temperature_c
+    ExternalLab:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        name:
+          type: string
+          maxLength: 200
+        contact:
+          type: string
+          default: ''
+          maxLength: 200
+        address:
+          type: string
+          default: ''
+          maxLength: 500
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - id
+      - name
+    ExternalLabRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contact:
+          type: string
+          default: ''
+          maxLength: 200
+        address:
+          type: string
+          default: ''
+          maxLength: 500
+        is_active:
+          type: boolean
+          default: true
+      required:
+      - name
     ExtraObservation:
       type: object
       properties:
@@ -26897,6 +28068,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EvaluationRead'
+    PaginatedExternalLabList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ExternalLab'
     PaginatedFuelLoadList:
       type: object
       required:
@@ -27541,6 +28735,52 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/PaddleReuseReceipt'
+    PaginatedPcrBatchPageList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrBatchPage'
+    PaginatedPcrSampleEntryList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrSampleEntry'
     PaginatedPermitList:
       type: object
       required:
@@ -28500,6 +29740,21 @@ components:
           minimum: 0
         requires_photo:
           type: boolean
+    PatchedExternalLabUpdateRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        contact:
+          type: string
+          maxLength: 200
+        address:
+          type: string
+          maxLength: 500
+        is_active:
+          type: boolean
     PatchedLocationWriteRequest:
       type: object
       properties:
@@ -28805,6 +30060,565 @@ components:
           maxItems: 2
         is_active:
           type: boolean
+    PcrBatchCreateRequest:
+      type: object
+      properties:
+        external_lab_id:
+          type: string
+          format: uuid
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrTargetEnum'
+          maxItems: 2
+          minItems: 1
+        sample_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 500
+          minItems: 1
+        notes:
+          type: string
+          default: ''
+          maxLength: 1000
+      required:
+      - external_lab_id
+      - sample_ids
+      - targets
+    PcrBatchDetail:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        external_lab_id:
+          type: string
+          format: uuid
+        external_lab_name:
+          type: string
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrTargetEnum'
+        sample_count:
+          type: integer
+        status:
+          $ref: '#/components/schemas/PcrBatchStatusEnum'
+        shipped_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        external_lab:
+          $ref: '#/components/schemas/PcrLabSummary'
+        notes:
+          type: string
+        author_name:
+          type: string
+        samples:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrSampleEntry'
+        events:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrEvent'
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrResult'
+        reports:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrReportFile'
+      required:
+      - author_name
+      - code
+      - created_at
+      - events
+      - external_lab
+      - external_lab_id
+      - external_lab_name
+      - id
+      - notes
+      - reports
+      - results
+      - sample_count
+      - samples
+      - shipped_at
+      - status
+      - targets
+    PcrBatchPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          nullable: true
+        previous:
+          type: string
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrBatchRow'
+        status_counts:
+          $ref: '#/components/schemas/PcrStatusCounts'
+      required:
+      - count
+      - next
+      - previous
+      - results
+      - status_counts
+    PcrBatchRow:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        external_lab_id:
+          type: string
+          format: uuid
+        external_lab_name:
+          type: string
+        targets:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrTargetEnum'
+        sample_count:
+          type: integer
+        status:
+          $ref: '#/components/schemas/PcrBatchStatusEnum'
+        shipped_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - code
+      - created_at
+      - external_lab_id
+      - external_lab_name
+      - id
+      - sample_count
+      - shipped_at
+      - status
+      - targets
+    PcrBatchStatusEnum:
+      enum:
+      - preparing
+      - ready_to_ship
+      - shipped
+      - received_by_lab
+      - results_received
+      - closed
+      - voided
+      type: string
+      description: |-
+        * `preparing` - preparing
+        * `ready_to_ship` - ready_to_ship
+        * `shipped` - shipped
+        * `received_by_lab` - received_by_lab
+        * `results_received` - results_received
+        * `closed` - closed
+        * `voided` - voided
+    PcrEvent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        kind:
+          $ref: '#/components/schemas/PcrEventKindEnum'
+        occurred_at:
+          type: string
+          format: date-time
+        created_at:
+          type: string
+          format: date-time
+        author_name:
+          type: string
+        carrier:
+          type: string
+        tracking_number:
+          type: string
+        has_evidence:
+          type: boolean
+        evidence_type:
+          type: string
+          nullable: true
+        undone:
+          type: boolean
+        reason:
+          type: string
+      required:
+      - author_name
+      - carrier
+      - created_at
+      - evidence_type
+      - has_evidence
+      - id
+      - kind
+      - occurred_at
+      - reason
+      - tracking_number
+      - undone
+    PcrEventKindEnum:
+      enum:
+      - ready
+      - ship
+      - receive
+      - results
+      - close
+      - undo
+      - void
+      type: string
+      description: |-
+        * `ready` - ready
+        * `ship` - ship
+        * `receive` - receive
+        * `results` - results
+        * `close` - close
+        * `undo` - undo
+        * `void` - void
+    PcrLabSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        contact:
+          type: string
+        address:
+          type: string
+      required:
+      - address
+      - contact
+      - id
+      - name
+    PcrOutcomeEnum:
+      enum:
+      - positive
+      - negative
+      - invalid
+      type: string
+      description: |-
+        * `positive` - positive
+        * `negative` - negative
+        * `invalid` - invalid
+    PcrPreview:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrPreviewRow'
+        valid_count:
+          type: integer
+        error_count:
+          type: integer
+        file_error:
+          type: string
+          nullable: true
+      required:
+      - error_count
+      - file_error
+      - rows
+      - valid_count
+    PcrPreviewRow:
+      type: object
+      properties:
+        line:
+          type: integer
+        sample_code:
+          type: string
+        sample_id:
+          type: string
+          format: uuid
+          nullable: true
+        target:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PcrTargetEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        outcome:
+          nullable: true
+          oneOf:
+          - $ref: '#/components/schemas/PcrOutcomeEnum'
+          - $ref: '#/components/schemas/NullEnum'
+        serotype:
+          type: string
+        ct_value:
+          type: string
+          nullable: true
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrRowError'
+      required:
+      - ct_value
+      - errors
+      - line
+      - outcome
+      - sample_code
+      - sample_id
+      - serotype
+      - target
+    PcrReasonRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
+    PcrReportFile:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        content_type:
+          type: string
+        size_bytes:
+          type: integer
+        author_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - author_name
+      - content_type
+      - created_at
+      - id
+      - size_bytes
+    PcrReportRequest:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          format: uuid
+      required:
+      - upload_id
+    PcrResult:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sample_id:
+          type: string
+          format: uuid
+        sample_code:
+          type: string
+        target:
+          $ref: '#/components/schemas/PcrTargetEnum'
+        outcome:
+          $ref: '#/components/schemas/PcrOutcomeEnum'
+        serotype:
+          type: string
+        ct_value:
+          type: string
+          nullable: true
+        author_name:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        current:
+          type: boolean
+        voided:
+          type: boolean
+        void_reason:
+          type: string
+        superseded:
+          type: boolean
+      required:
+      - author_name
+      - created_at
+      - ct_value
+      - current
+      - id
+      - outcome
+      - sample_code
+      - sample_id
+      - serotype
+      - superseded
+      - target
+      - void_reason
+      - voided
+    PcrResultRowRequest:
+      type: object
+      properties:
+        sample_id:
+          type: string
+          format: uuid
+        target:
+          $ref: '#/components/schemas/PcrTargetEnum'
+        outcome:
+          $ref: '#/components/schemas/PcrOutcomeEnum'
+        serotype:
+          default: ''
+          oneOf:
+          - $ref: '#/components/schemas/SerotypeEnum'
+          - $ref: '#/components/schemas/BlankEnum'
+        ct_value:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,3}(?:\.\d{0,2})?$
+          nullable: true
+      required:
+      - outcome
+      - sample_id
+      - target
+    PcrResultsPreviewRequest:
+      type: object
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 200000
+      required:
+      - content
+    PcrResultsRequest:
+      type: object
+      properties:
+        rows:
+          type: array
+          items:
+            $ref: '#/components/schemas/PcrResultRowRequest'
+      required:
+      - rows
+    PcrRowError:
+      type: object
+      properties:
+        field:
+          type: string
+        code:
+          type: string
+        params:
+          type: object
+          additionalProperties: {}
+      required:
+      - code
+      - field
+      - params
+    PcrSampleEntry:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        quadrant_code:
+          type: string
+          nullable: true
+        quadrant_name:
+          type: string
+          nullable: true
+        center_name:
+          type: string
+        epi_week:
+          type: string
+          nullable: true
+        collected_at:
+          type: string
+          format: date-time
+      required:
+      - center_name
+      - code
+      - collected_at
+      - epi_week
+      - id
+      - quadrant_code
+      - quadrant_name
+    PcrShipRequest:
+      type: object
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+          nullable: true
+        carrier:
+          type: string
+          default: ''
+          maxLength: 200
+        tracking_number:
+          type: string
+          minLength: 1
+          maxLength: 100
+        evidence_id:
+          type: string
+          format: uuid
+          nullable: true
+      required:
+      - tracking_number
+    PcrStatusCounts:
+      type: object
+      properties:
+        preparing:
+          type: integer
+        ready_to_ship:
+          type: integer
+        shipped:
+          type: integer
+        received_by_lab:
+          type: integer
+        results_received:
+          type: integer
+        closed:
+          type: integer
+        voided:
+          type: integer
+      required:
+      - closed
+      - preparing
+      - ready_to_ship
+      - received_by_lab
+      - results_received
+      - shipped
+      - voided
+    PcrStepRequest:
+      type: object
+      properties:
+        occurred_at:
+          type: string
+          format: date-time
+          nullable: true
+    PcrSummary:
+      type: object
+      properties:
+        in_process:
+          type: integer
+        pending_results:
+          type: integer
+      required:
+      - in_process
+      - pending_results
+    PcrTargetEnum:
+      enum:
+      - wolbachia
+      - dengue
+      type: string
+      description: |-
+        * `wolbachia` - wolbachia
+        * `dengue` - dengue
     PeopleReceipt:
       type: object
       properties:
@@ -34274,6 +36088,15 @@ components:
       - key
       - label
       - points
+    SerotypeEnum:
+      enum:
+      - DENV-1
+      - DENV-2
+      - DENV-3
+      - DENV-4
+      type: string
+      description: "* `` - \n* `DENV-1` - DENV-1\n* `DENV-2` - DENV-2\n* `DENV-3`
+        - DENV-3\n* `DENV-4` - DENV-4"
     ServiceKindEnum:
       enum:
       - routine

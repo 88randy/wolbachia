@@ -14,6 +14,7 @@ from organizations.demo_seed import (
     incidents_history,
     lab_history,
     operations,
+    pcr_history,
     people,
     samples_history,
 )
@@ -78,4 +79,5 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     retrying(lambda: incidents_history.ensure_incidents(organization, members, quadrants))
     entomologist = UploadActor(members["demo-entomologist"].user, organization)
     lab_history.ensure_lab_history(organization, entomologist)
+    retrying(lambda: pcr_history.ensure_pcr_history(organization, members, device))
     return DemoResult(organization, members, quadrants, ovitraps)
