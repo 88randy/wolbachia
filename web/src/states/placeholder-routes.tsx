@@ -7,7 +7,6 @@ import { AreaPlaceholder } from "./AreaPlaceholder";
  * move it to `web/src/<area>/routes.tsx` and drop `hidden`.
  */
 export const placeholderRoutes = [
-  areaHomeRoute("community", () => <AreaPlaceholder areaId="community" />),
   areaHomeRoute("dashboards", () => <AreaPlaceholder areaId="dashboards" />),
   areaHomeRoute("regulatory", () => <AreaPlaceholder areaId="regulatory" />),
 ];

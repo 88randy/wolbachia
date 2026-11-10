@@ -3,6 +3,7 @@ import { transfers } from "./transfers.ts";
 import { allocation } from "./allocation.ts";
 import { permitDocument } from "./permitDocument.ts";
 import { permits } from "./permits.ts";
+import { releases } from "./releases.ts";
 import { transferEvidence } from "./transferEvidence.ts";
 
 import { trainings } from "./trainings.ts";
@@ -52,6 +53,7 @@ export const en: Record<MessageKey, string> = {
   ...transferEvidence,
   ...permitDocument,
   ...permits,
+  ...releases,
 
   ...trainings,
   ...evaluations,
