@@ -58,6 +58,7 @@ def permits(org_a, make_member, monkeypatch, settings, tmp_path):
         now=now,
     )
     context.document_id = verified_training_evidence(context)
+    context.successor_document_id = verified_training_evidence(context)
     context.kind = create_permit_type(
         context.actor,
         {
@@ -87,7 +88,7 @@ def version_body(context, **overrides):
         "type": str(context.kind.pk),
         "number": "Reviewed successor number",
         "authority": "Synthetic regulatory authority",
-        "official_document": str(context.document_id),
+        "official_document": str(context.successor_document_id),
         "document_attestation": "Reviewed official successor document geometry",
         "geometry": GEOMETRY,
         "valid_from": context.now.isoformat(),
