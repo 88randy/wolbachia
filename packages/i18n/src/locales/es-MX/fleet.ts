@@ -122,6 +122,8 @@ export const fleet = {
   "fleet.gap.insufficient": "Datos insuficientes",
   "fleet.summary.unknown": "Sin dato",
   "fleet.summary.system": "Sistema / sin referencia de autor",
+  "fleet.summary.metrics": "Kilometraje y servicio",
+  "fleet.summary.openService": "Ver servicio",
   "fleet.summary.createdAt": "Fecha de alta",
   "fleet.summary.createdBy": "Referencia de quien registró",
   "fleet.summary.voidedAt": "Fecha de anulación",

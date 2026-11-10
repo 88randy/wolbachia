@@ -25,12 +25,14 @@ const DASH = [3, 2];
 
 interface Props {
   data: EditorData;
+  /** Quadrants the first view fits to. */
+  viewQuadrants: EditorData["quadrants"];
   editor: MapEditor;
   source: MapSource;
   onFailure: () => void;
 }
 
-export default function EditorMap({ data, editor, source, onFailure }: Props) {
+export default function EditorMap({ data, viewQuadrants, editor, source, onFailure }: Props) {
   const { t } = useTranslation();
   const colors = useMapTheme();
   const { draw, setDraw, tool, quadrantId, selectQuadrant } = editor;
@@ -68,7 +70,7 @@ export default function EditorMap({ data, editor, source, onFailure }: Props) {
   return (
     <div className="relative h-full w-full overflow-hidden rounded-2xl border border-line bg-surface">
       <Map
-        initialViewState={initialView(data.quadrants)}
+        initialViewState={initialView(viewQuadrants)}
         mapStyle={mapStyle}
         maxZoom={MAX_MAP_ZOOM}
         workerUrl={workerUrl}

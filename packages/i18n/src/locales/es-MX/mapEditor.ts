@@ -76,8 +76,11 @@ export const mapEditor = {
   "mapEditor.action.saveSampling": "Guardar punto de muestreo",
   "mapEditor.action.saveRelease": "Guardar punto de liberación",
   "mapEditor.action.saveChanges": "Guardar cambios",
-  "mapEditor.action.discard": "Descartar cambios",
+  "mapEditor.action.discard": "Descartar",
   "mapEditor.action.list": "Ver lista",
+  "mapEditor.advanced": "Avanzado: editar coordenadas",
+  "mapEditor.action.openRecord": "Abrir ficha",
+  "mapEditor.action.editOnMap": "Editar en el mapa",
   "mapEditor.action.open": "Editar mapa",
 
   "mapEditor.saved.quadrant": "Cuadrante guardado.",

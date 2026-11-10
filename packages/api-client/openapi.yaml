@@ -18274,6 +18274,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -18286,6 +18290,7 @@ components:
       - block
       - created_at
       - created_by
+      - created_by_name
       - effective_from
       - geometry
       - id
@@ -21185,6 +21190,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -21196,6 +21205,7 @@ components:
       required:
       - created_at
       - created_by
+      - created_by_name
       - decision
       - evidence
       - id
@@ -30142,6 +30152,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -30153,6 +30167,7 @@ components:
       required:
       - created_at
       - created_by
+      - created_by_name
       - effective_from
       - id
       - is_retired
@@ -30903,6 +30918,10 @@ components:
           format: uuid
           readOnly: true
           nullable: true
+        created_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         created_at:
           type: string
           format: date-time
@@ -30919,6 +30938,7 @@ components:
       required:
       - created_at
       - created_by
+      - created_by_name
       - effective_from
       - geometry
       - id

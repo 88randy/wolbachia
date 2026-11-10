@@ -71,8 +71,11 @@ export const mapEditor: Record<keyof typeof source, string> = {
   "mapEditor.action.saveSampling": "Save sampling point",
   "mapEditor.action.saveRelease": "Save release point",
   "mapEditor.action.saveChanges": "Save changes",
-  "mapEditor.action.discard": "Discard changes",
+  "mapEditor.action.discard": "Discard",
   "mapEditor.action.list": "See list",
+  "mapEditor.advanced": "Advanced: edit coordinates",
+  "mapEditor.action.openRecord": "Open record",
+  "mapEditor.action.editOnMap": "Edit on the map",
   "mapEditor.action.open": "Edit map",
 
   "mapEditor.saved.quadrant": "Quadrant saved.",

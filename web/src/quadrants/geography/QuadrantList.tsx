@@ -7,12 +7,9 @@ import { FilterBar } from "../../data-table/FilterBar";
 import { PageFrame } from "../../components/templates/PageFrame";
 import { PageHeader } from "../../components/templates/PageHeader";
 import { useDocumentTitle } from "../../shell/use-document-title";
-import { Button } from "../../ui/Button";
 import type { GeographyScope } from "./use-w-15";
-import { MapPanel } from "./MapPanel";
-import { QuadrantCreateDialog } from "./QuadrantCreateDialog";
+import { LazyGeographyMap } from "./LazyGeographyMap";
 import { useQuadrantList } from "./use-quadrant-list";
-import styles from "./geography.module.css";
 export function QuadrantList({ scope }: { scope: GeographyScope }) {
   const { t } = useTranslation();
   useDocumentTitle(t("geography.page.title"));
@@ -25,13 +22,14 @@ export function QuadrantList({ scope }: { scope: GeographyScope }) {
         actions={
           <>
             {scope.canCreateQuadrant && (
-              <Button
-                variant="secondary"
-                leadingIcon={<Plus aria-hidden="true" />}
-                onClick={list.open}
+              <Link
+                to="/quadrants/editor"
+                search={{ tool: "quadrant" }}
+                className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-line-strong bg-surface px-4 text-sm font-semibold text-ink hover:bg-tint"
               >
+                <Plus aria-hidden="true" className="size-4" />
                 {t("geography.page.create")}
-              </Button>
+              </Link>
             )}
             {canEdit && (
               <Link
@@ -46,11 +44,15 @@ export function QuadrantList({ scope }: { scope: GeographyScope }) {
         }
       />
       <FilterBar controller={list.table.controller} />
-      <div className={styles.workspace}>
-        <MapPanel quadrants={list.query.data?.results ?? []} />
+      <div className="grid min-w-0 items-start gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
         <DataTable caption={t("geography.page.list")} {...list.table} />
+        <section
+          aria-label={t("geography.map.label")}
+          className="min-w-0 overflow-hidden rounded-2xl border border-line bg-surface p-3 shadow-card xl:sticky xl:top-4"
+        >
+          <LazyGeographyMap quadrants={list.query.data?.results ?? []} />
+        </section>
       </div>
-      {list.isCreating && <QuadrantCreateDialog scope={scope} onClose={list.close} />}
     </PageFrame>
   );
 }

@@ -21,6 +21,7 @@ export function ResetPasswordForm({ uid, token }: ResetPasswordFormProps) {
       <ServiceFailureAlert id="reset-alert" ref={alertRef} failure={failure} />
       <ResetPasswordFields form={form} />
       <SubmitButton
+        block
         label={t("auth.reset.submit")}
         busyLabel={t("auth.login.submitting")}
         isBusy={form.formState.isSubmitting}

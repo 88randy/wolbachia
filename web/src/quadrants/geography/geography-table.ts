@@ -1,4 +1,5 @@
 import { CENTER_FILTER } from "../../centers/center-filter";
+import { CENTER_LOOKUP } from "../../lookups/lookup-sources";
 import type { TableQueryConfig, TableState } from "../../data-table/table-types";
 export const PAGE_SIZE = 25;
 export const QUADRANT_TABLE: TableQueryConfig = {
@@ -7,8 +8,10 @@ export const QUADRANT_TABLE: TableQueryConfig = {
   defaultOrdering: "code",
   sortableIds: ["code", "created_at"],
   supportsVoided: false,
-  // The shell center filter already scopes the list; no raw center id field on screen.
-  filters: [{ key: "search", kind: "text", labelKey: "geography.field.search", maxLength: 100 }],
+  filters: [
+    { ...CENTER_FILTER, input: "lookup", lookup: CENTER_LOOKUP },
+    { key: "search", kind: "text", labelKey: "geography.field.search", maxLength: 100 },
+  ],
 };
 export const RECORD_TABLE: TableQueryConfig = {
   paging: "page",

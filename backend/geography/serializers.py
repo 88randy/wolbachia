@@ -8,6 +8,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 
 from core.fields import OrgScopedPrimaryKeyRelatedField
+from core.models import OrgScopedModel
 from core.serializers import OrgScopedModelSerializer
 from geography.geometry import validate_location, validate_polygon
 from geography.models import (
@@ -83,7 +84,22 @@ class GeographyRelatedField(OrgScopedPrimaryKeyRelatedField):
             raise NotFound from error
 
 
+def author_name(record: OrgScopedModel) -> str | None:
+    """Display name of the author (read-only); never an id on screen."""
+    user = record.created_by
+    if user is None:
+        return None
+    return user.get_full_name() or user.get_username()
+
+
+
 class ExcludedPointResolutionSerializer(OrgScopedModelSerializer):
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
+
     class Meta:
         model = ExcludedPointResolution
         fields = [
@@ -93,6 +109,7 @@ class ExcludedPointResolutionSerializer(OrgScopedModelSerializer):
             "decision",
             "evidence",
             "created_by",
+            "created_by_name",
             "created_at",
         ]
         read_only_fields = fields
@@ -101,6 +118,12 @@ class ExcludedPointResolutionSerializer(OrgScopedModelSerializer):
 class QuadrantVersionSerializer(OrgScopedModelSerializer):
     geometry = PolygonField(read_only=True)
     point_resolutions = ExcludedPointResolutionSerializer(many=True, read_only=True)
+
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
 
     class Meta:
         model = QuadrantVersion
@@ -111,6 +134,7 @@ class QuadrantVersionSerializer(OrgScopedModelSerializer):
             "revision",
             "effective_from",
             "created_by",
+            "created_by_name",
             "created_at",
             "point_resolutions",
         ]
@@ -119,6 +143,12 @@ class QuadrantVersionSerializer(OrgScopedModelSerializer):
 
 class BlockVersionSerializer(OrgScopedModelSerializer):
     geometry = PolygonField(read_only=True)
+
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
 
     class Meta:
         model = BlockVersion
@@ -129,6 +159,7 @@ class BlockVersionSerializer(OrgScopedModelSerializer):
             "revision",
             "effective_from",
             "created_by",
+            "created_by_name",
             "created_at",
         ]
         read_only_fields = fields
@@ -136,6 +167,12 @@ class BlockVersionSerializer(OrgScopedModelSerializer):
 
 class PointVersionSerializer(OrgScopedModelSerializer):
     location = LocationField(read_only=True)
+
+    created_by_name = serializers.SerializerMethodField()
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_created_by_name(self, record: OrgScopedModel) -> str | None:
+        return author_name(record)
 
     class Meta:
         model = PointVersion
@@ -147,6 +184,7 @@ class PointVersionSerializer(OrgScopedModelSerializer):
             "effective_from",
             "is_retired",
             "created_by",
+            "created_by_name",
             "created_at",
         ]
         read_only_fields = fields

@@ -3,8 +3,8 @@ import { useGeographyScope } from "../geography/use-w-15";
 import { MapEditorScreen } from "./MapEditorScreen";
 
 /** W23 map editor: draw quadrants, place sampling and release points, move or correct them. */
-export function W23MapEditorPage() {
+export function W23MapEditorPage({ startTool }: { startTool?: "quadrant" }) {
   const scope = useGeographyScope();
   if (!scope.canRead || !(scope.canPublish || scope.canCreatePoint)) return <NotFoundState />;
-  return <MapEditorScreen key={scope.context} scope={scope} />;
+  return <MapEditorScreen key={scope.context} scope={scope} startTool={startTool} />;
 }

@@ -1,3 +1,4 @@
+import { EntityName } from "../../lookups/EntityName";
 import { useFormatDateTime } from "../../format/use-format-date-time";
 import { useTranslation } from "react-i18next";
 import { nameOrDash } from "../../lookups/use-reference-names";
