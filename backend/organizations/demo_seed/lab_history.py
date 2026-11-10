@@ -21,7 +21,7 @@ from organizations.models import Organization
 from ovitraps.models import Bag
 from uploads.access import UploadActor
 
-HISTORY_BAG_PREFIX = "B-20"  # history codes look like B-2026W45-0001; phone bags are B-DEMO-NNN
+HISTORY_BAG_PREFIX = "B-20"  # history codes look like B-2026W45-0001; phone bags are B-MER-NNN
 BAGS_PER_WEEK = 18  # each lab command takes seconds; this keeps the seed to a few minutes
 
 

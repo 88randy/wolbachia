@@ -33,7 +33,7 @@ from shifts.models import Motorcycle, Shift
 
 WEEKS = 8  # weeks of readings before the current week
 SEED = 358
-SKIPPED_BLOCK = "Q-DEMO-01-B1"  # placed live through the sync pipeline, on the phone
+SKIPPED_BLOCK = "Q-MER-01-B1"  # placed live through the sync pipeline, on the phone
 RULES_VERSION = "demo-seed"
 LOCAL_START = time(8, 0)
 PRICE_PER_LITRE = Decimal("24.30")
@@ -44,14 +44,14 @@ BASE_ODOMETER = 1800
 POSITIVITY_BY_WEEK = {8: 0.70, 7: 0.75, 6: 0.80, 5: 0.78, 4: 0.72, 3: 0.64, 2: 0.57, 1: 0.50}
 MEAN_EGGS_BY_WEEK = {8: 58, 7: 68, 6: 78, 5: 73, 4: 64, 3: 53, 2: 45, 1: 38}
 ZONE_FACTOR = {
-    "Q-DEMO-01": 0.80,
-    "Q-DEMO-02": 0.85,
-    "Q-DEMO-03": 1.25,
-    "Q-DEMO-04": 1.15,
-    "Q-DEMO-05": 0.90,
-    "Q-DEMO-06": 1.00,
-    "Q-DEMO-07": 0.75,
-    "Q-DEMO-08": 1.10,
+    "Q-MER-01": 0.80,
+    "Q-MER-02": 0.85,
+    "Q-MER-03": 1.25,
+    "Q-MER-04": 1.15,
+    "Q-MER-05": 0.90,
+    "Q-MER-06": 1.00,
+    "Q-MER-07": 0.75,
+    "Q-MER-08": 1.10,
 }
 # (finding code, share). Findings without a paddle leave no bag.
 FINDINGS = (
@@ -483,8 +483,10 @@ def hotspot_factor(point_code: str) -> float:
 
 
 def already_seeded(organization: Organization) -> bool:
-    """A closed shift exists only after the history ran (the phone's shifts are never closed)."""
-    return Shift.objects.filter(organization=organization, status="closed").exists()
+    """The history exists once its first placement does."""
+    return Ovitrap.objects.filter(
+        organization=organization, client_uuid=demo_id("ovitrap:Q-MER-01-B2-P1")
+    ).exists()
 
 
 def ensure_history(
@@ -500,7 +502,9 @@ def ensure_history(
     zone = ZoneInfo(organization.timezone)
     today = local_today(organization.timezone, timezone.now())
     points = list(
-        SamplingPoint.objects.filter(organization=organization)
+        SamplingPoint.objects.filter(
+            organization=organization, block__quadrant__code__startswith="Q-MER-"
+        )
         .exclude(block__code=SKIPPED_BLOCK)
         .select_related("block__quadrant")
         .order_by("code")
