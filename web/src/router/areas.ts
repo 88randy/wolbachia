@@ -19,7 +19,7 @@ export const AREAS = [
     id: "operations",
     path: "/operations",
     group: "operation",
-    requiredPermissions: ["review_item.read", "relocation.read"],
+    requiredPermissions: ["shift.read", "review_item.read", "relocation.read"],
   },
   {
     id: "quadrants",

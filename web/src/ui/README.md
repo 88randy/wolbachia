@@ -5,7 +5,8 @@ content, and Radix unstyled primitives. No business or network behavior belongs
 here. Import the component from its own file.
 
 - `Button`: `variant` (`primary`, `secondary`, `tertiary`, `ghost`), `size`
-  (`sm`, `md`, `lg`, `xl`), optional `leadingIcon` and `loading`. Keep a translated
+  (`sm`, `md`, `lg`, `xl`), optional `leadingIcon` and `loading`, and the native React 19
+  button `ref` for focus management. Keep a translated
   accessible name on icon-only controls. Explicit `aria-disabled` actions stay
   focusable and reject activation; `loading` also prevents duplicate submission. Explain disabled actions beside the
   control or with `Tooltip`; a reason must name who can unblock it.
