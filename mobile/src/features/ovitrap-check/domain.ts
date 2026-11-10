@@ -22,10 +22,10 @@ export const PLACEMENT_PREPARATION = [
   "marked",
 ] as const;
 /** Scans have one strict interpretation. Explicit manual entry is a separate action. */
-export function parseQr(value: string, expected: QrKind): { kind: QrKind; id: string } | null {
+export function parseQr(value: string, expected?: QrKind): { kind: QrKind; id: string } | null {
   const match = QR_PATTERN.exec(value);
-  if (!match || match[0] !== value || match[1] !== expected || !match[2]) return null;
-  return { kind: expected, id: match[2].toLowerCase() };
+  if (!match || match[0] !== value || (expected && match[1] !== expected) || !match[2]) return null;
+  return { kind: match[1] as QrKind, id: match[2].toLowerCase() };
 }
 export function normalizePaddle(draft: Draft): Draft {
   const isAbsent = NO_PADDLE_FINDINGS.includes(draft.finding);

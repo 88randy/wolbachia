@@ -40,9 +40,12 @@ import { createFuel } from "../features/fuel/create-fuel.ts";
 import type { FuelService } from "../features/fuel/service.ts";
 import { createIncidents } from "../features/incidents/create-incidents.ts";
 import type { IncidentService } from "../features/incidents/service.ts";
+import type { ScannerService } from "../features/scanner/service.ts";
+import { createScanner } from "../features/scanner/create-scanner.ts";
 
 /** Everything the screens share, created once at startup. */
 export interface AppServices {
+  readonly scanner: ScannerService;
   readonly attachments: Attachments;
   readonly supplyReceipt: SupplyReceiptService;
   readonly fuel: FuelService;
@@ -93,7 +96,8 @@ export async function createServices(): Promise<AppServices> {
   const captureDeps = { db, engine, requests, tokens, shiftOpen, attachments, evidence, auth };
   const captures = createCaptures(captureDeps, bundle, day);
   const forms = createLocalForms({ ...captureDeps, day, bundle, deviceId });
-  return { ...shared, ...captures, engine, shiftOpen, day, ...forms };
+  const scanner = createScanner(db, bundle, captures.ovitrapCheck);
+  return { ...shared, ...captures, scanner, engine, shiftOpen, day, ...forms };
 }
 function captureIdentity(
   auth: AuthController | null,

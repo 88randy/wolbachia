@@ -2,6 +2,49 @@
 import type { mobile as source } from "../es-MX/mobile.ts";
 
 export const mobile: Record<keyof typeof source, string> = {
+  "mobile.scanner.title": "Scan code",
+  "mobile.scanner.hint": "Point at the program QR code.",
+  "mobile.scanner.start": "Use camera",
+  "mobile.scanner.manual": "Enter code",
+  "mobile.scanner.code": "Code printed below the QR",
+  "mobile.scanner.lookup": "Find code",
+  "mobile.scanner.torchOn": "Turn torch on",
+  "mobile.scanner.torchOff": "Turn torch off",
+  "mobile.scanner.denied":
+    "The app cannot use the camera. Enable it in phone Settings › Permissions › Camera, or enter the code.",
+  "mobile.scanner.settings": "Open phone settings",
+  "mobile.scanner.cameraFailed":
+    "We could not open the camera. Try again or enter the printed code.",
+  "mobile.scanner.damaged":
+    "If the code cannot be read, clean the label, turn on the torch or enter the printed code.",
+  "mobile.scanner.retry": "Scan again",
+  "mobile.scanner.resume": "Continue capture saved on the phone",
+  "mobile.scanner.loading": "Looking in the downloaded copy…",
+  "mobile.scanner.report": "Report damage or expiry",
+  "mobile.scanner.invalid":
+    "We could not recognize this code. Find the program label or enter the printed code.",
+  "mobile.scanner.version":
+    "This code version is not supported. Enter the printed code or contact your supervisor.",
+  "mobile.scanner.kind":
+    "This code type does not match this capture. Scan the requested label or enter its code.",
+  "mobile.scanner.unavailable":
+    "This record is unavailable in your downloaded copy. Scan another code or contact your supervisor.",
+  "mobile.scanner.retired":
+    "This ovitrap is retired. Scan another label or tell your supervisor if you found it in the field.",
+  "mobile.scanner.duplicate":
+    "This code has already been read. Continue the capture or scan again; no additional record was added.",
+  "mobile.scanner.storage":
+    "We could not save the change on the phone. Keep your capture and try again.",
+  "mobile.scanner.supplyTitle": "Supply detail",
+  "mobile.scanner.lot": "Lot identifier",
+  "mobile.scanner.quantity": "Expected quantity in the downloaded plan",
+  "mobile.scanner.unit": "Unit version identifier",
+  "mobile.scanner.assignment": "Source assignment",
+  "mobile.scanner.date": "Assignment date",
+  "mobile.scanner.revision": "Downloaded plan revision",
+  "mobile.scanner.sourceLine": "Source line",
+  "mobile.scanner.missingMetadata":
+    "The downloaded copy has no supply or unit names, printed lot code or expiry. This is a planned quantity; it does not confirm receipt or stock. Check the label or contact your supervisor.",
   "mobile.shiftClose.refreshSupplies": "Refresh downloaded receipts",
   "mobile.shiftClose.sourceFrame":
     "Downloaded confirmed balance; additional declarations are shown below.",
