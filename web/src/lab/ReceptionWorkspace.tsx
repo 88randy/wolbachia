@@ -8,14 +8,16 @@ import { ReceptionSummary } from "./ReceptionSummary";
 import { ReceptionViewSelect } from "./ReceptionViewSelect";
 import { ReceptionTable } from "./ReceptionTable";
 import { useReceptionWorkspace } from "./use-reception-workspace";
-import styles from "./reception.module.css";
+import { PageFrame } from "../components/templates/PageFrame";
+import { useDocumentTitle } from "../shell/use-document-title";
 
 export function ReceptionWorkspace() {
   const { t } = useTranslation();
   const workspace = useReceptionWorkspace();
+  useDocumentTitle(t("labReception.page.title"));
   const { actions, controller, view, canRead, canCount, changeView } = workspace;
   return (
-    <section className={styles.page}>
+    <PageFrame>
       <ReceptionHeader canCount={canCount} />
       <InlineNotice>{t("labReception.page.scope")}</InlineNotice>
       <ReceptionScanner actions={actions} />
@@ -27,6 +29,6 @@ export function ReceptionWorkspace() {
       ) : (
         <ReceptionTable key={view} controller={controller} view={view} actions={actions} />
       )}
-    </section>
+    </PageFrame>
   );
 }

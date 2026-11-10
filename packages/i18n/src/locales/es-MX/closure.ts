@@ -1,5 +1,6 @@
 export const closure = {
   "closure.page.title": "Cierre del cuadrante {code}",
+  "closure.crumb": "Cierre",
   "closure.page.purpose":
     "Revisa todos los bloqueos antes de cerrar la versión actual del cuadrante.",
   "closure.readiness.title": "Preparación para el cierre",
@@ -7,7 +8,8 @@ export const closure = {
   "closure.readiness.ready": "No quedan bloqueos. Puedes revisar y confirmar el cierre.",
   "closure.readiness.blocked":
     "Cada bloqueo debe resolverlo quien tenga el permiso indicado. Actualiza después de su resolución.",
-  "closure.blocker.unblocker": "Lo resuelve quien tenga el permiso: {permission}",
+  "closure.blocker.unblocker":
+    "Lo resuelve la persona de supervisión responsable de este pendiente.",
   "closure.blocker.reference": "Referencia: {reference}",
   "closure.readiness.version": "Versión: {version} · revisión {revision}",
   "closure.actions.refresh": "Actualizar preparación",

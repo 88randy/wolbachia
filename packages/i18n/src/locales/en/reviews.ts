@@ -48,5 +48,7 @@ export const reviews = {
   "reviews.workspace.consequence":
     "The server will recheck the original evidence, current authority and mandatory safety requirements before applying this immutable decision.",
   "reviews.workspace.operations": "Operations",
+  "reviews.workspace.purpose": "Records the system flagged that wait for your decision.",
+  "reviews.workspace.pick": "Pick a record from the list to see what happened and decide.",
   "reviews.workspace.closeDetail": "Close review details",
 } as const;

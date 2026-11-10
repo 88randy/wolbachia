@@ -4,6 +4,7 @@ import { areaHomeRoute } from "../router/area-route";
 import { authenticatedRoute } from "../router/base-routes";
 import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
+import { W28Page } from "./live/W28Page";
 import { OperationsHome } from "./OperationsHome";
 import { W31Page } from "./relocations/W31Page";
 import { W30Page } from "./reviews/W30Page";
@@ -40,6 +41,16 @@ const shiftsRoute = createRoute({
   component: ShiftsPage,
   errorComponent: AreaErrorState,
 });
+const liveRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/operations/live",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("operations", context.me, "shift.read");
+  },
+  component: W28Page,
+  errorComponent: AreaErrorState,
+});
 const shiftRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
   path: "/operations/shifts/$id",
@@ -55,6 +66,7 @@ export const operationRoutes = [
   areaHomeRoute("operations", OperationsHome),
   reviewsRoute,
   relocationsRoute,
+  liveRoute,
   shiftsRoute,
   shiftRoute,
 ];
