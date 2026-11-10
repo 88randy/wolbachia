@@ -43,6 +43,7 @@ import { field } from "./field.ts";
 import { courierFlow } from "./courierFlow.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
+import { platform } from "./platform.ts";
 import { rules } from "./rules.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
@@ -96,6 +97,7 @@ export const esMX = {
   ...sync,
   ...table,
   ...phones,
+  ...platform,
   ...rules,
   ...voiding,
 } as const;

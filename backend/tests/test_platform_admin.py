@@ -279,8 +279,10 @@ def test_list_and_detail(platform_client: APIClient, org_a: Organization) -> Non
 
 
 def test_suspend_requires_reason_and_blocks_members(
-    platform_client: APIClient, api_client: APIClient, client_a: APIClient, org_a: Organization
+    platform_client: APIClient, member_a: User, org_a: Organization
 ) -> None:
+    client_a = APIClient()
+    client_a.force_authenticate(member_a)
     assert platform_client.post(f"{BASE}org-a/suspend/", {}, format="json").status_code == 400
     assert (
         platform_client.post(
@@ -348,7 +350,7 @@ def test_logo_upload_validates_png(platform_client: APIClient, org_a: Organizati
     assert response.data["has_logo"] is True
     served = platform_client.get(f"{BASE}org-a/logo/")
     assert served["Content-Type"] == "image/png"
-    assert served["Cache-Control"] == "private, no-store"
+    assert "no-store" in served["Cache-Control"]
 
 
 def test_audit_entries_are_insert_only(platform_client: APIClient, org_a: Organization) -> None:

@@ -13,6 +13,7 @@ import type { LoginOutcome } from "../auth/request-login";
 import { useFocusAlert } from "../forms/use-focus-alert";
 import { runAuthOperation, useAbandonOnUnmount } from "./auth-operation";
 import type { Me } from "./me";
+import { isPlatformOnly, PLATFORM_HOME } from "./platform";
 import { reauthSchema } from "./reauth-schema";
 import type { ReauthValues } from "./reauth-schema";
 import { begin, commitKnown, isLatest, noteStaleLogin } from "./session-controller";
@@ -22,7 +23,8 @@ import { useMe } from "./use-me";
 
 /** After the queue: navigating can wait on the network, so it comes last. */
 async function goToChooserIfNeeded(me: Me, router: RegisteredRouter): Promise<void> {
-  if (me.organization === null) await router.navigate({ to: "/select-organization" });
+  if (isPlatformOnly(me)) await router.navigate({ to: PLATFORM_HOME });
+  else if (me.organization === null) await router.navigate({ to: "/select-organization" });
 }
 
 interface SettleContext {

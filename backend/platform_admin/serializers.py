@@ -21,8 +21,11 @@ LANGUAGES = ["es-MX", "en"]
 DELIVERIES = ["password", "invite"]
 
 
+RESERVED_SLUGS = frozenset({"new-organization"})  # the web wizard's own path segment
+
+
 def _validate_slug(value: str) -> None:
-    if not SLUG_PATTERN.fullmatch(value):
+    if not SLUG_PATTERN.fullmatch(value) or value in RESERVED_SLUGS:
         raise serializers.ValidationError("Invalid slug.", code="invalid_slug")
 
 

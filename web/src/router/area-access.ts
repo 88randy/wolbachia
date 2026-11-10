@@ -6,7 +6,13 @@ interface AreaPermissions {
   requiredPermissions: Area["requiredPermissions"];
 }
 /** Navigation checks action codes; resource-specific dimensions belong to their own guards. */
-export function canOpenArea(me: Pick<Me, "permissions">, area: AreaPermissions): boolean {
+export function canOpenArea(
+  me: Pick<Me, "permissions"> & Partial<Pick<Me, "is_platform_admin" | "organization">>,
+  area: AreaPermissions & { platformOnly?: boolean },
+): boolean {
+  if (area.platformOnly === true) return me.is_platform_admin === true;
+  // A platform admin without an organization opens only the platform area.
+  if (me.organization === null) return false;
   const { requiredPermissions } = area;
   if (requiredPermissions === PENDING) return true;
   if (requiredPermissions.length === 0) return true;
