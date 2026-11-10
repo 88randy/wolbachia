@@ -17,14 +17,15 @@ then executes one disjoint selection serially. The single closed registry
 - `migrations-supplies`: courier-supplies107.
 - `migrations-session-audit`: session-audit181.
 - `migrations-people`: training/evaluation101.
-- `regular-integration`: complete B10 supplies, B04 private uploads and all six #116
-  permit/release test modules.
+- `regular-integration`: eighteen complete ordinary modules: B10 supplies, B04
+  private uploads, all six #116 permit/release modules and ten more modules
+  covering Lab, field, defaults, shifts, incidents, reviews, geography and inventory.
 
 `regular` retains exactly the complement of ALL explicit module cohorts. The
 derived `MIGRATION_MODULES` compatibility view feeds the existing exhaustive owner
 detector; the explicitly ordinary `regular-integration` cohort is excluded from that
 derived migration-only subset. No second module registry exists. Every migration
-cohort contains exactly one whole module; the ordinary cohort retains all eight whole
+cohort contains exactly one whole module; the ordinary cohort retains all eighteen whole
 modules. No module can belong to two cohorts. Each selection retains its original collected
 order. Upgrade, raw-SQL, protected reverse and restoration assertions stay intact.
 A direct MigrationExecutor owner outside the registry fails collection. No `-k`,
@@ -191,3 +192,12 @@ remain intact, following the existing review113 pattern. Whole-module ownership,
 all assertions, twelve jobs,900s budgets and the85% gate are unchanged. Real
 PostgreSQL revalidation and fresh CI qualification are pending; no wall-time
 improvement is predicted.
+
+## Ordinary capacity rebalance (#149/#154)
+
+Two regular jobs exhausted 900s while the existing integration cohort had capacity.
+Ten complete ordinary modules move there without changing their tests or the
+ordered inventory/coverage union. Adjacent progress intervals suggest roughly
+300s of movable work; they are not individual test durations or guaranteed savings.
+Initial database setup remains in each cohort. Twelve jobs, 900s budgets, all
+assertions and the combined 85% gate remain; fresh CI must qualify the new balance.

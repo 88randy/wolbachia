@@ -41,6 +41,16 @@ EXPECTED_COHORTS = {
         "tests/test_release_uuid_116.py",
         "tests/test_releases_b_20.py",
         "tests/test_releases_concurrency_116.py",
+        "tests/test_lab_recounts_b_19.py",
+        "tests/test_lab_concurrency_114.py",
+        "tests/test_ovitraps_lifecycle_b_15.py",
+        "tests/test_seed_defaults.py",
+        "tests/test_shift_concurrency.py",
+        "tests/test_incidents_b_06.py",
+        "tests/test_reviews_b_17.py",
+        "tests/test_geography_decisions_b_33.py",
+        "tests/test_sync_locks.py",
+        "tests/test_inventory_transfers_106.py",
     },
 }
 EXPECTED_PARTITIONS = ("regular", *EXPECTED_COHORTS)
@@ -138,8 +148,8 @@ def test_gate_requires_both_current_complete_exactly_once_fragments(fault):
         session["reports"].pop()
     if fault == "none":
         assert (
-            validate_fragments(bundles, expected) == 19
-        )  # Residual regular, ten migration owners and eight complete ordinary modules.
+            validate_fragments(bundles, expected) == 29
+        )  # Residual regular, ten migration owners and eighteen complete ordinary modules.
     else:
         with pytest.raises(ValueError, match="CI evidence"):
             validate_fragments(bundles, expected)
@@ -169,6 +179,7 @@ def test_partition_keeps_whole_migration_modules_and_rejects_unclassified_owners
         "tests/test_uploads_b_04.py",
         "tests/test_inventory_allocations_migrations_107.py",
         "tests/test_release_stock_116.py",
+        "tests/test_lab_recounts_b_19.py",
     ):
         with pytest.raises(ValueError, match="CI evidence"):
             partition_nodes([node for node in nodes if node.split("::")[0] != absent])
