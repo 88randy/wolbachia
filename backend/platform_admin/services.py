@@ -9,9 +9,11 @@ data: they reuse the organization bootstrap and default seeds (the same services
 import secrets
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import timedelta
 from typing import Literal
 from uuid import UUID
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
 from django.views.decorators.debug import sensitive_variables
@@ -19,6 +21,7 @@ from django.views.decorators.debug import sensitive_variables
 from accounts.models import User
 from accounts.services import create_user_without_password
 from core.exceptions import FieldValidationError
+from core.time import server_now
 from organizations.defaults import DefaultsPlan, seed_organization_defaults
 from organizations.models import Center, Organization, Profile, all_scope
 from organizations.services import (
@@ -111,6 +114,21 @@ def grant_platform_admin(user: User, actor: User | None = None) -> PlatformAdmin
     return role
 
 
+def revoke_platform_admin(user: User, actor: User | None = None) -> PlatformAdmin | None:
+    """Remove the platform role (writes PlatformAdmin and the audit). Safe to run twice.
+
+    The row is deactivated, never deleted. The user's organization memberships are untouched.
+    """
+    with transaction.atomic():
+        role = PlatformAdmin.objects.select_for_update().filter(user=user).first()
+        if role is None or not role.is_active:
+            return role
+        role.is_active = False
+        role.save(update_fields=["is_active"])
+        record(Action.PLATFORM_ADMIN_REVOKE, actor, target_id=user.pk)
+    return role
+
+
 def generate_temporary_password() -> str:
     """A random one-time password (about 95 bits), shown once and never stored in clear."""
     groups = [
@@ -143,7 +161,13 @@ def _deliver_credentials(user: User, delivery: Delivery) -> str | None:
     if delivery == "password":
         password = generate_temporary_password()
         user.set_password(password)
-        user.save(update_fields=["password"])
+        user.must_change_password = True
+        user.temporary_password_expires_at = server_now() + timedelta(
+            hours=settings.PLATFORM_TEMPORARY_PASSWORD_HOURS
+        )
+        user.save(
+            update_fields=["password", "must_change_password", "temporary_password_expires_at"]
+        )
         return password
     from accounts.tasks import send_password_reset_email
 
@@ -294,7 +318,9 @@ def set_organization_active(  # noqa: PLR0913 -- actor, target, keyword state an
 
     A suspended organization keeps every record. Its members cannot sign in and every scoped
     request answers `no_active_membership`, because membership resolution requires an active
-    organization.
+    organization. As defense in depth, suspending also revokes the organization's device
+    sessions and ends its members' web sessions right away (after the commit; the actor's own
+    session is kept).
     """
     with lock_organization_configuration(organization.pk) as locked:
         if locked.is_active == active:
@@ -308,4 +334,25 @@ def set_organization_active(  # noqa: PLR0913 -- actor, target, keyword state an
             locked.pk,
             {"reason": reason},
         )
+    if not active:
+        _lock_out_members(actor, locked)
     return locked
+
+
+def _lock_out_members(actor: User, organization: Organization) -> None:
+    """Revoke device sessions and end web sessions (outside any transaction, see revocation)."""
+    from accounts.models import DeviceSession, RevokeReason
+    from accounts.revocation import Revocation, revoke_active
+    from accounts.web_sessions import end_web_sessions
+    from organizations.models import Membership
+
+    revoke_active(
+        DeviceSession.objects.filter(organization=organization),
+        Revocation(RevokeReason.MEMBERSHIP_INACTIVE, revoked_by=actor),
+    )
+    members = (
+        Membership.objects.filter(organization=organization)
+        .exclude(user_id=actor.pk)
+        .values_list("user_id", flat=True)
+    )
+    end_web_sessions(members)

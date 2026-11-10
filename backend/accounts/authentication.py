@@ -14,6 +14,7 @@ from accounts.exceptions import (
     TokenExpiredError,
 )
 from accounts.models import DeviceSession, TokenPair, User
+from accounts.password_change import enforce_password_change
 from accounts.revocation import is_final_upload_available
 from accounts.services import touch_session
 from accounts.token_pairs import claim_access_use, is_access_superseded, is_retired_sibling
@@ -89,6 +90,7 @@ class DeviceBearerAuthentication(BaseAuthentication):
             if failure is not None:
                 fail(type(failure))
             touch_session(session)
+        enforce_password_change(request, session.user)
         return session.user, session
 
     @staticmethod

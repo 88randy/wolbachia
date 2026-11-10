@@ -52,6 +52,7 @@ class PlatformAuditEntry(ImmutableMixin, models.Model):
         CENTER_CREATE = "center.create"
         ADMIN_CREATE = "admin.create"
         PLATFORM_ADMIN_GRANT = "platform_admin.grant"
+        PLATFORM_ADMIN_REVOKE = "platform_admin.revoke"
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     action = models.CharField(max_length=40, choices=Action.choices)

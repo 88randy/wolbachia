@@ -20,5 +20,7 @@ export function canOpenArea(
   return requiredPermissions.some((permission) => can(me, permission));
 }
 export function pendingAreaIds(): readonly Area["id"][] {
-  return AREAS.filter((area) => (area.requiredPermissions as unknown) === PENDING).map((area) => area.id);
+  return AREAS.filter((area) => (area.requiredPermissions as unknown) === PENDING).map(
+    (area) => area.id,
+  );
 }

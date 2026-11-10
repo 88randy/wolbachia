@@ -53,6 +53,7 @@ class MeView(APIView):
     """
 
     uses_organization_header = True
+    allows_pending_password_change = True
 
     @extend_schema(responses=MeSerializer)
     def get(self, request: Request) -> Response:

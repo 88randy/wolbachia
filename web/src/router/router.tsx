@@ -5,6 +5,7 @@ import { ForgotPasswordPage } from "../auth/ForgotPasswordPage";
 import { LoginPage } from "../auth/LoginPage";
 import { LegacyResetPasswordPage } from "../auth/LegacyResetPasswordPage";
 import { ResetPasswordPage } from "../auth/ResetPasswordPage";
+import { ChangePasswordPage } from "../auth/ChangePasswordPage";
 import { SelectOrganizationPage } from "../auth/SelectOrganizationPage";
 import { installSessionSync } from "../session/install-session-sync";
 import { NotFoundState } from "../states/NotFoundState";
@@ -13,7 +14,7 @@ import { RouteErrorState } from "../states/RouteErrorState";
 import { areaRouteModules } from "./area-routes";
 import { authenticatedRoute, rootRoute } from "./base-routes";
 import { parseFlatSearch, stringifyFlatSearch } from "./flat-search";
-import { requireOrganizationChoice } from "./guards";
+import { requireOrganizationChoice, requirePasswordChange } from "./guards";
 import type { RouterContext } from "./router-context";
 import { loginSearchSchema, redirectSearchSchema } from "./search-schemas";
 
@@ -60,6 +61,15 @@ const selectOrganizationRoute = createRoute({
   component: SelectOrganizationPage,
 });
 
+// After signing in with a temporary password (platform provisioning): replace it first.
+const changePasswordRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: "/change-password",
+  validateSearch: redirectSearchSchema,
+  beforeLoad: requirePasswordChange,
+  component: ChangePasswordPage,
+});
+
 // An unknown address behind the session is "not found" inside the shell; without a session the
 // guard of the layout sends the visitor to sign in first.
 const notFoundRoute = createRoute({
@@ -74,6 +84,7 @@ const routeTree = rootRoute.addChildren([
   resetPasswordRoute,
   legacyResetPasswordRoute,
   selectOrganizationRoute,
+  changePasswordRoute,
   ...portalRoutes,
   authenticatedRoute.addChildren([...areaRouteModules, notFoundRoute]),
 ]);
