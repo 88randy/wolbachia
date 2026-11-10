@@ -27084,6 +27084,7 @@ export interface operations {
                 page?: number;
                 /** @description Number of results to return per page. */
                 page_size?: number;
+                pending_result?: boolean;
                 quadrant?: string;
                 /** @description Case-insensitive search across: code. */
                 search?: string;
