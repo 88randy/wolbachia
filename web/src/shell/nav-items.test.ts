@@ -21,6 +21,7 @@ describe("visibleNavGroups", () => {
             "location.read",
             "bag.receive",
             "egg_count.read",
+            "training.read",
           ],
         }),
       ),
@@ -35,6 +36,7 @@ describe("visibleNavGroups", () => {
     expect(ids).not.toContain("settings");
     expect(ids).not.toContain("inventory");
     expect(ids).not.toContain("operations");
+    expect(ids).not.toContain("people");
   });
 
   test("any one of the Settings codes opens Settings", () => {

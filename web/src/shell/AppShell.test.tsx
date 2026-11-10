@@ -45,6 +45,7 @@ describe("sidebar navigation", () => {
           "egg_count.read",
           "review_item.read",
           "bag.receive",
+          "training.read",
         ],
       }),
     });
@@ -72,11 +73,12 @@ describe("sidebar navigation", () => {
     expect(hrefs).not.toContain("/incidents");
     expect(hrefs).not.toContain("/lab");
     expect(hrefs).not.toContain("/operations");
-    expect(hrefs).toHaveLength(6);
+    expect(hrefs).not.toContain("/people");
+    expect(hrefs).toHaveLength(5);
   });
 
   test("groups the areas under headings", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["training.read"] }) });
 
     expect(screen.getByRole("list", { name: "Operación" })).toBeDefined();
     expect(screen.getByRole("list", { name: "Recursos" })).toBeDefined();
@@ -320,7 +322,10 @@ describe("accessibility", () => {
 
   test("collapsed shell has no axe violations", async () => {
     window.localStorage.setItem(STORAGE_KEYS.sidebarCollapsed, "true");
-    const { container } = await renderApp({ path: "/people" });
+    const { container } = await renderApp({
+      path: "/people",
+      me: makeMe({ permissions: ["training.read"] }),
+    });
 
     expect(await axe(container)).toHaveNoViolations();
   });

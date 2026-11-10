@@ -52,6 +52,7 @@ describe("area routes", () => {
           "inventory",
           "incidents",
           "operations",
+          "people",
           "lab",
           "notifications",
         ].includes(id),

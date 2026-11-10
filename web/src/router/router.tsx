@@ -1,3 +1,6 @@
+import { PeopleHome } from "../people/PeopleHome";
+import { W50Page } from "../people/trainings/W50Page";
+import { W51Page } from "../people/evaluations/W51Page";
 import { LabHome } from "../lab/LabHome";
 import { W5Page } from "../notifications/W5Page";
 import { W35Page } from "../lab/W35Page";
@@ -52,6 +55,7 @@ import { AREAS } from "./areas";
 import { installSessionSync } from "../session/install-session-sync";
 import { parseFlatSearch, stringifyFlatSearch } from "./flat-search";
 import {
+  ForbiddenError,
   requireAreaAccess,
   requireOrganization,
   requireOrganizationChoice,
@@ -124,22 +128,51 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
     component:
       area.id === "notifications"
         ? W5Page
-        : area.id === "operations"
-          ? OperationsHome
-          : area.id === "incidents"
-            ? W6Page
-            : area.id === "settings"
-              ? SettingsPage
-              : area.id === "fleet"
-                ? FleetHome
-                : area.id === "quadrants"
-                  ? W22Page
-                  : area.id === "lab"
-                    ? LabHome
-                    : () => <AreaPlaceholder areaId={area.id} />,
+        : area.id === "people"
+          ? PeopleHome
+          : area.id === "operations"
+            ? OperationsHome
+            : area.id === "incidents"
+              ? W6Page
+              : area.id === "settings"
+                ? SettingsPage
+                : area.id === "fleet"
+                  ? FleetHome
+                  : area.id === "quadrants"
+                    ? W22Page
+                    : area.id === "lab"
+                      ? LabHome
+                      : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
+
+const trainingsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/people/trainings",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    if (!context.me.permissions.some((code) => ["training.read", "training.manage"].includes(code)))
+      throw new ForbiddenError("people");
+  },
+  component: W50Page,
+  errorComponent: AreaErrorState,
+});
+const evaluationsRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/people/evaluations",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    if (
+      !context.me.permissions.some((code) =>
+        ["evaluation.read", "evaluation.create"].includes(code),
+      )
+    )
+      throw new ForbiddenError("people");
+  },
+  component: W51Page,
+  errorComponent: AreaErrorState,
+});
 
 const incidentRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -411,6 +444,8 @@ const routeTree = rootRoute.addChildren([
     shiftsRoute,
     shiftRoute,
     quadrantVersionsRoute,
+    trainingsRoute,
+    evaluationsRoute,
     incidentRoute,
     reviewsRoute,
     relocationsRoute,

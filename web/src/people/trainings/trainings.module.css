@@ -1,0 +1,36 @@
+.page,
+.stack {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+.page {
+  padding: var(--space-3);
+}
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+}
+.fields {
+  display: grid;
+  gap: var(--space-2);
+}
+.facts {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-family: var(--font-family-mono);
+}
+.code {
+  overflow-wrap: anywhere;
+  font-family: var(--font-family-mono);
+}
+.list {
+  padding-inline-start: var(--space-3);
+}

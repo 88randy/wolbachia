@@ -120,3 +120,7 @@ shift.field.reasonHint uses min/max from the existing Me reason limits.
 Issue #33 adds `incidents` workspace, state, severity, origin, event and evidence
 messages in both locales. Its explicit placeholders are listed in
 `test/messages.test.ts`; identifiers in API enums map to catalog keys in the web.
+
+Issue #148 adds `trainings` and `evaluations` in both locales for W50/W51.
+Copy distinguishes factual qualification, authoritative score and unavailable
+HR publication/delivery evidence; no technical defaults become user claims.

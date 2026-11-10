@@ -1,4 +1,6 @@
 import { notifications } from "./notifications.ts";
+import { trainings } from "./trainings.ts";
+import { evaluations } from "./evaluations.ts";
 import { labReception } from "./labReception.ts";
 import { lab } from "./lab.ts";
 import { shift } from "./shift.ts";
@@ -30,6 +32,8 @@ import { voiding } from "./voiding.ts";
 
 export const en: Record<MessageKey, string> = {
   ...notifications,
+  ...trainings,
+  ...evaluations,
   ...lab,
   ...shift,
   ...reviews,
