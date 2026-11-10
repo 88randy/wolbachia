@@ -236,6 +236,8 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     # Names the sync enums explicitly so the older `StatusEnum` (rule versions) keeps its name.
     "ENUM_NAME_OVERRIDES": {
+        "WolbachiaAttemptStatusEnum": ["valid", "invalid", "disputed"],
+        "WolbachiaResultEnum": ["positive", "negative"],
         "ReleaseDeviceStatusEnum": ["active", "inactive", "retired"],
         "OutcomeEnum": ["recovered_later", "written_off"],
         "EvaluationOutcomeEnum": ["incomplete", "pass", "low", "critical_failure"],

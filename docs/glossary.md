@@ -44,6 +44,9 @@ Rules:
 | resolución de retiro no recuperado | removal resolution | `RemovalResolution`, `removal.resolve` | Supervisor's append-only recovered_later or written_off disposition for one removal; original recovery evidence remains unchanged. |
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
 | muestra | sample | `/wolbachia-samples/`, `sample` | Lab sample (e.g. for Wolbachia results). |
+| muestra de Wolbachia | Wolbachia sample | `WolbachiaSample`, `sample.collect` | Immutable collection UUID/code and exact origin/method/source pins. |
+| recepción de muestra | sample receipt | `SampleReceipt`, `/wolbachia-samples/{id}/receive/` | Authored laboratory reception, distinct from collection. |
+| intento de resultado de Wolbachia | Wolbachia result attempt | `WolbachiaResultAttempt` | Append-only valid/invalid/disputed observation with an explicit binary result only when valid. |
 
 
 ## Configuration

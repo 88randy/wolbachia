@@ -23,6 +23,7 @@ INCIDENT_EVENTS = frozenset({"incident.report", "emergency.accident"})
 TRANSFER_EVENTS = frozenset({"transfer.dispatch", "transfer.receive"})
 SUPPLY_EVENTS = frozenset({"supplies.receive", "supplies.reconcile"})
 RELEASE_EVENTS = frozenset({"release.record"})
+SAMPLE_EVENTS = frozenset({"sample.collect"})
 
 
 @dataclass(frozen=True)
@@ -44,7 +45,12 @@ def _allows_motorcycle(scope: EffectiveScope, permission: str, motorcycle: Motor
 def declared_upload_ids(event: FieldEvent) -> set[UUID]:
     if (
         event.type
-        not in OVITRAP_EVENTS | INCIDENT_EVENTS | TRANSFER_EVENTS | SUPPLY_EVENTS | RELEASE_EVENTS
+        not in OVITRAP_EVENTS
+        | INCIDENT_EVENTS
+        | TRANSFER_EVENTS
+        | SUPPLY_EVENTS
+        | RELEASE_EVENTS
+        | SAMPLE_EVENTS
         and event.type != "fuel.load"
     ):
         return set()
@@ -394,6 +400,15 @@ def _authorize_event_download(
     event = FieldEvent.objects.filter(pk=event_id, organization=actor.organization).first()
     if event is None:
         raise Http404
+    if event.type in SAMPLE_EVENTS:
+        from reviews.scope import subject_allows
+
+        facts = _sample_event_subjects(event)
+        if not subject_allows(scope, "sample.read", facts) or (
+            event.status == "in_review" and not subject_allows(scope, "review_item.read", facts)
+        ):
+            raise Http404
+        return
     if event.type in RELEASE_EVENTS:
         _authorize_release_download(scope, event)
         return
@@ -405,9 +420,13 @@ def _authorize_event_download(
     if event.type in TRANSFER_EVENTS:
         _authorize_transfer_source_download(actor, scope, event)
         return
+    _authorize_legacy_event_download(scope, event)
+
+
+def _authorize_legacy_event_download(scope: EffectiveScope, event: FieldEvent) -> None:
     if event.type == "fuel.load":
         motorcycle = Motorcycle.objects.filter(
-            organization=actor.organization, code=event.payload.get("motorcycle_id")
+            organization=event.organization, code=event.payload.get("motorcycle_id")
         ).first()
         if motorcycle is None or not _allows_motorcycle(scope, "motorcycle.read", motorcycle):
             raise Http404
@@ -429,6 +448,14 @@ def _authorize_event_download(
 
 
 def has_event_upload_scope(scope: EffectiveScope, event: FieldEvent) -> bool:
+    if event.type in SAMPLE_EVENTS:
+        from reviews.scope import subject_allows
+
+        facts = _sample_event_subjects(event)
+        return all(
+            subject_allows(scope, permission, facts)
+            for permission in (FIELD_UPLOAD, FIELD_EVENT_SYNC, "sample.collect")
+        )
     if event.type in RELEASE_EVENTS:
         from reviews.scope import subject_allows
 
@@ -470,6 +497,19 @@ def has_event_upload_scope(scope: EffectiveScope, event: FieldEvent) -> bool:
     return scope.allows(FIELD_UPLOAD, center, quadrant) and scope.allows(
         FIELD_EVENT_SYNC, center, quadrant
     )
+
+
+def _sample_event_subjects(event: FieldEvent) -> Any:  # noqa: ANN401 -- concrete SubjectFacts, imported locally to avoid model cycles
+    from lab.samples.payloads import SampleCollectPayload
+    from reviews.scope import SubjectFacts, sample_subjects
+
+    payload = SampleCollectPayload(data=event.payload)
+    if not payload.is_valid():
+        return SubjectFacts()
+    try:
+        return sample_subjects(event.organization, dict(payload.validated_data))
+    except Http404:
+        return SubjectFacts()
 
 
 def _release_event_subjects(event: FieldEvent) -> Any:  # noqa: ANN401 -- concrete SubjectFacts, imported locally to avoid model cycles

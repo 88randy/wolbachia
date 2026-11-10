@@ -181,4 +181,16 @@ export const sync: Record<keyof typeof source, string> = {
     "Physical consumption must be preserved. Contact your supervisor to correct the record.",
   "sync.result.releaseTransitReviewRequired":
     "Transit evidence needs an authorized review. The capture was retained without applying consumption.",
+  "sync.result.sampleInaccessible":
+    "The sample or its source is unavailable with your current access. Contact your supervisor.",
+  "sync.result.sampleConfigurationUnavailable":
+    "A verified method or catalog is missing for this sample. Keep the capture and contact the laboratory.",
+  "sync.result.sampleSourceUnavailable":
+    "The sample source is no longer valid for this capture. Keep the record and contact your supervisor.",
+  "sync.result.sampleStateConflict":
+    "The sample has another confirmed record. Refresh the information before trying again.",
+  "sync.result.sampleEvidenceRequired":
+    "Verified sample evidence is missing. Keep pending files and contact your supervisor.",
+  "sync.result.sampleVoidBlocked":
+    "The sample has records that must be preserved. Contact the laboratory to correct its source.",
 };

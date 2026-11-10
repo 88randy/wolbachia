@@ -4,6 +4,12 @@ The only way `mobile/` and `web/` talk to the backend. Types come from the backe
 
 Nothing in `src/generated/` and `openapi.yaml` is edited by hand.
 
+#117 adds `/wolbachia-samples/`, immutable reception/result commands and explicit
+`supports_wolbachia` on the existing Lab method version. Command replies expose
+only their own persisted fact; sample.read separately authorizes full attempts,
+selected valid binary result and analytical eligibility. Null invalid/disputed/
+missing outcomes never mean negative. See [samples](../../backend/lab/samples/README.md).
+
 #101 adds training/requirement versions, evidence-backed certifications,
 evaluation rubrics/attempts/revisions/voids, pending notice-policy routing and
 qualification reads. Commands use immutable UUID receipts plus CAS; private

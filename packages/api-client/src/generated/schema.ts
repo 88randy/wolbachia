@@ -5352,6 +5352,110 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/wolbachia-samples/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["wolbachia_samples_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wolbachia-samples/{id}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        get: operations["wolbachia_samples_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wolbachia-samples/{id}/receive/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["wolbachia_samples_receive_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/wolbachia-samples/{id}/results/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description Resolves the active organization of the request and scopes every query to it.
+         *
+         *     Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+         *     `resolve_active_membership`. The organization comes from the user's membership, never from
+         *     the body: `organization_id` in a payload is ignored.
+         *
+         *     ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+         *     `APIView`s do not have.
+         */
+        post: operations["wolbachia_samples_results_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/write-offs/": {
         parameters: {
             query?: never;
@@ -7744,6 +7848,7 @@ export interface components {
             readonly supports_rejection: boolean;
             readonly supports_independent_qa: boolean;
             readonly supports_paddle_reuse: boolean;
+            readonly supports_wolbachia: boolean;
             readonly verification: unknown;
             readonly availability: string;
             /** Format: date-time */
@@ -7765,6 +7870,8 @@ export interface components {
             supports_independent_qa: boolean;
             /** @default false */
             supports_paddle_reuse: boolean;
+            /** @default false */
+            supports_wolbachia: boolean;
         };
         LabQAHistoryEntry: {
             /** Format: uuid */
@@ -9838,6 +9945,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["RuleParameterVersion"][];
         };
+        PaginatedSampleSnapshotList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["SampleSnapshot"][];
+        };
         PaginatedSamplingPointList: {
             /** @example 123 */
             count: number;
@@ -11487,6 +11609,15 @@ export interface components {
             readonly notes: string;
         };
         /**
+         * @description * `missing` - missing
+         *     * `invalid` - invalid
+         *     * `disputed` - disputed
+         *     * `positive` - positive
+         *     * `negative` - negative
+         * @enum {string}
+         */
+        ResultStatusEnum: "missing" | "invalid" | "disputed" | "positive" | "negative";
+        /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
          *
          *     Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
@@ -11929,6 +12060,95 @@ export interface components {
             /** Format: uuid */
             inspection_id: string;
             attest_safe_now: boolean;
+        };
+        SampleAttempt: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            command_id: string;
+            revision: number;
+            status: components["schemas"]["WolbachiaAttemptStatusEnum"];
+            result: (components["schemas"]["WolbachiaResultEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: uuid */
+            method_version_id: string;
+            method: components["schemas"]["LabMethodPin"];
+            /** Format: uuid */
+            method_verification_id: string;
+            /** Format: uuid */
+            repeat_of: string | null;
+            /** Format: uuid */
+            author_id: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        SampleCommandOutcome: {
+            /** Format: uuid */
+            sample_id: string;
+            receipt: components["schemas"]["SampleReceipt"] | null;
+            attempt: components["schemas"]["SampleAttempt"] | null;
+        };
+        SampleCommandRequest: {
+            /** Format: uuid */
+            command_id: string;
+        };
+        SampleReceipt: {
+            /** Format: uuid */
+            id: string;
+            /** Format: uuid */
+            command_id: string;
+            /** Format: uuid */
+            receiver_id: string;
+            /** Format: date-time */
+            created_at: string;
+        };
+        SampleResultRequest: {
+            /** Format: uuid */
+            command_id: string;
+            status: components["schemas"]["WolbachiaAttemptStatusEnum"];
+            result: (components["schemas"]["WolbachiaResultEnum"] | components["schemas"]["NullEnum"]) | null;
+            /** Format: uuid */
+            method_version: string;
+            /** Format: uuid */
+            repeat_of?: string | null;
+        };
+        SampleSnapshot: {
+            /** Format: uuid */
+            id: string;
+            code: string;
+            /** Format: uuid */
+            event_id: string;
+            origin_snapshot: unknown;
+            other_text: string;
+            /** Format: uuid */
+            center_id: string;
+            /** Format: uuid */
+            quadrant_id: string | null;
+            /** Format: uuid */
+            reading_id: string | null;
+            /** Format: uuid */
+            lot_id: string | null;
+            /** Format: uuid */
+            release_id: string | null;
+            /** Format: uuid */
+            method_version_id: string;
+            method: components["schemas"]["LabMethodPin"];
+            location: unknown;
+            source_provenance: unknown;
+            /** Format: date-time */
+            device_time: string;
+            /** Format: date-time */
+            server_received_at: string;
+            /** Format: uuid */
+            collector_id: string;
+            /** Format: date-time */
+            created_at: string;
+            voided: boolean;
+            receipt: components["schemas"]["SampleReceipt"] | null;
+            attempts: components["schemas"]["SampleAttempt"][];
+            selected_valid_result: components["schemas"]["SampleAttempt"] | null;
+            result_status: components["schemas"]["ResultStatusEnum"];
+            numerator_eligible: boolean;
+            denominator_eligible: boolean;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
@@ -13071,6 +13291,19 @@ export interface components {
             /** Format: date */
             week: string;
         };
+        /**
+         * @description * `valid` - valid
+         *     * `invalid` - invalid
+         *     * `disputed` - disputed
+         * @enum {string}
+         */
+        WolbachiaAttemptStatusEnum: "valid" | "invalid" | "disputed";
+        /**
+         * @description * `positive` - positive
+         *     * `negative` - negative
+         * @enum {string}
+         */
+        WolbachiaResultEnum: "positive" | "negative";
         WriteOffOutcome: {
             write_off: components["schemas"]["WriteOffRead"];
         };
@@ -22965,6 +23198,158 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PeopleReceipt"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    wolbachia_samples_list: {
+        parameters: {
+            query?: {
+                center?: string;
+                /** @description Exact human code of the resource (for example `OV-010`); returns 0 or 1 results. Blank values are rejected. */
+                code?: string;
+                include_voided?: boolean;
+                /** @description Comma-separated fields: code, created_at, device_time, id. Prefix with - for descending. Unsupported or blank terms return 400. Ties use id ascending. */
+                ordering?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+                quadrant?: string;
+                /** @description Case-insensitive search across: code. */
+                search?: string;
+            };
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedSampleSnapshotList"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    wolbachia_samples_retrieve: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleSnapshot"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    wolbachia_samples_receive_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SampleCommandRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleCommandOutcome"];
+                };
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    wolbachia_samples_results_create: {
+        parameters: {
+            query?: never;
+            header?: {
+                /** @description Slug of the active organization. Required only for users with more than one active membership; when sent it is always validated. */
+                "X-Organization"?: string;
+            };
+            path: {
+                id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SampleResultRequest"];
+            };
+        };
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SampleCommandOutcome"];
                 };
             };
             /** @description Error: any 4xx or 5xx status, with the error envelope as body. */

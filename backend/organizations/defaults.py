@@ -130,6 +130,8 @@ ADMIN_CODES = (
     MOTORCYCLE_SERVICE_CLEAR,
 )
 COURIER_CODES = (
+    "sample.collect",
+    "sample.void",
     "community_activity.read",
     "community_activity.create",
     *SUPPLY_COURIER_CODES,

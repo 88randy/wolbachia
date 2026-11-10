@@ -129,6 +129,25 @@ def reference_sources(source: FieldEvent) -> set[UUID]:
 
 def _inventory_references(source: FieldEvent) -> set[UUID]:
     identifiers: set[UUID] = set()
+    if source.type == "sample.collect" and source.created_by is not None:
+        from field_sync.registry import EventContext
+        from lab.samples.handlers import source_references as sample_source_references
+
+        try:
+            envelope = original_source_envelope(source)
+        except ValueError:
+            return identifiers
+        identifiers.update(
+            sample_source_references(
+                EventContext(
+                    source.organization,
+                    source.created_by,
+                    source.device,
+                    envelope,
+                    source.server_received_at,
+                )
+            )
+        )
     if source.type == "release.record" and source.created_by is not None:
         from field_sync.registry import EventContext
         from releases.stock import release_source_references

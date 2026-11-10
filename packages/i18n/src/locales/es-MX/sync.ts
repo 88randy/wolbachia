@@ -183,4 +183,16 @@ export const sync = {
     "El consumo físico debe conservarse. Consulta a tu supervisor para corregir el registro.",
   "sync.result.releaseTransitReviewRequired":
     "La evidencia del traslado requiere una revisión autorizada. La captura se conservó sin aplicar el consumo.",
+  "sync.result.sampleInaccessible":
+    "La muestra o su origen no están disponibles con tu acceso actual. Consulta a tu supervisor.",
+  "sync.result.sampleConfigurationUnavailable":
+    "Falta un método o catálogo verificado para esta muestra. Conserva la captura y consulta al laboratorio.",
+  "sync.result.sampleSourceUnavailable":
+    "El origen de la muestra ya no es válido para esta captura. Conserva el registro y consulta a tu supervisor.",
+  "sync.result.sampleStateConflict":
+    "La muestra tiene otro registro confirmado. Actualiza la información antes de volver a intentar.",
+  "sync.result.sampleEvidenceRequired":
+    "Falta evidencia verificada de la muestra. Conserva los archivos pendientes y consulta a tu supervisor.",
+  "sync.result.sampleVoidBlocked":
+    "La muestra tiene registros que deben conservarse. Consulta al laboratorio para corregir su origen.",
 } as const satisfies AreaCatalog<"sync">;
