@@ -4,23 +4,26 @@ import { useMemo } from "react";
 import { useApiClient } from "../api/ApiClientProvider";
 import { useMe } from "../session/use-me";
 import { useSessionIdentity } from "../session/use-session-identity";
+import { loadTable } from "./load-table";
 import { MAX_PAGE, scheduleOptions, weekLoadsOptions } from "./scheduling-queries";
-import type { DayLoad } from "./scheduling-queries";
 import { daysOfWeek, todayIn, weekStartOf } from "./week-dates";
 
-/** Courier -> day -> number of points. */
-function loadTable(days: readonly string[], perDay: readonly DayLoad[] | undefined) {
-  const table = new Map<string, Map<string, number>>();
-  perDay?.forEach((entry, index) => {
-    const date = days[index];
-    for (const row of entry.loads) {
-      if (row.courier === null || date === undefined) continue;
-      const byDay = table.get(row.courier) ?? new Map<string, number>();
-      byDay.set(date, row.load);
-      table.set(row.courier, byDay);
+/** Pending points of days before today, and the first courier and day that still has some. */
+function pastPending(
+  days: readonly string[],
+  loads: ReturnType<typeof loadTable>,
+  today: string,
+) {
+  let count = 0;
+  let first: { day: string; courier: string } | undefined;
+  for (const day of days.filter((date) => date < today)) {
+    for (const [courier, byDay] of loads) {
+      const load = byDay.get(day) ?? 0;
+      count += load;
+      if (load > 0 && first === undefined) first = { day, courier };
     }
-  });
-  return table;
+  }
+  return { count, first };
 }
 
 /** Week, day and courier of the plan, read from the address bar. */
@@ -55,7 +58,10 @@ export function usePlan() {
     enabled: dayOptions.enabled && weekQuery.isSuccess && selected !== undefined,
   });
   const first = weekQuery.data?.[0];
+  const past = pastPending(days, loads, today);
   return {
+    pastPending: past,
+    taskCount: (weekQuery.data ?? []).reduce((sum, entry) => sum + entry.count, 0),
     week,
     days,
     day,

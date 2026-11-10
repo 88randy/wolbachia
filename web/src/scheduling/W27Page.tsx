@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, useSearch } from "@tanstack/react-router";
-import { Upload } from "lucide-react";
+import { ArrowRight, Upload } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { useApiClient } from "../api/ApiClientProvider";
 import { ListPage } from "../components/templates/ListPage";
@@ -12,6 +12,9 @@ import { useCan } from "../session/use-can";
 import { useMe } from "../session/use-me";
 import { useSessionIdentity } from "../session/use-session-identity";
 import { buttonVariants } from "../ui/button-variants";
+import { EmptyState } from "../ui/EmptyState";
+import { InfoHint } from "../ui/InfoHint";
+import { InlineNotice } from "../ui/InlineNotice";
 import { risksOptions } from "./scheduling-queries";
 import { RISK_PAGE_SIZE, RISK_TABLE, RISK_TABLE_SCOPE } from "./risk-table";
 import { useRiskColumns } from "./use-risk-columns";
@@ -36,29 +39,67 @@ export function W27Page() {
     risksOptions(client, identity, week, controller.state.page, RISK_PAGE_SIZE),
   );
   const columns = useRiskColumns();
+  const canImport = can("risk_import.apply");
+  const isEmpty = query.isSuccess && query.data.count === 0;
+  const importLink = (
+    <Link
+      to="/scheduling/risk/import"
+      className={buttonVariants({ variant: canImport && isEmpty ? "primary" : "secondary" })}
+    >
+      <Upload aria-hidden="true" />
+      {t("scheduling.risk.import")}
+    </Link>
+  );
   return (
     <ListPage
       title={t("scheduling.risk.title", { week: weekNumberOf(week) })}
-      description={t("scheduling.risk.description", { day: formatDay(week) })}
+      description={
+        <>
+          {t("scheduling.risk.description", { day: formatDay(week) })}
+          <InfoHint text={t("scheduling.risk.hint")} />
+        </>
+      }
       actions={
         <>
           <WeekSwitcher week={week} />
-          {can("risk_import.apply") && (
-            <Link to="/scheduling/risk/import" className={buttonVariants({ variant: "primary" })}>
-              <Upload aria-hidden="true" />
-              {t("scheduling.risk.import")}
-            </Link>
-          )}
+          {canImport && importLink}
         </>
       }
+      notices={
+        query.isSuccess &&
+        query.data.count > 0 && (
+          <InlineNotice
+            tone="info"
+            action={
+              <Link
+                to="/scheduling/assignments"
+                className={buttonVariants({ variant: "secondary", size: "sm" })}
+              >
+                {t("scheduling.risk.goAssign")}
+                <ArrowRight aria-hidden="true" />
+              </Link>
+            }
+          >
+            <p className="font-semibold">{t("scheduling.risk.nextStep")}</p>
+          </InlineNotice>
+        )
+      }
     >
-      <DataTable
-        caption={t("scheduling.risk.caption")}
-        columns={columns}
-        controller={controller}
-        getRowId={(row) => row.id}
-        data={pageTableData(query, controller.state.page, RISK_PAGE_SIZE)}
-      />
+      {isEmpty ? (
+        <EmptyState
+          kind="noData"
+          message={`${t("scheduling.risk.emptyTitle")}. ${t(canImport ? "scheduling.risk.emptyHelp" : "scheduling.risk.emptyReadOnly")}`}
+          action={canImport ? importLink : undefined}
+        />
+      ) : (
+        <DataTable
+          caption={t("scheduling.risk.caption")}
+          columns={columns}
+          controller={controller}
+          getRowId={(row) => row.id}
+          data={pageTableData(query, controller.state.page, RISK_PAGE_SIZE)}
+        />
+      )}
     </ListPage>
   );
 }

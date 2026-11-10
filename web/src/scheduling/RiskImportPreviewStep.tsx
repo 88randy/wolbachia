@@ -3,8 +3,9 @@ import { useTranslation } from "react-i18next";
 import { InlineNotice } from "../ui/InlineNotice";
 import { StatusPill } from "../ui/StatusPill";
 import type { RiskImport } from "./use-risk-import";
+import { weekNumberOf } from "./week-dates";
 
-const TONE = { high: "critical", medium: "warning", low: "neutral" } as const;
+const TONE = { high: "critical", medium: "warning", low: "success" } as const;
 const KNOWN_ERRORS = [
   "invalid_columns",
   "invalid_row",
@@ -46,9 +47,22 @@ export function RiskImportPreviewStep({ flow }: { flow: RiskImport }) {
       )}
       {flow.rows.length > 0 && (
         <>
-          <p className="m-0 text-sm text-ink-2">
-            {t("scheduling.import.summary", { count: flow.rows.length })}
-          </p>
+          <div className="flex flex-col gap-2 rounded-xl bg-surface-muted p-4">
+            <p className="m-0 text-sm font-semibold text-ink">
+              {t("scheduling.import.summary", { count: flow.rows.length })}
+            </p>
+            <p className="m-0 flex flex-wrap items-center gap-2">
+              {(["high", "medium", "low"] as const).map((risk) => (
+                <StatusPill key={risk} tone={TONE[risk]}>
+                  {t(`scheduling.risk.${risk}`)}:{" "}
+                  {flow.rows.filter((row) => row.category === risk).length}
+                </StatusPill>
+              ))}
+            </p>
+            <p className="m-0 text-[13px] text-ink-2">
+              {t("scheduling.import.willDo", { week: weekNumberOf(flow.week) })}
+            </p>
+          </div>
           <div className="max-h-80 overflow-auto rounded-xl border border-line">
             <table className="w-full border-collapse text-sm">
               <caption className="sr-only">{t("scheduling.import.step3")}</caption>

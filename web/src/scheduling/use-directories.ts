@@ -25,7 +25,11 @@ export function useCouriers(knownIds: readonly string[]) {
       id === null
         ? t("scheduling.courier.none")
         : (names.get(id) ?? t("scheduling.courier.unknown"));
-    return { nameOf, ids: [...names.keys()] };
+    const couriers = (directory ?? [])
+      .filter((person) => person.profiles.includes("courier") || ordered.includes(person.id))
+      .map((person) => person.id);
+    const unlisted = ordered.filter((id) => !couriers.includes(id));
+    return { nameOf, ids: [...couriers, ...unlisted] };
   }, [directory, key, t]);
 }
 

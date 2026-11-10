@@ -57,7 +57,9 @@ export function useGenerateWeek() {
     onSuccess: async (result) => {
       await refresh();
       showToast({
-        message: t("scheduling.generate.done", { count: result.created }),
+        message: t(result.created > 0 ? "scheduling.generate.done" : "scheduling.generate.nothing", {
+          count: result.created,
+        }),
         tone: "success",
       });
     },
@@ -67,6 +69,7 @@ export function useGenerateWeek() {
   });
 }
 
+/** Saves one quadrant move. The caller shows the feedback (it knows the names and the undo). */
 export function useMoveQuadrant() {
   const client = useApiClient();
   const refresh = useRefresh();
@@ -77,7 +80,6 @@ export function useMoveQuadrant() {
       unwrap(await client.PUT("/api/v1/quadrant-assignments/", { body })),
     onSuccess: async () => {
       await refresh();
-      showToast({ message: t("scheduling.assign.moved"), tone: "success" });
     },
     onError: async (error) => {
       showToast({ message: t(failureKey(error)), tone: "critical" });

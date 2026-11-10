@@ -1,101 +1,83 @@
-import { useQuery } from "@tanstack/react-query";
+import { Link } from "@tanstack/react-router";
+import { CalendarDays } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { useApiClient } from "../api/ApiClientProvider";
 import { ListPage } from "../components/templates/ListPage";
-import { useCan } from "../session/use-can";
-import { useSessionIdentity } from "../session/use-session-identity";
+import { buttonVariants } from "../ui/button-variants";
 import { CardSkeleton } from "../ui/CardSkeleton";
 import { EmptyState } from "../ui/EmptyState";
 import { ErrorState } from "../ui/ErrorState";
+import { InfoHint } from "../ui/InfoHint";
 import { InlineNotice } from "../ui/InlineNotice";
-import { QuadrantCard } from "./QuadrantCard";
-import { assignmentsOptions } from "./scheduling-queries";
-import { useCouriers } from "./use-directories";
-import { useMoveQuadrant } from "./use-scheduling-writes";
+import { CourierColumn } from "./CourierColumn";
+import { useAssignmentBoard } from "./use-assignment-board";
 
-const NONE = "none";
-
-/** W25: couriers as columns, quadrants as cards. "Move to" works with the keyboard. */
+/** W25: couriers as columns, quadrants as cards. Drag, or "Mover a…" with the keyboard; saves at once. */
 export function W25Page() {
   const { t } = useTranslation();
-  const client = useApiClient();
-  const identity = useSessionIdentity();
-  const can = useCan();
-  const query = useQuery(assignmentsOptions(client, identity));
-  const move = useMoveQuadrant();
-  const rows = query.data?.results ?? [];
-  const assigned = rows.flatMap((row) => (row.courier === null ? [] : [row.courier]));
-  const { nameOf, ids } = useCouriers(assigned);
-  const canMove = can("schedule.manage");
-  const columns = [...ids, NONE];
-  const options = [
-    ...ids.map((id) => ({ value: id, label: nameOf(id) })),
-    { value: NONE, label: t("scheduling.assign.unassign") },
-  ];
+  const board = useAssignmentBoard();
+  const columns = board.columns.filter(
+    (column) => column.courier !== null || column.rows.length > 0,
+  );
   return (
     <ListPage
       title={t("scheduling.assign.title")}
-      description={t("scheduling.assign.description")}
+      description={
+        <>
+          {t("scheduling.assign.description")}
+          <InfoHint text={t("scheduling.assign.hint")} />
+        </>
+      }
+      actions={
+        <Link to="/scheduling/plan" className={buttonVariants({ variant: "secondary" })}>
+          <CalendarDays aria-hidden="true" />
+          {t("scheduling.assign.goPlan")}
+        </Link>
+      }
       notices={
-        !canMove && (
+        !board.canMove && (
           <InlineNotice tone="info">
             <p>{t("scheduling.assign.readOnly")}</p>
           </InlineNotice>
         )
       }
     >
-      {query.isError ? (
-        <ErrorState onRetry={() => void query.refetch()} />
-      ) : query.isPending ? (
+      {board.isError ? (
+        <ErrorState onRetry={board.refetch} />
+      ) : board.isPending ? (
         <CardSkeleton />
-      ) : rows.length === 0 ? (
-        <EmptyState kind="noData" message={t("scheduling.assign.empty")} />
+      ) : board.rows.length === 0 ? (
+        <EmptyState
+          kind="noData"
+          message={`${t("scheduling.assign.empty")} ${t("scheduling.assign.emptyHelp")}`}
+          action={
+            <Link to="/quadrants" className={buttonVariants({ variant: "secondary" })}>
+              {t("scheduling.assign.emptyAction")}
+            </Link>
+          }
+        />
       ) : (
-        <div className="grid min-w-0 gap-5 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
-          {columns.map((id) => {
-            const mine = rows.filter((row) => (row.courier ?? NONE) === id);
-            if (id === NONE && mine.length === 0) return null;
-            return (
-              <section
-                key={id}
-                aria-labelledby={`col-${id}`}
-                className="flex min-w-0 flex-col gap-3 rounded-2xl bg-surface-muted p-3"
-              >
-                <header className="flex items-baseline justify-between gap-2 px-1">
-                  <h2 id={`col-${id}`} className="m-0 text-[15px] font-semibold text-ink">
-                    {nameOf(id === NONE ? null : id)}
-                  </h2>
-                  <span className="text-xs text-ink-2 tabular-nums">
-                    {t("scheduling.assign.columnSummary", { count: mine.length })}
-                  </span>
-                </header>
-                <ul className="m-0 flex list-none flex-col gap-3 p-0">
-                  {mine.map((row) => (
-                    <QuadrantCard
-                      key={row.quadrant}
-                      row={row}
-                      canMove={canMove}
-                      isBusy={move.isPending}
-                      options={options.filter((option) => option.value !== (row.courier ?? NONE))}
-                      onMove={(courierId) => {
-                        move.mutate({
-                          expected_revision: row.revision,
-                          quadrant_id: row.quadrant,
-                          courier_id: courierId,
-                        });
-                      }}
-                    />
-                  ))}
-                  {mine.length === 0 && (
-                    <li className="rounded-xl border border-dashed border-line-strong p-4 text-center text-[13px] text-ink-2">
-                      {t("scheduling.assign.columnEmpty")}
-                    </li>
-                  )}
-                </ul>
-              </section>
-            );
-          })}
-        </div>
+        <>
+          <p className="m-0 text-[13px] text-ink-2">
+            {t("scheduling.assign.autosave")} {t("scheduling.assign.pendingNote")}
+          </p>
+          <div className="grid min-w-0 items-start gap-4 [grid-template-columns:repeat(auto-fill,minmax(17rem,1fr))]">
+            {board.unassigned.length > 0 && (
+              <CourierColumn
+                column={{
+                  courier: null,
+                  name: board.nameOf(null),
+                  rows: board.unassigned,
+                  peak: 0,
+                  weekPending: 0,
+                }}
+                board={board}
+              />
+            )}
+            {columns.map((column) => (
+              <CourierColumn key={column.courier} column={column} board={board} />
+            ))}
+          </div>
+        </>
       )}
     </ListPage>
   );

@@ -1,9 +1,11 @@
 import { Link } from "@tanstack/react-router";
+import type { ReactNode } from "react";
 import { TriangleAlert } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/lib/utils";
 import { Card } from "../ui/Card";
 import { EmptyState } from "../ui/EmptyState";
+import { InfoHint } from "../ui/InfoHint";
 import { useFormatNumber } from "../format/use-formatters";
 import { useLanguage } from "../i18n/use-language";
 import type { Plan } from "./use-plan";
@@ -23,18 +25,34 @@ function dayLabel(iso: string, locale: string): string {
 export function ScheduleMatrix({
   plan,
   nameOf,
+  emptyAction,
 }: {
   plan: Plan;
   nameOf: (id: string | null) => string;
+  /** What to do when nothing is scheduled yet (a button, or nothing when it is not allowed). */
+  emptyAction?: ReactNode;
 }) {
   const { t } = useTranslation();
   const { language } = useLanguage();
   const formatNumber = useFormatNumber();
   const couriers = [...plan.loads.keys()].sort((a, b) => nameOf(a).localeCompare(nameOf(b)));
   return (
-    <Card title={t("scheduling.plan.matrixTitle")}>
-      {couriers.length === 0 ? (
-        <EmptyState kind="noData" message={t("scheduling.plan.noTasks")} />
+    <Card
+      title={
+        <span className="inline-flex items-center gap-1">
+          {t("scheduling.plan.matrixTitle")}
+          <InfoHint text={t("scheduling.plan.matrixHint", { target: formatNumber(plan.target) })} />
+        </span>
+      }
+    >
+      {couriers.length === 0 && plan.taskCount > 0 ? (
+        <EmptyState kind="noData" message={t("scheduling.plan.allDone")} />
+      ) : couriers.length === 0 ? (
+        <EmptyState
+          kind="noData"
+          message={`${t("scheduling.plan.noTasks")} ${t(emptyAction ? "scheduling.plan.noTasksHelp" : "scheduling.plan.noTasksReadOnly")}`}
+          action={emptyAction}
+        />
       ) : (
         <div className="overflow-x-auto">
           <table className="w-full border-collapse text-sm">
@@ -54,6 +72,11 @@ export function ScheduleMatrix({
                     )}
                   >
                     {dayLabel(date, language)}
+                    {date === plan.today && (
+                      <span className="block text-[11px] font-semibold normal-case">
+                        {t("scheduling.plan.today")}
+                      </span>
+                    )}
                   </th>
                 ))}
               </tr>

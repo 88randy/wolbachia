@@ -4,7 +4,7 @@ import type { DataTableColumn } from "../data-table/table-types";
 import { StatusPill } from "../ui/StatusPill";
 
 type Risk = Schemas["Risk"];
-const TONE = { high: "critical", medium: "warning", low: "neutral" } as const;
+const TONE = { high: "critical", medium: "warning", low: "success" } as const;
 
 export function useRiskColumns(): readonly DataTableColumn<Risk>[] {
   const { t } = useTranslation();

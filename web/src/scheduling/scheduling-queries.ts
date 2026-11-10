@@ -138,6 +138,8 @@ export function blocksDirectoryOptions(client: ApiClient, identity: SessionIdent
 
 export interface DayLoad {
   loads: { courier: string | null; load: number }[];
+  /** Every point of the day, visited or not. */
+  count: number;
   target: number;
   revision: number;
 }
@@ -163,7 +165,12 @@ export function weekLoadsOptions(
             signal,
           }),
         );
-        result.push({ loads: page.load, target: page.target, revision: page.revision });
+        result.push({
+          loads: page.load,
+          count: page.count,
+          target: page.target,
+          revision: page.revision,
+        });
       }
       return result;
     },

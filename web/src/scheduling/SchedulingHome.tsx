@@ -1,52 +1,81 @@
-import { CalendarDays, Gauge, SprayCan, Users } from "lucide-react";
+import { CalendarDays, CircleCheck } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import type { HubCardItem } from "../components/templates/HubCard";
-import { HubPage } from "../components/templates/HubPage";
-import { useCan } from "../session/use-can";
+import { PageFrame } from "../components/templates/PageFrame";
+import { PageHeader } from "../components/templates/PageHeader";
+import { useFormatCalendarDate } from "../format/use-formatters";
+import { useDocumentTitle } from "../shell/use-document-title";
+import { CardSkeleton } from "../ui/CardSkeleton";
+import { ErrorState } from "../ui/ErrorState";
+import { InfoHint } from "../ui/InfoHint";
+import { InlineNotice } from "../ui/InlineNotice";
+import { CycleStepCard } from "./CycleStepCard";
+import { useCycleCards } from "./use-cycle-cards";
+import { useCycleStatus } from "./use-cycle-status";
+import { addDays, weekNumberOf } from "./week-dates";
 
-/** Scheduling home: the four planning screens as icon cards. */
+/** Scheduling home: the weekly cycle in order, with how each step stands this week. */
 export function SchedulingHome() {
   const { t } = useTranslation();
-  const can = useCan();
-  const items: (HubCardItem & { permission: string })[] = [
-    {
-      id: "plan",
-      permission: "schedule.read",
-      icon: CalendarDays,
-      link: { to: "/scheduling/plan" },
-      title: t("scheduling.plan.menu"),
-      description: t("scheduling.home.plan"),
-    },
-    {
-      id: "assignments",
-      permission: "schedule.read",
-      icon: Users,
-      link: { to: "/scheduling/assignments" },
-      title: t("scheduling.assign.title"),
-      description: t("scheduling.home.assignments"),
-    },
-    {
-      id: "risk",
-      permission: "schedule.read",
-      icon: Gauge,
-      link: { to: "/scheduling/risk" },
-      title: t("scheduling.risk.menu"),
-      description: t("scheduling.home.risk"),
-    },
-    {
-      id: "interventions",
-      permission: "intervention.read",
-      icon: SprayCan,
-      link: { to: "/scheduling/interventions" },
-      title: t("scheduling.intervention.title"),
-      description: t("scheduling.home.interventions"),
-    },
-  ];
+  const formatDay = useFormatCalendarDate();
+  const status = useCycleStatus();
+  const cards = useCycleCards(status.steps, status.facts);
+  const title = t("shell.nav.scheduling");
+  useDocumentTitle(title);
+  const week = t("scheduling.home.week", {
+    week: weekNumberOf(status.week),
+    from: formatDay(status.week),
+    to: formatDay(addDays(status.week, 6)),
+  });
+  const nextCard = cards.find((card) => card.id === status.next?.id);
   return (
-    <HubPage
-      title={t("shell.nav.scheduling")}
-      description={t("scheduling.home.description")}
-      items={items.filter((item) => can(item.permission))}
-    />
+    <PageFrame width="narrow">
+      <PageHeader
+        eyebrow={
+          <span className="inline-flex items-center gap-1.5">
+            <CalendarDays aria-hidden="true" className="size-3.5" />
+            {week}
+          </span>
+        }
+        title={
+          <span className="inline-flex items-center gap-1">
+            {title}
+            <InfoHint text={t("scheduling.home.hint")} />
+          </span>
+        }
+        description={t("scheduling.home.description")}
+      />
+      {status.isError ? (
+        <ErrorState onRetry={status.refetch} />
+      ) : status.isLoading ? (
+        <CardSkeleton />
+      ) : (
+        <>
+          {nextCard ? (
+            <InlineNotice tone="info">
+              <p className="font-semibold">
+                {t("scheduling.home.next", { step: nextCard.title })}
+              </p>
+            </InlineNotice>
+          ) : (
+            <InlineNotice tone="success">
+              <p className="flex items-center gap-2 font-semibold">
+                <CircleCheck aria-hidden="true" className="size-4" />
+                {t("scheduling.home.allDone")}
+              </p>
+            </InlineNotice>
+          )}
+          <ol aria-label={week} className="m-0 flex list-none flex-col gap-4 p-0">
+            {cards.map(({ id, ...card }, index) => (
+              <CycleStepCard
+                key={id}
+                number={index + 1}
+                isNext={id === status.next?.id}
+                {...card}
+              />
+            ))}
+          </ol>
+        </>
+      )}
+    </PageFrame>
   );
 }

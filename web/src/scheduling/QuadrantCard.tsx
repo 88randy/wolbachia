@@ -1,65 +1,82 @@
-import { TriangleAlert } from "lucide-react";
+import { GripVertical, LoaderCircle } from "lucide-react";
 import { useTranslation } from "react-i18next";
 import type { Schemas } from "@wolbachia/api-client";
-import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { EntityName } from "../lookups/EntityName";
 import { SelectMenu } from "../ui/SelectMenu";
-import { useFormatNumber } from "../format/use-formatters";
 
 type Row = Schemas["Assignment"];
 
-/** One quadrant with its daily load against the target and a keyboard-friendly "Move to". */
+/** One quadrant: drag it to another courier, or use the keyboard-friendly "Mover a…". */
 export function QuadrantCard({
   row,
   options,
   canMove,
-  isBusy,
+  isSaving,
+  isDragging,
+  onDragStart,
+  onDragEnd,
   onMove,
 }: {
   row: Row;
   options: readonly { value: string; label: string }[];
   canMove: boolean;
-  isBusy: boolean;
+  isSaving: boolean;
+  isDragging: boolean;
+  onDragStart: () => void;
+  onDragEnd: () => void;
   onMove: (courierId: string | null) => void;
 }) {
   const { t } = useTranslation();
-  const formatNumber = useFormatNumber();
-  const isOver = row.target > 0 && row.load > row.target;
   return (
-    <li className="flex flex-col gap-3 rounded-xl border border-line bg-surface p-4 shadow-card">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[15px] font-semibold text-ink">{row.code}</span>
-        <span
-          className={cn(
-            "inline-flex items-center gap-1 text-[13px] font-medium tabular-nums text-ink-2",
-            isOver && "text-warning-fg",
-          )}
-        >
-          {isOver && <TriangleAlert aria-hidden="true" className="size-3.5" />}
-          {t("scheduling.assign.load", {
-            load: formatNumber(row.load),
-            target: formatNumber(row.target),
-          })}
-        </span>
-      </div>
-      <Progress
-        value={row.target > 0 ? Math.min(100, (row.load / row.target) * 100) : 0}
-        aria-label={t("scheduling.assign.loadLabel", { code: row.code })}
-        className={cn(
-          "h-2 bg-tint [&>[data-slot=progress-indicator]]:bg-action",
-          isOver && "[&>[data-slot=progress-indicator]]:bg-warning-fg",
-        )}
-      />
-      {row.blockers.length > 0 && (
-        <p className="m-0 text-xs text-warning-fg">{t("scheduling.assign.blocked")}</p>
+    <li
+      draggable={canMove && !isSaving}
+      onDragStart={(event) => {
+        event.dataTransfer.setData("text/plain", row.quadrant);
+        event.dataTransfer.effectAllowed = "move";
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
+      className={cn(
+        "flex flex-col gap-3 rounded-xl border border-line bg-surface p-3 shadow-card",
+        canMove && "cursor-grab active:cursor-grabbing",
+        isDragging && "opacity-50",
       )}
+    >
+      <div className="flex items-start gap-2">
+        {canMove && (
+          <GripVertical
+            aria-hidden="true"
+            className="mt-0.5 size-4 flex-none text-ink-3"
+            data-testid="drag-handle"
+          />
+        )}
+        <div className="flex min-w-0 flex-1 flex-col">
+          <span className="text-[15px] leading-6 font-semibold text-ink">{row.code}</span>
+          <span className="text-xs text-ink-2">
+            {t("scheduling.assign.center", { name: "" })}
+            <EntityName kind="center" id={row.center_id} />
+          </span>
+        </div>
+        {isSaving && (
+          <span className="inline-flex items-center gap-1 text-xs text-ink-2" role="status">
+            <LoaderCircle aria-hidden="true" className="size-3.5 animate-spin" />
+            {t("scheduling.assign.saving")}
+          </span>
+        )}
+      </div>
       <SelectMenu
         id={`move-${row.quadrant}`}
         value=""
         ariaLabel={t("scheduling.assign.moveAria", { code: row.code })}
         placeholder={t("scheduling.assign.move")}
-        disabled={!canMove || isBusy}
-        options={options}
+        disabled={!canMove || isSaving}
+        options={[
+          ...options,
+          ...(row.courier === null
+            ? []
+            : [{ value: "none", label: t("scheduling.assign.unassign") }]),
+        ]}
         onValueChange={(value) => {
           if (value !== "") onMove(value === "none" ? null : value);
         }}
