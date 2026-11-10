@@ -133,6 +133,7 @@ AUTH_REFRESH_REUSE_GRACE_SECONDS = env.int("AUTH_REFRESH_REUSE_GRACE_SECONDS", d
 AUTH_REVOKED_FINAL_UPLOAD_HOURS = env.int("AUTH_REVOKED_FINAL_UPLOAD_HOURS", default=72)  # 0 = off
 AUTH_LOGIN_MAX_FAILURES = env.int("AUTH_LOGIN_MAX_FAILURES", default=5)
 AUTH_LOGIN_LOCKOUT_MINUTES = env.int("AUTH_LOGIN_LOCKOUT_MINUTES", default=15)
+PLATFORM_TEMPORARY_PASSWORD_HOURS = env.int("PLATFORM_TEMPORARY_PASSWORD_HOURS", default=72)
 AUTH_WEB_SESSION_AGE_SECONDS = env.int("AUTH_WEB_SESSION_AGE_SECONDS", default=43_200)  # 12 h
 SESSION_COOKIE_AGE = AUTH_WEB_SESSION_AGE_SECONDS
 PASSWORD_RESET_TIMEOUT = env.int("PASSWORD_RESET_TIMEOUT", default=3_600)
@@ -235,6 +236,7 @@ REST_FRAMEWORK = {
         "risk_import_upload": env("THROTTLE_RISK_IMPORT_UPLOAD_RATE", default="10/hour"),
         "platform": env("THROTTLE_PLATFORM_RATE", default="120/min"),
         "platform_write": env("THROTTLE_PLATFORM_WRITE_RATE", default="60/hour"),
+        "password_change": env("THROTTLE_PASSWORD_CHANGE_RATE", default="10/hour"),
     },
     # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a
     # client cannot dodge the anonymous throttle by rotating that header.

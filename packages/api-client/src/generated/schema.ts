@@ -244,6 +244,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/password-change/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * @description `POST /auth/password-change/ {current_password, new_password}` for a web session.
+         *
+         *     The one action allowed while `must_change_password` is set. Keeps the current web session
+         *     (new auth hash), ends the user's device sessions.
+         */
+        post: operations["auth_password_change_create"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/password-reset/": {
         parameters: {
             query?: never;
@@ -10066,6 +10088,7 @@ export interface components {
             organizations: components["schemas"]["MeOrganizationChoice"][];
             limits: components["schemas"]["MeLimits"];
             is_platform_admin: boolean;
+            must_change_password: boolean;
         };
         MeLimits: {
             void_reason_min_length: number;
@@ -12095,6 +12118,10 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["WriteOffRead"][];
         };
+        PasswordChangeRequest: {
+            current_password: string;
+            new_password: string;
+        };
         /** @description Resolves the link first, so a bad link never reveals the password rules. */
         PasswordResetConfirmRequest: {
             uid: string;
@@ -12534,9 +12561,10 @@ export interface components {
          *     * `center.create` - Center Create
          *     * `admin.create` - Admin Create
          *     * `platform_admin.grant` - Platform Admin Grant
+         *     * `platform_admin.revoke` - Platform Admin Revoke
          * @enum {string}
          */
-        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "admin.create" | "platform_admin.grant";
+        PlatformHistoryActionEnum: "organization.create" | "organization.defaults_apply" | "organization.logo_upload" | "organization.suspend" | "organization.reactivate" | "center.create" | "admin.create" | "platform_admin.grant" | "platform_admin.revoke";
         PlatformOrganization: {
             readonly slug: string;
             readonly name: string;
@@ -16397,6 +16425,37 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description No response body */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Error: any 4xx or 5xx status, with the error envelope as body. */
+            default: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ErrorEnvelope"];
+                };
+            };
+        };
+    };
+    auth_password_change_create: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PasswordChangeRequest"];
+            };
+        };
         responses: {
             /** @description No response body */
             204: {

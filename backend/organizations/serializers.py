@@ -79,6 +79,7 @@ class MeSerializer(serializers.Serializer[Any]):
     organizations = MeOrganizationChoiceSerializer(many=True)
     limits = MeLimitsSerializer()
     is_platform_admin = serializers.BooleanField()
+    must_change_password = serializers.BooleanField(source="user.must_change_password")
 
 
 class CenterSerializer(OrgScopedModelSerializer):

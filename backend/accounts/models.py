@@ -18,6 +18,11 @@ class User(AbstractUser):
     """
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # Set with a one-time temporary password (platform provisioning): until the user picks a
+    # new password every API call but /me/, logout and the password change answers 403, and
+    # after `temporary_password_expires_at` the temporary password no longer signs in.
+    must_change_password = models.BooleanField(default=False)
+    temporary_password_expires_at = models.DateTimeField(null=True, blank=True)
 
 
 class Device(OrgScopedModel):

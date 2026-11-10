@@ -108,6 +108,12 @@ def authenticate_user(username: str, password: str, ip: str | None) -> User:
         locked = register_failure(username, ip)
         log_auth_event(AuthEvent.LOGIN_FAILED, context, {"locked": locked})
         raise InvalidCredentialsError
+    expires = user.temporary_password_expires_at
+    if user.must_change_password and expires is not None and expires <= server_now():
+        # An unused temporary password stops working; the platform admin issues a new account
+        # or the user resets the password by email.
+        log_auth_event(AuthEvent.LOGIN_FAILED, context, {"reason": "temporary_password_expired"})
+        raise InvalidCredentialsError
     clear_failures(username, ip)
     return user
 
@@ -241,6 +247,32 @@ def reset_password(user: User, token: str, new_password: str) -> None:
         if not locked.is_active or not default_token_generator.check_token(locked, token):
             raise InvalidResetTokenError
         locked.set_password(new_password)
-        locked.save(update_fields=["password"])
+        locked.must_change_password = False
+        locked.temporary_password_expires_at = None
+        locked.save(
+            update_fields=["password", "must_change_password", "temporary_password_expires_at"]
+        )
         revoke_user_sessions(locked, Revocation(RevokeReason.PASSWORD_CHANGED))
         cancel_final_uploads(locked)
+
+
+@sensitive_variables("current_password", "new_password")
+def change_password(user: User, current_password: str, new_password: str) -> User:
+    """Replace the password of a signed-in user (writes User) and end their device sessions.
+
+    The current password is checked again under the user lock. Clears a pending temporary
+    password. The caller keeps the web session with `update_session_auth_hash`.
+    """
+    with transaction.atomic():
+        locked = User.objects.select_for_update(no_key=True).get(pk=user.pk)
+        if not locked.is_active or not check_password(current_password, locked.password):
+            raise InvalidCredentialsError
+        locked.set_password(new_password)
+        locked.must_change_password = False
+        locked.temporary_password_expires_at = None
+        locked.save(
+            update_fields=["password", "must_change_password", "temporary_password_expires_at"]
+        )
+        revoke_user_sessions(locked, Revocation(RevokeReason.PASSWORD_CHANGED))
+        cancel_final_uploads(locked)
+    return locked

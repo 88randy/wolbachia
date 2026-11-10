@@ -40,6 +40,7 @@ from accounts.serializers import (
     DeviceSerializer,
     LoginSerializer,
     MobileLoginResponseSerializer,
+    PasswordChangeSerializer,
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
     RefreshResponseSerializer,
@@ -48,11 +49,18 @@ from accounts.serializers import (
     RevokeRequestSerializer,
     WebLoginResponseSerializer,
 )
-from accounts.services import DeviceInfo, authenticate_user, reset_password, start_device_session
+from accounts.services import (
+    DeviceInfo,
+    authenticate_user,
+    change_password,
+    reset_password,
+    start_device_session,
+)
 from accounts.tasks import send_password_reset_email
 from accounts.throttling import (
     LoginIpThrottle,
     LoginUserIpThrottle,
+    PasswordChangeThrottle,
     PasswordResetConfirmThrottle,
     PasswordResetThrottle,
     RefreshThrottle,
@@ -294,6 +302,7 @@ class LogoutView(APIView):
     authentication_classes = [ApiSessionAuthentication, DeviceBearerAuthentication]
     permission_classes = [AllowAny]
     accepts_ended_sessions = True  # read by DeviceBearerAuthentication
+    allows_pending_password_change = True
 
     @extend_schema(request=None, responses={204: None})
     def post(self, request: Request) -> Response:
@@ -427,3 +436,37 @@ class UserViewSet(PersonnelViewSet):
             {"count": count, "by": request.user.pk, "final_upload": revocation.allow_final_upload},
         )
         return Response(RevokedSessionsSerializer({"revoked_sessions": count}).data)
+
+
+@method_decorator(never_cache, name="dispatch")
+class PasswordChangeView(APIView):
+    """`POST /auth/password-change/ {current_password, new_password}` for a web session.
+
+    The one action allowed while `must_change_password` is set. Keeps the current web session
+    (new auth hash), ends the user's device sessions.
+    """
+
+    authentication_classes = [ApiSessionAuthentication]
+    throttle_classes = [PasswordChangeThrottle]
+    allows_pending_password_change = True
+
+    @extend_schema(request=PasswordChangeSerializer, responses={204: None})
+    @sensitive_variables()
+    def post(self, request: Request) -> Response:
+        from django.contrib.auth import update_session_auth_hash
+
+        user = cast(User, request.user)
+        payload = PasswordChangeSerializer(data=request.data, context={"user": user})
+        payload.is_valid(raise_exception=True)
+        changed = change_password(
+            user,
+            payload.validated_data["current_password"],
+            payload.validated_data["new_password"],
+        )
+        update_session_auth_hash(request._request, changed)
+        log_auth_event(
+            AuthEvent.PASSWORD_RESET_CONFIRMED,
+            AuditContext(user_id=user.pk, ip=client_ip(request)),
+            {"channel": "change"},
+        )
+        return Response(status=status.HTTP_204_NO_CONTENT)

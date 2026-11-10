@@ -394,3 +394,115 @@ def test_create_platform_admin_command() -> None:
     assert not user.has_usable_password()
     assert not Membership.objects.filter(user=user).exists()
     assert PlatformAuditEntry.objects.filter(action="platform_admin.grant").count() == 1
+
+
+# --- Security review follow-ups ------------------------------------------------------------
+
+
+def _created_admin(platform_client: APIClient) -> tuple[User, str]:
+    response = platform_client.post(BASE, _payload(), format="json")
+    return User.objects.get(username="norte-admin"), response.data["admin"]["temporary_password"]
+
+
+def test_temporary_password_must_be_changed_before_anything_else(
+    platform_client: APIClient,
+) -> None:
+    admin, password = _created_admin(platform_client)
+    assert admin.must_change_password
+    client = APIClient()
+    client.force_login(admin)
+
+    me = client.get("/api/v1/me/")
+    blocked = client.get("/api/v1/organization/")
+    changed = client.post(
+        "/api/v1/auth/password-change/",
+        {"current_password": password, "new_password": "Norte-Nueva-Clave-2026"},
+        format="json",
+    )
+    after = client.get("/api/v1/organization/")
+
+    assert me.status_code == 200
+    assert me.data["must_change_password"] is True
+    assert blocked.status_code == 403
+    assert blocked.data["code"] == "password_change_required"
+    assert changed.status_code == 204
+    assert after.status_code == 200
+    admin.refresh_from_db()
+    assert not admin.must_change_password
+    assert admin.temporary_password_expires_at is None
+
+
+def test_password_change_rejects_a_wrong_current_password(platform_client: APIClient) -> None:
+    admin, _ = _created_admin(platform_client)
+    client = APIClient()
+    client.force_login(admin)
+
+    response = client.post(
+        "/api/v1/auth/password-change/",
+        {"current_password": "wrong-one", "new_password": "Norte-Nueva-Clave-2026"},
+        format="json",
+    )
+
+    assert response.status_code == 401
+    admin.refresh_from_db()
+    assert admin.must_change_password
+
+
+def test_temporary_password_expires(platform_client: APIClient) -> None:
+    from datetime import timedelta
+
+    from core.time import server_now
+
+    admin, password = _created_admin(platform_client)
+    login = {"username": admin.username, "password": password}
+    assert APIClient().post("/api/v1/auth/login/", login, format="json").status_code == 200
+
+    User.objects.filter(pk=admin.pk).update(
+        temporary_password_expires_at=server_now() - timedelta(minutes=1)
+    )
+
+    response = APIClient().post("/api/v1/auth/login/", login, format="json")
+    assert response.status_code == 401
+    assert response.data["code"] == "invalid_credentials"
+
+
+def test_audit_entries_cannot_be_truncated(platform_client: APIClient, org_a: Organization) -> None:
+    platform_client.post(f"{BASE}org-a/suspend/", {"reason": REASON}, format="json")
+
+    with pytest.raises(DatabaseError), transaction.atomic(), connection.cursor() as cursor:
+        cursor.execute("TRUNCATE platform_admin_platformauditentry CASCADE")
+    assert PlatformAuditEntry.objects.count() >= 1
+
+
+def test_revoke_platform_admin_command(platform_client: APIClient, platform_user: User) -> None:
+    call_command("revoke_platform_admin", "--username", platform_user.username, stdout=StringIO())
+
+    assert not PlatformAdmin.objects.get(user=platform_user).is_active
+    assert PlatformAuditEntry.objects.filter(
+        action="platform_admin.revoke", target_id=platform_user.pk
+    ).exists()
+    assert platform_client.get(BASE).status_code == 403
+    # Running it again is a no-op: one revoke receipt.
+    call_command("revoke_platform_admin", "--username", platform_user.username, stdout=StringIO())
+    assert PlatformAuditEntry.objects.filter(action="platform_admin.revoke").count() == 1
+
+
+def test_suspension_revokes_member_sessions(
+    platform_client: APIClient, platform_user: User, member_a: User, org_a: Organization
+) -> None:
+    from django.contrib.sessions.models import Session
+
+    from accounts.models import DeviceSession
+    from tests.factories import DeviceSessionFactory
+
+    device_session = DeviceSessionFactory(organization=org_a, user=member_a)
+    web = APIClient()
+    web.force_login(member_a)
+    sessions_before = Session.objects.count()
+
+    platform_client.post(f"{BASE}org-a/suspend/", {"reason": REASON}, format="json")
+
+    assert DeviceSession.objects.get(pk=device_session.pk).revoked_at is not None
+    assert Session.objects.count() == sessions_before - 1  # the actor keeps its own session
+    assert web.get("/api/v1/me/").status_code == 401
+    assert platform_client.get(BASE).status_code == 200
