@@ -7299,6 +7299,326 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/material-requests/:
+    get:
+      operationId: material_requests_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          - code
+          - -code
+          type: string
+          default: -created_at
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+          * `code` - code
+          * `-code` - -code
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - material-requests
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedMaterialRequestProjectionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: material_requests_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - material-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MaterialRequestWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialRequestProjection'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/material-requests/{id}/:
+    get:
+      operationId: material_requests_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this material request.
+        required: true
+      tags:
+      - material-requests
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialRequestProjection'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/material-requests/{id}/cenaprece-notification/:
+    post:
+      operationId: material_requests_cenaprece_notification_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this material request.
+        required: true
+      tags:
+      - material-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MaterialRequestProjection'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/material-requests/{id}/deliver/:
+    post:
+      operationId: material_requests_deliver_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this material request.
+        required: true
+      tags:
+      - material-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DeliveryWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeliveryReceipt'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/material-requests/{id}/void/:
+    post:
+      operationId: material_requests_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this material request.
+        required: true
+      tags:
+      - material-requests
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentVoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/me/:
     get:
       operationId: me_retrieve
@@ -13816,6 +14136,226 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/uieb-shipments/:
+    get:
+      operationId: uieb_shipments_list
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: query
+        name: center
+        schema:
+          type: string
+          format: uuid
+      - name: code
+        required: false
+        in: query
+        description: Exact human code of the resource (for example `OV-010`); returns
+          0 or 1 results. Blank values are rejected.
+        schema:
+          type: string
+          maxLength: 50
+      - in: query
+        name: include_voided
+        schema:
+          type: boolean
+          default: false
+      - in: query
+        name: ordering
+        schema:
+          enum:
+          - created_at
+          - -created_at
+          - code
+          - -code
+          type: string
+          default: -created_at
+          minLength: 1
+        description: |-
+          * `created_at` - created_at
+          * `-created_at` - -created_at
+          * `code` - code
+          * `-code` - -code
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: quadrant
+        schema:
+          type: string
+          format: uuid
+      tags:
+      - uieb-shipments
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedShipmentProjectionList'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+    post:
+      operationId: uieb_shipments_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      tags:
+      - uieb-shipments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentWriteRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentProjection'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/uieb-shipments/{id}/:
+    get:
+      operationId: uieb_shipments_retrieve
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this uieb shipment.
+        required: true
+      tags:
+      - uieb-shipments
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShipmentProjection'
+          description: ''
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
+  /api/v1/uieb-shipments/{id}/void/:
+    post:
+      operationId: uieb_shipments_void_create
+      description: |-
+        Resolves the active organization of the request and scopes every query to it.
+
+        Resolution lives here (not in middleware) so token auth (#4) and Channels (#19) reuse
+        `resolve_active_membership`. The organization comes from the user's membership, never from
+        the body: `organization_id` in a payload is ignored.
+
+        ViewSets only: authorization and the 405 check rely on the `action` attribute, which plain
+        `APIView`s do not have.
+      parameters:
+      - in: header
+        name: X-Organization
+        schema:
+          type: string
+        description: Slug of the active organization. Required only for users with
+          more than one active membership; when sent it is always validated.
+      - in: path
+        name: id
+        schema:
+          type: string
+          format: uuid
+        description: A UUID string identifying this uieb shipment.
+        required: true
+      tags:
+      - uieb-shipments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShipmentVoidRequest'
+        required: true
+      security:
+      - cookieAuth: []
+      - bearerAuth: []
+      responses:
+        '204':
+          description: No response body
+        default:
+          description: 'Error: any 4xx or 5xx status, with the error envelope as body.'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorEnvelope'
   /api/v1/users/{id}/revoke-device-sessions/:
     post:
       operationId: users_revoke_device_sessions_create
@@ -14884,6 +15424,7 @@ components:
       - inventory_intent
       - certification
       - lab_paddle_command
+      - material_request
       type: string
       description: |-
         * `field_event` - field_event
@@ -14895,6 +15436,7 @@ components:
         * `inventory_intent` - inventory_intent
         * `certification` - certification
         * `lab_paddle_command` - lab_paddle_command
+        * `material_request` - material_request
     AttachmentTargetRequest:
       type: object
       properties:
@@ -17101,6 +17643,63 @@ components:
         * `keep` - keep
         * `move` - move
         * `remove` - remove
+    DeliveryReceipt:
+      type: object
+      description: |-
+        Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).
+
+        Every relational field it builds is an `OrgScopedPrimaryKeyRelatedField`, so a payload can
+        never link a record to another organization's data. Relations to models that are not
+        org-scoped (`created_by`, `organization`...) must be read-only, or the serializer fails to
+        build with `ImproperlyConfigured`.
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        request:
+          type: string
+          format: uuid
+          readOnly: true
+        command_id:
+          type: string
+          format: uuid
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: string
+          format: uuid
+          readOnly: true
+          nullable: true
+        expected_revision:
+          type: integer
+          readOnly: true
+      required:
+      - command_id
+      - created_at
+      - created_by
+      - expected_revision
+      - id
+      - request
+    DeliveryWriteRequest:
+      type: object
+      properties:
+        command_id:
+          type: string
+          format: uuid
+        signature_upload_id:
+          type: string
+          format: uuid
+        expected_revision:
+          type: integer
+          minimum: 0
+      required:
+      - command_id
+      - expected_revision
+      - signature_upload_id
     Device:
       type: object
       description: Read-only view of a device for administrators (W67).
@@ -21416,6 +22015,86 @@ components:
       - quantity
       - reference
       - supply_version_id
+    MaterialRequestProjection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        recipient_institution:
+          type: string
+        lot_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+          nullable: true
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+        revision:
+          type: integer
+        is_voided:
+          type: boolean
+        delivery_id:
+          type: string
+          format: uuid
+          nullable: true
+        notifications:
+          type: array
+          items:
+            $ref: '#/components/schemas/NotificationProjection'
+      required:
+      - code
+      - delivery_id
+      - id
+      - is_voided
+      - location_id
+      - lot_id
+      - notifications
+      - piece_id
+      - quantity
+      - recipient_institution
+      - revision
+      - unit_version_id
+    MaterialRequestWriteRequest:
+      type: object
+      properties:
+        recipient_institution:
+          type: string
+          minLength: 1
+          maxLength: 200
+        lot_id:
+          type: string
+          format: uuid
+        location_id:
+          type: string
+          format: uuid
+        piece_id:
+          type: string
+          format: uuid
+        unit_version_id:
+          type: string
+          format: uuid
+        quantity:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,12}(?:\.\d{0,6})?$
+      required:
+      - location_id
+      - lot_id
+      - quantity
+      - recipient_institution
     Me:
       type: object
       description: '`organization` is null when the user has several organizations
@@ -22211,6 +22890,46 @@ components:
       - command_id
       - expected_revision
       - recipient_membership_id
+    NotificationProjection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        reference:
+          type: string
+        date:
+          type: string
+          format: date
+        evidence_id:
+          type: string
+          format: uuid
+      required:
+      - date
+      - evidence_id
+      - id
+      - reference
+    NotificationWriteRequest:
+      type: object
+      properties:
+        reference:
+          type: string
+          minLength: 1
+          maxLength: 200
+        date:
+          type: string
+          format: date
+        evidence_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 20
+          minItems: 1
+      required:
+      - date
+      - evidence_ids
+      - reference
     NullEnum:
       enum:
       - null
@@ -23625,6 +24344,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Lot'
+    PaginatedMaterialRequestProjectionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/MaterialRequestProjection'
     PaginatedMembershipList:
       type: object
       required:
@@ -24430,6 +25172,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Shift'
+    PaginatedShipmentProjectionList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ShipmentProjection'
     PaginatedStockList:
       type: object
       required:
@@ -30114,6 +30879,86 @@ components:
       description: |-
         * `approve` - approve
         * `observe` - observe
+    ShipmentProjection:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        code:
+          type: string
+        cutoff:
+          type: string
+          format: date-time
+        template_version:
+          type: string
+        recipient_institution:
+          type: string
+        source_snapshot:
+          type: array
+          items:
+            type: object
+            additionalProperties: {}
+        content_hash:
+          type: string
+        supersedes_id:
+          type: string
+          format: uuid
+          nullable: true
+        is_superseded:
+          type: boolean
+        rfc:
+          type: string
+        rfc_omission_code:
+          type: string
+      required:
+      - code
+      - content_hash
+      - cutoff
+      - id
+      - is_superseded
+      - recipient_institution
+      - rfc
+      - rfc_omission_code
+      - source_snapshot
+      - supersedes_id
+      - template_version
+    ShipmentVoidRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - reason
+    ShipmentWriteRequest:
+      type: object
+      properties:
+        source_ids:
+          type: array
+          items:
+            type: string
+            format: uuid
+          maxItems: 200
+          minItems: 1
+        cutoff:
+          type: string
+          format: date-time
+        recipient_institution:
+          type: string
+          default: ''
+          maxLength: 200
+        supersedes_id:
+          type: string
+          format: uuid
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+      required:
+      - cutoff
+      - source_ids
     SnapshotCatalog:
       type: object
       properties:

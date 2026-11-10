@@ -1,5 +1,7 @@
 """Retain sample audit and coherent tenant/source/method/result command chains."""
 
+from importlib import import_module
+
 from django.db import migrations
 from django.db.migrations.exceptions import IrreversibleError
 
@@ -160,30 +162,100 @@ CREATE CONSTRAINT TRIGGER lab_sample_complete AFTER INSERT ON lab_{table}
 """
     for table in TABLES
 )
-REVERSE = "\n".join(
-    f"DROP TRIGGER lab_sample_complete ON lab_{table};"
-    f"DROP TRIGGER lab_{table}_guard ON lab_{table};"
-    f"DROP TRIGGER lab_sample_lock ON lab_{table};"
-    for table in TABLES
-) + """
+REVERSE = (
+    "\n".join(
+        f"DROP TRIGGER lab_sample_complete ON lab_{table};"
+        f"DROP TRIGGER lab_{table}_guard ON lab_{table};"
+        f"DROP TRIGGER lab_sample_lock ON lab_{table};"
+        for table in TABLES
+    )
+    + """
 DROP TRIGGER lab_sample_source_void_guard ON field_sync_fieldevent;
 DROP FUNCTION lab_sample_source_void_guard();
 DROP FUNCTION lab_sample_complete();
 DROP FUNCTION lab_sample_lock();
 DROP FUNCTION lab_sample_method_valid(uuid,uuid,timestamptz);
 """
+)
+
+
+SHIPMENT_SOURCE_GUARD = r"""
+CREATE OR REPLACE FUNCTION shipment_sample_source_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF NEW.sample_id IS NOT NULL AND NOT EXISTS(
+   SELECT 1 FROM lab_wolbachiasample sample
+   WHERE sample.id=NEW.sample_id AND sample.organization_id=NEW.organization_id
+     AND sample.center_id=NEW.center_id
+     AND sample.quadrant_id IS NOT DISTINCT FROM NEW.quadrant_id
+ ) THEN RAISE EXCEPTION 'Shipment sample context invalid'; END IF;
+ RETURN NEW;
+END; $$;
+"""
+
+SHIPMENT_COMPLETE = r"""
+CREATE OR REPLACE FUNCTION shipment_complete_guard() RETURNS trigger LANGUAGE plpgsql AS $$
+DECLARE shipment lab_uiebshipment;
+BEGIN
+ IF TG_TABLE_NAME='lab_uiebshipment' THEN shipment=NEW;
+ ELSE SELECT * INTO shipment FROM lab_uiebshipment WHERE id=NEW.shipment_id; END IF;
+ IF (SELECT count(*) FROM lab_shipmentsource s WHERE s.shipment_id=shipment.id)<>jsonb_array_length(shipment.source_snapshot)
+   OR EXISTS(SELECT 1 FROM jsonb_array_elements(shipment.source_snapshot) pin WHERE NOT EXISTS(
+     SELECT 1 FROM lab_shipmentsource s WHERE s.shipment_id=shipment.id
+       AND ((pin->>'kind'='bag' AND s.bag_id=(pin->>'id')::uuid)
+         OR (pin->>'kind'='lot' AND s.lot_id=(pin->>'id')::uuid)
+         OR (pin->>'kind'='sample' AND s.sample_id=(pin->>'id')::uuid AND EXISTS(
+           SELECT 1 FROM lab_wolbachiasample sample WHERE sample.id=s.sample_id
+             AND sample.event_id=(pin->>'source_event_id')::uuid
+             AND sample.method_version_id=(pin->>'method_version_id')::uuid
+             AND (CASE WHEN pin ? 'location_id' THEN
+               sample.source_provenance->'legacy_identity'->>'origin_id'=pin->>'origin_id'
+               AND sample.source_provenance->'legacy_identity'->>'location_id'=pin->>'location_id'
+             ELSE sample.origin_snapshot=pin->'origin_snapshot'
+               AND sample.location=pin->'location'
+               AND sample.source_provenance=pin->'source_provenance'
+               AND sample.center_id=(pin->>'center_id')::uuid
+               AND sample.quadrant_id IS NOT DISTINCT FROM (pin->>'quadrant_id')::uuid
+               AND sample.release_id IS NOT DISTINCT FROM (pin->>'release_id')::uuid
+             END)
+             AND sample.reading_id IS NOT DISTINCT FROM (pin->>'reading_id')::uuid
+             AND sample.lot_id IS NOT DISTINCT FROM (pin->>'lot_id')::uuid
+             AND (sample.lot_id IS NULL OR EXISTS(SELECT 1 FROM inventory_lotversion version
+               WHERE version.id=(pin->>'lot_version_id')::uuid AND version.lot_id=sample.lot_id
+                 AND version.organization_id=sample.organization_id AND version.created_at<=shipment.cutoff))
+             AND sample.created_by_id=(pin->>'collector_id')::uuid
+         )))))
+   THEN RAISE EXCEPTION 'Shipment must retain its exact selected sources'; END IF;
+ RETURN NEW;
+END; $$;
+"""
+LEGACY_SHIPMENT = import_module("lab.migrations.0007_shipment_fact_guards")
+LEGACY_SOURCE_GUARD = (
+    "CREATE OR REPLACE FUNCTION shipment_sample_source_guard()"
+    + (
+        LEGACY_SHIPMENT.SAMPLE_GUARDS.split("CREATE FUNCTION shipment_sample_source_guard()", 1)[
+            1
+        ].split("CREATE TRIGGER lab_shipmentsource_sample_guard", 1)[0]
+    )
+)
 
 
 def protect_reverse(apps, schema_editor):
-    if any(apps.get_model("lab", model).objects.exists() for model in TABLES) or apps.get_model(
-        "lab", "LabMethodVersion"
-    ).objects.filter(supports_wolbachia=True).exists():
+    if (
+        any(apps.get_model("lab", model).objects.exists() for model in TABLES)
+        or apps.get_model("lab", "LabMethodVersion")
+        .objects.filter(supports_wolbachia=True)
+        .exists()
+    ):
         raise IrreversibleError("Retain Wolbachia sample, method and result audit.")
 
 
 class Migration(migrations.Migration):
-    dependencies = [("lab", "0006_wolbachia_samples"), ("releases", "0005_semantic_source_uuids")]
+    dependencies = [("lab", "0008_wolbachia_samples"), ("releases", "0005_semantic_source_uuids")]
     operations = [
+        migrations.RunSQL(
+            SHIPMENT_SOURCE_GUARD + SHIPMENT_COMPLETE,
+            LEGACY_SOURCE_GUARD + LEGACY_SHIPMENT.SAMPLE_COMPLETE,
+        ),
         migrations.RunSQL(FORWARD, REVERSE),
         migrations.RunPython(migrations.RunPython.noop, protect_reverse),
     ]

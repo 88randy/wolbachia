@@ -2,6 +2,18 @@
 
 One English name per domain term across backend, mobile and web. Spanish appears only in user-facing text (`packages/i18n`) and when talking with the client. Code, API routes, DB fields, events and logs use the **English name** below.
 
+## UIEB shipment and transfer eligibility (#118)
+
+| Spanish | English name in code | Notes |
+| --- | --- | --- |
+| envío UIEB | UiebShipment | Immutable technical source projection with cutoff and linked supersession. |
+| fuente de envío | ShipmentSource | Genuine selected Bag, WolbachiaSample or Lot identity; not a legal Annex VI template. |
+| solicitud de material | MaterialRequest | Actual recipient, lot, storage, unit, quantity and optional piece. |
+| evidencia de notificación CENAPRECE | NotificationEvidence | Recorded reference/date and verified owned private upload. |
+| recibo de entrega | DeliveryReceipt | Unique authenticated command, verified signature and one real stock debit. |
+| autorización de transferencia | DataTransferAuthorization | Exact recipient/purpose/field, actual scope pair and explicit validity interval. |
+| revocación de transferencia | DataTransferRevocation | Append-only withdrawal; never rewrites earlier evidence or stores an RFC value. |
+
 ## Private evidence (#102)
 
 | Spanish | English name in code | API / field form | Notes |
@@ -44,7 +56,7 @@ Rules:
 | resolución de retiro no recuperado | removal resolution | `RemovalResolution`, `removal.resolve` | Supervisor's append-only recovered_later or written_off disposition for one removal; original recovery evidence remains unchanged. |
 | bolsa | bag | `/bags/`, `bag_code` | Bag with the paddle sent to the lab. |
 | muestra | sample | `/wolbachia-samples/`, `sample` | Lab sample (e.g. for Wolbachia results). |
-| muestra de Wolbachia | Wolbachia sample | `WolbachiaSample`, `sample.collect` | Immutable collection UUID/code and exact origin/method/source pins. |
+| muestra de Wolbachia | Wolbachia sample | `WolbachiaSample`, `sample.collect` | Canonical collection UUID/code, retained origin/method proof, GPS, clocks and Reading, Lot or Release provenance; shared by results and shipments. |
 | recepción de muestra | sample receipt | `SampleReceipt`, `/wolbachia-samples/{id}/receive/` | Authored laboratory reception, distinct from collection. |
 | intento de resultado de Wolbachia | Wolbachia result attempt | `WolbachiaResultAttempt` | Append-only valid/invalid/disputed observation with an explicit binary result only when valid. |
 

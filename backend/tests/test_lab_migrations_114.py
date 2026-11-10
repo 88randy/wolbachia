@@ -161,6 +161,14 @@ RELEASE_ADDITIVE_TRIGGERS = {
     ("inventory_stockmovement", "inventory_release_movement_complete"),
 }
 
+# Explicit #118 additions outside the Lab tables excluded by the legacy query.
+SHIPMENT_ADDITIVE_TRIGGERS = {
+    ("inventory_stockoperation", "inventory_material_delivery_operation_guard"),
+    ("inventory_stockoperation", "inventory_material_delivery_operation_complete"),
+    ("inventory_stockmovement", "inventory_material_delivery_movement_complete"),
+    ("uploads_attachmentlink", "uploads_material_request_parent_guard"),
+}
+
 
 def insert_genuine_legacy_lab_observation(apps, context, bag):
     """Construct a real source/pins/command chain in the supplied model state.
@@ -301,6 +309,132 @@ def legacy_decision_rows(field):
     return (source, result.decision, result.next_day_task, result.next_day_task.task, closure)
 
 
+def assert_legacy_sample_upgrade_retains_issued_shipment(context, bag, method):
+    """Exercise only the two new migrations inside the existing migration owner."""
+    from core.snapshots import snapshot_hash
+    from field_sync.envelope import describe_payload
+    from inventory.models import Location
+    from lab.samples.models import WolbachiaSample
+    from lab.shipments.models import UiebShipment
+    from tests.factories import CatalogItemFactory, FieldEventFactory
+    from tests.lab_support import AT
+
+    actor = context.actor
+    quadrant = bag.reading.ovitrap.sampling_point.block.quadrant
+    location = Location.objects.create(
+        organization=actor.organization,
+        created_by=actor.user,
+        center=quadrant.center,
+        quadrant=quadrant,
+        code="LEGACY-SAMPLE-LOCATION",
+    )
+    # The old source guard requires the real B21 catalog, rather than a synthetic alias.
+    from catalogs.models import Catalog
+
+    catalog, _created = Catalog.objects.get_or_create(
+        organization=actor.organization,
+        slug="sample-origin",
+        defaults={"label_es": "Synthetic origin", "label_en": "Synthetic origin"},
+    )
+    origin = CatalogItemFactory(catalog=catalog, code="legacy-sample-origin")
+    identifier = uuid4()
+    payload = {
+        "sample_id": str(identifier),
+        "code": "LEGACY-SAMPLE-117",
+        "origin_code": origin.code,
+        "method_version": str(method.pk),
+        "source_ref": {"kind": "reading", "id": str(bag.reading_id)},
+    }
+    source = FieldEventFactory(
+        organization=actor.organization,
+        created_by=actor.user,
+        device=context.field.batch.device,
+        type="sample.collect",
+        payload=payload,
+        payload_sha256=describe_payload(payload).sha256,
+        device_time=AT,
+        server_received_at=AT,
+        gps_lng=-99.1,
+        gps_lat=19.4,
+    )
+    executor = MigrationExecutor(connection)
+    leaves = executor.loader.graph.leaf_nodes()
+    state = executor.migrate([("lab", "0007_shipment_fact_guards")])
+    shared = {"organization_id": actor.organization.pk, "created_by_id": actor.user.pk}
+    pin = {
+        "kind": "sample",
+        "id": str(identifier),
+        "code": payload["code"],
+        "source_event_id": str(source.pk),
+        "method_version_id": str(method.pk),
+        "origin_id": str(origin.pk),
+        "location_id": str(location.pk),
+        "collector_id": str(actor.user.pk),
+        "reading_id": str(bag.reading_id),
+        "lot_id": None,
+        "lot_version_id": None,
+        "device_time": source.device_time.isoformat(),
+        "server_received_at": source.server_received_at.isoformat(),
+    }
+    try:
+        with transaction.atomic():
+            state.apps.get_model("lab", "WolbachiaSample").objects.create(
+                **shared,
+                id=identifier,
+                code=payload["code"],
+                event_id=source.pk,
+                origin_id=origin.pk,
+                location_id=location.pk,
+                method_version_id=method.pk,
+                collector_id=actor.user.pk,
+                reading_id=bag.reading_id,
+            )
+            shipment = state.apps.get_model("lab", "UiebShipment").objects.create(
+                **shared,
+                code="LEGACY-SHIPMENT-117",
+                cutoff=AT,
+                recipient_institution="Synthetic legacy recipient",
+                source_snapshot=[pin],
+                content_hash=snapshot_hash([pin]),
+            )
+            state.apps.get_model("lab", "ShipmentSource").objects.create(
+                **shared,
+                shipment_id=shipment.pk,
+                sample_id=identifier,
+                center_id=quadrant.center_id,
+                quadrant_id=quadrant.pk,
+            )
+        original = (
+            state.apps.get_model("lab", "UiebShipment")
+            .objects.filter(pk=shipment.pk)
+            .values()
+            .get()
+        )
+        executor = MigrationExecutor(connection)
+        executor.migrate(leaves, state=state)
+        sample = WolbachiaSample.objects.get(pk=identifier)
+        assert sample.origin_snapshot["id"] == str(origin.pk)
+        assert sample.source_provenance["legacy_identity"]["location_id"] == str(location.pk)
+        assert sample.source_provenance["legacy_identity"]["collector_id"] == str(actor.user.pk)
+        assert sample.source_provenance["legacy_identity"]["created_by_id"] == str(actor.user.pk)
+        assert sample.created_by_id == source.created_by_id
+        assert sample.location == [-99.1, 19.4]
+        assert (sample.center_id, sample.quadrant_id) == (quadrant.center_id, quadrant.pk)
+        assert (sample.device_time, sample.server_received_at) == (AT, AT)
+        assert not sample.method_version.supports_wolbachia
+        assert not sample.attempts.exists()
+        assert UiebShipment.objects.filter(pk=shipment.pk).values().get() == original
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        with pytest.raises(IrreversibleError), transaction.atomic():
+            executor.migrate([("lab", "0007_shipment_fact_guards")])
+        assert set(executor.recorder.applied_migrations()) == applied
+        assert WolbachiaSample.objects.filter(pk=identifier).exists()
+    finally:
+        executor = MigrationExecutor(connection)
+        executor.migrate(leaves)
+
+
 @pytest.mark.django_db(transaction=True)
 def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_audit(
     monkeypatch, field, make_member
@@ -329,10 +463,12 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         ("uploads", "0004_remove_attachmentlink_attachment_exactly_one_parent_and_more"),
         ("incidents", "0002_automaticincidentorigin"),
     ]
+    head_state = None
     try:
-        executor.migrate(old)
+        legacy_state = executor.migrate(old)
         triggers = old_trigger_definitions()
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=legacy_state)
         retained = {(table, name): definition for table, name, definition in triggers}
         restored = {
             (table, name): definition for table, name, definition in old_trigger_definitions()
@@ -345,6 +481,7 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
             | QA_ADDITIVE_TRIGGERS
             | PEOPLE_ADDITIVE_TRIGGERS
             | RELEASE_ADDITIVE_TRIGGERS
+            | SHIPMENT_ADDITIVE_TRIGGERS
         )
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
@@ -366,11 +503,13 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         assert not LabMethod.objects.exists()
         # Exercise a populated released114 ->115 upgrade separately from the empty reverse.
         released = [("lab", "0003_material_disposition_guard")]
-        MigrationExecutor(connection).migrate(released)
-        old_apps = MigrationExecutor(connection).loader.project_state(released).apps
+        executor = MigrationExecutor(connection)
+        released_state = executor.migrate(released)
+        old_apps = released_state.apps
         request, saved = insert_genuine_legacy_lab_observation(old_apps, context, bag)
         original = LabCommand.objects.filter(command_id=request.command_id).values().get()
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=released_state)
         from datetime import timedelta
         from zoneinfo import ZoneInfo
 
@@ -448,14 +587,20 @@ def test_lab_upgrade_preserves_real_legacy_sources_and_reverse_never_deletes_aud
         )
         assert exposed_attempt.body["code"] == "lab_recount_disclosed"
         assert execute_lab_command(attester, attestation_command).body == attested.body
-        with pytest.raises(IrreversibleError):
-            MigrationExecutor(connection).migrate(released)
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        with pytest.raises(IrreversibleError), transaction.atomic():
+            executor.migrate(released)
+        assert set(executor.recorder.applied_migrations()) == applied
         assert EggCountAttempt.objects.get(pk=saved["count"]["id"]).value == 0
         assert legacy_before == [
             type(row).objects.filter(pk=row.pk).values().get() for row in legacy
         ]
+        assert_legacy_sample_upgrade_retains_issued_shipment(context, bag, qa_method)
     finally:
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(leaves)
+        executor.migrate(leaves, plan=plan, state=head_state if not plan else None)
 
 
 @pytest.mark.django_db(transaction=True)

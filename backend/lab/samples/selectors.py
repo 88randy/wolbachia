@@ -4,10 +4,67 @@ from typing import Any, cast
 
 from django.db.models import Count, OuterRef, Prefetch, Q, QuerySet, Subquery
 
+from inventory.transfers.scope import paired_query
 from lab.methods import method_pin
 from lab.samples.models import SampleReceipt, WolbachiaResultAttempt, WolbachiaSample
+from lab.samples.sources import resolve_source
 from reviews.effect_receipts import effective_effects, is_effective
 from uploads.access import UploadActor, current_scope
+
+
+def sample_pair_query(grant: Any, prefix: str = "") -> Q:  # noqa: ANN401 -- canonical paired WorkScope
+    result = paired_query(grant, prefix + "center_id", prefix + "quadrant_id")
+    for relation, center, quadrant in (
+        (
+            "reading",
+            "reading__ovitrap__sampling_point__block__quadrant__center_id",
+            "reading__ovitrap__sampling_point__block__quadrant_id",
+        ),
+        ("lot", "lot__center_id", "lot__quadrant_id"),
+        (
+            "release",
+            "release__permit_version__permit__center_id",
+            "release__permit_version__permit__quadrant_id",
+        ),
+    ):
+        result &= Q(**{prefix + relation + "__isnull": True}) | paired_query(
+            grant, prefix + center, prefix + quadrant
+        )
+    return result
+
+
+def sample_rows(actor: UploadActor, permission: str) -> QuerySet[WolbachiaSample]:
+    """One grant covers both retained sample scope and the actual source context."""
+    allowed = Q(pk__in=[])
+    for codes, grant in current_scope(actor).grants:
+        if permission in codes:
+            allowed |= sample_pair_query(grant)
+    return (
+        WolbachiaSample.objects.filter(organization=actor.organization)
+        .filter(allowed)
+        .select_related(
+            "event",
+            "method_version",
+            "lot",
+            "release__permit_version__permit",
+            "reading__event",
+            "reading__ovitrap__event",
+        )
+    )
+
+
+def sample_contexts(sample: WolbachiaSample) -> list[dict[str, str | None]]:
+    source = resolve_source(sample.organization, sample.event.payload["source_ref"])
+    return [
+        {
+            "center_id": str(sample.center_id),
+            "quadrant_id": str(sample.quadrant_id) if sample.quadrant_id else None,
+        },
+        {
+            "center_id": str(source.center_id),
+            "quadrant_id": str(source.quadrant_id) if source.quadrant_id else None,
+        },
+    ]
 
 
 def scoped_samples(

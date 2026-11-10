@@ -11,7 +11,7 @@ from lab.policies import MAX_OBSERVATION
 class LabFact(ImmutableMixin, OrgScopedModel):
     class Meta(ImmutableMixin.Meta):
         abstract = True
-        constraints = [
+        constraints: ClassVar[list[models.BaseConstraint]] = [
             models.CheckConstraint(
                 condition=models.Q(created_by__isnull=False),
                 name="%(app_label)s_%(class)s_author",
@@ -408,4 +408,14 @@ from lab.samples.models import (  # noqa: E402, I001 -- same-app registration af
     SampleReceipt as SampleReceipt,
     WolbachiaResultAttempt as WolbachiaResultAttempt,
     WolbachiaSample as WolbachiaSample,
+)
+
+from lab.shipments.models import (  # noqa: E402, I001 -- register same-app shipment facts after shared bases.
+    DeliveryReceipt as DeliveryReceipt,
+    MaterialRequest as MaterialRequest,
+    MaterialRequestVoid as MaterialRequestVoid,
+    NotificationEvidence as NotificationEvidence,
+    ShipmentSource as ShipmentSource,
+    ShipmentVoid as ShipmentVoid,
+    UiebShipment as UiebShipment,
 )

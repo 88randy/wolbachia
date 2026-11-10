@@ -41,6 +41,26 @@ RELEASE_ADDITIVE_TRIGGERS = {
     "inventory_release_movement_complete",
 }
 
+# Explicit #118 guards restored through People's upload/release dependents.
+SHIPMENT_ADDITIVE_TRIGGERS = {
+    "inventory_material_delivery_complete",
+    "inventory_material_delivery_movement_complete",
+    "inventory_material_delivery_operation_complete",
+    "inventory_material_delivery_operation_guard",
+    "lab_deliveryreceipt_guard",
+    "lab_materialrequest_guard",
+    "lab_materialrequestvoid_guard",
+    "lab_notificationevidence_guard",
+    "lab_shipmentsource_complete_guard",
+    "lab_shipmentsource_guard",
+    "lab_shipmentsource_sample_guard",
+    "lab_shipmentvoid_guard",
+    "lab_uiebshipment_complete_guard",
+    "lab_uiebshipment_guard",
+    "lab_wolbachiasample_guard",
+    "uploads_material_request_parent_guard",
+}
+
 
 def trigger_definitions():
     with connection.cursor() as cursor:
@@ -140,6 +160,7 @@ def test_people_upgrade_retains_legacy_and_raw_guards_preserve_real_private_chai
                 "lab_sample_complete",
                 "lab_sample_source_void_guard",
             }
+            | SHIPMENT_ADDITIVE_TRIGGERS
         )
         assert set(upgraded) - set(baseline) == additions
         assert Training.objects.count() == Certification.objects.count() == 0
@@ -388,8 +409,12 @@ def test_people_upgrade_retains_legacy_and_raw_guards_preserve_real_private_chai
         )
         assert CertificationRevocation.objects.count() == EvaluationVoid.objects.count() == 1
         retained = Certification.objects.filter(pk=certificate.pk).values().get()
-        with pytest.raises(IrreversibleError):
-            MigrationExecutor(connection).migrate([("people", "0001_people_certification_parent")])
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        # Keep the refused multi-migration downgrade and dependent DDL in one rollback.
+        with pytest.raises(IrreversibleError), transaction.atomic():
+            executor.migrate([("people", "0001_people_certification_parent")])
+        assert set(executor.recorder.applied_migrations()) == applied
         assert Certification.objects.filter(pk=certificate.pk).values().get() == retained
         assert AttachmentLink.objects.get(pk=attachment.pk).certification_id == certificate.pk
         assert (

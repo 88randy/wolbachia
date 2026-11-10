@@ -36,3 +36,11 @@ existing FieldEvent upload parent and grants no new download capability.
 Owning acceptance tests: `tests/test_lab_samples_b_21.py`. API documentation:
 [API conventions](../../../../docs/api-conventions.md) and
 [sync](../../../../docs/sync.md).
+
+UIEB shipments (#118) consume this same canonical sample, including release-backed
+collections. `source_ref` is `{kind: reading|lot|release, id: UUID}`; there is no
+separate identity writer or inventory reception-location assumption. Shipment
+selection checks one current paired grant over the retained sample context and
+its actual source. Snapshots retain original origin/method/source pins, GPS,
+collector and clocks. Pre-#117 identities and issued shipment snapshots are
+retained by the additive migration; no historical method verification is invented.
