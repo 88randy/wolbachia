@@ -1,10 +1,12 @@
 """Personnel projections contain only work facts and explicitly authorized training summaries."""
 
+from collections.abc import Mapping
 from typing import Any
 
 from django.db.models import QuerySet
 
 from accounts.models import AccessLog, Device, Personnel
+from accounts.personnel_serializers import AccessLogFilterSerializer
 from core.time import server_now
 from organizations.models import Membership
 from organizations.services import effective_scope
@@ -85,3 +87,21 @@ def scoped_access_log(membership: Membership) -> QuerySet[AccessLog]:
         effective_scope(membership),
         "access_log.read",
     ).order_by("-created_at", "-id")
+
+
+def filter_access_log(rows: QuerySet[AccessLog], params: Mapping[str, str]) -> QuerySet[AccessLog]:
+    """Optional `action`, `result`, `actor_id`, `created_after`, `created_before` filters (W60)."""
+    for key, lookup in (
+        ("action", "action"),
+        ("result", "result"),
+        ("actor_id", "created_by_id"),
+        ("created_after", "created_at__gte"),
+        ("created_before", "created_at__lt"),
+    ):
+        value = params.get(key)
+        if not value:
+            continue
+        serializer = AccessLogFilterSerializer(data={key: value})
+        serializer.is_valid(raise_exception=True)
+        rows = rows.filter(**{lookup: serializer.validated_data[key]})
+    return rows

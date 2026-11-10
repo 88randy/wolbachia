@@ -136,6 +136,23 @@ def receipt_snapshot(receipt: SampleReceipt) -> dict[str, Any]:
     }
 
 
+def valid_results(rows: QuerySet[WolbachiaSample]) -> QuerySet[WolbachiaSample]:
+    """Additive read for the dashboards: same valid-result rule as `prevalence_inputs`.
+
+    Effective samples whose latest attempt is valid, annotated with `selected_result`.
+    """
+    latest = WolbachiaResultAttempt.objects.filter(sample_id=OuterRef("pk")).order_by("-revision")
+    return cast(
+        "QuerySet[WolbachiaSample]",
+        effective_effects(rows, "event")
+        .annotate(
+            selected_status=Subquery(latest.values("status")[:1]),
+            selected_result=Subquery(latest.values("result")[:1]),
+        )
+        .filter(selected_status="valid", selected_result__in=["positive", "negative"]),
+    )
+
+
 def prevalence_inputs(rows: QuerySet[WolbachiaSample]) -> dict[str, int | float | None]:
     """Return the valid-positive / valid-tested fraction; an empty denominator is unknown."""
     latest = WolbachiaResultAttempt.objects.filter(sample_id=OuterRef("pk")).order_by("-revision")

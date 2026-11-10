@@ -229,6 +229,8 @@ REST_FRAMEWORK = {
         "password_reset_confirm": THROTTLE_PASSWORD_RESET_CONFIRM_RATE,
         "field_sync": THROTTLE_FIELD_SYNC_RATE,
         "search": env("THROTTLE_SEARCH_RATE", default="60/min"),
+        "export": env("THROTTLE_EXPORT_RATE", default="10/hour"),
+        "portal": env("THROTTLE_PORTAL_RATE", default="30/min"),
         "risk_import_upload": env("THROTTLE_RISK_IMPORT_UPLOAD_RATE", default="10/hour"),
     },
     # Number of trusted reverse proxies in front of the API. 0 ignores X-Forwarded-For, so a

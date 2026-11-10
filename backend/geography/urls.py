@@ -1,6 +1,8 @@
+from django.urls import path
 from rest_framework.routers import SimpleRouter
 
 from geography.decisions.views import InterventionViewSet
+from geography.map_tiles import MapTilesView
 from geography.views import BlockViewSet, QuadrantViewSet, SamplingPointViewSet
 
 router = SimpleRouter()
@@ -10,4 +12,7 @@ router.register("sampling-points", SamplingPointViewSet, basename="sampling-poin
 router.register(
     "third-party-interventions", InterventionViewSet, basename="third-party-intervention"
 )
-urlpatterns = router.urls
+urlpatterns = [
+    path("map-tiles/<str:name>.pmtiles", MapTilesView.as_view(), name="map-tiles"),
+    *router.urls,
+]
