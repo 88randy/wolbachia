@@ -11055,7 +11055,7 @@ export interface components {
             readonly device_time: string;
             /** Format: date-time */
             readonly server_received_at: string;
-            readonly provenance: unknown;
+            readonly provenance: components["schemas"]["ReleaseProvenance"];
             readonly blocked_by: components["schemas"]["ReleaseBlocker"][];
             /** Format: uuid */
             readonly created_by: string | null;
@@ -11158,6 +11158,23 @@ export interface components {
         ReleaseOutcome: {
             release: components["schemas"]["SupplyRelease"];
         };
+        /** @description Regulatory ids only: no courier, certification, reviewer, assignment or receipt ids. */
+        ReleaseProvenance: {
+            /** Format: uuid */
+            readonly permit_version: string;
+            /** Format: uuid */
+            readonly current_permit_version: string;
+            /** Format: uuid */
+            readonly permit_type: string;
+            /** Format: uuid */
+            readonly official_document: string;
+            /** Format: uuid */
+            readonly source_lot_version: string;
+            readonly rules_version: string;
+            readonly catalog_version: string;
+            readonly schedule: components["schemas"]["ReleaseScheduleProvenance"];
+            readonly stock: components["schemas"]["ReleaseStockProvenance"];
+        };
         ReleaseSchedule: {
             /** Format: uuid */
             task_id: string;
@@ -11168,6 +11185,12 @@ export interface components {
             /** Format: uuid */
             courier_id: string;
         };
+        ReleaseScheduleProvenance: {
+            /** Format: uuid */
+            readonly task_id: string;
+            /** Format: uuid */
+            readonly permit_version_id: string;
+        };
         ReleaseScheduleWriteRequest: {
             /** Format: uuid */
             point_id: string;
@@ -11176,6 +11199,16 @@ export interface components {
             /** Format: date */
             due_date: string;
             expected_revision: number;
+        };
+        ReleaseStockProvenance: {
+            /** Format: uuid */
+            readonly unit_version_id: string;
+            /** Format: uuid */
+            readonly lot_version_id: string;
+            /** Format: uuid */
+            readonly transit_policy_id: string;
+            readonly transit_mode: string;
+            readonly quantity: string;
         };
         /**
          * @description Base for the serializers of org-scoped models (mandatory, see docs/engineering-rules.md).

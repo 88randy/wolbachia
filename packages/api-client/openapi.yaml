@@ -26908,6 +26908,8 @@ components:
           format: date-time
           readOnly: true
         provenance:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseProvenance'
           readOnly: true
         blocked_by:
           type: array
@@ -27150,6 +27152,55 @@ components:
           $ref: '#/components/schemas/SupplyRelease'
       required:
       - release
+    ReleaseProvenance:
+      type: object
+      description: 'Regulatory ids only: no courier, certification, reviewer, assignment
+        or receipt ids.'
+      properties:
+        permit_version:
+          type: string
+          format: uuid
+          readOnly: true
+        current_permit_version:
+          type: string
+          format: uuid
+          readOnly: true
+        permit_type:
+          type: string
+          format: uuid
+          readOnly: true
+        official_document:
+          type: string
+          format: uuid
+          readOnly: true
+        source_lot_version:
+          type: string
+          format: uuid
+          readOnly: true
+        rules_version:
+          type: string
+          readOnly: true
+        catalog_version:
+          type: string
+          readOnly: true
+        schedule:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseScheduleProvenance'
+          readOnly: true
+        stock:
+          allOf:
+          - $ref: '#/components/schemas/ReleaseStockProvenance'
+          readOnly: true
+      required:
+      - catalog_version
+      - current_permit_version
+      - official_document
+      - permit_type
+      - permit_version
+      - rules_version
+      - schedule
+      - source_lot_version
+      - stock
     ReleaseSchedule:
       type: object
       properties:
@@ -27168,6 +27219,20 @@ components:
       required:
       - courier_id
       - due_date
+      - permit_version_id
+      - task_id
+    ReleaseScheduleProvenance:
+      type: object
+      properties:
+        task_id:
+          type: string
+          format: uuid
+          readOnly: true
+        permit_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+      required:
       - permit_version_id
       - task_id
     ReleaseScheduleWriteRequest:
@@ -27190,6 +27255,33 @@ components:
       - due_date
       - expected_revision
       - point_id
+    ReleaseStockProvenance:
+      type: object
+      properties:
+        unit_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        lot_version_id:
+          type: string
+          format: uuid
+          readOnly: true
+        transit_policy_id:
+          type: string
+          format: uuid
+          readOnly: true
+        transit_mode:
+          type: string
+          readOnly: true
+        quantity:
+          type: string
+          readOnly: true
+      required:
+      - lot_version_id
+      - quantity
+      - transit_mode
+      - transit_policy_id
+      - unit_version_id
     Relocation:
       type: object
       description: |-

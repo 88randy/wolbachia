@@ -65,7 +65,7 @@ def custody(org_a, make_member, monkeypatch, request):
     return context, destination
 
 
-def verified_upload(actor):
+def verified_upload(actor, content_type="image/png"):
     """Real immutable synthetic receipts, no filesystem/image-library re-test."""
     from uploads.models import Upload, UploadLease, UploadSource, UploadVerification
 
@@ -74,7 +74,7 @@ def verified_upload(actor):
         created_by=actor.user,
         uploader=actor.user,
         device_id=actor.device_id,
-        content_type="image/png",
+        content_type=content_type,
         size_bytes=1,
         sha256="a" * 64,
     )
@@ -102,7 +102,7 @@ def verified_upload(actor):
         object_key="synthetic-" + uuid4().hex,
         size_bytes=1,
         sha256="b" * 64,
-        content_type="image/png",
+        content_type=content_type,
         width=1,
         height=1,
     )

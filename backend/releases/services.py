@@ -89,6 +89,9 @@ def create_permit_type(actor: UploadActor, values: dict[str, Any]) -> PermitType
         raise
 
 
+DOCUMENT_CONTENT_TYPES = frozenset({"application/pdf"})
+
+
 def _official_document(actor: UploadActor, values: dict[str, Any]) -> UploadVerification:
     uploads = Upload.objects.filter(
         organization=actor.organization,
@@ -111,6 +114,10 @@ def _official_document(actor: UploadActor, values: dict[str, Any]) -> UploadVeri
     ).first()
     if verification is None or AttachmentLink.objects.filter(upload=upload).exists():
         raise ReleaseConflictError("permit_document_not_ready")
+    if verification.content_type not in DOCUMENT_CONTENT_TYPES:
+        raise FieldValidationError("official_document_id", "permit.document_type_invalid")
+    if PermitVersion.objects.filter(official_document=verification).exists():
+        raise ReleaseConflictError("permit_document_already_bound")
     return cast(UploadVerification, verification)
 
 
