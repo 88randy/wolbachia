@@ -974,4 +974,49 @@ export const mobile = {
     "No hay un teléfono laboral validado disponible. No se configuró un número de emergencias para esta app.",
   "mobile.incidents.callFallback":
     "Si necesitas ayuda inmediata, usa la app Teléfono del dispositivo y el contacto de emergencia que conozcas. La llamada depende del dispositivo y la red.",
+  "mobile.history.title": "Mi historial",
+  "mobile.history.search": "Buscar código o referencia",
+  "mobile.history.partial":
+    "Copia local parcial: los registros guardados, recibidos y revisados tienen estados distintos.",
+  "mobile.history.failed":
+    "No pudimos actualizar. Conservamos tus capturas; reintenta con conexión.",
+  "mobile.history.refresh": "Actualizar historial",
+  "mobile.history.allShifts": "Volver a jornadas",
+  "mobile.history.noMatches":
+    "No hay coincidencias en esta copia. Cambia la búsqueda o actualiza con conexión.",
+  "mobile.history.unavailable":
+    "Historial no disponible. Actualiza con conexión o pide a tu supervisor revisar el acceso.",
+  "mobile.history.unknownTime": "Fecha no disponible",
+  "mobile.history.shift": "Jornada",
+  "mobile.history.openShift": "Ver eventos y observaciones",
+  "mobile.history.reviewed": "Revisado",
+  "mobile.history.voided": "Anulado",
+  "mobile.history.observed": "Con observaciones",
+  "mobile.history.received": "Recibido por el servidor",
+  "mobile.history.serverFact": "Observación del servidor",
+  "mobile.history.author": "Autor (nombre o referencia)",
+  "mobile.history.unavailableValue": "No disponible",
+  "mobile.history.reference": "Referencia original",
+  "mobile.history.reason": "Motivo u observación",
+  "mobile.history.voids": "Corrige la referencia",
+  "mobile.settings.textSize": "Tamaño de texto",
+  "mobile.settings.textSystem": "Igual que el teléfono",
+  "mobile.settings.textLarge": "Texto adicionalmente 30 % más grande",
+  "mobile.settings.saveFailed":
+    "No pudimos guardar tu preferencia. Conservamos la selección anterior; vuelve a elegir para reintentar.",
+  "mobile.settings.readFailed":
+    "No pudimos consultar el estado local. Reintenta; puedes bloquear el acceso sin borrar tus capturas.",
+  "mobile.settings.version": "Versión de la app en ejecución",
+  "mobile.settings.updaterUnavailable":
+    "Actualizador no disponible. No hay un manifiesto ni un recibo de instalación verificado; consulta a soporte.",
+  "mobile.settings.support": "Contacto de soporte de la organización",
+  "mobile.settings.supportUnavailable": "No hay contacto configurado. Pide apoyo a tu supervisor.",
+  "mobile.settings.pendingWork": "Trabajo conservado en el teléfono",
+  "mobile.settings.events": "Registros pendientes de recepción",
+  "mobile.settings.files": "Archivos pendientes de verificación o vínculo",
+  "mobile.settings.drafts": "Borradores sin guardar como registro",
+  "mobile.settings.lockHint":
+    "Cerrar el acceso bloquea este teléfono. Conserva borradores, archivos y envíos; desbloquea con tu PIN para continuar. La sesión del servidor mantiene su vigencia original.",
+  "mobile.settings.viewUploads": "Ver envíos y observaciones",
+  "mobile.settings.lockAccess": "Cerrar acceso local y conservar trabajo",
 } as const satisfies AreaCatalog<"mobile">;

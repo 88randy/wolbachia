@@ -41,6 +41,14 @@ import { buildDay, findAssignedTaskByPointCode, mapTasks } from "../src/features
 import { NavigationService } from "../src/navigation/navigation-service.ts";
 import { createStores, makeEnvelope, FIXED_NOW } from "./support/factories.ts";
 import { LAB_HISTORY } from "./support/lifecycle-contract-fixtures.ts";
+import type { SqlExecutor } from "../src/db/sql.ts";
+
+async function downloadedLabKinds(db: SqlExecutor) {
+  const rows = await db.query(
+    "SELECT kind FROM lifecycle_courier_projection WHERE kind LIKE 'history.lab_%'",
+  );
+  return rows.map((row) => row.kind).sort();
+}
 
 const task = (overrides: Record<string, unknown> = {}) => ({
   kind: "task",
@@ -1114,19 +1122,19 @@ void test("Merge session: ordinary local lock retains downloads while boot recon
   const fixture = await authDayFixture(LAB_HISTORY);
   await fixture.service.refresh();
   assert.deepEqual(
-    await fixture.db.query(
-      "SELECT kind FROM lifecycle_courier_projection WHERE kind LIKE 'history.lab_%'",
-    ),
-    [],
+    await downloadedLabKinds(fixture.db),
+    LAB_HISTORY.map((row) => `history.${row.kind}`).sort(),
   );
   assert.equal(await fixture.store.needsBootstrap(), true, "Lab is not current capture authority");
   await fixture.auth.lock();
   assert.equal((await fixture.service.read()).tasks.length, 1);
+  assert.equal((await downloadedLabKinds(fixture.db)).length, LAB_HISTORY.length);
   await fixture.auth.endSession();
   // An interrupted earlier cleanup can leave old projections on disk.
   await fixture.store.replace(bundle(), FIXED_NOW);
   await fixture.auth.load();
   assert.equal((await fixture.service.read()).tasks.length, 0);
+  assert.equal((await downloadedLabKinds(fixture.db)).length, 0);
 });
 void test("Merge session: final upload completes credential erasure only after result settlement and projection cleanup", async () => {
   const fixture = await authDayFixture();
