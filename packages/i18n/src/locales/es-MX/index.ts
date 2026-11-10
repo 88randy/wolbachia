@@ -1,3 +1,5 @@
+import { regulatory } from "./regulatory.ts";
+import { portal } from "./portal.ts";
 import { notifications } from "./notifications.ts";
 import { transfers } from "./transfers.ts";
 import { allocation } from "./allocation.ts";
@@ -62,6 +64,8 @@ export const esMX = {
   ...trainings,
   ...evaluations,
   ...lab,
+  ...regulatory,
+  ...portal,
   ...shift,
   ...scheduling,
   ...live,
