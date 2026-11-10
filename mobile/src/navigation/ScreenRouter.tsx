@@ -11,6 +11,8 @@ import { P8Screen } from "../features/supply-receipt/P8Screen.tsx";
 import { P22Screen } from "../features/fuel/P22Screen.tsx";
 import { P23Screen } from "../features/incidents/P23Screen.tsx";
 import { P24Screen } from "../features/incidents/P24Screen.tsx";
+import { P29Screen } from "../features/history/P29Screen.tsx";
+import { P30Screen } from "../features/training/P30Screen.tsx";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
 
@@ -37,6 +39,8 @@ const SCREENS = {
   home: HomeScreen,
   inbox: InboxScreen,
   settings: SettingsScreen,
+  history: P29Screen,
+  training: P30Screen,
   stylePreview: DEV_TOOLS_ENABLED ? StylePreviewScreen : HomeScreen,
 };
 

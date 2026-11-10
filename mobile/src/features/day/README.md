@@ -1,5 +1,15 @@
 # Day projections and task locations
 
+## Personal history/training consumers (#144)
+
+The same bootstrap/change transaction now retains every current history7 kind and
+typed eligibility records. Full-body readiness markers force hydration after an
+upgrade; a delta or304 cannot mark a new consumer ready. Eligibility metadata binds
+the accepted owner, session and scope revision. Recovery suspends training reads,
+and revocation removes downloaded history/training plus private REST feedback while
+retaining authored drafts, original events, files and recovery data. These consumers
+share the original short projection writer and add no queue or sync publisher.
+
 ## Fuel capture context (#140)
 
 `withFuelContext` reuses the same short projection writer and downloaded paired

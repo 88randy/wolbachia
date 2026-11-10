@@ -22,6 +22,7 @@ import { lifecycleEvidence } from "./evidence-configuration.ts";
 import { ForegroundLifecycleGps } from "./foreground-gps.ts";
 import { LifecycleAdvisory } from "./advisory.ts";
 import { createScopedApiClient } from "../../api/create-scoped-api-client.ts";
+import { lifecycleTrainingGuards } from "./training-guard.ts";
 interface Dependencies {
   readonly db: SqlExecutor;
   readonly engine: SyncEngine;
@@ -92,6 +93,8 @@ export function createOvitrapLifecycle(deps: Dependencies): LifecycleService {
     engine: deps.engine,
     uuid: randomUUID,
     now: () => new Date(),
+    trainingGuards: (draft, turn) =>
+      lifecycleTrainingGuards(deps.db, { draft, turn, now: new Date() }),
     shiftId: async () => captureShiftId(await deps.shiftOpen.read()),
     gps: deps.gps ?? gps,
     cancelNative: gps.cancel,

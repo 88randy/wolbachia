@@ -8,20 +8,26 @@ export type ColorScheme = "light" | "dark";
 interface ThemeContextValue {
   readonly theme: Theme;
   readonly scheme: ColorScheme;
+  readonly textScale: number;
 }
 
-const ThemeContext = createContext<ThemeContextValue>({ theme: lightTheme, scheme: "light" });
+const ThemeContext = createContext<ThemeContextValue>({
+  theme: lightTheme,
+  scheme: "light",
+  textScale: 1,
+});
 
 interface ThemeProviderProps {
   /** Resolved appearance: live system scheme unless Settings has an explicit choice. */
   readonly scheme: ColorScheme;
   readonly children: ReactNode;
+  readonly textScale?: number;
 }
 
-export function ThemeProvider({ scheme, children }: ThemeProviderProps) {
+export function ThemeProvider({ scheme, children, textScale = 1 }: ThemeProviderProps) {
   const value = useMemo(
-    () => ({ theme: scheme === "dark" ? darkTheme : lightTheme, scheme }),
-    [scheme],
+    () => ({ theme: scheme === "dark" ? darkTheme : lightTheme, scheme, textScale }),
+    [scheme, textScale],
   );
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }

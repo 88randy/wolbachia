@@ -9,6 +9,8 @@ export class LifecycleGateError extends Error {
   }
 }
 export function actionErrorKey(error: unknown): MessageKey {
+  if (error instanceof LifecycleGateError && error.gate === "training")
+    return "trainings.mobile.boundary";
   if (error instanceof EvidenceUnavailableError) return "mobile.lifecycle.noCamera";
   if (error instanceof LifecycleGateError)
     return error.gate === "scope" ? "mobile.lifecycle.scopeBlocked" : "mobile.lifecycle.incomplete";

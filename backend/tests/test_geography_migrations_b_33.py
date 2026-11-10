@@ -55,11 +55,10 @@ def test_additive_upgrade_keeps_legacy_decision_unknown_audit_and_protects_new_p
     executor = MigrationExecutor(connection)
     leaves = executor.loader.graph.leaf_nodes()
     previous = [("geography", "0002_insert_only_guards"), ("ovitraps", "0004_removal_resolution")]
+    head_state = None
     try:
-        executor.migrate(previous)
-        old = executor.loader.project_state(previous).apps.get_model(
-            "ovitraps", "RelocationDecision"
-        )
+        legacy_state = executor.migrate(previous)
+        old = legacy_state.apps.get_model("ovitraps", "RelocationDecision")
         legacy = old.objects.create(
             organization_id=field.batch.organization.pk,
             created_by_id=field.batch.user.pk,
@@ -67,7 +66,8 @@ def test_additive_upgrade_keeps_legacy_decision_unknown_audit_and_protects_new_p
             proposal_id=source.pk,
             decision="rejected",
         )
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        head_state = executor.migrate(leaves, state=legacy_state)
         retained = RelocationDecision.objects.get(pk=legacy.pk)
         assert retained.reason is None
         assert retained.decided_at is None
@@ -105,8 +105,17 @@ def test_additive_upgrade_keeps_legacy_decision_unknown_audit_and_protects_new_p
                 "UPDATE geography_nextdaytask SET created_at=created_at WHERE id=%s",
                 [result.next_day_task.pk],
             )
-        with pytest.raises(DatabaseError, match="retained B33 relocation audit"):
-            MigrationExecutor(connection).migrate(previous)
+        executor = MigrationExecutor(connection)
+        applied = set(executor.recorder.applied_migrations())
+        # A protected reverse rolls back preceding dependent DDL and recorder writes.
+        with (
+            pytest.raises(DatabaseError, match="retained B33 relocation audit"),
+            transaction.atomic(),
+        ):
+            executor.migrate(previous)
+        assert set(executor.recorder.applied_migrations()) == applied
         assert NextDayTask.objects.filter(pk=result.next_day_task.pk).exists()
     finally:
-        MigrationExecutor(connection).migrate(leaves)
+        executor = MigrationExecutor(connection)
+        plan = executor.migration_plan(leaves)
+        executor.migrate(leaves, plan=plan, state=head_state if not plan else None)

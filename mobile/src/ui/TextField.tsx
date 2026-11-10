@@ -31,7 +31,7 @@ interface TextFieldProps extends TextInputProps {
 
 function useFieldPresentation(props: TextFieldProps) {
   const styles = useStyles(createStyles);
-  const { theme } = useTheme();
+  const { theme, textScale } = useTheme();
   const focus = useFieldFocus(props);
   const hasNumericKeyboard = ["numeric", "number-pad", "decimal-pad"].includes(
     props.keyboardType ?? "",
@@ -42,7 +42,7 @@ function useFieldPresentation(props: TextFieldProps) {
     placeholderTextColor: theme.color.text.tertiary,
     style: [
       styles.input,
-      textStyleFor("body", props.isMonospace === true || hasNumericKeyboard),
+      textStyleFor("body", props.isMonospace === true || hasNumericKeyboard, textScale),
       { color: theme.color.text.primary },
       props.style,
       focus.isFocused ? { borderColor: theme.color.actionStrong } : null,

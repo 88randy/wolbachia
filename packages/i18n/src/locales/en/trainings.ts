@@ -101,4 +101,49 @@ export const trainings: Record<keyof typeof Spanish, string> = {
     "No record will be sent automatically. Review history and confirm before saving again.",
   "trainings.eligibility.refreshRequired":
     "A validity boundary was reached. Refresh to confirm eligibility with the server.",
+  "trainings.mobile.title": "Trainings and evaluations",
+  "trainings.mobile.qualification": "Downloaded qualification by action",
+  "trainings.mobile.certificates": "Downloaded certificates",
+  "trainings.mobile.evaluations": "Evaluation sheets",
+  "trainings.mobile.eligible": "Current training",
+  "trainings.mobile.blocked": "Training needed",
+  "trainings.mobile.expired": "Expired",
+  "trainings.mobile.unavailable":
+    "Sync to review your training. Eligibility cannot be confirmed without current data.",
+  "trainings.mobile.boundary":
+    "Training does not qualify this action. Ask your supervisor to check your validity and training schedule.",
+  "trainings.mobile.qualificationHint":
+    "Training is one requirement. Permissions and other capture conditions are checked separately.",
+  "trainings.mobile.validUntil": "Valid until",
+  "trainings.mobile.validFrom": "Valid from",
+  "trainings.mobile.revoked": "Revoked",
+  "trainings.mobile.future": "Not yet valid",
+  "trainings.mobile.valid": "Current",
+  "trainings.mobile.pass": "Correct",
+  "trainings.mobile.low": "Observation to improve",
+  "trainings.mobile.critical": "Training required",
+  "trainings.mobile.incomplete": "Incomplete evaluation",
+  "trainings.mobile.voided": "Voided; original retained",
+  "trainings.mobile.refresh": "Refresh with signal",
+  "trainings.mobile.refreshing": "Refreshing; downloaded information is retained.",
+  "trainings.mobile.failed":
+    "Could not refresh. Downloads are retained; find signal and try again.",
+  "trainings.mobile.localFailed":
+    "Could not read the phone's information. Try again; records and drafts are retained.",
+  "trainings.mobile.empty":
+    "No records in this download. Refresh with signal to check for changes.",
+  "trainings.mobile.notDownloaded":
+    "Certificates or evaluation sheets have not been downloaded yet. Refresh with signal.",
+  "trainings.mobile.privateDenied":
+    "Private evaluations require authorization. Ask your supervisor to check your access.",
+  "trainings.mobile.trainingDenied":
+    "Certificates require authorization. Ask your supervisor to check your access.",
+  "trainings.mobile.partial":
+    "Showing the first authorized records. More history may exist on the server; ask your supervisor.",
+  "trainings.mobile.downloadedAt": "Certificates and evaluations downloaded",
+  "trainings.mobile.author": "Author",
+  "trainings.mobile.reason": "Reason or observation",
+  "trainings.mobile.revision": "Revision",
+  "trainings.mobile.source": "Original record",
+  "trainings.mobile.context": "Center and quadrant",
 };
