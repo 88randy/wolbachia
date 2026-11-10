@@ -7,6 +7,7 @@ import { requirePermission } from "../router/guards";
 import { AreaErrorState } from "../states/AreaErrorState";
 import { W22Page } from "./geography/W22Page";
 import { W23Page } from "./geography/W23Page";
+import { W23MapEditorPage } from "./editor/W23MapEditorPage";
 
 const quadrantVersionsRoute = createRoute({
   getParentRoute: () => authenticatedRoute,
@@ -16,6 +17,15 @@ const quadrantVersionsRoute = createRoute({
     requirePermission("quadrants", context.me, "quadrant.read");
   },
   component: W23Page,
+  errorComponent: AreaErrorState,
+});
+const mapEditorRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/quadrants/editor",
+  beforeLoad: ({ context }) => {
+    requirePermission("quadrants", context.me, "quadrant.read");
+  },
+  component: W23MapEditorPage,
   errorComponent: AreaErrorState,
 });
 const quadrantClosureRoute = createRoute({
@@ -42,9 +52,10 @@ const legacyQuadrantsRoute = createRoute({
   },
 });
 
-/** Quadrants area: W22 map and list, W23 versions, W33 closure. */
+/** Quadrants area: W22 map and list, W23 map editor and versions, W33 closure. */
 export const quadrantRoutes = [
   areaListHomeRoute("quadrants", W22Page),
+  mapEditorRoute,
   quadrantVersionsRoute,
   quadrantClosureRoute,
   legacyQuadrantsRoute,

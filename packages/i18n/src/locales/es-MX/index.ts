@@ -36,6 +36,7 @@ import { mobile } from "./mobile.ts";
 import { courier } from "./courier.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
+import { mapEditor } from "./mapEditor.ts";
 import { rules } from "./rules.ts";
 import { states } from "./states.ts";
 import { sync } from "./sync.ts";
@@ -82,6 +83,7 @@ export const esMX = {
   ...sync,
   ...table,
   ...phones,
+  ...mapEditor,
   ...rules,
   ...voiding,
 } as const;
