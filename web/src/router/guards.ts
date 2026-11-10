@@ -7,6 +7,7 @@ import type { Area, AreaId } from "./areas";
 import { can } from "../session/can";
 import type { Me } from "../session/me";
 import { loadMe } from "../session/me-query";
+import { isPlatformOnly, PLATFORM_HOME } from "../session/platform";
 import type { RouterContext } from "./router-context";
 
 const HOME = "/";
@@ -68,6 +69,11 @@ export async function requireSession(args: GuardArgs): Promise<Me> {
 export async function requireOrganization(args: GuardArgs): Promise<{ me: Me }> {
   const me = await requireSession(args);
   if (me.organization !== null) return { me };
+  // A platform admin without any organization works only in the platform area.
+  if (isPlatformOnly(me)) {
+    if (args.location.href.startsWith(PLATFORM_HOME)) return { me };
+    return leaveFor(redirect({ to: PLATFORM_HOME }));
+  }
   const target = args.location.href;
   return leaveFor(
     redirect({ to: "/select-organization", search: target === HOME ? {} : { redirect: target } }),
@@ -77,6 +83,7 @@ export async function requireOrganization(args: GuardArgs): Promise<{ me: Me }> 
 /** A single organization needs no chooser: whoever has only one never sees the screen. */
 export async function requireOrganizationChoice(args: GuardArgs): Promise<void> {
   const me = await requireSession(args);
+  if (isPlatformOnly(me)) leaveFor(redirect({ to: PLATFORM_HOME }));
   if (me.organization !== null && me.organizations.length < 2) leaveFor(redirect({ to: HOME }));
 }
 

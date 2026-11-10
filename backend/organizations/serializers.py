@@ -78,6 +78,7 @@ class MeSerializer(serializers.Serializer[Any]):
     scope = MeScopeSerializer()
     organizations = MeOrganizationChoiceSerializer(many=True)
     limits = MeLimitsSerializer()
+    is_platform_admin = serializers.BooleanField()
 
 
 class CenterSerializer(OrgScopedModelSerializer):

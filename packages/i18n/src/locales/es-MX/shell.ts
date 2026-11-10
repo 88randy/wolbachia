@@ -23,6 +23,7 @@ export const shell = {
   "shell.group.operation": "Operación",
   "shell.group.resources": "Recursos",
   "shell.group.analysis": "Análisis y administración",
+  "shell.group.platform": "Plataforma",
   "shell.nav.home": "Inicio",
   "shell.nav.incidents": "Incidentes",
   "shell.nav.operations": "Supervisión",
@@ -37,6 +38,7 @@ export const shell = {
   "shell.nav.dashboards": "Análisis",
   "shell.nav.regulatory": "Regulatorio",
   "shell.nav.settings": "Configuración",
+  "shell.nav.platform": "Organizaciones",
 
   // Web user menu (top bar)
   "shell.userMenu.button": "Menú de usuario",

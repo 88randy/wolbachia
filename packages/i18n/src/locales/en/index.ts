@@ -44,6 +44,7 @@ import { field } from "./field.ts";
 import { courierFlow } from "./courierFlow.ts";
 import { shell } from "./shell.ts";
 import { phones } from "./phones.ts";
+import { platform } from "./platform.ts";
 import { mapEditor } from "./mapEditor.ts";
 import { mapPicker } from "./mapPicker.ts";
 import { users } from "./users.ts";
@@ -103,6 +104,7 @@ export const en: Record<MessageKey, string> = {
   ...sync,
   ...table,
   ...phones,
+  ...platform,
   ...mapEditor,
   ...mapPicker,
   ...users,

@@ -10,7 +10,7 @@
  *
  * `hidden: true` keeps an area without screens out of the sidebar and Home (no dead links).
  */
-export type AreaGroup = "main" | "operation" | "resources" | "analysis";
+export type AreaGroup = "main" | "operation" | "resources" | "analysis" | "platform";
 
 export const PENDING = "pending";
 
@@ -133,6 +133,14 @@ export const AREAS = [
       "incident.manage_type",
       "user.read",
     ],
+  },
+  // Platform admins only (`/me/` is_platform_admin), never an organization permission.
+  {
+    id: "platform",
+    path: "/platform",
+    group: "platform",
+    requiredPermissions: [],
+    platformOnly: true,
   },
 ] as const;
 

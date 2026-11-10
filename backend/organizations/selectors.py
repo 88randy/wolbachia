@@ -29,6 +29,7 @@ class MeContext:
     scope: dict[str, dict[str, object]] = field(default_factory=default_scope)
     organizations: list[Organization] = field(default_factory=list)
     limits: dict[str, int] = field(default_factory=default_limits)
+    is_platform_admin: bool = False
 
 
 def _active_memberships(user: User) -> QuerySet[Membership]:
@@ -113,14 +114,36 @@ def get_scope(membership: Membership) -> dict[str, dict[str, object]]:
 
 
 def get_me_context(user: User, organization_slug: str | None) -> MeContext:
+    from platform_admin.selectors import is_platform_admin
+
     organizations = list_active_organizations(user)
+    platform = is_platform_admin(user)
     try:
         membership = resolve_active_membership(user, organization_slug)
     except OrganizationHeaderRequiredError:
         return MeContext(
-            user=user, organization=None, profiles=[], permissions=[], organizations=organizations
+            user=user,
+            organization=None,
+            profiles=[],
+            permissions=[],
+            organizations=organizations,
+            is_platform_admin=platform,
         )
+    except NoActiveMembershipError:
+        # A platform admin may sign in without any membership: no organization, no permissions,
+        # only the platform endpoints. A named organization is still checked (and refused).
+        if platform and not organization_slug and not organizations:
+            return MeContext(
+                user=user,
+                organization=None,
+                profiles=[],
+                permissions=[],
+                organizations=[],
+                is_platform_admin=True,
+            )
+        raise
     return MeContext(
+        is_platform_admin=platform,
         user=user,
         organization=membership.organization,
         profiles=list_active_profiles(membership),

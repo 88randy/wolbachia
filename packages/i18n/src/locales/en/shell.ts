@@ -23,6 +23,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.group.operation": "Operation",
   "shell.group.resources": "Resources",
   "shell.group.analysis": "Analysis and administration",
+  "shell.group.platform": "Platform",
   "shell.nav.home": "Home",
   "shell.nav.incidents": "Incidents",
   "shell.nav.operations": "Supervision",
@@ -37,6 +38,7 @@ export const shell: Record<keyof typeof source, string> = {
   "shell.nav.dashboards": "Analysis",
   "shell.nav.regulatory": "Regulatory",
   "shell.nav.settings": "Settings",
+  "shell.nav.platform": "Organizations",
 
   // Web user menu (top bar)
   "shell.userMenu.button": "User menu",

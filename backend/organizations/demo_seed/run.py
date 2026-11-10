@@ -49,6 +49,7 @@ def run_demo_seed(*, reset_passwords: bool = False) -> DemoResult:
     with custody_history.frozen_clock(custody_history.history_start()):
         organization = people.ensure_organization()
         users = people.ensure_users(organization, reset_passwords)
+        people.ensure_platform_admin(reset_passwords)
     members = {username: member for username, (_user, member) in users.items()}
     admin = members["demo-admin"]
     centers: dict[str, Center] = {

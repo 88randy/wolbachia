@@ -37,6 +37,7 @@ const AREA_TITLES_ES: Record<(typeof AREAS)[number]["id"], string> = {
   dashboards: "Tableros",
   regulatory: "Regulatorio",
   settings: "Configuración",
+  platform: "Organizaciones",
 };
 const OPERATIONS_ME = makeMe({
   permissions: ["review_item.read"],

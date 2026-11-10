@@ -1831,3 +1831,34 @@ never a parameter.
 
 No model, migration or write path is added. Samples and lab count facts are not yet producers:
 they are a follow-up (they need the sample source-context rule of `lab.samples.selectors`).
+
+## Platform administration (`/api/v1/platform/`)
+
+The only cross-organization surface. Every endpoint requires a web session (device bearer tokens
+answer `401`) whose user holds an active platform role (`403 permission_denied` otherwise),
+including organization admins. Reads are throttled per user (`platform`, 120/min) and writes also
+by `platform_write` (60/hour); both are env-configurable. Organizations are addressed by slug and
+no endpoint returns organization business data. `X-Organization` is never used to authorize.
+
+- `GET /platform/organizations/?search=&status=active|suspended&ordering=` (page paging):
+  `slug, name, country, timezone, is_active, users_count, centers_count, has_logo, created_at`.
+- `POST /platform/organizations/`: `name, slug, country, timezone, epi_week, languages[],
+  centers[{code,name}] (1..20), admin_first_name, admin_last_name, admin_username, admin_email,
+  admin_delivery=password|invite`. One transaction: organization, default profiles, permissions,
+  catalogs and rules, centers, a NEW admin account with the `admin` profile and all scope.
+  `201 {organization, admin{username, delivery, temporary_password}}`. `temporary_password` is
+  random (about 95 bits), returned once (`Cache-Control: no-store`) and never stored or logged; with
+  `invite` it is null and the existing password-reset email is sent after commit. Field codes:
+  `slug_taken`, `invalid_slug` (also the reserved `new-organization`), `username_taken`,
+  `duplicate_center_code`, `center_code_taken`.
+- `GET /platform/organizations/{slug}/`: settings, `centers[]`, `admins[]` (username, names,
+  email), last 50 `history[]` (`action, created_at, actor_name, reason`).
+- `POST .../centers/`, `POST .../admins/` (a new account only; an existing username is never
+  reused), `POST .../apply-defaults/` (idempotent seeds), `GET|POST .../logo/` (same PNG validator
+  as `/organization/logo/`), `POST .../suspend/` and `.../reactivate/` with a required `reason`
+  (void-reason length limits). Suspension keeps every record; members get `no_active_membership`.
+- `GET /platform/availability/?slug=&username=`: `{slug_available, username_available}`.
+
+`/me/` adds `is_platform_admin`. A platform admin with no membership gets `200` with
+`organization: null`, `organizations: []` and no permissions (instead of `403`); a named
+`X-Organization` is still refused.
