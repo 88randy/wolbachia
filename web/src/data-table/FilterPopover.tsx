@@ -26,7 +26,8 @@ export function FilterPopover({ activeCount, children }: FilterPopoverProps) {
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="flex max-h-[min(36rem,calc(100dvh-8rem))] w-[min(22rem,calc(100vw-2rem))] flex-col gap-4 overflow-y-auto rounded-xl border border-line bg-popover p-4 shadow-overlay"
+        collisionPadding={16}
+        className="flex max-h-[min(36rem,var(--radix-popover-content-available-height))] w-[min(22rem,calc(100vw-2rem))] flex-col gap-4 overflow-y-auto rounded-xl border border-line bg-popover p-4 shadow-overlay"
       >
         {children}
       </PopoverContent>

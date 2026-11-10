@@ -117,7 +117,7 @@ export const inventory = {
   "inventory.field.estimatedOrganismCount": "Estimated organism count",
   "inventory.field.observations": "Observations",
   "inventory.field.expiryDate": "Expiry date",
-  "inventory.field.expiry": "Expiry (organization time)",
+  "inventory.field.expiry": "Expiry",
   "inventory.field.protocolName": "Protocol name",
   "inventory.field.shelfLife": "Shelf life (elapsed seconds)",
   "inventory.field.temperatureMin": "Minimum temperature (°C)",

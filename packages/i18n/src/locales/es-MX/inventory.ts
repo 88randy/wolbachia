@@ -120,7 +120,7 @@ export const inventory = {
   "inventory.field.estimatedOrganismCount": "Cantidad estimada de organismos",
   "inventory.field.observations": "Observaciones",
   "inventory.field.expiryDate": "Fecha de caducidad",
-  "inventory.field.expiry": "Caduca (hora de la organización)",
+  "inventory.field.expiry": "Caducidad",
   "inventory.field.protocolName": "Nombre del protocolo",
   "inventory.field.shelfLife": "Vida útil (segundos transcurridos)",
   "inventory.field.temperatureMin": "Temperatura mínima (°C)",

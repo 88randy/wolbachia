@@ -4,7 +4,10 @@ import type { ApiClient } from "@wolbachia/api-client";
 /** One option of a picker filter: the id that goes in the URL and the human label shown. */
 export interface LookupOption {
   value: string;
+  /** The human name, shown first. */
   label: string;
+  /** Secondary text (the human code), shown small and muted. */
+  detail?: string;
 }
 
 /**
@@ -20,8 +23,8 @@ export interface LookupSource {
 
 const PAGE = 20;
 
-function labelOf(code: string, name: string): string {
-  return name && name !== code ? `${name} · ${code}` : code;
+function optionOf(value: string, code: string, name: string): LookupOption {
+  return name && name !== code ? { value, label: name, detail: code } : { value, label: code };
 }
 
 export const CENTER_LOOKUP: LookupSource = {
@@ -34,10 +37,7 @@ export const CENTER_LOOKUP: LookupSource = {
         signal,
       }),
     );
-    return page.results.map((center) => ({
-      value: center.id,
-      label: labelOf(center.code, center.name),
-    }));
+    return page.results.map((center) => optionOf(center.id, center.code, center.name));
   },
 };
 
@@ -51,10 +51,7 @@ export const SUPPLY_LOOKUP: LookupSource = {
         signal,
       }),
     );
-    return page.results.map((supply) => ({
-      value: supply.id,
-      label: labelOf(supply.code, supply.label),
-    }));
+    return page.results.map((supply) => optionOf(supply.id, supply.code, supply.label));
   },
 };
 
@@ -68,9 +65,6 @@ export const LOCATION_LOOKUP: LookupSource = {
         signal,
       }),
     );
-    return page.results.map((location) => ({
-      value: location.id,
-      label: labelOf(location.code, location.name),
-    }));
+    return page.results.map((location) => optionOf(location.id, location.code, location.name));
   },
 };

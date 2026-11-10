@@ -64,7 +64,12 @@ export function FilterLookup({ filter, value, onChange }: FilterLookupProps) {
                 }}
               >
                 <span className="min-w-0 truncate">{option.label}</span>
-                {isOn && <Check aria-hidden="true" className="size-4 flex-none" />}
+                <span className="ml-auto flex flex-none items-center gap-1.5">
+                  {option.detail && (
+                    <span className="text-xs font-normal text-ink-3">{option.detail}</span>
+                  )}
+                  {isOn && <Check aria-hidden="true" className="size-4" />}
+                </span>
               </button>
             </li>
           );
