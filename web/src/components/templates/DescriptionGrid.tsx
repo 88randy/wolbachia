@@ -27,7 +27,10 @@ export function DescriptionGrid({
       )}
     >
       {items.map((item) => (
-        <div key={item.label} className={cn("flex min-w-0 flex-col gap-1", item.wide && "sm:col-span-full")}>
+        <div
+          key={item.label}
+          className={cn("flex min-w-0 flex-col gap-1", item.wide && "sm:col-span-full")}
+        >
           <dt className="text-xs font-semibold text-ink-2">{item.label}</dt>
           <dd className="m-0 text-sm leading-5 text-ink [overflow-wrap:anywhere]">
             {item.value === null || item.value === undefined || item.value === "" ? (
