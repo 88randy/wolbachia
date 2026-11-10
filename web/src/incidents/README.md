@@ -58,7 +58,8 @@ copy. It uses a responsive action column rather than a permanently open sheet.
 The actual API accepts a closing reason and evidence IDs; it has no structured
 result, reopen, incident map or export operation, so none is invented.
 Unavailable linked records stay opaque. Existing motorcycle and lot record
-routes are linked and marked Voided when applicable; other record kinds remain
+routes are linked and marked Voided when applicable; Bag sources link to W34's
+exact-code view only with current `bag.receive`. Other record kinds remain
 labels until their actual web routes exist.
 
 `IncidentThread` renders the complete returned timeline without truncation and

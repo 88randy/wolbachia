@@ -44,7 +44,8 @@ const OPERATIONS_ME = makeMe({
 describe("area routes", () => {
   test.each(
     AREAS.filter(
-      ({ id }) => !["quadrants", "settings", "inventory", "incidents", "operations"].includes(id),
+      ({ id }) =>
+        !["quadrants", "settings", "inventory", "incidents", "operations", "lab"].includes(id),
     ),
   )("$path opens the placeholder of $id", async ({ path, id }) => {
     await renderApp({ path, me: makeMe({ permissions: ["catalog.read", "motorcycle.read"] }) });
@@ -155,7 +156,7 @@ describe("document title (WCAG 2.4.2)", () => {
   });
 
   test("navigating changes the title", async () => {
-    await renderApp();
+    await renderApp({ me: makeMe({ permissions: ["bag.receive"] }) });
     expect(document.title).toBe("Inicio · Wolbachia");
 
     await userEvent.click(screen.getByRole("link", { name: "Laboratorio" }));

@@ -4,6 +4,8 @@ import { OperationsHome } from "../operations/OperationsHome";
 import { W30Page } from "../operations/reviews/W30Page";
 import { W31Page } from "../operations/relocations/W31Page";
 import { W33Page } from "../operations/closure/W33Page";
+import { W34Page } from "../lab/W34Page";
+import { LabHome } from "../lab/LabHome";
 import { InventoryHome } from "../inventory/InventoryHome";
 import { InventoryScreen } from "../inventory/InventoryScreen";
 import { W8Page } from "../inventory/supplies/W8Page";
@@ -123,7 +125,9 @@ const areaRoutes = AREAS.filter((area) => area.id !== "inventory").map((area) =>
               ? FleetHome
               : area.id === "quadrants"
                 ? W22Page
-                : () => <AreaPlaceholder areaId={area.id} />,
+                : area.id === "lab"
+                  ? LabHome
+                  : () => <AreaPlaceholder areaId={area.id} />,
     errorComponent: AreaErrorState,
   }),
 );
@@ -171,6 +175,17 @@ const quadrantClosureRoute = createRoute({
     const { code } = quadrantClosureRoute.useParams();
     return <W33Page code={code} />;
   },
+  errorComponent: AreaErrorState,
+});
+
+const labReceptionRoute = createRoute({
+  getParentRoute: () => authenticatedRoute,
+  path: "/lab/bags",
+  validateSearch: tableSearchSchema,
+  beforeLoad: ({ context }) => {
+    requirePermission("lab", context.me, "bag.receive");
+  },
+  component: W34Page,
   errorComponent: AreaErrorState,
 });
 
@@ -348,6 +363,7 @@ const routeTree = rootRoute.addChildren([
     reviewsRoute,
     relocationsRoute,
     quadrantClosureRoute,
+    labReceptionRoute,
     catalogsRoute,
     catalogRoute,
     motorcyclesRoute,

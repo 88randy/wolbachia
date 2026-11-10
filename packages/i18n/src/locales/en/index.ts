@@ -1,3 +1,4 @@
+import { labReception } from "./labReception.ts";
 import { incidents } from "./incidents.ts";
 import { reviews } from "./reviews.ts";
 import { relocations } from "./relocations.ts";
@@ -28,6 +29,7 @@ export const en: Record<MessageKey, string> = {
   ...reviews,
   ...relocations,
   ...closure,
+  ...labReception,
   ...incidents,
   ...inventory,
   ...ui,
